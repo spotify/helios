@@ -1,0 +1,36 @@
+Deployment book for the Helios service
+======================================
+Daniel Norberg <dano@spotify.com>
+
+This is the helios deployment book. It is targeted towards Operations and describes how to deploy the helios service.
+
+
+Overview
+--------
+
+
+Administration
+--------------
+
+
+
+Projects
+--------
+Note: Projects are merely advisory.  Applications are deployed with a project.  That
+project may exist before initial deploy, but will be created if it doesn't exist already.
+If the application is already running, the project name on subsequent deploys must match.
+A user deploying an application must be in the project in order to deploy or undeploy it
+in that project.  Anyone may add/remove users from projects.  It is intended to prevent
+mistakes than real access control.  Creating a project that already exists will merely add
+the current user to that project if they are not already a member.
+
+Configuration
+-------------
+
+Helios is currently configured through command line parameters. These are controlled through the
+helios puppet class.
+
+
+Graphs
+------
+

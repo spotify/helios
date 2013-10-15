@@ -1,0 +1,35 @@
+Source: spotify-helios
+Section: non-free/net
+Priority: extra
+Maintainer: Daniel Norberg <dano@spotify.com>
+Build-Depends:
+ debhelper (>= 7),
+ default-jdk,
+ maven3,
+ spotify-maven-config,
+ spotify-supervision2-debhelper,
+Standards-Version: 3.7.2
+
+Package: spotify-helios
+Architecture: all
+Depends:
+ spotify-helios-common,
+Description: Spotify Helios Command Line Tool
+
+Package: spotify-helios-master
+Architecture: all
+Depends:
+ spotify-helios-common,
+Description: Spotify Helios Master
+
+Package: spotify-helios-agent
+Architecture: all
+Depends:
+ spotify-helios-common,
+Description: Spotify Helios Agent
+
+Package: spotify-helios-common
+Architecture: all
+Depends:
+ default-jre,
+Description: Spotify Helios common files

@@ -1,0 +1,14 @@
+# Build products and artifacts
+*.html
+.m2-repository/
+helios-core/target/
+helios-service/target/
+pom.xml.versionsBackup
+
+# Stuff from various IDE's and editors
+*.iml
+*~
+.idea/*
+
+# Mac OS X Finder
+.DS_Store

@@ -1,0 +1,27 @@
+Development book for the Helios service
+=======================================
+Daniel Norberg <dano@spotify.com>
+
+
+Introduction
+------------
+
+
+Overview
+--------
+
+
+
+Building
+--------
+
+To build Helios, you'll need the following prerequisites:
+
+- A JDK which supports Java 1.7
+- Maven 3
+
+Additionally you need to make sure that maven is configured to talk to our
+https://wiki.spotify.net/wiki/Artifactory[Artifactary repository].
+
+Building Helios is then as simple as `mvn package`.
+
