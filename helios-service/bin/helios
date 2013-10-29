@@ -11,5 +11,7 @@ fi
 
 exec java \
     -Djava.net.preferIPv4Stack=true \
+    -client \
+    -Xverify:none \
     -jar "$jar" \
     "$@"
