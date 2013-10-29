@@ -10,7 +10,7 @@ override_dh_installinit:
 
 build:
 	dh build --until dh_auto_build
-	$(MVN) package
+	DOCKER_ENDPOINT=http://hw3949:4160 $(MVN) package
 	# dh_install cannot rename files, so do that here.
 	cp `ls helios-service/target/helios-service*.jar | grep -v sources | grep -v javadoc | head -n 1` helios-service/target/spotify-helios-service.jar
 	dh build --remaining

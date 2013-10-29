@@ -68,6 +68,8 @@ public class SystemTest {
   private final int zookeeperPort = PORT_COUNTER.incrementAndGet();
   private final String zookeeperEndpoint = "localhost:" + zookeeperPort;
 
+  private final String dockerEndpoint = getDockerEndpoint();
+
   private File tempDir;
   private List<Main> mains = newArrayList();
   private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -160,7 +162,7 @@ public class SystemTest {
                                             "--no-log-setup",
                                             "--munin-port", "0",
                                             "--zk", "localhost:" + zookeeperPort,
-                                            "--docker", "http://localhost:4160",
+                                            "--docker", dockerEndpoint,
                                             "--name", TEST_AGENT);
     final List<String> argsList = asList(args);
     return startMain(defaultArgs, argsList);
@@ -265,7 +267,7 @@ public class SystemTest {
               "--no-log-setup",
               "--munin-port", "0",
               "--name", agentName,
-              "--docker", "http://localhost:4160",
+              "--docker", dockerEndpoint,
               "--zk", zookeeperEndpoint);
 
     final Client control = Client.newBuilder()
@@ -390,4 +392,9 @@ public class SystemTest {
     assertContains(jobId, listOutput);
     return jobId;
   }
+
+    private static String getDockerEndpoint() {
+        final String endpoint = System.getenv("DOCKER_ENDPOINT");
+        return endpoint == null ? "http://localhost:4160" : endpoint;
+    }
 }
