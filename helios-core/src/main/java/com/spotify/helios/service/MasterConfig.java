@@ -12,7 +12,7 @@ public class MasterConfig {
   private String endpoint;
   private String zooKeeperConnectString;
   private int muninReporterPort;
-  private InetSocketAddress controlHttpEndpoint;
+  private InetSocketAddress httpEndpoint;
 
   public int getMuninReporterPort() {
     return muninReporterPort;
@@ -23,21 +23,21 @@ public class MasterConfig {
     return this;
   }
 
-  public String getControlEndpoint() {
+  public String getHermesEndpoint() {
     return endpoint;
   }
 
-  public MasterConfig setControlEndpoint(final String endpoint) {
+  public MasterConfig setHermesEndpoint(final String endpoint) {
     this.endpoint = endpoint;
     return this;
   }
 
-  public InetSocketAddress getControlHttpEndpoint() {
-    return controlHttpEndpoint;
+  public InetSocketAddress getHttpEndpoint() {
+    return httpEndpoint;
   }
 
-  public MasterConfig setControlHttpEndpoint(final InetSocketAddress endpoint) {
-    this.controlHttpEndpoint = endpoint;
+  public MasterConfig setHttpEndpoint(final InetSocketAddress endpoint) {
+    this.httpEndpoint = endpoint;
     return this;
   }
 

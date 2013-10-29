@@ -42,10 +42,10 @@ public class MasterService implements HeliosRun {
 
   private final CuratorFramework zooKeeperClient;
 
-  private final Server controlServer;
-  private final String controlEndpoint;
-  private final HttpServer controlHttpServer;
-  private final InetSocketAddress controlHttpEndpoint;
+  private final Server hermesServer;
+  private final String hermesEndpoint;
+  private final HttpServer httpServer;
+  private final InetSocketAddress httpEndpoint;
 
   /**
    * Create a new service instance. Initializes the control interface and the worker.
@@ -54,7 +54,7 @@ public class MasterService implements HeliosRun {
    */
   public MasterService(final MasterConfig config) {
 
-    controlEndpoint = config.getControlEndpoint();
+    hermesEndpoint = config.getHermesEndpoint();
 
     // Set up statistics
     final MetricsRegistry metricsRegistry = Metrics.defaultRegistry();
@@ -68,14 +68,14 @@ public class MasterService implements HeliosRun {
     final MasterHandler masterHandler = new MasterHandler(coordinator);
 
     // master server
-    controlServer = Hermes.newServer(masterHandler);
-    controlHttpEndpoint = config.getControlHttpEndpoint();
+    hermesServer = Hermes.newServer(masterHandler);
+    httpEndpoint = config.getHttpEndpoint();
     final com.spotify.hermes.http.Statistics statistics = new com.spotify.hermes.http.Statistics();
     // TODO: this is a bit messy
     final HermesHttpRequestDispatcher requestDispatcher =
         new HermesHttpRequestDispatcher(new RequestHandlerClient(masterHandler), statistics, V2, 30000,
                                         "helios");
-    controlHttpServer = new HttpServer(requestDispatcher, new HttpServer.Config(), statistics);
+    httpServer = new HttpServer(requestDispatcher, new HttpServer.Config(), statistics);
   }
 
   /**
@@ -108,8 +108,10 @@ public class MasterService implements HeliosRun {
    */
   @Override
   public void start() {
-    controlServer.bind(controlEndpoint);
-    controlHttpServer.bind(controlHttpEndpoint);
+    log.info("hermes: " + hermesEndpoint);
+    log.info("http: {}:{}", httpEndpoint.getHostString(), httpEndpoint.getPort());
+    hermesServer.bind(hermesEndpoint);
+    httpServer.bind(httpEndpoint);
   }
 
   /**
@@ -117,12 +119,12 @@ public class MasterService implements HeliosRun {
    */
   @Override
   public void stop() {
-    if (controlServer != null) {
-      controlServer.stop();
+    if (hermesServer != null) {
+      hermesServer.stop();
     }
 
-    if (controlHttpServer != null) {
-      controlHttpServer.stop();
+    if (httpServer != null) {
+      httpServer.stop();
     }
 
     if (zooKeeperClient != null) {

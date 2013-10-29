@@ -60,12 +60,12 @@ public class MasterCommand extends Command {
 
   @Override
   public Entrypoint getEntrypoint(Namespace options) {
-    final String controlHttp = options.getString(bindHttpArg.getDest());
-    final InetSocketAddress controlHttpAddress = parseSocketAddress(controlHttp);
+    final String bindHttp = options.getString(bindHttpArg.getDest());
+    final InetSocketAddress bindHttpAddress = parseSocketAddress(bindHttp);
 
     final MasterConfig config = new MasterConfig()
-        .setControlEndpoint(options.getString(bindHermesArg.getDest()))
-        .setControlHttpEndpoint(controlHttpAddress)
+        .setHermesEndpoint(options.getString(bindHermesArg.getDest()))
+        .setHttpEndpoint(bindHttpAddress)
         .setZooKeeperConnectString(options.getString(zookeeperConnectionArg.getDest()))
         .setSite(options.getString(siteArg.getDest()))
         .setMuninReporterPort(options.getInt(muninPortArg.getDest()));
@@ -73,14 +73,14 @@ public class MasterCommand extends Command {
     return new ServiceEntrypoint(new MasterService(config));
   }
 
-  private InetSocketAddress parseSocketAddress(final String controlHttp) {
-    final InetSocketAddress controlHttpAddress;
+  private InetSocketAddress parseSocketAddress(final String addressString) {
+    final InetSocketAddress address;
     try {
-      final URI u = new URI("tcp://" + controlHttp);
-      controlHttpAddress = new InetSocketAddress(u.getHost(), u.getPort());
+      final URI u = new URI("http://" + addressString);
+      address = new InetSocketAddress(u.getHost(), u.getPort());
     } catch (URISyntaxException e) {
-      throw new IllegalArgumentException("Bad address: " + controlHttp, e);
+      throw new IllegalArgumentException("Bad address: " + addressString, e);
     }
-    return controlHttpAddress;
+    return address;
   }
 }
