@@ -6,7 +6,6 @@ package com.spotify.helios.service.coordination;
 
 import com.google.common.base.Throwables;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCacheEvent;
@@ -28,8 +27,6 @@ import static org.apache.zookeeper.KeeperException.NoNodeException;
 public class ZooKeeperState extends AbstractState {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperState.class);
-
-  private final ObjectMapper objectMapper = new ObjectMapper();
 
   private final PathChildrenCache containers;
   private final CuratorInterface client;

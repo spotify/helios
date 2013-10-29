@@ -5,20 +5,14 @@
 package com.spotify.helios.service.descriptors;
 
 import com.google.common.base.Objects;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.helios.common.Json;
 
 import java.io.IOException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.List;
-import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -126,23 +120,15 @@ public class JobDescriptor extends Descriptor {
   public static class Builder {
 
     private String hash;
-    private String name;
-    private String version;
-    private String image;
-    private List<String> command;
-    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    public static final TypeReference<Map<String, Object>> MAP_TYPE =
-        new TypeReference<Map<String, Object>>() {};
-    static final MessageDigest SHA1;
 
-    static {
-      try {
-        SHA1 = MessageDigest.getInstance("SHA-1");
-      } catch (NoSuchAlgorithmException e) {
-        throw propagate(e);
-      }
+    private static class Parameters {
+      public String name;
+      public String version;
+      public String image;
+      public List<String> command;
     }
 
+    Parameters p = new Parameters();
 
     public Builder setHash(final String hash) {
       this.hash = hash;
@@ -150,45 +136,29 @@ public class JobDescriptor extends Descriptor {
     }
 
     public Builder setName(final String name) {
-      this.name = name;
+      p.name = name;
       return this;
     }
 
     public Builder setVersion(final String version) {
-      this.version = version;
+      p.version = version;
       return this;
     }
 
     public Builder setImage(final String image) {
-      this.image = image;
+      p.image = image;
       return this;
     }
 
     public Builder setCommand(final List<String> command) {
-      this.command = command;
+      p.command = command;
       return this;
-    }
-
-    public static byte[] sha1(final Object o) throws IOException {
-      final String json = OBJECT_MAPPER.writeValueAsString(o);
-      final Map<String, Object> map = OBJECT_MAPPER.readValue(json, MAP_TYPE);
-      return sha1(map);
-    }
-
-    private static byte[] sha1(final Map<String, ?> m)
-        throws IOException {
-      final Map<String, Object> s = Maps.newTreeMap();
-      s.putAll(m);
-      final String s1 = OBJECT_MAPPER.writeValueAsString(s);
-      final byte[] bytes = s1.getBytes();
-      return SHA1.digest(bytes);
     }
 
     public JobDescriptor build() {
       final String hash;
       try {
-        hash = hex(sha1(ImmutableMap.of("name", name, "version", version, "image", image,
-                                        "command", command)));
+        hash = hex(Json.sha1digest(p));
       } catch (IOException e) {
         throw propagate(e);
       }
@@ -196,7 +166,7 @@ public class JobDescriptor extends Descriptor {
         checkArgument(this.hash.equals(hash));
       }
 
-      return new JobDescriptor(hash, name, version, image, command);
+      return new JobDescriptor(hash, p.name, p.version, p.image, p.command);
     }
 
     private String hex(final byte[] bytes) {

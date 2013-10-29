@@ -8,17 +8,15 @@ import com.google.common.base.Throwables;
 import com.google.protobuf.ByteString;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.helios.common.Json;
 
 import java.io.IOException;
 
 public abstract class Descriptor {
 
-  private static final ObjectMapper objectMapper = new ObjectMapper();
-
   public String toJsonString() {
     try {
-      return objectMapper.writeValueAsString(this);
+      return Json.asString(this);
     } catch (JsonProcessingException e) {
       throw Throwables.propagate(e);
     }
@@ -26,7 +24,7 @@ public abstract class Descriptor {
 
   public byte[] toJsonBytes() {
     try {
-      return objectMapper.writeValueAsBytes(this);
+      return Json.asBytes(this);
     } catch (JsonProcessingException e) {
       throw Throwables.propagate(e);
     }
@@ -38,7 +36,7 @@ public abstract class Descriptor {
 
   public static <T extends Descriptor> T parse(final byte[] bytes, Class<T> clazz)
       throws IOException {
-    return objectMapper.readValue(bytes, clazz);
+    return Json.read(bytes, clazz);
   }
 
   public static <T extends Descriptor> T parse(final ByteString bytes, Class<T> clazz)

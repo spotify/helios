@@ -12,8 +12,8 @@ import com.google.protobuf.ByteString;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.service.descriptors.AgentJob;
 import com.spotify.helios.service.descriptors.AgentStatus;
 import com.spotify.helios.service.descriptors.Descriptor;
@@ -43,7 +43,6 @@ import static java.util.Arrays.asList;
 public class Client {
 
   private static final Logger log = LoggerFactory.getLogger(Client.class);
-  private static final ObjectMapper objectMapper = new ObjectMapper();
 
   private final String user;
   private final com.spotify.hermes.service.Client hermesClient;
@@ -95,11 +94,11 @@ public class Client {
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final TypeReference<T> typeReference) {
-    return get(uri, objectMapper.getTypeFactory().constructType(typeReference));
+    return get(uri, Json.type(typeReference));
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final Class<T> clazz) {
-    return get(uri, objectMapper.constructType(clazz));
+    return get(uri, Json.type(clazz));
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final JavaType javaType) {
@@ -125,7 +124,7 @@ public class Client {
             final T result;
             final ByteString payload = reply.getPayloads().get(0);
             try {
-              result = objectMapper.readValue(payload.toByteArray(), javaType);
+              result = Json.read(payload.toByteArray(), javaType);
             } catch (IOException e) {
               throw new HeliosException("bad reply: " + reply, e);
             }
@@ -212,7 +211,7 @@ public class Client {
             final Map<String, JobDescriptor> jobs;
             try {
               final ByteString payload = reply.getPayloads().get(0);
-              jobs = objectMapper.readValue(payload.toByteArray(), JOB_DESCRIPTOR_MAP);
+              jobs = Json.read(payload.toByteArray(), JOB_DESCRIPTOR_MAP);
             } catch (IOException e) {
               throw new HeliosException("bad reply: " + reply, e);
             }

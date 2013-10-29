@@ -8,8 +8,8 @@ import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.service.coordination.Coordinator;
 import com.spotify.helios.service.coordination.JobDoesNotExistException;
 import com.spotify.helios.service.coordination.JobExistsException;
@@ -39,7 +39,6 @@ public class MasterHandler extends MatchingHandler {
 
   private final Logger log = LoggerFactory.getLogger(MasterHandler.class);
   private final Coordinator coordinator;
-  private ObjectMapper objectMapper = new ObjectMapper();
 
   public MasterHandler(final Coordinator coordinator) {
     this.coordinator = coordinator;
@@ -146,7 +145,7 @@ public class MasterHandler extends MatchingHandler {
     final byte[] payload = message.getPayloads().get(0).toByteArray();
     final AgentJob agentJob;
     try {
-      agentJob = objectMapper.readValue(payload, AgentJob.class);
+      agentJob = Json.read(payload, AgentJob.class);
     } catch (IOException e) {
       throw new RequestHandlerException(BAD_REQUEST);
     }
@@ -242,7 +241,7 @@ public class MasterHandler extends MatchingHandler {
 
   private void ok(final ServiceRequest request, final Object payload)
       throws JsonProcessingException {
-    final byte[] json = objectMapper.writeValueAsBytes(payload);
+    final byte[] json = Json.asBytes(payload);
     final Message reply = request.getMessage()
         .makeReplyBuilder(OK)
         .appendPayload(ByteString.copyFrom(json))
