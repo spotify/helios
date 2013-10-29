@@ -60,11 +60,11 @@ public class MainTest {
     assertEquals(0, latchCaptor.getValue().getCount());
   }
 
+  @SuppressWarnings("unchecked")
   @Test
   public void testMainHandlesEntrypointExceptions() throws Exception {
     // premise
-    when(entrypoint.enter(latchCaptor.capture()))
-        .thenThrow(RuntimeException.class);
+    when(entrypoint.enter(latchCaptor.capture())).thenThrow(RuntimeException.class);
 
     // run
     int exit = main.run();

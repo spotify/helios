@@ -9,7 +9,7 @@ package com.spotify.helios;
  * stopping the Helios Service.
  *
  * Implementors must ensure that it is safe to call
- * the {@method stop()} method even if the start
+ * the {@link #stop} method even if the start
  * method throws an exception
  */
 public interface HeliosRun {

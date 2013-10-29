@@ -57,6 +57,7 @@ public class Main {
     this(Parser.createDefaultParser(out, args));
   }
 
+  @SuppressWarnings("UseOfSystemOutOrSystemErr")
   public Main(final String... args) throws Exception {
     this(System.out, System.err, args);
   }

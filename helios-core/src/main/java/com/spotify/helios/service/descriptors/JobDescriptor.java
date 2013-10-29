@@ -128,7 +128,7 @@ public class JobDescriptor extends Descriptor {
       public List<String> command;
     }
 
-    Parameters p = new Parameters();
+    final Parameters p = new Parameters();
 
     public Builder setHash(final String hash) {
       this.hash = hash;

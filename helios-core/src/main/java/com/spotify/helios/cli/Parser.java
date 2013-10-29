@@ -40,12 +40,12 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class Parser {
 
-  private final ArgumentParser parser;
   private final Namespace options;
 
   private final Command command;
   private final LoggingConfig loggingConfig;
 
+  @SuppressWarnings("UseOfSystemOutOrSystemErr")
   public Parser(final CommandsConfigFactory commandsConfigFactory, final String... args)
       throws ArgumentParserException, JSONException, IOException {
     this(commandsConfigFactory, System.out, args);
@@ -56,7 +56,7 @@ public class Parser {
                  final String[] args)
       throws ArgumentParserException, IOException, JSONException {
 
-    this.parser = ArgumentParsers.newArgumentParser("sphelios")
+    final ArgumentParser parser = ArgumentParsers.newArgumentParser("sphelios")
         .defaultHelp(true)
         .description("Spotify Helios");
 
