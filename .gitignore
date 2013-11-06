@@ -1,8 +1,7 @@
 # Build products and artifacts
 *.html
 .m2-repository/
-helios-core/target/
-helios-service/target/
+target/
 pom.xml.versionsBackup
 
 # Stuff from various IDE's and editors
