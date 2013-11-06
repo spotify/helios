@@ -48,6 +48,7 @@ import static com.spotify.hermes.message.StatusCode.OK;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.junit.Assert.assertEquals;
@@ -172,15 +173,18 @@ public class SystemTest {
     return main(args.toArray(new String[args.size()]));
   }
 
-  private String control(final String command, final String sub, final Object... args) throws Exception {
+  private String control(final String command, final String sub, final Object... args)
+      throws Exception {
     return control(command, sub, flatten(args));
   }
 
-  private String control(final String command, final String sub, final String... args) throws Exception {
+  private String control(final String command, final String sub, final String... args)
+      throws Exception {
     return control(command, sub, asList(args));
   }
 
-  private String control(final String command, final String sub, final List<String> args) throws Exception {
+  private String control(final String command, final String sub, final List<String> args)
+      throws Exception {
     final List<String> commands = asList(command, sub, "-z", masterEndpoint, "--no-log-setup");
     final List<String> allArgs = newArrayList(concat(commands, args));
     return main(allArgs).toString();
@@ -279,8 +283,8 @@ public class SystemTest {
     final JobDescriptor job = JobDescriptor.newBuilder()
         .setName(jobName)
         .setVersion(jobVersion)
-        .setImage("ubuntu:latest")
-        .setCommand(asList("/bin/bash", "-c", "while :; do sleep 1; done"))
+        .setImage("busybox")
+        .setCommand(asList("sh", "-c", "while :; do sleep 1; done"))
         .build();
     final StatusCode created = control.createJob(job).get();
     assertEquals(OK, created);
@@ -365,10 +369,10 @@ public class SystemTest {
     startDefaultMaster();
     startDefaultAgent();
 
-    final String jobName = "precise-test";
+    final String jobName = "test";
     final String jobVersion = "17";
-    final String jobImage = "ubuntu:12.04";
-    final List<String> command = asList("/bin/bash", "-c", "while :; do sleep 1; done");
+    final String jobImage = "busybox";
+    final List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
 
     // Wait for agent to come up
     awaitAgentRegistered(TEST_AGENT, 10, SECONDS);
@@ -393,8 +397,8 @@ public class SystemTest {
     return jobId;
   }
 
-    private static String getDockerEndpoint() {
-        final String endpoint = System.getenv("DOCKER_ENDPOINT");
-        return endpoint == null ? "http://localhost:4160" : endpoint;
-    }
+  private static String getDockerEndpoint() {
+    final String endpoint = System.getenv("DOCKER_ENDPOINT");
+    return endpoint == null ? "http://localhost:4160" : endpoint;
+  }
 }
