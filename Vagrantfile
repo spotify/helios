@@ -14,6 +14,7 @@ Vagrant::Config.run do |config|
   config.vm.box_url = BOX_URI
 
   config.ssh.forward_agent = true
+  config.vm.forward_port 4243, 4160
 
   # Provision docker and new kernel if deployment was not done.
   # It is assumed Vagrant can successfully launch the provider instance.
@@ -39,6 +40,8 @@ Vagrant::Config.run do |config|
         "echo 'Installation of VBox Guest Additions is proceeding in the background.'; " \
         "echo '\"vagrant reload\" can be used in about 2 minutes to activate the new guest additions.'; "
     end
+    # Set up to listen on TCP
+    pkg_cmd << "grep '0.0.0.0' /etc/init/docker.conf || sed -e 's/-d/-d -H 0.0.0.0:4243/' /etc/init/docker.conf -i;\n"
     # Add vagrant user to the docker group
     pkg_cmd << "usermod -a -G docker vagrant; "
     # Activate new kernel
