@@ -55,4 +55,4 @@ DEVELOPING
 
 Prerequisites:
 
-* docker listening on port 4160 on localhost.
+* docker listening on port 4160 on localhost. For local development a Vagrantefile is provided which will setup a VM running Docker appropriately.
