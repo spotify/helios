@@ -63,7 +63,7 @@
     <dependency>
       <groupId>com.kpelykh</groupId>
       <artifactId>docker-java</artifactId>
-      <version>0.6.1-SNAPSHOT</version>
+      <version>0.6.5.2</version>
     </dependency>
 
     <!--test scope-->
