@@ -4,19 +4,27 @@
 
 package com.spotify.helios.service.coordination;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
 import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
+import com.kpelykh.docker.client.model.Image;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.service.descriptors.JobDescriptor;
 import com.spotify.helios.service.descriptors.JobGoal;
 import com.spotify.helios.service.descriptors.JobStatus;
+import com.sun.jersey.api.client.ClientResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Uninterruptibles.joinUninterruptibly;
@@ -147,6 +155,15 @@ class JobRunner {
             containerId = jobStatus.getId();
           }
 
+          // Check if the image exists
+          final String image = containerConfig.getImage();
+          final List<Image> images = dockerClient.getImages(image);
+          if (images.isEmpty()) {
+            final ClientResponse pull = dockerClient.pull(image);
+            // Wait until image is completely pulled
+            jsonTail("pull " + image, pull.getEntityInputStream());
+          }
+
           // Check if container exists
           final ContainerInspectResponse containerInfo;
           if (containerId != null) {
@@ -194,6 +211,14 @@ class JobRunner {
             sleepUninterruptibly(100, MILLISECONDS);
           }
         }
+      }
+    }
+
+    private void jsonTail(final String operation, final InputStream stream) throws IOException {
+      final MappingIterator<Map<String, Object>> messages =
+          Json.readValues(stream, new TypeReference<Map<String, Object>>() {});
+      while (messages.hasNext()) {
+        log.info("{}: {}", operation, messages.next());
       }
     }
   }

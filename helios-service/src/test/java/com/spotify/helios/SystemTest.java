@@ -300,7 +300,7 @@ public class SystemTest {
 
     // Wait for the job to run
     JobStatus jobStatus;
-    jobStatus = awaitJobState(control, agentName, jobId, RUNNING, 10, SECONDS);
+    jobStatus = awaitJobState(control, agentName, jobId, RUNNING, 2, MINUTES);
     assertEquals(job, jobStatus.getJob());
 
     // Wait for a while and make sure that the container is still running

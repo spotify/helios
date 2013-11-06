@@ -4,12 +4,15 @@
 
 package com.spotify.helios.common;
 
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -58,6 +61,13 @@ public class Json {
   public static <T> T read(final byte[] bytes, final JavaType javaType)
       throws IOException {
     return OBJECT_MAPPER.readValue(bytes, javaType);
+  }
+
+  public static MappingIterator<Map<String, Object>> readValues(
+      final InputStream stream, final TypeReference<Map<String, Object>> typeReference)
+      throws IOException {
+    final JsonParser parser = OBJECT_MAPPER.getFactory().createParser(stream);
+    return OBJECT_MAPPER.readValues(parser, typeReference);
   }
 
   public static JavaType type(Type t) {
