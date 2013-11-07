@@ -44,4 +44,5 @@ exec java \
     "${args[@]}" \
     -Djava.net.preferIPv4Stack=true \
     -cp "$jar" \
-    com.spotify.helios.master.MasterMain
+    com.spotify.helios.master.MasterMain \
+    "$@"
