@@ -53,6 +53,14 @@ public class MasterHandler extends MatchingHandler {
                       .build());
   }
 
+  private void reply(final ServiceRequest request, final StatusCode statusCode,
+                     final String message) {
+    Message reply = request.getMessage()
+        .makeReplyBuilder(statusCode)
+        .appendPayload(ByteString.copyFrom(Charsets.UTF_8.encode(message)))
+        .build();
+    request.reply(reply);
+  }
 //                    /jobs/foo:17:CCA7C38573E9FF9A9C957C46621F45BC56154341
   @Match(uri = "hm://helios/jobs/<id>", methods = "PUT")
   public void jobPut(final ServiceRequest request, final String id) throws Exception {
@@ -159,19 +167,11 @@ public class MasterHandler extends MatchingHandler {
       coordinator.addAgentJob(agent, agentJob);
     } catch (JobDoesNotExistException e) {
       log.warn("job not found: {}", agentJob.getJob(), agent, e);
-      Message reply = request.getMessage()
-          .makeReplyBuilder(NOT_FOUND)
-          .appendPayload(ByteString.copyFrom(Charsets.UTF_8.encode("job " + agentJob.getJob() + " not found")))
-          .build();
-      request.reply(reply);
+      reply(request, NOT_FOUND, "job " + agentJob.getJob() + " not found");
       return;
     } catch (AgentDoesNotExistException e) {
       log.warn("agent not found: {}", agent, e);
-      Message reply = request.getMessage()
-          .makeReplyBuilder(NOT_FOUND)
-          .appendPayload(ByteString.copyFrom(Charsets.UTF_8.encode("agent " + agent + " not found")))
-          .build();
-      request.reply(reply);
+      reply(request, NOT_FOUND, "agent " + agent + " not found");
       return;
     } catch (HeliosException e) {
       log.error("failed to add job {} to agent {}", agentJob, agent, e);
