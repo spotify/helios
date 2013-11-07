@@ -4,12 +4,14 @@
 
 package com.spotify.helios.master;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.common.base.Charsets;
 import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
-
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.coordination.AgentDoesNotExistException;
+import com.spotify.helios.common.coordination.Coordinator;
 import com.spotify.helios.common.coordination.JobDoesNotExistException;
 import com.spotify.helios.common.coordination.JobExistsException;
 import com.spotify.helios.common.descriptors.AgentJob;
@@ -135,7 +137,7 @@ public class MasterHandler extends MatchingHandler {
 
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "PUT")
   public void agentJobPut(final ServiceRequest request, final String agent,
-                          final String job) throws RequestHandlerException {
+                          final String job) throws RequestHandlerException, JsonProcessingException {
     final Message message = request.getMessage();
     if (message.getPayloads().size() != 1) {
       throw new RequestHandlerException(BAD_REQUEST);
@@ -157,7 +159,20 @@ public class MasterHandler extends MatchingHandler {
       coordinator.addAgentJob(agent, agentJob);
     } catch (JobDoesNotExistException e) {
       log.warn("job not found: {}", agentJob.getJob(), agent, e);
-      throw new RequestHandlerException(NOT_FOUND);
+      Message reply = request.getMessage()
+          .makeReplyBuilder(NOT_FOUND)
+          .appendPayload(ByteString.copyFrom(Charsets.UTF_8.encode("job " + agentJob.getJob() + " not found")))
+          .build();
+      request.reply(reply);
+      return;
+    } catch (AgentDoesNotExistException e) {
+      log.warn("agent not found: {}", agent, e);
+      Message reply = request.getMessage()
+          .makeReplyBuilder(NOT_FOUND)
+          .appendPayload(ByteString.copyFrom(Charsets.UTF_8.encode("agent " + agent + " not found")))
+          .build();
+      request.reply(reply);
+      return;
     } catch (HeliosException e) {
       log.error("failed to add job {} to agent {}", agentJob, agent, e);
       throw new RequestHandlerException(SERVER_ERROR);

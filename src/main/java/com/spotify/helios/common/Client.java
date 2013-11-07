@@ -144,8 +144,8 @@ public class Client {
     return status(request(uri, "PUT"));
   }
 
-  public ListenableFuture<StatusCode> deploy(final AgentJob job, final String host) {
-    return put(uri("/agents/%s/jobs/%s", host, job.getJob()), job);
+  public ListenableFuture<Message> deploy(final AgentJob job, final String host) {
+    return request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PUT", job);
   }
 
   public ListenableFuture<StatusCode> setGoal(final AgentJob job, final String host) {
