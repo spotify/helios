@@ -63,7 +63,7 @@ public class JobDeployCommand extends ControlCommand {
       out.printf("%s: ", host);
       final Message result = client.deploy(job, host).get();
       if (result.getStatusCode() == StatusCode.OK) {
-        out.printf("done%n", result);
+        out.printf("done%n");
       } else {
         ByteString bytes = result.getPayloads().get(0);
         out.printf("failed: %s%n", Charsets.UTF_8.decode(bytes.asReadOnlyByteBuffer())) ;
