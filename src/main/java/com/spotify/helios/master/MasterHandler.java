@@ -5,18 +5,17 @@
 package com.spotify.helios.master;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.common.base.Charsets;
 import com.google.protobuf.ByteString;
-import com.google.protobuf.MessageLite;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.coordination.AgentDoesNotExistException;
-import com.spotify.helios.common.coordination.Coordinator;
-import com.spotify.helios.common.coordination.JobDoesNotExistException;
-import com.spotify.helios.common.coordination.JobExistsException;
-import com.spotify.helios.common.descriptors.AgentJob;
-import com.spotify.helios.common.descriptors.AgentStatus;
-import com.spotify.helios.common.descriptors.JobDescriptor;
+import com.spotify.helios.service.coordination.AgentDoesNotExistException;
+import com.spotify.helios.service.coordination.Coordinator;
+import com.spotify.helios.service.coordination.JobDoesNotExistException;
+import com.spotify.helios.service.coordination.JobExistsException;
+import com.spotify.helios.service.descriptors.AgentJob;
+import com.spotify.helios.service.descriptors.AgentStatus;
+import com.spotify.helios.service.descriptors.JobDescriptor;
+import com.spotify.helios.service.protocol.JobDeployResponse;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.StatusCode;
 import com.spotify.hermes.service.RequestHandlerException;
@@ -45,23 +44,7 @@ public class MasterHandler extends MatchingHandler {
     this.coordinator = coordinator;
   }
 
-  private void reply(final ServiceRequest request, final StatusCode statusCode,
-                     final MessageLite payload) {
-    request.reply(request.getMessage()
-                      .makeReplyBuilder(statusCode)
-                      .appendPayload(payload.toByteString())
-                      .build());
-  }
-
-  private void reply(final ServiceRequest request, final StatusCode statusCode,
-                     final String message) {
-    Message reply = request.getMessage()
-        .makeReplyBuilder(statusCode)
-        .appendPayload(ByteString.copyFrom(Charsets.UTF_8.encode(message)))
-        .build();
-    request.reply(reply);
-  }
-//                    /jobs/foo:17:CCA7C38573E9FF9A9C957C46621F45BC56154341
+  //                    /jobs/foo:17:CCA7C38573E9FF9A9C957C46621F45BC56154341
   @Match(uri = "hm://helios/jobs/<id>", methods = "PUT")
   public void jobPut(final ServiceRequest request, final String id) throws Exception {
     final Message message = request.getMessage();
@@ -167,11 +150,13 @@ public class MasterHandler extends MatchingHandler {
       coordinator.addAgentJob(agent, agentJob);
     } catch (JobDoesNotExistException e) {
       log.warn("job not found: {}", agentJob.getJob(), agent, e);
-      reply(request, NOT_FOUND, "job " + agentJob.getJob() + " not found");
+      respond(request, StatusCode.NOT_FOUND,
+          new JobDeployResponse(JobDeployResponse.Status.JOB_NOT_FOUND, agentJob.getJob()));
       return;
     } catch (AgentDoesNotExistException e) {
       log.warn("agent not found: {}", agent, e);
-      reply(request, NOT_FOUND, "agent " + agent + " not found");
+      respond(request, StatusCode.NOT_FOUND,
+          new JobDeployResponse(JobDeployResponse.Status.AGENT_NOT_FOUND, agent));
       return;
     } catch (HeliosException e) {
       log.error("failed to add job {} to agent {}", agentJob, agent, e);
@@ -255,9 +240,14 @@ public class MasterHandler extends MatchingHandler {
 
   private void ok(final ServiceRequest request, final Object payload)
       throws JsonProcessingException {
+    respond(request, StatusCode.OK, payload);
+  }
+
+  private void respond(final ServiceRequest request, StatusCode code, final Object payload)
+      throws JsonProcessingException {
     final byte[] json = Json.asBytes(payload);
     final Message reply = request.getMessage()
-        .makeReplyBuilder(OK)
+        .makeReplyBuilder(code)
         .appendPayload(ByteString.copyFrom(json))
         .build();
     request.reply(reply);

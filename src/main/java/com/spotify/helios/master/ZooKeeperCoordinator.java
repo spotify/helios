@@ -122,7 +122,7 @@ public class ZooKeeperCoordinator implements Coordinator {
     if (descriptor == null) {
       throw new JobDoesNotExistException(agentJob.getJob());
     }
-
+    // TODO(drewc): do the assert and the createAndSetData in a txn
     assertAgentExists(agent);
     final String path = Paths.configAgentJob(agent, agentJob.getJob());
     final AgentJobDescriptor agentJobDescriptor = new AgentJobDescriptor(agentJob, descriptor);

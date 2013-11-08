@@ -14,9 +14,11 @@ import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.service.protocol.JobDeployResponse;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.StatusCode;
 import com.spotify.logging.UncaughtExceptionLogger;
+
 import org.apache.commons.lang.StringUtils;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
@@ -261,8 +263,8 @@ public class SystemTest {
     // Deploy the job on the agent
     final String jobId = format("%s:%s:%s", jobName, jobVersion, job.getHash());
     final AgentJob agentJob = AgentJob.of(jobId, START);
-    final Message deployed = control.deploy(agentJob, agentName).get();
-    assertEquals(OK, deployed.getStatusCode());
+    final JobDeployResponse deployed = control.deploy(agentJob, agentName).get();
+    assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
     // Check that the job is in the desired state
     final AgentJob fetchedAgentJob = control.stat(agentName, jobId).get();

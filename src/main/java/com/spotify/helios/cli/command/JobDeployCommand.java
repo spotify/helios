@@ -9,6 +9,7 @@ import com.google.protobuf.ByteString;
 import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.AgentJob;
+import com.spotify.helios.service.protocol.JobDeployResponse;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.StatusCode;
 
@@ -61,12 +62,11 @@ public class JobDeployCommand extends ControlCommand {
 
     for (final String host : hosts) {
       out.printf("%s: ", host);
-      final Message result = client.deploy(job, host).get();
-      if (result.getStatusCode() == StatusCode.OK) {
+      final JobDeployResponse result = client.deploy(job, host).get();
+      if (result.getStatus() == JobDeployResponse.Status.OK) {
         out.printf("done%n");
       } else {
-        ByteString bytes = result.getPayloads().get(0);
-        out.printf("failed: %s%n", Charsets.UTF_8.decode(bytes.asReadOnlyByteBuffer())) ;
+        out.printf("failed: %s%n", result);
         code = 1;
       }
     }
