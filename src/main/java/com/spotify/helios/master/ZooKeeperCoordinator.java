@@ -139,7 +139,7 @@ public class ZooKeeperCoordinator implements Coordinator {
 
   private void assertAgentExists(String agent) throws HeliosException {
     try {
-      client.getData(Paths.statusAgentJobs(agent));
+      client.getData(Paths.statusAgent(agent));
     } catch (NoNodeException e) {
       throw new AgentDoesNotExistException(agent, e);
     } catch (KeeperException e) {

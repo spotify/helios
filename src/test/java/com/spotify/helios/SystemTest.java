@@ -15,7 +15,6 @@ import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.service.protocol.JobDeployResponse;
-import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.StatusCode;
 import com.spotify.logging.UncaughtExceptionLogger;
 
@@ -226,6 +225,8 @@ public class SystemTest {
   @Test
   public void testService() throws Exception {
     final String agentName = "foobar";
+    final String bogusAgentName = "BOGUS_AGENT";
+    final String bogusJobName = "BOGUS_JOB";
     final String jobName = "foo";
     final String jobVersion = "17";
 
@@ -265,6 +266,16 @@ public class SystemTest {
     final AgentJob agentJob = AgentJob.of(jobId, START);
     final JobDeployResponse deployed = control.deploy(agentJob, agentName).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
+
+    final JobDeployResponse deployed2 = control.deploy(agentJob, agentName).get();
+    assertEquals(JobDeployResponse.Status.JOB_ALREADY_DEPLOYED, deployed2.getStatus());
+
+    final JobDeployResponse deployed3 = control.deploy(AgentJob.of(bogusJobName, START),
+        agentName).get();
+    assertEquals(JobDeployResponse.Status.JOB_NOT_FOUND, deployed3.getStatus());
+
+    final JobDeployResponse deployed4 = control.deploy(agentJob, bogusAgentName).get();
+    assertEquals(JobDeployResponse.Status.AGENT_NOT_FOUND, deployed4.getStatus());
 
     // Check that the job is in the desired state
     final AgentJob fetchedAgentJob = control.stat(agentName, jobId).get();
