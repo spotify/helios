@@ -7,7 +7,7 @@ package com.spotify.helios;
 import com.google.common.io.Files;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
-import com.spotify.helios.common.Main;
+import com.spotify.helios.common.ServiceMain;
 import com.spotify.helios.master.MasterMain;
 import com.spotify.helios.service.Client;
 import com.spotify.helios.service.descriptors.AgentJob;
@@ -67,7 +67,7 @@ public class SystemTest {
   private final String dockerEndpoint = getDockerEndpoint();
 
   private File tempDir;
-  private List<Main> mains = newArrayList();
+  private List<ServiceMain> mains = newArrayList();
   private final ExecutorService executorService = Executors.newCachedThreadPool();
   private ZooKeeperServer zkServer;
   private ServerCnxnFactory cnxnFactory;
@@ -82,9 +82,9 @@ public class SystemTest {
 
   @After
   public void teardown() throws Exception {
-    for (final Main main : mains) {
-      main.shutdown();
-      main.join();
+    for (final ServiceMain main : mains) {
+      main.stopAsync();
+      main.awaitTerminated();
     }
     mains = null;
 
@@ -110,32 +110,28 @@ public class SystemTest {
     zkServer.shutdown();
   }
 
-  private Main startMain(final Main main) throws Exception {
-    mains.add(main);
-    executorService.execute(new Runnable() {
-      @Override
-      public void run() {
-        main.run();
-      }
-    });
-    return main;
-  }
-
   private ByteArrayOutputStream main(final String... args) throws Exception {
     final ByteArrayOutputStream out = new ByteArrayOutputStream();
     final ByteArrayOutputStream err = new ByteArrayOutputStream();
-    final Main main = new CliMain(new PrintStream(out), new PrintStream(err), args);
-    mains.add(main);
+    final CliMain main = new CliMain(new PrintStream(out), new PrintStream(err), args);
     main.run();
     return out;
   }
 
-  private Main startMaster(final String... args) throws Exception {
-    return startMain(new MasterMain(args));
+  private MasterMain startMaster(final String... args) throws Exception {
+    final MasterMain main = new MasterMain(args);
+    main.startAsync();
+    main.awaitRunning();
+    mains.add(main);
+    return main;
   }
 
-  private Main startAgent(final String... args) throws Exception {
-    return startMain(new AgentMain(args));
+  private AgentMain startAgent(final String... args) throws Exception {
+    final AgentMain main = new AgentMain(args);
+    main.startAsync();
+    main.awaitRunning();
+    mains.add(main);
+    return main;
   }
 
   private ByteArrayOutputStream main(final Collection<String> args) throws Exception {

@@ -5,7 +5,6 @@
 package com.spotify.helios.cli;
 
 import com.spotify.helios.common.LoggingConfig;
-import com.spotify.helios.common.Main;
 import com.spotify.logging.LoggingConfigurator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,7 +19,7 @@ import static java.util.Arrays.asList;
 /**
  * Instantiates and runs helios CLI.
  */
-public class CliMain implements Main {
+public class CliMain {
 
   private static final Logger log = LoggerFactory.getLogger(CliMain.class);
 
@@ -82,15 +81,6 @@ public class CliMain implements Main {
         LoggingConfigurator.configureDefaults("helios", level);
       }
     }
-  }
-
-  @Override
-  public void shutdown() {
-    //To change body of implemented methods use File | Settings | File Templates.
-  }
-
-  public void join() throws InterruptedException {
-//    shutdownLatch.await();
   }
 
 }
