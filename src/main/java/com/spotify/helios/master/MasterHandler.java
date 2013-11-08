@@ -10,6 +10,7 @@ import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.service.coordination.AgentDoesNotExistException;
 import com.spotify.helios.service.coordination.Coordinator;
+import com.spotify.helios.service.coordination.JobAlreadyDeployedException;
 import com.spotify.helios.service.coordination.JobDoesNotExistException;
 import com.spotify.helios.service.coordination.JobExistsException;
 import com.spotify.helios.service.descriptors.AgentJob;
@@ -146,18 +147,23 @@ public class MasterHandler extends MatchingHandler {
       throw new RequestHandlerException(BAD_REQUEST);
     }
 
+    StatusCode code = OK;
+    JobDeployResponse.Status detailStatus = JobDeployResponse.Status.OK;
+
     try {
       coordinator.addAgentJob(agent, agentJob);
     } catch (JobDoesNotExistException e) {
       log.warn("job not found: {}", agentJob.getJob(), agent, e);
-      respond(request, StatusCode.NOT_FOUND,
-          new JobDeployResponse(JobDeployResponse.Status.JOB_NOT_FOUND, agentJob.getJob()));
-      return;
+      code = NOT_FOUND;
+      detailStatus = JobDeployResponse.Status.JOB_NOT_FOUND;
     } catch (AgentDoesNotExistException e) {
       log.warn("agent not found: {}", agent, e);
-      respond(request, StatusCode.NOT_FOUND,
-          new JobDeployResponse(JobDeployResponse.Status.AGENT_NOT_FOUND, agent));
-      return;
+      code = NOT_FOUND;
+      detailStatus = JobDeployResponse.Status.AGENT_NOT_FOUND;
+    } catch (JobAlreadyDeployedException e) {
+      log.warn("job already deployed: {} {}", agent, job, e);
+      code = StatusCode.METHOD_NOT_ALLOWED;
+      detailStatus = JobDeployResponse.Status.JOB_ALREADY_DEPLOYED;
     } catch (HeliosException e) {
       log.error("failed to add job {} to agent {}", agentJob, agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -165,7 +171,7 @@ public class MasterHandler extends MatchingHandler {
 
     log.info("added job {} to agent {}", agentJob, agent);
 
-    ok(request);
+    respond(request, code, new JobDeployResponse(detailStatus, agent, job));
   }
 
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "GET")

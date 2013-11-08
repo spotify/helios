@@ -4,29 +4,37 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 
 public class JobDeployResponse {
-  public enum Status { OK, JOB_NOT_FOUND, AGENT_NOT_FOUND };
+  public enum Status { OK, JOB_NOT_FOUND, AGENT_NOT_FOUND, JOB_ALREADY_DEPLOYED };
   private final Status status;
-  private final String message;
+  private final String job;
+  private final String agent;
 
   public JobDeployResponse(@JsonProperty("status") Status status,
-                           @JsonProperty("message") String message) {
+                           @JsonProperty("agent") String agent,
+                           @JsonProperty("job") String job) {
     this.status = status;
-    this.message = message;
+    this.job = job;
+    this.agent = agent;
   }
 
   public Status getStatus() {
     return status;
   }
 
-  public String getMessage() {
-    return message;
+  public String getJob() {
+    return job;
+  }
+
+  public String getAgent() {
+    return agent;
   }
 
   @Override
   public String toString() {
     return Objects.toStringHelper("JobDeployResponse")
         .add("status", status)
-        .add("message", message)
+        .add("agent", agent)
+        .add("job", job)
         .toString();
   }
 }

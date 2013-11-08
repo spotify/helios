@@ -4,6 +4,8 @@
 
 package com.spotify.helios.common;
 
+import static com.spotify.hermes.message.StatusCode.METHOD_NOT_ALLOWED;
+
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -31,7 +33,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -125,7 +126,7 @@ public class Client {
     return (ListenableFuture<JobDeployResponse>)transform(
         request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PUT", job),
         ConvertResponseToPojo.create(JobDeployResponse.class,
-            ImmutableSet.of(OK, NOT_FOUND)));
+            ImmutableSet.of(OK, NOT_FOUND, METHOD_NOT_ALLOWED)));
   }
 
   public ListenableFuture<StatusCode> setGoal(final AgentJob job, final String host) {
@@ -205,32 +206,34 @@ public class Client {
 
   private static final class ConvertResponseToPojo<T> implements AsyncFunction<Message, T> {
     private final JavaType javaType;
-    private final Set<StatusCode> decodeableStatusCodes;
+    private final ImmutableSet<StatusCode> decodeableStatusCodes;
 
     private ConvertResponseToPojo(JavaType javaType) {
-      this(javaType, ImmutableSet.<StatusCode>of(StatusCode.OK));
+      this(javaType, ImmutableSet.of(StatusCode.OK));
     }
 
-    public ConvertResponseToPojo(JavaType type, Set<StatusCode> decodableStatusCodes) {
+    public ConvertResponseToPojo(JavaType type,
+                                 ImmutableSet<StatusCode> decodeableStatusCodes) {
       this.javaType = type;
-      this.decodeableStatusCodes = decodableStatusCodes;
+      this.decodeableStatusCodes = decodeableStatusCodes;
     }
 
     public static <T> ConvertResponseToPojo<T> create(Class<T> clazz,
-      Set<StatusCode> decodableStatusCodes) {
-      return new ConvertResponseToPojo<T>(Json.type(clazz), decodableStatusCodes);
+      ImmutableSet<StatusCode> immutableSet) {
+      return new ConvertResponseToPojo<T>(Json.type(clazz), immutableSet);
     }
 
     @Override
     public ListenableFuture<T> apply(
         final Message reply)
         throws HeliosException {
-      if (reply.getStatusCode() == NOT_FOUND
+      StatusCode statusCode = reply.getStatusCode();
+      if (statusCode == NOT_FOUND
           && !decodeableStatusCodes.contains(NOT_FOUND)) {
         return immediateFuture(null);
       }
 
-      if (!decodeableStatusCodes.contains(reply.getStatusCode())) {
+      if (!decodeableStatusCodes.contains(statusCode)) {
         throw new HeliosException("request failed: " + reply);
       }
 

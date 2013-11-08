@@ -4,14 +4,10 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.base.Charsets;
-import com.google.protobuf.ByteString;
 import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.service.protocol.JobDeployResponse;
-import com.spotify.hermes.message.Message;
-import com.spotify.hermes.message.StatusCode;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
