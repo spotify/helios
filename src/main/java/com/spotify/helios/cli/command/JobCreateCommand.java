@@ -5,8 +5,8 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.cli.CliConfig;
-import com.spotify.helios.service.Client;
-import com.spotify.helios.service.descriptors.JobDescriptor;
+import com.spotify.helios.common.Client;
+import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.hermes.message.StatusCode;
 
 import net.sourceforge.argparse4j.inf.Argument;

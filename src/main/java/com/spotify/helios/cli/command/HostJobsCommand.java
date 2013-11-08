@@ -7,9 +7,9 @@ package com.spotify.helios.cli.command;
 import com.google.common.collect.ImmutableSortedMap;
 
 import com.spotify.helios.cli.CliConfig;
-import com.spotify.helios.service.Client;
-import com.spotify.helios.service.descriptors.AgentJob;
-import com.spotify.helios.service.descriptors.AgentStatus;
+import com.spotify.helios.common.Client;
+import com.spotify.helios.common.descriptors.AgentJob;
+import com.spotify.helios.common.descriptors.AgentStatus;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;

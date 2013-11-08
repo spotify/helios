@@ -5,8 +5,8 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.cli.CliConfig;
-import com.spotify.helios.service.Client;
-import com.spotify.helios.service.descriptors.AgentJob;
+import com.spotify.helios.common.Client;
+import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.hermes.message.StatusCode;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -17,8 +17,8 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import static com.spotify.helios.service.descriptors.JobGoal.START;
-import static com.spotify.helios.service.descriptors.JobGoal.STOP;
+import static com.spotify.helios.common.descriptors.JobGoal.START;
+import static com.spotify.helios.common.descriptors.JobGoal.STOP;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class JobDeployCommand extends ControlCommand {

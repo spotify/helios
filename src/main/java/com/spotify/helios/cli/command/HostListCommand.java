@@ -5,7 +5,7 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.cli.CliConfig;
-import com.spotify.helios.service.Client;
+import com.spotify.helios.common.Client;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;

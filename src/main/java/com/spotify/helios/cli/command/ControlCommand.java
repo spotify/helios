@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.cli.CliParser;
-import com.spotify.helios.service.Client;
+import com.spotify.helios.common.Client;
 import com.spotify.hermes.service.RequestTimeoutException;
 import com.spotify.hermes.service.SendFailureException;
 import net.sourceforge.argparse4j.inf.Argument;
@@ -192,7 +192,7 @@ public abstract class ControlCommand {
 
   /**
    * A target cluster identified by an endpoint string that can be used with a {@link
-   * com.spotify.helios.service.Client}.
+   * com.spotify.helios.common.Client}.
    */
   public static class Target {
 
