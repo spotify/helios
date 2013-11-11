@@ -7,7 +7,7 @@ package com.spotify.helios.cli.command;
 import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.AgentJob;
-import com.spotify.hermes.message.StatusCode;
+import com.spotify.helios.service.protocol.JobDeployResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -58,8 +58,8 @@ public class JobDeployCommand extends ControlCommand {
 
     for (final String host : hosts) {
       out.printf("%s: ", host);
-      final StatusCode result = client.deploy(job, host).get();
-      if (result == StatusCode.OK) {
+      final JobDeployResponse result = client.deploy(job, host).get();
+      if (result.getStatus() == JobDeployResponse.Status.OK) {
         out.printf("done%n");
       } else {
         out.printf("failed: %s%n", result);

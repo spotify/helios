@@ -4,17 +4,24 @@
 
 package com.spotify.helios.master;
 
-import com.google.protobuf.ByteString;
-import com.google.protobuf.MessageLite;
+import static com.spotify.helios.common.descriptors.Descriptor.parse;
+import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
+import static com.spotify.hermes.message.StatusCode.NOT_FOUND;
+import static com.spotify.hermes.message.StatusCode.OK;
+import static com.spotify.hermes.message.StatusCode.SERVER_ERROR;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.protobuf.ByteString;
+import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.coordination.JobDoesNotExistException;
 import com.spotify.helios.common.coordination.JobExistsException;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
+import com.spotify.helios.service.coordination.JobAlreadyDeployedException;
+import com.spotify.helios.service.protocol.JobDeployResponse;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.StatusCode;
 import com.spotify.hermes.service.RequestHandlerException;
@@ -28,12 +35,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 
-import static com.spotify.helios.common.descriptors.Descriptor.parse;
-import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
-import static com.spotify.hermes.message.StatusCode.NOT_FOUND;
-import static com.spotify.hermes.message.StatusCode.OK;
-import static com.spotify.hermes.message.StatusCode.SERVER_ERROR;
-
 public class MasterHandler extends MatchingHandler {
 
   private final Logger log = LoggerFactory.getLogger(MasterHandler.class);
@@ -43,15 +44,7 @@ public class MasterHandler extends MatchingHandler {
     this.coordinator = coordinator;
   }
 
-  private void reply(final ServiceRequest request, final StatusCode statusCode,
-                     final MessageLite payload) {
-    request.reply(request.getMessage()
-                      .makeReplyBuilder(statusCode)
-                      .appendPayload(payload.toByteString())
-                      .build());
-  }
-
-//                    /jobs/foo:17:CCA7C38573E9FF9A9C957C46621F45BC56154341
+  //                    /jobs/foo:17:CCA7C38573E9FF9A9C957C46621F45BC56154341
   @Match(uri = "hm://helios/jobs/<id>", methods = "PUT")
   public void jobPut(final ServiceRequest request, final String id) throws Exception {
     final Message message = request.getMessage();
@@ -135,7 +128,7 @@ public class MasterHandler extends MatchingHandler {
 
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "PUT")
   public void agentJobPut(final ServiceRequest request, final String agent,
-                          final String job) throws RequestHandlerException {
+                          final String job) throws RequestHandlerException, JsonProcessingException {
     final Message message = request.getMessage();
     if (message.getPayloads().size() != 1) {
       throw new RequestHandlerException(BAD_REQUEST);
@@ -153,11 +146,23 @@ public class MasterHandler extends MatchingHandler {
       throw new RequestHandlerException(BAD_REQUEST);
     }
 
+    StatusCode code = OK;
+    JobDeployResponse.Status detailStatus = JobDeployResponse.Status.OK;
+
     try {
       coordinator.addAgentJob(agent, agentJob);
     } catch (JobDoesNotExistException e) {
       log.warn("job not found: {}", agentJob.getJob(), agent, e);
-      throw new RequestHandlerException(NOT_FOUND);
+      code = NOT_FOUND;
+      detailStatus = JobDeployResponse.Status.JOB_NOT_FOUND;
+    } catch (AgentDoesNotExistException e) {
+      log.warn("agent not found: {}", agent, e);
+      code = NOT_FOUND;
+      detailStatus = JobDeployResponse.Status.AGENT_NOT_FOUND;
+    } catch (JobAlreadyDeployedException e) {
+      log.warn("job already deployed: {} {}", agent, job, e);
+      code = StatusCode.METHOD_NOT_ALLOWED;
+      detailStatus = JobDeployResponse.Status.JOB_ALREADY_DEPLOYED;
     } catch (HeliosException e) {
       log.error("failed to add job {} to agent {}", agentJob, agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -165,7 +170,7 @@ public class MasterHandler extends MatchingHandler {
 
     log.info("added job {} to agent {}", agentJob, agent);
 
-    ok(request);
+    respond(request, code, new JobDeployResponse(detailStatus, agent, job));
   }
 
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "GET")
@@ -240,9 +245,14 @@ public class MasterHandler extends MatchingHandler {
 
   private void ok(final ServiceRequest request, final Object payload)
       throws JsonProcessingException {
+    respond(request, StatusCode.OK, payload);
+  }
+
+  private void respond(final ServiceRequest request, StatusCode code, final Object payload)
+      throws JsonProcessingException {
     final byte[] json = Json.asBytes(payload);
     final Message reply = request.getMessage()
-        .makeReplyBuilder(OK)
+        .makeReplyBuilder(code)
         .appendPayload(ByteString.copyFrom(json))
         .build();
     request.reply(reply);

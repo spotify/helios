@@ -4,18 +4,23 @@
 
 package com.spotify.helios.common;
 
+import static com.spotify.hermes.message.StatusCode.METHOD_NOT_ALLOWED;
+
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Descriptor;
 import com.spotify.helios.common.descriptors.JobDescriptor;
+import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.service.protocol.JobDeployResponse;
 import com.spotify.hermes.Hermes;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.MessageBuilder;
@@ -102,34 +107,7 @@ public class Client {
   private <T> ListenableFuture<T> get(final URI uri, final JavaType javaType) {
     return transform(
         request(uri),
-        new AsyncFunction<Message, T>() {
-          @Override
-          public ListenableFuture<T> apply(
-              final Message reply)
-              throws HeliosException {
-            if (reply.getStatusCode() == NOT_FOUND) {
-              return immediateFuture(null);
-            }
-
-            if (reply.getStatusCode() != OK) {
-              throw new HeliosException("request failed: " + reply);
-            }
-
-            if (reply.getPayloads().size() != 1) {
-              throw new HeliosException("bad reply: " + reply);
-            }
-
-            final T result;
-            final ByteString payload = reply.getPayloads().get(0);
-            try {
-              result = Json.read(payload.toByteArray(), javaType);
-            } catch (IOException e) {
-              throw new HeliosException("bad reply: " + reply, e);
-            }
-
-            return immediateFuture(result);
-          }
-        });
+        new ConvertResponseToPojo<T>(javaType));
   }
 
   private ListenableFuture<StatusCode> patch(final URI uri, final Descriptor descriptor) {
@@ -144,8 +122,11 @@ public class Client {
     return status(request(uri, "PUT"));
   }
 
-  public ListenableFuture<StatusCode> deploy(final AgentJob job, final String host) {
-    return put(uri("/agents/%s/jobs/%s", host, job.getJob()), job);
+  public ListenableFuture<JobDeployResponse> deploy(final AgentJob job, final String host) {
+    return (ListenableFuture<JobDeployResponse>)transform(
+        request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PUT", job),
+        ConvertResponseToPojo.create(JobDeployResponse.class,
+            ImmutableSet.of(OK, NOT_FOUND, METHOD_NOT_ALLOWED)));
   }
 
   public ListenableFuture<StatusCode> setGoal(final AgentJob job, final String host) {
@@ -221,6 +202,55 @@ public class Client {
 
   public static Builder newBuilder() {
     return new Builder();
+  }
+
+  private static final class ConvertResponseToPojo<T> implements AsyncFunction<Message, T> {
+    private final JavaType javaType;
+    private final ImmutableSet<StatusCode> decodeableStatusCodes;
+
+    private ConvertResponseToPojo(JavaType javaType) {
+      this(javaType, ImmutableSet.of(StatusCode.OK));
+    }
+
+    public ConvertResponseToPojo(JavaType type,
+                                 ImmutableSet<StatusCode> decodeableStatusCodes) {
+      this.javaType = type;
+      this.decodeableStatusCodes = decodeableStatusCodes;
+    }
+
+    public static <T> ConvertResponseToPojo<T> create(Class<T> clazz,
+      ImmutableSet<StatusCode> immutableSet) {
+      return new ConvertResponseToPojo<T>(Json.type(clazz), immutableSet);
+    }
+
+    @Override
+    public ListenableFuture<T> apply(
+        final Message reply)
+        throws HeliosException {
+      StatusCode statusCode = reply.getStatusCode();
+      if (statusCode == NOT_FOUND
+          && !decodeableStatusCodes.contains(NOT_FOUND)) {
+        return immediateFuture(null);
+      }
+
+      if (!decodeableStatusCodes.contains(statusCode)) {
+        throw new HeliosException("request failed: " + reply);
+      }
+
+      if (reply.getPayloads().size() != 1) {
+        throw new HeliosException("bad reply: " + reply);
+      }
+
+      final T result;
+      final ByteString payload = reply.getPayloads().get(0);
+      try {
+        result = Json.read(payload.toByteArray(), javaType);
+      } catch (IOException e) {
+        throw new HeliosException("bad reply: " + reply, e);
+      }
+
+      return immediateFuture(result);
+    }
   }
 
   public static class Builder {

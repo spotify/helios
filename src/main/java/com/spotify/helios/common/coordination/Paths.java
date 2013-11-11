@@ -43,6 +43,10 @@ public class Paths {
     return CONFIG_JOBS.path(id);
   }
 
+  public static String statusAgent(final String agent) {
+    return STATUS_AGENTS.path(agent);
+  }
+
   public static String statusAgentJobs(final String agent) {
     return STATUS_AGENTS.path(agent, JOBS);
   }

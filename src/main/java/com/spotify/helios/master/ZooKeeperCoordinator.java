@@ -5,10 +5,16 @@
 package com.spotify.helios.master;
 
 import com.google.common.collect.Maps;
+import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.coordination.*;
 import com.spotify.helios.common.descriptors.*;
+import com.spotify.helios.service.coordination.JobAlreadyDeployedException;
+
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +86,8 @@ public class ZooKeeperCoordinator implements Coordinator {
     try {
       final byte[] data = client.getData(path);
       return Descriptor.parse(data, JobDescriptor.class);
+    } catch (NoNodeException e) {
+      throw new JobDoesNotExistException(e);
     } catch (KeeperException | IOException e) {
       throw new HeliosException("getting job " + id + " failed", e);
     }
@@ -114,17 +122,32 @@ public class ZooKeeperCoordinator implements Coordinator {
       throws HeliosException {
     log.debug("adding agent job: agent={}, job={}", agent, agentJob);
 
-    final JobDescriptor descriptor = getJob(agentJob.getJob());
-    if (descriptor == null) {
-      throw new JobDoesNotExistException(agentJob.getJob());
-    }
+    final String job = agentJob.getJob();
+    final JobDescriptor descriptor = getJob(job);
 
-    final String path = Paths.configAgentJob(agent, agentJob.getJob());
+    if (descriptor == null) {
+      throw new JobDoesNotExistException(job);
+    }
+    // TODO(drewc): do the assert and the createAndSetData in a txn
+    assertAgentExists(agent);
+    final String path = Paths.configAgentJob(agent, job);
     final AgentJobDescriptor agentJobDescriptor = new AgentJobDescriptor(agentJob, descriptor);
     try {
       client.createAndSetData(path, agentJobDescriptor.toJsonBytes());
+    } catch (NodeExistsException e) {
+      throw new JobAlreadyDeployedException(agent, job);
     } catch (Exception e) {
       throw new HeliosException("adding slave container failed", e);
+    }
+  }
+
+  private void assertAgentExists(String agent) throws HeliosException {
+    try {
+      client.getData(Paths.statusAgent(agent));
+    } catch (NoNodeException e) {
+      throw new AgentDoesNotExistException(agent, e);
+    } catch (KeeperException e) {
+      throw new HeliosException(e);
     }
   }
 
