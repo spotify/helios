@@ -5,9 +5,13 @@
 package com.spotify.helios.master;
 
 import com.google.common.collect.Maps;
+import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.coordination.*;
 import com.spotify.helios.common.descriptors.*;
+import com.spotify.helios.service.coordination.JobAlreadyDeployedException;
+
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;

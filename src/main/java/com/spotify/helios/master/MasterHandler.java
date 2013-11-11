@@ -4,18 +4,23 @@
 
 package com.spotify.helios.master;
 
+import static com.spotify.helios.common.descriptors.Descriptor.parse;
+import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
+import static com.spotify.hermes.message.StatusCode.NOT_FOUND;
+import static com.spotify.hermes.message.StatusCode.OK;
+import static com.spotify.hermes.message.StatusCode.SERVER_ERROR;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.protobuf.ByteString;
+import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.service.coordination.AgentDoesNotExistException;
-import com.spotify.helios.service.coordination.Coordinator;
+import com.spotify.helios.common.coordination.JobExistsException;
+import com.spotify.helios.common.descriptors.AgentJob;
+import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.service.coordination.JobAlreadyDeployedException;
-import com.spotify.helios.service.coordination.JobDoesNotExistException;
-import com.spotify.helios.service.coordination.JobExistsException;
-import com.spotify.helios.service.descriptors.AgentJob;
-import com.spotify.helios.service.descriptors.AgentStatus;
-import com.spotify.helios.service.descriptors.JobDescriptor;
 import com.spotify.helios.service.protocol.JobDeployResponse;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.StatusCode;
@@ -29,12 +34,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
-
-import static com.spotify.helios.common.descriptors.Descriptor.parse;
-import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
-import static com.spotify.hermes.message.StatusCode.NOT_FOUND;
-import static com.spotify.hermes.message.StatusCode.OK;
-import static com.spotify.hermes.message.StatusCode.SERVER_ERROR;
 
 public class MasterHandler extends MatchingHandler {
 
