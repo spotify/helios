@@ -4,6 +4,8 @@
 
 package com.spotify.helios.common;
 
+import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
+
 import static com.spotify.hermes.message.StatusCode.METHOD_NOT_ALLOWED;
 
 import com.google.common.base.Function;
@@ -20,6 +22,7 @@ import com.spotify.helios.common.descriptors.Descriptor;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.service.protocol.CreateJobResponse;
 import com.spotify.helios.service.protocol.JobDeployResponse;
 import com.spotify.helios.service.protocol.JobUndeployResponse;
 import com.spotify.hermes.Hermes;
@@ -129,6 +132,7 @@ public class Client {
             ImmutableSet.of(OK, NOT_FOUND, METHOD_NOT_ALLOWED)));
   }
 
+  //TODO(drewc): implement the server side of this....
   public ListenableFuture<StatusCode> setGoal(final AgentJob job, final String host) {
     return patch(uri("/agents/%s/jobs/%s", host, job.getJob()), job);
   }
@@ -161,16 +165,13 @@ public class Client {
         ConvertResponseToPojo.create(JobUndeployResponse.class, ImmutableSet.of(OK, NOT_FOUND)));
  }
 
-  private ListenableFuture<StatusCode> delete(final URI uri) {
-    return status(request(uri, "DELETE"));
-  }
-
   public ListenableFuture<List<String>> listAgents() {
     return get(uri("/agents/"), new TypeReference<List<String>>() {});
   }
 
-  public ListenableFuture<StatusCode> createJob(final JobDescriptor descriptor) {
-    return put(uri("/jobs/" + descriptor.getId()), descriptor);
+  public ListenableFuture<CreateJobResponse> createJob(final JobDescriptor descriptor) {
+    return transform(request(uri("/jobs/" + descriptor.getId()), "PUT", descriptor),
+        ConvertResponseToPojo.create(CreateJobResponse.class, ImmutableSet.of(OK, BAD_REQUEST)));
   }
 
   public ListenableFuture<Map<String, JobDescriptor>> jobs() {

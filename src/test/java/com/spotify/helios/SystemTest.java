@@ -14,6 +14,7 @@ import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.service.protocol.CreateJobResponse;
 import com.spotify.helios.service.protocol.JobDeployResponse;
 import com.spotify.helios.service.protocol.JobUndeployResponse;
 import com.spotify.hermes.message.StatusCode;
@@ -262,8 +263,8 @@ public class SystemTest {
         .setImage("busybox")
         .setCommand(asList("sh", "-c", "while :; do sleep 1; done"))
         .build();
-    final StatusCode created = control.createJob(job).get();
-    assertEquals(OK, created);
+    final CreateJobResponse created = control.createJob(job).get();
+    assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     // Wait for agent to come up
     awaitAgent(control, agentName, 10, SECONDS);

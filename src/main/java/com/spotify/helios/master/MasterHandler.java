@@ -21,6 +21,7 @@ import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.service.coordination.JobAlreadyDeployedException;
+import com.spotify.helios.service.protocol.CreateJobResponse;
 import com.spotify.helios.service.protocol.JobDeployResponse;
 import com.spotify.helios.service.protocol.JobUndeployResponse;
 import com.spotify.helios.service.protocol.JobUndeployResponse.Status;
@@ -63,14 +64,16 @@ public class MasterHandler extends MatchingHandler {
     }
 
     if (!descriptor.getId().equals(id)) {
-      throw new RequestHandlerException(BAD_REQUEST);
+      respond(request, BAD_REQUEST, new CreateJobResponse(CreateJobResponse.Status.ID_MISMATCH));
+      return;
     }
 
     try {
       coordinator.addJob(descriptor);
     } catch (JobExistsException e) {
-      log.error("job already exists: {}", id, e);
-      throw new RequestHandlerException(BAD_REQUEST);
+      respond(request, BAD_REQUEST,
+          new CreateJobResponse(CreateJobResponse.Status.JOB_ALREADY_EXISTS));
+      return;
     } catch (HeliosException e) {
       log.error("failed to add job: {}:{}", id, descriptor, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -78,7 +81,8 @@ public class MasterHandler extends MatchingHandler {
 
     log.info("added job {}:{}", id, descriptor);
 
-    ok(request);
+    respond(request, OK, new CreateJobResponse(CreateJobResponse.Status.OK));
+
   }
 
   @Match(uri = "hm://helios/jobs/<id>", methods = "GET")
