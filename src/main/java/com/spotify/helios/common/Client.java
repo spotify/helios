@@ -118,10 +118,6 @@ public class Client {
     return status(request(uri, "PATCH", descriptor));
   }
 
-  private ListenableFuture<StatusCode> put(final URI uri, final Descriptor descriptor) {
-    return status(request(uri, "PUT", descriptor));
-  }
-
   private ListenableFuture<StatusCode> put(final URI uri) {
     return status(request(uri, "PUT"));
   }
