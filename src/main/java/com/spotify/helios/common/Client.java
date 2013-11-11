@@ -21,6 +21,7 @@ import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.service.protocol.JobDeployResponse;
+import com.spotify.helios.service.protocol.JobUndeployResponse;
 import com.spotify.hermes.Hermes;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.MessageBuilder;
@@ -123,8 +124,7 @@ public class Client {
   }
 
   public ListenableFuture<JobDeployResponse> deploy(final AgentJob job, final String host) {
-    return (ListenableFuture<JobDeployResponse>)transform(
-        request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PUT", job),
+    return transform(request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PUT", job),
         ConvertResponseToPojo.create(JobDeployResponse.class,
             ImmutableSet.of(OK, NOT_FOUND, METHOD_NOT_ALLOWED)));
   }
@@ -156,9 +156,10 @@ public class Client {
     return put(uri("/agents/%s", agent));
   }
 
-  public ListenableFuture<StatusCode> undeploy(final String jobId, final String host) {
-    return delete(uri("/agents/%s/jobs/%s", host, jobId));
-  }
+  public ListenableFuture<JobUndeployResponse> undeploy(final String jobId, final String host) {
+    return transform(request(uri("/agents/%s/jobs/%s", host, jobId), "DELETE"),
+        ConvertResponseToPojo.create(JobUndeployResponse.class, ImmutableSet.of(OK, NOT_FOUND)));
+ }
 
   private ListenableFuture<StatusCode> delete(final URI uri) {
     return status(request(uri, "DELETE"));

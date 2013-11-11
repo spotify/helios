@@ -6,6 +6,7 @@ package com.spotify.helios.cli.command;
 
 import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
+import com.spotify.helios.service.protocol.JobUndeployResponse;
 import com.spotify.hermes.message.StatusCode;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -48,11 +49,11 @@ public class JobUndeployCommand extends ControlCommand {
 
     for (final String host : hosts) {
       out.printf("%s: ", host);
-      final StatusCode statusCode = client.undeploy(id, host).get();
-      if (statusCode == StatusCode.OK) {
+      final JobUndeployResponse response = client.undeploy(id, host).get();
+      if (response.getStatus() == JobUndeployResponse.Status.OK) {
         out.println("done");
       } else {
-        out.println("failed: " + statusCode);
+        out.println("failed: " + response);
         code = -1;
       }
     }
