@@ -5,8 +5,8 @@
 package com.spotify.helios.master;
 
 import com.google.common.collect.Maps;
-
 import com.spotify.helios.common.AgentDoesNotExistException;
+import com.spotify.helios.common.AgentJobDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.coordination.CuratorInterface;
@@ -71,7 +71,14 @@ public class ZooKeeperCoordinator implements Coordinator {
 
   @Override
   public void removeAgent(final String agent) throws HeliosException {
-    throw new UnsupportedOperationException();
+    assertAgentExists(agent);
+    try {
+      client.deleteRecursive(Paths.configAgent(agent));
+    } catch (NoNodeException e) {
+      throw new AgentDoesNotExistException(agent);
+    } catch (KeeperException e) {
+      throw new HeliosException(e);
+    }
   }
 
   @Override
@@ -149,6 +156,32 @@ public class ZooKeeperCoordinator implements Coordinator {
     }
   }
 
+  @Override
+  public void updateAgentJob(final String agent, final AgentJob agentJob)
+      throws HeliosException {
+    log.debug("updating agent job: agent={}, job={}", agent, agentJob);
+
+    final String job = agentJob.getJob();
+    final JobDescriptor descriptor = getJob(job);
+
+    if (descriptor == null) {
+      throw new JobDoesNotExistException(job);
+    }
+
+    assertAgentExists(agent);
+    assertAgentJobExists(agent, agentJob.getJob());
+
+    final String path = Paths.configAgentJob(agent, job);
+    final AgentJobDescriptor agentJobDescriptor = new AgentJobDescriptor(agentJob, descriptor);
+    try {
+      client.setData(path, agentJobDescriptor.toJsonBytes());
+    } catch (NodeExistsException e) {
+      throw new JobAlreadyDeployedException(agent, job);
+    } catch (Exception e) {
+      throw new HeliosException("updating job on agent failed", e);
+    }
+  }
+
   private void assertAgentExists(String agent) throws HeliosException {
     try {
       client.getData(Paths.statusAgent(agent));
@@ -159,6 +192,15 @@ public class ZooKeeperCoordinator implements Coordinator {
     }
   }
 
+  private void assertAgentJobExists(String agent, String job) throws HeliosException {
+    try {
+      client.getData(Paths.statusAgentJob(agent, job));
+    } catch (NoNodeException e) {
+      throw new AgentJobDoesNotExistException(agent, job, e);
+    } catch (KeeperException e) {
+      throw new HeliosException(e);
+    }
+  }
   @Override
   public AgentJob getAgentJob(final String agent, final String jobId)
       throws HeliosException {

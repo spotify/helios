@@ -5,9 +5,9 @@
 package com.spotify.helios.master;
 
 import com.google.protobuf.ByteString;
-
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.spotify.helios.common.AgentDoesNotExistException;
+import com.spotify.helios.common.AgentJobDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.Json;
@@ -16,10 +16,12 @@ import com.spotify.helios.common.coordination.JobExistsException;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
+import com.spotify.helios.common.protocol.AgentDeleteResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse.Status;
+import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.StatusCode;
 import com.spotify.hermes.service.RequestHandlerException;
@@ -83,10 +85,9 @@ public class MasterHandler extends MatchingHandler {
     log.info("added job {}:{}", id, descriptor);
 
     respond(request, OK, new CreateJobResponse(CreateJobResponse.Status.OK));
-
   }
 
-  @Match(uri = "hm://helios/jobs/<id>", methods = "GET")
+ @Match(uri = "hm://helios/jobs/<id>", methods = "GET")
   public void jobGet(final ServiceRequest request, final String id) throws Exception {
     try {
       final JobDescriptor job = coordinator.getJob(id);
@@ -137,21 +138,12 @@ public class MasterHandler extends MatchingHandler {
   public void agentJobPut(final ServiceRequest request, final String agent,
                           final String job)
       throws RequestHandlerException, JsonProcessingException {
-    final Message message = request.getMessage();
-    if (message.getPayloads().size() != 1) {
-      throw new RequestHandlerException(BAD_REQUEST);
-    }
-
-    final byte[] payload = message.getPayloads().get(0).toByteArray();
-    final AgentJob agentJob;
-    try {
-      agentJob = Json.read(payload, AgentJob.class);
-    } catch (IOException e) {
-      throw new RequestHandlerException(BAD_REQUEST);
-    }
+    final AgentJob agentJob = unmarshalAgentJob(request);
 
     if (!agentJob.getJob().equals(job)) {
-      throw new RequestHandlerException(BAD_REQUEST);
+      respond(request, BAD_REQUEST,
+          new JobDeployResponse(JobDeployResponse.Status.ID_MISMATCH, agent, job));
+      return;
     }
 
     StatusCode code = OK;
@@ -178,6 +170,58 @@ public class MasterHandler extends MatchingHandler {
     respond(request, code, new JobDeployResponse(detailStatus, agent, job));
   }
 
+  @Match(uri = "hm://helios/agents/<agent>/jobs/<id>", methods = "PATCH")
+  public void jobPatch(final ServiceRequest request,
+                       final String agent,
+                       final String job) throws Exception {
+    final AgentJob agentJob = unmarshalAgentJob(request);
+
+    if (!agentJob.getJob().equals(job)) {
+      respond(request, BAD_REQUEST,
+          new SetGoalResponse(SetGoalResponse.Status.ID_MISMATCH, agent, job));
+      return;
+    }
+
+    StatusCode code = OK;
+    SetGoalResponse.Status detailStatus = SetGoalResponse.Status.OK;
+
+    try {
+      coordinator.updateAgentJob(agent, agentJob);
+    } catch (JobDoesNotExistException e) {
+      code = NOT_FOUND;
+      detailStatus = SetGoalResponse.Status.JOB_NOT_FOUND;
+    } catch (AgentDoesNotExistException e) {
+      code = NOT_FOUND;
+      detailStatus = SetGoalResponse.Status.AGENT_NOT_FOUND;
+    } catch (AgentJobDoesNotExistException e) {
+      code = NOT_FOUND;
+      detailStatus = SetGoalResponse.Status.JOB_NOT_DEPLOYED;
+    } catch (HeliosException e) {
+      log.error("failed to add job {} to agent {}", agentJob, agent, e);
+      throw new RequestHandlerException(SERVER_ERROR);
+    }
+
+    log.info("added job {} to agent {}", agentJob, agent);
+
+    respond(request, code, new SetGoalResponse(detailStatus, agent, job));
+  }
+
+  private AgentJob unmarshalAgentJob(final ServiceRequest request) {
+    final Message message = request.getMessage();
+    if (message.getPayloads().size() != 1) {
+      throw new RequestHandlerException(BAD_REQUEST);
+    }
+
+    final byte[] payload = message.getPayloads().get(0).toByteArray();
+    final AgentJob agentJob;
+    try {
+      agentJob = Json.read(payload, AgentJob.class);
+    } catch (IOException e) {
+      throw new RequestHandlerException(BAD_REQUEST);
+    }
+    return agentJob;
+  }
+
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "GET")
   public void agentJobGet(final ServiceRequest request, final String agent,
                           final String job)
@@ -197,6 +241,23 @@ public class MasterHandler extends MatchingHandler {
     }
 
     ok(request, agentJob);
+  }
+
+  @Match(uri = "hm://helios/agents/<agent>", methods = "DELETE")
+  public void agentDelete(final ServiceRequest request, final String agent)
+      throws JsonProcessingException {
+    try {
+      coordinator.removeAgent(agent);
+    } catch (AgentDoesNotExistException e) {
+      respond(request, NOT_FOUND,
+          new AgentDeleteResponse(AgentDeleteResponse.Status.NOT_FOUND, agent));
+      return;
+    } catch (HeliosException e) {
+      log.error("failed to remove agent {}", agent, e);
+      throw new RequestHandlerException(SERVER_ERROR);
+    }
+    respond(request, NOT_FOUND,
+        new AgentDeleteResponse(AgentDeleteResponse.Status.OK, agent));
   }
 
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "DELETE")

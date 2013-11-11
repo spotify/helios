@@ -15,7 +15,9 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.spotify.helios.common.descriptors.JobGoal.START;
 import static com.spotify.helios.common.descriptors.JobGoal.STOP;
@@ -66,6 +68,22 @@ public class JobDeployCommand extends ControlCommand {
         code = 1;
       }
     }
+
+    final AtomicInteger a = new AtomicInteger(5);
+    try {
+      new Callable() {
+
+        @Override
+        public Object call() throws Exception {
+          a.set(3);
+          return null;
+        }
+      }.call();
+    } catch (Exception e) {
+      // TODO Auto-generated catch block
+      e.printStackTrace();
+    }
+
 
     return code;
   }

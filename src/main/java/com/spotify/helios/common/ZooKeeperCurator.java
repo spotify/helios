@@ -7,6 +7,7 @@ import com.spotify.helios.common.coordination.CuratorInterface;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.data.Stat;
 
 import java.util.List;
@@ -58,6 +59,16 @@ public class ZooKeeperCurator implements CuratorInterface {
   public List<String> getChildren(final String path) throws KeeperException {
     try {
       return client.getChildren().forPath(path);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
+  public void deleteRecursive(final String path) throws KeeperException {
+    try {
+      ZKUtil.deleteRecursive(client.getZookeeperClient().getZooKeeper(), path);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);

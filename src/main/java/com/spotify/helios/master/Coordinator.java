@@ -36,4 +36,6 @@ public interface Coordinator {
   AgentJob removeAgentJob(String agent, String job) throws HeliosException;
 
   AgentStatus getAgentStatus(String agent) throws HeliosException;
+
+  void updateAgentJob(String agent, AgentJob agentJob) throws HeliosException;
 }

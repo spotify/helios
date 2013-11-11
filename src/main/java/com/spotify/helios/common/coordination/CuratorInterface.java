@@ -33,4 +33,6 @@ public interface CuratorInterface {
   Stat stat(String path) throws KeeperException;
 
   PathChildrenCache pathChildrenCache(String path, boolean cacheData);
+
+  void deleteRecursive(String path) throws KeeperException;
 }

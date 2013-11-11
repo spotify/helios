@@ -5,8 +5,8 @@
 package com.spotify.helios.cli;
 
 import com.google.common.collect.Maps;
-
 import com.spotify.helios.cli.command.ControlCommand;
+import com.spotify.helios.cli.command.HostDeleteCommand;
 import com.spotify.helios.cli.command.HostJobsCommand;
 import com.spotify.helios.cli.command.HostListCommand;
 import com.spotify.helios.cli.command.HostRegisterCommand;
@@ -169,6 +169,7 @@ public class CliParser {
       new HostListCommand(p(host, "list"), cliConfig, out);
       new HostJobsCommand(p(host, "jobs"), cliConfig, out);
       new HostRegisterCommand(p(host, "register"), cliConfig, out);
+      new HostDeleteCommand(p(host, "delete"), cliConfig, out);
     }
   }
 }

@@ -10,13 +10,13 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Descriptor;
 import com.spotify.helios.common.descriptors.JobDescriptor;
+import com.spotify.helios.common.protocol.AgentDeleteResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
@@ -120,10 +120,10 @@ public class Client {
   }
 
   public ListenableFuture<JobDeployResponse> deploy(final AgentJob job, final String host) {
+    ImmutableSet<StatusCode> deserializeReturnCodes = ImmutableSet.of(OK, NOT_FOUND,
+        METHOD_NOT_ALLOWED, BAD_REQUEST);
     return transform(request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PUT", job),
-                     ConvertResponseToPojo.create(JobDeployResponse.class,
-                                                  ImmutableSet.of(OK, NOT_FOUND,
-                                                                  METHOD_NOT_ALLOWED)));
+                     ConvertResponseToPojo.create(JobDeployResponse.class, deserializeReturnCodes));
   }
 
   //TODO(drewc): implement the server side of this....
@@ -158,6 +158,12 @@ public class Client {
     return transform(request(uri("/agents/%s/jobs/%s", host, jobId), "DELETE"),
                      ConvertResponseToPojo.create(JobUndeployResponse.class,
                                                   ImmutableSet.of(OK, NOT_FOUND)));
+  }
+
+  public ListenableFuture<AgentDeleteResponse> deleteAgent(final String host) {
+    return transform(request(uri("/agents/%s", host), "DELETE"),
+      ConvertResponseToPojo.create(AgentDeleteResponse.class,
+                                   ImmutableSet.of(OK, NOT_FOUND)));
   }
 
   public ListenableFuture<List<String>> listAgents() {

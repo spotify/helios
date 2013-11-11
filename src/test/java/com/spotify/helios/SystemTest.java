@@ -5,7 +5,6 @@
 package com.spotify.helios;
 
 import com.google.common.io.Files;
-
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
@@ -366,6 +365,8 @@ public class SystemTest {
         "--zk", "localhost:" + zookeeperPort,
         "--hm", masterEndpoint);
 
+    assertContains("NOT_FOUND", deleteAgent(TEST_AGENT));
+
     startAgent(
         "-vvvv",
         "--no-log-setup",
@@ -390,6 +391,12 @@ public class SystemTest {
 
     // Undeploy job
     undeployJob(jobId, TEST_AGENT);
+
+    assertContains(TEST_AGENT + ": done", deleteAgent(TEST_AGENT));
+  }
+
+  private String deleteAgent(String testAgent) throws Exception {
+    return control("host", "delete", testAgent, "yes");
   }
 
   private String createJob(final String name, final String version, final String image,
