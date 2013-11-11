@@ -20,6 +20,7 @@ import com.spotify.helios.common.protocol.AgentDeleteResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
+import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.hermes.Hermes;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.MessageBuilder;
@@ -111,10 +112,6 @@ public class Client {
         new ConvertResponseToPojo<T>(javaType));
   }
 
-  private ListenableFuture<StatusCode> patch(final URI uri, final Descriptor descriptor) {
-    return status(request(uri, "PATCH", descriptor));
-  }
-
   private ListenableFuture<StatusCode> put(final URI uri) {
     return status(request(uri, "PUT"));
   }
@@ -126,9 +123,9 @@ public class Client {
                      ConvertResponseToPojo.create(JobDeployResponse.class, deserializeReturnCodes));
   }
 
-  //TODO(drewc): implement the server side of this....
-  public ListenableFuture<StatusCode> setGoal(final AgentJob job, final String host) {
-    return patch(uri("/agents/%s/jobs/%s", host, job.getJob()), job);
+  public ListenableFuture<SetGoalResponse> setGoal(final AgentJob job, final String host) {
+    return transform(request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PATCH", job),
+        ConvertResponseToPojo.create(SetGoalResponse.class, ImmutableSet.of(OK, NOT_FOUND)));
   }
 
   private ListenableFuture<StatusCode> status(final ListenableFuture<Message> req) {

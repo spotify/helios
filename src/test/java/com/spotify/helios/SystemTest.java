@@ -54,9 +54,11 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.fail;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SystemTest {
@@ -178,19 +180,11 @@ public class SystemTest {
   }
 
   private void assertContains(String needle, String haystack) {
-    if (!contains(needle, haystack)) {
-      fail("expected to find [" + needle + "] in [" + haystack + "]");
-    }
+    assertThat(haystack, containsString(needle));
   }
 
   private void assertNotContains(String needle, String haystack) {
-    if (contains(needle, haystack)) {
-      fail("expected NOT to find [" + needle + "] in [" + haystack + "]");
-    }
-  }
-
-  private boolean contains(final String needle, final String haystack) {
-    return haystack.contains(needle);
+    assertThat(haystack, not(containsString(needle)));
   }
 
   private void deployJob(final String job, final String agent)
@@ -386,13 +380,28 @@ public class SystemTest {
     // Create job
     final String jobId = createJob(jobName, jobVersion, jobImage, command);
 
+    final String prestop = stopJob(jobId, TEST_AGENT);
+    assertContains("JOB_NOT_DEPLOYED", prestop);
+
     // Deploy job
     deployJob(jobId, TEST_AGENT);
+
+    // Stop job
+    final String stop1 = stopJob(jobId, BOGUS_AGENT);
+    assertContains("AGENT_NOT_FOUND", stop1);
+    final String stop2 = stopJob(BOGUS_JOB, TEST_AGENT);
+    assertContains("JOB_NOT_FOUND", stop2);
+    final String stop3 = stopJob(jobId, TEST_AGENT);
+    assertContains(TEST_AGENT + ": done", stop3);
 
     // Undeploy job
     undeployJob(jobId, TEST_AGENT);
 
     assertContains(TEST_AGENT + ": done", deleteAgent(TEST_AGENT));
+  }
+
+  private String stopJob(String jobId, String agent) throws Exception {
+    return control("job", "stop", jobId, agent);
   }
 
   private String deleteAgent(String testAgent) throws Exception {
