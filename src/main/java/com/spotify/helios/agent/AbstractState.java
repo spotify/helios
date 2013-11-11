@@ -7,7 +7,6 @@ package com.spotify.helios.agent;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
-import com.spotify.helios.common.coordination.State;
 import com.spotify.helios.common.descriptors.AgentJobDescriptor;
 
 import org.slf4j.Logger;

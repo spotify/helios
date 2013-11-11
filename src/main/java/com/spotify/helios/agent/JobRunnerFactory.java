@@ -1,5 +1,6 @@
-package com.spotify.helios.common.coordination;
+package com.spotify.helios.agent;
 
+import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 
 import static com.google.common.base.Preconditions.checkNotNull;

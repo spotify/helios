@@ -2,12 +2,13 @@
  * Copyright (C) 2013 Spotify AB
  */
 
-package com.spotify.helios.common.coordination;
+package com.spotify.helios.agent;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import com.spotify.helios.common.coordination.Reactor;
 import com.spotify.helios.common.descriptors.AgentJobDescriptor;
 import com.spotify.helios.common.descriptors.JobGoal;
 

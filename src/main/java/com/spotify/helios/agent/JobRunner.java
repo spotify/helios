@@ -2,7 +2,7 @@
  * Copyright (C) 2013 Spotify AB
  */
 
-package com.spotify.helios.common.coordination;
+package com.spotify.helios.agent;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingIterator;
@@ -13,6 +13,7 @@ import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.Image;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.descriptors.JobGoal;
 import com.spotify.helios.common.descriptors.JobStatus;

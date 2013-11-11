@@ -10,7 +10,6 @@ import com.google.protobuf.MessageLite;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.coordination.Coordinator;
 import com.spotify.helios.common.coordination.JobDoesNotExistException;
 import com.spotify.helios.common.coordination.JobExistsException;
 import com.spotify.helios.common.descriptors.AgentJob;

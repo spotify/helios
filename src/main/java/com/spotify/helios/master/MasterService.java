@@ -9,7 +9,6 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.AbstractClient;
-import com.spotify.helios.common.coordination.Coordinator;
 import com.spotify.helios.common.coordination.CuratorInterface;
 import com.spotify.helios.common.ZooKeeperCurator;
 import com.spotify.helios.master.http.HttpServiceRequest;
