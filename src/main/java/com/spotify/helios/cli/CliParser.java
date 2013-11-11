@@ -5,11 +5,26 @@
 package com.spotify.helios.cli;
 
 import com.google.common.collect.Maps;
-import com.spotify.helios.cli.command.*;
+
+import com.spotify.helios.cli.command.ControlCommand;
+import com.spotify.helios.cli.command.HostJobsCommand;
+import com.spotify.helios.cli.command.HostListCommand;
+import com.spotify.helios.cli.command.HostRegisterCommand;
+import com.spotify.helios.cli.command.JobCreateCommand;
+import com.spotify.helios.cli.command.JobDeployCommand;
+import com.spotify.helios.cli.command.JobListCommand;
+import com.spotify.helios.cli.command.JobUndeployCommand;
 import com.spotify.helios.common.LoggingConfig;
+
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
-import net.sourceforge.argparse4j.inf.*;
+import net.sourceforge.argparse4j.inf.ArgumentGroup;
+import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+import net.sourceforge.argparse4j.inf.Subparsers;
+
 import org.json.JSONException;
 
 import java.io.File;
@@ -17,7 +32,9 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
 
-import static net.sourceforge.argparse4j.impl.Arguments.*;
+import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
+import static net.sourceforge.argparse4j.impl.Arguments.fileType;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class CliParser {
 

@@ -1,7 +1,9 @@
 package com.spotify.helios.common;
 
 import com.google.common.util.concurrent.AbstractIdleService;
+
 import com.spotify.logging.LoggingConfigurator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +31,7 @@ public abstract class ServiceMain extends AbstractIdleService {
         try {
           stopAsync();
           awaitTerminated();
-        } catch(Exception e) {
+        } catch (Exception e) {
           log.error("Exception stopping service", e);
         }
       }

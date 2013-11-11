@@ -52,7 +52,8 @@ public class ImageDescriptor extends Descriptor {
     return true;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return Objects.toStringHelper(this)
         .add("name", name)
         .add("tag", tag)

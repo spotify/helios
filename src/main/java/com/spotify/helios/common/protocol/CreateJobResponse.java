@@ -1,11 +1,17 @@
 package com.spotify.helios.common.protocol;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class CreateJobResponse {
 
-  public enum Status { OK, ID_MISMATCH, JOB_ALREADY_EXISTS };
+  public enum Status {
+    OK,
+    ID_MISMATCH,
+    JOB_ALREADY_EXISTS
+  }
+
   private final Status status;
 
   public CreateJobResponse(@JsonProperty("status") Status status) {

@@ -7,6 +7,7 @@ package com.spotify.helios.common.coordination;
 import com.kpelykh.docker.client.DockerClient;
 
 public class DockerClientFactory {
+
   private final String endpoint;
 
   public DockerClientFactory(final String endpoint) {

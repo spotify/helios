@@ -1,10 +1,18 @@
 package com.spotify.helios.common.protocol;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 public class JobDeployResponse {
-  public enum Status { OK, JOB_NOT_FOUND, AGENT_NOT_FOUND, JOB_ALREADY_DEPLOYED };
+
+  public enum Status {
+    OK,
+    JOB_NOT_FOUND,
+    AGENT_NOT_FOUND,
+    JOB_ALREADY_DEPLOYED
+  }
+
   private final Status status;
   private final String job;
   private final String agent;

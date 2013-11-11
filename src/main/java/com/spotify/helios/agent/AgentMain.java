@@ -6,6 +6,7 @@ package com.spotify.helios.agent;
 
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.common.ServiceMain;
+
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
 /**

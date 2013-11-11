@@ -3,8 +3,8 @@ package com.spotify.helios.common;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 import com.netflix.curator.utils.EnsurePath;
-
 import com.spotify.helios.common.coordination.CuratorInterface;
+
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -96,7 +96,8 @@ public class ZooKeeperCurator implements CuratorInterface {
     }
   }
 
-  @Override public void setData(final String path, final byte[] data) throws KeeperException {
+  @Override
+  public void setData(final String path, final byte[] data) throws KeeperException {
     try {
       client.setData().forPath(path, data);
     } catch (Exception e) {
@@ -105,7 +106,8 @@ public class ZooKeeperCurator implements CuratorInterface {
     }
   }
 
-  @Override public Stat stat(final String path) throws KeeperException {
+  @Override
+  public Stat stat(final String path) throws KeeperException {
     try {
       return client.checkExists().forPath(path);
     } catch (Exception e) {
@@ -114,7 +116,8 @@ public class ZooKeeperCurator implements CuratorInterface {
     }
   }
 
-  @Override public PathChildrenCache pathChildrenCache(final String path, final boolean cacheData) {
+  @Override
+  public PathChildrenCache pathChildrenCache(final String path, final boolean cacheData) {
     return new PathChildrenCache(client, path, cacheData);
   }
 }

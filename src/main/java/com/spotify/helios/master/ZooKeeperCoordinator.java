@@ -5,12 +5,20 @@
 package com.spotify.helios.master;
 
 import com.google.common.collect.Maps;
+
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
-import com.spotify.helios.common.coordination.*;
-import com.spotify.helios.common.descriptors.*;
+import com.spotify.helios.common.coordination.CuratorInterface;
 import com.spotify.helios.common.coordination.JobAlreadyDeployedException;
+import com.spotify.helios.common.coordination.JobExistsException;
+import com.spotify.helios.common.coordination.Paths;
+import com.spotify.helios.common.descriptors.AgentJob;
+import com.spotify.helios.common.descriptors.AgentJobDescriptor;
+import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.Descriptor;
+import com.spotify.helios.common.descriptors.JobDescriptor;
+import com.spotify.helios.common.descriptors.JobStatus;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -243,7 +251,7 @@ public class ZooKeeperCoordinator implements Coordinator {
     final AgentJob job = getAgentJob(agent, jobId);
     if (job == null) {
       throw new JobDoesNotExistException(String.format("Job [%s] does not exist on agent [%s]",
-        jobId, agent));
+                                                       jobId, agent));
     }
 
     final String path = Paths.configAgentJob(agent, jobId);

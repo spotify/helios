@@ -6,8 +6,8 @@ package com.spotify.helios.cli;
 
 import com.google.common.base.Joiner;
 
-import com.spotify.helios.common.Defaults;
 import com.spotify.config.SpotifyConfigNode;
+import com.spotify.helios.common.Defaults;
 import com.spotify.json.SpJSON;
 
 import org.json.JSONException;
@@ -50,14 +50,12 @@ public class CliConfig {
   }
 
   /**
-   * Returns a CliConfig instance with values
-   * from a config file from under the users
-   * home directory:
+   * Returns a CliConfig instance with values from a config file from under the users home
+   * directory:
    *
    * <user.home>/.helios/config
    *
-   * If the file is not found, a CliConfig with
-   * pre-defined values will be returned.
+   * If the file is not found, a CliConfig with pre-defined values will be returned.
    *
    * @throws IOException   If the file exists but could not be read
    * @throws JSONException If the file exists but could not be parsed
@@ -72,11 +70,9 @@ public class CliConfig {
   }
 
   /**
-   * Returns a CliConfig instance with values
-   * parsed from the specified file.
+   * Returns a CliConfig instance with values parsed from the specified file.
    *
-   * If the file is not found, a CliConfig with
-   * pre-defined values will be returned.
+   * If the file is not found, a CliConfig with pre-defined values will be returned.
    *
    * @param defaultsFile The file to parse from
    * @throws IOException   If the file exists but could not be read
@@ -95,11 +91,9 @@ public class CliConfig {
   }
 
   /**
-   * Returns a CliConfig instance with values
-   * parsed from the specified config node.
+   * Returns a CliConfig instance with values parsed from the specified config node.
    *
-   * Any value missing in the config tree will get
-   * a pre-defined default value.
+   * Any value missing in the config tree will get a pre-defined default value.
    */
   public static CliConfig fromConfigNode(SpotifyConfigNode config) {
     checkNotNull(config);

@@ -10,8 +10,8 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import java.util.Map;
 
 /**
- * Models the desired state of a slave as provided by coordinators and provides a way for a slave
- * to indicate its current state.
+ * Models the desired state of a slave as provided by coordinators and provides a way for a slave to
+ * indicate its current state.
  */
 public interface State {
 
@@ -25,15 +25,12 @@ public interface State {
   /**
    * Register container state.
    *
-   * @param name
    * @param state The container state.
    */
   void setJobStatus(final String name, JobStatus state);
 
   /**
    * Get registered container state.
-   * @param name
-   * @return
    */
   JobStatus getJobStatus(String name);
 

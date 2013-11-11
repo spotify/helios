@@ -9,9 +9,11 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.ZooKeeperCurator;
-import com.spotify.helios.common.coordination.*;
+import com.spotify.helios.common.coordination.CuratorInterface;
+import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricsRegistry;
+
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

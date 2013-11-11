@@ -121,8 +121,9 @@ public class Client {
 
   public ListenableFuture<JobDeployResponse> deploy(final AgentJob job, final String host) {
     return transform(request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PUT", job),
-        ConvertResponseToPojo.create(JobDeployResponse.class,
-                                     ImmutableSet.of(OK, NOT_FOUND, METHOD_NOT_ALLOWED)));
+                     ConvertResponseToPojo.create(JobDeployResponse.class,
+                                                  ImmutableSet.of(OK, NOT_FOUND,
+                                                                  METHOD_NOT_ALLOWED)));
   }
 
   //TODO(drewc): implement the server side of this....
@@ -155,8 +156,9 @@ public class Client {
 
   public ListenableFuture<JobUndeployResponse> undeploy(final String jobId, final String host) {
     return transform(request(uri("/agents/%s/jobs/%s", host, jobId), "DELETE"),
-        ConvertResponseToPojo.create(JobUndeployResponse.class, ImmutableSet.of(OK, NOT_FOUND)));
- }
+                     ConvertResponseToPojo.create(JobUndeployResponse.class,
+                                                  ImmutableSet.of(OK, NOT_FOUND)));
+  }
 
   public ListenableFuture<List<String>> listAgents() {
     return get(uri("/agents/"), new TypeReference<List<String>>() {});
@@ -164,7 +166,8 @@ public class Client {
 
   public ListenableFuture<CreateJobResponse> createJob(final JobDescriptor descriptor) {
     return transform(request(uri("/jobs/" + descriptor.getId()), "PUT", descriptor),
-        ConvertResponseToPojo.create(CreateJobResponse.class, ImmutableSet.of(OK, BAD_REQUEST)));
+                     ConvertResponseToPojo.create(CreateJobResponse.class,
+                                                  ImmutableSet.of(OK, BAD_REQUEST)));
   }
 
   public ListenableFuture<Map<String, JobDescriptor>> jobs() {
@@ -200,6 +203,7 @@ public class Client {
   }
 
   private static final class ConvertResponseToPojo<T> implements AsyncFunction<Message, T> {
+
     private final JavaType javaType;
     private final ImmutableSet<StatusCode> decodeableStatusCodes;
 
@@ -207,20 +211,18 @@ public class Client {
       this(javaType, ImmutableSet.of(StatusCode.OK));
     }
 
-    public ConvertResponseToPojo(JavaType type,
-                                 ImmutableSet<StatusCode> decodeableStatusCodes) {
+    public ConvertResponseToPojo(JavaType type, ImmutableSet<StatusCode> decodeableStatusCodes) {
       this.javaType = type;
       this.decodeableStatusCodes = decodeableStatusCodes;
     }
 
     public static <T> ConvertResponseToPojo<T> create(Class<T> clazz,
-      ImmutableSet<StatusCode> immutableSet) {
+                                                      ImmutableSet<StatusCode> immutableSet) {
       return new ConvertResponseToPojo<T>(Json.type(clazz), immutableSet);
     }
 
     @Override
-    public ListenableFuture<T> apply(
-        final Message reply)
+    public ListenableFuture<T> apply(final Message reply)
         throws HeliosException {
       StatusCode statusCode = reply.getStatusCode();
       if (statusCode == NOT_FOUND
@@ -249,6 +251,7 @@ public class Client {
   }
 
   public static class Builder {
+
     private String user;
     private Iterable<String> endpoints;
 

@@ -5,11 +5,11 @@
 package com.spotify.helios;
 
 import com.google.common.io.Files;
+
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
-import com.spotify.helios.common.ServiceMain;
-import com.spotify.helios.master.MasterMain;
 import com.spotify.helios.common.Client;
+import com.spotify.helios.common.ServiceMain;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
@@ -17,6 +17,7 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
+import com.spotify.helios.master.MasterMain;
 import com.spotify.logging.UncaughtExceptionLogger;
 
 import org.apache.commons.lang.StringUtils;
@@ -36,7 +37,11 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.collect.Iterables.concat;
@@ -50,10 +55,13 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SystemTest {
+
   private static final String BOGUS_JOB = "BOGUS_JOB";
   private static final String BOGUS_AGENT = "BOGUS_AGENT";
 
@@ -237,17 +245,17 @@ public class SystemTest {
     final String jobVersion = "17";
 
     startMaster("-vvvv",
-              "--no-log-setup",
-              "--munin-port", "0",
-              "--hm", masterEndpoint,
-              "--zk", zookeeperEndpoint);
+                "--no-log-setup",
+                "--munin-port", "0",
+                "--hm", masterEndpoint,
+                "--zk", zookeeperEndpoint);
 
     startAgent("-vvvv",
-              "--no-log-setup",
-              "--munin-port", "0",
-              "--name", agentName,
-              "--docker", dockerEndpoint,
-              "--zk", zookeeperEndpoint);
+               "--no-log-setup",
+               "--munin-port", "0",
+               "--name", agentName,
+               "--docker", dockerEndpoint,
+               "--zk", zookeeperEndpoint);
 
     final Client control = Client.newBuilder()
         .setUser(TEST_USER)
@@ -277,7 +285,7 @@ public class SystemTest {
     assertEquals(JobDeployResponse.Status.JOB_ALREADY_DEPLOYED, deployed2.getStatus());
 
     final JobDeployResponse deployed3 = control.deploy(AgentJob.of(BOGUS_JOB, START),
-        agentName).get();
+                                                       agentName).get();
     assertEquals(JobDeployResponse.Status.JOB_NOT_FOUND, deployed3.getStatus());
 
     final JobDeployResponse deployed4 = control.deploy(agentJob, BOGUS_AGENT).get();

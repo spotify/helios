@@ -4,23 +4,18 @@
 
 package com.spotify.helios.master;
 
-import static com.spotify.helios.common.descriptors.Descriptor.parse;
-import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
-import static com.spotify.hermes.message.StatusCode.NOT_FOUND;
-import static com.spotify.hermes.message.StatusCode.OK;
-import static com.spotify.hermes.message.StatusCode.SERVER_ERROR;
+import com.google.protobuf.ByteString;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.google.protobuf.ByteString;
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.coordination.JobAlreadyDeployedException;
 import com.spotify.helios.common.coordination.JobExistsException;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
-import com.spotify.helios.common.coordination.JobAlreadyDeployedException;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
@@ -37,6 +32,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
+
+import static com.spotify.helios.common.descriptors.Descriptor.parse;
+import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
+import static com.spotify.hermes.message.StatusCode.NOT_FOUND;
+import static com.spotify.hermes.message.StatusCode.OK;
+import static com.spotify.hermes.message.StatusCode.SERVER_ERROR;
 
 public class MasterHandler extends MatchingHandler {
 
@@ -72,7 +73,7 @@ public class MasterHandler extends MatchingHandler {
       coordinator.addJob(descriptor);
     } catch (JobExistsException e) {
       respond(request, BAD_REQUEST,
-          new CreateJobResponse(CreateJobResponse.Status.JOB_ALREADY_EXISTS));
+              new CreateJobResponse(CreateJobResponse.Status.JOB_ALREADY_EXISTS));
       return;
     } catch (HeliosException e) {
       log.error("failed to add job: {}:{}", id, descriptor, e);
@@ -134,7 +135,8 @@ public class MasterHandler extends MatchingHandler {
 
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "PUT")
   public void agentJobPut(final ServiceRequest request, final String agent,
-                          final String job) throws RequestHandlerException, JsonProcessingException {
+                          final String job)
+      throws RequestHandlerException, JsonProcessingException {
     final Message message = request.getMessage();
     if (message.getPayloads().size() != 1) {
       throw new RequestHandlerException(BAD_REQUEST);

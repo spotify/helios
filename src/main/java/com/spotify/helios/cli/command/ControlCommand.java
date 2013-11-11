@@ -7,14 +7,17 @@ package com.spotify.helios.cli.command;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+
 import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.cli.CliParser;
 import com.spotify.helios.common.Client;
 import com.spotify.hermes.service.RequestTimeoutException;
 import com.spotify.hermes.service.SendFailureException;
+
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,14 +47,14 @@ public abstract class ControlCommand {
   private final Argument usernameArg;
 
   ControlCommand(final Subparser parser, final CliConfig cliConfig, final PrintStream out) {
-      this.cliConfig = cliConfig;
-      this.out = out;
+    this.cliConfig = cliConfig;
+    this.out = out;
 
-      parser
-          .setDefault("command", this)
-          .defaultHelp(true);
+    parser
+        .setDefault("command", this)
+        .defaultHelp(true);
 
-      CliParser.addGlobalArgs(parser);
+    CliParser.addGlobalArgs(parser);
 
     endpointsArg = parser.addArgument("-z", "--master")
         .action(append())

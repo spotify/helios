@@ -6,6 +6,7 @@ package com.spotify.helios.cli;
 
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.logging.LoggingConfigurator;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,7 +14,9 @@ import java.io.File;
 import java.io.PrintStream;
 
 import static com.google.common.collect.Iterables.get;
-import static com.spotify.logging.LoggingConfigurator.Level.*;
+import static com.spotify.logging.LoggingConfigurator.Level.ALL;
+import static com.spotify.logging.LoggingConfigurator.Level.DEBUG;
+import static com.spotify.logging.LoggingConfigurator.Level.INFO;
 import static java.util.Arrays.asList;
 
 /**
@@ -43,7 +46,8 @@ public class CliMain {
     setupLogging();
   }
 
-  public CliMain(final PrintStream out, final PrintStream err, final String... args) throws Exception {
+  public CliMain(final PrintStream out, final PrintStream err, final String... args)
+      throws Exception {
     this(CliParser.createDefaultParser(out, args));
   }
 

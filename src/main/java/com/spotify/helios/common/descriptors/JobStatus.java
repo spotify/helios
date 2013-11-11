@@ -42,7 +42,8 @@ public class JobStatus extends Descriptor {
     return job;
   }
 
-  @Override public String toString() {
+  @Override
+  public String toString() {
     return Objects.toStringHelper(this)
         .add("job", job)
         .add("state", state)

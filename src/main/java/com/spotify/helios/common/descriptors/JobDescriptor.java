@@ -122,6 +122,7 @@ public class JobDescriptor extends Descriptor {
     private String hash;
 
     private static class Parameters {
+
       public String name;
       public String version;
       public String image;

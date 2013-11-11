@@ -11,7 +11,8 @@ import com.spotify.hermes.service.Client;
 import com.spotify.hermes.service.ReplyHandler;
 
 /**
- * A convenient abstract class for implementing the hermes {@link com.spotify.hermes.service.Client} interface.
+ * A convenient abstract class for implementing the hermes {@link com.spotify.hermes.service.Client}
+ * interface.
  */
 public abstract class AbstractClient implements Client {
 

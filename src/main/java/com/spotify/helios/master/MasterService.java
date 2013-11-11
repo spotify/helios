@@ -9,8 +9,8 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.AbstractClient;
-import com.spotify.helios.common.coordination.CuratorInterface;
 import com.spotify.helios.common.ZooKeeperCurator;
+import com.spotify.helios.common.coordination.CuratorInterface;
 import com.spotify.helios.master.http.HttpServiceRequest;
 import com.spotify.hermes.Hermes;
 import com.spotify.hermes.http.HermesHttpRequestDispatcher;
@@ -21,6 +21,7 @@ import com.spotify.hermes.service.RequestHandler;
 import com.spotify.hermes.service.Server;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricsRegistry;
+
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -69,7 +70,8 @@ public class MasterService {
     final com.spotify.hermes.http.Statistics statistics = new com.spotify.hermes.http.Statistics();
     // TODO: this is a bit messy
     final HermesHttpRequestDispatcher requestDispatcher =
-        new HermesHttpRequestDispatcher(new RequestHandlerClient(masterHandler), statistics, V2, 30000,
+        new HermesHttpRequestDispatcher(new RequestHandlerClient(masterHandler), statistics, V2,
+                                        30000,
                                         "helios");
     httpServer = new HttpServer(requestDispatcher, new HttpServer.Config(), statistics);
   }

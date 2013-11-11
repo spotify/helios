@@ -8,9 +8,12 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.io.File;
 
-import static net.sourceforge.argparse4j.impl.Arguments.*;
+import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
+import static net.sourceforge.argparse4j.impl.Arguments.fileType;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class ServiceParser {
+
   private final Namespace options;
   private final LoggingConfig loggingConfig;
 
@@ -54,9 +57,9 @@ public class ServiceParser {
     }
 
     this.loggingConfig = new LoggingConfig(options.getInt("verbose"),
-        options.getBoolean("syslog"),
-        (File) options.get("logconfig"),
-        options.getBoolean("no_log_setup"));
+                                           options.getBoolean("syslog"),
+                                           (File) options.get("logconfig"),
+                                           options.getBoolean("no_log_setup"));
   }
 
   protected void addArgs(final ArgumentParser parser) {

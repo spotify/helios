@@ -51,7 +51,8 @@ public class JobCreateCommand extends ControlCommand {
         .help("Command line arguments");
   }
 
-  @Override int runControl(final Namespace options, final Client client)
+  @Override
+  int runControl(final Namespace options, final Client client)
       throws ExecutionException, InterruptedException {
     final List<String> command = options.getList(argsArg.getDest());
     final String imageIdentifier = options.getString(imageArg.getDest());

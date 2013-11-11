@@ -93,7 +93,8 @@ public class Worker {
   /**
    * Starts and stops jobs to reflect the desired state. Called by the reactor.
    */
-  @VisibleForTesting void checkChanges() {
+  @VisibleForTesting
+  void checkChanges() {
     // Get a snapshot of the desired state
     final Map<String, AgentJobDescriptor> desiredJobs = state.getJobs();
     final Set<String> desiredJobIds = desiredJobs.keySet();

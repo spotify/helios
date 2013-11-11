@@ -1,6 +1,7 @@
 package com.spotify.helios.common;
 
 public class AgentDoesNotExistException extends HeliosException {
+
   public AgentDoesNotExistException(final String message) {
     super(message);
   }
