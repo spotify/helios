@@ -238,9 +238,12 @@ public class ZooKeeperCoordinator implements Coordinator {
       throws HeliosException {
     log.debug("removing agent job: agent={}, job={}", agent, jobId);
 
+    assertAgentExists(agent);
+
     final AgentJob job = getAgentJob(agent, jobId);
     if (job == null) {
-      return null;
+      throw new JobDoesNotExistException(String.format("Job [%s] does not exist on agent [%s]",
+        jobId, agent));
     }
 
     final String path = Paths.configAgentJob(agent, jobId);

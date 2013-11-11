@@ -7,6 +7,7 @@ package com.spotify.helios.cli.command;
 import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.JobDescriptor;
+import com.spotify.helios.service.protocol.CreateJobResponse;
 import com.spotify.hermes.message.StatusCode;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -68,8 +69,8 @@ public class JobCreateCommand extends ControlCommand {
       out.println("Creating job: " + descriptor.toJsonString());
     }
 
-    final StatusCode status = client.createJob(descriptor).get();
-    if (status == StatusCode.OK) {
+    final CreateJobResponse status = client.createJob(descriptor).get();
+    if (status.getStatus() == CreateJobResponse.Status.OK) {
       if (!quiet) {
         out.println("Done.");
       }

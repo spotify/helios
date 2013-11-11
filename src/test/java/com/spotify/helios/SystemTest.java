@@ -14,7 +14,9 @@ import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.service.protocol.CreateJobResponse;
 import com.spotify.helios.service.protocol.JobDeployResponse;
+import com.spotify.helios.service.protocol.JobUndeployResponse;
 import com.spotify.hermes.message.StatusCode;
 import com.spotify.logging.UncaughtExceptionLogger;
 
@@ -54,6 +56,8 @@ import static org.junit.Assert.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SystemTest {
+  private static final String BOGUS_JOB = "BOGUS_JOB";
+  private static final String BOGUS_AGENT = "BOGUS_AGENT";
 
   private static final AtomicInteger PORT_COUNTER = new AtomicInteger(5000);
 
@@ -215,6 +219,12 @@ public class SystemTest {
   }
 
   private void undeployJob(final String job, final String host) throws Exception {
+    final String bogusUndeployAgentWrong = control("job", "undeploy", job, BOGUS_AGENT);
+    assertContains("AGENT_NOT_FOUND", bogusUndeployAgentWrong);
+
+    final String bogusUndeployJobWrong = control("job", "undeploy", BOGUS_JOB, host);
+    assertContains("JOB_NOT_FOUND", bogusUndeployJobWrong);
+
     final String undeployOutput = control("job", "undeploy", job, host);
     assertContains(host + ": done", undeployOutput);
 
@@ -225,8 +235,6 @@ public class SystemTest {
   @Test
   public void testService() throws Exception {
     final String agentName = "foobar";
-    final String bogusAgentName = "BOGUS_AGENT";
-    final String bogusJobName = "BOGUS_JOB";
     final String jobName = "foo";
     final String jobVersion = "17";
 
@@ -255,8 +263,8 @@ public class SystemTest {
         .setImage("busybox")
         .setCommand(asList("sh", "-c", "while :; do sleep 1; done"))
         .build();
-    final StatusCode created = control.createJob(job).get();
-    assertEquals(OK, created);
+    final CreateJobResponse created = control.createJob(job).get();
+    assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     // Wait for agent to come up
     awaitAgent(control, agentName, 10, SECONDS);
@@ -270,11 +278,11 @@ public class SystemTest {
     final JobDeployResponse deployed2 = control.deploy(agentJob, agentName).get();
     assertEquals(JobDeployResponse.Status.JOB_ALREADY_DEPLOYED, deployed2.getStatus());
 
-    final JobDeployResponse deployed3 = control.deploy(AgentJob.of(bogusJobName, START),
+    final JobDeployResponse deployed3 = control.deploy(AgentJob.of(BOGUS_JOB, START),
         agentName).get();
     assertEquals(JobDeployResponse.Status.JOB_NOT_FOUND, deployed3.getStatus());
 
-    final JobDeployResponse deployed4 = control.deploy(agentJob, bogusAgentName).get();
+    final JobDeployResponse deployed4 = control.deploy(agentJob, BOGUS_AGENT).get();
     assertEquals(JobDeployResponse.Status.AGENT_NOT_FOUND, deployed4.getStatus());
 
     // Check that the job is in the desired state
@@ -293,8 +301,8 @@ public class SystemTest {
     assertEquals(RUNNING, jobStatus.getState());
 
     // Undeploy the container
-    final StatusCode undeployed = control.undeploy(jobId, agentName).get();
-    assertEquals(OK, undeployed);
+    final JobUndeployResponse undeployed = control.undeploy(jobId, agentName).get();
+    assertEquals(JobUndeployResponse.Status.OK, undeployed.getStatus());
 
     // Make sure that it is no longer in the desired state
     final AgentJob undeployedJob = control.stat(agentName, jobId).get();
