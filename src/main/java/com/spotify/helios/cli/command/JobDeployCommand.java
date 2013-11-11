@@ -7,7 +7,7 @@ package com.spotify.helios.cli.command;
 import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.AgentJob;
-import com.spotify.helios.service.protocol.JobDeployResponse;
+import com.spotify.helios.common.protocol.JobDeployResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;

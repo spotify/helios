@@ -1,4 +1,4 @@
-package com.spotify.helios.service.coordination;
+package com.spotify.helios.common.coordination;
 
 import com.spotify.helios.common.HeliosException;
 

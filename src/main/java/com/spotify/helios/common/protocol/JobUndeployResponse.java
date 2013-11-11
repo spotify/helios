@@ -1,17 +1,18 @@
-package com.spotify.helios.service.protocol;
+package com.spotify.helios.common.protocol;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 
-public class JobDeployResponse {
-  public enum Status { OK, JOB_NOT_FOUND, AGENT_NOT_FOUND, JOB_ALREADY_DEPLOYED };
+public class JobUndeployResponse {
+
+  public enum Status { OK, JOB_NOT_FOUND, AGENT_NOT_FOUND };
   private final Status status;
   private final String job;
   private final String agent;
 
-  public JobDeployResponse(@JsonProperty("status") Status status,
-                           @JsonProperty("agent") String agent,
-                           @JsonProperty("job") String job) {
+  public JobUndeployResponse(@JsonProperty("status") Status status,
+                             @JsonProperty("agent") String agent,
+                             @JsonProperty("job") String job) {
     this.status = status;
     this.job = job;
     this.agent = agent;

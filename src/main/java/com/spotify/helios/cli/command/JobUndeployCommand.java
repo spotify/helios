@@ -6,8 +6,7 @@ package com.spotify.helios.cli.command;
 
 import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
-import com.spotify.helios.service.protocol.JobUndeployResponse;
-import com.spotify.hermes.message.StatusCode;
+import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;

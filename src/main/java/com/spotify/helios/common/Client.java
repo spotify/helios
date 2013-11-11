@@ -4,27 +4,22 @@
 
 package com.spotify.helios.common;
 
-import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
-
-import static com.spotify.hermes.message.StatusCode.METHOD_NOT_ALLOWED;
-
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Descriptor;
 import com.spotify.helios.common.descriptors.JobDescriptor;
-import com.spotify.helios.common.HeliosException;
-import com.spotify.helios.common.Json;
-import com.spotify.helios.service.protocol.CreateJobResponse;
-import com.spotify.helios.service.protocol.JobDeployResponse;
-import com.spotify.helios.service.protocol.JobUndeployResponse;
+import com.spotify.helios.common.protocol.CreateJobResponse;
+import com.spotify.helios.common.protocol.JobDeployResponse;
+import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.hermes.Hermes;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.MessageBuilder;
@@ -42,6 +37,8 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
+import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
+import static com.spotify.hermes.message.StatusCode.METHOD_NOT_ALLOWED;
 import static com.spotify.hermes.message.StatusCode.NOT_FOUND;
 import static com.spotify.hermes.message.StatusCode.OK;
 import static java.lang.String.format;
@@ -125,7 +122,7 @@ public class Client {
   public ListenableFuture<JobDeployResponse> deploy(final AgentJob job, final String host) {
     return transform(request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PUT", job),
         ConvertResponseToPojo.create(JobDeployResponse.class,
-            ImmutableSet.of(OK, NOT_FOUND, METHOD_NOT_ALLOWED)));
+                                     ImmutableSet.of(OK, NOT_FOUND, METHOD_NOT_ALLOWED)));
   }
 
   //TODO(drewc): implement the server side of this....

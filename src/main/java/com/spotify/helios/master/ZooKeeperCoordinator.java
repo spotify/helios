@@ -10,7 +10,7 @@ import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.coordination.*;
 import com.spotify.helios.common.descriptors.*;
-import com.spotify.helios.service.coordination.JobAlreadyDeployedException;
+import com.spotify.helios.common.coordination.JobAlreadyDeployedException;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
