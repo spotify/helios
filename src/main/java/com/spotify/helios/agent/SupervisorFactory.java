@@ -6,16 +6,16 @@ import com.spotify.helios.common.descriptors.JobDescriptor;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * Creates application containers.
+ * Creates job supervisors.
  *
- * @see JobRunner
+ * @see Supervisor
  */
-public class JobRunnerFactory {
+public class SupervisorFactory {
 
   private final State state;
   private final DockerClientFactory dockerClientFactory;
 
-  public JobRunnerFactory(final State state, final DockerClientFactory dockerClientFactory) {
+  public SupervisorFactory(final State state, final DockerClientFactory dockerClientFactory) {
     this.dockerClientFactory = dockerClientFactory;
     this.state = checkNotNull(state);
   }
@@ -25,7 +25,8 @@ public class JobRunnerFactory {
    *
    * @return A new container.
    */
-  public JobRunner create(final String name, final JobDescriptor descriptor) {
-    return new JobRunner(name, descriptor, state, dockerClientFactory);
+  public Supervisor create(final String name, final JobDescriptor descriptor) {
+    final AsyncDockerClient dockerClient = new AsyncDockerClient(dockerClientFactory);
+    return new Supervisor(name, descriptor, state, dockerClient);
   }
 }

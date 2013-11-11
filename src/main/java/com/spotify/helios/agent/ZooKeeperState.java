@@ -5,6 +5,7 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.Maps;
 
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
@@ -21,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
@@ -44,6 +47,22 @@ public class ZooKeeperState extends AbstractState {
   private String jobId(final String path) {
     final String prefix = Paths.configAgentJobs(agent) + "/";
     return path.replaceFirst(prefix, "");
+  }
+
+  @Override
+  public Map<String, JobStatus> getJobStatuses() {
+    final String path = Paths.statusAgentJobs(agent);
+    final Map<String, JobStatus> jobs = Maps.newHashMap();
+    try {
+      final List<String> children = client.getChildren(path);
+      for (final String name : children) {
+        final JobStatus jobStatus = getJobStatus(name);
+        jobs.put(name, jobStatus);
+      }
+    } catch (KeeperException e) {
+      throw Throwables.propagate(e);
+    }
+    return jobs;
   }
 
   @Override

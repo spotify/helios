@@ -26,7 +26,7 @@ abstract class AbstractState implements State {
   @Override
   public void addListener(final Listener listener) {
     listeners.add(listener);
-    listener.containersUpdated(this);
+    listener.jobsUpdated(this);
   }
 
   @Override
@@ -62,7 +62,7 @@ abstract class AbstractState implements State {
   private void fireContainersUpdated() {
     for (final Listener listener : listeners) {
       try {
-        listener.containersUpdated(this);
+        listener.jobsUpdated(this);
       } catch (Exception e) {
         log.error("listener threw exception", e);
       }

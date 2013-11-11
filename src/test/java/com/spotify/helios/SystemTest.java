@@ -47,8 +47,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.JobGoal.START;
-import static com.spotify.helios.common.descriptors.JobStatus.State.DESTROYED;
 import static com.spotify.helios.common.descriptors.JobStatus.State.RUNNING;
+import static com.spotify.helios.common.descriptors.JobStatus.State.STOPPED;
 import static java.lang.String.format;
 import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
@@ -314,8 +314,8 @@ public class SystemTest {
     final AgentJob undeployedJob = control.stat(agentName, jobId).get();
     assertNull(undeployedJob);
 
-    // Wait for the container to enter the DESTROYED state
-    awaitJobState(control, agentName, jobId, DESTROYED, 10, SECONDS);
+    // Wait for the container to enter the STOPPED state
+    awaitJobState(control, agentName, jobId, STOPPED, 10, SECONDS);
   }
 
   private JobStatus awaitJobState(final Client controlClient, final String slave,

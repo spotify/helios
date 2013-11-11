@@ -15,7 +15,7 @@ public class JobStatus extends Descriptor {
     STARTING,
     RUNNING,
     EXITED,
-    DESTROYED
+    STOPPED
   }
 
   private final JobDescriptor job;

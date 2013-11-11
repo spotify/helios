@@ -8,6 +8,7 @@ import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
+import com.spotify.helios.common.ReactorFactory;
 import com.spotify.helios.common.ZooKeeperCurator;
 import com.spotify.helios.common.coordination.CuratorInterface;
 import com.spotify.helios.common.coordination.DockerClientFactory;
@@ -28,7 +29,7 @@ public class AgentService {
 
   private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
-  private final Worker worker;
+  private final Agent agent;
 
   private final CuratorFramework zooKeeperClient;
 
@@ -47,9 +48,10 @@ public class AgentService {
 
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
-    final JobRunnerFactory jobRunnerFactory = new JobRunnerFactory(state, dockerClientFactory);
+    final SupervisorFactory supervisorFactory = new SupervisorFactory(state, dockerClientFactory);
+    final ReactorFactory reactorFactory = new ReactorFactory();
 
-    worker = new Worker(state, jobRunnerFactory);
+    agent = new Agent(state, supervisorFactory, reactorFactory);
   }
 
   /**
@@ -67,7 +69,7 @@ public class AgentService {
     final CuratorInterface curator = new ZooKeeperCurator(client);
 
     try {
-      // TODO: this logic should probably live in the worker
+      // TODO: this logic should probably live in the agent
       curator.ensurePath(format("/config/agents/%s/jobs", config.getName()));
       curator.ensurePath(format("/status/agents/%s/jobs", config.getName()));
       final String upNode = format("/status/agents/%s/up", config.getName());
@@ -83,10 +85,10 @@ public class AgentService {
   }
 
   /**
-   * Set up a worker state using zookeeper.
+   * Set up an agent state using zookeeper.
    *
    * @param config The service configuration.
-   * @return A worker state.
+   * @return An agent state.
    */
   private State setupState(final AgentConfig config) {
     final CuratorInterface curator = new ZooKeeperCurator(zooKeeperClient);
@@ -103,19 +105,20 @@ public class AgentService {
    * Start the agent.
    */
   public void start() {
+    agent.start();
   }
 
   /**
    * Stop the agent.
    */
   public void stop() {
-    worker.close();
+    agent.close();
 
     if (zooKeeperClient != null) {
       zooKeeperClient.close();
     }
 
-    worker.close();
+    agent.close();
   }
 }
 

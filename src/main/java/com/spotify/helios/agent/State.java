@@ -16,35 +16,45 @@ import java.util.Map;
 public interface State {
 
   /**
-   * Get a map of the desired containers.
+   * Get a map of the desired jobs.
    *
-   * @return A map of container names to descriptors.
+   * @return A map of jobs names to descriptors.
    */
   Map<String, AgentJobDescriptor> getJobs();
 
   /**
-   * Register container state.
+   * Get a map of the job statuses.
    *
+   * @return A map of job names to statuses.
+   */
+  Map<String, JobStatus> getJobStatuses();
+
+  /**
+   * Register job status.
+   *
+   * @param name
    * @param state The container state.
    */
   void setJobStatus(final String name, JobStatus state);
 
   /**
-   * Get registered container state.
+   * Get registered job status.
+   * @param name
+   * @return
    */
   JobStatus getJobStatus(String name);
 
   /**
-   * Deregister a running container.
+   * Remove a job status.
    *
-   * @param name The container name.
+   * @param name The job name.
    */
   void removeJobStatus(String name);
 
   /**
-   * Add a listener for changes to the desired set of applications.
+   * Add a listener for changes to the desired set of jobs.
    *
-   * @param listener A listener that will be called when the desired set of applications changes.
+   * @param listener A listener that will be called when the desired set of jobs changes.
    * @see Listener
    */
   void addListener(Listener listener);
@@ -66,6 +76,6 @@ public interface State {
      *
      * @param state This state.
      */
-    void containersUpdated(State state);
+    void jobsUpdated(State state);
   }
 }
