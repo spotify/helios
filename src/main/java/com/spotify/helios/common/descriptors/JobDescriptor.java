@@ -14,9 +14,11 @@ import com.spotify.helios.common.Json;
 import java.io.IOException;
 import java.util.List;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
+import static com.spotify.helios.common.Hash.sha1digest;
 
 public class JobDescriptor extends Descriptor {
 
@@ -157,12 +159,16 @@ public class JobDescriptor extends Descriptor {
     }
 
     public JobDescriptor build() {
-      final String hash;
+      final String configHash;
       try {
-        hash = hex(Json.sha1digest(p));
+        configHash = hex(Json.sha1digest(p));
       } catch (IOException e) {
         throw propagate(e);
       }
+
+      final String input = String.format("%s:%s:%s", p.name, p.version, configHash);
+      final String hash = hex(sha1digest(input.getBytes(UTF_8)));
+
       if (this.hash != null) {
         checkArgument(this.hash.equals(hash));
       }

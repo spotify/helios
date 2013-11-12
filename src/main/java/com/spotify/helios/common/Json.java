@@ -14,13 +14,10 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.Map;
 
 import static com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHABETICALLY;
 import static com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS;
-import static com.google.common.base.Throwables.propagate;
 
 public class Json {
 
@@ -30,16 +27,6 @@ public class Json {
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE =
       new TypeReference<Map<String, Object>>() {};
-
-  private static final MessageDigest SHA1;
-
-  static {
-    try {
-      SHA1 = MessageDigest.getInstance("SHA-1");
-    } catch (NoSuchAlgorithmException e) {
-      throw propagate(e);
-    }
-  }
 
   public static byte[] asBytes(final Object value) throws JsonProcessingException {
     return OBJECT_MAPPER.writeValueAsBytes(value);
@@ -86,6 +73,6 @@ public class Json {
 
   public static byte[] sha1digest(final Map<String, ?> o) throws IOException {
     final byte[] bytes = OBJECT_MAPPER.writeValueAsBytes(o);
-    return SHA1.digest(bytes);
+    return Hash.sha1digest(bytes);
   }
 }
