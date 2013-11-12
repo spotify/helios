@@ -37,7 +37,7 @@ import java.util.concurrent.TimeoutException;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Uninterruptibles.getUninterruptibly;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
-import static com.spotify.helios.common.descriptors.JobStatus.State.CREATED;
+import static com.spotify.helios.common.descriptors.JobStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.JobStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.JobStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.JobStatus.State.STARTING;
@@ -311,10 +311,10 @@ class Supervisor {
         if (containerInfo != null && containerInfo.state.running) {
           containerId = registeredContainerId;
         } else {
+          setStatus(CREATING, null);
           final ContainerConfig containerConfig = containerConfig(descriptor);
           final ContainerCreateResponse container = docker.createContainer(containerConfig).get();
           containerId = container.id;
-          setStatus(CREATED, containerId);
           log.info("created container: {}: {}", descriptor, container);
 
           setStatus(STARTING, containerId);

@@ -8,10 +8,12 @@ import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.jetbrains.annotations.Nullable;
+
 public class JobStatus extends Descriptor {
 
   public enum State {
-    CREATED,
+    CREATING,
     STARTING,
     RUNNING,
     EXITED,
@@ -24,12 +26,13 @@ public class JobStatus extends Descriptor {
 
   public JobStatus(@JsonProperty("job") final JobDescriptor job,
                    @JsonProperty("state") final State state,
-                   @JsonProperty("id") final String id) {
+                   @Nullable @JsonProperty("id") final String id) {
     this.id = id;
     this.state = state;
     this.job = job;
   }
 
+  @Nullable
   public String getId() {
     return id;
   }

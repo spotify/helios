@@ -28,10 +28,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
-import static com.spotify.helios.common.descriptors.JobStatus.State.CREATED;
+import static com.spotify.helios.common.descriptors.JobStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.JobStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.JobStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.JobStatus.State.STOPPED;
@@ -89,14 +88,13 @@ public class SupervisorTest {
     when(docker.getImages(IMAGE)).thenReturn(immediateFuture(DOCKER_IMAGES));
 
     final ConcurrentMap<String, JobStatus> statusMap = Maps.newConcurrentMap();
-    final AtomicReference<JobStatus> statusHolder = new AtomicReference<>();
     doAnswer(new Answer() {
       @Override
       public Object answer(final InvocationOnMock invocationOnMock) {
         final Object[] arguments = invocationOnMock.getArguments();
         final String name = (String) arguments[0];
         final JobStatus status = (JobStatus) arguments[1];
-        statusMap.putIfAbsent(name, status);
+        statusMap.put(name, status);
         return null;
       }
     }).when(state).setJobStatus(eq(NAME), any(JobStatus.class));
@@ -141,19 +139,19 @@ public class SupervisorTest {
 
     // Verify that the container is created
     verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture());
+    verify(state, timeout(1000)).setJobStatus(eq(NAME),
+                                              eq(new JobStatus(DESCRIPTOR, CREATING, null)));
+    assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
     assertEquals(IMAGE, containerConfig.getImage());
-    verify(state, timeout(1000)).setJobStatus(eq(NAME),
-                                              eq(new JobStatus(DESCRIPTOR, CREATED, containerId)));
-    assertEquals(CREATED, sut.getStatus());
 
     // Verify that the container is started
     verify(docker, timeout(1000)).startContainer(containerId);
-    startFuture.set(null);
     verify(state, timeout(1000)).setJobStatus(eq(NAME),
                                               eq(new JobStatus(DESCRIPTOR, STARTING, containerId)));
     assertEquals(STARTING, sut.getStatus());
+    startFuture.set(null);
 
     verify(docker, timeout(1000)).waitContainer(containerId);
     verify(state, timeout(1000)).setJobStatus(eq(NAME),
@@ -171,7 +169,7 @@ public class SupervisorTest {
         sut.stop();
       }
     });
-    verify(docker, timeout(1000)).kill(eq(containerId));
+    verify(docker, timeout(100000)).kill(eq(containerId));
 
     // Change docker container state to stopped when it's killed
     when(docker.inspectContainer(eq(containerId))).thenReturn(immediateFuture(stoppedResponse));

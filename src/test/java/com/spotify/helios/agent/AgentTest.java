@@ -27,7 +27,7 @@ import java.util.Map;
 
 import static com.spotify.helios.common.descriptors.JobGoal.START;
 import static com.spotify.helios.common.descriptors.JobGoal.STOP;
-import static com.spotify.helios.common.descriptors.JobStatus.State.CREATED;
+import static com.spotify.helios.common.descriptors.JobStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.JobStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.JobStatus.State.STOPPED;
 import static java.util.Arrays.asList;
@@ -128,7 +128,7 @@ public class AgentTest {
     configure(FOO_DESCRIPTOR, START);
     configure(BAR_DESCRIPTOR, STOP);
 
-    jobStatuses.put(FOO_DESCRIPTOR.getId(), new JobStatus(FOO_DESCRIPTOR, CREATED, "foo-container-1"));
+    jobStatuses.put(FOO_DESCRIPTOR.getId(), new JobStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1"));
     jobStatuses.put(BAR_DESCRIPTOR.getId(), new JobStatus(BAR_DESCRIPTOR, RUNNING, "bar-container-1"));
 
     when(fooSupervisor.isStarting()).thenReturn(false);
@@ -152,7 +152,8 @@ public class AgentTest {
 
   @Test
   public void verifyAgentRecoversStateAndStopsUndesiredSupervisors() {
-    jobStatuses.put(FOO_DESCRIPTOR.getId(), new JobStatus(FOO_DESCRIPTOR, CREATED, "foo-container-1"));
+    jobStatuses.put(FOO_DESCRIPTOR.getId(),
+                    new JobStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1"));
 
     startAgent();
 
