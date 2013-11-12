@@ -53,8 +53,9 @@ class Supervisor {
 
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
-  private static final long RESTART_INTERVAL_MILLIS = 100;
-  private static final long RETRY_INTERVAL_MILLIS = 1000;
+  private static final long DEFAULT_RESTART_INTERVAL_MILLIS = 100;
+  private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
+
 
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
       new ThreadFactoryBuilder().setNameFormat("helios-supervisor-runner-%d").build();
@@ -63,9 +64,11 @@ class Supervisor {
 
   private final AsyncDockerClient docker;
 
-  private final State state;
   private final String name;
   private final JobDescriptor descriptor;
+  private final State state;
+  private final long restartIntervalMillis;
+  private final long retryIntervalMillis;
 
   private volatile Runner runner;
   private volatile boolean closed;
@@ -78,12 +81,15 @@ class Supervisor {
    * @param descriptor The job descriptor.
    * @param state      The worker state to use.
    */
-  public Supervisor(final String name, final JobDescriptor descriptor,
-                    final State state, final AsyncDockerClient dockerClient) {
-    this.name = name;
-    this.descriptor = descriptor;
+  private Supervisor(final String name, final JobDescriptor descriptor,
+                     final State state, final AsyncDockerClient dockerClient,
+                     final long restartIntervalMillis, final long retryIntervalMillis) {
+    this.name = checkNotNull(name);
+    this.descriptor = checkNotNull(descriptor);
     this.state = checkNotNull(state);
-    this.docker = dockerClient;
+    this.docker = checkNotNull(dockerClient);
+    this.restartIntervalMillis = restartIntervalMillis;
+    this.retryIntervalMillis = retryIntervalMillis;
   }
 
   /**
@@ -137,15 +143,19 @@ class Supervisor {
       @Override
       public void onSuccess(final Integer exitCode) {
         synchronized (sync) {
-          startJob(RESTART_INTERVAL_MILLIS);
+          startJob(restartIntervalMillis);
         }
       }
 
       @Override
       public void onFailure(final Throwable t) {
-        log.error("exception in job runner", t);
+        if (t instanceof InterruptedException) {
+          log.debug("job runner interrupted", t);
+        } else {
+          log.error("job runner threw exception", t);
+        }
         synchronized (sync) {
-          startJob(RETRY_INTERVAL_MILLIS);
+          startJob(retryIntervalMillis);
         }
       }
     });
@@ -368,6 +378,58 @@ class Supervisor {
         Json.readValues(stream, new TypeReference<Map<String, Object>>() {});
     while (messages.hasNext()) {
       log.info("{}: {}", operation, messages.next());
+    }
+  }
+
+  public static Builder newBuilder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+
+    private Builder() {
+    }
+
+    private String name;
+    private JobDescriptor descriptor;
+    private State state;
+    private AsyncDockerClient dockerClient;
+    private long restartIntervalMillis = DEFAULT_RESTART_INTERVAL_MILLIS;
+    private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
+
+    public Builder setName(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder setDescriptor(final JobDescriptor descriptor) {
+      this.descriptor = descriptor;
+      return this;
+    }
+
+    public Builder setState(final State state) {
+      this.state = state;
+      return this;
+    }
+
+    public Builder setDockerClient(final AsyncDockerClient dockerClient) {
+      this.dockerClient = dockerClient;
+      return this;
+    }
+
+    public Builder setRestartIntervalMillis(final long restartIntervalMillis) {
+      this.restartIntervalMillis = restartIntervalMillis;
+      return this;
+    }
+
+    public Builder setRetryIntervalMillis(final long retryIntervalMillis) {
+      this.retryIntervalMillis = retryIntervalMillis;
+      return this;
+    }
+
+    public Supervisor build() {
+      return new Supervisor(name, descriptor, state, dockerClient, restartIntervalMillis,
+                            retryIntervalMillis);
     }
   }
 }

@@ -27,6 +27,11 @@ public class SupervisorFactory {
    */
   public Supervisor create(final String name, final JobDescriptor descriptor) {
     final AsyncDockerClient dockerClient = new AsyncDockerClient(dockerClientFactory);
-    return new Supervisor(name, descriptor, state, dockerClient);
+    return Supervisor.newBuilder()
+        .setName(name)
+        .setDescriptor(descriptor)
+        .setState(state)
+        .setDockerClient(dockerClient)
+        .build();
   }
 }

@@ -50,4 +50,36 @@ public class JobStatus extends Descriptor {
         .add("id", id)
         .toString();
   }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final JobStatus status = (JobStatus) o;
+
+    if (id != null ? !id.equals(status.id) : status.id != null) {
+      return false;
+    }
+    if (job != null ? !job.equals(status.job) : status.job != null) {
+      return false;
+    }
+    if (state != status.state) {
+      return false;
+    }
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    int result = job != null ? job.hashCode() : 0;
+    result = 31 * result + (state != null ? state.hashCode() : 0);
+    result = 31 * result + (id != null ? id.hashCode() : 0);
+    return result;
+  }
 }

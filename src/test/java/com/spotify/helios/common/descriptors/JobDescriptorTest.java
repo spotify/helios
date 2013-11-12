@@ -24,7 +24,7 @@ public class JobDescriptorTest {
   @Test
   public void verifySha1ID() throws IOException {
     final Map<String, Object> expectedConfig = ImmutableMap.of("command", asList("foo", "bar"),
-                                                               "image", "foobar:4711",
+                                                               "image", "testStartStop:4711",
                                                                "name", "foozbarz",
                                                                "version", "17");
 
@@ -34,7 +34,7 @@ public class JobDescriptorTest {
 
     final JobDescriptor descriptor = JobDescriptor.newBuilder()
         .setCommand(asList("foo", "bar"))
-        .setImage("foobar:4711")
+        .setImage("testStartStop:4711")
         .setName("foozbarz")
         .setVersion("17")
         .build();
