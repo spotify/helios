@@ -61,9 +61,7 @@ public class ZooKeeperCoordinatorIntegrationTest {
   private File tempDir;
   private ZooKeeperServer zkServer;
   private ServerCnxnFactory cnxnFactory;
-
   private CuratorInterface curator;
-
   private ZooKeeperCoordinator coordinator;
 
   @Before
@@ -102,6 +100,17 @@ public class ZooKeeperCoordinatorIntegrationTest {
   private void stopZookeeper() throws Exception {
     cnxnFactory.shutdown();
     zkServer.shutdown();
+  }
+
+  @Test
+  public void testAgentRemove() throws Exception {
+    coordinator.addAgent(AGENT);
+    List<String> agents1 = coordinator.getAgents();
+    assertThat(agents1, hasItem(AGENT));
+
+    coordinator.removeAgent(AGENT);
+    List<String> agents2 = coordinator.getAgents();
+    assertEquals(0, agents2.size());
   }
 
   @Test

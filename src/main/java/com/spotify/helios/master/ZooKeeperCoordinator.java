@@ -9,6 +9,7 @@ import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.AgentJobDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
+import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.coordination.CuratorInterface;
 import com.spotify.helios.common.coordination.JobAlreadyDeployedException;
 import com.spotify.helios.common.coordination.JobExistsException;
@@ -129,7 +130,24 @@ public class ZooKeeperCoordinator implements Coordinator {
 
   @Override
   public JobDescriptor removeJob(final String id) throws HeliosException {
-    throw new UnsupportedOperationException();
+    log.debug("removing job: id={}", id);
+    JobDescriptor old = getJob(id);
+
+    // TODO(drewc): this should be transactional -- possibly by tagging the job as
+    // attempting to delete so that no agents try to start it while we're deleting it
+    for (String agent : getAgents()) {
+      if (getAgentJob(agent, id) != null) {
+        throw new JobStillInUseException(id, agent);
+      }
+    }
+
+    try {
+      client.delete(Paths.configJob(id));
+    } catch (KeeperException e) {
+      throw new HeliosException("removing job " + id + " failed", e);
+    }
+
+    return old;
   }
 
   @Override

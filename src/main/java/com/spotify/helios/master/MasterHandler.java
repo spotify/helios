@@ -10,6 +10,7 @@ import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.AgentJobDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
+import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.coordination.JobAlreadyDeployedException;
 import com.spotify.helios.common.coordination.JobExistsException;
@@ -18,6 +19,7 @@ import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.protocol.AgentDeleteResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
+import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse.Status;
@@ -34,6 +36,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Map;
+
+import static com.spotify.hermes.message.StatusCode.FORBIDDEN;
 
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
@@ -113,7 +117,9 @@ public class MasterHandler extends MatchingHandler {
   public void jobDelete(final ServiceRequest request, final String id) throws Exception {
     try {
       coordinator.removeJob(id);
-      ok(request);
+      respond(request, OK, new JobDeleteResponse(JobDeleteResponse.Status.OK));
+    } catch (JobStillInUseException e) {
+      respond(request, FORBIDDEN, new JobDeleteResponse(JobDeleteResponse.Status.STILL_IN_USE));
     } catch (HeliosException e) {
       log.error("failed to remove job: {}", id, e);
       throw new RequestHandlerException(SERVER_ERROR);

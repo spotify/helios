@@ -5,6 +5,7 @@
 package com.spotify.helios;
 
 import com.google.common.io.Files;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
@@ -14,6 +15,7 @@ import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
+import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
@@ -23,6 +25,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
+import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -293,6 +296,8 @@ public class SystemTest {
     jobStatus = awaitJobState(control, agentName, jobId, RUNNING, 2, MINUTES);
     assertEquals(job, jobStatus.getJob());
 
+    assertEquals(JobDeleteResponse.Status.STILL_IN_USE, control.deleteJob(jobId).get().getStatus());
+
     // Wait for a while and make sure that the container is still running
     Thread.sleep(5000);
     final AgentStatus agentStatus = control.agentStatus(agentName).get();
@@ -309,6 +314,8 @@ public class SystemTest {
 
     // Wait for the container to enter the STOPPED state
     awaitJobState(control, agentName, jobId, STOPPED, 10, SECONDS);
+
+    assertEquals(JobDeleteResponse.Status.OK, control.deleteJob(jobId).get().getStatus());
   }
 
   private JobStatus awaitJobState(final Client controlClient, final String slave,

@@ -18,6 +18,7 @@ import com.spotify.helios.common.descriptors.Descriptor;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.protocol.AgentDeleteResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
+import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
@@ -34,6 +35,8 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import static com.spotify.hermes.message.StatusCode.FORBIDDEN;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
@@ -149,6 +152,11 @@ public class Client {
 
   public ListenableFuture<StatusCode> registerAgent(final String agent) {
     return put(uri("/agents/%s", agent));
+  }
+
+  public ListenableFuture<JobDeleteResponse> deleteJob(final String id) {
+    return transform(request(uri("/jobs/%s", id), "DELETE"),
+        ConvertResponseToPojo.create(JobDeleteResponse.class, ImmutableSet.of(OK, FORBIDDEN)));
   }
 
   public ListenableFuture<JobUndeployResponse> undeploy(final String jobId, final String host) {
