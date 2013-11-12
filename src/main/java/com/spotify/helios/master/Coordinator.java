@@ -5,7 +5,7 @@
 package com.spotify.helios.master;
 
 import com.spotify.helios.common.HeliosException;
-import com.spotify.helios.common.coordination.JobExistsException;
+import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;

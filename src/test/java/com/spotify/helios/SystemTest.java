@@ -4,6 +4,7 @@
 
 package com.spotify.helios;
 
+import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
@@ -203,6 +204,14 @@ public class SystemTest extends ZooKeeperTestBase {
                 "--hm", masterEndpoint,
                 "--zk", zookeeperEndpoint);
 
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    AgentStatus v = control.agentStatus(agentName).get();
+    assertNull(v); // for NOT_FOUND
+
     startAgent("-vvvv",
                "--no-log-setup",
                "--munin-port", "0",
@@ -210,20 +219,26 @@ public class SystemTest extends ZooKeeperTestBase {
                "--docker", dockerEndpoint,
                "--zk", zookeeperEndpoint);
 
-    final Client control = Client.newBuilder()
-        .setUser(TEST_USER)
-        .setEndpoints(masterEndpoint)
-        .build();
-
+    List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
     // Create a job
     final JobDescriptor job = JobDescriptor.newBuilder()
         .setName(jobName)
         .setVersion(jobVersion)
         .setImage("busybox")
-        .setCommand(asList("sh", "-c", "while :; do sleep 1; done"))
+        .setCommand(command)
         .build();
     final CreateJobResponse created = control.createJob(job).get();
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
+
+    final CreateJobResponse duplicateJob = control.createJob(job).get();
+    assertEquals(CreateJobResponse.Status.JOB_ALREADY_EXISTS, duplicateJob.getStatus());
+
+    final CreateJobResponse createIdMismatch = control.createJob(
+        new JobDescriptor("foo", jobName, jobVersion, "busyBox", command) {
+          @Override
+          public String getId() { return "BOOO"; }
+        }).get();
+    assertEquals(CreateJobResponse.Status.ID_MISMATCH, createIdMismatch.getStatus());
 
     // Wait for agent to come up
     awaitAgent(control, agentName, 10, SECONDS);
@@ -343,6 +358,10 @@ public class SystemTest extends ZooKeeperTestBase {
 
     // Create job
     final String jobId = createJob(jobName, jobVersion, jobImage, command);
+
+    final String duplicateJob = control(
+        "job", "create", jobName, jobVersion, jobImage, "--", command);
+    assertContains("JOB_ALREADY_EXISTS", duplicateJob);
 
     final String prestop = stopJob(jobId, TEST_AGENT);
     assertContains("JOB_NOT_DEPLOYED", prestop);

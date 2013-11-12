@@ -2,9 +2,7 @@
  * Copyright (C) 2013 Spotify AB
  */
 
-package com.spotify.helios.common.coordination;
-
-import com.spotify.helios.common.HeliosException;
+package com.spotify.helios.common;
 
 public class JobExistsException extends HeliosException {
 

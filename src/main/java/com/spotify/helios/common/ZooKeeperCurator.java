@@ -27,11 +27,13 @@ public class ZooKeeperCurator implements CuratorInterface {
   }
 
   @Override
+  /** {@inheritDoc} */
   public void ensurePath(final String path) throws KeeperException {
     ensurePath(path, false);
   }
 
   @Override
+  /** {@inheritDoc} */
   public void ensurePath(final String path, final boolean excludingLast) throws KeeperException {
     EnsurePath ensurePath = new EnsurePath(path);
     if (excludingLast) {

@@ -9,11 +9,11 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.AgentJobDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
+import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.coordination.JobAlreadyDeployedException;
-import com.spotify.helios.common.coordination.JobExistsException;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobDescriptor;
@@ -38,7 +38,6 @@ import java.io.IOException;
 import java.util.Map;
 
 import static com.spotify.hermes.message.StatusCode.FORBIDDEN;
-
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
 import static com.spotify.hermes.message.StatusCode.NOT_FOUND;
