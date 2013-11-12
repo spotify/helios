@@ -4,8 +4,6 @@
 
 package com.spotify.helios;
 
-import com.google.common.io.Files;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
@@ -19,23 +17,15 @@ import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
-import com.spotify.logging.UncaughtExceptionLogger;
 
 import org.apache.commons.lang.StringUtils;
-import org.apache.zookeeper.server.ServerCnxnFactory;
-import org.apache.zookeeper.server.ZooKeeperServer;
-import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.PrintStream;
-import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -44,7 +34,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
@@ -56,7 +45,6 @@ import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -64,38 +52,23 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 
 @RunWith(MockitoJUnitRunner.class)
-public class SystemTest {
+public class SystemTest extends ZooKeeperTestBase {
 
   private static final String BOGUS_JOB = "BOGUS_JOB";
   private static final String BOGUS_AGENT = "BOGUS_AGENT";
 
-  private static final AtomicInteger PORT_COUNTER = new AtomicInteger(5000);
-
   private static final String TEST_USER = "TestUser";
   private static final String TEST_AGENT = "test-agent";
 
-  private final int masterPort = PORT_COUNTER.incrementAndGet();
+  private final int masterPort = ZooKeeperTestBase.PORT_COUNTER.incrementAndGet();
   private final String masterEndpoint = "tcp://localhost:" + masterPort;
-
-  private final int zookeeperPort = PORT_COUNTER.incrementAndGet();
-  private final String zookeeperEndpoint = "localhost:" + zookeeperPort;
 
   private final String dockerEndpoint = getDockerEndpoint();
 
-  private File tempDir;
   private List<ServiceMain> mains = newArrayList();
   private final ExecutorService executorService = Executors.newCachedThreadPool();
-  private ZooKeeperServer zkServer;
-  private ServerCnxnFactory cnxnFactory;
 
-  @Before
-  public void setup() throws Exception {
-    UncaughtExceptionLogger.setDefaultUncaughtExceptionHandler();
-    tempDir = Files.createTempDir();
-
-    startZookeeper(tempDir);
-  }
-
+  @Override
   @After
   public void teardown() throws Exception {
     for (final ServiceMain main : mains) {
@@ -104,26 +77,10 @@ public class SystemTest {
     }
     mains = null;
 
-    stopZookeeper();
-
     executorService.shutdownNow();
     executorService.awaitTermination(30, SECONDS);
 
-    deleteDirectory(tempDir);
-    tempDir = null;
-  }
-
-  private void startZookeeper(final File tempDir) throws Exception {
-    zkServer = new ZooKeeperServer();
-    zkServer.setTxnLogFactory(new FileTxnSnapLog(tempDir, tempDir));
-    cnxnFactory = ServerCnxnFactory.createFactory();
-    cnxnFactory.configure(new InetSocketAddress(zookeeperPort), 0);
-    cnxnFactory.startup(zkServer);
-  }
-
-  private void stopZookeeper() throws Exception {
-    cnxnFactory.shutdown();
-    zkServer.shutdown();
+    super.teardown();
   }
 
   private ByteArrayOutputStream main(final String... args) throws Exception {

@@ -1,7 +1,6 @@
 package com.spotify.helios;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.io.Files;
 import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
@@ -16,24 +15,15 @@ import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.descriptors.JobGoal;
 import com.spotify.helios.master.ZooKeeperCoordinator;
-import com.spotify.logging.UncaughtExceptionLogger;
 
-import org.apache.zookeeper.server.ServerCnxnFactory;
-import org.apache.zookeeper.server.ZooKeeperServer;
-import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.io.File;
-import java.net.InetSocketAddress;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
@@ -41,7 +31,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ZooKeeperCoordinatorIntegrationTest {
+public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
   private static final String IMAGE = "IMAGE";
   private static final String COMMAND = "COMMAND";
   private static final String JOB_NAME = "JOB_NAME";
@@ -53,23 +43,11 @@ public class ZooKeeperCoordinatorIntegrationTest {
       .setVersion("VERSION")
       .build();
 
-  private static final AtomicInteger PORT_COUNTER = new AtomicInteger(5000);
-
-  private final int zookeeperPort = PORT_COUNTER.incrementAndGet();
-  private final String zookeeperEndpoint = "localhost:" + zookeeperPort;
-
-  private File tempDir;
-  private ZooKeeperServer zkServer;
-  private ServerCnxnFactory cnxnFactory;
   private CuratorInterface curator;
   private ZooKeeperCoordinator coordinator;
 
   @Before
   public void setup() throws Exception {
-    UncaughtExceptionLogger.setDefaultUncaughtExceptionHandler();
-    tempDir = Files.createTempDir();
-
-    startZookeeper(tempDir);
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
 
     final CuratorFramework client = CuratorFrameworkFactory.newClient(
@@ -79,27 +57,6 @@ public class ZooKeeperCoordinatorIntegrationTest {
     curator = new ZooKeeperCurator(client);
 
     coordinator = new ZooKeeperCoordinator(curator);
-  }
-
-  @After
-  public void teardown() throws Exception {
-    stopZookeeper();
-
-    deleteDirectory(tempDir);
-    tempDir = null;
-  }
-
-  private void startZookeeper(final File tempDir) throws Exception {
-    zkServer = new ZooKeeperServer();
-    zkServer.setTxnLogFactory(new FileTxnSnapLog(tempDir, tempDir));
-    cnxnFactory = ServerCnxnFactory.createFactory();
-    cnxnFactory.configure(new InetSocketAddress(zookeeperPort), 0);
-    cnxnFactory.startup(zkServer);
-  }
-
-  private void stopZookeeper() throws Exception {
-    cnxnFactory.shutdown();
-    zkServer.shutdown();
   }
 
   @Test
