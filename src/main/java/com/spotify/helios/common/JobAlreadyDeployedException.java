@@ -1,6 +1,4 @@
-package com.spotify.helios.common.coordination;
-
-import com.spotify.helios.common.HeliosException;
+package com.spotify.helios.common;
 
 public class JobAlreadyDeployedException extends HeliosException {
 

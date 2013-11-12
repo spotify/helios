@@ -8,11 +8,11 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.AgentJobDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
+import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.coordination.CuratorInterface;
-import com.spotify.helios.common.coordination.JobAlreadyDeployedException;
-import com.spotify.helios.common.coordination.JobExistsException;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentJobDescriptor;
@@ -114,7 +114,12 @@ public class ZooKeeperCoordinator implements Coordinator {
     log.debug("getting jobs");
     final String folder = Paths.configJobs();
     try {
-      final List<String> ids = client.getChildren(folder);
+      final List<String> ids;
+      try {
+        ids = client.getChildren(folder);
+      } catch (NoNodeException e) {
+        return Maps.newHashMap();
+      }
       final Map<String, JobDescriptor> descriptors = Maps.newHashMap();
       for (final String id : ids) {
         final String path = Paths.configJobPath(id);
