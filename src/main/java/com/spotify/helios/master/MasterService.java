@@ -19,15 +19,21 @@ import com.spotify.hermes.message.Message;
 import com.spotify.hermes.service.ReplyHandler;
 import com.spotify.hermes.service.RequestHandler;
 import com.spotify.hermes.service.Server;
+import com.spotify.nameless.client.Nameless;
+import com.spotify.nameless.client.NamelessRegistrar;
+import com.spotify.nameless.client.RegistrationHandle;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricsRegistry;
-
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.concurrent.ExecutionException;
 
+import static com.google.common.base.Throwables.propagate;
 import static com.spotify.hermes.message.ProtocolVersion.V2;
 
 /**
@@ -43,6 +49,10 @@ public class MasterService {
   private final String hermesEndpoint;
   private final HttpServer httpServer;
   private final InetSocketAddress httpEndpoint;
+  private final NamelessRegistrar registrar;
+  private RegistrationHandle namelessHermesHandle;
+  private RegistrationHandle namelessHttpHandle;
+
 
   /**
    * Create a new service instance. Initializes the control interface and the worker.
@@ -74,6 +84,15 @@ public class MasterService {
                                         30000,
                                         "helios");
     httpServer = new HttpServer(requestDispatcher, new HttpServer.Config(), statistics);
+
+    // TODO: There is a nameless pull request to add the newRegistrar method
+    // (https://ghe.spotify.net/nameless/nameless-client/pull/9). Uncomment
+    // the two lines below once that is merged.
+    // localhost is used by system test
+    registrar =
+//        config.getSite().equals("localhost") ?
+//        Nameless.newRegistrar("tcp://localhost:4999") :
+        Nameless.newRegistrarForDomain(config.getSite());
   }
 
   /**
@@ -109,12 +128,31 @@ public class MasterService {
     log.info("http: {}:{}", httpEndpoint.getHostString(), httpEndpoint.getPort());
     hermesServer.bind(hermesEndpoint);
     httpServer.bind(httpEndpoint);
+
+    try {
+      log.info("registering with nameless");
+      final int hermesPort = new URI(hermesEndpoint).getPort();
+      namelessHermesHandle = registrar.register("helios", "hm", hermesPort).get();
+      namelessHttpHandle = registrar.register("helios", "http", httpEndpoint.getPort()).get();
+    } catch(InterruptedException | ExecutionException | URISyntaxException e) {
+      throw propagate(e);
+    }
   }
 
   /**
    * Stop the service. Tears down the control interfaces.
    */
   public void stop() {
+    if (namelessHttpHandle != null) {
+      registrar.unregister(namelessHttpHandle);
+    }
+
+    if (namelessHermesHandle != null) {
+      registrar.unregister(namelessHermesHandle);
+    }
+
+    registrar.shutdown();
+
     if (hermesServer != null) {
       hermesServer.stop();
     }

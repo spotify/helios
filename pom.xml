@@ -125,6 +125,11 @@
       <artifactId>argparse4j</artifactId>
       <version>0.4.1</version>
     </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>nameless-client</artifactId>
+      <version>0.2.1</version>
+    </dependency>
 
     <!--test scope-->
     <dependency>
