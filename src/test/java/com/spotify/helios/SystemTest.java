@@ -4,7 +4,7 @@
 
 package com.spotify.helios;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.kpelykh.docker.client.DockerClient;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
@@ -381,6 +381,147 @@ public class SystemTest extends ZooKeeperTestBase {
     undeployJob(jobId, TEST_AGENT);
 
     assertContains(TEST_AGENT + ": done", deleteAgent(TEST_AGENT));
+  }
+
+  /**
+   * Verifies that:
+   *
+   * 1. The container is kept running when the agent is restarted.
+   * 2. A container that died while the agent was down is restarted when the agent comes up.
+   * 3. The container for a job that was undeployed while the agent was down is killed when the
+   * agent comes up again.
+   */
+  @Test
+  public void testAgentRestart() throws Exception {
+    final String agentName = "foobar";
+    final String jobName = "foo";
+    final String jobVersion = "17";
+
+    startMaster("-vvvv",
+                "--no-log-setup",
+                "--munin-port", "0",
+                "--hm", masterEndpoint,
+                "--zk", zookeeperEndpoint);
+
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    AgentStatus v = control.agentStatus(agentName).get();
+    assertNull(v); // for NOT_FOUND
+
+    final AgentMain agent1 = startAgent("-vvvv",
+                                        "--no-log-setup",
+                                        "--munin-port", "0",
+                                        "--name", agentName,
+                                        "--docker", dockerEndpoint,
+                                        "--zk", zookeeperEndpoint);
+
+    // A simple netcat echo server
+    final List<String> command =
+        asList("bash", "-c",
+               "DEBIAN_FRONTEND=noninteractive apt-get install -q -y nmap && ncat -l -p 4711 -c \"while true; do read i && echo $i; done\"");
+
+    // TODO (dano): connect to the server during the test and verify that the connection is never broken
+
+    // Create a job
+    final JobDescriptor job = JobDescriptor.newBuilder()
+        .setName(jobName)
+        .setVersion(jobVersion)
+        .setImage("ubuntu:12.04")
+        .setCommand(command)
+        .build();
+    final CreateJobResponse created = control.createJob(job).get();
+    assertEquals(CreateJobResponse.Status.OK, created.getStatus());
+
+    final CreateJobResponse duplicateJob = control.createJob(job).get();
+    assertEquals(CreateJobResponse.Status.JOB_ALREADY_EXISTS, duplicateJob.getStatus());
+
+    // Wait for agent to come up
+    awaitAgent(control, agentName, 10, SECONDS);
+
+    // Deploy the job on the agent
+    final String jobId = format("%s:%s:%s", jobName, jobVersion, job.getHash());
+    final AgentJob agentJob = AgentJob.of(jobId, START);
+    final JobDeployResponse deployed = control.deploy(agentJob, agentName).get();
+    assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
+
+    // Check that the job is in the desired state
+    final AgentJob fetchedAgentJob = control.stat(agentName, jobId).get();
+    assertEquals(agentJob, fetchedAgentJob);
+
+    // Wait for the job to run
+    final JobStatus firstJobStatus = awaitJobState(control, agentName, jobId, RUNNING, 2, MINUTES);
+    assertEquals(job, firstJobStatus.getJob());
+
+    // Stop the agent
+    agent1.stopAsync().awaitTerminated();
+
+    // TODO: Wait for the agent to become DOWN
+    Thread.sleep(1000);
+
+    // Start the agent again
+    final AgentMain agent2 = startAgent("-vvvv",
+                                        "--no-log-setup",
+                                        "--munin-port", "0",
+                                        "--name", agentName,
+                                        "--docker", dockerEndpoint,
+                                        "--zk", zookeeperEndpoint);
+
+    // Wait for a while and make sure that the same container is still running
+    Thread.sleep(5000);
+    final AgentStatus agentStatus = control.agentStatus(agentName).get();
+    final JobStatus jobStatus = agentStatus.getStatuses().get(jobId);
+    assertEquals(RUNNING, jobStatus.getState());
+    assertEquals(firstJobStatus.getId(), jobStatus.getId());
+
+    // Stop the agent
+    agent2.stopAsync().awaitTerminated();
+
+    // Kill the container
+    final DockerClient dockerClient = new DockerClient(dockerEndpoint);
+    dockerClient.stopContainer(firstJobStatus.getId());
+
+    // Start the agent again
+    final AgentMain agent3 = startAgent("-vvvv",
+                                        "--no-log-setup",
+                                        "--munin-port", "0",
+                                        "--name", agentName,
+                                        "--docker", dockerEndpoint,
+                                        "--zk", zookeeperEndpoint);
+
+    // Wait for the job to be restarted in a new container
+    final JobStatus restartedJobStatus = await(1, MINUTES, new Callable<JobStatus>() {
+      @Override
+      public JobStatus call() throws Exception {
+        final AgentStatus agentStatus = control.agentStatus(agentName).get();
+        final JobStatus jobStatus = agentStatus.getStatuses().get(jobId);
+        return (jobStatus != null && jobStatus.getId() != firstJobStatus.getId()) ? jobStatus
+                                                                                  : null;
+      }
+    });
+
+    // Stop the agent
+    agent3.stopAsync().awaitTerminated();
+
+    // TODO: Wait for the agent to become DOWN
+    Thread.sleep(1000);
+
+    // Undeploy the container
+    final JobUndeployResponse undeployed = control.undeploy(jobId, agentName).get();
+    assertEquals(JobUndeployResponse.Status.OK, undeployed.getStatus());
+
+    // Start the agent again
+    final AgentMain agent4 = startAgent("-vvvv",
+                                        "--no-log-setup",
+                                        "--munin-port", "0",
+                                        "--name", agentName,
+                                        "--docker", dockerEndpoint,
+                                        "--zk", zookeeperEndpoint);
+
+    // Wait for the job to enter the STOPPED state
+    awaitJobState(control, agentName, jobId, STOPPED, 10, SECONDS);
   }
 
   private String stopJob(String jobId, String agent) throws Exception {
