@@ -43,7 +43,7 @@ Vagrant::Config.run do |config|
         "echo '\"vagrant reload\" can be used in about 2 minutes to activate the new guest additions.'; "
     end
     # Set up to listen on TCP
-    pkg_cmd << "grep '0.0.0.0' /etc/init/docker.conf || sed -e 's/-d/-d -H 0.0.0.0:4243/' /etc/init/docker.conf -i;\n"
+    pkg_cmd << "grep '0.0.0.0' /etc/init/docker.conf || sed -e 's/-d/-d -H 0.0.0.0:4243 -H 0.0.0.0:4160 -H unix:\\/\\/\\/var\\/run\\/docker.sock/' /etc/init/docker.conf -i;\n"
     # Add vagrant user to the docker group
     pkg_cmd << "usermod -a -G docker vagrant; "
     # Activate new kernel
