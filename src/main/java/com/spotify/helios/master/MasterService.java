@@ -91,13 +91,9 @@ public class MasterService {
     this.httpServer = new HttpServer(requestDispatcher, new HttpServer.Config(), statistics);
 
     if (config.getSite() != null)  {
-      // TODO: There is a nameless pull request to add the newRegistrar method
-      // (https://ghe.spotify.net/nameless/nameless-client/pull/9). Uncomment
-      // the two lines below once that is merged.
-      // localhost is used by system test
       this.registrar =
-  //        config.getSite().equals("localhost") ?
-  //        Nameless.newRegistrar("tcp://localhost:4999") :
+          config.getSite().equals("localhost") ?
+          Nameless.newRegistrar("tcp://localhost:4999") :
           Nameless.newRegistrarForDomain(config.getSite());
     } else {
       this.registrar = null;

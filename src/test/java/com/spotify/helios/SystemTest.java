@@ -4,9 +4,8 @@
 
 package com.spotify.helios;
 
-import com.google.common.base.Charsets;
-
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Charsets;
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
 import com.spotify.helios.agent.AgentMain;
@@ -25,10 +24,15 @@ import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
+import com.spotify.hermes.Hermes;
+import com.spotify.nameless.Service;
+import com.spotify.nameless.api.EndpointFilter;
+import com.spotify.nameless.api.NamelessClient;
+import com.spotify.nameless.proto.Messages;
 import com.sun.jersey.api.client.ClientResponse;
-
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -65,6 +69,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -84,6 +89,15 @@ public class SystemTest extends ZooKeeperTestBase {
 
   private List<ServiceMain> mains = newArrayList();
   private final ExecutorService executorService = Executors.newCachedThreadPool();
+  private Service nameless;
+
+  @Override
+  @Before
+  public void setUp() throws Exception {
+    super.setUp();
+    nameless = new Service();
+    nameless.start();
+  }
 
   @Override
   @After
@@ -206,6 +220,49 @@ public class SystemTest extends ZooKeeperTestBase {
 
     final String listOutput = control("host", "jobs", "-q", host);
     assertNotContains(jobId.toString(), listOutput);
+  }
+
+  @Test
+  public void testNamelessRegistration() throws Exception {
+    startMaster("-vvvv",
+        "--no-log-setup",
+        "--munin-port", "0",
+        "--site", "localhost",
+        "--http", "0.0.0.0:5555",
+        "--hm", masterEndpoint,
+        "--zk", zookeeperEndpoint);
+
+    // sleep for half a second to give master time to register with nameless
+    Thread.sleep(500);
+    NamelessClient client = new NamelessClient(Hermes.newClient("tcp://localhost:4999"));
+    List<Messages.RegistryEntry> entries = client.queryEndpoints(EndpointFilter.everything()).get();
+
+    assertEquals("wrong number of nameless entries", 2, entries.size());
+
+    boolean httpFound = false;
+    boolean hermesFound = false;
+
+    for (Messages.RegistryEntry entry : entries) {
+      final Messages.Endpoint endpoint = entry.getEndpoint();
+      assertEquals("wrong service", "helios", endpoint.getService());
+      final String protocol = endpoint.getProtocol();
+
+      switch (protocol) {
+        case "hm":
+          hermesFound = true;
+          assertEquals("wrong port", endpoint.getPort(), masterPort);
+          break;
+        case "http":
+          httpFound = true;
+          assertEquals("wrong port", endpoint.getPort(), 5555);
+          break;
+        default:
+          fail("unknown protocol " + protocol);
+      }
+    }
+
+    assertTrue("missing hermes nameless entry", hermesFound);
+    assertTrue("missing http nameless entry", httpFound);
   }
 
   @Test

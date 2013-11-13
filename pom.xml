@@ -133,7 +133,7 @@
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>nameless-client</artifactId>
-      <version>0.2.1</version>
+      <version>0.2.2</version>
     </dependency>
 
     <!--test scope-->
@@ -147,7 +147,12 @@
       <artifactId>mockito-all</artifactId>
       <version>1.9.5</version>
     </dependency>
-
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>nameless-registry</artifactId>
+      <version>0.2.6-20131018.120309-1</version>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-library</artifactId>
