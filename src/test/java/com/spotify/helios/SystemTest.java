@@ -198,11 +198,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final String jobName = "foo";
     final String jobVersion = "17";
 
-    startMaster("-vvvv",
-                "--no-log-setup",
-                "--munin-port", "0",
-                "--hm", masterEndpoint,
-                "--zk", zookeeperEndpoint);
+    startDefaultMaster();
 
     final Client control = Client.newBuilder()
         .setUser(TEST_USER)
@@ -212,12 +208,7 @@ public class SystemTest extends ZooKeeperTestBase {
     AgentStatus v = control.agentStatus(agentName).get();
     assertNull(v); // for NOT_FOUND
 
-    startAgent("-vvvv",
-               "--no-log-setup",
-               "--munin-port", "0",
-               "--name", agentName,
-               "--docker", dockerEndpoint,
-               "--zk", zookeeperEndpoint);
+    startDefaultAgent(agentName);
 
     List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
     // Create a job
@@ -290,6 +281,23 @@ public class SystemTest extends ZooKeeperTestBase {
     assertEquals(JobDeleteResponse.Status.OK, control.deleteJob(jobId).get().getStatus());
   }
 
+  private void startDefaultMaster() throws Exception {
+    startMaster("-vvvv",
+                "--no-log-setup",
+                "--munin-port", "0",
+                "--hm", masterEndpoint,
+                "--zk", zookeeperEndpoint);
+  }
+
+  private AgentMain startDefaultAgent(final String agentName) throws Exception {
+    return startAgent("-vvvv",
+                      "--no-log-setup",
+                      "--munin-port", "0",
+                      "--name", agentName,
+                      "--docker", dockerEndpoint,
+                      "--zk", zookeeperEndpoint);
+  }
+
   private JobStatus awaitJobState(final Client controlClient, final String slave,
                                   final String jobId,
                                   final JobStatus.State state, final int timeout,
@@ -331,22 +339,11 @@ public class SystemTest extends ZooKeeperTestBase {
 
   @Test
   public void testServiceUsingCLI() throws Exception {
-    startMaster(
-        "-vvvv",
-        "--no-log-setup",
-        "--munin-port", "0",
-        "--zk", "localhost:" + zookeeperPort,
-        "--hm", masterEndpoint);
+    startDefaultMaster();
 
     assertContains("NOT_FOUND", deleteAgent(TEST_AGENT));
 
-    startAgent(
-        "-vvvv",
-        "--no-log-setup",
-        "--munin-port", "0",
-        "--zk", "localhost:" + zookeeperPort,
-        "--docker", dockerEndpoint,
-        "--name", TEST_AGENT);
+    startDefaultAgent(TEST_AGENT);
 
     final String jobName = "test";
     final String jobVersion = "17";
@@ -397,26 +394,14 @@ public class SystemTest extends ZooKeeperTestBase {
     final String jobName = "foo";
     final String jobVersion = "17";
 
-    startMaster("-vvvv",
-                "--no-log-setup",
-                "--munin-port", "0",
-                "--hm", masterEndpoint,
-                "--zk", zookeeperEndpoint);
+    startDefaultMaster();
 
-    final Client control = Client.newBuilder()
+    final Client client = Client.newBuilder()
         .setUser(TEST_USER)
         .setEndpoints(masterEndpoint)
         .build();
 
-    AgentStatus v = control.agentStatus(agentName).get();
-    assertNull(v); // for NOT_FOUND
-
-    final AgentMain agent1 = startAgent("-vvvv",
-                                        "--no-log-setup",
-                                        "--munin-port", "0",
-                                        "--name", agentName,
-                                        "--docker", dockerEndpoint,
-                                        "--zk", zookeeperEndpoint);
+    final AgentMain agent1 = startDefaultAgent(agentName);
 
     // A simple netcat echo server
     final List<String> command =
@@ -432,27 +417,20 @@ public class SystemTest extends ZooKeeperTestBase {
         .setImage("ubuntu:12.04")
         .setCommand(command)
         .build();
-    final CreateJobResponse created = control.createJob(job).get();
+    final String jobId = job.getId();
+    final CreateJobResponse created = client.createJob(job).get();
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
-    final CreateJobResponse duplicateJob = control.createJob(job).get();
-    assertEquals(CreateJobResponse.Status.JOB_ALREADY_EXISTS, duplicateJob.getStatus());
-
     // Wait for agent to come up
-    awaitAgent(control, agentName, 10, SECONDS);
+    awaitAgent(client, agentName, 10, SECONDS);
 
     // Deploy the job on the agent
-    final String jobId = format("%s:%s:%s", jobName, jobVersion, job.getHash());
     final AgentJob agentJob = AgentJob.of(jobId, START);
-    final JobDeployResponse deployed = control.deploy(agentJob, agentName).get();
+    final JobDeployResponse deployed = client.deploy(agentJob, agentName).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
-    // Check that the job is in the desired state
-    final AgentJob fetchedAgentJob = control.stat(agentName, jobId).get();
-    assertEquals(agentJob, fetchedAgentJob);
-
     // Wait for the job to run
-    final JobStatus firstJobStatus = awaitJobState(control, agentName, jobId, RUNNING, 2, MINUTES);
+    final JobStatus firstJobStatus = awaitJobState(client, agentName, jobId, RUNNING, 2, MINUTES);
     assertEquals(job, firstJobStatus.getJob());
 
     // Stop the agent
@@ -462,16 +440,11 @@ public class SystemTest extends ZooKeeperTestBase {
     Thread.sleep(1000);
 
     // Start the agent again
-    final AgentMain agent2 = startAgent("-vvvv",
-                                        "--no-log-setup",
-                                        "--munin-port", "0",
-                                        "--name", agentName,
-                                        "--docker", dockerEndpoint,
-                                        "--zk", zookeeperEndpoint);
+    final AgentMain agent2 = startDefaultAgent(agentName);
 
     // Wait for a while and make sure that the same container is still running
     Thread.sleep(5000);
-    final AgentStatus agentStatus = control.agentStatus(agentName).get();
+    final AgentStatus agentStatus = client.agentStatus(agentName).get();
     final JobStatus jobStatus = agentStatus.getStatuses().get(jobId);
     assertEquals(RUNNING, jobStatus.getState());
     assertEquals(firstJobStatus.getId(), jobStatus.getId());
@@ -484,18 +457,13 @@ public class SystemTest extends ZooKeeperTestBase {
     dockerClient.stopContainer(firstJobStatus.getId());
 
     // Start the agent again
-    final AgentMain agent3 = startAgent("-vvvv",
-                                        "--no-log-setup",
-                                        "--munin-port", "0",
-                                        "--name", agentName,
-                                        "--docker", dockerEndpoint,
-                                        "--zk", zookeeperEndpoint);
+    final AgentMain agent3 = startDefaultAgent(agentName);
 
     // Wait for the job to be restarted in a new container
-    final JobStatus restartedJobStatus = await(1, MINUTES, new Callable<JobStatus>() {
+    await(1, MINUTES, new Callable<JobStatus>() {
       @Override
       public JobStatus call() throws Exception {
-        final AgentStatus agentStatus = control.agentStatus(agentName).get();
+        final AgentStatus agentStatus = client.agentStatus(agentName).get();
         final JobStatus jobStatus = agentStatus.getStatuses().get(jobId);
         return (jobStatus != null && jobStatus.getId() != firstJobStatus.getId()) ? jobStatus
                                                                                   : null;
@@ -509,19 +477,14 @@ public class SystemTest extends ZooKeeperTestBase {
     Thread.sleep(1000);
 
     // Undeploy the container
-    final JobUndeployResponse undeployed = control.undeploy(jobId, agentName).get();
+    final JobUndeployResponse undeployed = client.undeploy(jobId, agentName).get();
     assertEquals(JobUndeployResponse.Status.OK, undeployed.getStatus());
 
     // Start the agent again
-    final AgentMain agent4 = startAgent("-vvvv",
-                                        "--no-log-setup",
-                                        "--munin-port", "0",
-                                        "--name", agentName,
-                                        "--docker", dockerEndpoint,
-                                        "--zk", zookeeperEndpoint);
+    startDefaultAgent(agentName);
 
     // Wait for the job to enter the STOPPED state
-    awaitJobState(control, agentName, jobId, STOPPED, 10, SECONDS);
+    awaitJobState(client, agentName, jobId, STOPPED, 10, SECONDS);
   }
 
   private String stopJob(String jobId, String agent) throws Exception {
