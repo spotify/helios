@@ -22,17 +22,20 @@ Vagrant::Config.run do |config|
     pkg_cmd = "export DEBIAN_FRONTEND=noninteractive; "
 
     # Add lxc-docker package
-    pkg_cmd = "wget -q -O - https://get.docker.io/gpg | apt-key add -;" \
-      "echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list;" \
-      "apt-get update -qq; apt-get install -q -y --force-yes lxc-docker; "
+    pkg_cmd << "wget -q -O - https://get.docker.io/gpg | apt-key add -; " \
+      "echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list; " \
+      "apt-get update -q; apt-get install -q -y --force-yes lxc-docker; "
+
     # Add Ubuntu raring backported kernel
     pkg_cmd << "apt-get update -qq; apt-get install -q -y linux-image-generic-lts-raring; "
+
     # Add guest additions if local vbox VM. As virtualbox is the default provider,
     # it is assumed it won't be explicitly stated.
     if ENV["VAGRANT_DEFAULT_PROVIDER"].nil? && ARGV.none? { |arg| arg.downcase.start_with?("--provider") }
       pkg_cmd << "apt-get install -q -y linux-headers-generic-lts-raring dkms; " \
         "echo 'Downloading VBox Guest Additions...'; " \
         "wget -q http://dlc.sun.com.edgesuite.net/virtualbox/4.2.12/VBoxGuestAdditions_4.2.12.iso; "
+
       # Prepare the VM to add guest additions after reboot
       pkg_cmd << "echo -e 'mount -o loop,ro /home/vagrant/VBoxGuestAdditions_4.2.12.iso /mnt\n" \
         "echo yes | /mnt/VBoxLinuxAdditions.run\numount /mnt\n" \
@@ -42,12 +45,16 @@ Vagrant::Config.run do |config|
         "echo 'Installation of VBox Guest Additions is proceeding in the background.'; " \
         "echo '\"vagrant reload\" can be used in about 2 minutes to activate the new guest additions.'; "
     end
+
     # Set up to listen on TCP
     pkg_cmd << "grep '0.0.0.0' /etc/init/docker.conf || sed -e 's/-d/-d -H 0.0.0.0:4243 -H 0.0.0.0:4160 -H unix:\\/\\/\\/var\\/run\\/docker.sock/' /etc/init/docker.conf -i;\n"
+
     # Add vagrant user to the docker group
     pkg_cmd << "usermod -a -G docker vagrant; "
+
     # Activate new kernel
     pkg_cmd << "shutdown -r +1; "
+
     config.vm.provision :shell, :inline => pkg_cmd
   end
 end
