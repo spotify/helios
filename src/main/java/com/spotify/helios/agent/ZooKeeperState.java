@@ -24,8 +24,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.netflix.curator.framework.recipes.cache.PathChildrenCache.StartMode.POST_INITIALIZED_EVENT;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static org.apache.zookeeper.KeeperException.NoNodeException;
 
@@ -33,15 +35,17 @@ public class ZooKeeperState extends AbstractState {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperState.class);
 
-  private final PathChildrenCache containers;
+  private final PathChildrenCache jobs;
+  private final CountDownLatch jobsInitialized = new CountDownLatch(1);
+
   private final CuratorInterface client;
   private final String agent;
 
   public ZooKeeperState(final CuratorInterface client, final String agent) {
     this.client = checkNotNull(client);
     this.agent = checkNotNull(agent);
-    this.containers = client.pathChildrenCache(Paths.configAgentJobs(agent), true);
-    containers.getListenable().addListener(new ContainersListener());
+    this.jobs = client.pathChildrenCache(Paths.configAgentJobs(agent), true);
+    jobs.getListenable().addListener(new ContainersListener());
   }
 
   private String jobId(final String path) {
@@ -122,7 +126,8 @@ public class ZooKeeperState extends AbstractState {
   public void start() {
     log.debug("starting");
     try {
-      containers.start();
+      jobs.start(POST_INITIALIZED_EVENT);
+      jobsInitialized.await();
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }
@@ -155,6 +160,9 @@ public class ZooKeeperState extends AbstractState {
           doRemoveJob(name);
           break;
         }
+        case INITIALIZED:
+          jobsInitialized.countDown();
+          break;
       }
     }
   }
