@@ -347,7 +347,8 @@ class Supervisor {
         if (pullStream != null) {
           try {
             pullStream.close();
-          } catch (IOException e) {
+          } catch (Exception e) {
+            // XXX (dano): catch Exception here as the guts of pullStream.close() might throw NPE.
             log.debug("exception when closing pull feedback stream", e);
           }
         }
