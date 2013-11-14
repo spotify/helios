@@ -315,11 +315,10 @@ public class SystemTest extends ZooKeeperTestBase {
 
   private void awaitAgent(final Client controlClient, final String slave, final int timeout,
                           final TimeUnit timeUnit) throws Exception {
-    await(timeout, timeUnit, new Callable<Boolean>() {
+    await(timeout, timeUnit, new Callable<AgentStatus>() {
       @Override
-      public Boolean call() throws Exception {
-        final AgentStatus agentStatus = controlClient.agentStatus(slave).get();
-        return agentStatus != null;
+      public AgentStatus call() throws Exception {
+        return controlClient.agentStatus(slave).get();
       }
     });
   }
@@ -465,7 +464,7 @@ public class SystemTest extends ZooKeeperTestBase {
       public JobStatus call() throws Exception {
         final AgentStatus agentStatus = client.agentStatus(agentName).get();
         final JobStatus jobStatus = agentStatus.getStatuses().get(jobId);
-        return (jobStatus != null && jobStatus.getId() != firstJobStatus.getId()) ? jobStatus
+        return (jobStatus != null && jobStatus.getId() != null && !jobStatus.getId().equals(firstJobStatus.getId())) ? jobStatus
                                                                                   : null;
       }
     });
