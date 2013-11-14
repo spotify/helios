@@ -1,0 +1,20 @@
+#!/bin/bash
+PUPPET_BRANCH=drewc/helios-system-test
+PROJECT=drewc
+for i in 1 2 3
+do   
+    spcloud create \
+      --project=$PROJECT \
+      --name=zookeeper-$i \
+      --branch=$PUPPET_BRANCH \
+      --classes=zookeeper::heliostest
+done
+
+for i in 1 2 3
+do
+    spcloud create \
+      --project=$PROJECT \
+      --name=helios-master-$i \
+      --branch=$PUPPET_BRANCH \
+      --classes=helios::master
+done
