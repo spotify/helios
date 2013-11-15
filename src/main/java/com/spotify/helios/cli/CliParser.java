@@ -16,6 +16,7 @@ import com.spotify.helios.cli.command.JobListCommand;
 import com.spotify.helios.cli.command.JobRemoveCommand;
 import com.spotify.helios.cli.command.JobStopCommand;
 import com.spotify.helios.cli.command.JobUndeployCommand;
+import com.spotify.helios.cli.command.MasterListCommand;
 import com.spotify.helios.common.LoggingConfig;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -174,6 +175,10 @@ public class CliParser {
       new HostJobsCommand(p(host, "jobs"), cliConfig, out);
       new HostRegisterCommand(p(host, "register"), cliConfig, out);
       new HostDeleteCommand(p(host, "delete"), cliConfig, out);
+
+      // Master Commands
+      final Subparser master = p("master");
+      new MasterListCommand(p(master, "list"), cliConfig, out);
     }
   }
 }

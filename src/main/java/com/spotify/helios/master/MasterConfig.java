@@ -11,6 +11,7 @@ public class MasterConfig {
   private String site;
   private String endpoint;
   private String zooKeeperConnectString;
+  private String name;
   private int muninReporterPort;
   private InetSocketAddress httpEndpoint;
 
@@ -48,6 +49,15 @@ public class MasterConfig {
   public MasterConfig setSite(final String site) {
     this.site = site;
     return this;
+  }
+
+  public MasterConfig setName(final String name) {
+    this.name = name;
+    return this;
+  }
+
+  public String getName() {
+    return name;
   }
 
   public String getZooKeeperConnectString() {

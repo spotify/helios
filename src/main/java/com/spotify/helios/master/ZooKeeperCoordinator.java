@@ -4,6 +4,12 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.AgentJobDoesNotExistException;
@@ -67,6 +73,32 @@ public class ZooKeeperCoordinator implements Coordinator {
       return emptyList();
     } catch (KeeperException e) {
       throw new HeliosException("listing agents failed", e);
+    }
+  }
+
+  @Override
+  public ImmutableList<String> getRunningMasters() throws HeliosException {
+    try {
+      return ImmutableList.copyOf(
+        Iterables.filter(client.getChildren(Paths.statusMasters()),
+          new Predicate<String>() {
+            @Override public boolean apply(String masterName) {
+              return loadMasterUp(masterName);
+            }
+          }));
+    } catch (KeeperException.NoNodeException e) {
+      return ImmutableList.of();
+    } catch (KeeperException e) {
+      throw new HeliosException("listing masters failed", e);
+    }
+  }
+
+  private boolean loadMasterUp(String master) {
+    try {
+      client.getData(Paths.upMaster(master));
+      return true;
+    } catch (KeeperException e) {
+      return false;
     }
   }
 

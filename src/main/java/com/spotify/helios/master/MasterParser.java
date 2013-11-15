@@ -11,9 +11,13 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
+
+import static com.google.common.base.Throwables.propagate;
 
 public class MasterParser extends ServiceParser {
 
@@ -31,9 +35,11 @@ public class MasterParser extends ServiceParser {
         .setHttpEndpoint(bindHttpAddress)
         .setZooKeeperConnectString(options.getString("zk"))
         .setSite(options.getString("site"))
+        .setName(options.getString("name"))
         .setMuninReporterPort(options.getInt("munin_port"));
   }
 
+  @Override
   protected void addArgs(final ArgumentParser parser) {
     parser.addArgument("--hm")
         .setDefault(Defaults.MASTER_HM_BIND)
@@ -47,6 +53,19 @@ public class MasterParser extends ServiceParser {
         .type(Integer.class)
         .setDefault(4951)
         .help("munin port (0 = disabled)");
+
+    parser.addArgument("--name")
+        .setDefault(getHostName())
+        .help("master name");
+
+  }
+
+  private static String getHostName() {
+    try {
+      return InetAddress.getLocalHost().getHostName();
+    } catch (UnknownHostException e) {
+      throw propagate(e);
+    }
   }
 
   private InetSocketAddress parseSocketAddress(final String addressString) {

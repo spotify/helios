@@ -318,6 +318,18 @@ public class MasterHandler extends MatchingHandler {
     }
   }
 
+  @Match(uri = "hm://helios/masters/", methods = "GET")
+  public void mastersGet(final ServiceRequest request)
+      throws RequestHandlerException, JsonProcessingException {
+    // TODO(drewc): should make it so we can get all masters, not just the running ones
+    try {
+      ok(request, coordinator.getRunningMasters());
+    } catch (HeliosException e) {
+      log.error("getting masters failed", e);
+      throw new RequestHandlerException(SERVER_ERROR);
+    }
+  }
+
   private void ok(final ServiceRequest request) {
     request.reply(OK);
   }

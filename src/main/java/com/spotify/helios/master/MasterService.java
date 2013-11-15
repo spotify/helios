@@ -24,6 +24,7 @@ import com.spotify.nameless.client.NamelessRegistrar;
 import com.spotify.nameless.client.RegistrationHandle;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricsRegistry;
+
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +34,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 
+import static java.lang.String.format;
+
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.hermes.message.ProtocolVersion.V2;
+import static org.apache.zookeeper.CreateMode.EPHEMERAL;
 
 /**
  * The Helios master service.
@@ -113,6 +117,13 @@ public class MasterService {
       curator.ensurePath("/config/agents");
       curator.ensurePath("/config/jobs");
       curator.ensurePath("/status/agents");
+      curator.ensurePath("/status/masters");
+
+      final String upNode = format("/status/masters/%s/up", config.getName());
+      if (curator.stat(upNode) != null) {
+        curator.delete(upNode);
+      }
+      curator.createWithMode(upNode, EPHEMERAL);
     } catch (KeeperException e) {
       throw new RuntimeException("zookeeper initialization failed", e);
     }

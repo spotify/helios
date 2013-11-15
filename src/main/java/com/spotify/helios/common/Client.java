@@ -175,6 +175,10 @@ public class Client {
     return get(uri("/agents/"), new TypeReference<List<String>>() {});
   }
 
+  public ListenableFuture<List<String>> listMasters() {
+    return get(uri("/masters/"), new TypeReference<List<String>>() {});
+  }
+
   public ListenableFuture<CreateJobResponse> createJob(final JobDescriptor descriptor) {
     return transform(request(uri("/jobs/" + descriptor.getId()), "PUT", descriptor),
                      ConvertResponseToPojo.create(CreateJobResponse.class,

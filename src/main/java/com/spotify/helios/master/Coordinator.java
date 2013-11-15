@@ -4,6 +4,7 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.collect.ImmutableList;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.descriptors.AgentJob;
@@ -38,4 +39,6 @@ public interface Coordinator {
   AgentStatus getAgentStatus(String agent) throws HeliosException;
 
   void updateAgentJob(String agent, AgentJob agentJob) throws HeliosException;
+
+  ImmutableList<String> getRunningMasters() throws HeliosException;
 }

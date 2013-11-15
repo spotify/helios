@@ -63,6 +63,7 @@ public class SystemTest extends ZooKeeperTestBase {
 
   private final int masterPort = ZooKeeperTestBase.PORT_COUNTER.incrementAndGet();
   private final String masterEndpoint = "tcp://localhost:" + masterPort;
+  private final String masterName = "test-master";
 
   private final String dockerEndpoint = getDockerEndpoint();
 
@@ -286,6 +287,7 @@ public class SystemTest extends ZooKeeperTestBase {
                 "--no-log-setup",
                 "--munin-port", "0",
                 "--hm", masterEndpoint,
+                "--name", masterName,
                 "--zk", zookeeperEndpoint);
   }
 
@@ -339,6 +341,9 @@ public class SystemTest extends ZooKeeperTestBase {
   @Test
   public void testServiceUsingCLI() throws Exception {
     startDefaultMaster();
+
+    String output = control("master", "list");
+    assertContains(masterName, output);
 
     assertContains("NOT_FOUND", deleteAgent(TEST_AGENT));
 
