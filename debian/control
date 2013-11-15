@@ -5,7 +5,7 @@ Maintainer: Daniel Norberg <dano@spotify.com>
 Build-Depends:
  debhelper (>= 7),
  default-jdk,
- maven3,
+ maven,
  spotify-maven-config,
  spotify-supervision2-debhelper,
 Standards-Version: 3.7.2
