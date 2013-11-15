@@ -3,7 +3,7 @@
 %:
 	dh $@
 
-MVN = mvn3 -U -X -B -e -Dmaven.repo.local=$$PWD/.m2-repository -s/etc/maven2/spotify-settings.xml
+MVN = mvn -U -X -B -e -Dmaven.repo.local=$$PWD/.m2-repository -s/etc/maven2/spotify-settings.xml
 
 override_dh_installinit:
 	dh_installinit -n
