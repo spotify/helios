@@ -4,7 +4,6 @@
 
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.protocol.CreateJobResponse;
@@ -27,11 +26,8 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument imageArg;
   private final Argument argsArg;
 
-  public JobCreateCommand(
-      final Subparser parser,
-      final CliConfig cliConfig,
-      final PrintStream out) {
-    super(parser, cliConfig, out);
+  public JobCreateCommand(final Subparser parser) {
+    super(parser);
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
@@ -52,7 +48,7 @@ public class JobCreateCommand extends ControlCommand {
   }
 
   @Override
-  int runControl(final Namespace options, final Client client)
+  int run(Namespace options, Client client, PrintStream out)
       throws ExecutionException, InterruptedException {
     final List<String> command = options.getList(argsArg.getDest());
     final String imageIdentifier = options.getString(imageArg.getDest());

@@ -1,6 +1,5 @@
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 
@@ -12,11 +11,12 @@ import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 
 public class JobRemoveCommand extends ControlCommand {
+
   private final Argument jobIdArg;
   private final Argument confirmArg;
 
-  public JobRemoveCommand(Subparser parser, CliConfig cliConfig, PrintStream out) {
-    super(parser, cliConfig, out);
+  public JobRemoveCommand(Subparser parser) {
+    super(parser);
 
     jobIdArg = parser.addArgument("jobid")
         .help("The id of the job to remove.");
@@ -27,7 +27,8 @@ public class JobRemoveCommand extends ControlCommand {
   }
 
   @Override
-  int runControl(Namespace options, Client client) throws ExecutionException, InterruptedException {
+  int run(Namespace options, Client client, PrintStream out)
+      throws ExecutionException, InterruptedException {
     String jobId = options.getString(jobIdArg.getDest());
 
     if (!"yes".equals(options.getString(confirmArg.getDest()))) {

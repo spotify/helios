@@ -6,7 +6,6 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.collect.ImmutableSortedMap;
 
-import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentStatus;
@@ -23,18 +22,15 @@ public class HostJobsCommand extends ControlCommand {
 
   private final Argument hostArg;
 
-  public HostJobsCommand(
-      final Subparser parser,
-      final CliConfig cliConfig,
-      final PrintStream out) {
-    super(parser, cliConfig, out);
+  public HostJobsCommand(final Subparser parser) {
+    super(parser);
 
     hostArg = parser.addArgument("host")
         .help("The host to list jobs for.");
   }
 
   @Override
-  int runControl(final Namespace options, final Client client)
+  int run(Namespace options, Client client, PrintStream out)
       throws ExecutionException, InterruptedException {
     final String host = options.getString(hostArg.getDest());
     final AgentStatus agentStatus = client.agentStatus(host).get();

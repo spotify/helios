@@ -4,7 +4,6 @@
 
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.protocol.JobDeployResponse;
@@ -27,11 +26,8 @@ public class JobDeployCommand extends ControlCommand {
   private final Argument hostsArg;
   private final Argument noStartArg;
 
-  public JobDeployCommand(
-      final Subparser parser,
-      final CliConfig cliConfig,
-      final PrintStream out) {
-    super(parser, cliConfig, out);
+  public JobDeployCommand(final Subparser parser) {
+    super(parser);
 
     jobArg = parser.addArgument("job")
         .help("Job id.");
@@ -46,7 +42,7 @@ public class JobDeployCommand extends ControlCommand {
   }
 
   @Override
-  int runControl(final Namespace options, final Client client)
+  int run(Namespace options, Client client, PrintStream out)
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
     final AgentJob job = AgentJob.of(options.getString(jobArg.getDest()),

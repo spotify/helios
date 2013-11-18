@@ -1,6 +1,5 @@
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.protocol.AgentDeleteResponse;
 
@@ -16,8 +15,8 @@ public class HostDeleteCommand extends ControlCommand {
   private Argument agentArg;
   private Argument confirmArg;
 
-  public HostDeleteCommand(Subparser parser, CliConfig cliConfig, PrintStream out) {
-    super(parser, cliConfig, out);
+  public HostDeleteCommand(Subparser parser) {
+    super(parser);
 
     agentArg = parser.addArgument("host")
         .help("Host name to remove.");
@@ -28,7 +27,8 @@ public class HostDeleteCommand extends ControlCommand {
   }
 
   @Override
-  int runControl(Namespace options, Client client) throws ExecutionException, InterruptedException {
+  int run(Namespace options, Client client, PrintStream out)
+      throws ExecutionException, InterruptedException {
     String host = options.getString(agentArg.getDest());
 
     if (!"yes".equals(options.getString(confirmArg.getDest()))) {

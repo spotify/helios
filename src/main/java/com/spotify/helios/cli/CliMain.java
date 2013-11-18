@@ -27,6 +27,7 @@ public class CliMain {
   private static final Logger log = LoggerFactory.getLogger(CliMain.class);
 
   private final CliParser parser;
+  private final PrintStream out;
 
   public static void main(final String... args) {
     try {
@@ -41,14 +42,11 @@ public class CliMain {
     System.exit(0);
   }
 
-  public CliMain(final CliParser parser) {
-    this.parser = parser;
-    setupLogging();
-  }
-
   public CliMain(final PrintStream out, final PrintStream err, final String... args)
       throws Exception {
-    this(CliParser.createDefaultParser(out, args));
+    this.parser = new CliParser(args);
+    this.out = out;
+    setupLogging();
   }
 
   @SuppressWarnings("UseOfSystemOutOrSystemErr")
@@ -58,7 +56,8 @@ public class CliMain {
 
   public int run() {
     try {
-      return parser.getCommand().runControl(parser.getNamespace());
+      return parser.getCommand().run(parser.getNamespace(), parser.getTargets(), out,
+                                     parser.getUsername());
     } catch (Exception e) {
       log.error("command failed", e);
       return 1;

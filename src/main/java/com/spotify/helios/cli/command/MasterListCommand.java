@@ -1,6 +1,5 @@
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -12,12 +11,13 @@ import java.util.concurrent.ExecutionException;
 
 public class MasterListCommand extends ControlCommand {
 
-  public MasterListCommand(Subparser parser, CliConfig cliConfig, PrintStream out) {
-    super(parser, cliConfig, out);
+  public MasterListCommand(Subparser parser) {
+    super(parser);
   }
 
   @Override
-  int runControl(Namespace options, Client client) throws ExecutionException, InterruptedException {
+  int run(final Namespace options, final Client client, final PrintStream out)
+      throws ExecutionException, InterruptedException {
     final List<String> agents = client.listMasters().get();
     for (final String agent : agents) {
       out.println(agent);

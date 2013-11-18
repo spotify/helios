@@ -1,6 +1,5 @@
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.JobGoal;
@@ -19,8 +18,8 @@ public class JobStopCommand extends ControlCommand {
   private final Argument hostsArg;
   private final Argument jobArg;
 
-  public JobStopCommand(Subparser parser, CliConfig cliConfig, PrintStream out) {
-    super(parser, cliConfig, out);
+  public JobStopCommand(Subparser parser) {
+    super(parser);
 
     jobArg = parser.addArgument("host")
         .help("Job to stop.");
@@ -31,7 +30,8 @@ public class JobStopCommand extends ControlCommand {
   }
 
   @Override
-  int runControl(Namespace options, Client client) throws ExecutionException, InterruptedException {
+  int run(Namespace options, Client client, PrintStream out)
+      throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
     final String job = options.getString(jobArg.getDest());
 

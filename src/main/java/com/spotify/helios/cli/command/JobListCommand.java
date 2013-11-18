@@ -6,7 +6,6 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.collect.Sets;
 
-import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 
@@ -25,11 +24,8 @@ public class JobListCommand extends ControlCommand {
 
   private final Argument quietArg;
 
-  public JobListCommand(
-      final Subparser parser,
-      final CliConfig cliConfig,
-      final PrintStream out) {
-    super(parser, cliConfig, out);
+  public JobListCommand(final Subparser parser) {
+    super(parser);
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
@@ -37,7 +33,7 @@ public class JobListCommand extends ControlCommand {
   }
 
   @Override
-  int runControl(final Namespace options, final Client client)
+  int run(Namespace options, Client client, PrintStream out)
       throws ExecutionException, InterruptedException {
     final boolean quiet = options.getBoolean(quietArg.getDest());
 

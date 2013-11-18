@@ -6,7 +6,6 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.collect.Lists;
 
-import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.AgentJob;
 
@@ -25,11 +24,8 @@ public class StatusCommand extends ControlCommand {
   private final Argument jobArg;
   private final Argument hostsArg;
 
-  public StatusCommand(
-      final Subparser parser,
-      final CliConfig cliConfig,
-      final PrintStream out) {
-    super(parser, cliConfig, out);
+  public StatusCommand(final Subparser parser) {
+    super(parser);
 
     jobArg = parser.addArgument("job")
         .help("Job id.");
@@ -41,7 +37,7 @@ public class StatusCommand extends ControlCommand {
   }
 
   @Override
-  int runControl(final Namespace options, final Client client)
+  int run(Namespace options, Client client, PrintStream out)
       throws ExecutionException, InterruptedException {
     final String container = jobArg.getDest();
 

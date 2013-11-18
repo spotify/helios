@@ -4,7 +4,6 @@
 
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.cli.CliConfig;
 import com.spotify.helios.common.Client;
 import com.spotify.hermes.message.StatusCode;
 
@@ -20,16 +19,14 @@ public class HostRegisterCommand extends ControlCommand {
 
   private final Argument hostsArg;
 
-  public HostRegisterCommand(final Subparser parser,
-                             final CliConfig cliConfig,
-                             final PrintStream out) {
-    super(parser, cliConfig, out);
+  public HostRegisterCommand(final Subparser parser) {
+    super(parser);
 
     hostsArg = parser.addArgument("hosts").nargs("+");
   }
 
   @Override
-  int runControl(final Namespace options, final Client client)
+  int run(Namespace options, Client client, PrintStream out)
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
 
