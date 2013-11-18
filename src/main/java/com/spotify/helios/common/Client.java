@@ -10,6 +10,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.spotify.helios.common.descriptors.AgentJob;
@@ -36,12 +37,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.spotify.hermes.message.StatusCode.FORBIDDEN;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
+import static com.spotify.hermes.message.StatusCode.FORBIDDEN;
 import static com.spotify.hermes.message.StatusCode.METHOD_NOT_ALLOWED;
 import static com.spotify.hermes.message.StatusCode.NOT_FOUND;
 import static com.spotify.hermes.message.StatusCode.OK;
@@ -121,14 +121,16 @@ public class Client {
 
   public ListenableFuture<JobDeployResponse> deploy(final AgentJob job, final String host) {
     ImmutableSet<StatusCode> deserializeReturnCodes = ImmutableSet.of(OK, NOT_FOUND,
-        METHOD_NOT_ALLOWED, BAD_REQUEST);
+                                                                      METHOD_NOT_ALLOWED,
+                                                                      BAD_REQUEST);
     return transform(request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PUT", job),
                      ConvertResponseToPojo.create(JobDeployResponse.class, deserializeReturnCodes));
   }
 
   public ListenableFuture<SetGoalResponse> setGoal(final AgentJob job, final String host) {
     return transform(request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PATCH", job),
-        ConvertResponseToPojo.create(SetGoalResponse.class, ImmutableSet.of(OK, NOT_FOUND)));
+                     ConvertResponseToPojo.create(SetGoalResponse.class,
+                                                  ImmutableSet.of(OK, NOT_FOUND)));
   }
 
   private ListenableFuture<StatusCode> status(final ListenableFuture<Message> req) {
@@ -156,7 +158,8 @@ public class Client {
 
   public ListenableFuture<JobDeleteResponse> deleteJob(final String id) {
     return transform(request(uri("/jobs/%s", id), "DELETE"),
-        ConvertResponseToPojo.create(JobDeleteResponse.class, ImmutableSet.of(OK, FORBIDDEN)));
+                     ConvertResponseToPojo.create(JobDeleteResponse.class,
+                                                  ImmutableSet.of(OK, FORBIDDEN)));
   }
 
   public ListenableFuture<JobUndeployResponse> undeploy(final String jobId, final String host) {
@@ -167,8 +170,8 @@ public class Client {
 
   public ListenableFuture<AgentDeleteResponse> deleteAgent(final String host) {
     return transform(request(uri("/agents/%s", host), "DELETE"),
-      ConvertResponseToPojo.create(AgentDeleteResponse.class,
-                                   ImmutableSet.of(OK, NOT_FOUND)));
+                     ConvertResponseToPojo.create(AgentDeleteResponse.class,
+                                                  ImmutableSet.of(OK, NOT_FOUND)));
   }
 
   public ListenableFuture<List<String>> listAgents() {
@@ -233,7 +236,7 @@ public class Client {
 
     public static <T> ConvertResponseToPojo<T> create(Class<T> clazz,
                                                       ImmutableSet<StatusCode> immutableSet) {
-      return new ConvertResponseToPojo<T>(Json.type(clazz), immutableSet);
+      return new ConvertResponseToPojo<>(Json.type(clazz), immutableSet);
     }
 
     @Override

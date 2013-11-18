@@ -53,7 +53,6 @@ public class MasterHandler extends MatchingHandler {
     this.coordinator = coordinator;
   }
 
-  //                    /jobs/foo:17:CCA7C38573E9FF9A9C957C46621F45BC56154341
   @Match(uri = "hm://helios/jobs/<id>", methods = "PUT")
   public void jobPut(final ServiceRequest request, final String id) throws Exception {
     final Message message = request.getMessage();

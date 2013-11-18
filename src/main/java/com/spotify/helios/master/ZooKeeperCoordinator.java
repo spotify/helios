@@ -4,12 +4,9 @@
 
 package com.spotify.helios.master;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.AgentJobDoesNotExistException;
@@ -275,15 +272,14 @@ public class ZooKeeperCoordinator implements Coordinator {
   public AgentStatus getAgentStatus(final String agent)
       throws HeliosException {
     final Map<String, AgentJob> jobs = getAgentJobs(agent);
-    final Map<String, JobStatus> statuses = getAgentStatuses(agent);
+    final Map<String, JobStatus> statuses = getAgentJobStatuses(agent);
     if (jobs == null) {
       return null;
     }
     return new AgentStatus(jobs, statuses == null ? EMPTY_STATUSES : statuses);
   }
 
-  private Map<String, JobStatus> getAgentStatuses(final String agent) throws HeliosException {
-    // Job status
+  private Map<String, JobStatus> getAgentJobStatuses(final String agent) throws HeliosException {
     final Map<String, JobStatus> statuses = Maps.newHashMap();
     try {
       final List<String> jobIds;
