@@ -8,6 +8,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.io.File;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.fileType;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
@@ -31,6 +32,16 @@ public class ServiceParser {
     parser.addArgument("--zk")
         .setDefault("localhost:2181")
         .help("zookeeper connection string");
+
+    parser.addArgument("--zk-session-timeout")
+        .type(Integer.class)
+        .setDefault((int) SECONDS.toMillis(60))
+        .help("zookeeper session timeout");
+
+    parser.addArgument("--zk-connection-timeout")
+        .type(Integer.class)
+        .setDefault((int) SECONDS.toMillis(15))
+        .help("zookeeper connection timeout");
 
     parser.addArgument("-v", "--verbose")
         .action(Arguments.count());

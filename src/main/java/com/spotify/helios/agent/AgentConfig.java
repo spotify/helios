@@ -11,6 +11,8 @@ public class AgentConfig {
   private String zooKeeperConnectionString;
   private int muninReporterPort;
   private String dockerEndpoint;
+  private int zooKeeperSessionTimeoutMillis;
+  private int zooKeeperConnectionTimeoutMillis;
 
   public String getName() {
     return name;
@@ -55,5 +57,23 @@ public class AgentConfig {
 
   public String getDockerEndpoint() {
     return dockerEndpoint;
+  }
+
+  public AgentConfig setZooKeeperSessionTimeoutMillis(final int timeoutMillis) {
+    this.zooKeeperSessionTimeoutMillis = timeoutMillis;
+    return this;
+  }
+
+  public int getZooKeeperSessionTimeoutMillis() {
+    return zooKeeperSessionTimeoutMillis;
+  }
+
+  public AgentConfig setZooKeeperConnectionTimeoutMillis(final int timeoutMillis) {
+    this.zooKeeperConnectionTimeoutMillis = timeoutMillis;
+    return this;
+  }
+
+  public int getZooKeeperConnectionTimeoutMillis() {
+    return zooKeeperConnectionTimeoutMillis;
   }
 }

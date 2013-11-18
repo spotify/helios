@@ -8,6 +8,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
+
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.AgentJobDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
@@ -15,18 +16,21 @@ import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.JobStillInUseException;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.coordination.CuratorInterface;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentJobDescriptor;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Descriptor;
+import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.descriptors.JobStatus;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,6 +38,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
+import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
@@ -273,12 +279,39 @@ public class ZooKeeperCoordinator implements Coordinator {
   @Override
   public AgentStatus getAgentStatus(final String agent)
       throws HeliosException {
+    final boolean up = checkAgentUp(agent);
+    final HostInfo hostInfo = getAgentHostInfo(agent);
     final Map<String, AgentJob> jobs = getAgentJobs(agent);
     final Map<String, JobStatus> statuses = getAgentJobStatuses(agent);
     if (jobs == null) {
       return null;
     }
-    return new AgentStatus(jobs, statuses == null ? EMPTY_STATUSES : statuses);
+    return AgentStatus.newBuilder()
+        .setJobs(jobs)
+        .setStatuses(statuses == null ? EMPTY_STATUSES : statuses)
+        .setHostInfo(hostInfo)
+        .setStatus(up ? UP : DOWN)
+        .build();
+  }
+
+  private HostInfo getAgentHostInfo(final String agent) throws HeliosException {
+    try {
+      final byte[] data = client.getData(Paths.statusAgentHostInfo(agent));
+      return Json.read(data, HostInfo.class);
+    } catch (NoNodeException e) {
+      return null;
+    } catch (KeeperException | IOException e) {
+      throw new HeliosException("getting agent host info failed", e);
+    }
+  }
+
+  private boolean checkAgentUp(final String agent) throws HeliosException {
+    try {
+      final Stat stat = client.stat(Paths.statusAgentUp(agent));
+      return stat != null;
+    } catch (KeeperException e) {
+      throw new HeliosException("getting agent up status failed", e);
+    }
   }
 
   private Map<String, JobStatus> getAgentJobStatuses(final String agent) throws HeliosException {

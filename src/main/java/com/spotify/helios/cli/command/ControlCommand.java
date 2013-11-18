@@ -91,6 +91,6 @@ public abstract class ControlCommand {
     }
   }
 
-  abstract int run(Namespace options, Client client, PrintStream out)
+  abstract int run(final Namespace options, final Client client, PrintStream out)
       throws ExecutionException, InterruptedException;
 }

@@ -33,6 +33,8 @@ public class AgentParser extends ServiceParser {
     agentConfig = new AgentConfig()
         .setName(name)
         .setZooKeeperConnectionString(options.getString("zk"))
+        .setZooKeeperSessionTimeoutMillis(options.getInt("zk_session_timeout"))
+        .setZooKeeperConnectionTimeoutMillis(options.getInt("zk_connection_timeout"))
         .setSite(options.getString("site"))
         .setMuninReporterPort(options.getInt("munin_port"))
         .setDockerEndpoint(options.getString("docker"));

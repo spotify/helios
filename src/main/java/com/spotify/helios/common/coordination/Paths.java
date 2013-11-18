@@ -12,6 +12,7 @@ public class Paths {
   public static final String JOBS = "jobs";
   public static final String AGENTS = "agents";
   public static final String MASTERS = "masters";
+  private static final String HOSTINFO = "hostinfo";
 
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
   private static final PathFactory CONFIG_AGENTS = new PathFactory("/", CONFIG, AGENTS);
@@ -58,11 +59,19 @@ public class Paths {
     return STATUS_AGENTS.path(agent, JOBS, jobId);
   }
 
+  public static String statusAgentUp(final String agent) {
+    return STATUS_AGENTS.path(agent, UP);
+  }
+
   public static String statusMasterUp(final String master) {
     return STATUS_MASTERS.path(master, UP);
   }
 
   public static String statusMaster() {
     return STATUS_MASTERS.path();
+  }
+
+  public static String statusAgentHostInfo(final String agent) {
+    return STATUS_AGENTS.path(agent, HOSTINFO);
   }
 }

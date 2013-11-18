@@ -30,7 +30,7 @@ public class HostJobsCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out)
+  int run(final Namespace options, final Client client, final PrintStream out)
       throws ExecutionException, InterruptedException {
     final String host = options.getString(hostArg.getDest());
     final AgentStatus agentStatus = client.agentStatus(host).get();
