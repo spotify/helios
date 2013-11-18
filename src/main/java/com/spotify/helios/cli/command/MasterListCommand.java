@@ -18,9 +18,9 @@ public class MasterListCommand extends ControlCommand {
   @Override
   int run(final Namespace options, final Client client, final PrintStream out)
       throws ExecutionException, InterruptedException {
-    final List<String> agents = client.listMasters().get();
-    for (final String agent : agents) {
-      out.println(agent);
+    final List<String> masters = client.listMasters().get();
+    for (final String master : masters) {
+      out.println(master);
     }
     return 0;
   }
