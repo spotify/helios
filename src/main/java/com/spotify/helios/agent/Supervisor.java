@@ -183,20 +183,14 @@ class Supervisor {
 
         // See if the container is running
         try {
-          final ContainerInspectResponse containerInfo =
-              Futures.get(docker.inspectContainer(containerId), DockerException.class);
+          final ContainerInspectResponse containerInfo = inspectContainer(containerId);
           if (!containerInfo.state.running) {
             break;
           }
         } catch (DockerException e) {
-          // XXX (dano): checking for string in exception message is a kludge
-          if (e.getMessage().contains("No such container")) {
-            break;
-          } else {
-            log.error("failed to query container {}", containerId, e);
-            sleepUninterruptibly(100, MILLISECONDS);
-            continue;
-          }
+          log.error("failed to query container {}", containerId, e);
+          sleepUninterruptibly(100, MILLISECONDS);
+          continue;
         }
 
         // Kill the container
@@ -211,6 +205,24 @@ class Supervisor {
     }
 
     setStatus(STOPPED, containerId);
+  }
+
+  /**
+   * A wrapper around {@link AsyncDockerClient#inspectContainer(String)} that returns null instead
+   * of throwing an exception if the container is missing.
+   */
+  private ContainerInspectResponse inspectContainer(final String containerId)
+      throws DockerException {
+    // TODO (dano): this or something like it should probably go into the docker client itself
+    try {
+      return Futures.get(docker.inspectContainer(containerId), DockerException.class);
+    } catch (DockerException e) {
+      // XXX (dano): checking for string in exception message is a kludge
+      if (!e.getMessage().contains("No such container")) {
+        throw e;
+      }
+      return null;
+    }
   }
 
   /**
@@ -289,20 +301,14 @@ class Supervisor {
         final String registeredContainerId = (jobStatus == null) ? null : jobStatus.getId();
 
         // Check if container exists
-        ContainerInspectResponse containerInfo = null;
+        final ContainerInspectResponse containerInfo;
         if (registeredContainerId != null) {
           log.info("inspecting container: {}: {}", descriptor, registeredContainerId);
-          try {
-            containerInfo = docker.inspectContainer(registeredContainerId).get();
-          } catch (ExecutionException e) {
-            // A round about way of saying that if it's a DockerException because the container
-            // doesn't exist, that's ok, but otherwise, something went bad.
-            if (e.getCause().getClass() != DockerException.class
-                || !e.getMessage().contains("No such container")) {
-              throw e;
-            }
-          }
+          containerInfo = inspectContainer(registeredContainerId);
+        } else {
+          containerInfo = null;
         }
+
         // Check if the image exists
         final String image = descriptor.getImage();
         final List<Image> images = docker.getImages(image).get();
