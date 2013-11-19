@@ -54,6 +54,7 @@ public class MasterService {
   private final HttpServer httpServer;
   private final InetSocketAddress httpEndpoint;
   private final NamelessRegistrar registrar;
+
   private RegistrationHandle namelessHermesHandle;
   private RegistrationHandle namelessHttpHandle;
 
@@ -65,13 +66,13 @@ public class MasterService {
    */
   public MasterService(final MasterConfig config) {
 
-    hermesEndpoint = config.getHermesEndpoint();
+    this.hermesEndpoint = config.getHermesEndpoint();
 
     // Set up statistics
     final MetricsRegistry metricsRegistry = Metrics.defaultRegistry();
 
     // Set up clients
-    zooKeeperClient = setupZookeeperClient(config);
+    this.zooKeeperClient = setupZookeeperClient(config);
 
     // Set up the master interface
     final ZooKeeperCurator curator = new ZooKeeperCurator(zooKeeperClient);
@@ -79,24 +80,28 @@ public class MasterService {
     final MasterHandler masterHandler = new MasterHandler(coordinator);
 
     // master server
-    hermesServer = Hermes.newServer(masterHandler);
-    httpEndpoint = config.getHttpEndpoint();
+    this.hermesServer = Hermes.newServer(masterHandler);
+    this.httpEndpoint = config.getHttpEndpoint();
     final com.spotify.hermes.http.Statistics statistics = new com.spotify.hermes.http.Statistics();
     // TODO: this is a bit messy
     final HermesHttpRequestDispatcher requestDispatcher =
         new HermesHttpRequestDispatcher(new RequestHandlerClient(masterHandler), statistics, V2,
                                         30000,
                                         "helios");
-    httpServer = new HttpServer(requestDispatcher, new HttpServer.Config(), statistics);
+    this.httpServer = new HttpServer(requestDispatcher, new HttpServer.Config(), statistics);
 
-    // TODO: There is a nameless pull request to add the newRegistrar method
-    // (https://ghe.spotify.net/nameless/nameless-client/pull/9). Uncomment
-    // the two lines below once that is merged.
-    // localhost is used by system test
-    registrar =
-//        config.getSite().equals("localhost") ?
-//        Nameless.newRegistrar("tcp://localhost:4999") :
-        Nameless.newRegistrarForDomain(config.getSite());
+    if (config.getSite() != null)  {
+      // TODO: There is a nameless pull request to add the newRegistrar method
+      // (https://ghe.spotify.net/nameless/nameless-client/pull/9). Uncomment
+      // the two lines below once that is merged.
+      // localhost is used by system test
+      this.registrar =
+  //        config.getSite().equals("localhost") ?
+  //        Nameless.newRegistrar("tcp://localhost:4999") :
+          Nameless.newRegistrarForDomain(config.getSite());
+    } else {
+      this.registrar = null;
+    }
   }
 
   /**
@@ -140,13 +145,15 @@ public class MasterService {
     hermesServer.bind(hermesEndpoint);
     httpServer.bind(httpEndpoint);
 
-    try {
-      log.info("registering with nameless");
-      final int hermesPort = new URI(hermesEndpoint).getPort();
-      namelessHermesHandle = registrar.register("helios", "hm", hermesPort).get();
-      namelessHttpHandle = registrar.register("helios", "http", httpEndpoint.getPort()).get();
-    } catch(InterruptedException | ExecutionException | URISyntaxException e) {
-      throw propagate(e);
+    if (this.registrar != null) {
+      try {
+        log.info("registering with nameless");
+        final int hermesPort = new URI(hermesEndpoint).getPort();
+        namelessHermesHandle = registrar.register("helios", "hm", hermesPort).get();
+        namelessHttpHandle = registrar.register("helios", "http", httpEndpoint.getPort()).get();
+      } catch(InterruptedException | ExecutionException | URISyntaxException e) {
+        throw propagate(e);
+      }
     }
   }
 
@@ -154,27 +161,21 @@ public class MasterService {
    * Stop the service. Tears down the control interfaces.
    */
   public void stop() {
-    if (namelessHttpHandle != null) {
-      registrar.unregister(namelessHttpHandle);
+    if (registrar != null) {
+      if (namelessHttpHandle != null) {
+        registrar.unregister(namelessHttpHandle);
+      }
+
+      if (namelessHermesHandle != null) {
+        registrar.unregister(namelessHermesHandle);
+      }
+
+      registrar.shutdown();
     }
 
-    if (namelessHermesHandle != null) {
-      registrar.unregister(namelessHermesHandle);
-    }
-
-    registrar.shutdown();
-
-    if (hermesServer != null) {
-      hermesServer.stop();
-    }
-
-    if (httpServer != null) {
-      httpServer.stop();
-    }
-
-    if (zooKeeperClient != null) {
-      zooKeeperClient.close();
-    }
+    hermesServer.stop();
+    httpServer.stop();
+    zooKeeperClient.close();
   }
 
   // TODO: move

@@ -26,7 +26,6 @@ public class ServiceParser {
         .description(description);
 
     parser.addArgument("-s", "--site")
-        .setDefault(Defaults.SITES.get(0))
         .help("backend site");
 
     parser.addArgument("--zk")
