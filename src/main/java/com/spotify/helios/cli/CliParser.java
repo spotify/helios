@@ -4,9 +4,6 @@
 
 package com.spotify.helios.cli;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-
 import com.spotify.helios.cli.command.ControlCommand;
 import com.spotify.helios.cli.command.HostDeleteCommand;
 import com.spotify.helios.cli.command.HostJobsCommand;
@@ -39,17 +36,19 @@ import java.util.List;
 
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
-import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
 import static com.spotify.helios.cli.Target.targetsFrom;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.fileType;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class CliParser {
+
+  private static final List<String> DEFAULT_MASTER_ENDPOINTS = asList("tcp://localhost:5800");
 
   private final Namespace options;
   private final ControlCommand command;
@@ -92,16 +91,37 @@ public class CliParser {
     final List<String> explicitEndpoints = options.getList(globalArgs.masterArg.getDest());
     final String sitesArgument = options.getString(globalArgs.sitesArg.getDest());
     final String srvName = options.getString(globalArgs.srvNameArg.getDest());
-    final List<Target> explicitTargets = targetsFrom(explicitEndpoints);
-    final String sitesString = sitesArgument == null ? cliConfig.getSitesString() : sitesArgument;
-    final Iterable<String> sites;
-    if (explicitEndpoints.isEmpty()) {
-      sites = filter(asList(sitesString.split(",")), not(equalTo("")));
+
+    // Order of target precedence:
+    // 1. endpoints from command line
+    // 3. sites from command line
+    // 2. endpoints from config file
+    // 4. sites from config file
+    // 3. default (localhost)
+
+    // TODO (dano): this is kind of complex, make sure it matches the defaults in the help and maybe factor out and unit test it
+
+    if (explicitEndpoints != null && !explicitEndpoints.isEmpty()) {
+      this.targets = targetsFrom(explicitEndpoints);
+    } else if (sitesArgument != null && !sitesArgument.isEmpty()) {
+      final Iterable<String> sites = parseSitesString(sitesArgument);
+      this.targets = targetsFrom(srvName, sites);
+    } else if (!cliConfig.getMasterEndpoints().isEmpty()) {
+      this.targets = targetsFrom(cliConfig.getMasterEndpoints());
+    } else if (!cliConfig.getSitesString().isEmpty()) {
+      final Iterable<String> sites = parseSitesString(cliConfig.getSitesString());
+      this.targets = targetsFrom(srvName, sites);
     } else {
-      sites = ImmutableList.of();
+      this.targets = targetsFrom(DEFAULT_MASTER_ENDPOINTS);
     }
-    final List<Target> siteTargets = targetsFrom(srvName, sites);
-    this.targets = ImmutableList.copyOf(concat(explicitTargets, siteTargets));
+
+    if (targets.isEmpty()) {
+      parser.handleError(new ArgumentParserException("no masters specified", parser));
+    }
+  }
+
+  private Iterable<String> parseSitesString(final String sitesString) {
+    return filter(asList(sitesString.split(",")), not(equalTo("")));
   }
 
   private void setupCommands() {
@@ -134,6 +154,20 @@ public class CliParser {
     return username;
   }
 
+  private static List<String> getDefaultMasterEndpoints(final CliConfig cliConfig) {
+    final List<String> defaultMaster;
+    if (cliConfig.getSites().isEmpty()) {
+      if (!cliConfig.getMasterEndpoints().isEmpty()) {
+        defaultMaster = cliConfig.getMasterEndpoints();
+      } else {
+        defaultMaster = DEFAULT_MASTER_ENDPOINTS;
+      }
+    } else {
+      defaultMaster = emptyList();
+    }
+    return defaultMaster;
+  }
+
   private static class GlobalArgs {
 
     private final Argument masterArg;
@@ -150,8 +184,7 @@ public class CliParser {
 
       masterArg = parser.addArgument("-z", "--master")
           .action(append())
-          .setDefault(Lists.newArrayList())
-          .help("master endpoint");
+          .help(format("master endpoint (default: %s)", getDefaultMasterEndpoints(cliConfig)));
 
       sitesArg = parser.addArgument("-s", "--sites")
           .help(format("sites (default: %s)", cliConfig.getSitesString()));

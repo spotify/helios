@@ -15,6 +15,7 @@ import org.json.JSONObject;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -22,15 +23,19 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class CliConfig {
 
   private static final String CONFIG_PATH = ".helios" + File.separator + "config";
+  public static final List<String> EMPTY_STRING_LIST = Collections.<String>emptyList();
 
   private final String username;
   private final List<String> sites;
   private final String srvName;
+  private final List<String> masterEndpoints;
+  ;
 
-  public CliConfig(List<String> sites, String srvName) {
+  public CliConfig(List<String> sites, String srvName, List<String> masterEndpoints) {
     this.username = System.getProperty("user.name");
-    this.sites = sites;
-    this.srvName = srvName;
+    this.sites = checkNotNull(sites);
+    this.srvName = checkNotNull(srvName);
+    this.masterEndpoints = checkNotNull(masterEndpoints);
   }
 
   public String getUsername() {
@@ -47,6 +52,10 @@ public class CliConfig {
 
   public String getSrvName() {
     return srvName;
+  }
+
+  public List<String> getMasterEndpoints() {
+    return masterEndpoints;
   }
 
   /**
@@ -98,9 +107,11 @@ public class CliConfig {
   public static CliConfig fromConfigNode(SpotifyConfigNode config) {
     checkNotNull(config);
 
-    final List<String> sites = config.getList("sites", Defaults.SITES, String.class);
+    final List<String> sites = config.getList("sites", EMPTY_STRING_LIST, String.class);
     final String srvName = config.getString("srvName", Defaults.SRV_NAME);
+    final List<String> masterEndpoints = config.getList("masterEndpoints",
+                                                        EMPTY_STRING_LIST, String.class);
 
-    return new CliConfig(sites, srvName);
+    return new CliConfig(sites, srvName, masterEndpoints);
   }
 }
