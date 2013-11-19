@@ -85,4 +85,14 @@ public class AgentStatus extends Descriptor {
       return new AgentStatus(jobs, statuses, status, hostInfo);
     }
   }
+
+  @Override
+  public String toString() {
+    return "AgentStatus{" +
+           "status=" + status +
+           ", hostInfo=" + hostInfo +
+           ", jobs=" + jobs +
+           ", statuses=" + statuses +
+           '}';
+  }
 }

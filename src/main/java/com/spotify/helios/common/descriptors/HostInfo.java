@@ -179,4 +179,22 @@ public class HostInfo extends Descriptor {
       return new HostInfo(this);
     }
   }
+
+
+  @Override
+  public String toString() {
+    return "HostInfo{" +
+           "hostname='" + hostname + '\'' +
+           ", uname='" + uname + '\'' +
+           ", architecture='" + architecture + '\'' +
+           ", osName='" + osName + '\'' +
+           ", osVersion='" + osVersion + '\'' +
+           ", cpus=" + cpus +
+           ", loadAvg=" + loadAvg +
+           ", memoryTotalBytes=" + memoryTotalBytes +
+           ", memoryFreeBytes=" + memoryFreeBytes +
+           ", swapTotalBytes=" + swapTotalBytes +
+           ", swapFreeBytes=" + swapFreeBytes +
+           '}';
+  }
 }
