@@ -288,14 +288,20 @@ class Supervisor {
         final String registeredContainerId = (jobStatus == null) ? null : jobStatus.getId();
 
         // Check if container exists
-        final ContainerInspectResponse containerInfo;
+        ContainerInspectResponse containerInfo = null;
         if (registeredContainerId != null) {
           log.info("inspecting container: {}: {}", descriptor, registeredContainerId);
-          containerInfo = docker.inspectContainer(registeredContainerId).get();
-        } else {
-          containerInfo = null;
+          try {
+            containerInfo = docker.inspectContainer(registeredContainerId).get();
+          } catch (ExecutionException e) {
+            // A round about way of saying that if it's a DockerException because the container
+            // doesn't exist, that's ok, but otherwise, something went bad.
+            if (e.getCause().getClass() != DockerException.class
+                || !e.getMessage().contains("No such container")) {
+              throw e;
+            }
+          }
         }
-
         // Check if the image exists
         final String image = descriptor.getImage();
         final List<Image> images = docker.getImages(image).get();
@@ -337,6 +343,7 @@ class Supervisor {
       }
     }
 
+    @Override
     public void stop() {
       // Interrupt the thread
       executor.shutdownNow();
