@@ -41,7 +41,7 @@ public class MasterMain extends ServiceMain {
     service.stop();
   }
 
-  public static void main(final String[] args) {
+  public static void main(final String... args) {
     try {
       final MasterMain main = new MasterMain(args);
       main.startAsync();

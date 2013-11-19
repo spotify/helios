@@ -41,7 +41,7 @@ public class AgentMain extends ServiceMain {
     service.stop();
   }
 
-  public static void main(final String[] args) {
+  public static void main(final String... args) {
     try {
       final AgentMain main = new AgentMain(args);
       main.startAsync();

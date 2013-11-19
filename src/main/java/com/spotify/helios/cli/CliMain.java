@@ -34,12 +34,10 @@ public class CliMain {
       int exitCode = new CliMain(args).run();
       System.exit(exitCode);
     } catch (Throwable e) {
+      // TODO (dano): don't swallow exceptions
       //log.error("Uncaught exception", e);
       System.exit(1);
     }
-
-    // Ensure we exit even if there's lingering non-daemon threads
-    System.exit(0);
   }
 
   public CliMain(final PrintStream out, final PrintStream err, final String... args)
