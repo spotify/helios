@@ -194,6 +194,7 @@
         <version>1.4</version>
         <configuration>
           <transformers>
+            <!--The ServicesResourceTransformer is needed to make jersey (docker-java) happy-->
             <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
           </transformers>
         </configuration>
