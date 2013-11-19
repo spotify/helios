@@ -5,6 +5,7 @@
 package com.spotify.helios;
 
 import com.kpelykh.docker.client.DockerClient;
+import com.kpelykh.docker.client.DockerException;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
@@ -53,6 +54,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.fail;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SystemTest extends ZooKeeperTestBase {
@@ -415,7 +417,8 @@ public class SystemTest extends ZooKeeperTestBase {
    *
    * 1. The container is kept running when the agent is restarted.
    * 2. A container that died while the agent was down is restarted when the agent comes up.
-   * 3. The container for a job that was undeployed while the agent was down is killed when the
+   * 3. A container that was destroyed while the agent was down is restarted when the agent comes up.
+   * 4. The container for a job that was undeployed while the agent was down is killed when the
    * agent comes up again.
    */
   @Test
@@ -425,6 +428,8 @@ public class SystemTest extends ZooKeeperTestBase {
     final String jobVersion = "17";
 
     startDefaultMaster();
+
+    final DockerClient dockerClient = new DockerClient(dockerEndpoint);
 
     final Client client = Client.newBuilder()
         .setUser(TEST_USER)
@@ -484,7 +489,6 @@ public class SystemTest extends ZooKeeperTestBase {
     awaitAgentStatus(client, agentName, DOWN, 10, SECONDS);
 
     // Kill the container
-    final DockerClient dockerClient = new DockerClient(dockerEndpoint);
     dockerClient.stopContainer(firstJobStatus.getId());
 
     // Start the agent again
@@ -492,19 +496,49 @@ public class SystemTest extends ZooKeeperTestBase {
     awaitAgentStatus(client, agentName, UP, 10, SECONDS);
 
     // Wait for the job to be restarted in a new container
-    await(1, MINUTES, new Callable<JobStatus>() {
+    final JobStatus secondJobStatus = await(1, MINUTES, new Callable<JobStatus>() {
       @Override
       public JobStatus call() throws Exception {
         final AgentStatus agentStatus = client.agentStatus(agentName).get();
         final JobStatus jobStatus = agentStatus.getStatuses().get(jobId);
-        return (jobStatus != null && jobStatus.getId() != null && !jobStatus.getId()
-            .equals(firstJobStatus.getId())) ? jobStatus
-                                             : null;
+        return (jobStatus != null && jobStatus.getId() != null && jobStatus.getState() == RUNNING &&
+                !jobStatus.getId().equals(firstJobStatus.getId())) ? jobStatus
+                                                                   : null;
       }
     });
 
     // Stop the agent
     agent3.stopAsync().awaitTerminated();
+    awaitAgentStatus(client, agentName, DOWN, 10, SECONDS);
+
+    // Kill and destroy the container
+    dockerClient.stopContainer(secondJobStatus.getId());
+    dockerClient.removeContainer(secondJobStatus.getId());
+    try {
+      // This should fail with an exception if the container still exists
+      dockerClient.inspectContainer(secondJobStatus.getId());
+      fail();
+    } catch (DockerException ignore) {
+    }
+
+    // Start the agent again
+    final AgentMain agent4 = startDefaultAgent(agentName);
+    awaitAgentStatus(client, agentName, UP, 10, SECONDS);
+
+    // Wait for the job to be restarted in a new container
+    final JobStatus thirdJobStatus = await(1, MINUTES, new Callable<JobStatus>() {
+      @Override
+      public JobStatus call() throws Exception {
+        final AgentStatus agentStatus = client.agentStatus(agentName).get();
+        final JobStatus jobStatus = agentStatus.getStatuses().get(jobId);
+        return (jobStatus != null && jobStatus.getId() != null && jobStatus.getState() == RUNNING &&
+                !jobStatus.getId().equals(secondJobStatus.getId())) ? jobStatus
+                                                                    : null;
+      }
+    });
+
+    // Stop the agent
+    agent4.stopAsync().awaitTerminated();
     awaitAgentStatus(client, agentName, DOWN, 10, SECONDS);
 
     // Undeploy the container
