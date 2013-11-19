@@ -1,15 +1,17 @@
 package com.spotify.helios.agent;
 
+import com.google.common.io.CharStreams;
+
 import com.spotify.helios.common.ServiceParser;
 
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
-import java.net.InetAddress;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 
 import static com.google.common.base.Throwables.propagate;
 
@@ -57,9 +59,14 @@ public class AgentParser extends ServiceParser {
   }
 
   private static String getHostName() {
+    return exec("uname -n").trim();
+  }
+
+  private static String exec(final String command) {
     try {
-      return InetAddress.getLocalHost().getHostName();
-    } catch (UnknownHostException e) {
+      final Process process = Runtime.getRuntime().exec(command);
+      return CharStreams.toString(new InputStreamReader(process.getInputStream()));
+    } catch (IOException e) {
       throw propagate(e);
     }
   }
