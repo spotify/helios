@@ -73,6 +73,16 @@ public class AsyncDockerClient {
     });
   }
 
+  public ListenableFuture<ContainerCreateResponse> createContainer(final ContainerConfig config,
+                                                                   final String name) {
+    return executor.submit(new Callable<ContainerCreateResponse>() {
+      @Override
+      public ContainerCreateResponse call() throws Exception {
+        return client().createContainer(config, name);
+      }
+    });
+  }
+
   public ListenableFuture<Void> startContainer(final String containerId) {
     return executor.submit(new Callable<Void>() {
       @Override

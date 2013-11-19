@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -326,7 +327,10 @@ class Supervisor {
         } else {
           setStatus(CREATING, null);
           final ContainerConfig containerConfig = containerConfig(descriptor);
-          final ContainerCreateResponse container = docker.createContainer(containerConfig).get();
+          final UUID uuid = UUID.randomUUID();
+          final String name = descriptor.getId() + ":" + uuid;
+          final ContainerCreateResponse container =
+              docker.createContainer(containerConfig, name).get();
           containerId = container.id;
           log.info("created container: {}: {}", descriptor, container);
 

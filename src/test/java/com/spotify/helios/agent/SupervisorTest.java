@@ -25,6 +25,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -72,6 +73,7 @@ public class SupervisorTest {
   @Mock AsyncDockerClient docker;
 
   @Captor ArgumentCaptor<ContainerConfig> containerConfigCaptor;
+  @Captor ArgumentCaptor<String> containerNameCaptor;
 
   Supervisor sut;
 
@@ -128,7 +130,8 @@ public class SupervisorTest {
     }};
 
     final SettableFuture<ContainerCreateResponse> createFuture = SettableFuture.create();
-    when(docker.createContainer(any(ContainerConfig.class))).thenReturn(createFuture);
+    when(docker.createContainer(any(ContainerConfig.class),
+                                any(String.class))).thenReturn(createFuture);
     final SettableFuture<Void> startFuture = SettableFuture.create();
     when(docker.startContainer(containerId)).thenReturn(startFuture);
     final SettableFuture<Integer> waitFuture = SettableFuture.create();
@@ -138,13 +141,17 @@ public class SupervisorTest {
     sut.start();
 
     // Verify that the container is created
-    verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture());
+    verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture(),
+                                                  containerNameCaptor.capture());
     verify(state, timeout(1000)).setJobStatus(eq(NAME),
                                               eq(new JobStatus(DESCRIPTOR, CREATING, null)));
     assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
     assertEquals(IMAGE, containerConfig.getImage());
+    final String containerName = containerNameCaptor.getValue();
+    final UUID uuid = parseContainerUUID(containerName);
+    assertEquals(DESCRIPTOR.getId(), parseContainerName(containerName));
 
     // Verify that the container is started
     verify(docker, timeout(1000)).startContainer(containerId);
@@ -181,6 +188,17 @@ public class SupervisorTest {
     assertEquals(STOPPED, sut.getStatus());
   }
 
+  private UUID parseContainerUUID(final String containerName) {
+    final int lastColon = containerName.lastIndexOf(':');
+    final String uuid = containerName.substring(lastColon + 1);
+    return UUID.fromString(uuid);
+  }
+
+  private String parseContainerName(final String containerName) {
+    final int lastColon = containerName.lastIndexOf(':');
+    return containerName.substring(0, lastColon);
+  }
+
   @Test
   public void verifySupervisorRestartsExitedContainer() throws InterruptedException {
     final String containerId1 = "deadbeef1";
@@ -191,7 +209,7 @@ public class SupervisorTest {
     final ContainerCreateResponse createResponse2 = new ContainerCreateResponse() {{
       id = containerId2;
     }};
-    when(docker.createContainer(any(ContainerConfig.class)))
+    when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
         .thenReturn(immediateFuture(createResponse1));
     when(docker.startContainer(containerId1))
         .thenReturn(immediateFuture((Void) null));
@@ -202,7 +220,7 @@ public class SupervisorTest {
 
     // Start the job
     sut.start();
-    verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture());
+    verify(docker, timeout(1000)).createContainer(any(ContainerConfig.class), any(String.class));
     verify(docker, timeout(1000)).startContainer(containerId1);
     verify(docker, timeout(1000)).waitContainer(containerId1);
 
@@ -213,14 +231,14 @@ public class SupervisorTest {
       }};
     }};
     when(docker.inspectContainer(eq(containerId1))).thenReturn(immediateFuture(stoppedResponse));
-    when(docker.createContainer(any(ContainerConfig.class)))
+    when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
         .thenReturn(immediateFuture(createResponse2));
     when(docker.startContainer(containerId2))
         .thenReturn(immediateFuture((Void) null));
     waitFuture1.set(1);
 
     // Verify that the container was restarted
-    verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture());
+    verify(docker, timeout(1000)).createContainer(any(ContainerConfig.class), any(String.class));
     verify(docker, timeout(1000)).startContainer(containerId2);
     verify(docker, timeout(1000)).waitContainer(containerId2);
   }
