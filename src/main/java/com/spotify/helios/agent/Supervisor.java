@@ -277,6 +277,7 @@ class Supervisor {
       return this;
     }
 
+    @SuppressWarnings("TryWithIdenticalCatches")
     @Override
     public void run() {
       try {
@@ -338,7 +339,10 @@ class Supervisor {
         setStatus(EXITED, containerId);
 
         set(exitCode);
+      } catch (InterruptedException e) {
+        setException(e);
       } catch (Exception e) {
+        // Keep separate catch clauses to simplify setting breakpoints on actual errors
         setException(e);
       }
     }
