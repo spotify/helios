@@ -193,7 +193,6 @@
         <artifactId>maven-shade-plugin</artifactId>
         <version>1.4</version>
         <configuration>
-          <createDependencyReducedPom>true</createDependencyReducedPom>
         </configuration>
         <executions>
           <execution>
