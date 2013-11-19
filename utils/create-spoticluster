@@ -1,0 +1,149 @@
+#!/bin/bash
+# Author: Drew Csillag (drewc@spotify.com)
+# Tool to create a 9 machine cluster in spoticloud
+# 3 zookeepers, 3 masters, 3 agents
+echo -n "Puppet branch name to create: [default $LOGNAME/helios] "
+read PUPPET_BRANCH
+if [ -z "$PUPPET_BRANCH" ]
+then
+  PUPPET_BRANCH=$LOGNAME/helios
+fi
+
+echo -n "Spoticloud project name for nodes: [default $LOGNAME-helios]"
+read PROJECT
+if [ -z "$PROJECT" ]
+then
+  PROJECT=$LOGNAME-helios
+fi
+
+echo "Create puppet branch $PUPPET_BRANCH with project $PROJECT [press enter to continue]"
+read foo
+
+### -----------------------------------
+### Make puppet branch
+
+TMPDIR=$(mktemp -d /tmp/helios-spcloud.XXXXXXXXXX)
+cd $TMPDIR
+echo git repo will be under $TMPDIR
+git clone git.spotify.net:spotify-puppet.git
+cd spotify-puppet
+git checkout -b $PUPPET_BRANCH production
+HIERA_FILE=hiera-data/domain/$PROJECT.cloud.spotify.net.yaml
+cat <<EOF > $HIERA_FILE
+---
+zookeeper::heliostest::servers: 
+  - zookeeper-1.$PROJECT.cloud.spotify.net
+  - zookeeper-2.$PROJECT.cloud.spotify.net
+  - zookeeper-3.$PROJECT.cloud.spotify.net
+helios::master::zk_connect_string: zookeeper-1.$PROJECT.cloud.spotify.net:2181,zookeeper-2.$PROJECT.cloud.spotify.net:2181,zookeeper-3.$PROJECT.cloud.spotify.net:2181
+helios::agent::zk_connect_string: zookeeper-1.$PROJECT.cloud.spotify.net:2181,zookeeper-2.$PROJECT.cloud.spotify.net:2181,zookeeper-3.$PROJECT.cloud.spotify.net:2181
+EOF
+
+git add $HIERA_FILE
+git commit -am "Added spoticloud project $PROJECT settings"
+git push -f origin $PUPPET_BRANCH
+
+### -----------------------------------
+### Create VMs
+
+for i in 1 2 3
+do   
+    spcloud create \
+      --project=$PROJECT \
+      --name=zookeeper-$i \
+      --branch=$PUPPET_BRANCH \
+      --classes=zookeeper::heliostest
+done
+
+for i in 1 2 3
+do
+    spcloud create \
+      --project=$PROJECT \
+      --name=helios-master-$i \
+      --branch=$PUPPET_BRANCH \
+      --dist=precise \
+      --classes=helios::master
+done
+
+for i in 1 2 3
+do
+    spcloud create \
+      --project=$PROJECT \
+      --name=helios-agent-$i \
+      --branch=$PUPPET_BRANCH \
+      --dist=precise \
+      --classes=helios::agent
+done
+
+### -----------------------------------
+### Make sure they're set up, then reboot them
+check_file_existence() {
+  local HOST=$1
+  local FILE=$2
+  echo "Running the puppet agent until setup is complete"
+  ssh -t -A $HOST "
+  while ! (test -f $FILE)
+  do
+    sudo sppuppet agent -t -v
+  done
+  "
+}
+
+check_ssh_keys() {
+  local HOST=$1
+  echo -----------------------
+  echo "Checking/Establishing SSH key for $HOST"
+  while (ssh $HOST true) 2>&1 | egrep '(Host|Offending) key'
+  do
+      echo 'There is a conflicting ssh key, remove the offending key in another shell window'
+      echo 'and press enter to continue'
+      read FOO
+  done
+  echo "SSH key for $HOST is OK"
+}
+
+check_initial_puppet_run() {
+  local HOST=$1
+
+  echo "Checking if initial puppet run on $HOST is still going"
+
+  while ssh -t -A $HOST 'ps -ef | grep puppet | grep -v grep' > /dev/null
+  do  
+    sleep 60
+    echo "  ...still going"
+  done
+  echo "Initial puppet run is over"
+}
+
+
+for i in 1 2 3
+do
+  check_ssh_keys zookeeper-$i.$PROJECT.cloud.spotify.net
+  check_initial_puppet_run zookeeper-$i.$PROJECT.cloud.spotify.net
+  
+  ssh -t -A zookeeper-$i.$PROJECT.cloud.spotify.net '
+  while ! (test -f /etc/zookeeper/conf/zoo.cfg && head -1 /etc/zookeeper/conf/zoo.cfg | grep puppet) > /dev/null
+  do
+    sudo sppuppet agent -t -v
+  done
+  '
+done
+
+for role in master agent
+do
+  for instance in 1 2 3
+  do
+    check_ssh_keys helios-$role-$instance.$PROJECT.cloud.spotify.net
+    check_initial_puppet_run helios-$role-$instance.$PROJECT.cloud.spotify.net
+    check_file_existence helios-$role-$instance.$PROJECT.cloud.spotify.net /usr/bin/helios-$role
+  done
+done
+
+for role in helios-master helios-agent zookeeper 
+do
+    for instance in 1 2 3
+    do
+	ssh -t -A $role-$instance.$PROJECT.cloud.spotify.net sudo shutdown -r now
+    done
+done
+

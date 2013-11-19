@@ -1,0 +1,9 @@
+#!/bin/bash
+PROJECT=drewc
+for i in helios-master helios-agent zookeeper 
+do
+    for j in 1 2 3
+    do
+	spcloud destroy --name $i-$j --project $PROJECT --yes
+    done
+done
