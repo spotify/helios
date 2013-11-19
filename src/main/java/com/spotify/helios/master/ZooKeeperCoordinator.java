@@ -77,12 +77,13 @@ public class ZooKeeperCoordinator implements Coordinator {
   public ImmutableList<String> getRunningMasters() throws HeliosException {
     try {
       return ImmutableList.copyOf(
-        Iterables.filter(client.getChildren(Paths.statusMasters()),
-          new Predicate<String>() {
-            @Override public boolean apply(String masterName) {
-              return loadMasterUp(masterName);
-            }
-          }));
+          Iterables.filter(client.getChildren(Paths.statusMaster()),
+                           new Predicate<String>() {
+                             @Override
+                             public boolean apply(String masterName) {
+                               return loadMasterUp(masterName);
+                             }
+                           }));
     } catch (KeeperException.NoNodeException e) {
       return ImmutableList.of();
     } catch (KeeperException e) {
@@ -92,7 +93,7 @@ public class ZooKeeperCoordinator implements Coordinator {
 
   private boolean loadMasterUp(String master) {
     try {
-      client.getData(Paths.upMaster(master));
+      client.getData(Paths.statusMasterUp(master));
       return true;
     } catch (KeeperException e) {
       return false;
@@ -253,6 +254,7 @@ public class ZooKeeperCoordinator implements Coordinator {
       throw new HeliosException(e);
     }
   }
+
   @Override
   public AgentJob getAgentJob(final String agent, final String jobId)
       throws HeliosException {

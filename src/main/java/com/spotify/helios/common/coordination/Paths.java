@@ -58,11 +58,11 @@ public class Paths {
     return STATUS_AGENTS.path(agent, JOBS, jobId);
   }
 
-  public static String upMaster(final String master) {
+  public static String statusMasterUp(final String master) {
     return STATUS_MASTERS.path(master, UP);
   }
 
-  public static String statusMasters() {
+  public static String statusMaster() {
     return STATUS_MASTERS.path();
   }
 }
