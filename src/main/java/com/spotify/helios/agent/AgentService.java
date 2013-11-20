@@ -57,8 +57,6 @@ public class AgentService {
     final SupervisorFactory supervisorFactory = new SupervisorFactory(state, dockerClientFactory);
     final ReactorFactory reactorFactory = new ReactorFactory();
 
-    final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =
-        new ZooKeeperNodeUpdaterFactory(zooKeeperClient);
     this.hostInfoReporter = HostInfoReporter.newBuilder()
         .setNodeUpdaterFactory(new ZooKeeperNodeUpdaterFactory(zooKeeperClient))
         .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
