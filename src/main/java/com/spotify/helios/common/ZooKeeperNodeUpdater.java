@@ -15,10 +15,10 @@ public class ZooKeeperNodeUpdater implements NodeUpdater {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperNodeUpdater.class);
 
-  private final ZooKeeperCurator zooKeeperClient;
+  private final DefaultZooKeeperClient zooKeeperClient;
   private final String path;
 
-  public ZooKeeperNodeUpdater(final String path, final ZooKeeperCurator zooKeeperClient) {
+  public ZooKeeperNodeUpdater(final String path, final DefaultZooKeeperClient zooKeeperClient) {
     this.zooKeeperClient = zooKeeperClient;
     this.path = path;
   }

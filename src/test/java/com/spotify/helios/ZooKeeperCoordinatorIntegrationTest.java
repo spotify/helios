@@ -7,17 +7,16 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.AgentJobDoesNotExistException;
+import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobStillInUseException;
-import com.spotify.helios.common.ZooKeeperCurator;
-import com.spotify.helios.common.coordination.CuratorInterface;
+import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.JobDescriptor;
 import com.spotify.helios.common.descriptors.JobGoal;
 import com.spotify.helios.master.ZooKeeperCoordinator;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -51,7 +50,7 @@ public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
       .build();
   private static final String JOB_ID = JOB.getId();
 
-  private CuratorInterface curator;
+  private ZooKeeperClient curator;
   private ZooKeeperCoordinator coordinator;
 
   @Before
@@ -62,7 +61,7 @@ public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
       zookeeperEndpoint, zooKeeperRetryPolicy);
 
     client.start();
-    curator = new ZooKeeperCurator(client);
+    curator = new DefaultZooKeeperClient(client);
 
     coordinator = new ZooKeeperCoordinator(curator);
   }

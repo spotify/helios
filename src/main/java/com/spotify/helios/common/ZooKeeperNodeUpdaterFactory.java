@@ -6,9 +6,9 @@ package com.spotify.helios.common;
 
 public class ZooKeeperNodeUpdaterFactory implements NodeUpdaterFactory {
 
-  final ZooKeeperCurator zooKeeperClient;
+  final DefaultZooKeeperClient zooKeeperClient;
 
-  public ZooKeeperNodeUpdaterFactory(final ZooKeeperCurator zooKeeperClient) {
+  public ZooKeeperNodeUpdaterFactory(final DefaultZooKeeperClient zooKeeperClient) {
     this.zooKeeperClient = zooKeeperClient;
   }
 

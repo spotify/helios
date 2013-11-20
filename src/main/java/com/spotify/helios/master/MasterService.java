@@ -9,8 +9,8 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.AbstractClient;
-import com.spotify.helios.common.ZooKeeperCurator;
-import com.spotify.helios.common.coordination.CuratorInterface;
+import com.spotify.helios.common.DefaultZooKeeperClient;
+import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.master.http.HttpServiceRequest;
 import com.spotify.hermes.Hermes;
 import com.spotify.hermes.http.HermesHttpRequestDispatcher;
@@ -75,7 +75,7 @@ public class MasterService {
     this.zooKeeperClient = setupZookeeperClient(config);
 
     // Set up the master interface
-    final ZooKeeperCurator curator = new ZooKeeperCurator(zooKeeperClient);
+    final DefaultZooKeeperClient curator = new DefaultZooKeeperClient(zooKeeperClient);
     final Coordinator coordinator = new ZooKeeperCoordinator(curator);
     final MasterHandler masterHandler = new MasterHandler(coordinator);
 
@@ -116,7 +116,7 @@ public class MasterService {
         config.getZooKeeperConnectString(), zooKeeperRetryPolicy);
     client.start();
 
-    final CuratorInterface curator = new ZooKeeperCurator(client);
+    final ZooKeeperClient curator = new DefaultZooKeeperClient(client);
 
     try {
       curator.ensurePath("/config/agents");

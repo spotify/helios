@@ -11,7 +11,7 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCacheListener;
-import com.spotify.helios.common.coordination.CuratorInterface;
+import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.descriptors.AgentJobDescriptor;
 import com.spotify.helios.common.descriptors.JobStatus;
@@ -38,10 +38,10 @@ public class ZooKeeperState extends AbstractState {
   private final PathChildrenCache jobs;
   private final CountDownLatch jobsInitialized = new CountDownLatch(1);
 
-  private final CuratorInterface client;
+  private final ZooKeeperClient client;
   private final String agent;
 
-  public ZooKeeperState(final CuratorInterface client, final String agent) {
+  public ZooKeeperState(final ZooKeeperClient client, final String agent) {
     this.client = checkNotNull(client);
     this.agent = checkNotNull(agent);
     this.jobs = client.pathChildrenCache(Paths.configAgentJobs(agent), true);

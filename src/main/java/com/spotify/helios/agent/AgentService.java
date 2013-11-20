@@ -8,10 +8,10 @@ import com.netflix.curator.RetryPolicy;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
+import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.ReactorFactory;
-import com.spotify.helios.common.ZooKeeperCurator;
 import com.spotify.helios.common.ZooKeeperNodeUpdaterFactory;
-import com.spotify.helios.common.coordination.CuratorInterface;
+import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.spotify.helios.common.coordination.Paths;
 import com.sun.management.OperatingSystemMXBean;
@@ -35,7 +35,7 @@ public class AgentService {
   private final Agent agent;
 
   private final CuratorFramework zooKeeperCurator;
-  private final ZooKeeperCurator zooKeeperClient;
+  private final DefaultZooKeeperClient zooKeeperClient;
   private final HostInfoReporter hostInfoReporter;
 
   /**
@@ -48,7 +48,7 @@ public class AgentService {
     final MetricsRegistry metricsRegistry = Metrics.defaultRegistry();
 
     this.zooKeeperCurator = setupZookeeperCurator(config);
-    this.zooKeeperClient = new ZooKeeperCurator(zooKeeperCurator);
+    this.zooKeeperClient = new DefaultZooKeeperClient(zooKeeperCurator);
 
     final State state = setupState(config, zooKeeperClient);
 
@@ -81,7 +81,7 @@ public class AgentService {
         zooKeeperRetryPolicy);
 
     client.start();
-    final CuratorInterface curator = new ZooKeeperCurator(client);
+    final ZooKeeperClient curator = new DefaultZooKeeperClient(client);
 
     try {
       // TODO: this logic should probably live in the agent
@@ -110,7 +110,7 @@ public class AgentService {
    * @return An agent state.
    */
   private static State setupState(final AgentConfig config,
-                                  final ZooKeeperCurator zooKeeperClient) {
+                                  final DefaultZooKeeperClient zooKeeperClient) {
     final ZooKeeperState state = new ZooKeeperState(zooKeeperClient, config.getName());
     try {
       state.start();

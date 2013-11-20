@@ -3,7 +3,7 @@ package com.spotify.helios.common;
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 import com.netflix.curator.utils.EnsurePath;
-import com.spotify.helios.common.coordination.CuratorInterface;
+import com.spotify.helios.common.coordination.ZooKeeperClient;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -17,11 +17,11 @@ import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.netflix.curator.framework.imps.CuratorFrameworkState.STARTED;
 
-public class ZooKeeperCurator implements CuratorInterface {
+public class DefaultZooKeeperClient implements ZooKeeperClient {
 
   private final CuratorFramework client;
 
-  public ZooKeeperCurator(CuratorFramework client) {
+  public DefaultZooKeeperClient(CuratorFramework client) {
     checkArgument(client.getState() == STARTED);
     this.client = client;
   }

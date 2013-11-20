@@ -12,7 +12,7 @@ import java.util.List;
  * Exists because the Curator library makes things ununit-testable without this. Also it avoids
  * having to catch Exception at call-sites.
  */
-public interface CuratorInterface {
+public interface ZooKeeperClient {
 
   void ensurePath(String path) throws KeeperException;
 

@@ -17,7 +17,7 @@ import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.coordination.CuratorInterface;
+import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.descriptors.AgentJob;
 import com.spotify.helios.common.descriptors.AgentJobDescriptor;
@@ -50,9 +50,9 @@ public class ZooKeeperCoordinator implements Coordinator {
 
   public static final Map<String, JobStatus> EMPTY_STATUSES = emptyMap();
 
-  private final CuratorInterface client;
+  private final ZooKeeperClient client;
 
-  public ZooKeeperCoordinator(final CuratorInterface client) {
+  public ZooKeeperCoordinator(final ZooKeeperClient client) {
     this.client = client;
   }
 
