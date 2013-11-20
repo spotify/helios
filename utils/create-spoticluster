@@ -2,6 +2,12 @@
 # Author: Drew Csillag (drewc@spotify.com)
 # Tool to create a 9 machine cluster in spoticloud
 # 3 zookeepers, 3 masters, 3 agents
+
+###### NOTE:  If you need to hack the script to have it skip a machine because 
+###### of puppet superawesomeness, keep everything from here to where it makes 
+###### puppet branch, then hack/slash as necessary.  In general, if PROJECT is
+###### not set, your day will be bad.
+
 echo -n "Puppet branch name to create: [default $LOGNAME/helios] "
 read PUPPET_BRANCH
 if [ -z "$PUPPET_BRANCH" ]
@@ -76,13 +82,13 @@ do
 done
 
 ### -----------------------------------
-### Make sure they're set up, then reboot them
-check_file_existence() {
+### Make sure they're set up because puppet is awesome
+check_file_existence_and_java() {
   local HOST=$1
   local FILE=$2
-  echo "Running the puppet agent until setup is complete"
+  echo "Running the sppuppet agent until setup is complete"
   ssh -t -A $HOST "
-  while ! (test -f $FILE)
+  while ! (test -f $FILE) && !(dpkg -l | grep oracle-java7-jdk)
   do
     sudo sppuppet agent -t -v
   done
@@ -129,16 +135,29 @@ do
   '
 done
 
-for role in master agent
+## The next two were inlined from a loop to help you hack the script should 
+## puppet be super-awesome and get the machine into a state where running
+## the agent will never fix the mess it made.
+role=master
+for instance in 1 2 3
 do
-  for instance in 1 2 3
-  do
-    check_ssh_keys helios-$role-$instance.$PROJECT.cloud.spotify.net
-    check_initial_puppet_run helios-$role-$instance.$PROJECT.cloud.spotify.net
-    check_file_existence helios-$role-$instance.$PROJECT.cloud.spotify.net /usr/bin/helios-$role
-  done
+  check_ssh_keys helios-$role-$instance.$PROJECT.cloud.spotify.net
+  check_initial_puppet_run helios-$role-$instance.$PROJECT.cloud.spotify.net
+  check_file_existence_and_java helios-$role-$instance.$PROJECT.cloud.spotify.net /usr/bin/helios-$role
 done
 
+
+role=agent
+for instance in 1 2 3
+do
+  check_ssh_keys helios-$role-$instance.$PROJECT.cloud.spotify.net
+  check_initial_puppet_run helios-$role-$instance.$PROJECT.cloud.spotify.net
+  check_file_existence_and_java helios-$role-$instance.$PROJECT.cloud.spotify.net /usr/bin/helios-$role
+done
+
+
+### -----------------------------------
+### Reboot the world so everything comes up
 for role in helios-master helios-agent zookeeper 
 do
     for instance in 1 2 3
