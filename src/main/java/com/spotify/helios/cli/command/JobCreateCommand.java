@@ -5,7 +5,7 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.common.Client;
-import com.spotify.helios.common.descriptors.JobDescriptor;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -52,7 +52,7 @@ public class JobCreateCommand extends ControlCommand {
       throws ExecutionException, InterruptedException {
     final List<String> command = options.getList(argsArg.getDest());
     final String imageIdentifier = options.getString(imageArg.getDest());
-    final JobDescriptor descriptor = JobDescriptor.newBuilder()
+    final Job descriptor = Job.newBuilder()
         .setName(options.getString(nameArg.getDest()))
         .setVersion(options.getString(versionArg.getDest()))
         .setImage(imageIdentifier)

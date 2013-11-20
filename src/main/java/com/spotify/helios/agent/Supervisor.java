@@ -18,8 +18,9 @@ import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.Image;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.JobDescriptor;
-import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.slf4j.Logger;
@@ -38,11 +39,11 @@ import java.util.concurrent.TimeoutException;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Uninterruptibles.getUninterruptibly;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
-import static com.spotify.helios.common.descriptors.JobStatus.State.CREATING;
-import static com.spotify.helios.common.descriptors.JobStatus.State.EXITED;
-import static com.spotify.helios.common.descriptors.JobStatus.State.RUNNING;
-import static com.spotify.helios.common.descriptors.JobStatus.State.STARTING;
-import static com.spotify.helios.common.descriptors.JobStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -65,8 +66,8 @@ class Supervisor {
 
   private final AsyncDockerClient docker;
 
-  private final String name;
-  private final JobDescriptor descriptor;
+  private final JobId jobId;
+  private final Job job;
   private final State state;
   private final long restartIntervalMillis;
   private final long retryIntervalMillis;
@@ -74,19 +75,20 @@ class Supervisor {
   private volatile Runner runner;
   private volatile boolean closed;
   private volatile boolean starting;
-  private volatile JobStatus.State status;
+  private volatile TaskStatus.State status;
 
   /**
-   * Create a new job runner.
+   * Create a new job supervisor.
    *
-   * @param descriptor The job descriptor.
-   * @param state      The worker state to use.
+   * @param jobId The job id.
+   * @param job   The job.
+   * @param state The worker state to use.
    */
-  private Supervisor(final String name, final JobDescriptor descriptor,
+  private Supervisor(final JobId jobId, final Job job,
                      final State state, final AsyncDockerClient dockerClient,
                      final long restartIntervalMillis, final long retryIntervalMillis) {
-    this.name = checkNotNull(name);
-    this.descriptor = checkNotNull(descriptor);
+    this.jobId = checkNotNull(jobId);
+    this.job = checkNotNull(job);
     this.state = checkNotNull(state);
     this.docker = checkNotNull(dockerClient);
     this.restartIntervalMillis = restartIntervalMillis;
@@ -135,7 +137,7 @@ class Supervisor {
    * Note: sync must be locked when calling this method.
    */
   private void startJob(final long delayMillis) {
-    log.debug("start: name={}: descriptor={}, closed={}", name, descriptor, closed);
+    log.debug("start: jobId={}: job={}, closed={}", jobId, job, closed);
     if (closed || !starting) {
       return;
     }
@@ -168,15 +170,15 @@ class Supervisor {
    * Note: sync must be locked when calling this method.
    */
   private void stopJob() {
-    log.debug("start: name={}: descriptor={}, closed={}", name, descriptor, closed);
+    log.debug("start: jobId={}: job={}, closed={}", jobId, job, closed);
 
     // Stop the runner
     if (runner != null) {
       runner.stop();
     }
 
-    final JobStatus jobStatus = state.getJobStatus(name);
-    final String containerId = (jobStatus == null) ? null : jobStatus.getId();
+    final TaskStatus taskStatus = state.getTaskStatus(jobId);
+    final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
 
     // Kill the job
     if (containerId != null) {
@@ -229,22 +231,22 @@ class Supervisor {
   /**
    * Persist job status.
    */
-  private void setStatus(final JobStatus.State status, final String containerId) {
-    state.setJobStatus(name, new JobStatus(descriptor, status, containerId));
+  private void setStatus(final TaskStatus.State status, final String containerId) {
+    state.setTaskStatus(jobId, new TaskStatus(job, status, containerId));
     this.status = status;
   }
 
   /**
    * Get the current job status.
    */
-  public JobStatus.State getStatus() {
+  public TaskStatus.State getStatus() {
     return status;
   }
 
   /**
    * Create docker container configuration for a job.
    */
-  private ContainerConfig containerConfig(final JobDescriptor descriptor) {
+  private ContainerConfig containerConfig(final Job descriptor) {
     final ContainerConfig containerConfig = new ContainerConfig();
     containerConfig.setImage(descriptor.getImage());
     final List<String> command = descriptor.getCommand();
@@ -298,20 +300,23 @@ class Supervisor {
         Thread.sleep(delayMillis);
 
         // Get centrally registered status
-        final JobStatus jobStatus = state.getJobStatus(name);
-        final String registeredContainerId = (jobStatus == null) ? null : jobStatus.getId();
+        final TaskStatus taskStatus = state.getTaskStatus(jobId);
+        final
+        String
+            registeredContainerId =
+            (taskStatus == null) ? null : taskStatus.getContainerId();
 
         // Check if container exists
         final ContainerInspectResponse containerInfo;
         if (registeredContainerId != null) {
-          log.info("inspecting container: {}: {}", descriptor, registeredContainerId);
+          log.info("inspecting container: {}: {}", job, registeredContainerId);
           containerInfo = inspectContainer(registeredContainerId);
         } else {
           containerInfo = null;
         }
 
         // Check if the image exists
-        final String image = descriptor.getImage();
+        final String image = job.getImage();
         final List<Image> images = docker.getImages(image).get();
         if (images.isEmpty()) {
           final ClientResponse pull = docker.pull(image).get();
@@ -326,26 +331,26 @@ class Supervisor {
           containerId = registeredContainerId;
         } else {
           setStatus(CREATING, null);
-          final ContainerConfig containerConfig = containerConfig(descriptor);
+          final ContainerConfig containerConfig = containerConfig(job);
           final UUID uuid = UUID.randomUUID();
-          final String name = descriptor.getId() + ":" + uuid;
+          final String name = job.getId() + ":" + uuid;
           final ContainerCreateResponse container =
               docker.createContainer(containerConfig, name).get();
           containerId = container.id;
-          log.info("created container: {}: {}", descriptor, container);
+          log.info("created container: {}: {}", job, container);
 
           setStatus(STARTING, containerId);
-          log.info("starting container: {}: {}", descriptor, containerId);
+          log.info("starting container: {}: {}", job, containerId);
           startFuture = docker.startContainer(containerId);
           startFuture.get();
-          log.info("started container: {}: {}: {}", descriptor, containerId, containerInfo);
+          log.info("started container: {}: {}: {}", job, containerId, containerInfo);
         }
 
         setStatus(RUNNING, containerId);
 
         // Wait for container to die
         final int exitCode = docker.waitContainer(containerId).get();
-        log.info("container exited: {}: {}: {}", descriptor, containerId, exitCode);
+        log.info("container exited: {}: {}: {}", job, containerId, exitCode);
         setStatus(EXITED, containerId);
 
         set(exitCode);
@@ -412,19 +417,19 @@ class Supervisor {
     private Builder() {
     }
 
-    private String name;
-    private JobDescriptor descriptor;
+    private JobId jobId;
+    private Job descriptor;
     private State state;
     private AsyncDockerClient dockerClient;
     private long restartIntervalMillis = DEFAULT_RESTART_INTERVAL_MILLIS;
     private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
 
-    public Builder setName(final String name) {
-      this.name = name;
+    public Builder setJobId(final JobId jobId) {
+      this.jobId = jobId;
       return this;
     }
 
-    public Builder setDescriptor(final JobDescriptor descriptor) {
+    public Builder setDescriptor(final Job descriptor) {
       this.descriptor = descriptor;
       return this;
     }
@@ -450,7 +455,7 @@ class Supervisor {
     }
 
     public Supervisor build() {
-      return new Supervisor(name, descriptor, state, dockerClient, restartIntervalMillis,
+      return new Supervisor(jobId, descriptor, state, dockerClient, restartIntervalMillis,
                             retryIntervalMillis);
     }
   }

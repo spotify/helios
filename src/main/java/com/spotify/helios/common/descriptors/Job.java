@@ -7,7 +7,6 @@ package com.spotify.helios.common.descriptors;
 import com.google.common.base.Objects;
 import com.google.common.io.BaseEncoding;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 
@@ -20,45 +19,27 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.helios.common.Hash.sha1digest;
 
-public class JobDescriptor extends Descriptor {
+public class Job extends Descriptor {
 
-  private final String hash;
-  private final String name;
-  private final String version;
+  private final JobId id;
   private final String image;
   private final List<String> command;
 
-  public JobDescriptor(@JsonProperty("hash") final String hash,
-                       @JsonProperty("name") final String name,
-                       @JsonProperty("version") final String version,
-                       @JsonProperty("image") final String image,
-                       @JsonProperty("command") final List<String> command) {
-    this.hash = checkNotNull(hash);
-    this.name = checkNotNull(name);
-    this.version = checkNotNull(version);
+  public Job(@JsonProperty("id") final JobId id,
+             @JsonProperty("image") final String image,
+             @JsonProperty("command") final List<String> command) {
+    this.id = checkNotNull(id);
     this.image = checkNotNull(image);
     this.command = checkNotNull(command);
   }
 
-  public String getHash() {
-    return hash;
+  public JobId getId() {
+    return id;
   }
 
-  public String getName() {
-    return name;
-  }
-
-  public String getVersion() {
-    return version;
-  }
 
   public String getImage() {
     return image;
-  }
-
-  @JsonIgnore
-  public String getId() {
-    return name + ":" + version + ":" + hash;
   }
 
   public List<String> getCommand() {
@@ -71,7 +52,6 @@ public class JobDescriptor extends Descriptor {
 
   @Override
   public boolean equals(final Object o) {
-
     if (this == o) {
       return true;
     }
@@ -79,21 +59,15 @@ public class JobDescriptor extends Descriptor {
       return false;
     }
 
-    final JobDescriptor that = (JobDescriptor) o;
+    final Job job = (Job) o;
 
-    if (command != null ? !command.equals(that.command) : that.command != null) {
+    if (command != null ? !command.equals(job.command) : job.command != null) {
       return false;
     }
-    if (hash != null ? !hash.equals(that.hash) : that.hash != null) {
+    if (id != null ? !id.equals(job.id) : job.id != null) {
       return false;
     }
-    if (image != null ? !image.equals(that.image) : that.image != null) {
-      return false;
-    }
-    if (name != null ? !name.equals(that.name) : that.name != null) {
-      return false;
-    }
-    if (version != null ? !version.equals(that.version) : that.version != null) {
+    if (image != null ? !image.equals(job.image) : job.image != null) {
       return false;
     }
 
@@ -102,9 +76,7 @@ public class JobDescriptor extends Descriptor {
 
   @Override
   public int hashCode() {
-    int result = hash != null ? hash.hashCode() : 0;
-    result = 31 * result + (name != null ? name.hashCode() : 0);
-    result = 31 * result + (version != null ? version.hashCode() : 0);
+    int result = id != null ? id.hashCode() : 0;
     result = 31 * result + (image != null ? image.hashCode() : 0);
     result = 31 * result + (command != null ? command.hashCode() : 0);
     return result;
@@ -113,7 +85,7 @@ public class JobDescriptor extends Descriptor {
   @Override
   public String toString() {
     return Objects.toStringHelper(this)
-        .add("name", name)
+        .add("id", id)
         .add("image", image)
         .add("command", command)
         .toString();
@@ -158,7 +130,7 @@ public class JobDescriptor extends Descriptor {
       return this;
     }
 
-    public JobDescriptor build() {
+    public Job build() {
       final String configHash;
       try {
         configHash = hex(Json.sha1digest(p));
@@ -173,7 +145,9 @@ public class JobDescriptor extends Descriptor {
         checkArgument(this.hash.equals(hash));
       }
 
-      return new JobDescriptor(hash, p.name, p.version, p.image, p.command);
+      final JobId id = new JobId(p.name, p.version, hash);
+
+      return new Job(id, p.image, p.command);
     }
 
     private String hex(final byte[] bytes) {

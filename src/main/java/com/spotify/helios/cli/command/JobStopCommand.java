@@ -1,8 +1,9 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.common.Client;
-import com.spotify.helios.common.descriptors.AgentJob;
-import com.spotify.helios.common.descriptors.JobGoal;
+import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -33,16 +34,20 @@ public class JobStopCommand extends ControlCommand {
   int run(Namespace options, Client client, PrintStream out)
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
-    final String job = options.getString(jobArg.getDest());
+    final JobId jobId = JobId.fromString(options.getString(jobArg.getDest()));
 
-    out.printf("Deploying %s on %s%n", job, hosts);
+    final Deployment deployment = new Deployment.Builder()
+        .setGoal(Goal.STOP)
+        .setJobId(jobId)
+        .build();
+
+    out.printf("Deploying %s on %s%n", jobId, hosts);
 
     int code = 0;
 
     for (final String host : hosts) {
       out.printf("%s: ", host);
-      AgentJob agentJob = new AgentJob.Builder().setGoal(JobGoal.STOP).setJob(job).build();
-      final SetGoalResponse result = client.setGoal(agentJob, host).get();
+      final SetGoalResponse result = client.setGoal(deployment, host).get();
       if (result.getStatus() == SetGoalResponse.Status.OK) {
         out.printf("done%n");
       } else {

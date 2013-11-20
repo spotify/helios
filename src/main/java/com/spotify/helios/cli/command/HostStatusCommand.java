@@ -10,7 +10,8 @@ import com.google.common.primitives.Ints;
 
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.AgentStatus;
-import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -60,11 +61,11 @@ public class HostStatusCommand extends ControlCommand {
       final AgentStatus s = client.agentStatus(host).get();
 
       if (s != null) {
-        final Set<JobStatus> runningDeployedJobs = Sets.newHashSet();
-        for (final String name : s.getJobs().keySet()) {
-          final JobStatus jobStatus = s.getStatuses().get(name);
-          if (jobStatus.getState() == JobStatus.State.RUNNING) {
-            runningDeployedJobs.add(jobStatus);
+        final Set<TaskStatus> runningDeployedJobs = Sets.newHashSet();
+        for (final JobId jobId : s.getJobs().keySet()) {
+          final TaskStatus taskStatus = s.getStatuses().get(jobId);
+          if (taskStatus.getState() == TaskStatus.State.RUNNING) {
+            runningDeployedJobs.add(taskStatus);
           }
         }
 

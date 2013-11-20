@@ -8,13 +8,13 @@ import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-public class ImageDescriptor extends Descriptor {
+public class ImageId extends Descriptor {
 
   private final String name;
   private final String tag;
 
-  public ImageDescriptor(@JsonProperty("name") final String name,
-                         @JsonProperty("tag") final String tag) {
+  public ImageId(@JsonProperty("name") final String name,
+                 @JsonProperty("tag") final String tag) {
     this.name = name;
     this.tag = tag;
   }
@@ -40,7 +40,7 @@ public class ImageDescriptor extends Descriptor {
       return false;
     }
 
-    final ImageDescriptor that = (ImageDescriptor) o;
+    final ImageId that = (ImageId) o;
 
     if (name != null ? !name.equals(that.name) : that.name != null) {
       return false;
@@ -86,8 +86,8 @@ public class ImageDescriptor extends Descriptor {
       return this;
     }
 
-    public ImageDescriptor build() {
-      return new ImageDescriptor(name, tag);
+    public ImageId build() {
+      return new ImageId(name, tag);
     }
   }
 }

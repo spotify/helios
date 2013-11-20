@@ -10,7 +10,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
 
-public class JobStatus extends Descriptor {
+public class TaskStatus extends Descriptor {
 
   public enum State {
     CREATING,
@@ -20,28 +20,28 @@ public class JobStatus extends Descriptor {
     STOPPED
   }
 
-  private final JobDescriptor job;
+  private final Job job;
   private final State state;
-  private final String id;
+  private final String containerId;
 
-  public JobStatus(@JsonProperty("job") final JobDescriptor job,
-                   @JsonProperty("state") final State state,
-                   @Nullable @JsonProperty("id") final String id) {
-    this.id = id;
+  public TaskStatus(@JsonProperty("job") final Job job,
+                    @JsonProperty("state") final State state,
+                    @Nullable @JsonProperty("containerId") final String containerId) {
+    this.containerId = containerId;
     this.state = state;
     this.job = job;
   }
 
   @Nullable
-  public String getId() {
-    return id;
+  public String getContainerId() {
+    return containerId;
   }
 
   public State getState() {
     return state;
   }
 
-  public JobDescriptor getJob() {
+  public Job getJob() {
     return job;
   }
 
@@ -50,7 +50,7 @@ public class JobStatus extends Descriptor {
     return Objects.toStringHelper(this)
         .add("job", job)
         .add("state", state)
-        .add("id", id)
+        .add("containerId", containerId)
         .toString();
   }
 
@@ -63,9 +63,10 @@ public class JobStatus extends Descriptor {
       return false;
     }
 
-    final JobStatus status = (JobStatus) o;
+    final TaskStatus status = (TaskStatus) o;
 
-    if (id != null ? !id.equals(status.id) : status.id != null) {
+    if (containerId != null ? !containerId.equals(status.containerId)
+                            : status.containerId != null) {
       return false;
     }
     if (job != null ? !job.equals(status.job) : status.job != null) {
@@ -82,7 +83,7 @@ public class JobStatus extends Descriptor {
   public int hashCode() {
     int result = job != null ? job.hashCode() : 0;
     result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (id != null ? id.hashCode() : 0);
+    result = 31 * result + (containerId != null ? containerId.hashCode() : 0);
     return result;
   }
 }

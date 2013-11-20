@@ -5,7 +5,8 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.common.Client;
-import com.spotify.helios.common.descriptors.AgentJob;
+import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -16,8 +17,8 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import static com.spotify.helios.common.descriptors.JobGoal.START;
-import static com.spotify.helios.common.descriptors.JobGoal.STOP;
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class JobDeployCommand extends ControlCommand {
@@ -45,8 +46,8 @@ public class JobDeployCommand extends ControlCommand {
   int run(Namespace options, Client client, PrintStream out)
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
-    final AgentJob job = AgentJob.of(options.getString(jobArg.getDest()),
-                                     options.getBoolean(noStartArg.getDest()) ? STOP : START);
+    final Deployment job = Deployment.of(JobId.fromString(options.getString(jobArg.getDest())),
+                                         options.getBoolean(noStartArg.getDest()) ? STOP : START);
 
     out.printf("Deploying %s on %s%n", job, hosts);
 

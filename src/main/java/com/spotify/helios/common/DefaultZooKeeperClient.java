@@ -99,6 +99,17 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
+  public void create(final String path) throws KeeperException {
+    ensurePath(path, true);
+    try {
+      client.create().forPath(path);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
   public void createWithMode(final String path, final CreateMode mode) throws KeeperException {
     ensurePath(path, true);
     try {

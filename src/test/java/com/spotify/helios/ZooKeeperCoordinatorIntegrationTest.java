@@ -6,15 +6,16 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.AgentDoesNotExistException;
-import com.spotify.helios.common.AgentJobDoesNotExistException;
+import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
-import com.spotify.helios.common.descriptors.AgentJob;
-import com.spotify.helios.common.descriptors.JobDescriptor;
-import com.spotify.helios.common.descriptors.JobGoal;
+import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.master.ZooKeeperCoordinator;
 
 import org.junit.Before;
@@ -42,13 +43,13 @@ public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
   private static final String COMMAND = "COMMAND";
   private static final String JOB_NAME = "JOB_NAME";
   private static final String AGENT = "AGENT";
-  private static final JobDescriptor JOB = JobDescriptor.newBuilder()
+  private static final Job JOB = Job.newBuilder()
       .setCommand(ImmutableList.of(COMMAND))
       .setImage(IMAGE)
       .setName(JOB_NAME)
       .setVersion("VERSION")
       .build();
-  private static final String JOB_ID = JOB.getId();
+  private static final JobId JOB_ID = JOB.getId();
 
   private ZooKeeperClient curator;
   private ZooKeeperCoordinator coordinator;
@@ -90,7 +91,7 @@ public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
     assertEquals(coordinator.getJobs().get(JOB_ID), JOB);
     assertEquals(coordinator.getJob(JOB_ID), JOB);
 
-    final JobDescriptor secondJob = JobDescriptor.newBuilder()
+    final Job secondJob = Job.newBuilder()
         .setCommand(ImmutableList.of(COMMAND))
         .setImage(IMAGE)
         .setName(JOB_NAME)
@@ -108,8 +109,8 @@ public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
     coordinator.addJob(JOB);
     coordinator.addAgent(AGENT);
 
-    coordinator.addAgentJob(AGENT,
-        AgentJob.newBuilder().setGoal(JobGoal.START).setJob(JOB_ID).build());
+    coordinator.deployJob(AGENT,
+                          Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
     try {
       coordinator.removeJob(JOB_ID);
       fail("should have thrown an exception");
@@ -117,17 +118,20 @@ public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
       assertTrue(true);
     }
 
-    coordinator.removeAgentJob(AGENT, JOB_ID);
+    coordinator.undeployJob(AGENT, JOB_ID);
     assertNotNull(coordinator.getJobs().get(JOB_ID));
     coordinator.removeJob(JOB_ID); // should succeed
     assertNull(coordinator.getJobs().get(JOB_ID));
   }
 
   @Test
-  public void testAddAgentJob() throws Exception {
+  public void testDeploy() throws Exception {
     try {
-      coordinator.addAgentJob(AGENT,
-          AgentJob.newBuilder().setGoal(JobGoal.START).setJob(JOB_ID).build());
+      coordinator.deployJob(AGENT,
+                            Deployment.newBuilder()
+                                .setGoal(Goal.START)
+                                .setJobId(JOB_ID)
+                                .build());
       fail("should throw");
     } catch (JobDoesNotExistException | AgentDoesNotExistException e) {
       assertTrue(true);
@@ -135,8 +139,8 @@ public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
 
     coordinator.addJob(JOB);
     try {
-      coordinator.addAgentJob(AGENT,
-          AgentJob.newBuilder().setGoal(JobGoal.START).setJob(JOB_ID).build());
+      coordinator.deployJob(AGENT,
+                            Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
       fail("should throw");
     } catch (AgentDoesNotExistException e) {
       assertTrue(true);
@@ -144,15 +148,15 @@ public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
 
     coordinator.addAgent(AGENT);
 
-    coordinator.addAgentJob(AGENT,
-        AgentJob.newBuilder().setGoal(JobGoal.START).setJob(JOB_ID).build());
+    coordinator.deployJob(AGENT,
+                          Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
 
-    coordinator.removeAgentJob(AGENT,  JOB_ID);
+    coordinator.undeployJob(AGENT, JOB_ID);
     coordinator.removeJob(JOB_ID);
 
     try {
-      coordinator.addAgentJob(AGENT,
-          AgentJob.newBuilder().setGoal(JobGoal.START).setJob(JOB_ID).build());
+      coordinator.deployJob(AGENT,
+                            Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
       fail("should throw");
     } catch (JobDoesNotExistException e) {
       assertTrue(true);
@@ -198,30 +202,30 @@ public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
     try {
       stopJob(coordinator, JOB);
       fail("should have thrown exception");
-    } catch (AgentJobDoesNotExistException e) {
+    } catch (JobNotDeployedException e) {
       assertTrue(true);
     } catch (Exception e) {
-      fail("Should have thrown an AgentJobDoesNotExistException");
+      fail("Should have thrown an JobNotDeployedException");
     }
 
-    coordinator.addAgentJob(AGENT, AgentJob.newBuilder()
-        .setGoal(JobGoal.START)
-        .setJob(JOB.getId())
+    coordinator.deployJob(AGENT, Deployment.newBuilder()
+        .setGoal(Goal.START)
+        .setJobId(JOB.getId())
         .build());
-    Map<String, JobDescriptor> jobsOnAgent = coordinator.getJobs();
+    Map<JobId, Job> jobsOnAgent = coordinator.getJobs();
     assertEquals(1, jobsOnAgent.size());
-    JobDescriptor descriptor = jobsOnAgent.get(JOB.getId());
+    Job descriptor = jobsOnAgent.get(JOB.getId());
     assertEquals(JOB, descriptor);
 
     stopJob(coordinator, JOB); // should succeed this time!
-    AgentJob jobCfg = coordinator.getAgentJob(AGENT, JOB.getId());
-    assertEquals(JobGoal.STOP, jobCfg.getGoal());
+    Deployment jobCfg = coordinator.getDeployment(AGENT, JOB.getId());
+    assertEquals(Goal.STOP, jobCfg.getGoal());
   }
 
-  private void stopJob(ZooKeeperCoordinator coordinator, JobDescriptor job) throws HeliosException {
-    coordinator.updateAgentJob(AGENT, AgentJob.newBuilder()
-        .setGoal(JobGoal.STOP)
-        .setJob(job.getId())
+  private void stopJob(ZooKeeperCoordinator coordinator, Job job) throws HeliosException {
+    coordinator.updateDeployment(AGENT, Deployment.newBuilder()
+        .setGoal(Goal.STOP)
+        .setJobId(job.getId())
         .build());
   }
 }

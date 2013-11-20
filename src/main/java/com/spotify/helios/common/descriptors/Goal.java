@@ -4,7 +4,7 @@
 
 package com.spotify.helios.common.descriptors;
 
-public enum JobGoal {
+public enum Goal {
   START,
   STOP
 }

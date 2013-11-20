@@ -13,14 +13,16 @@ import com.google.protobuf.ByteString;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
-import com.spotify.helios.common.descriptors.AgentJob;
+import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Descriptor;
-import com.spotify.helios.common.descriptors.JobDescriptor;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.AgentDeleteResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
+import com.spotify.helios.common.protocol.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.hermes.Hermes;
@@ -55,8 +57,8 @@ public class Client {
   private final String user;
   private final com.spotify.hermes.service.Client hermesClient;
 
-  public static final TypeReference<Map<String, JobDescriptor>> JOB_DESCRIPTOR_MAP =
-      new TypeReference<Map<String, JobDescriptor>>() {};
+  public static final TypeReference<Map<String, Job>> JOB_DESCRIPTOR_MAP =
+      new TypeReference<Map<String, Job>>() {};
 
   public Client(final String user, final com.spotify.hermes.service.Client hermesClient) {
     this.user = user;
@@ -119,16 +121,16 @@ public class Client {
     return status(request(uri, "PUT"));
   }
 
-  public ListenableFuture<JobDeployResponse> deploy(final AgentJob job, final String host) {
+  public ListenableFuture<JobDeployResponse> deploy(final Deployment job, final String host) {
     ImmutableSet<StatusCode> deserializeReturnCodes = ImmutableSet.of(OK, NOT_FOUND,
                                                                       METHOD_NOT_ALLOWED,
                                                                       BAD_REQUEST);
-    return transform(request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PUT", job),
+    return transform(request(uri("/agents/%s/jobs/%s", host, job.getJobId()), "PUT", job),
                      ConvertResponseToPojo.create(JobDeployResponse.class, deserializeReturnCodes));
   }
 
-  public ListenableFuture<SetGoalResponse> setGoal(final AgentJob job, final String host) {
-    return transform(request(uri("/agents/%s/jobs/%s", host, job.getJob()), "PATCH", job),
+  public ListenableFuture<SetGoalResponse> setGoal(final Deployment job, final String host) {
+    return transform(request(uri("/agents/%s/jobs/%s", host, job.getJobId()), "PATCH", job),
                      ConvertResponseToPojo.create(SetGoalResponse.class,
                                                   ImmutableSet.of(OK, NOT_FOUND)));
   }
@@ -143,8 +145,8 @@ public class Client {
                      });
   }
 
-  public ListenableFuture<AgentJob> stat(final String agent, final String job) {
-    return get(uri("/agents/%s/jobs/%s", agent, job), AgentJob.class);
+  public ListenableFuture<Deployment> stat(final String agent, final JobId job) {
+    return get(uri("/agents/%s/jobs/%s", agent, job), Deployment.class);
   }
 
   public ListenableFuture<AgentStatus> agentStatus(final String agent) {
@@ -156,13 +158,13 @@ public class Client {
     return put(uri("/agents/%s", agent));
   }
 
-  public ListenableFuture<JobDeleteResponse> deleteJob(final String id) {
+  public ListenableFuture<JobDeleteResponse> deleteJob(final JobId id) {
     return transform(request(uri("/jobs/%s", id), "DELETE"),
                      ConvertResponseToPojo.create(JobDeleteResponse.class,
                                                   ImmutableSet.of(OK, FORBIDDEN)));
   }
 
-  public ListenableFuture<JobUndeployResponse> undeploy(final String jobId, final String host) {
+  public ListenableFuture<JobUndeployResponse> undeploy(final JobId jobId, final String host) {
     return transform(request(uri("/agents/%s/jobs/%s", host, jobId), "DELETE"),
                      ConvertResponseToPojo.create(JobUndeployResponse.class,
                                                   ImmutableSet.of(OK, NOT_FOUND)));
@@ -182,18 +184,18 @@ public class Client {
     return get(uri("/masters/"), new TypeReference<List<String>>() {});
   }
 
-  public ListenableFuture<CreateJobResponse> createJob(final JobDescriptor descriptor) {
+  public ListenableFuture<CreateJobResponse> createJob(final Job descriptor) {
     return transform(request(uri("/jobs/" + descriptor.getId()), "PUT", descriptor),
                      ConvertResponseToPojo.create(CreateJobResponse.class,
                                                   ImmutableSet.of(OK, BAD_REQUEST)));
   }
 
-  public ListenableFuture<Map<String, JobDescriptor>> jobs() {
+  public ListenableFuture<Map<String, Job>> jobs() {
     return transform(
         request(uri("/jobs/")),
-        new AsyncFunction<Message, Map<String, JobDescriptor>>() {
+        new AsyncFunction<Message, Map<String, Job>>() {
           @Override
-          public ListenableFuture<Map<String, JobDescriptor>> apply(final Message reply)
+          public ListenableFuture<Map<String, Job>> apply(final Message reply)
               throws HeliosException {
             if (reply.getStatusCode() != StatusCode.OK) {
               throw new HeliosException("request failed: " + reply);
@@ -203,7 +205,7 @@ public class Client {
               throw new HeliosException("bad reply: " + reply);
             }
 
-            final Map<String, JobDescriptor> jobs;
+            final Map<String, Job> jobs;
             try {
               final ByteString payload = reply.getPayloads().get(0);
               jobs = Json.read(payload.toByteArray(), JOB_DESCRIPTOR_MAP);
@@ -218,6 +220,10 @@ public class Client {
 
   public static Builder newBuilder() {
     return new Builder();
+  }
+
+  public ListenableFuture<JobStatus> jobStatus(final JobId jobId) {
+    return get(uri("/jobs/%s/status", jobId), JobStatus.class);
   }
 
   private static final class ConvertResponseToPojo<T> implements AsyncFunction<Message, T> {

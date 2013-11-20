@@ -8,11 +8,11 @@ import com.google.common.collect.Maps;
 
 import com.spotify.helios.common.Reactor;
 import com.spotify.helios.common.ReactorFactory;
-import com.spotify.helios.common.descriptors.AgentJob;
-import com.spotify.helios.common.descriptors.AgentJobDescriptor;
-import com.spotify.helios.common.descriptors.JobDescriptor;
-import com.spotify.helios.common.descriptors.JobGoal;
-import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.Task;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -25,11 +25,11 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.util.Collections;
 import java.util.Map;
 
-import static com.spotify.helios.common.descriptors.JobGoal.START;
-import static com.spotify.helios.common.descriptors.JobGoal.STOP;
-import static com.spotify.helios.common.descriptors.JobStatus.State.CREATING;
-import static com.spotify.helios.common.descriptors.JobStatus.State.RUNNING;
-import static com.spotify.helios.common.descriptors.JobStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.Goal.STOP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
@@ -53,18 +53,18 @@ public class AgentTest {
   @Captor ArgumentCaptor<State.Listener> listenerCaptor;
   @Captor ArgumentCaptor<Long> timeoutCaptor;
 
-  final Map<String, AgentJobDescriptor> jobs = Maps.newHashMap();
-  final Map<String, AgentJobDescriptor> unmodifiableJobs = Collections.unmodifiableMap(jobs);
+  final Map<JobId, Task> jobs = Maps.newHashMap();
+  final Map<JobId, Task> unmodifiableJobs = Collections.unmodifiableMap(jobs);
 
-  final Map<String, JobStatus> jobStatuses = Maps.newHashMap();
-  final Map<String, JobStatus> unmodifiableJobStatuses = Collections.unmodifiableMap(jobStatuses);
+  final Map<JobId, TaskStatus> jobStatuses = Maps.newHashMap();
+  final Map<JobId, TaskStatus> unmodifiableJobStatuses = Collections.unmodifiableMap(jobStatuses);
 
   Agent sut;
   Runnable callback;
   State.Listener listener;
 
   static final String FOO_JOB = "foojob";
-  static final JobDescriptor FOO_DESCRIPTOR = JobDescriptor.newBuilder()
+  static final Job FOO_DESCRIPTOR = Job.newBuilder()
       .setCommand(asList("foo", "foo"))
       .setImage("foo:4711")
       .setName("foo")
@@ -72,7 +72,7 @@ public class AgentTest {
       .build();
 
   static final String BAR_JOB = "barjob";
-  static final JobDescriptor BAR_DESCRIPTOR = JobDescriptor.newBuilder()
+  static final Job BAR_DESCRIPTOR = Job.newBuilder()
       .setCommand(asList("bar", "bar"))
       .setImage("bar:5656")
       .setName("bar")
@@ -87,8 +87,8 @@ public class AgentTest {
         .thenReturn(barSupervisor);
     when(reactorFactory.create(callbackCaptor.capture(), timeoutCaptor.capture()))
         .thenReturn(reactor);
-    when(state.getJobs()).thenReturn(unmodifiableJobs);
-    when(state.getJobStatuses()).thenReturn(unmodifiableJobStatuses);
+    when(state.getTasks()).thenReturn(unmodifiableJobs);
+    when(state.getTaskStatuses()).thenReturn(unmodifiableJobStatuses);
     sut = new Agent(state, supervisorFactory, reactorFactory);
     verify(reactorFactory).create(any(Runnable.class), anyLong());
     callback = callbackCaptor.getValue();
@@ -100,18 +100,17 @@ public class AgentTest {
     listener = listenerCaptor.getValue();
   }
 
-  private void configure(final JobDescriptor descriptor, final JobGoal goal) {
-    final AgentJob agentJob = new AgentJob(descriptor.getId(), goal);
-    final AgentJobDescriptor agentJobDescriptor = new AgentJobDescriptor(agentJob, descriptor);
-    jobs.put(descriptor.getId(), agentJobDescriptor);
+  private void configure(final Job job, final Goal goal) {
+    final Task task = new Task(job, goal);
+    jobs.put(job.getId(), task);
   }
 
-  private void start(JobDescriptor descriptor) {
+  private void start(Job descriptor) {
     configure(descriptor, START);
     callback.run();
   }
 
-  private void stop(JobDescriptor descriptor) {
+  private void stop(Job descriptor) {
     jobs.remove(descriptor.getId());
     callback.run();
   }
@@ -119,7 +118,7 @@ public class AgentTest {
   @Test
   public void verifyReactorIsUpdatedWhenListenerIsCalled() {
     startAgent();
-    listener.jobsUpdated(state);
+    listener.tasksChanged(state);
     verify(reactor).update();
   }
 
@@ -128,8 +127,8 @@ public class AgentTest {
     configure(FOO_DESCRIPTOR, START);
     configure(BAR_DESCRIPTOR, STOP);
 
-    jobStatuses.put(FOO_DESCRIPTOR.getId(), new JobStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1"));
-    jobStatuses.put(BAR_DESCRIPTOR.getId(), new JobStatus(BAR_DESCRIPTOR, RUNNING, "bar-container-1"));
+    jobStatuses.put(FOO_DESCRIPTOR.getId(), new TaskStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1"));
+    jobStatuses.put(BAR_DESCRIPTOR.getId(), new TaskStatus(BAR_DESCRIPTOR, RUNNING, "bar-container-1"));
 
     when(fooSupervisor.isStarting()).thenReturn(false);
     when(barSupervisor.isStarting()).thenReturn(true);
@@ -153,7 +152,7 @@ public class AgentTest {
   @Test
   public void verifyAgentRecoversStateAndStopsUndesiredSupervisors() {
     jobStatuses.put(FOO_DESCRIPTOR.getId(),
-                    new JobStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1"));
+                    new TaskStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1"));
 
     startAgent();
 

@@ -1,7 +1,8 @@
 package com.spotify.helios.common.protocol;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class SetGoalResponse {
   public enum Status {
@@ -9,7 +10,8 @@ public class SetGoalResponse {
     JOB_NOT_FOUND,
     AGENT_NOT_FOUND,
     JOB_NOT_DEPLOYED,
-    ID_MISMATCH
+    ID_MISMATCH,
+    INVALID_ID
   }
 
   private final Status status;

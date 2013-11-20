@@ -11,8 +11,9 @@ import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.Image;
-import com.spotify.helios.common.descriptors.JobDescriptor;
-import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -31,10 +32,10 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
-import static com.spotify.helios.common.descriptors.JobStatus.State.CREATING;
-import static com.spotify.helios.common.descriptors.JobStatus.State.RUNNING;
-import static com.spotify.helios.common.descriptors.JobStatus.State.STARTING;
-import static com.spotify.helios.common.descriptors.JobStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
@@ -53,9 +54,10 @@ public class SupervisorTest {
   static final String TAG = "17";
   static final String IMAGE = REPOSITORY + ":" + TAG;
   static final String NAME = "testStartStop";
+  static final JobId JOB_ID = new JobId("test", "job", "deadbeef");
   static final List<String> COMMAND = asList("foo", "bar");
   static final String VERSION = "4711";
-  static final JobDescriptor DESCRIPTOR = JobDescriptor.newBuilder()
+  static final Job DESCRIPTOR = Job.newBuilder()
       .setName(NAME)
       .setCommand(COMMAND)
       .setImage(IMAGE)
@@ -80,7 +82,7 @@ public class SupervisorTest {
   @Before
   public void setup() {
     sut = Supervisor.newBuilder()
-        .setName(NAME)
+        .setJobId(JOB_ID)
         .setDescriptor(DESCRIPTOR)
         .setState(state)
         .setDockerClient(docker)
@@ -89,22 +91,22 @@ public class SupervisorTest {
         .build();
     when(docker.getImages(IMAGE)).thenReturn(immediateFuture(DOCKER_IMAGES));
 
-    final ConcurrentMap<String, JobStatus> statusMap = Maps.newConcurrentMap();
+    final ConcurrentMap<JobId, TaskStatus> statusMap = Maps.newConcurrentMap();
     doAnswer(new Answer() {
       @Override
       public Object answer(final InvocationOnMock invocationOnMock) {
         final Object[] arguments = invocationOnMock.getArguments();
-        final String name = (String) arguments[0];
-        final JobStatus status = (JobStatus) arguments[1];
-        statusMap.put(name, status);
+        final JobId jobId = (JobId) arguments[0];
+        final TaskStatus status = (TaskStatus) arguments[1];
+        statusMap.put(jobId, status);
         return null;
       }
-    }).when(state).setJobStatus(eq(NAME), any(JobStatus.class));
-    when(state.getJobStatus(eq(NAME))).thenAnswer(new Answer<Object>() {
+    }).when(state).setTaskStatus(eq(JOB_ID), any(TaskStatus.class));
+    when(state.getTaskStatus(eq(JOB_ID))).thenAnswer(new Answer<Object>() {
       @Override
       public Object answer(final InvocationOnMock invocationOnMock) throws Throwable {
-        final String name = (String) invocationOnMock.getArguments()[0];
-        return statusMap.get(name);
+        final JobId jobId = (JobId) invocationOnMock.getArguments()[0];
+        return statusMap.get(jobId);
       }
     });
   }
@@ -143,26 +145,28 @@ public class SupervisorTest {
     // Verify that the container is created
     verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture(),
                                                   containerNameCaptor.capture());
-    verify(state, timeout(1000)).setJobStatus(eq(NAME),
-                                              eq(new JobStatus(DESCRIPTOR, CREATING, null)));
+    verify(state, timeout(1000)).setTaskStatus(eq(JOB_ID),
+                                               eq(new TaskStatus(DESCRIPTOR, CREATING, null)));
     assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
     assertEquals(IMAGE, containerConfig.getImage());
     final String containerName = containerNameCaptor.getValue();
-    final UUID uuid = parseContainerUUID(containerName);
-    assertEquals(DESCRIPTOR.getId(), parseContainerName(containerName));
+    final UUID uuid = uuidFromContainerName(containerName);
+    assertEquals(DESCRIPTOR.getId(), jobIdFromContainerName(containerName));
 
     // Verify that the container is started
     verify(docker, timeout(1000)).startContainer(containerId);
-    verify(state, timeout(1000)).setJobStatus(eq(NAME),
-                                              eq(new JobStatus(DESCRIPTOR, STARTING, containerId)));
+    verify(state, timeout(1000)).setTaskStatus(eq(JOB_ID),
+                                               eq(new TaskStatus(DESCRIPTOR, STARTING,
+                                                                 containerId)));
     assertEquals(STARTING, sut.getStatus());
     startFuture.set(null);
 
     verify(docker, timeout(1000)).waitContainer(containerId);
-    verify(state, timeout(1000)).setJobStatus(eq(NAME),
-                                              eq(new JobStatus(DESCRIPTOR, RUNNING, containerId)));
+    verify(state, timeout(1000)).setTaskStatus(eq(JOB_ID),
+                                               eq(new TaskStatus(DESCRIPTOR, RUNNING,
+                                                                 containerId)));
     assertEquals(RUNNING, sut.getStatus());
 
     // Stop the job
@@ -183,20 +187,21 @@ public class SupervisorTest {
     killFuture.set(null);
 
     // Verify that the stopped state is signalled
-    verify(state, timeout(1000)).setJobStatus(eq(NAME),
-                                              eq(new JobStatus(DESCRIPTOR, STOPPED, containerId)));
+    verify(state, timeout(1000)).setTaskStatus(eq(JOB_ID),
+                                               eq(new TaskStatus(DESCRIPTOR, STOPPED,
+                                                                 containerId)));
     assertEquals(STOPPED, sut.getStatus());
   }
 
-  private UUID parseContainerUUID(final String containerName) {
+  private UUID uuidFromContainerName(final String containerName) {
     final int lastColon = containerName.lastIndexOf(':');
     final String uuid = containerName.substring(lastColon + 1);
     return UUID.fromString(uuid);
   }
 
-  private String parseContainerName(final String containerName) {
+  private JobId jobIdFromContainerName(final String containerName) {
     final int lastColon = containerName.lastIndexOf(':');
-    return containerName.substring(0, lastColon);
+    return JobId.fromString(containerName.substring(0, lastColon));
   }
 
   @Test

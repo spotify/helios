@@ -19,7 +19,7 @@ import static com.google.common.base.Charsets.UTF_8;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
-public class JobDescriptorTest {
+public class JobTest {
 
   @Test
   public void verifySha1ID() throws IOException {
@@ -30,9 +30,9 @@ public class JobDescriptorTest {
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
-    final String expectedId = "foozbarz:17:" + expectedDigest;
+    final JobId expectedId = JobId.fromString("foozbarz:17:" + expectedDigest);
 
-    final JobDescriptor descriptor = JobDescriptor.newBuilder()
+    final Job descriptor = Job.newBuilder()
         .setCommand(asList("foo", "bar"))
         .setImage("testStartStop:4711")
         .setName("foozbarz")

@@ -35,4 +35,6 @@ public interface ZooKeeperClient {
   PathChildrenCache pathChildrenCache(String path, boolean cacheData);
 
   void deleteRecursive(String path) throws KeeperException;
+
+  void create(String path) throws KeeperException;
 }

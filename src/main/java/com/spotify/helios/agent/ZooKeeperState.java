@@ -13,8 +13,9 @@ import com.netflix.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCacheListener;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.coordination.Paths;
-import com.spotify.helios.common.descriptors.AgentJobDescriptor;
-import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.Task;
+import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -48,20 +49,21 @@ public class ZooKeeperState extends AbstractState {
     jobs.getListenable().addListener(new ContainersListener());
   }
 
-  private String jobId(final String path) {
+  private JobId jobId(final String path) {
     final String prefix = Paths.configAgentJobs(agent) + "/";
-    return path.replaceFirst(prefix, "");
+    return JobId.fromString(path.replaceFirst(prefix, ""));
   }
 
   @Override
-  public Map<String, JobStatus> getJobStatuses() {
+  public Map<JobId, TaskStatus> getTaskStatuses() {
     final String path = Paths.statusAgentJobs(agent);
-    final Map<String, JobStatus> jobs = Maps.newHashMap();
+    final Map<JobId, TaskStatus> jobs = Maps.newHashMap();
     try {
       final List<String> children = client.getChildren(path);
-      for (final String name : children) {
-        final JobStatus jobStatus = getJobStatus(name);
-        jobs.put(name, jobStatus);
+      for (final String jobIdString : children) {
+        final JobId jobId = JobId.fromString(jobIdString);
+        final TaskStatus taskStatus = getTaskStatus(jobId);
+        jobs.put(jobId, taskStatus);
       }
     } catch (KeeperException e) {
       throw Throwables.propagate(e);
@@ -70,10 +72,10 @@ public class ZooKeeperState extends AbstractState {
   }
 
   @Override
-  public void setJobStatus(final String name, final JobStatus state) {
-    log.debug("setting job status: {}", state);
+  public void setTaskStatus(final JobId jobId, final TaskStatus status) {
+    log.debug("setting job status: {}", status);
 
-    final String path = Paths.statusAgentJob(agent, name);
+    final String path = Paths.statusAgentJob(agent, jobId);
 
     try {
       // Check if the node already exists.
@@ -81,9 +83,9 @@ public class ZooKeeperState extends AbstractState {
 
       if (stat != null) {
         // The node already exists, overwrite it.
-        client.setData(path, state.toJsonBytes());
+        client.setData(path, status.toJsonBytes());
       } else {
-        client.createAndSetData(path, state.toJsonBytes());
+        client.createAndSetData(path, status.toJsonBytes());
       }
     } catch (KeeperException e) {
       throw Throwables.propagate(e);
@@ -91,15 +93,15 @@ public class ZooKeeperState extends AbstractState {
   }
 
   @Override
-  public JobStatus getJobStatus(final String name) {
-    final String path = Paths.statusAgentJob(agent, name);
+  public TaskStatus getTaskStatus(final JobId jobId) {
+    final String path = Paths.statusAgentJob(agent, jobId);
     try {
       final byte[] data = client.getData(path);
       if (data == null) {
         // No data, treat that as no state
         return null;
       }
-      return parse(data, JobStatus.class);
+      return parse(data, TaskStatus.class);
     } catch (NoNodeException e) {
       // No node -> no state
       return null;
@@ -112,10 +114,10 @@ public class ZooKeeperState extends AbstractState {
   }
 
   @Override
-  public void removeJobStatus(final String name) {
-    log.debug("removing job status: name={}", name);
+  public void removeTaskStatus(final JobId jobId) {
+    log.debug("removing job status: name={}", jobId);
     try {
-      client.delete(Paths.statusAgentJob(agent, name));
+      client.delete(Paths.statusAgentJob(agent, jobId));
     } catch (NoNodeException e) {
       log.debug("application node did not exist");
     } catch (KeeperException e) {
@@ -143,21 +145,21 @@ public class ZooKeeperState extends AbstractState {
       switch (event.getType()) {
         case CHILD_ADDED: {
           final byte[] data = event.getData().getData();
-          final String name = jobId(event.getData().getPath());
-          final AgentJobDescriptor descriptor = parse(data, AgentJobDescriptor.class);
-          doAddJob(name, descriptor);
+          final JobId jobId = jobId(event.getData().getPath());
+          final Task descriptor = parse(data, Task.class);
+          doAddJob(jobId, descriptor);
           break;
         }
         case CHILD_UPDATED: {
           final byte[] data = event.getData().getData();
-          final String name = jobId(event.getData().getPath());
-          final AgentJobDescriptor descriptor = parse(data, AgentJobDescriptor.class);
-          doUpdateJob(name, descriptor);
+          final JobId jobId = jobId(event.getData().getPath());
+          final Task descriptor = parse(data, Task.class);
+          doUpdateJob(jobId, descriptor);
           break;
         }
         case CHILD_REMOVED: {
-          final String name = jobId(event.getData().getPath());
-          doRemoveJob(name);
+          final JobId jobId = jobId(event.getData().getPath());
+          doRemoveJob(jobId);
           break;
         }
         case INITIALIZED:

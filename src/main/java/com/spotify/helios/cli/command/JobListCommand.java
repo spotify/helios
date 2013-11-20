@@ -7,7 +7,7 @@ package com.spotify.helios.cli.command;
 import com.google.common.collect.Sets;
 
 import com.spotify.helios.common.Client;
-import com.spotify.helios.common.descriptors.JobDescriptor;
+import com.spotify.helios.common.descriptors.Job;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -37,7 +37,7 @@ public class JobListCommand extends ControlCommand {
       throws ExecutionException, InterruptedException {
     final boolean quiet = options.getBoolean(quietArg.getDest());
 
-    final Map<String, JobDescriptor> jobs = client.jobs().get();
+    final Map<String, Job> jobs = client.jobs().get();
 
     SortedSet<String> sortedJobIds = Sets.newTreeSet(jobs.keySet());
 
@@ -45,9 +45,8 @@ public class JobListCommand extends ControlCommand {
       if (quiet) {
         out.println(jobId);
       } else {
-        final JobDescriptor d = jobs.get(jobId);
-        out.printf("%s: %s %s %s %s %s%n",
-                   jobId, d.getName(), d.getVersion(), d.getHash(), d.getImage(), d.getCommand());
+        final Job job = jobs.get(jobId);
+        out.printf("%s: %s %s%n", job.getId(), job.getImage(), job.getCommand());
       }
     }
 

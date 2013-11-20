@@ -12,41 +12,40 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import static com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL;
 
 @JsonInclude(NON_NULL)
-public class AgentJob extends Descriptor {
+public class Deployment extends Descriptor {
 
-  private final String job;
-  private final JobGoal goal;
+  private final JobId jobId;
+  private final Goal goal;
 
-  public AgentJob(@JsonProperty("job") final String job,
-                  @JsonProperty("goal") final JobGoal goal) {
-    this.job = job;
+  public Deployment(@JsonProperty("job") final JobId jobId,
+                    @JsonProperty("goal") final Goal goal) {
+    this.jobId  = jobId;
     this.goal = goal;
   }
 
-  public static AgentJob of(final String job, final JobGoal goal) {
+  public static Deployment of(final JobId jobId, final Goal goal) {
     return newBuilder()
-        .setJob(job)
+        .setJobId(jobId)
         .setGoal(goal)
         .build();
   }
 
-  public String getJob() {
-    return job;
+  public JobId getJobId() {
+    return jobId;
   }
 
-  public JobGoal getGoal() {
+  public Goal getGoal() {
     return goal;
   }
 
   @Override
   public String toString() {
     return Objects.toStringHelper(this)
-        .add("job", job)
+        .add("jobId", jobId)
         .add("goal", goal)
         .toString();
   }
 
-  @SuppressWarnings("RedundantIfStatement")
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -56,12 +55,12 @@ public class AgentJob extends Descriptor {
       return false;
     }
 
-    final AgentJob agentJob = (AgentJob) o;
+    final Deployment that = (Deployment) o;
 
-    if (goal != agentJob.goal) {
+    if (goal != that.goal) {
       return false;
     }
-    if (job != null ? !job.equals(agentJob.job) : agentJob.job != null) {
+    if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
       return false;
     }
 
@@ -70,7 +69,7 @@ public class AgentJob extends Descriptor {
 
   @Override
   public int hashCode() {
-    int result = job != null ? job.hashCode() : 0;
+    int result = jobId != null ? jobId.hashCode() : 0;
     result = 31 * result + (goal != null ? goal.hashCode() : 0);
     return result;
   }
@@ -81,21 +80,21 @@ public class AgentJob extends Descriptor {
 
   public static class Builder {
 
-    private String job;
-    private JobGoal goal;
+    private JobId jobId;
+    private Goal goal;
 
-    public Builder setJob(final String job) {
-      this.job = job;
+    public Builder setJobId(final JobId jobId) {
+      this.jobId = jobId;
       return this;
     }
 
-    public Builder setGoal(final JobGoal goal) {
+    public Builder setGoal(final Goal goal) {
       this.goal = goal;
       return this;
     }
 
-    public AgentJob build() {
-      return new AgentJob(job, goal);
+    public Deployment build() {
+      return new Deployment(jobId, goal);
     }
   }
 }

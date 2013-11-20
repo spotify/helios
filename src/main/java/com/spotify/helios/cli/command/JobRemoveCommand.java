@@ -1,6 +1,7 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.common.Client;
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -29,7 +30,7 @@ public class JobRemoveCommand extends ControlCommand {
   @Override
   int run(Namespace options, Client client, PrintStream out)
       throws ExecutionException, InterruptedException {
-    String jobId = options.getString(jobIdArg.getDest());
+    final JobId jobId = JobId.fromString(options.getString(jobIdArg.getDest()));
 
     if (!"yes".equals(options.getString(confirmArg.getDest()))) {
       out.printf("Will not delete a job unconfirmed.  Add yes to your command line.");

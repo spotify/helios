@@ -11,7 +11,8 @@ public class JobDeployResponse {
     JOB_NOT_FOUND,
     AGENT_NOT_FOUND,
     JOB_ALREADY_DEPLOYED,
-    ID_MISMATCH
+    ID_MISMATCH,
+    INVALID_ID
   }
 
   private final Status status;

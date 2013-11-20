@@ -7,7 +7,8 @@ package com.spotify.helios.cli.command;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.Client;
-import com.spotify.helios.common.descriptors.AgentJob;
+import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.JobId;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -39,15 +40,15 @@ public class StatusCommand extends ControlCommand {
   @Override
   int run(Namespace options, Client client, PrintStream out)
       throws ExecutionException, InterruptedException {
-    final String container = jobArg.getDest();
+    final JobId jobId = JobId.fromString(options.getString(jobArg.getDest()));
 
     final List<String> agents = options.getList(hostsArg.getDest());
 
     for (final String agent : agents) {
       out.printf("%s: ", agent);
-      final AgentJob agentJob = client.stat(agent, container).get();
-      if (agentJob != null) {
-        out.printf("%s%n", agentJob);
+      final Deployment deployment = client.stat(agent, jobId).get();
+      if (deployment != null) {
+        out.printf("%s%n", deployment);
       } else {
         out.printf("-%n");
       }

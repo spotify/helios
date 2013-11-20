@@ -4,6 +4,8 @@
 
 package com.spotify.helios.common.coordination;
 
+import com.spotify.helios.common.descriptors.JobId;
+
 public class Paths {
 
   private static final String UP = "up";
@@ -27,8 +29,16 @@ public class Paths {
     return CONFIG_JOBS.path();
   }
 
-  public static String configJob(final String id) {
-    return CONFIG_JOBS.path(id);
+  public static String configJob(final JobId id) {
+    return CONFIG_JOBS.path(id.toString());
+  }
+
+  public static String configJobAgents(final JobId jobId) {
+    return CONFIG_JOBS.path(jobId.toString(), AGENTS);
+  }
+
+  public static String configJobAgent(final JobId jobId, final String agent) {
+    return CONFIG_JOBS.path(jobId.toString(), AGENTS, agent);
   }
 
   public static String configAgent(final String agent) {
@@ -39,12 +49,8 @@ public class Paths {
     return CONFIG_AGENTS.path(agent, JOBS);
   }
 
-  public static String configAgentJob(final String agent, final String job) {
-    return CONFIG_AGENTS.path(agent, JOBS, job);
-  }
-
-  public static String configJobPath(final String id) {
-    return CONFIG_JOBS.path(id);
+  public static String configAgentJob(final String agent, final JobId jobId) {
+    return CONFIG_AGENTS.path(agent, JOBS, jobId.toString());
   }
 
   public static String statusAgent(final String agent) {
@@ -55,8 +61,8 @@ public class Paths {
     return STATUS_AGENTS.path(agent, JOBS);
   }
 
-  public static String statusAgentJob(final String agent, final String jobId) {
-    return STATUS_AGENTS.path(agent, JOBS, jobId);
+  public static String statusAgentJob(final String agent, final JobId jobId) {
+    return STATUS_AGENTS.path(agent, JOBS, jobId.toString());
   }
 
   public static String statusAgentUp(final String agent) {
@@ -74,4 +80,5 @@ public class Paths {
   public static String statusAgentHostInfo(final String agent) {
     return STATUS_AGENTS.path(agent, HOSTINFO);
   }
+
 }

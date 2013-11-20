@@ -10,9 +10,10 @@ import com.google.common.collect.Sets;
 
 import com.spotify.helios.common.Reactor;
 import com.spotify.helios.common.ReactorFactory;
-import com.spotify.helios.common.descriptors.AgentJobDescriptor;
-import com.spotify.helios.common.descriptors.JobDescriptor;
-import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.Task;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,7 +22,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.Sets.difference;
-import static com.spotify.helios.common.descriptors.JobStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -37,7 +38,7 @@ public class Agent {
   private final Reactor reactor;
 
   private final StateListener stateListener = new StateListener();
-  private final Map<String, Supervisor> supervisors = Maps.newHashMap();
+  private final Map<JobId, Supervisor> supervisors = Maps.newHashMap();
 
   /**
    * Create a new worker.
@@ -54,12 +55,12 @@ public class Agent {
   }
 
   public void start() {
-    final Map<String, JobStatus> jobStatuses = state.getJobStatuses();
-    final Map<String, AgentJobDescriptor> jobConfigurations = state.getJobs();
-    for (final String name : jobStatuses.keySet()) {
-      final JobStatus jobStatus = jobStatuses.get(name);
-      final AgentJobDescriptor config = jobConfigurations.get(name);
-      final Supervisor supervisor = createSupervisor(name, jobStatus.getJob());
+    final Map<JobId, TaskStatus> jobStatuses = state.getTaskStatuses();
+    final Map<JobId, Task> jobConfigurations = state.getTasks();
+    for (final JobId jobId : jobStatuses.keySet()) {
+      final TaskStatus taskStatus = jobStatuses.get(jobId);
+      final Task config = jobConfigurations.get(jobId);
+      final Supervisor supervisor = createSupervisor(jobId, taskStatus.getJob());
       delegate(supervisor, config);
     }
     this.state.addListener(stateListener);
@@ -71,7 +72,7 @@ public class Agent {
   public void close() {
     reactor.close();
     this.state.removeListener(stateListener);
-    for (final Map.Entry<String, Supervisor> entry : supervisors.entrySet()) {
+    for (final Map.Entry<JobId, Supervisor> entry : supervisors.entrySet()) {
       entry.getValue().close();
     }
   }
@@ -79,24 +80,24 @@ public class Agent {
   /**
    * Create a job supervisor.
    *
-   * @param name       The name of the job.
+   * @param jobId       The name of the job.
    * @param descriptor The job descriptor.
    */
-  private Supervisor createSupervisor(final String name, final JobDescriptor descriptor) {
-    log.debug("creating job supervisor: name={}, descriptor={}", name, descriptor);
-    final Supervisor supervisor = supervisorFactory.create(name, descriptor);
-    supervisors.put(name, supervisor);
+  private Supervisor createSupervisor(final JobId jobId, final Job descriptor) {
+    log.debug("creating job supervisor: name={}, descriptor={}", jobId, descriptor);
+    final Supervisor supervisor = supervisorFactory.create(jobId, descriptor);
+    supervisors.put(jobId, supervisor);
     return supervisor;
   }
 
   /**
    * Instructor supervisor to start or stop job depending on configuration.
    */
-  private void delegate(final Supervisor supervisor, final AgentJobDescriptor config) {
-    if (config == null) {
+  private void delegate(final Supervisor supervisor, final Task task) {
+    if (task == null) {
       supervisor.stop();
     } else {
-      switch (config.getJob().getGoal()) {
+      switch (task.getGoal()) {
         case START:
           if (!supervisor.isStarting()) {
             supervisor.start();
@@ -117,7 +118,7 @@ public class Agent {
   private class StateListener implements State.Listener {
 
     @Override
-    public void jobsUpdated(final State state) {
+    public void tasksChanged(final State state) {
       reactor.update();
     }
   }
@@ -130,7 +131,7 @@ public class Agent {
     @Override
     public void run() {
       // Remove stopped supervisors
-      for (final String name : ImmutableSet.copyOf(supervisors.keySet())) {
+      for (final JobId name : ImmutableSet.copyOf(supervisors.keySet())) {
         final Supervisor supervisor = supervisors.get(name);
         if (supervisor.getStatus() == STOPPED) {
           supervisors.remove(name);
@@ -138,29 +139,29 @@ public class Agent {
       }
 
       // Get a snapshot of the desired state
-      final Map<String, AgentJobDescriptor> desiredJobs = state.getJobs();
-      final Set<String> desiredJobIds = desiredJobs.keySet();
+      final Map<JobId, Task> desiredJobs = state.getTasks();
+      final Set<JobId> desiredJobIds = desiredJobs.keySet();
 
       // Get a snapshot of the current state
-      final Set<String> currentJobIds = Sets.newHashSet(supervisors.keySet());
+      final Set<JobId> currentJobIds = Sets.newHashSet(supervisors.keySet());
 
       // Stop removed supervisors
       // current - desired == running that shouldn't run
-      for (final String jobId : difference(currentJobIds, desiredJobIds)) {
+      for (final JobId jobId : difference(currentJobIds, desiredJobIds)) {
         final Supervisor supervisor = supervisors.get(jobId);
         supervisor.stop();
       }
 
       // Create new supervisors
       // desired - current == not running that should run
-      for (final String jobId : difference(desiredJobIds, currentJobIds)) {
-        final AgentJobDescriptor jobDescriptor = desiredJobs.get(jobId);
-        createSupervisor(jobId, jobDescriptor.getDescriptor());
+      for (final JobId jobId : difference(desiredJobIds, currentJobIds)) {
+        final Task jobDescriptor = desiredJobs.get(jobId);
+        createSupervisor(jobId, jobDescriptor.getJob());
       }
 
       // Update job goals
-      for (final Map.Entry<String, AgentJobDescriptor> entry : desiredJobs.entrySet()) {
-        final String jobId = entry.getKey();
+      for (final Map.Entry<JobId, Task> entry : desiredJobs.entrySet()) {
+        final JobId jobId = entry.getKey();
         final Supervisor supervisor = supervisors.get(jobId);
         delegate(supervisor, entry.getValue());
       }

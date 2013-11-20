@@ -5,6 +5,10 @@
 package com.spotify.helios.common;
 
 
+import com.spotify.helios.common.descriptors.JobId;
+
+import static java.lang.String.format;
+
 public class JobDoesNotExistException extends HeliosException {
 
   public JobDoesNotExistException(final String message) {
@@ -17,5 +21,9 @@ public class JobDoesNotExistException extends HeliosException {
 
   public JobDoesNotExistException(final String message, final Throwable cause) {
     super(message, cause);
+  }
+
+  public JobDoesNotExistException(final JobId id) {
+    super(format("job does not exist: %s", id));
   }
 }

@@ -19,11 +19,11 @@ public class AgentStatus extends Descriptor {
 
   private final Status status;
   private final HostInfo hostInfo;
-  private final Map<String, AgentJob> jobs;
-  private final Map<String, JobStatus> statuses;
+  private final Map<JobId, Deployment> jobs;
+  private final Map<JobId, TaskStatus> statuses;
 
-  public AgentStatus(@JsonProperty("jobs") final Map<String, AgentJob> jobs,
-                     @JsonProperty("statuses") final Map<String, JobStatus> statuses,
+  public AgentStatus(@JsonProperty("jobs") final Map<JobId, Deployment> jobs,
+                     @JsonProperty("statuses") final Map<JobId, TaskStatus> statuses,
                      @JsonProperty("status") final Status status,
                      @JsonProperty("hostInfo") final HostInfo hostInfo) {
     this.status = checkNotNull(status);
@@ -42,11 +42,11 @@ public class AgentStatus extends Descriptor {
     return hostInfo;
   }
 
-  public Map<String, AgentJob> getJobs() {
+  public Map<JobId, Deployment> getJobs() {
     return jobs;
   }
 
-  public Map<String, JobStatus> getStatuses() {
+  public Map<JobId, TaskStatus> getStatuses() {
     return statuses;
   }
 
@@ -56,17 +56,17 @@ public class AgentStatus extends Descriptor {
 
   public static class Builder {
 
-    private Map<String, AgentJob> jobs;
-    private Map<String, JobStatus> statuses;
+    private Map<JobId, Deployment> jobs;
+    private Map<JobId, TaskStatus> statuses;
     private Status status;
     private HostInfo hostInfo;
 
-    public Builder setJobs(final Map<String, AgentJob> jobs) {
+    public Builder setJobs(final Map<JobId, Deployment> jobs) {
       this.jobs = jobs;
       return this;
     }
 
-    public Builder setStatuses(final Map<String, JobStatus> statuses) {
+    public Builder setStatuses(final Map<JobId, TaskStatus> statuses) {
       this.statuses = statuses;
       return this;
     }
