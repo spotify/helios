@@ -22,6 +22,8 @@ public class HostRegisterCommand extends ControlCommand {
   public HostRegisterCommand(final Subparser parser) {
     super(parser);
 
+    parser.help("register a host");
+
     hostsArg = parser.addArgument("hosts").nargs("+");
   }
 

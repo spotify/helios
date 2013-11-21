@@ -27,6 +27,8 @@ public class JobListCommand extends ControlCommand {
   public JobListCommand(final Subparser parser) {
     super(parser);
 
+    parser.help("list all jobs");
+
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
         .help("only print job id");

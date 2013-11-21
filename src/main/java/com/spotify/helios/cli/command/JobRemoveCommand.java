@@ -19,6 +19,8 @@ public class JobRemoveCommand extends ControlCommand {
   public JobRemoveCommand(Subparser parser) {
     super(parser);
 
+    parser.help("remove a job");
+
     jobIdArg = parser.addArgument("jobid")
         .help("The id of the job to remove.");
 

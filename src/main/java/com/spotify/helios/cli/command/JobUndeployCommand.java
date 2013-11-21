@@ -24,6 +24,8 @@ public class JobUndeployCommand extends ControlCommand {
   public JobUndeployCommand(final Subparser parser) {
     super(parser);
 
+    parser.help("undeploy a job from hosts");
+
     jobArg = parser.addArgument("job")
         .help("Job id.");
 

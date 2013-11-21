@@ -30,6 +30,8 @@ public class JobStatusCommand extends ControlCommand {
   public JobStatusCommand(final Subparser parser) {
     super(parser);
 
+    parser.help("show status for a job");
+
     jobsArg = parser.addArgument("job")
         .action(append())
         .setDefault(Lists.newArrayList())

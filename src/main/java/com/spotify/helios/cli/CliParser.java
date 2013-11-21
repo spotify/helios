@@ -5,7 +5,7 @@
 package com.spotify.helios.cli;
 
 import com.spotify.helios.cli.command.ControlCommand;
-import com.spotify.helios.cli.command.HostDeleteCommand;
+import com.spotify.helios.cli.command.HostDeregisterCommand;
 import com.spotify.helios.cli.command.HostJobsCommand;
 import com.spotify.helios.cli.command.HostListCommand;
 import com.spotify.helios.cli.command.HostRegisterCommand;
@@ -32,7 +32,6 @@ import net.sourceforge.argparse4j.inf.Subparsers;
 
 import org.json.JSONException;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.List;
 
@@ -45,7 +44,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
-import static net.sourceforge.argparse4j.impl.Arguments.fileType;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class CliParser {
@@ -81,8 +79,7 @@ public class CliParser {
       final String username = options.getString(globalArgs.usernameArg.getDest());
       this.username = (username == null) ? cliConfig.getUsername() : username;
       this.loggingConfig = new LoggingConfig(options.getInt(globalArgs.verbose.getDest()),
-                                             options.getBoolean(globalArgs.syslog.getDest()),
-                                             (File) options.get(globalArgs.logconfig.getDest()),
+                                             false, null,
                                              options.getBoolean(globalArgs.noLogSetup.getDest()));
     } catch (ArgumentParserException e) {
       parser.handleError(e);
@@ -128,7 +125,8 @@ public class CliParser {
 
   private void setupCommands() {
     // Job commands
-    final Subparsers job = p("job").addSubparsers();
+    final Subparsers job = p("job").help("job commands")
+        .addSubparsers().title("job commands").metavar("COMMAND").help("additional help");
     new JobListCommand(p(job, "list"));
     new JobCreateCommand(p(job, "create"));
     new JobDeployCommand(p(job, "deploy"));
@@ -138,15 +136,17 @@ public class CliParser {
     new JobStatusCommand(p(job, "status"));
 
     // Host commands
-    final Subparsers host = p("host").addSubparsers();
+    final Subparsers host = p("host").help("host commands")
+        .addSubparsers().title("host commands").metavar("COMMAND").help("additional help");
     new HostListCommand(p(host, "list"));
     new HostJobsCommand(p(host, "jobs"));
     new HostRegisterCommand(p(host, "register"));
-    new HostDeleteCommand(p(host, "delete"));
+    new HostDeregisterCommand(p(host, "delete"));
     new HostStatusCommand(p(host, "status"));
 
     // Master Commands
-    final Subparsers master = p("master").addSubparsers();
+    final Subparsers master = p("master").help("master commands")
+        .addSubparsers().title("master commands").metavar("COMMAND").help("additional help");
     new MasterListCommand(p(master, "list"));
   }
 
@@ -179,8 +179,6 @@ public class CliParser {
     private final Argument srvNameArg;
     private final Argument usernameArg;
     private final Argument verbose;
-    private final Argument syslog;
-    private final Argument logconfig;
     private final Argument noLogSetup;
 
     GlobalArgs(final ArgumentParser parser, final CliConfig cliConfig) {
@@ -197,20 +195,12 @@ public class CliParser {
           .setDefault(cliConfig.getSrvName())
           .help("master srv name");
 
-      usernameArg = globalArgs.addArgument("--username")
+      usernameArg = globalArgs.addArgument("-u", "--username")
           .setDefault(System.getProperty("user.name"))
           .help("username");
 
       verbose = globalArgs.addArgument("-v", "--verbose")
           .action(Arguments.count());
-
-      syslog = globalArgs.addArgument("--syslog")
-          .help("Log to syslog.")
-          .action(storeTrue());
-
-      logconfig = globalArgs.addArgument("--logconfig")
-          .type(fileType().verifyExists().verifyCanRead())
-          .help("Logback configuration file.");
 
       noLogSetup = globalArgs.addArgument("--no-log-setup")
           .action(storeTrue())

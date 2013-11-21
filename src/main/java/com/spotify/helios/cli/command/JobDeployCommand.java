@@ -30,6 +30,8 @@ public class JobDeployCommand extends ControlCommand {
   public JobDeployCommand(final Subparser parser) {
     super(parser);
 
+    parser.help("deploy a job to hosts");
+
     jobArg = parser.addArgument("job")
         .help("Job id.");
 

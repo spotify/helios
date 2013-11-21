@@ -22,6 +22,8 @@ public class JobStopCommand extends ControlCommand {
   public JobStopCommand(Subparser parser) {
     super(parser);
 
+    parser.help("stop a job on hosts");
+
     jobArg = parser.addArgument("host")
         .help("Job to stop.");
 

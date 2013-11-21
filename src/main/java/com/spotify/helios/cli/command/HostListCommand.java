@@ -17,6 +17,8 @@ public class HostListCommand extends ControlCommand {
 
   public HostListCommand(final Subparser parser) {
     super(parser);
+
+    parser.help("list hosts");
   }
 
   @Override

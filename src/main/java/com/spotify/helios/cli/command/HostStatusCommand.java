@@ -33,6 +33,8 @@ public class HostStatusCommand extends ControlCommand {
   public HostStatusCommand(final Subparser parser) {
     super(parser);
 
+    parser.help("show host status");
+
     hostsArg = parser.addArgument("hosts")
         .action(append())
         .setDefault(Lists.newArrayList())

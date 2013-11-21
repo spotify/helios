@@ -10,16 +10,18 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 
-public class HostDeleteCommand extends ControlCommand {
+public class HostDeregisterCommand extends ControlCommand {
 
   private Argument agentArg;
   private Argument confirmArg;
 
-  public HostDeleteCommand(Subparser parser) {
+  public HostDeregisterCommand(Subparser parser) {
     super(parser);
 
+    parser.help("deregister a host");
+
     agentArg = parser.addArgument("host")
-        .help("Host name to remove.");
+        .help("Host name to deregister.");
 
     // TODO(drewc): perhaps require the enter in today's date or something?
     confirmArg = parser.addArgument("sure")

@@ -29,6 +29,8 @@ public class JobCreateCommand extends ControlCommand {
   public JobCreateCommand(final Subparser parser) {
     super(parser);
 
+    parser.help("create a job");
+
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
         .help("only print job id");

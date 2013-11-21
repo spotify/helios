@@ -26,6 +26,8 @@ public class HostJobsCommand extends ControlCommand {
   public HostJobsCommand(final Subparser parser) {
     super(parser);
 
+    parser.help("list jobs deployed on a host");
+
     hostArg = parser.addArgument("host")
         .help("The host to list jobs for.");
   }
