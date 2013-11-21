@@ -186,18 +186,18 @@ public class CliParser {
     GlobalArgs(final ArgumentParser parser, final CliConfig cliConfig) {
       final ArgumentGroup globalArgs = parser.addArgumentGroup("global options");
 
-      masterArg = parser.addArgument("-z", "--master")
+      masterArg = globalArgs.addArgument("-z", "--master")
           .action(append())
           .help(format("master endpoint (default: %s)", getDefaultMasterEndpoints(cliConfig)));
 
-      sitesArg = parser.addArgument("-s", "--sites")
+      sitesArg = globalArgs.addArgument("-s", "--sites")
           .help(format("sites (default: %s)", cliConfig.getSitesString()));
 
-      srvNameArg = parser.addArgument("--srv-name")
+      srvNameArg = globalArgs.addArgument("--srv-name")
           .setDefault(cliConfig.getSrvName())
           .help("master srv name");
 
-      usernameArg = parser.addArgument("--username")
+      usernameArg = globalArgs.addArgument("--username")
           .setDefault(System.getProperty("user.name"))
           .help("username");
 
