@@ -15,7 +15,7 @@ then
   PUPPET_BRANCH=$LOGNAME/helios
 fi
 
-echo -n "Spoticloud project name for nodes: [default $LOGNAME-helios]"
+echo -n "Spoticloud project name for nodes: [default $LOGNAME-helios] "
 read PROJECT
 if [ -z "$PROJECT" ]
 then
