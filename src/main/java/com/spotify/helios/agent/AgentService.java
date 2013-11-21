@@ -54,7 +54,8 @@ public class AgentService {
 
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
-    final SupervisorFactory supervisorFactory = new SupervisorFactory(state, dockerClientFactory);
+    final SupervisorFactory supervisorFactory = new SupervisorFactory(state, dockerClientFactory,
+        config);
     final ReactorFactory reactorFactory = new ReactorFactory();
 
     this.hostInfoReporter = HostInfoReporter.newBuilder()

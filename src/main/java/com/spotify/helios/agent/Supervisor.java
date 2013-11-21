@@ -4,6 +4,9 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -71,11 +74,13 @@ class Supervisor {
   private final State state;
   private final long restartIntervalMillis;
   private final long retryIntervalMillis;
+  private final AgentConfig agentConfig;
 
   private volatile Runner runner;
   private volatile boolean closed;
   private volatile boolean starting;
   private volatile TaskStatus.State status;
+
 
   /**
    * Create a new job supervisor.
@@ -83,16 +88,19 @@ class Supervisor {
    * @param jobId The job id.
    * @param job   The job.
    * @param state The worker state to use.
+   * @param config     The agent configuration.
    */
   private Supervisor(final JobId jobId, final Job job,
                      final State state, final AsyncDockerClient dockerClient,
-                     final long restartIntervalMillis, final long retryIntervalMillis) {
+                     final long restartIntervalMillis, final long retryIntervalMillis,
+                     final AgentConfig config) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.state = checkNotNull(state);
     this.docker = checkNotNull(dockerClient);
     this.restartIntervalMillis = restartIntervalMillis;
     this.retryIntervalMillis = retryIntervalMillis;
+    this.agentConfig = checkNotNull(config);
   }
 
   /**
@@ -243,6 +251,14 @@ class Supervisor {
     return status;
   }
 
+  private boolean notEmpty(String s) {
+    if (s == null) {
+      return false;
+    }
+
+    return !"".equals(s);
+  }
+
   /**
    * Create docker container configuration for a job.
    */
@@ -251,6 +267,37 @@ class Supervisor {
     containerConfig.setImage(descriptor.getImage());
     final List<String> command = descriptor.getCommand();
     containerConfig.setCmd(command.toArray(new String[command.size()]));
+
+    List<String> environment = Lists.newArrayList();
+    if (notEmpty(agentConfig.getDomain())) {
+      environment.add("DOMAIN=" + agentConfig.getDomain());
+    }
+
+    if (notEmpty(agentConfig.getSite())) {
+      environment.add("SITE=" + agentConfig.getSite());
+    }
+
+    if (notEmpty(agentConfig.getPod())) {
+      environment.add("POD="+ agentConfig.getPod());
+    }
+
+    if (notEmpty(agentConfig.getRole())) {
+      environment.add("ROLE="+ agentConfig.getRole());
+    }
+
+    if (notEmpty(agentConfig.getSyslogHostPort())) {
+      List<String> bits = ImmutableList.copyOf(
+          Splitter.on(":").split(agentConfig.getSyslogHostPort()));
+      if (bits.size() == 2) {
+        environment.add("SYSLOG_HOST=" + bits.get(0));
+        environment.add("SYSLOG_PORT=" + bits.get(1));
+      } else {
+        throw new RuntimeException("--syslogHost must be host:port, got " + agentConfig.getSyslogHostPort());
+      }
+    }
+
+    containerConfig.setEnv(environment.toArray(new String[]{}));
+
     return containerConfig;
   }
 
@@ -423,6 +470,7 @@ class Supervisor {
     private AsyncDockerClient dockerClient;
     private long restartIntervalMillis = DEFAULT_RESTART_INTERVAL_MILLIS;
     private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
+    private AgentConfig config;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -454,9 +502,15 @@ class Supervisor {
       return this;
     }
 
+    public Builder setConfig(AgentConfig config) {
+      this.config = config;
+      return this;
+    }
+
     public Supervisor build() {
       return new Supervisor(jobId, descriptor, state, dockerClient, restartIntervalMillis,
-                            retryIntervalMillis);
+                            retryIntervalMillis, config);
     }
+
   }
 }

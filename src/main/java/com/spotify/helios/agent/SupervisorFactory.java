@@ -15,10 +15,13 @@ public class SupervisorFactory {
 
   private final State state;
   private final DockerClientFactory dockerClientFactory;
+  private final AgentConfig config;
 
-  public SupervisorFactory(final State state, final DockerClientFactory dockerClientFactory) {
+  public SupervisorFactory(final State state, final DockerClientFactory dockerClientFactory,
+                           final AgentConfig config) {
     this.dockerClientFactory = dockerClientFactory;
     this.state = checkNotNull(state);
+    this.config = checkNotNull(config);
   }
 
   /**
@@ -33,6 +36,7 @@ public class SupervisorFactory {
         .setDescriptor(descriptor)
         .setState(state)
         .setDockerClient(dockerClient)
+        .setConfig(config)
         .build();
   }
 }
