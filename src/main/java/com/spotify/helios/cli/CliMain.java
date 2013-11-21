@@ -55,7 +55,7 @@ public class CliMain {
   public int run() {
     try {
       return parser.getCommand().run(parser.getNamespace(), parser.getTargets(), out,
-                                     parser.getUsername());
+                                     parser.getUsername(), parser.getJson());
     } catch (Exception e) {
       log.error("command failed", e);
       return 1;

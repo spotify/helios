@@ -4,6 +4,8 @@
 
 package com.spotify.helios.common;
 
+import com.google.common.base.Throwables;
+
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -17,6 +19,7 @@ import java.lang.reflect.Type;
 import java.util.Map;
 
 import static com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHABETICALLY;
+import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS;
 
 public class Json {
@@ -25,16 +28,83 @@ public class Json {
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
       .configure(ORDER_MAP_ENTRIES_BY_KEYS, true);
 
+  private static final ObjectMapper PRETTY_OBJECT_MAPPER = new ObjectMapper()
+      .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
+      .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
+      .configure(INDENT_OUTPUT, true);
+
   private static final TypeReference<Map<String, Object>> MAP_TYPE =
       new TypeReference<Map<String, Object>>() {};
 
+  /**
+   * Serialize an object to json. Use when it is not know whether an object can be json
+   * serializable.
+   *
+   * @see #asBytesUnchecked(Object)
+   */
   public static byte[] asBytes(final Object value) throws JsonProcessingException {
     return OBJECT_MAPPER.writeValueAsBytes(value);
   }
 
+  /**
+   * Serialize an object to json. Use when object is expected to be json serializable.
+   *
+   * @see #asBytes(Object)
+   */
+  public static byte[] asBytesUnchecked(final Object value) {
+    try {
+      return OBJECT_MAPPER.writeValueAsBytes(value);
+    } catch (JsonProcessingException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  /**
+   * Serialize an object to a json string. Use when it is not know whether an object can be json
+   * serializable.
+   *
+   * @see #asStringUnchecked(Object)
+   */
   public static String asString(final Object value) throws JsonProcessingException {
     return OBJECT_MAPPER.writeValueAsString(value);
   }
+
+  /**
+   * Serialize an object to a json string. Use when object is expected to be json serializable.
+   *
+   * @see #asString(Object)
+   */
+  public static String asStringUnchecked(final Object value) {
+    try {
+      return asString(value);
+    } catch (JsonProcessingException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  /**
+   * Serialize an object to a json string. Use when it is not know whether an object can be json
+   * serializable.
+   *
+   * @see #asPrettyStringUnchecked(Object)
+   */
+  public static String asPrettyString(final Object value) throws JsonProcessingException {
+    return PRETTY_OBJECT_MAPPER.writeValueAsString(value);
+  }
+
+  /**
+   * Serialize an object to a json string. Use when object is expected to be json serializable.
+   *
+   * @see #asPrettyString(Object)
+   */
+  public static String asPrettyStringUnchecked(final Object value) {
+    try {
+      return asPrettyString(value);
+    } catch (JsonProcessingException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
 
   public static <T> T read(final byte[] bytes, final Class<T> clazz) throws IOException {
     return OBJECT_MAPPER.readValue(bytes, clazz);

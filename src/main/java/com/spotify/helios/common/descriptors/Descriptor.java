@@ -15,11 +15,7 @@ import java.io.IOException;
 public abstract class Descriptor {
 
   public String toJsonString() {
-    try {
-      return Json.asString(this);
-    } catch (JsonProcessingException e) {
-      throw Throwables.propagate(e);
-    }
+    return Json.asStringUnchecked(this);
   }
 
   public byte[] toJsonBytes() {

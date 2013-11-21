@@ -42,7 +42,7 @@ public class HostStatusCommand extends ControlCommand {
   }
 
   @Override
-  int run(final Namespace options, final Client client, final PrintStream out)
+  int run(final Namespace options, final Client client, final PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
 
     List<String> hosts = options.getList(hostsArg.getDest());

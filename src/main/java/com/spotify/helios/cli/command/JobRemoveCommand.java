@@ -30,7 +30,7 @@ public class JobRemoveCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out)
+  int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final JobId jobId = JobId.fromString(options.getString(jobIdArg.getDest()));
 

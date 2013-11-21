@@ -35,7 +35,7 @@ public class JobListCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out)
+  int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final boolean quiet = options.getBoolean(quietArg.getDest());
 

@@ -45,7 +45,7 @@ public class JobDeployCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out)
+  int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
     final Deployment job = Deployment.of(JobId.fromString(options.getString(jobArg.getDest())),

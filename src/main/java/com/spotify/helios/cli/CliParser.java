@@ -57,6 +57,7 @@ public class CliParser {
   private final CliConfig cliConfig;
   private final List<Target> targets;
   private final String username;
+  private boolean json;
 
   public CliParser(final String... args)
       throws ArgumentParserException, IOException, JSONException {
@@ -78,6 +79,7 @@ public class CliParser {
       this.command = (ControlCommand) options.get("command");
       final String username = options.getString(globalArgs.usernameArg.getDest());
       this.username = (username == null) ? cliConfig.getUsername() : username;
+      this.json = options.getBoolean(globalArgs.jsonArg.getDest());
       this.loggingConfig = new LoggingConfig(options.getInt(globalArgs.verbose.getDest()),
                                              false, null,
                                              options.getBoolean(globalArgs.noLogSetup.getDest()));
@@ -158,6 +160,10 @@ public class CliParser {
     return username;
   }
 
+  public boolean getJson() {
+    return json;
+  }
+
   private static List<String> getDefaultMasterEndpoints(final CliConfig cliConfig) {
     final List<String> defaultMaster;
     if (cliConfig.getSites().isEmpty()) {
@@ -180,6 +186,7 @@ public class CliParser {
     private final Argument usernameArg;
     private final Argument verbose;
     private final Argument noLogSetup;
+    private final Argument jsonArg;
 
     GlobalArgs(final ArgumentParser parser, final CliConfig cliConfig) {
       final ArgumentGroup globalArgs = parser.addArgumentGroup("global options");
@@ -201,6 +208,10 @@ public class CliParser {
 
       verbose = globalArgs.addArgument("-v", "--verbose")
           .action(Arguments.count());
+
+      jsonArg = globalArgs.addArgument("--json")
+          .action(storeTrue())
+          .help("json output");
 
       noLogSetup = globalArgs.addArgument("--no-log-setup")
           .action(storeTrue())

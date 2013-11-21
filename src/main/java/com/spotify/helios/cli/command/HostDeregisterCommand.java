@@ -29,7 +29,7 @@ public class HostDeregisterCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out)
+  int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     String host = options.getString(agentArg.getDest());
 

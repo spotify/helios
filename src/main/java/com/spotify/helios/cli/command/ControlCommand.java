@@ -34,7 +34,7 @@ public abstract class ControlCommand {
   }
 
   public int run(final Namespace options, final List<Target> targets,
-                 final PrintStream out, final String username) {
+                 final PrintStream out, final String username, final boolean json) {
     boolean successful = true;
 
     // Execute the control command over each target cluster
@@ -47,7 +47,7 @@ public abstract class ControlCommand {
       }
 
       try {
-        successful &= run(options, target, out, username);
+        successful &= run(options, target, out, username, json);
       } catch (InterruptedException e) {
         log.error("Error running control command", e);
       }
@@ -65,7 +65,7 @@ public abstract class ControlCommand {
    * Execute against a cluster at a specific endpoint
    */
   private boolean run(final Namespace options, final Target target, final PrintStream out,
-                      final String username)
+                      final String username, final boolean json)
       throws InterruptedException {
 
     final Client client = Client.newBuilder()
@@ -74,7 +74,7 @@ public abstract class ControlCommand {
         .build();
 
     try {
-      final int result = run(options, client, out);
+      final int result = run(options, client, out, json);
       return result == 0;
     } catch (ExecutionException e) {
       final Throwable cause = e.getCause();
@@ -91,6 +91,7 @@ public abstract class ControlCommand {
     }
   }
 
-  abstract int run(final Namespace options, final Client client, PrintStream out)
+  abstract int run(final Namespace options, final Client client, PrintStream out,
+                   final boolean json)
       throws ExecutionException, InterruptedException;
 }

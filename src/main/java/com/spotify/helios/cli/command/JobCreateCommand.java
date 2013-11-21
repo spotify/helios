@@ -50,7 +50,7 @@ public class JobCreateCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out)
+  int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> command = options.getList(argsArg.getDest());
     final String imageIdentifier = options.getString(imageArg.getDest());

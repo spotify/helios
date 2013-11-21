@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.common.Client;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobIdParseException;
 import com.spotify.helios.common.protocol.JobStatus;
@@ -39,7 +40,7 @@ public class JobStatusCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out)
+  int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> jobIdStrings = options.getList(jobsArg.getDest());
     final List<JobId> jobIds = Lists.newArrayList();
@@ -47,7 +48,9 @@ public class JobStatusCommand extends ControlCommand {
       try {
         jobIds.add(JobId.parse(jobIdString));
       } catch (JobIdParseException e) {
-        out.println("Invalid job id: " + jobIdString);
+        if (!json) {
+          out.println("Invalid job id: " + jobIdString);
+        }
         return 0;
       }
     }
@@ -57,8 +60,12 @@ public class JobStatusCommand extends ControlCommand {
       statuses.put(jobId, client.jobStatus(jobId).get());
     }
 
-    // TODO (dano): pretty output
-    out.println(statuses);
+    if (json) {
+      out.print(Json.asPrettyStringUnchecked(statuses));
+    } else {
+      // TODO (dano): pretty output
+      out.println(statuses);
+    }
 
     return 0;
   }
