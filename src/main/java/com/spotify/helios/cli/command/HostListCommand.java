@@ -25,6 +25,7 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.collect.Ordering.natural;
 import static com.spotify.helios.cli.Output.humanDuration;
 import static com.spotify.helios.cli.Output.table;
+import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static java.lang.String.format;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -57,7 +58,7 @@ public class HostListCommand extends ControlCommand {
       }
     } else {
       final Table table = table(out);
-      table.row("HOST", "STATUS", "AGENT UPTIME", "DEPLOYED", "RUNNING",
+      table.row("HOST", "STATUS", "DEPLOYED", "RUNNING",
                 "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS", "VERSION");
 
       for (final String host : hosts) {
@@ -95,10 +96,17 @@ public class HostListCommand extends ControlCommand {
           memUsage = cpus = mem = loadAvg = osName = osVersion = "";
         }
 
-        final String uptime = s.getRuntimeInfo() == null ? "" :
-                              humanDuration(s.getRuntimeInfo().getUptime());
+        final String status;
+        if (s.getStatus() == UP) {
+          final String uptime = s.getRuntimeInfo() == null ? "" :
+                                humanDuration(System.currentTimeMillis() -
+                                              s.getRuntimeInfo().getStartTime());
+          status = "Up " + uptime;
+        } else {
+          status = "Down";
+        }
 
-        table.row(host, s.getStatus(), uptime, s.getJobs().size(), runningDeployedJobs.size(),
+        table.row(host, status, s.getJobs().size(), runningDeployedJobs.size(),
                   cpus, mem, loadAvg, memUsage, osName, osVersion);
       }
 
