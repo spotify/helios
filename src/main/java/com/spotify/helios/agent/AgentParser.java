@@ -12,6 +12,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
 
 import static com.google.common.base.Throwables.propagate;
 
@@ -32,6 +33,8 @@ public class AgentParser extends ServiceParser {
 
     final String name = options.getString("name");
 
+    List<Object> env = options.getList("env");
+    String[] envVars = env == null ? new String[]{} : env.toArray(new String[]{});
     agentConfig = new AgentConfig()
         .setName(name)
         .setZooKeeperConnectionString(options.getString("zk"))
@@ -39,12 +42,7 @@ public class AgentParser extends ServiceParser {
         .setZooKeeperConnectionTimeoutMillis(options.getInt("zk_connection_timeout"))
         .setSite(options.getString("site"))
         .setMuninReporterPort(options.getInt("munin_port"))
-
-        .setDomain(options.getString("domain"))
-        .setRole(options.getString("role"))
-        .setPod(options.getString("pod"))
-        .setSyslogHostPort(options.getString("syslogHost"))
-
+        .setEnvVars(envVars)
         .setDockerEndpoint(options.getString("docker"));
   }
 
@@ -63,21 +61,9 @@ public class AgentParser extends ServiceParser {
         .setDefault("http://localhost:4160")
         .help("docker endpoint");
 
-    parser.addArgument("--domain")
-        .setDefault("")
-        .help("Domain agent runs in");
-
-    parser.addArgument("--role")
-        .setDefault("")
-        .help("Role for this machine");
-
-    parser.addArgument("--pod")
-        .setDefault("")
-        .help("pod agent is running in");
-
-    parser.addArgument("--syslogHost")
-        .setDefault("")
-        .help("host:port where containers should connect to for syslog");
+    parser.addArgument("--env")
+        .nargs("+")
+        .help("Specify environment variables that will pass down to all containers");
   }
 
   private static String getHostName() {

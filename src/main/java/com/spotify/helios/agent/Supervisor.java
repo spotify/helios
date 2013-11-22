@@ -4,9 +4,6 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -74,7 +71,7 @@ class Supervisor {
   private final AgentModel model;
   private final long restartIntervalMillis;
   private final long retryIntervalMillis;
-  private final AgentConfig agentConfig;
+  private final String[] envVars;
 
   private volatile Runner runner;
   private volatile boolean closed;
@@ -85,22 +82,22 @@ class Supervisor {
   /**
    * Create a new job supervisor.
    *
-   * @param jobId  The job id.
-   * @param job    The job.
-   * @param model  The model to use.
-   * @param config The agent configuration.
+   * @param jobId The job id.
+   * @param job   The job.
+   * @param model The model to use.
+   * @param envVars Environment vTariables to expose to child containers.
    */
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
                      final long restartIntervalMillis, final long retryIntervalMillis,
-                     final AgentConfig config) {
+                     final String[] envVars) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
     this.docker = checkNotNull(dockerClient);
     this.restartIntervalMillis = restartIntervalMillis;
     this.retryIntervalMillis = retryIntervalMillis;
-    this.agentConfig = checkNotNull(config);
+    this.envVars = checkNotNull(envVars);
   }
 
   /**
@@ -251,14 +248,6 @@ class Supervisor {
     return status;
   }
 
-  private boolean notEmpty(String s) {
-    if (s == null) {
-      return false;
-    }
-
-    return !"".equals(s);
-  }
-
   /**
    * Create docker container configuration for a job.
    */
@@ -268,36 +257,7 @@ class Supervisor {
     final List<String> command = descriptor.getCommand();
     containerConfig.setCmd(command.toArray(new String[command.size()]));
 
-    List<String> environment = Lists.newArrayList();
-    if (notEmpty(agentConfig.getDomain())) {
-      environment.add("DOMAIN=" + agentConfig.getDomain());
-    }
-
-    if (notEmpty(agentConfig.getSite())) {
-      environment.add("SITE=" + agentConfig.getSite());
-    }
-
-    if (notEmpty(agentConfig.getPod())) {
-      environment.add("POD=" + agentConfig.getPod());
-    }
-
-    if (notEmpty(agentConfig.getRole())) {
-      environment.add("ROLE=" + agentConfig.getRole());
-    }
-
-    if (notEmpty(agentConfig.getSyslogHostPort())) {
-      List<String> bits = ImmutableList.copyOf(
-          Splitter.on(":").split(agentConfig.getSyslogHostPort()));
-      if (bits.size() == 2) {
-        environment.add("SYSLOG_HOST=" + bits.get(0));
-        environment.add("SYSLOG_PORT=" + bits.get(1));
-      } else {
-        throw new RuntimeException(
-            "--syslogHost must be host:port, got " + agentConfig.getSyslogHostPort());
-      }
-    }
-
-    containerConfig.setEnv(environment.toArray(new String[]{}));
+    containerConfig.setEnv(envVars);
 
     return containerConfig;
   }
@@ -471,7 +431,7 @@ class Supervisor {
     private AsyncDockerClient dockerClient;
     private long restartIntervalMillis = DEFAULT_RESTART_INTERVAL_MILLIS;
     private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
-    private AgentConfig config;
+    private String[] envVars;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -503,14 +463,14 @@ class Supervisor {
       return this;
     }
 
-    public Builder setConfig(AgentConfig config) {
-      this.config = config;
+    public Builder setEnvVars(String[] envVars) {
+      this.envVars = envVars;
       return this;
     }
 
     public Supervisor build() {
       return new Supervisor(jobId, descriptor, model, dockerClient, restartIntervalMillis,
-                            retryIntervalMillis, config);
+                            retryIntervalMillis, envVars);
     }
 
   }
