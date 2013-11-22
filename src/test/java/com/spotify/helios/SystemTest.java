@@ -362,7 +362,7 @@ public class SystemTest extends ZooKeeperTestBase {
       if (value != null) {
         return value;
       }
-      Thread.sleep(100);
+      Thread.sleep(500);
     }
     throw new TimeoutException();
   }
