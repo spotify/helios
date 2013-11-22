@@ -36,6 +36,7 @@ import org.json.JSONException;
 import java.io.IOException;
 import java.util.List;
 
+import static com.google.common.base.Objects.equal;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.filter;
@@ -77,17 +78,18 @@ public class CliParser {
 
     try {
       this.options = parser.parseArgs(args);
-      this.command = (ControlCommand) options.get("command");
-      final String username = options.getString(globalArgs.usernameArg.getDest());
-      this.username = (username == null) ? cliConfig.getUsername() : username;
-      this.json = options.getBoolean(globalArgs.jsonArg.getDest());
-      this.loggingConfig = new LoggingConfig(options.getInt(globalArgs.verbose.getDest()),
-                                             false, null,
-                                             options.getBoolean(globalArgs.noLogSetup.getDest()));
     } catch (ArgumentParserException e) {
       parser.handleError(e);
       throw e;
     }
+
+    this.command = (ControlCommand) options.get("command");
+    final String username = options.getString(globalArgs.usernameArg.getDest());
+    this.username = (username == null) ? cliConfig.getUsername() : username;
+    this.json = equal(options.getBoolean(globalArgs.jsonArg.getDest()), true);
+    this.loggingConfig = new LoggingConfig(options.getInt(globalArgs.verbose.getDest()),
+                                           false, null,
+                                           options.getBoolean(globalArgs.noLogSetup.getDest()));
 
     // Merge sites and explicit endpoints into master endpoints
     final List<String> explicitEndpoints = options.getList(globalArgs.masterArg.getDest());
@@ -212,6 +214,7 @@ public class CliParser {
           .action(Arguments.count());
 
       jsonArg = globalArgs.addArgument("--json")
+          .setDefault(SUPPRESS)
           .action(storeTrue())
           .help("json output");
 
