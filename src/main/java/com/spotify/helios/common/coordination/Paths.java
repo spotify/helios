@@ -15,6 +15,7 @@ public class Paths {
   public static final String AGENTS = "agents";
   public static final String MASTERS = "masters";
   private static final String HOSTINFO = "hostinfo";
+  private static final String RUNTIMEINFO = "runtimeinfo";
 
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
   private static final PathFactory CONFIG_AGENTS = new PathFactory("/", CONFIG, AGENTS);
@@ -79,6 +80,10 @@ public class Paths {
 
   public static String statusAgentHostInfo(final String agent) {
     return STATUS_AGENTS.path(agent, HOSTINFO);
+  }
+
+  public static String statusAgentRuntimeInfo(final String agent) {
+    return STATUS_AGENTS.path(agent, RUNTIMEINFO);
   }
 
 }

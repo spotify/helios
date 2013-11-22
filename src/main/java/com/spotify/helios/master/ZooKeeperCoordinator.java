@@ -27,6 +27,7 @@ import com.spotify.helios.common.descriptors.Descriptor;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RuntimeInfo;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobStatus;
@@ -332,6 +333,7 @@ public class ZooKeeperCoordinator implements Coordinator {
       throws HeliosException {
     final boolean up = checkAgentUp(agent);
     final HostInfo hostInfo = getAgentHostInfo(agent);
+    final RuntimeInfo runtimeInfo = getAgentRuntimeInfo(agent);
     final Map<JobId, Deployment> jobs = getTasks(agent);
     final Map<JobId, TaskStatus> statuses = getTaskStatuses(agent);
     if (jobs == null) {
@@ -341,8 +343,20 @@ public class ZooKeeperCoordinator implements Coordinator {
         .setJobs(jobs)
         .setStatuses(statuses == null ? EMPTY_STATUSES : statuses)
         .setHostInfo(hostInfo)
+        .setRuntimeInfo(runtimeInfo)
         .setStatus(up ? UP : DOWN)
         .build();
+  }
+
+  private RuntimeInfo getAgentRuntimeInfo(final String agent) throws HeliosException {
+    try {
+      final byte[] data = client.getData(Paths.statusAgentRuntimeInfo(agent));
+      return Json.read(data, RuntimeInfo.class);
+    } catch (NoNodeException e) {
+      return null;
+    } catch (KeeperException | IOException e) {
+      throw new HeliosException("getting agent runtime info failed", e);
+    }
   }
 
   private HostInfo getAgentHostInfo(final String agent) throws HeliosException {

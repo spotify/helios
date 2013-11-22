@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
+import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL;
 
 /**
@@ -37,6 +38,7 @@ public class AgentService {
   private final CuratorFramework zooKeeperCurator;
   private final DefaultZooKeeperClient zooKeeperClient;
   private final HostInfoReporter hostInfoReporter;
+  private final RuntimeInfoReporter runtimeInfoReporter;
 
   /**
    * Create a new agent instance.
@@ -60,6 +62,12 @@ public class AgentService {
     this.hostInfoReporter = HostInfoReporter.newBuilder()
         .setNodeUpdaterFactory(new ZooKeeperNodeUpdaterFactory(zooKeeperClient))
         .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
+        .setAgent(config.getName())
+        .build();
+
+    this.runtimeInfoReporter = RuntimeInfoReporter.newBuilder()
+        .setNodeUpdaterFactory(new ZooKeeperNodeUpdaterFactory(zooKeeperClient))
+        .setRuntimeMXBean(getRuntimeMXBean())
         .setAgent(config.getName())
         .build();
 
@@ -126,6 +134,7 @@ public class AgentService {
   public void start() {
     agent.start();
     hostInfoReporter.start();
+    runtimeInfoReporter.start();
   }
 
   /**
@@ -134,6 +143,7 @@ public class AgentService {
   public void stop() {
     agent.close();
     hostInfoReporter.close();
+    runtimeInfoReporter.close();
     zooKeeperCurator.close();
   }
 }
