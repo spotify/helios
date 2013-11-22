@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Joiner.on;
 import static com.spotify.helios.cli.Output.table;
-import static net.sourceforge.argparse4j.impl.Arguments.append;
 
 public class JobStatusCommand extends ControlCommand {
 
@@ -38,8 +37,7 @@ public class JobStatusCommand extends ControlCommand {
     parser.help("show status for a job");
 
     jobsArg = parser.addArgument("job")
-        .action(append())
-        .setDefault(Lists.newArrayList())
+        .nargs("+")
         .help("Job id");
   }
 
@@ -55,7 +53,8 @@ public class JobStatusCommand extends ControlCommand {
         if (!json) {
           out.println("Invalid job id: " + jobIdString);
         }
-        return 0;
+        // TODO: print error to stderr
+        return 1;
       }
     }
 

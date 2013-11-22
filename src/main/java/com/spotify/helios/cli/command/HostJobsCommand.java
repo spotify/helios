@@ -4,7 +4,6 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -28,7 +27,6 @@ import java.util.concurrent.ExecutionException;
 
 import static com.google.common.collect.Ordering.natural;
 import static com.spotify.helios.cli.Output.table;
-import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class HostJobsCommand extends ControlCommand {
@@ -42,8 +40,7 @@ public class HostJobsCommand extends ControlCommand {
     parser.help("list jobs deployed on a host");
 
     hostArg = parser.addArgument("host")
-        .action(append())
-        .setDefault(Lists.newArrayList())
+        .nargs("+")
         .help("The hosts to list jobs for.");
 
     quietArg = parser.addArgument("-q")
@@ -86,6 +83,9 @@ public class HostJobsCommand extends ControlCommand {
         table.row("HOST", "JOB ID", "NAME", "VERSION", "GOAL", "STATE");
         for (final String host : hostStatuses.keySet()) {
           final AgentStatus agentStatus = hostStatuses.get(host);
+          if (agentStatus == null) {
+            continue;
+          }
           final Set<JobId> jobIds = agentStatus.getJobs().keySet();
           final List<JobId> sortedJobIds = natural().sortedCopy(jobIds);
           for (final JobId jobId : sortedJobIds) {

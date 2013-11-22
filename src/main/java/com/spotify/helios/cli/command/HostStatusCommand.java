@@ -4,7 +4,6 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.common.Client;
@@ -20,8 +19,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import static net.sourceforge.argparse4j.impl.Arguments.append;
-
 public class HostStatusCommand extends ControlCommand {
 
   private final Argument hostsArg;
@@ -32,8 +29,7 @@ public class HostStatusCommand extends ControlCommand {
     parser.help("show host status");
 
     hostsArg = parser.addArgument("hosts")
-        .action(append())
-        .setDefault(Lists.newArrayList())
+        .nargs("+")
         .help("");
   }
 
