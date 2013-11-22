@@ -161,9 +161,9 @@ class Supervisor {
       @Override
       public void onFailure(final Throwable t) {
         if (t instanceof InterruptedException) {
-          log.debug("job runner interrupted", t);
+          log.debug("task runner interrupted", t);
         } else {
-          log.error("job runner threw exception", t);
+          log.error("task runner threw exception", t);
         }
         synchronized (sync) {
           startJob(retryIntervalMillis);
