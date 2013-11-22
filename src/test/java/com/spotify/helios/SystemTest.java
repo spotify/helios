@@ -4,8 +4,9 @@
 
 package com.spotify.helios;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Charsets;
+
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
 import com.spotify.helios.agent.AgentMain;
@@ -30,6 +31,7 @@ import com.spotify.nameless.api.EndpointFilter;
 import com.spotify.nameless.api.NamelessClient;
 import com.spotify.nameless.proto.Messages;
 import com.sun.jersey.api.client.ClientResponse;
+
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -209,7 +211,8 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   private void undeployJob(final JobId jobId, final String host) throws Exception {
-    final String bogusUndeployAgentWrong = control("job", "undeploy", jobId.toString(), BOGUS_AGENT);
+    final String bogusUndeployAgentWrong =
+        control("job", "undeploy", jobId.toString(), BOGUS_AGENT);
     assertContains("AGENT_NOT_FOUND", bogusUndeployAgentWrong);
 
     final String bogusUndeployJobWrong = control("job", "undeploy", BOGUS_JOB.toString(), host);
@@ -225,12 +228,12 @@ public class SystemTest extends ZooKeeperTestBase {
   @Test
   public void testNamelessRegistration() throws Exception {
     startMaster("-vvvv",
-        "--no-log-setup",
-        "--munin-port", "0",
-        "--site", "localhost",
-        "--http", "0.0.0.0:5555",
-        "--hm", masterEndpoint,
-        "--zk", zookeeperEndpoint);
+                "--no-log-setup",
+                "--munin-port", "0",
+                "--site", "localhost",
+                "--http", "0.0.0.0:5555",
+                "--hm", masterEndpoint,
+                "--zk", zookeeperEndpoint);
 
     // sleep for half a second to give master time to register with nameless
     Thread.sleep(500);
@@ -381,16 +384,16 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   private TaskStatus awaitJobState(final Client controlClient, final String slave,
-                                  final JobId jobId,
-                                  final TaskStatus.State state, final int timeout,
-                                  final TimeUnit timeunit) throws Exception {
+                                   final JobId jobId,
+                                   final TaskStatus.State state, final int timeout,
+                                   final TimeUnit timeunit) throws Exception {
     return await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final AgentStatus agentStatus = controlClient.agentStatus(slave).get();
         final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
         return (taskStatus != null && taskStatus.getState() == state) ? taskStatus
-                                                                    : null;
+                                                                      : null;
       }
     });
   }
@@ -529,7 +532,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final DockerClient dockerClient = new DockerClient(dockerEndpoint);
 
     final List<String> command = asList("sh", "-c",
-        "echo site: $SITE pod: $POD domain: $DOMAIN role: $ROLE syslog: $SYSLOG_HOST-$SYSLOG_PORT");
+                                        "echo site: $SITE pod: $POD domain: $DOMAIN role: $ROLE syslog: $SYSLOG_HOST-$SYSLOG_PORT");
 
     // Create job
     JobId jobId = createJob("NAME", "VERSION", "busybox", command);
@@ -546,14 +549,14 @@ public class SystemTest extends ZooKeeperTestBase {
     int counter = 0;
     while (true) {
       System.err.println("COUNTER " + counter);
-      int numRead = stream.read(buffer, counter, 1024-counter);
+      int numRead = stream.read(buffer, counter, 1024 - counter);
       if (numRead <= 0) {
         break;
       }
       counter += numRead;
     }
     // the +8 is to skip the length header
-    String logMessage = Charsets.UTF_8.decode(ByteBuffer.wrap(buffer, 8,  counter-8)).toString();
+    String logMessage = Charsets.UTF_8.decode(ByteBuffer.wrap(buffer, 8, counter - 8)).toString();
 
     assertContains("pod: PODNAME", logMessage);
     assertContains("domain: DOMAINNAME", logMessage);
@@ -575,8 +578,12 @@ public class SystemTest extends ZooKeeperTestBase {
    * Verifies that:
    *
    * 1. The container is kept running when the agent is restarted.
+   *
    * 2. A container that died while the agent was down is restarted when the agent comes up.
-   * 3. A container that was destroyed while the agent was down is restarted when the agent comes up.
+   *
+   * 3. A container that was destroyed while the agent was down is restarted when the agent comes
+   * up.
+   *
    * 4. The container for a job that was undeployed while the agent was down is killed when the
    * agent comes up again.
    */
@@ -660,9 +667,10 @@ public class SystemTest extends ZooKeeperTestBase {
       public TaskStatus call() throws Exception {
         final AgentStatus agentStatus = client.agentStatus(agentName).get();
         final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
-        return (taskStatus != null && taskStatus.getContainerId() != null && taskStatus.getState() == RUNNING &&
+        return (taskStatus != null && taskStatus.getContainerId() != null &&
+                taskStatus.getState() == RUNNING &&
                 !taskStatus.getContainerId().equals(firstTaskStatus.getContainerId())) ? taskStatus
-                                                                   : null;
+                                                                                       : null;
       }
     });
 
@@ -690,9 +698,10 @@ public class SystemTest extends ZooKeeperTestBase {
       public TaskStatus call() throws Exception {
         final AgentStatus agentStatus = client.agentStatus(agentName).get();
         final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
-        return (taskStatus != null && taskStatus.getContainerId() != null && taskStatus.getState() == RUNNING &&
+        return (taskStatus != null && taskStatus.getContainerId() != null &&
+                taskStatus.getState() == RUNNING &&
                 !taskStatus.getContainerId().equals(secondTaskStatus.getContainerId())) ? taskStatus
-                                                                    : null;
+                                                                                        : null;
       }
     });
 
@@ -721,7 +730,7 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   private JobId createJob(final String name, final String version, final String image,
-                           final List<String> command) throws Exception {
+                          final List<String> command) throws Exception {
     final String createOutput = control("job", "create", "-q", name, version, image, "--", command);
     final String jobId = StringUtils.strip(createOutput);
 
