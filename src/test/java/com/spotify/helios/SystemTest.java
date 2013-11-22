@@ -139,7 +139,7 @@ public class SystemTest extends ZooKeeperTestBase {
     await(timeout, timeUnit, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
-        final String output = control("host", "list");
+        final String output = control("host", "list", "-q");
         return output.contains(name) ? true : null;
       }
     });
@@ -158,7 +158,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final String deployOutput = control("job", "deploy", jobId.toString(), agent);
     assertContains(agent + ": done", deployOutput);
 
-    final String listOutput = control("host", "jobs", agent);
+    final String listOutput = control("host", "jobs", "-q", agent);
     assertContains(jobId.toString(), listOutput);
   }
 
@@ -193,7 +193,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final String undeployOutput = control("job", "undeploy", jobId.toString(), host);
     assertContains(host + ": done", undeployOutput);
 
-    final String listOutput = control("host", "jobs", host);
+    final String listOutput = control("host", "jobs", "-q", host);
     assertNotContains(jobId.toString(), listOutput);
   }
 
@@ -567,7 +567,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final String createOutput = control("job", "create", "-q", name, version, image, "--", command);
     final String jobId = StringUtils.strip(createOutput);
 
-    final String listOutput = control("job", "list");
+    final String listOutput = control("job", "list", "-q");
     assertContains(jobId, listOutput);
     return JobId.fromString(jobId);
   }
