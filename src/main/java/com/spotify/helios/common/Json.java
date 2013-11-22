@@ -105,6 +105,20 @@ public class Json {
     }
   }
 
+  public static <T> T read(final String content, final Class<T> clazz) throws IOException {
+    return OBJECT_MAPPER.readValue(content, clazz);
+  }
+
+  public static <T> T read(final String content, final TypeReference<?> typeReference)
+      throws IOException {
+    return OBJECT_MAPPER.readValue(content, typeReference);
+  }
+
+  public static <T> T read(final String content, final JavaType javaType)
+      throws IOException {
+    return OBJECT_MAPPER.readValue(content, javaType);
+  }
+
 
   public static <T> T read(final byte[] bytes, final Class<T> clazz) throws IOException {
     return OBJECT_MAPPER.readValue(bytes, clazz);

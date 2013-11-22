@@ -5,14 +5,14 @@
 package com.spotify.helios;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.ServiceMain;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -22,24 +22,26 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
+import com.spotify.helios.common.protocol.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -51,6 +53,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.lang.System.nanoTime;
@@ -421,20 +424,32 @@ public class SystemTest extends ZooKeeperTestBase {
     assertContains(TEST_AGENT + ": done", deleteAgent(TEST_AGENT));
   }
 
-  private String awaitJobFinished(final String jobId) throws Exception {
+  private TaskStatus awaitTaskState(final JobId jobId, final String agent,
+                                    final TaskStatus.State state) throws Exception {
     long timeout = 10;
     TimeUnit timeUnit = TimeUnit.SECONDS;
-    return await(timeout, timeUnit, new Callable<String>() {
+    return await(timeout, timeUnit, new Callable<TaskStatus>() {
       @Override
-      public String call() throws Exception {
-        final String output = control("job", "status", jobId);
-        if (output.length() == 0) {
+      public TaskStatus call() throws Exception {
+        final String output = control("job", "status", "--json", jobId.toString());
+        final Map<JobId, JobStatus> statusMap;
+        try {
+          statusMap = Json.read(output, new TypeReference<Map<JobId, JobStatus>>() {});
+        } catch (IOException e) {
           return null;
         }
-        if (!output.contains("EXITED")) {
+        final JobStatus status = statusMap.get(jobId);
+        if (status == null) {
           return null;
         }
-        return output;
+        final TaskStatus taskStatus = status.getTaskStatuses().get(agent);
+        if (taskStatus == null) {
+          return null;
+        }
+        if (taskStatus.getState() != state) {
+          return null;
+        }
+        return taskStatus;
       }
     });
   }
@@ -465,13 +480,9 @@ public class SystemTest extends ZooKeeperTestBase {
     // deploy
     deployJob(jobId, TEST_AGENT);
 
-    String output = awaitJobFinished(jobId.toString());
-    Assert.assertNotEquals(0, output.length());
+    TaskStatus taskStatus = awaitTaskState(jobId, TEST_AGENT, EXITED);
 
-    ImmutableList<String> it = ImmutableList.copyOf(Splitter.on("containerId=").split(output));
-    ImmutableList<String> containerId = ImmutableList.copyOf(Splitter.on("}").split(it.get(1)));
-
-    ClientResponse logs = dockerClient.logContainer(containerId.get(0));
+    ClientResponse logs = dockerClient.logContainer(taskStatus.getContainerId());
     InputStream stream = logs.getEntityInputStream();
 
     byte[] buffer = new byte[1024];
