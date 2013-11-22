@@ -2,7 +2,7 @@
  * Copyright (C) 2013 Spotify AB
  */
 
-package com.spotify.helios.cli.command;
+package com.spotify.helios.cli;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
@@ -17,7 +17,7 @@ import static java.lang.Math.max;
  * Produces tabulated output, adding padding to cells as necessary to align them into columns.
  */
 
-class Table {
+public class Table {
 
   private final PrintStream out;
   private final String paddingString;
@@ -25,7 +25,7 @@ class Table {
   private final List<Object[]> rows = Lists.newArrayList();
 
 
-  Table(final PrintStream out, final int padding) {
+  public Table(final PrintStream out, final int padding) {
     this.out = out;
     this.paddingString = Strings.repeat(" ", padding);
   }
@@ -34,7 +34,7 @@ class Table {
     this(out, 4);
   }
 
-  void row(final Object... row) {
+  public void row(final Object... row) {
     columns = Ints.ensureCapacity(columns, row.length, row.length);
     for (int i = 0; i < row.length; i++) {
       row[i] = row[i].toString();
@@ -43,7 +43,7 @@ class Table {
     rows.add(row);
   }
 
-  void print() {
+  public void print() {
     for (final Object[] row : rows) {
       for (int i = 0; i < row.length; i++) {
         final String cell = row[i].toString();

@@ -7,6 +7,7 @@ package com.spotify.helios.cli.command;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
+import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
@@ -24,6 +25,7 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Joiner.on;
+import static com.spotify.helios.cli.Output.table;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 
 public class JobStatusCommand extends ControlCommand {
@@ -57,6 +59,8 @@ public class JobStatusCommand extends ControlCommand {
       }
     }
 
+    // TODO (dano): it would sure be nice to be able to report container/task uptime
+
     final Map<JobId, JobStatus> statuses = Maps.newHashMap();
     for (final JobId jobId : jobIds) {
       statuses.put(jobId, client.jobStatus(jobId).get());
@@ -65,7 +69,8 @@ public class JobStatusCommand extends ControlCommand {
     if (json) {
       out.println(Json.asPrettyStringUnchecked(statuses));
     } else {
-      final Table table = new Table(out);
+      // TODO (dano): this explodes the job into one row per agent, is that sane/expected?
+      final Table table = table(out);
       table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND");
       for (final JobId jobId : jobIds) {
         final JobStatus jobStatus = statuses.get(jobId);

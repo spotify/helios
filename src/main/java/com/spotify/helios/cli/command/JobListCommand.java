@@ -6,6 +6,7 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.collect.Sets;
 
+import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
@@ -22,6 +23,7 @@ import java.util.SortedSet;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Joiner.on;
+import static com.spotify.helios.cli.Output.table;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class JobListCommand extends ControlCommand {
@@ -59,8 +61,8 @@ public class JobListCommand extends ControlCommand {
           out.println(jobId);
         }
       } else {
-        final Table table = new Table(out);
-        table.row("ID", "NAME", "VERSION", "HOSTS", "COMMAND");
+        final Table table = table(out);
+        table.row("JOB ID", "NAME", "VERSION", "HOSTS", "COMMAND");
         for (final JobId jobId : sortedJobIds) {
           final Job job = jobs.get(jobId);
           final JobStatus status = client.jobStatus(jobId).get();

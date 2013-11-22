@@ -8,6 +8,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
+import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentStatus;
@@ -26,6 +27,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.collect.Ordering.natural;
+import static com.spotify.helios.cli.Output.table;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -80,7 +82,7 @@ public class HostJobsCommand extends ControlCommand {
       if (json) {
         out.println(Json.asPrettyStringUnchecked(hostStatuses));
       } else {
-        final Table table = new Table(out);
+        final Table table = table(out);
         table.row("HOST", "JOB ID", "NAME", "VERSION", "GOAL", "STATE");
         for (final String host : hostStatuses.keySet()) {
           final AgentStatus agentStatus = hostStatuses.get(host);
