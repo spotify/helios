@@ -13,8 +13,8 @@ import com.google.protobuf.ByteString;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
-import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Descriptor;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -56,9 +56,6 @@ public class Client {
 
   private final String user;
   private final com.spotify.hermes.service.Client hermesClient;
-
-  public static final TypeReference<Map<String, Job>> JOB_DESCRIPTOR_MAP =
-      new TypeReference<Map<String, Job>>() {};
 
   public Client(final String user, final com.spotify.hermes.service.Client hermesClient) {
     this.user = user;
@@ -190,12 +187,12 @@ public class Client {
                                                   ImmutableSet.of(OK, BAD_REQUEST)));
   }
 
-  public ListenableFuture<Map<String, Job>> jobs() {
+  public ListenableFuture<Map<JobId, Job>> jobs() {
     return transform(
         request(uri("/jobs/")),
-        new AsyncFunction<Message, Map<String, Job>>() {
+        new AsyncFunction<Message, Map<JobId, Job>>() {
           @Override
-          public ListenableFuture<Map<String, Job>> apply(final Message reply)
+          public ListenableFuture<Map<JobId, Job>> apply(final Message reply)
               throws HeliosException {
             if (reply.getStatusCode() != StatusCode.OK) {
               throw new HeliosException("request failed: " + reply);
@@ -205,10 +202,10 @@ public class Client {
               throw new HeliosException("bad reply: " + reply);
             }
 
-            final Map<String, Job> jobs;
+            final Map<JobId, Job> jobs;
             try {
               final ByteString payload = reply.getPayloads().get(0);
-              jobs = Json.read(payload.toByteArray(), JOB_DESCRIPTOR_MAP);
+              jobs = Json.read(payload.toByteArray(), new TypeReference<Map<JobId, Job>>() {});
             } catch (IOException e) {
               throw new HeliosException("bad reply: " + reply, e);
             }

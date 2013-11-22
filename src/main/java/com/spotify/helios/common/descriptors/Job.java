@@ -19,7 +19,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.helios.common.Hash.sha1digest;
 
-public class Job extends Descriptor {
+public class Job extends Descriptor implements Comparable<Job> {
 
   private final JobId id;
   private final String image;
@@ -48,6 +48,11 @@ public class Job extends Descriptor {
 
   public static Builder newBuilder() {
     return new Builder();
+  }
+
+  @Override
+  public int compareTo(final Job o) {
+    return id.compareTo(o.getId());
   }
 
   @Override

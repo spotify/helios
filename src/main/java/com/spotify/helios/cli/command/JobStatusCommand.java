@@ -11,6 +11,7 @@ import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobIdParseException;
+import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobStatus;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -22,6 +23,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.base.Joiner.on;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 
 public class JobStatusCommand extends ControlCommand {
@@ -61,12 +63,23 @@ public class JobStatusCommand extends ControlCommand {
     }
 
     if (json) {
-      out.print(Json.asPrettyStringUnchecked(statuses));
+      out.println(Json.asPrettyStringUnchecked(statuses));
     } else {
-      // TODO (dano): pretty output
-      out.println(statuses);
+      final Table table = new Table(out);
+      table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND");
+      for (final JobId jobId : jobIds) {
+        final JobStatus jobStatus = statuses.get(jobId);
+        final Map<String, TaskStatus> taskStatuses = jobStatus.getTaskStatuses();
+        for (final String host : taskStatuses.keySet()) {
+          final TaskStatus ts = taskStatuses.get(host);
+          final String command = on(' ').join(ts.getJob().getCommand());
+          table.row(jobId, host, ts.getState(), ts.getContainerId(), command);
+        }
+      }
+      table.print();
     }
 
     return 0;
   }
+
 }
