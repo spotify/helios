@@ -15,13 +15,13 @@ public class SupervisorFactory {
 
   private final AgentModel model;
   private final DockerClientFactory dockerClientFactory;
-  private final AgentConfig config;
+  private final String[] envVars;
 
   public SupervisorFactory(final AgentModel model, final DockerClientFactory dockerClientFactory,
-                           final AgentConfig config) {
+                           final String[] envVars) {
     this.dockerClientFactory = dockerClientFactory;
     this.model = checkNotNull(model);
-    this.config = checkNotNull(config);
+    this.envVars = checkNotNull(envVars);
   }
 
   /**
@@ -36,7 +36,7 @@ public class SupervisorFactory {
         .setDescriptor(descriptor)
         .setModel(model)
         .setDockerClient(dockerClient)
-        .setConfig(config)
+        .setEnvVars(envVars)
         .build();
   }
 }

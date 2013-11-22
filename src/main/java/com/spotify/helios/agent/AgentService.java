@@ -57,7 +57,7 @@ public class AgentService {
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
     final SupervisorFactory supervisorFactory = new SupervisorFactory(model, dockerClientFactory,
-                                                                      config);
+        config.getEnvVars());
     final ReactorFactory reactorFactory = new ReactorFactory();
 
     this.hostInfoReporter = HostInfoReporter.newBuilder()
@@ -120,13 +120,13 @@ public class AgentService {
    */
   private static AgentModel setupState(final AgentConfig config,
                                        final DefaultZooKeeperClient zooKeeperClient) {
-    final ZooKeeperAgentModel state = new ZooKeeperAgentModel(zooKeeperClient, config.getName());
+    final ZooKeeperAgentModel model = new ZooKeeperAgentModel(zooKeeperClient, config.getName());
     try {
-      state.start();
+      model.start();
     } catch (Exception e) {
       throw new RuntimeException("state initialization failed", e);
     }
-    return state;
+    return model;
   }
 
   /**
