@@ -88,6 +88,7 @@ public class SupervisorTest {
         .setDockerClient(docker)
         .setRestartIntervalMillis(10)
         .setRetryIntervalMillis(10)
+        .setConfig(new AgentConfig())
         .build();
     when(docker.getImages(IMAGE)).thenReturn(immediateFuture(DOCKER_IMAGES));
 

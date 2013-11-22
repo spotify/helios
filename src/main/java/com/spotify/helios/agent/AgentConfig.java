@@ -13,6 +13,10 @@ public class AgentConfig {
   private String dockerEndpoint;
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
+  private String domain;
+  private String pod;
+  private String role;
+  private String syslogHostPort;
 
   public String getName() {
     return name;
@@ -75,5 +79,41 @@ public class AgentConfig {
 
   public int getZooKeeperConnectionTimeoutMillis() {
     return zooKeeperConnectionTimeoutMillis;
+  }
+
+  public AgentConfig setDomain(final String domain) {
+    this.domain = domain;
+    return this;
+  }
+
+  public String getDomain() {
+    return domain;
+  }
+
+  public AgentConfig setPod(final String pod) {
+    this.pod = pod;
+    return this;
+  }
+
+  public String getPod() {
+    return pod;
+  }
+
+  public AgentConfig setRole(final String role) {
+    this.role = role;
+    return this;
+  }
+
+  public String getRole() {
+    return role;
+  }
+
+  public AgentConfig setSyslogHostPort(final String hostPort) {
+    this.syslogHostPort = hostPort;
+    return this;
+  }
+
+  public String getSyslogHostPort() {
+    return syslogHostPort;
   }
 }

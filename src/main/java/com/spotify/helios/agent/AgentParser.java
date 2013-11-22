@@ -39,11 +39,17 @@ public class AgentParser extends ServiceParser {
         .setZooKeeperConnectionTimeoutMillis(options.getInt("zk_connection_timeout"))
         .setSite(options.getString("site"))
         .setMuninReporterPort(options.getInt("munin_port"))
+
+        .setDomain(options.getString("domain"))
+        .setRole(options.getString("role"))
+        .setPod(options.getString("pod"))
+        .setSyslogHostPort(options.getString("syslogHost"))
+
         .setDockerEndpoint(options.getString("docker"));
   }
 
+  @Override
   protected void addArgs(final ArgumentParser parser) {
-
     parser.addArgument("--name")
         .setDefault(getHostName())
         .help("agent name");
@@ -56,6 +62,22 @@ public class AgentParser extends ServiceParser {
     parser.addArgument("--docker")
         .setDefault("http://localhost:4160")
         .help("docker endpoint");
+
+    parser.addArgument("--domain")
+        .setDefault("")
+        .help("Domain agent runs in");
+
+    parser.addArgument("--role")
+        .setDefault("")
+        .help("Role for this machine");
+
+    parser.addArgument("--pod")
+        .setDefault("")
+        .help("pod agent is running in");
+
+    parser.addArgument("--syslogHost")
+        .setDefault("")
+        .help("host:port where containers should connect to for syslog");
   }
 
   private static String getHostName() {

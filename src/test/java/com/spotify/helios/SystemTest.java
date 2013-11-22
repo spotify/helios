@@ -4,11 +4,17 @@
 
 package com.spotify.helios;
 
+import com.google.common.base.Charsets;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+
+import com.fasterxml.jackson.databind.MappingIterator;
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.ServiceMain;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -20,18 +26,26 @@ import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
+import com.spotify.helios.master.ZooKeeperCoordinator;
+import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
+import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -411,6 +425,88 @@ public class SystemTest extends ZooKeeperTestBase {
     undeployJob(jobId, TEST_AGENT);
 
     assertContains(TEST_AGENT + ": done", deleteAgent(TEST_AGENT));
+  }
+
+  private String awaitJobFinished(final String jobId) throws Exception {
+    long timeout = 10;
+    TimeUnit timeUnit = TimeUnit.SECONDS;
+    return await(timeout, timeUnit, new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        final String output = control("job", "status", jobId);
+        if (output.length() == 0) {
+          return null;
+        }
+        if (!output.contains("EXITED")) {
+          return null;
+        }
+        return output;
+      }
+    });
+  }
+
+  @Test
+  public void testSiteVariables() throws Exception {
+    startDefaultMaster();
+    AgentMain agent = startAgent("-vvvv",
+                        "--no-log-setup",
+                        "--munin-port", "0",
+                        "--name", TEST_AGENT,
+                        "--docker", dockerEndpoint,
+                        "--zk", zookeeperEndpoint,
+                        "--zk-session-timeout", "100",
+                        "--pod=PODNAME",
+                        "--role=ROLENAME",
+                        "--domain=DOMAINNAME",
+                        "--syslogHost=SYSLOG:22");
+
+    final DockerClient dockerClient = new DockerClient(dockerEndpoint);
+
+    final List<String> command = asList("sh", "-c",
+        "echo site: $SITE pod: $POD domain: $DOMAIN role: $ROLE syslog: $SYSLOG_HOST-$SYSLOG_PORT");
+
+    // Create job
+    JobId jobId = createJob("NAME", "VERSION", "busybox", command);
+
+    // deploy
+    deployJob(jobId, TEST_AGENT);
+
+    String output = awaitJobFinished(jobId.toString());
+    Assert.assertNotEquals(0, output.length());
+
+    ImmutableList<String> it = ImmutableList.copyOf(Splitter.on("containerId=").split(output));
+    ImmutableList<String> containerId = ImmutableList.copyOf(Splitter.on("}").split(it.get(1)));
+
+    ClientResponse logs = dockerClient.logContainer(containerId.get(0));
+    InputStream stream = logs.getEntityInputStream();
+
+    byte[] buffer = new byte[1024];
+    int counter = 0;
+    while (true) {
+      System.err.println("COUNTER " + counter);
+      int numRead = stream.read(buffer, counter, 1024-counter);
+      if (numRead <= 0) {
+        break;
+      }
+      counter += numRead;
+    }
+    // the +8 is to skip the length header
+    String logMessage = Charsets.UTF_8.decode(ByteBuffer.wrap(buffer, 8,  counter-8)).toString();
+
+    assertContains("pod: PODNAME", logMessage);
+    assertContains("domain: DOMAINNAME", logMessage);
+    assertContains("role: ROLENAME", logMessage);
+    assertContains("syslog: SYSLOG-22", logMessage);
+
+    // Stop the agent
+    agent.stopAsync().awaitTerminated();
+
+    final Client client = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    awaitAgentStatus(client, TEST_AGENT, DOWN, 10, SECONDS);
   }
 
   /**
