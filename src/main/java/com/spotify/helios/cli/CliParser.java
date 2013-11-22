@@ -14,6 +14,7 @@ import com.spotify.helios.cli.command.JobCreateCommand;
 import com.spotify.helios.cli.command.JobDeployCommand;
 import com.spotify.helios.cli.command.JobListCommand;
 import com.spotify.helios.cli.command.JobRemoveCommand;
+import com.spotify.helios.cli.command.JobStartCommand;
 import com.spotify.helios.cli.command.JobStatusCommand;
 import com.spotify.helios.cli.command.JobStopCommand;
 import com.spotify.helios.cli.command.JobUndeployCommand;
@@ -130,12 +131,13 @@ public class CliParser {
     final Subparsers job = p("job").help("job commands")
         .addSubparsers().title("job commands").metavar("COMMAND").help("additional help");
     new JobListCommand(p(job, "list"));
+    new JobStatusCommand(p(job, "status"));
     new JobCreateCommand(p(job, "create"));
+    new JobRemoveCommand(p(job, "remove"));
     new JobDeployCommand(p(job, "deploy"));
     new JobUndeployCommand(p(job, "undeploy"));
+    new JobStartCommand(p(job, "start"));
     new JobStopCommand(p(job, "stop"));
-    new JobRemoveCommand(p(job, "remove"));
-    new JobStatusCommand(p(job, "status"));
 
     // Host commands
     final Subparsers host = p("host").help("host commands")

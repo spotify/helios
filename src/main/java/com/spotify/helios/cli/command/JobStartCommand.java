@@ -1,3 +1,7 @@
+/**
+ * Copyright (C) 2013 Spotify AB
+ */
+
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.common.Client;
@@ -14,22 +18,22 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class JobStopCommand extends ControlCommand {
+public class JobStartCommand extends ControlCommand {
 
   private final Argument hostsArg;
   private final Argument jobArg;
 
-  public JobStopCommand(Subparser parser) {
+  public JobStartCommand(Subparser parser) {
     super(parser);
 
-    parser.help("stop a job on hosts");
+    parser.help("start a job on hosts");
 
     jobArg = parser.addArgument("job")
-        .help("Job to stop.");
+        .help("Job to start.");
 
     hostsArg = parser.addArgument("hosts")
         .nargs("+")
-        .help("The hosts to stop the job on.");
+        .help("The hosts to start the job on.");
   }
 
   @Override
@@ -39,11 +43,11 @@ public class JobStopCommand extends ControlCommand {
     final JobId jobId = JobId.fromString(options.getString(jobArg.getDest()));
 
     final Deployment deployment = new Deployment.Builder()
-        .setGoal(Goal.STOP)
+        .setGoal(Goal.START)
         .setJobId(jobId)
         .build();
 
-    out.printf("Stopping %s on %s%n", jobId, hosts);
+    out.printf("Starting %s on %s%n", jobId, hosts);
 
     int code = 0;
 
