@@ -51,10 +51,10 @@ import static com.spotify.hermes.message.StatusCode.SERVER_ERROR;
 public class MasterHandler extends MatchingHandler {
 
   private final Logger log = LoggerFactory.getLogger(MasterHandler.class);
-  private final Coordinator coordinator;
+  private final MasterModel model;
 
-  public MasterHandler(final Coordinator coordinator) {
-    this.coordinator = coordinator;
+  public MasterHandler(final MasterModel model) {
+    this.model = model;
   }
 
   @Match(uri = "hm://helios/jobs/<id>", methods = "PUT")
@@ -78,7 +78,7 @@ public class MasterHandler extends MatchingHandler {
     }
 
     try {
-      coordinator.addJob(descriptor);
+      model.addJob(descriptor);
     } catch (JobExistsException e) {
       respond(request, BAD_REQUEST,
               new CreateJobResponse(CreateJobResponse.Status.JOB_ALREADY_EXISTS));
@@ -97,7 +97,7 @@ public class MasterHandler extends MatchingHandler {
   public void jobGet(final ServiceRequest request, final String id) throws Exception {
     final JobId jobId = parseJobId(id);
     try {
-      final Job job = coordinator.getJob(jobId);
+      final Job job = model.getJob(jobId);
       ok(request, job);
     } catch (HeliosException e) {
       log.error("failed to get job: {}", id, e);
@@ -108,7 +108,7 @@ public class MasterHandler extends MatchingHandler {
   @Match(uri = "hm://helios/jobs/", methods = "GET")
   public void jobsGet(final ServiceRequest request) throws Exception {
     try {
-      final Map<JobId, Job> jobs = coordinator.getJobs();
+      final Map<JobId, Job> jobs = model.getJobs();
       ok(request, jobs);
     } catch (HeliosException e) {
       log.error("failed to get jobs", e);
@@ -119,7 +119,7 @@ public class MasterHandler extends MatchingHandler {
   @Match(uri = "hm://helios/jobs/<id>", methods = "DELETE")
   public void jobDelete(final ServiceRequest request, final String id) throws Exception {
     try {
-      coordinator.removeJob(parseJobId(id));
+      model.removeJob(parseJobId(id));
       respond(request, OK, new JobDeleteResponse(JobDeleteResponse.Status.OK));
     } catch (JobStillInUseException e) {
       respond(request, FORBIDDEN, new JobDeleteResponse(JobDeleteResponse.Status.STILL_IN_USE));
@@ -133,7 +133,7 @@ public class MasterHandler extends MatchingHandler {
   public void jobStatusGet(final ServiceRequest request, final String id) throws Exception {
     final JobId jobId = parseJobId(id);
     try {
-      final JobStatus jobStatus = coordinator.getJobStatus(jobId);
+      final JobStatus jobStatus = model.getJobStatus(jobId);
       ok(request, jobStatus);
     } catch (HeliosException e) {
       log.error("failed to get job status for job: {}", id, e);
@@ -144,7 +144,7 @@ public class MasterHandler extends MatchingHandler {
   @Match(uri = "hm://helios/agents/<agent>", methods = "PUT")
   public void agentPut(final ServiceRequest request, final String agent) throws Exception {
     try {
-      coordinator.addAgent(agent);
+      model.addAgent(agent);
     } catch (HeliosException e) {
       log.error("failed to add agent {}", agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -180,7 +180,7 @@ public class MasterHandler extends MatchingHandler {
     JobDeployResponse.Status detailStatus = JobDeployResponse.Status.OK;
 
     try {
-      coordinator.deployJob(agent, deployment);
+      model.deployJob(agent, deployment);
     } catch (JobDoesNotExistException e) {
       code = NOT_FOUND;
       detailStatus = JobDeployResponse.Status.JOB_NOT_FOUND;
@@ -225,7 +225,7 @@ public class MasterHandler extends MatchingHandler {
     SetGoalResponse.Status detailStatus = SetGoalResponse.Status.OK;
 
     try {
-      coordinator.updateDeployment(agent, deployment);
+      model.updateDeployment(agent, deployment);
     } catch (JobDoesNotExistException e) {
       code = NOT_FOUND;
       detailStatus = SetGoalResponse.Status.JOB_NOT_FOUND;
@@ -268,7 +268,7 @@ public class MasterHandler extends MatchingHandler {
 
     final Deployment deployment;
     try {
-      deployment = coordinator.getDeployment(agent, parseJobId(jobId));
+      deployment = model.getDeployment(agent, parseJobId(jobId));
     } catch (HeliosException e) {
       log.error("failed to get job {} for agent {}", jobId, agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -286,7 +286,7 @@ public class MasterHandler extends MatchingHandler {
   public void agentDelete(final ServiceRequest request, final String agent)
       throws JsonProcessingException {
     try {
-      coordinator.removeAgent(agent);
+      model.removeAgent(agent);
     } catch (AgentDoesNotExistException e) {
       respond(request, NOT_FOUND,
               new AgentDeleteResponse(AgentDeleteResponse.Status.NOT_FOUND, agent));
@@ -307,7 +307,7 @@ public class MasterHandler extends MatchingHandler {
     StatusCode code = OK;
     Status detail = JobUndeployResponse.Status.OK;
     try {
-      coordinator.undeployJob(agent, parseJobId(jobId));
+      model.undeployJob(agent, parseJobId(jobId));
     } catch (AgentDoesNotExistException e) {
       code = NOT_FOUND;
       detail = JobUndeployResponse.Status.AGENT_NOT_FOUND;
@@ -328,7 +328,7 @@ public class MasterHandler extends MatchingHandler {
 
     final AgentStatus agentStatus;
     try {
-      agentStatus = coordinator.getAgentStatus(agent);
+      agentStatus = model.getAgentStatus(agent);
     } catch (HeliosException e) {
       log.error("failed to get status for agent {}", agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -345,7 +345,7 @@ public class MasterHandler extends MatchingHandler {
   public void agentsGet(final ServiceRequest request)
       throws RequestHandlerException, JsonProcessingException {
     try {
-      ok(request, coordinator.getAgents());
+      ok(request, model.getAgents());
     } catch (HeliosException e) {
       log.error("getting agents failed", e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -357,7 +357,7 @@ public class MasterHandler extends MatchingHandler {
       throws RequestHandlerException, JsonProcessingException {
     // TODO(drewc): should make it so we can get all masters, not just the running ones
     try {
-      ok(request, coordinator.getRunningMasters());
+      ok(request, model.getRunningMasters());
     } catch (HeliosException e) {
       log.error("getting masters failed", e);
       throw new RequestHandlerException(SERVER_ERROR);

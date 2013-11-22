@@ -12,8 +12,8 @@ import com.spotify.helios.common.Reactor;
 import com.spotify.helios.common.ReactorFactory;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.Task;
+import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,38 +32,38 @@ public class Agent {
 
   private static final Logger log = LoggerFactory.getLogger(Agent.class);
 
-  private final State state;
+  private final AgentModel model;
   private final SupervisorFactory supervisorFactory;
 
   private final Reactor reactor;
 
-  private final StateListener stateListener = new StateListener();
+  private final ModelListener modelListener = new ModelListener();
   private final Map<JobId, Supervisor> supervisors = Maps.newHashMap();
 
   /**
    * Create a new worker.
    *
-   * @param state             The desired state.
+   * @param model             The model.
    * @param supervisorFactory The factory to use for creating supervisors.
    * @param reactorFactory    The factory to use for creating reactors.
    */
-  public Agent(final State state, final SupervisorFactory supervisorFactory,
+  public Agent(final AgentModel model, final SupervisorFactory supervisorFactory,
                final ReactorFactory reactorFactory) {
     this.reactor = reactorFactory.create(new Update(), SECONDS.toMillis(1));
-    this.state = state;
+    this.model = model;
     this.supervisorFactory = supervisorFactory;
   }
 
   public void start() {
-    final Map<JobId, TaskStatus> jobStatuses = state.getTaskStatuses();
-    final Map<JobId, Task> jobConfigurations = state.getTasks();
+    final Map<JobId, TaskStatus> jobStatuses = model.getTaskStatuses();
+    final Map<JobId, Task> jobConfigurations = model.getTasks();
     for (final JobId jobId : jobStatuses.keySet()) {
       final TaskStatus taskStatus = jobStatuses.get(jobId);
       final Task config = jobConfigurations.get(jobId);
       final Supervisor supervisor = createSupervisor(jobId, taskStatus.getJob());
       delegate(supervisor, config);
     }
-    this.state.addListener(stateListener);
+    this.model.addListener(modelListener);
   }
 
   /**
@@ -71,7 +71,7 @@ public class Agent {
    */
   public void close() {
     reactor.close();
-    this.state.removeListener(stateListener);
+    this.model.removeListener(modelListener);
     for (final Map.Entry<JobId, Supervisor> entry : supervisors.entrySet()) {
       entry.getValue().close();
     }
@@ -80,7 +80,7 @@ public class Agent {
   /**
    * Create a job supervisor.
    *
-   * @param jobId       The name of the job.
+   * @param jobId      The name of the job.
    * @param descriptor The job descriptor.
    */
   private Supervisor createSupervisor(final JobId jobId, final Job descriptor) {
@@ -115,10 +115,10 @@ public class Agent {
   /**
    * Listens to desired state updates.
    */
-  private class StateListener implements State.Listener {
+  private class ModelListener implements AgentModel.Listener {
 
     @Override
-    public void tasksChanged(final State state) {
+    public void tasksChanged(final AgentModel model) {
       reactor.update();
     }
   }
@@ -139,7 +139,7 @@ public class Agent {
       }
 
       // Get a snapshot of the desired state
-      final Map<JobId, Task> desiredJobs = state.getTasks();
+      final Map<JobId, Task> desiredJobs = model.getTasks();
       final Set<JobId> desiredJobIds = desiredJobs.keySet();
 
       // Get a snapshot of the current state

@@ -5,17 +5,16 @@
 package com.spotify.helios.agent;
 
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.Task;
+import com.spotify.helios.common.descriptors.TaskStatus;
 
 import java.util.Map;
 
 /**
- * Models the desired state of a slave as provided by coordinators and provides a way for a slave
- * to
+ * Models the desired state of a host as provided by mastera and provides a way for an agent to
  * indicate its current state.
  */
-public interface State {
+public interface AgentModel {
 
   /**
    * Get a map of tasks.
@@ -73,8 +72,8 @@ public interface State {
     /**
      * The set of tasks changed.
      *
-     * @param state This state.
+     * @param model This state.
      */
-    void tasksChanged(State state);
+    void tasksChanged(AgentModel model);
   }
 }

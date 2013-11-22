@@ -11,9 +11,9 @@ import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.ReactorFactory;
 import com.spotify.helios.common.ZooKeeperNodeUpdaterFactory;
-import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.spotify.helios.common.coordination.Paths;
+import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.sun.management.OperatingSystemMXBean;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricsRegistry;
@@ -52,12 +52,12 @@ public class AgentService {
     this.zooKeeperCurator = setupZookeeperCurator(config);
     this.zooKeeperClient = new DefaultZooKeeperClient(zooKeeperCurator);
 
-    final State state = setupState(config, zooKeeperClient);
+    final AgentModel model = setupState(config, zooKeeperClient);
 
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
-    final SupervisorFactory supervisorFactory = new SupervisorFactory(state, dockerClientFactory,
-        config);
+    final SupervisorFactory supervisorFactory = new SupervisorFactory(model, dockerClientFactory,
+                                                                      config);
     final ReactorFactory reactorFactory = new ReactorFactory();
 
     this.hostInfoReporter = HostInfoReporter.newBuilder()
@@ -72,7 +72,7 @@ public class AgentService {
         .setAgent(config.getName())
         .build();
 
-    this.agent = new Agent(state, supervisorFactory, reactorFactory);
+    this.agent = new Agent(model, supervisorFactory, reactorFactory);
   }
 
   /**
@@ -118,9 +118,9 @@ public class AgentService {
    * @param zooKeeperClient The ZooKeeper client to use.
    * @return An agent state.
    */
-  private static State setupState(final AgentConfig config,
-                                  final DefaultZooKeeperClient zooKeeperClient) {
-    final ZooKeeperState state = new ZooKeeperState(zooKeeperClient, config.getName());
+  private static AgentModel setupState(final AgentConfig config,
+                                       final DefaultZooKeeperClient zooKeeperClient) {
+    final ZooKeeperAgentModel state = new ZooKeeperAgentModel(zooKeeperClient, config.getName());
     try {
       state.start();
     } catch (Exception e) {

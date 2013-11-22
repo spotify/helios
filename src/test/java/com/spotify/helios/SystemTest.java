@@ -8,13 +8,11 @@ import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 
-import com.fasterxml.jackson.databind.MappingIterator;
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
-import com.spotify.helios.common.Json;
 import com.spotify.helios.common.ServiceMain;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -26,7 +24,6 @@ import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
-import com.spotify.helios.master.ZooKeeperCoordinator;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.commons.lang.StringUtils;
@@ -40,12 +37,9 @@ import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.nio.CharBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -449,16 +443,16 @@ public class SystemTest extends ZooKeeperTestBase {
   public void testSiteVariables() throws Exception {
     startDefaultMaster();
     AgentMain agent = startAgent("-vvvv",
-                        "--no-log-setup",
-                        "--munin-port", "0",
-                        "--name", TEST_AGENT,
-                        "--docker", dockerEndpoint,
-                        "--zk", zookeeperEndpoint,
-                        "--zk-session-timeout", "100",
-                        "--pod=PODNAME",
-                        "--role=ROLENAME",
-                        "--domain=DOMAINNAME",
-                        "--syslogHost=SYSLOG:22");
+                                 "--no-log-setup",
+                                 "--munin-port", "0",
+                                 "--name", TEST_AGENT,
+                                 "--docker", dockerEndpoint,
+                                 "--zk", zookeeperEndpoint,
+                                 "--zk-session-timeout", "100",
+                                 "--pod=PODNAME",
+                                 "--role=ROLENAME",
+                                 "--domain=DOMAINNAME",
+                                 "--syslogHost=SYSLOG:22");
 
     final DockerClient dockerClient = new DockerClient(dockerEndpoint);
 

@@ -17,9 +17,9 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
-abstract class AbstractState implements State {
+abstract class AbstractAgentModel implements AgentModel {
 
-  private static final Logger log = LoggerFactory.getLogger(AbstractState.class);
+  private static final Logger log = LoggerFactory.getLogger(AbstractAgentModel.class);
 
   private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
   private final ConcurrentMap<JobId, Task> jobs = Maps.newConcurrentMap();

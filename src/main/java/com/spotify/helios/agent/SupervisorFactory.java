@@ -13,14 +13,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class SupervisorFactory {
 
-  private final State state;
+  private final AgentModel model;
   private final DockerClientFactory dockerClientFactory;
   private final AgentConfig config;
 
-  public SupervisorFactory(final State state, final DockerClientFactory dockerClientFactory,
+  public SupervisorFactory(final AgentModel model, final DockerClientFactory dockerClientFactory,
                            final AgentConfig config) {
     this.dockerClientFactory = dockerClientFactory;
-    this.state = checkNotNull(state);
+    this.model = checkNotNull(model);
     this.config = checkNotNull(config);
   }
 
@@ -34,7 +34,7 @@ public class SupervisorFactory {
     return Supervisor.newBuilder()
         .setJobId(jobId)
         .setDescriptor(descriptor)
-        .setState(state)
+        .setModel(model)
         .setDockerClient(dockerClient)
         .setConfig(config)
         .build();

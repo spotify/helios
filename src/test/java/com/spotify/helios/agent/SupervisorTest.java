@@ -71,7 +71,7 @@ public class SupervisorTest {
   }};
   static final List<Image> DOCKER_IMAGES = asList(DOCKER_IMAGE);
 
-  @Mock State state;
+  @Mock AgentModel model;
   @Mock AsyncDockerClient docker;
 
   @Captor ArgumentCaptor<ContainerConfig> containerConfigCaptor;
@@ -84,7 +84,7 @@ public class SupervisorTest {
     sut = Supervisor.newBuilder()
         .setJobId(JOB_ID)
         .setDescriptor(DESCRIPTOR)
-        .setState(state)
+        .setModel(model)
         .setDockerClient(docker)
         .setRestartIntervalMillis(10)
         .setRetryIntervalMillis(10)
@@ -102,8 +102,8 @@ public class SupervisorTest {
         statusMap.put(jobId, status);
         return null;
       }
-    }).when(state).setTaskStatus(eq(JOB_ID), any(TaskStatus.class));
-    when(state.getTaskStatus(eq(JOB_ID))).thenAnswer(new Answer<Object>() {
+    }).when(model).setTaskStatus(eq(JOB_ID), any(TaskStatus.class));
+    when(model.getTaskStatus(eq(JOB_ID))).thenAnswer(new Answer<Object>() {
       @Override
       public Object answer(final InvocationOnMock invocationOnMock) throws Throwable {
         final JobId jobId = (JobId) invocationOnMock.getArguments()[0];
@@ -146,7 +146,7 @@ public class SupervisorTest {
     // Verify that the container is created
     verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture(),
                                                   containerNameCaptor.capture());
-    verify(state, timeout(1000)).setTaskStatus(eq(JOB_ID),
+    verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, CREATING, null)));
     assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
@@ -158,14 +158,14 @@ public class SupervisorTest {
 
     // Verify that the container is started
     verify(docker, timeout(1000)).startContainer(containerId);
-    verify(state, timeout(1000)).setTaskStatus(eq(JOB_ID),
+    verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, STARTING,
                                                                  containerId)));
     assertEquals(STARTING, sut.getStatus());
     startFuture.set(null);
 
     verify(docker, timeout(1000)).waitContainer(containerId);
-    verify(state, timeout(1000)).setTaskStatus(eq(JOB_ID),
+    verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, RUNNING,
                                                                  containerId)));
     assertEquals(RUNNING, sut.getStatus());
@@ -188,7 +188,7 @@ public class SupervisorTest {
     killFuture.set(null);
 
     // Verify that the stopped state is signalled
-    verify(state, timeout(1000)).setTaskStatus(eq(JOB_ID),
+    verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, STOPPED,
                                                                  containerId)));
     assertEquals(STOPPED, sut.getStatus());

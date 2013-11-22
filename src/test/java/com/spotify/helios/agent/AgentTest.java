@@ -11,8 +11,8 @@ import com.spotify.helios.common.ReactorFactory;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.Task;
+import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -41,7 +41,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class AgentTest {
 
-  @Mock State state;
+  @Mock AgentModel model;
   @Mock SupervisorFactory supervisorFactory;
   @Mock ReactorFactory reactorFactory;
 
@@ -50,7 +50,7 @@ public class AgentTest {
   @Mock Reactor reactor;
 
   @Captor ArgumentCaptor<Runnable> callbackCaptor;
-  @Captor ArgumentCaptor<State.Listener> listenerCaptor;
+  @Captor ArgumentCaptor<AgentModel.Listener> listenerCaptor;
   @Captor ArgumentCaptor<Long> timeoutCaptor;
 
   final Map<JobId, Task> jobs = Maps.newHashMap();
@@ -61,7 +61,7 @@ public class AgentTest {
 
   Agent sut;
   Runnable callback;
-  State.Listener listener;
+  AgentModel.Listener listener;
 
   static final String FOO_JOB = "foojob";
   static final Job FOO_DESCRIPTOR = Job.newBuilder()
@@ -87,16 +87,16 @@ public class AgentTest {
         .thenReturn(barSupervisor);
     when(reactorFactory.create(callbackCaptor.capture(), timeoutCaptor.capture()))
         .thenReturn(reactor);
-    when(state.getTasks()).thenReturn(unmodifiableJobs);
-    when(state.getTaskStatuses()).thenReturn(unmodifiableJobStatuses);
-    sut = new Agent(state, supervisorFactory, reactorFactory);
+    when(model.getTasks()).thenReturn(unmodifiableJobs);
+    when(model.getTaskStatuses()).thenReturn(unmodifiableJobStatuses);
+    sut = new Agent(model, supervisorFactory, reactorFactory);
     verify(reactorFactory).create(any(Runnable.class), anyLong());
     callback = callbackCaptor.getValue();
   }
 
   private void startAgent() {
     sut.start();
-    verify(state).addListener(listenerCaptor.capture());
+    verify(model).addListener(listenerCaptor.capture());
     listener = listenerCaptor.getValue();
   }
 
@@ -118,7 +118,7 @@ public class AgentTest {
   @Test
   public void verifyReactorIsUpdatedWhenListenerIsCalled() {
     startAgent();
-    listener.tasksChanged(state);
+    listener.tasksChanged(model);
     verify(reactor).update();
   }
 
@@ -127,8 +127,10 @@ public class AgentTest {
     configure(FOO_DESCRIPTOR, START);
     configure(BAR_DESCRIPTOR, STOP);
 
-    jobStatuses.put(FOO_DESCRIPTOR.getId(), new TaskStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1"));
-    jobStatuses.put(BAR_DESCRIPTOR.getId(), new TaskStatus(BAR_DESCRIPTOR, RUNNING, "bar-container-1"));
+    jobStatuses.put(FOO_DESCRIPTOR.getId(),
+                    new TaskStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1"));
+    jobStatuses.put(BAR_DESCRIPTOR.getId(),
+                    new TaskStatus(BAR_DESCRIPTOR, RUNNING, "bar-container-1"));
 
     when(fooSupervisor.isStarting()).thenReturn(false);
     when(barSupervisor.isStarting()).thenReturn(true);

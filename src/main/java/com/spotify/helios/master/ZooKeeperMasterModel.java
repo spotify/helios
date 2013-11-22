@@ -50,15 +50,15 @@ import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
-public class ZooKeeperCoordinator implements Coordinator {
+public class ZooKeeperMasterModel implements MasterModel {
 
-  private static final Logger log = LoggerFactory.getLogger(ZooKeeperCoordinator.class);
+  private static final Logger log = LoggerFactory.getLogger(ZooKeeperMasterModel.class);
 
   public static final Map<JobId, TaskStatus> EMPTY_STATUSES = emptyMap();
 
   private final ZooKeeperClient client;
 
-  public ZooKeeperCoordinator(final ZooKeeperClient client) {
+  public ZooKeeperMasterModel(final ZooKeeperClient client) {
     this.client = client;
   }
 

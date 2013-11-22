@@ -32,9 +32,9 @@ import static com.netflix.curator.framework.recipes.cache.PathChildrenCache.Star
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static org.apache.zookeeper.KeeperException.NoNodeException;
 
-public class ZooKeeperState extends AbstractState {
+public class ZooKeeperAgentModel extends AbstractAgentModel {
 
-  private static final Logger log = LoggerFactory.getLogger(ZooKeeperState.class);
+  private static final Logger log = LoggerFactory.getLogger(ZooKeeperAgentModel.class);
 
   private final PathChildrenCache jobs;
   private final CountDownLatch jobsInitialized = new CountDownLatch(1);
@@ -42,7 +42,7 @@ public class ZooKeeperState extends AbstractState {
   private final ZooKeeperClient client;
   private final String agent;
 
-  public ZooKeeperState(final ZooKeeperClient client, final String agent) {
+  public ZooKeeperAgentModel(final ZooKeeperClient client, final String agent) {
     this.client = checkNotNull(client);
     this.agent = checkNotNull(agent);
     this.jobs = client.pathChildrenCache(Paths.configAgentJobs(agent), true);

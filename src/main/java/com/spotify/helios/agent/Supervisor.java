@@ -71,7 +71,7 @@ class Supervisor {
 
   private final JobId jobId;
   private final Job job;
-  private final State state;
+  private final AgentModel model;
   private final long restartIntervalMillis;
   private final long retryIntervalMillis;
   private final AgentConfig agentConfig;
@@ -85,18 +85,18 @@ class Supervisor {
   /**
    * Create a new job supervisor.
    *
-   * @param jobId The job id.
-   * @param job   The job.
-   * @param state The worker state to use.
-   * @param config     The agent configuration.
+   * @param jobId  The job id.
+   * @param job    The job.
+   * @param model  The model to use.
+   * @param config The agent configuration.
    */
   private Supervisor(final JobId jobId, final Job job,
-                     final State state, final AsyncDockerClient dockerClient,
+                     final AgentModel model, final AsyncDockerClient dockerClient,
                      final long restartIntervalMillis, final long retryIntervalMillis,
                      final AgentConfig config) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
-    this.state = checkNotNull(state);
+    this.model = checkNotNull(model);
     this.docker = checkNotNull(dockerClient);
     this.restartIntervalMillis = restartIntervalMillis;
     this.retryIntervalMillis = retryIntervalMillis;
@@ -185,7 +185,7 @@ class Supervisor {
       runner.stop();
     }
 
-    final TaskStatus taskStatus = state.getTaskStatus(jobId);
+    final TaskStatus taskStatus = model.getTaskStatus(jobId);
     final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
 
     // Kill the job
@@ -240,7 +240,7 @@ class Supervisor {
    * Persist job status.
    */
   private void setStatus(final TaskStatus.State status, final String containerId) {
-    state.setTaskStatus(jobId, new TaskStatus(job, status, containerId));
+    model.setTaskStatus(jobId, new TaskStatus(job, status, containerId));
     this.status = status;
   }
 
@@ -278,11 +278,11 @@ class Supervisor {
     }
 
     if (notEmpty(agentConfig.getPod())) {
-      environment.add("POD="+ agentConfig.getPod());
+      environment.add("POD=" + agentConfig.getPod());
     }
 
     if (notEmpty(agentConfig.getRole())) {
-      environment.add("ROLE="+ agentConfig.getRole());
+      environment.add("ROLE=" + agentConfig.getRole());
     }
 
     if (notEmpty(agentConfig.getSyslogHostPort())) {
@@ -292,7 +292,8 @@ class Supervisor {
         environment.add("SYSLOG_HOST=" + bits.get(0));
         environment.add("SYSLOG_PORT=" + bits.get(1));
       } else {
-        throw new RuntimeException("--syslogHost must be host:port, got " + agentConfig.getSyslogHostPort());
+        throw new RuntimeException(
+            "--syslogHost must be host:port, got " + agentConfig.getSyslogHostPort());
       }
     }
 
@@ -347,7 +348,7 @@ class Supervisor {
         Thread.sleep(delayMillis);
 
         // Get centrally registered status
-        final TaskStatus taskStatus = state.getTaskStatus(jobId);
+        final TaskStatus taskStatus = model.getTaskStatus(jobId);
         final
         String
             registeredContainerId =
@@ -466,7 +467,7 @@ class Supervisor {
 
     private JobId jobId;
     private Job descriptor;
-    private State state;
+    private AgentModel model;
     private AsyncDockerClient dockerClient;
     private long restartIntervalMillis = DEFAULT_RESTART_INTERVAL_MILLIS;
     private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
@@ -482,8 +483,8 @@ class Supervisor {
       return this;
     }
 
-    public Builder setState(final State state) {
-      this.state = state;
+    public Builder setModel(final AgentModel model) {
+      this.model = model;
       return this;
     }
 
@@ -508,7 +509,7 @@ class Supervisor {
     }
 
     public Supervisor build() {
-      return new Supervisor(jobId, descriptor, state, dockerClient, restartIntervalMillis,
+      return new Supervisor(jobId, descriptor, model, dockerClient, restartIntervalMillis,
                             retryIntervalMillis, config);
     }
 

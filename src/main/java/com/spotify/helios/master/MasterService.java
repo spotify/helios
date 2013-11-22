@@ -76,16 +76,16 @@ public class MasterService {
 
     // Set up the master interface
     final DefaultZooKeeperClient curator = new DefaultZooKeeperClient(zooKeeperClient);
-    final Coordinator coordinator = new ZooKeeperCoordinator(curator);
-    final MasterHandler masterHandler = new MasterHandler(coordinator);
+    final MasterModel model = new ZooKeeperMasterModel(curator);
+    final MasterHandler handler = new MasterHandler(model);
 
     // master server
-    this.hermesServer = Hermes.newServer(masterHandler);
+    this.hermesServer = Hermes.newServer(handler);
     this.httpEndpoint = config.getHttpEndpoint();
     final com.spotify.hermes.http.Statistics statistics = new com.spotify.hermes.http.Statistics();
     // TODO: this is a bit messy
     final HermesHttpRequestDispatcher requestDispatcher =
-        new HermesHttpRequestDispatcher(new RequestHandlerClient(masterHandler), statistics, V2,
+        new HermesHttpRequestDispatcher(new RequestHandlerClient(handler), statistics, V2,
                                         30000,
                                         "helios");
     this.httpServer = new HttpServer(requestDispatcher, new HttpServer.Config(), statistics);

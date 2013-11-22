@@ -16,7 +16,7 @@ import com.spotify.helios.common.protocol.JobStatus;
 import java.util.List;
 import java.util.Map;
 
-public interface Coordinator {
+public interface MasterModel {
 
   // TODO (dano): instead of having all coordinator methods throwing checked HeliosExceptions on
   // internal failures we should throw runtime exceptions for situations like ZooKeeper being borked
