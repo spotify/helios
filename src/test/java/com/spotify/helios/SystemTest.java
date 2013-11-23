@@ -4,11 +4,10 @@
 
 package com.spotify.helios;
 
-import com.google.common.base.Charsets;
-
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
+import com.kpelykh.docker.client.utils.LogReader;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
@@ -41,9 +40,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.PrintStream;
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -54,6 +51,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
@@ -515,7 +513,7 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   @Test
-  public void testSiteVariables() throws Exception {
+  public void testEnvVariables() throws Exception {
     startDefaultMaster();
     AgentMain agent = startAgent("-vvvv",
                                  "--no-log-setup",
@@ -531,36 +529,21 @@ public class SystemTest extends ZooKeeperTestBase {
     final DockerClient dockerClient = new DockerClient(dockerEndpoint);
 
     final List<String> command = asList("sh", "-c",
-                                        "echo site: $SITE pod: $POD domain: $DOMAIN role: $ROLE syslog: $SYSLOG_HOST-$SYSLOG_PORT");
+                                        "echo pod: $SPOTIFY_POD role: $SPOTIFY_ROLE");
 
     // Create job
-    JobId jobId = createJob("NAME", "VERSION", "busybox", command);
+    final JobId jobId = createJob("NAME", "VERSION", "busybox", command);
 
     // deploy
     deployJob(jobId, TEST_AGENT);
 
-    TaskStatus taskStatus = awaitTaskState(jobId, TEST_AGENT, EXITED);
+    final TaskStatus taskStatus = awaitTaskState(jobId, TEST_AGENT, EXITED);
 
-    ClientResponse logs = dockerClient.logContainer(taskStatus.getContainerId());
-    InputStream stream = logs.getEntityInputStream();
-
-    byte[] buffer = new byte[1024];
-    int counter = 0;
-    while (true) {
-      System.err.println("COUNTER " + counter);
-      int numRead = stream.read(buffer, counter, 1024 - counter);
-      if (numRead <= 0) {
-        break;
-      }
-      counter += numRead;
-    }
-    // the +8 is to skip the length header
-    String logMessage = Charsets.UTF_8.decode(ByteBuffer.wrap(buffer, 8, counter - 8)).toString();
+    final ClientResponse response = dockerClient.logContainer(taskStatus.getContainerId());
+    final String logMessage = readLogFully(response);
 
     assertContains("pod: PODNAME", logMessage);
-    assertContains("domain: DOMAINNAME", logMessage);
     assertContains("role: ROLENAME", logMessage);
-    assertContains("syslog: SYSLOG-22", logMessage);
 
     // Stop the agent
     agent.stopAsync().awaitTerminated();
@@ -571,6 +554,17 @@ public class SystemTest extends ZooKeeperTestBase {
         .build();
 
     awaitAgentStatus(client, TEST_AGENT, DOWN, 10, SECONDS);
+
+  }
+
+  private String readLogFully(final ClientResponse logs) throws IOException {
+    final LogReader logReader = new LogReader(logs.getEntityInputStream());
+    StringBuilder stringBuilder = new StringBuilder();
+    LogReader.Frame frame;
+    while ((frame = logReader.readFrame()) != null) {
+      stringBuilder.append(UTF_8.decode(frame.getBytes()));
+    }
+    return stringBuilder.toString();
   }
 
   /**
