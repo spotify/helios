@@ -4,6 +4,8 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -26,6 +28,8 @@ import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
@@ -63,6 +67,9 @@ public class SupervisorTest {
       .setImage(IMAGE)
       .setVersion(VERSION)
       .build();
+  static final Map<String, String> ENV = ImmutableMap.of("foo", "17",
+                                                         "bar", "4711");
+  static final Set<String> EXPECTED_CONTAINER_ENV = ImmutableSet.of("foo=17", "bar=4711");
 
   static final Image DOCKER_IMAGE = new Image() {{
     repository = IMAGE;
@@ -88,7 +95,7 @@ public class SupervisorTest {
         .setDockerClient(docker)
         .setRestartIntervalMillis(10)
         .setRetryIntervalMillis(10)
-        .setEnvVars(new String[]{})
+        .setEnvVars(ENV)
         .build();
     when(docker.getImages(IMAGE)).thenReturn(immediateFuture(DOCKER_IMAGES));
 
@@ -152,6 +159,7 @@ public class SupervisorTest {
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
     assertEquals(IMAGE, containerConfig.getImage());
+    assertEquals(EXPECTED_CONTAINER_ENV, ImmutableSet.copyOf(containerConfig.getEnv()));
     final String containerName = containerNameCaptor.getValue();
     final UUID uuid = uuidFromContainerName(containerName);
     assertEquals(DESCRIPTOR.getId(), jobIdFromContainerName(containerName));

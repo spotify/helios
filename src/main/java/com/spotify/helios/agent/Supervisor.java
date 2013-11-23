@@ -4,6 +4,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -28,6 +29,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -71,7 +73,7 @@ class Supervisor {
   private final AgentModel model;
   private final long restartIntervalMillis;
   private final long retryIntervalMillis;
-  private final String[] envVars;
+  private final Map<String, String> envVars;
 
   private volatile Runner runner;
   private volatile boolean closed;
@@ -90,7 +92,7 @@ class Supervisor {
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
                      final long restartIntervalMillis, final long retryIntervalMillis,
-                     final String[] envVars) {
+                     final Map<String, String> envVars) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
@@ -256,9 +258,11 @@ class Supervisor {
     containerConfig.setImage(descriptor.getImage());
     final List<String> command = descriptor.getCommand();
     containerConfig.setCmd(command.toArray(new String[command.size()]));
-
-    containerConfig.setEnv(envVars);
-
+    final List<String> env = Lists.newArrayList();
+    for (final Map.Entry<String, String> entry : envVars.entrySet()) {
+      env.add(entry.getKey() + '=' + entry.getValue());
+    }
+    containerConfig.setEnv(env.toArray(new String[env.size()]));
     return containerConfig;
   }
 
@@ -431,7 +435,7 @@ class Supervisor {
     private AsyncDockerClient dockerClient;
     private long restartIntervalMillis = DEFAULT_RESTART_INTERVAL_MILLIS;
     private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
-    private String[] envVars;
+    private Map<String, String> envVars = Collections.emptyMap();
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -463,7 +467,7 @@ class Supervisor {
       return this;
     }
 
-    public Builder setEnvVars(String[] envVars) {
+    public Builder setEnvVars(Map<String, String> envVars) {
       this.envVars = envVars;
       return this;
     }

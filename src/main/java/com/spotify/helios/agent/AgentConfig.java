@@ -4,6 +4,8 @@
 
 package com.spotify.helios.agent;
 
+import java.util.Map;
+
 public class AgentConfig {
 
   private String site;
@@ -13,7 +15,7 @@ public class AgentConfig {
   private String dockerEndpoint;
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
-  private String[] envVars;
+  private Map<String, String> envVars;
 
   public String getName() {
     return name;
@@ -78,12 +80,12 @@ public class AgentConfig {
     return zooKeeperConnectionTimeoutMillis;
   }
 
-  public AgentConfig setEnvVars(final String[] envVars) {
+  public AgentConfig setEnvVars(final Map<String, String> envVars) {
     this.envVars = envVars;
     return this;
   }
 
-  public String[] getEnvVars() {
+  public Map<String, String> getEnvVars() {
     return envVars;
   }
 }

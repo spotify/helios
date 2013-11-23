@@ -524,10 +524,9 @@ public class SystemTest extends ZooKeeperTestBase {
                                  "--docker", dockerEndpoint,
                                  "--zk", zookeeperEndpoint,
                                  "--zk-session-timeout", "100",
-                                 "--pod=PODNAME",
-                                 "--role=ROLENAME",
-                                 "--domain=DOMAINNAME",
-                                 "--syslogHost=SYSLOG:22");
+                                 "--env",
+                                 "SPOTIFY_POD=PODNAME",
+                                 "SPOTIFY_ROLE=ROLENAME");
 
     final DockerClient dockerClient = new DockerClient(dockerEndpoint);
 

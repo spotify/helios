@@ -1,5 +1,7 @@
 package com.spotify.helios.agent;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 
 import com.spotify.helios.common.ServiceParser;
@@ -13,6 +15,7 @@ import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Throwables.propagate;
 
@@ -33,8 +36,18 @@ public class AgentParser extends ServiceParser {
 
     final String name = options.getString("name");
 
-    List<Object> env = options.getList("env");
-    String[] envVars = env == null ? new String[]{} : env.toArray(new String[]{});
+    final List<String> env = options.getList("env");
+    final Map<String, String> envVars = Maps.newHashMap();
+    if (env != null) {
+      for (final String s : env) {
+        final List<String> parts = Splitter.on('=').splitToList(s);
+        if (parts.size() != 2) {
+          throw new IllegalArgumentException("Bad environment variable: " + s);
+        }
+        envVars.put(parts.get(0), parts.get(1));
+      }
+    }
+
     agentConfig = new AgentConfig()
         .setName(name)
         .setZooKeeperConnectionString(options.getString("zk"))

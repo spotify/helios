@@ -4,6 +4,8 @@ import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 
+import java.util.Map;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -15,10 +17,10 @@ public class SupervisorFactory {
 
   private final AgentModel model;
   private final DockerClientFactory dockerClientFactory;
-  private final String[] envVars;
+  private final Map<String, String> envVars;
 
   public SupervisorFactory(final AgentModel model, final DockerClientFactory dockerClientFactory,
-                           final String[] envVars) {
+                           final Map<String, String> envVars) {
     this.dockerClientFactory = dockerClientFactory;
     this.model = checkNotNull(model);
     this.envVars = checkNotNull(envVars);
