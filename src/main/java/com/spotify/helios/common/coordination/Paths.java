@@ -14,6 +14,7 @@ public class Paths {
   public static final String JOBS = "jobs";
   public static final String AGENTS = "agents";
   public static final String MASTERS = "masters";
+  public static final String HISTORY = "history";
   private static final String HOSTINFO = "hostinfo";
   private static final String RUNTIMEINFO = "runtimeinfo";
 
@@ -21,6 +22,7 @@ public class Paths {
   private static final PathFactory CONFIG_AGENTS = new PathFactory("/", CONFIG, AGENTS);
   private static final PathFactory STATUS_AGENTS = new PathFactory("/", STATUS, AGENTS);
   private static final PathFactory STATUS_MASTERS = new PathFactory("/", STATUS, MASTERS);
+  private static final PathFactory HISTORY_JOBS = new PathFactory("/", HISTORY, JOBS);
 
   public static String configAgents() {
     return CONFIG_AGENTS.path();
@@ -86,4 +88,11 @@ public class Paths {
     return STATUS_AGENTS.path(agent, RUNTIMEINFO);
   }
 
+  public static String historyJobAgent(final String job, final String agent, final long timestamp) {
+    return HISTORY_JOBS.path(job, agent + ":" + String.valueOf(timestamp));
+  }
+
+  public static String historyJob(final String job) {
+    return HISTORY_JOBS.path(job);
+  }
 }

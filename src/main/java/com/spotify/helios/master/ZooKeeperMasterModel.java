@@ -5,10 +5,13 @@
 package com.spotify.helios.master;
 
 import com.google.common.base.Predicate;
+import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.common.AgentDoesNotExistException;
@@ -31,6 +34,8 @@ import com.spotify.helios.common.descriptors.RuntimeInfo;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobStatus;
+import com.spotify.helios.common.protocol.JobStatusEvent;
+import com.spotify.helios.common.protocol.JobStatusEvents;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -131,13 +136,41 @@ public class ZooKeeperMasterModel implements MasterModel {
       // TODO (dano): do this in a transaction
       final String jobPath = Paths.configJob(job.getId());
       client.createAndSetData(jobPath, job.toJsonBytes());
+
       final String jobAgentsPath = Paths.configJobAgents(job.getId());
       client.create(jobAgentsPath);
+
+      client.ensurePath(Paths.historyJob(job.getId().toString()));
     } catch (KeeperException.NodeExistsException e) {
       throw new JobExistsException(job.getId().toString());
     } catch (KeeperException e) {
       throw new HeliosException("adding job " + job + " failed", e);
     }
+  }
+
+  @Override
+  public List<JobStatusEvent> getJobHistory(final JobId jobId) throws HeliosException {
+    List<String> events = null;
+    try {
+      events = client.getChildren(Paths.historyJob(jobId.toString()));
+    } catch (KeeperException e) {
+      Throwables.propagate(e);
+    }
+
+    List<JobStatusEvent> jsEvents = Lists.newArrayList();
+
+    for (String event : events) {
+      try {
+        byte[] data = client.getData(Paths.historyJob(jobId.toString()) + "/" + event);
+        TaskStatus status = Json.read(data, TaskStatus.class);
+        String basename = Iterables.getLast(Splitter.on("/").split(event));
+        ImmutableList<String> parts = ImmutableList.copyOf(Splitter.on(":").split(basename));
+        jsEvents.add(new JobStatusEvent(status, Long.valueOf(parts.get(1)), parts.get(0)));
+      } catch (KeeperException | IOException e) {
+        Throwables.propagate(e);
+      }
+    }
+    return jsEvents;
   }
 
   @Override

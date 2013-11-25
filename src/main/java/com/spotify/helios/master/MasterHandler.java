@@ -26,6 +26,8 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
+import com.spotify.helios.common.protocol.JobStatusEvent;
+import com.spotify.helios.common.protocol.JobStatusEvents;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse.Status;
 import com.spotify.helios.common.protocol.SetGoalResponse;
@@ -40,6 +42,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -383,6 +386,14 @@ public class MasterHandler extends MatchingHandler {
       log.error("getting masters failed", e);
       throw new RequestHandlerException(SERVER_ERROR);
     }
+  }
+
+  @Match(uri = "hm://helios/history/jobs/<jobid>", methods = "GET")
+  public void jobHistoryGet(final ServiceRequest request, final String jobId)
+      throws HeliosException, JobIdParseException, JsonProcessingException {
+    List<JobStatusEvent> history = model.getJobHistory(JobId.parse(jobId));
+    JobStatusEvents events = new JobStatusEvents(history);
+    ok(request, events);
   }
 
   private void ok(final ServiceRequest request) {

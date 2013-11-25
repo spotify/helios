@@ -188,33 +188,33 @@ class Supervisor {
     final TaskStatus taskStatus = model.getTaskStatus(jobId);
     final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
 
-    // Kill the job
-    if (containerId != null) {
-      while (true) {
-
-        // See if the container is running
-        try {
-          final ContainerInspectResponse containerInfo = inspectContainer(containerId);
-          if (!containerInfo.state.running) {
-            break;
-          }
-        } catch (DockerException e) {
-          log.error("failed to query container {}", containerId, e);
-          sleepUninterruptibly(100, MILLISECONDS);
-          continue;
-        }
-
-        // Kill the container
-        try {
-          Futures.get(docker.kill(containerId), DockerException.class);
-          break;
-        } catch (DockerException e) {
-          log.error("failed to kill container {}", containerId, e);
-          sleepUninterruptibly(100, MILLISECONDS);
-        }
-      }
+    if (containerId == null) {
+      return;
     }
 
+    // Kill the job
+    while (true) {
+      // See if the container is running
+      try {
+        final ContainerInspectResponse containerInfo = inspectContainer(containerId);
+        if (!containerInfo.state.running) {
+          break;
+        }
+      } catch (DockerException e) {
+        log.error("failed to query container {}", containerId, e);
+        sleepUninterruptibly(100, MILLISECONDS);
+        continue;
+      }
+
+      // Kill the container
+      try {
+        Futures.get(docker.kill(containerId), DockerException.class);
+        break;
+      } catch (DockerException e) {
+        log.error("failed to kill container {}", containerId, e);
+        sleepUninterruptibly(100, MILLISECONDS);
+      }
+    }
     setStatus(STOPPED, containerId);
   }
 
