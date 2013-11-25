@@ -1,6 +1,5 @@
 package com.spotify.helios.agent;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 
@@ -14,10 +13,12 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Throwables.propagate;
+import static net.sourceforge.argparse4j.impl.Arguments.append;
 
 public class AgentParser extends ServiceParser {
 
@@ -36,15 +37,17 @@ public class AgentParser extends ServiceParser {
 
     final String name = options.getString("name");
 
-    final List<String> env = options.getList("env");
+    final List<List<String>> env = options.getList("env");
     final Map<String, String> envVars = Maps.newHashMap();
     if (env != null) {
-      for (final String s : env) {
-        final List<String> parts = Splitter.on('=').splitToList(s);
-        if (parts.size() != 2) {
-          throw new IllegalArgumentException("Bad environment variable: " + s);
+      for (final List<String> group : env) {
+        for (final String s : group) {
+          final String[] parts = s.split("=", 2);
+          if (parts.length != 2) {
+            throw new IllegalArgumentException("Bad environment variable: " + s);
+          }
+          envVars.put(parts[0], parts[1]);
         }
-        envVars.put(parts.get(0), parts.get(1));
       }
     }
 
@@ -75,6 +78,8 @@ public class AgentParser extends ServiceParser {
         .help("docker endpoint");
 
     parser.addArgument("--env")
+        .action(append())
+        .setDefault(new ArrayList<String>())
         .nargs("+")
         .help("Specify environment variables that will pass down to all containers");
   }
