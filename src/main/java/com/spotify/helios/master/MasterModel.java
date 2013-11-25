@@ -12,7 +12,7 @@ import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobStatus;
-import com.spotify.helios.common.protocol.JobStatusEvent;
+import com.spotify.helios.common.protocol.TaskStatusEvent;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -56,5 +56,5 @@ public interface MasterModel {
 
   ImmutableList<String> getRunningMasters() throws HeliosException;
 
-  List<JobStatusEvent> getJobHistory(JobId jobId) throws HeliosException;
+  List<TaskStatusEvent> getJobHistory(JobId jobId) throws HeliosException;
 }

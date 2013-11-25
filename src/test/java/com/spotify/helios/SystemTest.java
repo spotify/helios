@@ -28,8 +28,8 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
-import com.spotify.helios.common.protocol.JobStatusEvent;
-import com.spotify.helios.common.protocol.JobStatusEvents;
+import com.spotify.helios.common.protocol.TaskStatusEvent;
+import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
 import com.spotify.hermes.Hermes;
@@ -291,30 +291,23 @@ public class SystemTest extends ZooKeeperTestBase {
     deployJob(jobId, TEST_AGENT);
     awaitJobState(control, TEST_AGENT, jobId, EXITED, 10, SECONDS);
     undeployJob(jobId, TEST_AGENT);
-    JobStatusEvents events = control.jobHistory(jobId).get();
-    List<JobStatusEvent> eventsList = events.getEvents();
+    TaskStatusEvents events = control.jobHistory(jobId).get();
+    List<TaskStatusEvent> eventsList = events.getEvents();
     assertFalse(eventsList.isEmpty());
-    int counter = 0;
-    for (JobStatusEvent event : eventsList) {
-      // Only do the first four.  Depending on how things shake out, it may have rolled over
-      // more than once.
-      if (counter == 4) {
-        break;
-      }
 
-      if (counter == 0) {
-        assertEquals(State.CREATING, event.getStatus().getState());
-        assertNull(event.getStatus().getContainerId());
-      } else if (counter == 1) {
-        assertEquals(State.STARTING, event.getStatus().getState());
-        assertNotNull(event.getStatus().getContainerId());
-      } else if (counter == 2) {
-        assertEquals(State.RUNNING, event.getStatus().getState());
-      } else if (counter == 3) {
-        assertEquals(State.EXITED, event.getStatus().getState());
-      }
-      counter ++;
-    }
+    final TaskStatusEvent event1 = eventsList.get(0);
+    assertEquals(State.CREATING, event1.getStatus().getState());
+    assertNull(event1.getStatus().getContainerId());
+
+    final TaskStatusEvent event2 = eventsList.get(1);
+    assertEquals(State.STARTING, event2.getStatus().getState());
+    assertNotNull(event2.getStatus().getContainerId());
+
+    final TaskStatusEvent event3 = eventsList.get(2);
+    assertEquals(State.RUNNING, event3.getStatus().getState());
+
+    final TaskStatusEvent event4 = eventsList.get(3);
+    assertEquals(State.EXITED, event4.getStatus().getState());
   }
 
   @Test

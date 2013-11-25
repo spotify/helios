@@ -26,8 +26,8 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
-import com.spotify.helios.common.protocol.JobStatusEvent;
-import com.spotify.helios.common.protocol.JobStatusEvents;
+import com.spotify.helios.common.protocol.TaskStatusEvent;
+import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse.Status;
 import com.spotify.helios.common.protocol.SetGoalResponse;
@@ -391,8 +391,8 @@ public class MasterHandler extends MatchingHandler {
   @Match(uri = "hm://helios/history/jobs/<jobid>", methods = "GET")
   public void jobHistoryGet(final ServiceRequest request, final String jobId)
       throws HeliosException, JobIdParseException, JsonProcessingException {
-    List<JobStatusEvent> history = model.getJobHistory(JobId.parse(jobId));
-    JobStatusEvents events = new JobStatusEvents(history);
+    List<TaskStatusEvent> history = model.getJobHistory(JobId.parse(jobId));
+    TaskStatusEvents events = new TaskStatusEvents(history);
     ok(request, events);
   }
 

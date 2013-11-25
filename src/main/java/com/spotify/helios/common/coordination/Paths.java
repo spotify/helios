@@ -13,6 +13,7 @@ public class Paths {
   public static final String STATUS = "status";
   public static final String JOBS = "jobs";
   public static final String AGENTS = "agents";
+  public static final String EVENTS = "events";
   public static final String MASTERS = "masters";
   public static final String HISTORY = "history";
   private static final String HOSTINFO = "hostinfo";
@@ -88,8 +89,18 @@ public class Paths {
     return STATUS_AGENTS.path(agent, RUNTIMEINFO);
   }
 
-  public static String historyJobAgent(final JobId jobId, final String agent, final long timestamp) {
-    return HISTORY_JOBS.path(jobId.toString(), agent + ":" + String.valueOf(timestamp));
+  public static String historyJobAgentEventsTimestamp(final JobId jobId,
+                                                      final String agent,
+                                                      final long timestamp) {
+    return HISTORY_JOBS.path(jobId.toString(), AGENTS, agent, EVENTS, String.valueOf(timestamp));
+  }
+
+  public static String historyJobAgentEvents(final JobId jobId, final String agent) {
+    return HISTORY_JOBS.path(jobId.toString(), AGENTS, agent, EVENTS);
+  }
+
+  public static String historyJobAgents(final JobId jobId) {
+    return HISTORY_JOBS.path(jobId.toString(), AGENTS);
   }
 
   public static String historyJob(final JobId jobId) {

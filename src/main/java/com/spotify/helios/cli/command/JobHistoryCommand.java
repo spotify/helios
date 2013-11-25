@@ -7,8 +7,8 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobIdParseException;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
-import com.spotify.helios.common.protocol.JobStatusEvent;
-import com.spotify.helios.common.protocol.JobStatusEvents;
+import com.spotify.helios.common.protocol.TaskStatusEvent;
+import com.spotify.helios.common.protocol.TaskStatusEvents;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -53,7 +53,7 @@ public class JobHistoryCommand extends ControlCommand {
       return 1;
     }
 
-    JobStatusEvents result = client.jobHistory(jobId).get();
+    TaskStatusEvents result = client.jobHistory(jobId).get();
     if (json) {
       out.println(Json.asPrettyStringUnchecked(result));
       return 0;
@@ -61,10 +61,10 @@ public class JobHistoryCommand extends ControlCommand {
 
     final Table table = table(out);
     table.row("AGENT", "TIMESTAMP", "STATE", "CONTAINERID");
-    List<JobStatusEvent> events = result.getEvents();
+    List<TaskStatusEvent> events = result.getEvents();
     DateTimeFormatter format = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS");
 
-    for (JobStatusEvent event : events) {
+    for (TaskStatusEvent event : events) {
       String agent = checkNotNull(event.getAgent());
       long timestamp = checkNotNull(event.getTimestamp());
       TaskStatus status = checkNotNull(event.getStatus());

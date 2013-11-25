@@ -23,7 +23,7 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
-import com.spotify.helios.common.protocol.JobStatusEvents;
+import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.hermes.Hermes;
@@ -198,10 +198,10 @@ public class Client {
     return get(uri("/jobs"), new TypeReference<Map<JobId, Job>>() {});
   }
 
-  public ListenableFuture<JobStatusEvents> jobHistory(final JobId jobId) {
+  public ListenableFuture<TaskStatusEvents> jobHistory(final JobId jobId) {
     return transform(
         request(uri("/history/jobs/%s", jobId.toString()), "GET"),
-        ConvertResponseToPojo.create(JobStatusEvents.class,
+        ConvertResponseToPojo.create(TaskStatusEvents.class,
             ImmutableSet.of(OK)));
   }
 

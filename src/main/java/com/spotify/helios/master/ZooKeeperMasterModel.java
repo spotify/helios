@@ -35,7 +35,7 @@ import com.spotify.helios.common.descriptors.RuntimeInfo;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobStatus;
-import com.spotify.helios.common.protocol.JobStatusEvent;
+import com.spotify.helios.common.protocol.TaskStatusEvent;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -59,9 +59,9 @@ import static java.util.Collections.emptyMap;
 
 public class ZooKeeperMasterModel implements MasterModel {
 
-  public static final class EventComparator implements Comparator<JobStatusEvent> {
+  public static final class EventComparator implements Comparator<TaskStatusEvent> {
     @Override
-    public int compare(JobStatusEvent arg0, JobStatusEvent arg1) {
+    public int compare(TaskStatusEvent arg0, TaskStatusEvent arg1) {
       if (arg1.getTimestamp() > arg0.getTimestamp()) {
         return -1;
       } else if (arg1.getTimestamp() == arg0.getTimestamp()) {
@@ -165,27 +165,36 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public List<JobStatusEvent> getJobHistory(final JobId jobId) throws HeliosException {
-    List<String> events = null;
+  public List<TaskStatusEvent> getJobHistory(final JobId jobId) throws HeliosException {
+    final List<String> agents;
     try {
-      events = client.getChildren(Paths.historyJob(jobId));
+      agents = client.getChildren(Paths.historyJobAgents(jobId));
     } catch (KeeperException e) {
-      Throwables.propagate(e);
+      throw Throwables.propagate(e);
     }
 
-    List<JobStatusEvent> jsEvents = Lists.newArrayList();
+    final List<TaskStatusEvent> jsEvents = Lists.newArrayList();
 
-    for (String event : events) {
+    for (String agent : agents) {
+      final List<String> events;
       try {
-        byte[] data = client.getData(Paths.historyJob(jobId) + "/" + event);
-        TaskStatus status = Json.read(data, TaskStatus.class);
-        String basename = Iterables.getLast(Splitter.on("/").split(event));
-        ImmutableList<String> parts = ImmutableList.copyOf(Splitter.on(":").split(basename));
-        jsEvents.add(new JobStatusEvent(status, Long.valueOf(parts.get(1)), parts.get(0)));
-      } catch (KeeperException | IOException e) {
-        Throwables.propagate(e);
+        events = client.getChildren(Paths.historyJobAgentEvents(jobId, agent));
+      } catch (KeeperException e) {
+        throw Throwables.propagate(e);
+      }
+
+      for (String event : events) {
+        try {
+          byte[] data = client.getData(Paths.historyJobAgentEventsTimestamp(
+              jobId, agent, Long.valueOf(event)));
+          final TaskStatus status = Json.read(data, TaskStatus.class);
+          jsEvents.add(new TaskStatusEvent(status, Long.valueOf(event), agent));
+        } catch (KeeperException | IOException e) {
+          throw Throwables.propagate(e);
+        }
       }
     }
+
     return Ordering.from(EVENT_COMPARATOR).sortedCopy(jsEvents);
   }
 
