@@ -88,11 +88,11 @@ public class Paths {
     return STATUS_AGENTS.path(agent, RUNTIMEINFO);
   }
 
-  public static String historyJobAgent(final String job, final String agent, final long timestamp) {
-    return HISTORY_JOBS.path(job, agent + ":" + String.valueOf(timestamp));
+  public static String historyJobAgent(final JobId jobId, final String agent, final long timestamp) {
+    return HISTORY_JOBS.path(jobId.toString(), agent + ":" + String.valueOf(timestamp));
   }
 
-  public static String historyJob(final String job) {
-    return HISTORY_JOBS.path(job);
+  public static String historyJob(final JobId jobId) {
+    return HISTORY_JOBS.path(jobId.toString());
   }
 }

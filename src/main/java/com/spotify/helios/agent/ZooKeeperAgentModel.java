@@ -89,7 +89,7 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
       } else {
         client.createAndSetData(path, jsonBytes);
       }
-      String historyPath = Paths.historyJobAgent(jobId.toString(), agent, new Instant().getMillis());
+      String historyPath = Paths.historyJobAgent(jobId, agent, new Instant().getMillis());
       client.createAndSetData(historyPath, jsonBytes);
     } catch (KeeperException e) {
       throw Throwables.propagate(e);

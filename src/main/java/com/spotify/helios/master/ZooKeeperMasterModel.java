@@ -154,7 +154,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       final String jobAgentsPath = Paths.configJobAgents(job.getId());
       client.create(jobAgentsPath);
 
-      client.ensurePath(Paths.historyJob(job.getId().toString()));
+      client.ensurePath(Paths.historyJob(job.getId()));
     } catch (KeeperException.NodeExistsException e) {
       throw new JobExistsException(job.getId().toString());
     } catch (KeeperException e) {
@@ -166,7 +166,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public List<JobStatusEvent> getJobHistory(final JobId jobId) throws HeliosException {
     List<String> events = null;
     try {
-      events = client.getChildren(Paths.historyJob(jobId.toString()));
+      events = client.getChildren(Paths.historyJob(jobId));
     } catch (KeeperException e) {
       Throwables.propagate(e);
     }
@@ -175,7 +175,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     for (String event : events) {
       try {
-        byte[] data = client.getData(Paths.historyJob(jobId.toString()) + "/" + event);
+        byte[] data = client.getData(Paths.historyJob(jobId) + "/" + event);
         TaskStatus status = Json.read(data, TaskStatus.class);
         String basename = Iterables.getLast(Splitter.on("/").split(event));
         ImmutableList<String> parts = ImmutableList.copyOf(Splitter.on(":").split(basename));

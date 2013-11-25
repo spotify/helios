@@ -189,6 +189,7 @@ class Supervisor {
     final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
 
     if (containerId == null) {
+      setStatus(STOPPED, containerId);
       return;
     }
 
