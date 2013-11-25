@@ -15,11 +15,11 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.common.AgentDoesNotExistException;
-import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
+import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.coordination.Paths;
@@ -35,7 +35,6 @@ import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobStatus;
 import com.spotify.helios.common.protocol.JobStatusEvent;
-import com.spotify.helios.common.protocol.JobStatusEvents;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -46,6 +45,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -56,6 +57,19 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 public class ZooKeeperMasterModel implements MasterModel {
+
+  public static final class EventComparator implements Comparator<JobStatusEvent> {
+    @Override
+    public int compare(JobStatusEvent arg0, JobStatusEvent arg1) {
+      if (arg1.getTimestamp() > arg0.getTimestamp()) {
+        return -1;
+      } else if (arg1.getTimestamp() == arg0.getTimestamp()) {
+        return 0;
+      } else {
+        return 1;
+      }
+    }
+  }
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperMasterModel.class);
 
@@ -170,6 +184,8 @@ public class ZooKeeperMasterModel implements MasterModel {
         Throwables.propagate(e);
       }
     }
+    Collections.sort(jsEvents, new EventComparator());
+
     return jsEvents;
   }
 

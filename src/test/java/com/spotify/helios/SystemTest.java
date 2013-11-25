@@ -5,7 +5,9 @@
 package com.spotify.helios;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
@@ -21,10 +23,13 @@ import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
+import com.spotify.helios.common.protocol.JobStatusEvent;
+import com.spotify.helios.common.protocol.JobStatusEvents;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
 import com.spotify.hermes.Hermes;
@@ -55,6 +60,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertFalse;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
@@ -268,6 +275,46 @@ public class SystemTest extends ZooKeeperTestBase {
 
     assertTrue("missing hermes nameless entry", hermesFound);
     assertTrue("missing http nameless entry", httpFound);
+  }
+
+  @Test
+  public void testJobHistory() throws Exception {
+    startDefaultMaster();
+
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    startDefaultAgent(TEST_AGENT);
+    JobId jobId = createJob("JOB_NAME", "JOB_VERSION", "busybox", ImmutableList.of("/bin/true"));
+    deployJob(jobId, TEST_AGENT);
+    awaitJobState(control, TEST_AGENT, jobId, EXITED, 10, SECONDS);
+    undeployJob(jobId, TEST_AGENT);
+    JobStatusEvents events = control.jobHistory(jobId).get();
+    List<JobStatusEvent> eventsList = events.getEvents();
+    assertFalse(eventsList.isEmpty());
+    int counter = 0;
+    for (JobStatusEvent event : eventsList) {
+      // Only do the first four.  Depending on how things shake out, it may have rolled over
+      // more than once.
+      if (counter == 4) {
+        break;
+      }
+
+      if (counter == 0) {
+        assertEquals(State.CREATING, event.getStatus().getState());
+        assertNull(event.getStatus().getContainerId());
+      } else if (counter == 1) {
+        assertEquals(State.STARTING, event.getStatus().getState());
+        assertNotNull(event.getStatus().getContainerId());
+      } else if (counter == 2) {
+        assertEquals(State.RUNNING, event.getStatus().getState());
+      } else if (counter == 3) {
+        assertEquals(State.EXITED, event.getStatus().getState());
+      }
+      counter ++;
+    }
   }
 
   @Test

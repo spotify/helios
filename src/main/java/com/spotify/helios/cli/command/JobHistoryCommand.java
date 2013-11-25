@@ -1,7 +1,5 @@
 package com.spotify.helios.cli.command;
 
-import com.google.common.base.Preconditions;
-
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
@@ -12,17 +10,14 @@ import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.protocol.JobStatusEvent;
 import com.spotify.helios.common.protocol.JobStatusEvents;
 
-import org.joda.time.Instant;
-import org.joda.time.format.DateTimeFormat;
-import org.joda.time.format.DateTimeFormatter;
-
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
+
 import java.io.PrintStream;
-import java.util.Collections;
-import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
@@ -30,19 +25,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.cli.Output.table;
 
 public class JobHistoryCommand extends ControlCommand {
-
-  private static final class EventComparator implements Comparator<JobStatusEvent> {
-    @Override
-    public int compare(JobStatusEvent arg0, JobStatusEvent arg1) {
-      if (arg1.getTimestamp() > arg0.getTimestamp()) {
-        return -1;
-      } else if (arg1.getTimestamp() == arg0.getTimestamp()) {
-        return 0;
-      } else {
-        return 1;
-      }
-    }
-  }
 
   private final Argument jobIdArg;
 
@@ -81,8 +63,6 @@ public class JobHistoryCommand extends ControlCommand {
     table.row("AGENT", "TIMESTAMP", "STATE", "CONTAINERID");
     List<JobStatusEvent> events = result.getEvents();
     DateTimeFormatter format = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS");
-
-    Collections.sort(events, new EventComparator());
 
     for (JobStatusEvent event : events) {
       String agent = checkNotNull(event.getAgent());

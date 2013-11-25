@@ -228,6 +228,9 @@ class Supervisor {
     try {
       return Futures.get(docker.inspectContainer(containerId), DockerException.class);
     } catch (DockerException e) {
+      if (e.getCause().getClass() == InterruptedException.class) {
+        Thread.interrupted(); // or else we get a cool endless loop of IE's
+      }
       // XXX (dano): checking for string in exception message is a kludge
       if (!e.getMessage().contains("No such container")) {
         throw e;
