@@ -13,6 +13,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
@@ -70,6 +71,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       }
     }
   }
+  private static final EventComparator EVENT_COMPARATOR = new EventComparator();
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperMasterModel.class);
 
@@ -184,9 +186,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         Throwables.propagate(e);
       }
     }
-    Collections.sort(jsEvents, new EventComparator());
-
-    return jsEvents;
+    return Ordering.from(EVENT_COMPARATOR).sortedCopy(jsEvents);
   }
 
   @Override
