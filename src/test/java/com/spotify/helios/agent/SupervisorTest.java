@@ -100,7 +100,7 @@ public class SupervisorTest {
     when(docker.getImages(IMAGE)).thenReturn(immediateFuture(DOCKER_IMAGES));
 
     final ConcurrentMap<JobId, TaskStatus> statusMap = Maps.newConcurrentMap();
-    doAnswer(new Answer() {
+    doAnswer(new Answer<Object>() {
       @Override
       public Object answer(final InvocationOnMock invocationOnMock) {
         final Object[] arguments = invocationOnMock.getArguments();

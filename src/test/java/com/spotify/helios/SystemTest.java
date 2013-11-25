@@ -564,6 +564,7 @@ public class SystemTest extends ZooKeeperTestBase {
     while ((frame = logReader.readFrame()) != null) {
       stringBuilder.append(UTF_8.decode(frame.getBytes()));
     }
+    logReader.close();
     return stringBuilder.toString();
   }
 
