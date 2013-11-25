@@ -764,7 +764,7 @@ public class SystemTest extends ZooKeeperTestBase {
     awaitAgentStatus(client, agentName, UP, 10, SECONDS);
 
     // Wait for the job to be restarted in a new container
-    final TaskStatus thirdTaskStatus = await(1, MINUTES, new Callable<TaskStatus>() {
+    await(1, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final AgentStatus agentStatus = client.agentStatus(agentName).get();
