@@ -4,6 +4,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
@@ -70,14 +71,15 @@ public class JobStatusCommand extends ControlCommand {
     } else {
       // TODO (dano): this explodes the job into one row per agent, is that sane/expected?
       final Table table = table(out);
-      table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND");
+      table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND", "ENVIRONMENT");
       for (final JobId jobId : jobIds) {
         final JobStatus jobStatus = statuses.get(jobId);
         final Map<String, TaskStatus> taskStatuses = jobStatus.getTaskStatuses();
         for (final String host : taskStatuses.keySet()) {
           final TaskStatus ts = taskStatuses.get(host);
           final String command = on(' ').join(ts.getJob().getCommand());
-          table.row(jobId, host, ts.getState(), ts.getContainerId(), command);
+          final String env = Joiner.on(" ").withKeyValueSeparator("=").join(ts.getJob().getEnv());
+          table.row(jobId, host, ts.getState(), ts.getContainerId(), command, env);
         }
       }
       table.print();

@@ -4,6 +4,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 
 import com.spotify.helios.cli.Table;
@@ -62,13 +63,14 @@ public class JobListCommand extends ControlCommand {
         }
       } else {
         final Table table = table(out);
-        table.row("JOB ID", "NAME", "VERSION", "HOSTS", "COMMAND");
+        table.row("JOB ID", "NAME", "VERSION", "HOSTS", "COMMAND", "ENVIRONMENT");
         for (final JobId jobId : sortedJobIds) {
           final Job job = jobs.get(jobId);
           final JobStatus status = client.jobStatus(jobId).get();
           final String command = on(' ').join(job.getCommand());
+          final String env = Joiner.on(" ").withKeyValueSeparator("=").join(job.getEnv());
           table.row(jobId, jobId.getName(), jobId.getVersion(), status.getDeployedHosts().size(),
-                    command);
+                    command, env);
         }
         table.print();
       }
