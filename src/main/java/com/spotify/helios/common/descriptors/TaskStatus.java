@@ -19,19 +19,27 @@ public class TaskStatus extends Descriptor {
     STARTING,
     RUNNING,
     EXITED,
-    STOPPED
+    STOPPED,
+    EXITED_FLAPPING
   }
 
   private final Job job;
   private final State state;
   private final String containerId;
+  private final boolean flapping;
 
   public TaskStatus(@JsonProperty("job") final Job job,
                     @JsonProperty("state") final State state,
-                    @Nullable @JsonProperty("containerId") final String containerId) {
+                    @Nullable @JsonProperty("containerId") final String containerId,
+                    @JsonProperty("flapping") final boolean flapping) {
     this.job = checkNotNull(job, "job");
     this.state = checkNotNull(state, "state");
     this.containerId = containerId;
+    this.flapping = flapping;
+  }
+
+  public boolean isFlapping() {
+    return flapping;
   }
 
   @Nullable
@@ -53,6 +61,7 @@ public class TaskStatus extends Descriptor {
         .add("job", job)
         .add("state", state)
         .add("containerId", containerId)
+        .add("flapping", flapping)
         .toString();
   }
 
@@ -78,6 +87,10 @@ public class TaskStatus extends Descriptor {
       return false;
     }
 
+    if (flapping != status.flapping) {
+      return false;
+    }
+
     return true;
   }
 
@@ -86,6 +99,7 @@ public class TaskStatus extends Descriptor {
     int result = job != null ? job.hashCode() : 0;
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (containerId != null ? containerId.hashCode() : 0);
+    result = 31 * result + (flapping ? 1231 : 1237);
     return result;
   }
 }

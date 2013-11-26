@@ -154,7 +154,7 @@ public class SupervisorTest {
     verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture(),
                                                   containerNameCaptor.capture());
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
-                                               eq(new TaskStatus(DESCRIPTOR, CREATING, null)));
+                                               eq(new TaskStatus(DESCRIPTOR, CREATING, null, false)));
     assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
@@ -168,14 +168,14 @@ public class SupervisorTest {
     verify(docker, timeout(1000)).startContainer(containerId);
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, STARTING,
-                                                                 containerId)));
+                                                                 containerId, false)));
     assertEquals(STARTING, sut.getStatus());
     startFuture.set(null);
 
     verify(docker, timeout(1000)).waitContainer(containerId);
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, RUNNING,
-                                                                 containerId)));
+                                                                 containerId, false)));
     assertEquals(RUNNING, sut.getStatus());
 
     // Stop the job
@@ -198,7 +198,7 @@ public class SupervisorTest {
     // Verify that the stopped state is signalled
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, STOPPED,
-                                                                 containerId)));
+                                                                 containerId, false)));
     assertEquals(STOPPED, sut.getStatus());
   }
 

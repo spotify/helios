@@ -66,6 +66,7 @@ import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED_FLAPPING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.lang.System.nanoTime;
@@ -307,6 +308,19 @@ public class SystemTest extends ZooKeeperTestBase {
 
     final TaskStatusEvent event4 = eventsList.get(3);
     assertEquals(State.EXITED, event4.getStatus().getState());
+  }
+
+  @Test
+  public void testFlapping() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(TEST_AGENT);
+    JobId jobId = createJob("JOB_NAME", "JOB_VERSION", "busybox", ImmutableList.of("/bin/true"));
+    deployJob(jobId, TEST_AGENT);
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+   awaitJobState(control, TEST_AGENT, jobId, EXITED_FLAPPING, 20, SECONDS);
   }
 
   @Test

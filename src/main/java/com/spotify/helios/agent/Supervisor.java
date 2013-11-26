@@ -4,6 +4,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractFuture;
@@ -25,6 +26,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.sun.jersey.api.client.ClientResponse;
 
+import org.joda.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,12 +40,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Uninterruptibles.getUninterruptibly;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED_FLAPPING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
@@ -55,12 +59,33 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Supervises docker containers for a single job.
  */
 class Supervisor {
+  private static class Exit {
+    private final boolean prevWasFlapping;
+    private final long timestamp;
 
+    public Exit(boolean prevWasFlapping, long timestamp) {
+      this.prevWasFlapping = prevWasFlapping;
+      this.timestamp = timestamp;
+    }
+
+    public boolean isPrevWasFlapping() {
+      return prevWasFlapping;
+    }
+
+    public long getTimestamp() {
+      return timestamp;
+    }
+  }
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
   private static final long DEFAULT_RESTART_INTERVAL_MILLIS = 100;
   private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
-
+  /** Restart throttle interval if job is flapping */
+  private static final long DEFAULT_FLAPPING_RESTART_INTERVAL_MILLIS = 30000;
+  /** Number of restarts in the time period to consider the job flapping */
+  private static final int DEFAULT_FLAPPING_RESTART_COUNT = 10;
+  /** If total runtime of the container over the last n restarts is less than this, we throttle. */
+  private static final long DEFAULT_FLAPPING_TIME_RANGE_MILLIS = 60000;
 
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
       new ThreadFactoryBuilder().setNameFormat("helios-supervisor-runner-%d").build();
@@ -75,6 +100,13 @@ class Supervisor {
   private final long restartIntervalMillis;
   private final long retryIntervalMillis;
   private final Map<String, String> envVars;
+
+  private final int flappingRestartCount;
+  private final long flappingTimeRangeMillis;
+  private final long flappingRestartThrottleMillis;
+  private volatile boolean isFlapping;
+  private volatile AtomicReference<ImmutableList<Exit>> lastExits =
+      new AtomicReference<ImmutableList<Exit>>(ImmutableList.<Exit>of());
 
   private volatile Runner runner;
   private volatile boolean closed;
@@ -93,7 +125,8 @@ class Supervisor {
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
                      final long restartIntervalMillis, final long retryIntervalMillis,
-                     final Map<String, String> envVars) {
+                     final Map<String, String> envVars, final long flappingTimeRangeMillis,
+                     final long flappingRestartIntervalMillis, final int flappingRestartCount) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
@@ -101,6 +134,9 @@ class Supervisor {
     this.restartIntervalMillis = restartIntervalMillis;
     this.retryIntervalMillis = retryIntervalMillis;
     this.envVars = checkNotNull(envVars);
+    this.flappingRestartCount = flappingRestartCount;
+    this.flappingRestartThrottleMillis = flappingRestartIntervalMillis;
+    this.flappingTimeRangeMillis = flappingTimeRangeMillis;
   }
 
   /**
@@ -139,6 +175,54 @@ class Supervisor {
     return starting;
   }
 
+  private void jobDied() {
+    // The CAS-loop here might be overkill...
+    ImmutableList<Exit> newExits;
+    while (true) {
+      ImmutableList<Exit> wasExited = lastExits.get();
+      List<Exit> trimmed = Lists.newArrayList(wasExited);
+
+      while (trimmed.size() >= flappingRestartCount) {
+        trimmed.remove(0);
+      }
+
+      newExits = ImmutableList.<Exit>builder()
+          .addAll(trimmed)
+          .add(new Exit(isFlapping, new Instant().getMillis()))
+          .build();
+      if (lastExits.compareAndSet(wasExited, newExits)) {
+        break;
+      }
+    }
+
+    // Not restarted enough times to be considered flapping
+    if (newExits.size() < flappingRestartCount) {
+      setFlapping(false);
+      return;
+    }
+
+    // Compute the amount of time between exits, adjusting for the restart throttle
+    long totalTime = 0;
+    for (int i = 1 ; i < flappingRestartCount; i++) {
+      long deltaT = newExits.get(i).getTimestamp() - newExits.get(i-1).getTimestamp();
+      if (newExits.get(i-1).isPrevWasFlapping()) {
+        deltaT -= flappingRestartThrottleMillis;
+      }
+      totalTime += deltaT;
+    }
+
+    // If not running enough, we're flapping
+    setFlapping(totalTime < flappingTimeRangeMillis);
+  }
+
+  public void setFlapping(boolean isFlapping) {
+    if (this.isFlapping != isFlapping) {
+      log.info("JobId {} flapping status changed from {} to {}", jobId,
+          this.isFlapping, isFlapping);
+    }
+    this.isFlapping = isFlapping;
+  }
+
   /**
    * Start a {@link Runner} to run the container for a job.
    *
@@ -154,7 +238,7 @@ class Supervisor {
       @Override
       public void onSuccess(final Integer exitCode) {
         synchronized (sync) {
-          startJob(restartIntervalMillis);
+          startJob(isFlapping ? flappingRestartThrottleMillis : restartIntervalMillis);
         }
       }
 
@@ -244,7 +328,9 @@ class Supervisor {
    * Persist job status.
    */
   private void setStatus(final TaskStatus.State status, final String containerId) {
-    model.setTaskStatus(jobId, new TaskStatus(job, status, containerId));
+    model.setTaskStatus(jobId, new TaskStatus(job,
+        (isFlapping && status == EXITED) ? EXITED_FLAPPING : status,
+        containerId, isFlapping));
     this.status = status;
   }
 
@@ -381,6 +467,7 @@ class Supervisor {
         // Wait for container to die
         final int exitCode = docker.waitContainer(containerId).get();
         log.info("container exited: {}: {}: {}", job, containerId, exitCode);
+        jobDied();
         setStatus(EXITED, containerId);
 
         set(exitCode);
@@ -454,6 +541,9 @@ class Supervisor {
     private long restartIntervalMillis = DEFAULT_RESTART_INTERVAL_MILLIS;
     private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
     private Map<String, String> envVars = Collections.emptyMap();
+    private int flappingRestartCount = DEFAULT_FLAPPING_RESTART_COUNT;
+    private long flappingTimeRangeMillis = DEFAULT_FLAPPING_TIME_RANGE_MILLIS;
+    private long flappingRestartThrottleMillis = DEFAULT_FLAPPING_RESTART_INTERVAL_MILLIS;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -490,10 +580,25 @@ class Supervisor {
       return this;
     }
 
-    public Supervisor build() {
-      return new Supervisor(jobId, descriptor, model, dockerClient, restartIntervalMillis,
-                            retryIntervalMillis, envVars);
+    public Builder setFlappingRestartCount(int flappingRestartCount) {
+      this.flappingRestartCount = flappingRestartCount;
+      return this;
     }
 
+    public Builder setFlappingTimeRangeMillis(long flappingTimeRangeMillis) {
+      this.flappingTimeRangeMillis = flappingTimeRangeMillis;
+      return this;
+    }
+
+    public Builder setFlappingRestartThrottleMillis(long flappingRestartThrottleMillis) {
+      this.flappingRestartThrottleMillis = flappingRestartThrottleMillis;
+      return this;
+    }
+
+    public Supervisor build() {
+      return new Supervisor(jobId, descriptor, model, dockerClient, restartIntervalMillis,
+                            retryIntervalMillis, envVars, flappingTimeRangeMillis,
+                            flappingRestartThrottleMillis, flappingRestartCount);
+    }
   }
 }
