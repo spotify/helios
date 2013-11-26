@@ -13,6 +13,8 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobStatus;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.util.List;
 import java.util.Map;
 
@@ -32,6 +34,7 @@ public interface MasterModel {
 
   void addJob(Job job) throws HeliosException;
 
+  @Nullable
   Job getJob(JobId job) throws HeliosException;
 
   Map<JobId, Job> getJobs() throws HeliosException;

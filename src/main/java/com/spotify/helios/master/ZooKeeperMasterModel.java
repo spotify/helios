@@ -148,7 +148,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       final byte[] data = client.getData(path);
       return Descriptor.parse(data, Job.class);
     } catch (NoNodeException e) {
-      throw new JobDoesNotExistException(e);
+      // Return null to indicate that the job does not exist
+      return null;
     } catch (KeeperException | IOException e) {
       throw new HeliosException("getting job " + id + " failed", e);
     }
