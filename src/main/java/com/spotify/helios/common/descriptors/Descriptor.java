@@ -39,4 +39,9 @@ public abstract class Descriptor {
       throws IOException {
     return parse(bytes.toByteArray(), clazz);
   }
+
+  public static <T extends Descriptor> T parse(final String value, Class<T> clazz)
+      throws IOException {
+    return parse(ByteString.copyFromUtf8(value), clazz);
+  }
 }

@@ -7,6 +7,8 @@ package com.spotify.helios.common.descriptors;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.common.Hash;
 import com.spotify.helios.common.Json;
 
@@ -17,6 +19,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -34,14 +37,14 @@ public class JobTest {
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
     final JobId expectedId = JobId.fromString("foozbarz:17:" + expectedDigest);
 
-    final Job descriptor = Job.newBuilder()
+    final Job job = Job.newBuilder()
         .setCommand(asList("foo", "bar"))
         .setImage("testStartStop:4711")
         .setName("foozbarz")
         .setVersion("17")
         .build();
 
-    assertEquals(expectedId, descriptor.getId());
+    assertEquals(expectedId, job.getId());
   }
 
   @Test
@@ -57,7 +60,7 @@ public class JobTest {
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
     final JobId expectedId = JobId.fromString("foozbarz:17:" + expectedDigest);
 
-    final Job descriptor = Job.newBuilder()
+    final Job job = Job.newBuilder()
         .setCommand(asList("foo", "bar"))
         .setImage("testStartStop:4711")
         .setName("foozbarz")
@@ -65,10 +68,54 @@ public class JobTest {
         .setEnv(env)
         .build();
 
-    assertEquals(expectedId, descriptor.getId());
+    assertEquals(expectedId, job.getId());
   }
 
   private String hex(final byte[] bytes) {
     return BaseEncoding.base16().lowerCase().encode(bytes);
+  }
+
+  @Test
+  public void verifyCanParseJobWithUnknownFields() throws Exception {
+    final Job job = Job.newBuilder()
+        .setCommand(asList("foo", "bar"))
+        .setImage("testStartStop:4711")
+        .setName("foozbarz")
+        .setVersion("17")
+        .build();
+
+    final String jobJson = job.toJsonString();
+
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final Map<String, Object> fields = objectMapper.readValue(
+        jobJson, new TypeReference<Map<String, Object>>() {});
+    fields.put("UNKNOWN_FIELD", "FOOBAR");
+    final String modifiedJobJson = objectMapper.writeValueAsString(fields);
+
+    final Job parsedJob = parse(modifiedJobJson, Job.class);
+
+    assertEquals(job, parsedJob);
+  }
+
+  @Test
+  public void verifyCanParseJobWithMissingEnv() throws Exception {
+    final Job job = Job.newBuilder()
+        .setCommand(asList("foo", "bar"))
+        .setImage("testStartStop:4711")
+        .setName("foozbarz")
+        .setVersion("17")
+        .build();
+
+    final String jobJson = job.toJsonString();
+
+    final ObjectMapper objectMapper = new ObjectMapper();
+    final Map<String, Object> fields = objectMapper.readValue(
+        jobJson, new TypeReference<Map<String, Object>>() {});
+    fields.remove("env");
+    final String modifiedJobJson = objectMapper.writeValueAsString(fields);
+
+    final Job parsedJob = parse(modifiedJobJson, Job.class);
+
+    assertEquals(job, parsedJob);
   }
 }
