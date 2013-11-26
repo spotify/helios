@@ -58,7 +58,7 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/jobs/<id>", methods = "PUT")
-  public void jobPut(final ServiceRequest request, final String id) throws Exception {
+  public void jobPut(final ServiceRequest request, final String id) {
     final Message message = request.getMessage();
     if (message.getPayloads().size() != 1) {
       throw new RequestHandlerException(BAD_REQUEST);
@@ -94,7 +94,7 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/jobs/<id>", methods = "GET")
-  public void jobGet(final ServiceRequest request, final String id) throws Exception {
+  public void jobGet(final ServiceRequest request, final String id) {
     final JobId jobId = parseJobId(id);
     try {
       final Job job = model.getJob(jobId);
@@ -106,7 +106,7 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/jobs/", methods = "GET")
-  public void jobsGet(final ServiceRequest request) throws Exception {
+  public void jobsGet(final ServiceRequest request) {
     try {
       final Map<JobId, Job> jobs = model.getJobs();
       ok(request, jobs);
@@ -117,7 +117,7 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/jobs/<id>", methods = "DELETE")
-  public void jobDelete(final ServiceRequest request, final String id) throws Exception {
+  public void jobDelete(final ServiceRequest request, final String id) {
     try {
       model.removeJob(parseJobId(id));
       respond(request, OK, new JobDeleteResponse(JobDeleteResponse.Status.OK));
@@ -130,7 +130,7 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/jobs/<id>/status", methods = "GET")
-  public void jobStatusGet(final ServiceRequest request, final String id) throws Exception {
+  public void jobStatusGet(final ServiceRequest request, final String id) {
     final JobId jobId = parseJobId(id);
     try {
       final JobStatus jobStatus = model.getJobStatus(jobId);
@@ -142,7 +142,7 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/agents/<agent>", methods = "PUT")
-  public void agentPut(final ServiceRequest request, final String agent) throws Exception {
+  public void agentPut(final ServiceRequest request, final String agent) {
     try {
       model.addAgent(agent);
     } catch (HeliosException e) {
@@ -158,7 +158,7 @@ public class MasterHandler extends MatchingHandler {
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "PUT")
   public void agentJobPut(final ServiceRequest request, final String agent,
                           final String job)
-      throws RequestHandlerException, JsonProcessingException {
+      throws RequestHandlerException {
     final Deployment deployment = parseDeployment(request);
 
     final JobId jobId;
@@ -203,7 +203,7 @@ public class MasterHandler extends MatchingHandler {
   @Match(uri = "hm://helios/agents/<agent>/jobs/<id>", methods = "PATCH")
   public void jobPatch(final ServiceRequest request,
                        final String agent,
-                       final String job) throws Exception {
+                       final String job) {
     final Deployment deployment = parseDeployment(request);
 
     final JobId jobId;
@@ -264,7 +264,7 @@ public class MasterHandler extends MatchingHandler {
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "GET")
   public void agentJobGet(final ServiceRequest request, final String agent,
                           final String jobId)
-      throws RequestHandlerException, JsonProcessingException {
+      throws RequestHandlerException {
 
     final Deployment deployment;
     try {
@@ -283,8 +283,7 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/agents/<agent>", methods = "DELETE")
-  public void agentDelete(final ServiceRequest request, final String agent)
-      throws JsonProcessingException {
+  public void agentDelete(final ServiceRequest request, final String agent) {
     try {
       model.removeAgent(agent);
     } catch (AgentDoesNotExistException e) {
@@ -302,7 +301,7 @@ public class MasterHandler extends MatchingHandler {
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "DELETE")
   public void agentJobDelete(final ServiceRequest request, final String agent,
                              final String jobId)
-      throws RequestHandlerException, JsonProcessingException {
+      throws RequestHandlerException {
 
     StatusCode code = OK;
     Status detail = JobUndeployResponse.Status.OK;
@@ -324,7 +323,7 @@ public class MasterHandler extends MatchingHandler {
 
   @Match(uri = "hm://helios/agents/<agent>/status", methods = "GET")
   public void agentStatusGet(final ServiceRequest request, final String agent)
-      throws RequestHandlerException, JsonProcessingException {
+      throws RequestHandlerException {
 
     final AgentStatus agentStatus;
     try {
@@ -343,7 +342,7 @@ public class MasterHandler extends MatchingHandler {
 
   @Match(uri = "hm://helios/agents/", methods = "GET")
   public void agentsGet(final ServiceRequest request)
-      throws RequestHandlerException, JsonProcessingException {
+      throws RequestHandlerException {
     try {
       ok(request, model.getAgents());
     } catch (HeliosException e) {
@@ -368,14 +367,13 @@ public class MasterHandler extends MatchingHandler {
     request.reply(OK);
   }
 
-  private void ok(final ServiceRequest request, final Object payload)
-      throws JsonProcessingException {
+  private void ok(final ServiceRequest request, final Object payload) {
     respond(request, StatusCode.OK, payload);
   }
 
-  private void respond(final ServiceRequest request, StatusCode code, final Object payload)
-      throws JsonProcessingException {
-    final byte[] json = Json.asBytes(payload);
+  private void respond(final ServiceRequest request, StatusCode code, final Object payload) {
+    final byte[] json;
+    json = Json.asBytesUnchecked(payload);
     final Message reply = request.getMessage()
         .makeReplyBuilder(code)
         .appendPayload(ByteString.copyFrom(json))
