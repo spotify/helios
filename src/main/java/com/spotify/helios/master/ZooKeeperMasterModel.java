@@ -197,7 +197,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ImmutableMap.Builder<String, TaskStatus> taskStatuses = ImmutableMap.builder();
     for (final String agent : agents) {
       final TaskStatus taskStatus = getTaskStatus(agent, jobId);
-      taskStatuses.put(agent, taskStatus);
+      if (taskStatus != null) {
+        taskStatuses.put(agent, taskStatus);
+      }
     }
 
     return JobStatus.newBuilder()
