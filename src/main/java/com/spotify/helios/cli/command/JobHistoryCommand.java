@@ -3,6 +3,7 @@ package com.spotify.helios.cli.command;
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobIdParseException;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -19,7 +20,10 @@ import org.joda.time.format.DateTimeFormatter;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
+import static com.google.common.collect.Iterables.getLast;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.cli.Output.table;
@@ -41,19 +45,22 @@ public class JobHistoryCommand extends ControlCommand {
   int run(Namespace options, Client client, PrintStream out, boolean json)
       throws ExecutionException, InterruptedException {
 
-    JobId jobId;
     String jobIdString = options.getString(jobIdArg.getDest());
-    try {
-      jobId = JobId.parse(jobIdString);
-    } catch (JobIdParseException e) {
-      if (!json) {
-        out.println("Invalid job id: " + jobIdString);
-      }
-      System.err.println("Invalid job id: " + jobIdString);
+
+    final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
+
+    if (jobs.size() == 0) {
+      out.printf("Unknown job: %s%n", jobIdString);
+      return 1;
+    } else if (jobs.size() > 1) {
+      out.printf("Ambiguous job id: %s%n", jobIdString);
       return 1;
     }
 
+    final JobId jobId = getLast(jobs.keySet());
+
     TaskStatusEvents result = client.jobHistory(jobId).get();
+
     if (json) {
       out.println(Json.asPrettyStringUnchecked(result));
       return 0;

@@ -202,7 +202,7 @@ public class Client {
     return transform(
         request(uri("/history/jobs/%s", jobId.toString()), "GET"),
         ConvertResponseToPojo.create(TaskStatusEvents.class,
-            ImmutableSet.of(OK)));
+            ImmutableSet.of(OK, NOT_FOUND)));
   }
 
   public static Builder newBuilder() {

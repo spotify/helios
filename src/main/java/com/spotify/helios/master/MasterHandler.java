@@ -4,6 +4,7 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 
@@ -26,11 +27,11 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
-import com.spotify.helios.common.protocol.TaskStatusEvent;
-import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse.Status;
 import com.spotify.helios.common.protocol.SetGoalResponse;
+import com.spotify.helios.common.protocol.TaskStatusEvent;
+import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.StatusCode;
 import com.spotify.hermes.service.RequestHandlerException;
@@ -391,9 +392,14 @@ public class MasterHandler extends MatchingHandler {
   @Match(uri = "hm://helios/history/jobs/<jobid>", methods = "GET")
   public void jobHistoryGet(final ServiceRequest request, final String jobId)
       throws HeliosException, JobIdParseException, JsonProcessingException {
-    List<TaskStatusEvent> history = model.getJobHistory(JobId.parse(jobId));
-    TaskStatusEvents events = new TaskStatusEvents(history);
-    ok(request, events);
+    try {
+      List<TaskStatusEvent> history = model.getJobHistory(JobId.parse(jobId));
+      TaskStatusEvents events = new TaskStatusEvents(history, TaskStatusEvents.Status.OK);
+      ok(request, events);
+    } catch (JobDoesNotExistException e) {
+      respond(request, NOT_FOUND, new TaskStatusEvents(ImmutableList.<TaskStatusEvent>of(),
+          TaskStatusEvents.Status.JOB_ID_NOT_FOUND));
+    }
   }
 
   private void ok(final ServiceRequest request) {

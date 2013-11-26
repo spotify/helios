@@ -166,9 +166,16 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   @Override
   public List<TaskStatusEvent> getJobHistory(final JobId jobId) throws HeliosException {
+    final Job descriptor = getJob(jobId);
+    if (descriptor == null) {
+      throw new JobDoesNotExistException(jobId);
+    }
+
     final List<String> agents;
     try {
       agents = client.getChildren(Paths.historyJobAgents(jobId));
+    } catch (NoNodeException e) {
+      return ImmutableList.<TaskStatusEvent>of();
     } catch (KeeperException e) {
       throw Throwables.propagate(e);
     }
