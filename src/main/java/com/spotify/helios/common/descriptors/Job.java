@@ -5,6 +5,8 @@
 package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -12,25 +14,37 @@ import com.spotify.helios.common.Json;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.helios.common.Hash.sha1digest;
+import static java.util.Collections.emptyMap;
 
 public class Job extends Descriptor implements Comparable<Job> {
 
   private final JobId id;
   private final String image;
   private final List<String> command;
+  private final Map<String, String> env;
 
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
-             @JsonProperty("command") final List<String> command) {
+             @JsonProperty("command") final List<String> command,
+             @JsonProperty("env") final Map<String, String> env) {
     this.id = checkNotNull(id);
     this.image = checkNotNull(image);
     this.command = checkNotNull(command);
+    this.env = checkNotNull(env);
+  }
+
+  private Job(final JobId id, final Builder.Parameters p) {
+    this.id = checkNotNull(id);
+    this.image = checkNotNull(p.image);
+    this.command = ImmutableList.copyOf(p.command);
+    this.env = ImmutableMap.copyOf(p.env);
   }
 
   public JobId getId() {
@@ -44,6 +58,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public List<String> getCommand() {
     return command;
+  }
+
+  public Map<String, String> getEnv() {
+    return env;
   }
 
   public static Builder newBuilder() {
@@ -69,6 +87,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (command != null ? !command.equals(job.command) : job.command != null) {
       return false;
     }
+    if (env != null ? !env.equals(job.env) : job.env != null) {
+      return false;
+    }
     if (id != null ? !id.equals(job.id) : job.id != null) {
       return false;
     }
@@ -84,6 +105,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     int result = id != null ? id.hashCode() : 0;
     result = 31 * result + (image != null ? image.hashCode() : 0);
     result = 31 * result + (command != null ? command.hashCode() : 0);
+    result = 31 * result + (env != null ? env.hashCode() : 0);
     return result;
   }
 
@@ -93,6 +115,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("id", id)
         .add("image", image)
         .add("command", command)
+        .add("env", env)
         .toString();
   }
 
@@ -106,6 +129,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public String version;
       public String image;
       public List<String> command;
+      public Map<String, String> env = emptyMap();
     }
 
     final Parameters p = new Parameters();
@@ -135,6 +159,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setEnv(final Map<String, String> env) {
+      p.env = env;
+      return this;
+    }
+
     public Job build() {
       final String configHash;
       try {
@@ -152,7 +181,7 @@ public class Job extends Descriptor implements Comparable<Job> {
 
       final JobId id = new JobId(p.name, p.version, hash);
 
-      return new Job(id, p.image, p.command);
+      return new Job(id, p);
     }
 
     private String hex(final byte[] bytes) {

@@ -5,6 +5,7 @@
 package com.spotify.helios.agent;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -87,7 +88,7 @@ class Supervisor {
    * @param jobId The job id.
    * @param job   The job.
    * @param model The model to use.
-   * @param envVars Environment vTariables to expose to child containers.
+   * @param envVars Environment variables to expose to child containers.
    */
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
@@ -258,12 +259,26 @@ class Supervisor {
     containerConfig.setImage(descriptor.getImage());
     final List<String> command = descriptor.getCommand();
     containerConfig.setCmd(command.toArray(new String[command.size()]));
-    final List<String> env = Lists.newArrayList();
-    for (final Map.Entry<String, String> entry : envVars.entrySet()) {
-      env.add(entry.getKey() + '=' + entry.getValue());
-    }
-    containerConfig.setEnv(env.toArray(new String[env.size()]));
+    containerConfig.setEnv(containerEnv(descriptor));
     return containerConfig;
+  }
+
+  /**
+   * Compute docker container environment variables.
+   */
+  private String[] containerEnv(final Job descriptor) {
+    final Map<String, String> env = Maps.newHashMap(envVars);
+
+    // Let job environment variables take precedence.
+    // TODO (dano): is this sane or should it be the other way around?
+    env.putAll(descriptor.getEnv());
+
+    final List<String> envList = Lists.newArrayList();
+    for (final Map.Entry<String, String> entry : env.entrySet()) {
+      envList.add(entry.getKey() + '=' + entry.getValue());
+    }
+
+    return envList.toArray(new String[envList.size()]);
   }
 
   /**

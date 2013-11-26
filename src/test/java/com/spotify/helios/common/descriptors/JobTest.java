@@ -13,6 +13,7 @@ import com.spotify.helios.common.Json;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -26,7 +27,8 @@ public class JobTest {
     final Map<String, Object> expectedConfig = ImmutableMap.of("command", asList("foo", "bar"),
                                                                "image", "testStartStop:4711",
                                                                "name", "foozbarz",
-                                                               "version", "17");
+                                                               "version", "17",
+                                                               "env", new HashMap<>());
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
@@ -37,6 +39,30 @@ public class JobTest {
         .setImage("testStartStop:4711")
         .setName("foozbarz")
         .setVersion("17")
+        .build();
+
+    assertEquals(expectedId, descriptor.getId());
+  }
+
+  @Test
+  public void verifySha1IDWithEnv() throws IOException {
+    final Map<String, String> env = ImmutableMap.of("FOO", "BAR");
+    final Map<String, Object> expectedConfig = ImmutableMap.of("command", asList("foo", "bar"),
+                                                               "image", "testStartStop:4711",
+                                                               "name", "foozbarz",
+                                                               "version", "17",
+                                                               "env", env);
+
+    final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
+    final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
+    final JobId expectedId = JobId.fromString("foozbarz:17:" + expectedDigest);
+
+    final Job descriptor = Job.newBuilder()
+        .setCommand(asList("foo", "bar"))
+        .setImage("testStartStop:4711")
+        .setName("foozbarz")
+        .setVersion("17")
+        .setEnv(env)
         .build();
 
     assertEquals(expectedId, descriptor.getId());

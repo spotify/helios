@@ -4,6 +4,9 @@
 
 package com.spotify.helios;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
@@ -43,6 +46,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -524,15 +528,18 @@ public class SystemTest extends ZooKeeperTestBase {
                                  "--zk-session-timeout", "100",
                                  "--env",
                                  "SPOTIFY_POD=PODNAME",
-                                 "SPOTIFY_ROLE=ROLENAME");
+                                 "SPOTIFY_ROLE=ROLENAME",
+                                 "BAR=badfood");
 
     final DockerClient dockerClient = new DockerClient(dockerEndpoint);
 
     final List<String> command = asList("sh", "-c",
-                                        "echo pod: $SPOTIFY_POD role: $SPOTIFY_ROLE");
+                                        "echo pod: $SPOTIFY_POD role: $SPOTIFY_ROLE foo: $FOO bar: $BAR");
 
     // Create job
-    final JobId jobId = createJob("NAME", "VERSION", "busybox", command);
+    final JobId jobId = createJob("NAME", "VERSION", "busybox", command,
+                                  ImmutableMap.of("FOO", "4711",
+                                                  "BAR", "deadbeef"));
 
     // deploy
     deployJob(jobId, TEST_AGENT);
@@ -544,6 +551,11 @@ public class SystemTest extends ZooKeeperTestBase {
 
     assertContains("pod: PODNAME", logMessage);
     assertContains("role: ROLENAME", logMessage);
+    assertContains("foo: 4711", logMessage);
+
+    // Verify that the the BAR environment variable in the job overrode the agent config
+    // TODO (dano): is this sane or should it be the other way around. Either way it should be well defined.
+    assertContains("bar: deadbeef", logMessage);
 
     // Stop the agent
     agent.stopAsync().awaitTerminated();
@@ -725,7 +737,25 @@ public class SystemTest extends ZooKeeperTestBase {
 
   private JobId createJob(final String name, final String version, final String image,
                           final List<String> command) throws Exception {
-    final String createOutput = control("job", "create", "-q", name, version, image, "--", command);
+    return createJob(name, version, image, command, new HashMap<String, String>());
+  }
+
+  private JobId createJob(final String name, final String version, final String image,
+                          final List<String> command, final Map<String, String> env)
+      throws Exception {
+    final List<String> args = Lists.newArrayList("-q", name, version, image);
+
+    if (!env.isEmpty()) {
+      args.add("--env");
+      for (final Map.Entry<String, String> entry : env.entrySet()) {
+        args.add(entry.getKey() + "=" + entry.getValue());
+      }
+    }
+
+    args.add("--");
+    args.addAll(command);
+
+    final String createOutput = control("job", "create", args);
     final String jobId = StringUtils.strip(createOutput);
 
     final String listOutput = control("job", "list", "-q");
