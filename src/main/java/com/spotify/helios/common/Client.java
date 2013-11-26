@@ -71,9 +71,11 @@ public class Client {
   }
 
   private URI uri(final String resource, final Object... args) {
-    // TODO: use new uri builder in hermes and/or fix encoding
+    // TODO: use a uri builder and clean this mess up
     checkArgument(resource.startsWith("/"));
-    return URI.create("hm://helios" + format(resource, args) + "?user=" + user);
+    final String uri = "hm://helios" + format(resource, args);
+    final String q = uri.contains("?") ? "&" : "?";
+    return URI.create(uri + q + "user=" + user);
   }
 
   private ListenableFuture<Message> request(final URI uri) {
@@ -187,32 +189,12 @@ public class Client {
                                                   ImmutableSet.of(OK, BAD_REQUEST)));
   }
 
+  public ListenableFuture<Map<JobId, Job>> jobs(final String query) {
+    return get(uri("/jobs?q=%s", query), new TypeReference<Map<JobId, Job>>() {});
+  }
+
   public ListenableFuture<Map<JobId, Job>> jobs() {
-    return transform(
-        request(uri("/jobs/")),
-        new AsyncFunction<Message, Map<JobId, Job>>() {
-          @Override
-          public ListenableFuture<Map<JobId, Job>> apply(final Message reply)
-              throws HeliosException {
-            if (reply.getStatusCode() != StatusCode.OK) {
-              throw new HeliosException("request failed: " + reply);
-            }
-
-            if (reply.getPayloads().size() != 1) {
-              throw new HeliosException("bad reply: " + reply);
-            }
-
-            final Map<JobId, Job> jobs;
-            try {
-              final ByteString payload = reply.getPayloads().get(0);
-              jobs = Json.read(payload.toByteArray(), new TypeReference<Map<JobId, Job>>() {});
-            } catch (IOException e) {
-              throw new HeliosException("bad reply: " + reply, e);
-            }
-
-            return immediateFuture(jobs);
-          }
-        });
+    return get(uri("/jobs"), new TypeReference<Map<JobId, Job>>() {});
   }
 
   public static Builder newBuilder() {

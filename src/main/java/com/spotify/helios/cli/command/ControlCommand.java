@@ -17,6 +17,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -34,7 +35,8 @@ public abstract class ControlCommand {
   }
 
   public int run(final Namespace options, final List<Target> targets,
-                 final PrintStream out, final String username, final boolean json) {
+                 final PrintStream out, final String username, final boolean json)
+      throws IOException {
     boolean successful = true;
 
     // Execute the control command over each target cluster
@@ -66,7 +68,7 @@ public abstract class ControlCommand {
    */
   private boolean run(final Namespace options, final Target target, final PrintStream out,
                       final String username, final boolean json)
-      throws InterruptedException {
+      throws InterruptedException, IOException {
 
     final Client client = Client.newBuilder()
         .setUser(username)
@@ -93,5 +95,5 @@ public abstract class ControlCommand {
 
   abstract int run(final Namespace options, final Client client, PrintStream out,
                    final boolean json)
-      throws ExecutionException, InterruptedException;
+      throws ExecutionException, InterruptedException, IOException;
 }

@@ -6,6 +6,7 @@ package com.spotify.helios.cli.command;
 
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 
@@ -15,8 +16,10 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.collect.Iterables.getLast;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
@@ -48,7 +51,22 @@ public class JobDeployCommand extends ControlCommand {
   int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
-    final Deployment job = Deployment.of(JobId.fromString(options.getString(jobArg.getDest())),
+
+    final String jobIdString = options.getString(jobArg.getDest());
+
+    final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
+
+    if (jobs.size() == 0) {
+      out.printf("Unknown job: %s%n", jobIdString);
+      return 1;
+    } else if (jobs.size() > 1) {
+      out.printf("Ambiguous job id: %s%n", jobIdString);
+      return 1;
+    }
+
+    final JobId jobId = getLast(jobs.keySet());
+
+    final Deployment job = Deployment.of(jobId,
                                          options.getBoolean(noStartArg.getDest()) ? STOP : START);
 
     out.printf("Deploying %s on %s%n", job, hosts);

@@ -1,20 +1,26 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.common.Client;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
+import static com.google.common.collect.Iterables.getLast;
 
 public class JobRemoveCommand extends ControlCommand {
 
   private final Argument jobIdArg;
-  private final Argument confirmArg;
+  private final Argument forceArg;
 
   public JobRemoveCommand(Subparser parser) {
     super(parser);
@@ -24,19 +30,39 @@ public class JobRemoveCommand extends ControlCommand {
     jobIdArg = parser.addArgument("jobid")
         .help("The id of the job to remove.");
 
-    // TODO(drewc): perhaps require the enter in today's date or something?
-    confirmArg = parser.addArgument("sure")
-        .help("Are you really sure?  Set arg to yes.");
+    forceArg = parser.addArgument("--force")
+        .action(Arguments.storeTrue())
+        .help("Force removal.");
   }
 
   @Override
   int run(Namespace options, Client client, PrintStream out, final boolean json)
-      throws ExecutionException, InterruptedException {
-    final JobId jobId = JobId.fromString(options.getString(jobIdArg.getDest()));
+      throws ExecutionException, InterruptedException, IOException {
+    final String jobIdString = options.getString(jobIdArg.getDest());
+    final boolean force = options.getBoolean(forceArg.getDest());
 
-    if (!"yes".equals(options.getString(confirmArg.getDest()))) {
-      out.printf("Will not delete a job unconfirmed.  Add yes to your command line.");
-      return 1;
+    final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
+
+    switch (jobs.size()) {
+      case 0:
+        out.printf("Unknown job: %s%n", jobIdString);
+        return 1;
+      case 1:
+        out.printf("Ambiguous job id: %s%n", jobIdString);
+        return 1;
+    }
+
+    final JobId jobId = getLast(jobs.keySet());
+
+    if (!force) {
+      out.printf("This will remove the job %s%n", jobId);
+      out.printf("Do you want to continue? [Y/n]%n");
+
+      final int c = System.in.read();
+
+      if (c != 'Y') {
+        return 1;
+      }
     }
 
     out.printf("Removing job %s%n", jobId);

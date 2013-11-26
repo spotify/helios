@@ -218,7 +218,7 @@ public class SystemTest extends ZooKeeperTestBase {
     assertContains("AGENT_NOT_FOUND", bogusUndeployAgentWrong);
 
     final String bogusUndeployJobWrong = control("job", "undeploy", BOGUS_JOB.toString(), host);
-    assertContains("JOB_NOT_FOUND", bogusUndeployJobWrong);
+    assertContains("Unknown job", bogusUndeployJobWrong);
 
     final String undeployOutput = control("job", "undeploy", jobId.toString(), host);
     assertContains(host + ": done", undeployOutput);
@@ -296,11 +296,25 @@ public class SystemTest extends ZooKeeperTestBase {
         .setImage("busybox")
         .setCommand(command)
         .build();
+    final JobId jobId = job.getId();
     final CreateJobResponse created = control.createJob(job).get();
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     final CreateJobResponse duplicateJob = control.createJob(job).get();
     assertEquals(CreateJobResponse.Status.JOB_ALREADY_EXISTS, duplicateJob.getStatus());
+
+    // Try querying for the job
+    final Map<JobId, Job> noMatchJobs = control.jobs(jobName + "not_matching").get();
+    assertTrue(noMatchJobs.isEmpty());
+
+    final Map<JobId, Job> matchJobs1 = control.jobs(jobName).get();
+    assertEquals(ImmutableMap.of(jobId, job), matchJobs1);
+
+    final Map<JobId, Job> matchJobs2 = control.jobs(jobName + ":" + jobVersion).get();
+    assertEquals(ImmutableMap.of(jobId, job), matchJobs2);
+
+    final Map<JobId, Job> matchJobs3 = control.jobs(job.getId().toString()).get();
+    assertEquals(ImmutableMap.of(jobId, job), matchJobs3);
 
     // TODO: reimplement this test
 //    final CreateJobResponse createIdMismatch = control.createJob(
@@ -315,7 +329,6 @@ public class SystemTest extends ZooKeeperTestBase {
     awaitAgentStatus(control, agentName, UP, 10, SECONDS);
 
     // Deploy the job on the agent
-    final JobId jobId = job.getId();
     final Deployment deployment = Deployment.of(jobId, START);
     final JobDeployResponse deployed = control.deploy(deployment, agentName).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
@@ -461,6 +474,11 @@ public class SystemTest extends ZooKeeperTestBase {
 
     // Create job
     final JobId jobId = createJob(jobName, jobVersion, jobImage, command);
+
+    // Query for job
+    assertContains(jobId.toString(), control("job", "list", jobName, "-q"));
+    assertContains(jobId.toString(), control("job", "list", jobName + ":" + jobVersion, "-q"));
+    assertTrue(control("job", "list", "foozbarz", "-q").trim().isEmpty());
 
     final String duplicateJob = control(
         "job", "create", jobName, jobVersion, jobImage, "--", command);

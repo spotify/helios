@@ -11,8 +11,8 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.JobIdParseException;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobStatus;
 
@@ -48,15 +48,9 @@ public class JobStatusCommand extends ControlCommand {
     final List<String> jobIdStrings = options.getList(jobsArg.getDest());
     final List<JobId> jobIds = Lists.newArrayList();
     for (final String jobIdString : jobIdStrings) {
-      try {
-        jobIds.add(JobId.parse(jobIdString));
-      } catch (JobIdParseException e) {
-        if (!json) {
-          out.println("Invalid job id: " + jobIdString);
-        }
-        // TODO: print error to stderr
-        return 1;
-      }
+      final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
+      // TODO (dano): complain if there were no matching jobs?
+      jobIds.addAll(jobs.keySet());
     }
 
     // TODO (dano): it would sure be nice to be able to report container/task uptime

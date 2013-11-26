@@ -20,6 +20,9 @@ public class JobId implements Comparable<JobId> {
   private final String version;
   private final String hash;
 
+  /**
+   * Create a fully qualified job id with name, version and hash.
+   */
   public JobId(final String name,
                final String version,
                final String hash) {
@@ -31,6 +34,9 @@ public class JobId implements Comparable<JobId> {
     this.hash = hash;
   }
 
+  /**
+   * Create a new job id with a specific name and version.
+   */
   public JobId(final String name,
                final String version) {
     checkArgument(!checkNotNull(name, "name is null").isEmpty(), "name is empty");
@@ -41,13 +47,36 @@ public class JobId implements Comparable<JobId> {
   }
 
   /**
+   * Private constructor for use by jackson.
+   */
+  @JsonCreator
+  private JobId(final String id) {
+    final String[] parts = id.split(":");
+    if (parts.length != 3) {
+      throw new IllegalArgumentException("Invalid Job id: " + id);
+    }
+    this.name = parts[0];
+    this.version = parts[1];
+    this.hash = parts[2];
+  }
+
+  /**
+   * Private constructor for use by {@link #parse(String)}
+   */
+  private JobId(final String name, boolean b) {
+    checkArgument(!checkNotNull(name, "name is null").isEmpty(), "name is empty");
+    this.name = name;
+    this.version = null;
+    this.hash = null;
+  }
+
+  /**
    * Parse a job id string.
    *
    * This parsing method can be used when input is trusted, i.e. failing to parse it indicates
    * programming error and not bad input.
    * @see #parse(String)
    */
-  @JsonCreator
   public static JobId fromString(final String id) {
     try {
       return parse(id);
@@ -74,6 +103,8 @@ public class JobId implements Comparable<JobId> {
   public static JobId parse(final String id) throws JobIdParseException {
     final String[] parts = id.split(":");
     switch (parts.length) {
+      case 1:
+        return new JobId(parts[0], true);
       case 2:
         return new JobId(parts[0], parts[1]);
       case 3:
@@ -135,5 +166,35 @@ public class JobId implements Comparable<JobId> {
   @Override
   public int compareTo(final JobId o) {
     return toString().compareTo(o.toString());
+  }
+
+  public static Builder newBuilder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+
+    private String name;
+    private String version;
+    private String hash;
+
+    public Builder setName(final String name) {
+      this.name = name;
+      return this;
+    }
+
+    public Builder setVersion(final String version) {
+      this.version = version;
+      return this;
+    }
+
+    public Builder setHash(final String hash) {
+      this.hash = hash;
+      return this;
+    }
+
+    public JobId build() {
+      return new JobId(name, version, hash);
+    }
   }
 }

@@ -30,11 +30,16 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 public class JobListCommand extends ControlCommand {
 
   private final Argument quietArg;
+  private final Argument patternArg;
 
   public JobListCommand(final Subparser parser) {
     super(parser);
 
-    parser.help("list all jobs");
+    parser.help("list jobs");
+
+    patternArg = parser.addArgument("pattern")
+        .nargs("?")
+        .help("Job id pattern");
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
@@ -45,10 +50,16 @@ public class JobListCommand extends ControlCommand {
   int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final boolean quiet = options.getBoolean(quietArg.getDest());
+    final String pattern = options.getString(patternArg.getDest());
 
-    final Map<JobId, Job> jobs = client.jobs().get();
+    final Map<JobId, Job> jobs;
+    if (pattern == null) {
+      jobs = client.jobs().get();
+    } else {
+      jobs = client.jobs(pattern).get();
+    }
 
-    SortedSet<JobId> sortedJobIds = Sets.newTreeSet(jobs.keySet());
+    final SortedSet<JobId> sortedJobIds = Sets.newTreeSet(jobs.keySet());
 
     if (json) {
       if (quiet) {

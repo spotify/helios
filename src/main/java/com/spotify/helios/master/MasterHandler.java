@@ -4,15 +4,16 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.collect.Maps;
 import com.google.protobuf.ByteString;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.spotify.helios.common.AgentDoesNotExistException;
-import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
+import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentStatus;
@@ -41,6 +42,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
 import static com.spotify.hermes.message.StatusCode.FORBIDDEN;
@@ -105,11 +107,31 @@ public class MasterHandler extends MatchingHandler {
     }
   }
 
-  @Match(uri = "hm://helios/jobs/", methods = "GET")
+  @Match(uri = "hm://helios/jobs", methods = "GET")
   public void jobsGet(final ServiceRequest request) {
+    final String q = request.getMessage().getParameter("q");
     try {
-      final Map<JobId, Job> jobs = model.getJobs();
-      ok(request, jobs);
+      final Map<JobId, Job> allJobs = model.getJobs();
+      if (isNullOrEmpty(q)) {
+        // Return all jobs
+        ok(request, allJobs);
+      } else {
+        // Filter jobs
+        // TODO (dano): support prefix matching queries?
+        final JobId needle = JobId.parse(q);
+        final Map<JobId, Job> filteredJobs = Maps.newHashMap();
+        for (final JobId jobId : allJobs.keySet()) {
+          if (needle.getName().equals(jobId.getName()) &&
+              (needle.getVersion() == null || needle.getVersion().equals(jobId.getVersion())) &&
+              (needle.getHash() == null || needle.getHash().equals((jobId.getHash())))) {
+            filteredJobs.put(jobId, allJobs.get(jobId));
+          }
+        }
+        ok(request, filteredJobs);
+      }
+    } catch (JobIdParseException e) {
+      log.error("failed to parse job id query, e");
+      throw new RequestHandlerException(BAD_REQUEST);
     } catch (HeliosException e) {
       log.error("failed to get jobs", e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -372,8 +394,7 @@ public class MasterHandler extends MatchingHandler {
   }
 
   private void respond(final ServiceRequest request, StatusCode code, final Object payload) {
-    final byte[] json;
-    json = Json.asBytesUnchecked(payload);
+    final byte[] json = Json.asBytesUnchecked(payload);
     final Message reply = request.getMessage()
         .makeReplyBuilder(code)
         .appendPayload(ByteString.copyFrom(json))
