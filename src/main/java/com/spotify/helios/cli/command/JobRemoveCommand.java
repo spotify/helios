@@ -43,13 +43,12 @@ public class JobRemoveCommand extends ControlCommand {
 
     final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
 
-    switch (jobs.size()) {
-      case 0:
-        out.printf("Unknown job: %s%n", jobIdString);
-        return 1;
-      case 1:
-        out.printf("Ambiguous job id: %s%n", jobIdString);
-        return 1;
+    if (jobs.size() == 0) {
+      out.printf("Unknown job: %s%n", jobIdString);
+      return 1;
+    } else if (jobs.size() > 1) {
+      out.printf("Ambiguous job reference: %s%n", jobIdString);
+      return 1;
     }
 
     final JobId jobId = getLast(jobs.keySet());
