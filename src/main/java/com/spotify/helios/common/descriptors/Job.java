@@ -5,10 +5,12 @@
 package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.BaseEncoding;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 
@@ -23,7 +25,10 @@ import static com.google.common.base.Throwables.propagate;
 import static com.spotify.helios.common.Hash.sha1digest;
 import static java.util.Collections.emptyMap;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Job extends Descriptor implements Comparable<Job> {
+
+  public static final Map<String, String> EMPTY_ENV = emptyMap();
 
   private final JobId id;
   private final String image;
@@ -37,7 +42,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.id = checkNotNull(id, "id");
     this.image = checkNotNull(image, "image");
     this.command = checkNotNull(command, "command");
-    this.env = checkNotNull(env, "env");
+
+    // Optional
+    this.env = Optional.fromNullable(env).or(EMPTY_ENV);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
