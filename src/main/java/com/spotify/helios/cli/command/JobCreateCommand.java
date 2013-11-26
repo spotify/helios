@@ -7,7 +7,9 @@ package com.spotify.helios.cli.command;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.common.Client;
+import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -16,14 +18,19 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.regex.Matcher;
 
+import static java.util.regex.Pattern.compile;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class JobCreateCommand extends ControlCommand {
+
+  private static final JobValidator JOB_VALIDATOR = new JobValidator();
 
   private final Argument quietArg;
   private final Argument nameArg;
@@ -31,6 +38,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument imageArg;
   private final Argument envArg;
   private final Argument argsArg;
+  private final Argument portArg;
 
   public JobCreateCommand(final Subparser parser) {
     super(parser);
@@ -56,6 +64,16 @@ public class JobCreateCommand extends ControlCommand {
         .nargs("+")
         .help("Environment variables");
 
+    portArg = parser.addArgument("-p", "--port")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .nargs("+")
+        .help("Port mapping. Specify a name and a single port (e.g. \"http=8080\") number for " +
+              "dynamic port mapping and a name=private:public tuple (e.g. \"http=8080:80\") for " +
+              "static port mapping. E.g., foo=4711 will map the internal port 4711 of the job to " +
+              "an arbitrary external port on the host. Specifying foo=4711:80 will map internal " +
+              "port 4711 of the job to port 80 on the host.");
+
     argsArg = parser.addArgument("args")
         .nargs("*")
         .help("Command line arguments");
@@ -68,6 +86,7 @@ public class JobCreateCommand extends ControlCommand {
     final String imageIdentifier = options.getString(imageArg.getDest());
 
     final boolean quiet = options.getBoolean(quietArg.getDest());
+    final List<List<String>> portSpecLists = options.getList(portArg.getDest());
 
     final List<List<String>> envList = options.getList(envArg.getDest());
     final Map<String, String> env = Maps.newHashMap();
@@ -83,13 +102,40 @@ public class JobCreateCommand extends ControlCommand {
       }
     }
 
+    final Map<String, PortMapping> ports = Maps.newHashMap();
+    for (final List<String> specs : portSpecLists) {
+      for (final String spec : specs) {
+        final Matcher matcher = compile("(?<n>\\w+)=(?<i>\\d+)(:?(?<e>\\d+))").matcher(spec);
+        if (!matcher.matches()) {
+          throw new IllegalArgumentException("Bad port mapping: " + spec);
+        }
+
+        final String name = matcher.group("n");
+        final int internal = Integer.parseInt(matcher.group("i"));
+        final Integer external = nullOrInteger(matcher.group("e"));
+
+        if (ports.containsKey(name)) {
+          throw new IllegalArgumentException("Duplicate port mapping: " + name);
+        }
+
+        ports.put(name, PortMapping.of(internal, external));
+      }
+    }
+
     final Job job = Job.newBuilder()
         .setName(options.getString(nameArg.getDest()))
         .setVersion(options.getString(versionArg.getDest()))
         .setImage(imageIdentifier)
         .setCommand(command)
         .setEnv(env)
+        .setPorts(ports)
         .build();
+
+    final Collection<String> errors = JOB_VALIDATOR.validate(job);
+    if (!errors.isEmpty()) {
+      // TODO: nicer output
+      throw new IllegalArgumentException("Bad job definition: " + errors);
+    }
 
     if (!quiet) {
       out.println("Creating job: " + job.toJsonString());
@@ -108,6 +154,10 @@ public class JobCreateCommand extends ControlCommand {
       }
       return 1;
     }
+  }
+
+  private Integer nullOrInteger(final String s) {
+    return s == null ? null : Integer.valueOf(s);
   }
 }
 

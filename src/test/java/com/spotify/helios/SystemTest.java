@@ -21,6 +21,7 @@ import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.ThrottleState;
@@ -328,6 +329,8 @@ public class SystemTest extends ZooKeeperTestBase {
     final String agentName = "foobar";
     final String jobName = "foo";
     final String jobVersion = "17";
+    final List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
+    final Map<String, PortMapping> ports = ImmutableMap.of("foos", PortMapping.of(17, 4711));
 
     startDefaultMaster();
 
@@ -341,13 +344,13 @@ public class SystemTest extends ZooKeeperTestBase {
 
     final AgentMain agent = startDefaultAgent(agentName);
 
-    List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
     // Create a job
     final Job job = Job.newBuilder()
         .setName(jobName)
         .setVersion(jobVersion)
         .setImage("busybox")
         .setCommand(command)
+        .setPorts(ports)
         .build();
     final JobId jobId = job.getId();
     final CreateJobResponse created = control.createJob(job).get();

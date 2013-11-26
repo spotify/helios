@@ -12,11 +12,11 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
+import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.Image;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.descriptors.ThrottleState;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -42,6 +42,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -136,6 +137,9 @@ public class SupervisorTest {
       state = new ContainerState() {{
         running = true;
       }};
+      networkSettings = new NetworkSettings() {{
+        ports = emptyMap();
+      }};
     }};
 
     final ContainerInspectResponse stoppedResponse = new ContainerInspectResponse() {{
@@ -148,7 +152,7 @@ public class SupervisorTest {
     when(docker.createContainer(any(ContainerConfig.class),
                                 any(String.class))).thenReturn(createFuture);
     final SettableFuture<Void> startFuture = SettableFuture.create();
-    when(docker.startContainer(containerId)).thenReturn(startFuture);
+    when(docker.startContainer(eq(containerId), any(HostConfig.class))).thenReturn(startFuture);
     final SettableFuture<Integer> waitFuture = SettableFuture.create();
     when(docker.waitContainer(containerId)).thenReturn(waitFuture);
 
@@ -159,8 +163,11 @@ public class SupervisorTest {
     verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture(),
                                                   containerNameCaptor.capture());
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
-                                               eq(new TaskStatus(DESCRIPTOR, CREATING, null,
-                                               ThrottleState.NO)));
+                                               eq(TaskStatus.newBuilder()
+                                                      .setJob(DESCRIPTOR)
+                                                      .setState(CREATING)
+                                                      .setContainerId(null)
+                                                      .build()));
     assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
@@ -171,23 +178,27 @@ public class SupervisorTest {
     assertEquals(DESCRIPTOR.getId(), jobIdFromContainerName(containerName));
 
     // Verify that the container is started
-    verify(docker, timeout(1000)).startContainer(containerId);
+    verify(docker, timeout(1000)).startContainer(eq(containerId), any(HostConfig.class));
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
-                                               eq(new TaskStatus(DESCRIPTOR, STARTING,
-                                                                 containerId,
-                                                                 ThrottleState.NO)));
+                                               eq(TaskStatus.newBuilder()
+                                                      .setJob(DESCRIPTOR)
+                                                      .setState(STARTING)
+                                                      .setContainerId(containerId)
+                                                      .build()));
     assertEquals(STARTING, sut.getStatus());
+    when(docker.inspectContainer(eq(containerId))).thenReturn(immediateFuture(runningResponse));
     startFuture.set(null);
 
     verify(docker, timeout(1000)).waitContainer(containerId);
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
-                                               eq(new TaskStatus(DESCRIPTOR, RUNNING,
-                                                                 containerId,
-                                                                 ThrottleState.NO)));
+                                               eq(TaskStatus.newBuilder()
+                                                      .setJob(DESCRIPTOR)
+                                                      .setState(RUNNING)
+                                                      .setContainerId(containerId)
+                                                      .build()));
     assertEquals(RUNNING, sut.getStatus());
 
     // Stop the job
-    when(docker.inspectContainer(eq(containerId))).thenReturn(immediateFuture(runningResponse));
     final SettableFuture<Void> killFuture = SettableFuture.create();
     when(docker.kill(eq(containerId))).thenReturn(killFuture);
     executor.execute(new Runnable() {
@@ -205,9 +216,11 @@ public class SupervisorTest {
 
     // Verify that the stopped state is signalled
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
-                                               eq(new TaskStatus(DESCRIPTOR, STOPPED,
-                                                                 containerId,
-                                                                 ThrottleState.NO)));
+                                               eq(TaskStatus.newBuilder()
+                                                      .setJob(DESCRIPTOR)
+                                                      .setState(STOPPED)
+                                                      .setContainerId(containerId)
+                                                      .build()));
     assertEquals(STOPPED, sut.getStatus());
   }
 
@@ -232,10 +245,19 @@ public class SupervisorTest {
     final ContainerCreateResponse createResponse2 = new ContainerCreateResponse() {{
       id = containerId2;
     }};
+    final ContainerInspectResponse runningResponse = new ContainerInspectResponse() {{
+      state = new ContainerState() {{
+        running = true;
+      }};
+      networkSettings = new NetworkSettings() {{
+        ports = emptyMap();
+      }};
+    }};
     when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
         .thenReturn(immediateFuture(createResponse1));
-    when(docker.startContainer(containerId1))
+    when(docker.startContainer(eq(containerId1), any(HostConfig.class)))
         .thenReturn(immediateFuture((Void) null));
+    when(docker.inspectContainer(eq(containerId1))).thenReturn(immediateFuture(runningResponse));
     final SettableFuture<Integer> waitFuture1 = SettableFuture.create();
     final SettableFuture<Integer> waitFuture2 = SettableFuture.create();
     when(docker.waitContainer(containerId1)).thenReturn(waitFuture1);
@@ -244,7 +266,7 @@ public class SupervisorTest {
     // Start the job
     sut.start();
     verify(docker, timeout(1000)).createContainer(any(ContainerConfig.class), any(String.class));
-    verify(docker, timeout(1000)).startContainer(containerId1);
+    verify(docker, timeout(1000)).startContainer(eq(containerId1), any(HostConfig.class));
     verify(docker, timeout(1000)).waitContainer(containerId1);
 
     // Indicate that the container exited
@@ -256,13 +278,14 @@ public class SupervisorTest {
     when(docker.inspectContainer(eq(containerId1))).thenReturn(immediateFuture(stoppedResponse));
     when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
         .thenReturn(immediateFuture(createResponse2));
-    when(docker.startContainer(containerId2))
+    when(docker.startContainer(eq(containerId2), any(HostConfig.class)))
         .thenReturn(immediateFuture((Void) null));
+    when(docker.inspectContainer(eq(containerId2))).thenReturn(immediateFuture(runningResponse));
     waitFuture1.set(1);
 
     // Verify that the container was restarted
     verify(docker, timeout(1000)).createContainer(any(ContainerConfig.class), any(String.class));
-    verify(docker, timeout(1000)).startContainer(containerId2);
+    verify(docker, timeout(1000)).startContainer(eq(containerId2), any(HostConfig.class));
     verify(docker, timeout(1000)).waitContainer(containerId2);
   }
 }

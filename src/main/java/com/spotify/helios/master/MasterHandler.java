@@ -16,6 +16,7 @@ import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.JobStillInUseException;
+import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -43,6 +44,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -56,7 +58,10 @@ import static com.spotify.hermes.message.StatusCode.SERVER_ERROR;
 
 public class MasterHandler extends MatchingHandler {
 
-  private final Logger log = LoggerFactory.getLogger(MasterHandler.class);
+  private static final Logger log = LoggerFactory.getLogger(MasterHandler.class);
+
+  private static final JobValidator JOB_VALIDATOR = new JobValidator();
+
   private final MasterModel model;
 
   public MasterHandler(final MasterModel model) {
@@ -71,30 +76,37 @@ public class MasterHandler extends MatchingHandler {
     }
 
     final byte[] payload = message.getPayloads().get(0).toByteArray();
-    final Job descriptor;
+    final Job job;
     try {
-      descriptor = parse(payload, Job.class);
+      job = parse(payload, Job.class);
     } catch (IOException e) {
       throw new RequestHandlerException(BAD_REQUEST);
     }
 
-    if (!descriptor.getId().equals(parseJobId(id))) {
+    if (!job.getId().equals(parseJobId(id))) {
       respond(request, BAD_REQUEST, new CreateJobResponse(CreateJobResponse.Status.ID_MISMATCH));
       return;
     }
 
+    final Collection<String> errors = JOB_VALIDATOR.validate(job);
+    if (!errors.isEmpty()) {
+      respond(request, BAD_REQUEST, new CreateJobResponse(
+          CreateJobResponse.Status.INVALID_JOB_DEFINITION));
+      return;
+    }
+
     try {
-      model.addJob(descriptor);
+      model.addJob(job);
     } catch (JobExistsException e) {
       respond(request, BAD_REQUEST,
               new CreateJobResponse(CreateJobResponse.Status.JOB_ALREADY_EXISTS));
       return;
     } catch (HeliosException e) {
-      log.error("failed to add job: {}:{}", id, descriptor, e);
+      log.error("failed to add job: {}:{}", id, job, e);
       throw new RequestHandlerException(SERVER_ERROR);
     }
 
-    log.info("added job {}:{}", id, descriptor);
+    log.info("added job {}:{}", id, job);
 
     respond(request, OK, new CreateJobResponse(CreateJobResponse.Status.OK));
   }

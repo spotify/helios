@@ -9,7 +9,8 @@ public class CreateJobResponse {
   public enum Status {
     OK,
     ID_MISMATCH,
-    JOB_ALREADY_EXISTS
+    JOB_ALREADY_EXISTS,
+    INVALID_JOB_DEFINITION,
   }
 
   private final Status status;
