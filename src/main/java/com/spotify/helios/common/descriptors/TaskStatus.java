@@ -10,6 +10,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 public class TaskStatus extends Descriptor {
 
   public enum State {
@@ -27,9 +29,9 @@ public class TaskStatus extends Descriptor {
   public TaskStatus(@JsonProperty("job") final Job job,
                     @JsonProperty("state") final State state,
                     @Nullable @JsonProperty("containerId") final String containerId) {
+    this.job = checkNotNull(job, "job");
+    this.state = checkNotNull(state, "state");
     this.containerId = containerId;
-    this.state = state;
-    this.job = job;
   }
 
   @Nullable

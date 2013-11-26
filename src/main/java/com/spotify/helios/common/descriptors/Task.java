@@ -6,6 +6,8 @@ package com.spotify.helios.common.descriptors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import static org.mockito.internal.util.Checks.checkNotNull;
+
 public class Task extends Descriptor {
 
   private final Job job;
@@ -13,8 +15,8 @@ public class Task extends Descriptor {
 
   public Task(@JsonProperty("job") final Job job,
               @JsonProperty("goal") final Goal goal) {
-    this.job = job;
-    this.goal = goal;
+    this.job = checkNotNull(job, "job");
+    this.goal = checkNotNull(goal, "goal");
   }
 
   public Goal getGoal() {

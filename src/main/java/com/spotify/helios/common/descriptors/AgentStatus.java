@@ -30,9 +30,9 @@ public class AgentStatus extends Descriptor {
                      @JsonProperty("status") final Status status,
                      @JsonProperty("hostInfo") final HostInfo hostInfo,
                      @JsonProperty("runtimeInfo") final RuntimeInfo runtimeInfo) {
-    this.status = checkNotNull(status);
-    this.jobs = checkNotNull(jobs);
-    this.statuses = checkNotNull(statuses);
+    this.status = checkNotNull(status, "status");
+    this.jobs = checkNotNull(jobs, "jobs");
+    this.statuses = checkNotNull(statuses, "statuses");
 
     // Host and runtime info might not be available
     this.hostInfo = hostInfo;

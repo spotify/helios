@@ -34,17 +34,17 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("image") final String image,
              @JsonProperty("command") final List<String> command,
              @JsonProperty("env") final Map<String, String> env) {
-    this.id = checkNotNull(id);
-    this.image = checkNotNull(image);
-    this.command = checkNotNull(command);
-    this.env = checkNotNull(env);
+    this.id = checkNotNull(id, "id");
+    this.image = checkNotNull(image, "image");
+    this.command = checkNotNull(command, "command");
+    this.env = checkNotNull(env, "env");
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
-    this.id = checkNotNull(id);
-    this.image = checkNotNull(p.image);
-    this.command = ImmutableList.copyOf(p.command);
-    this.env = ImmutableMap.copyOf(p.env);
+    this.id = checkNotNull(id, "id");
+    this.image = checkNotNull(p.image, "image");
+    this.command = ImmutableList.copyOf(checkNotNull(p.command, "command"));
+    this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
   }
 
   public JobId getId() {
