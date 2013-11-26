@@ -611,7 +611,6 @@ public class SystemTest extends ZooKeeperTestBase {
     assertContains("foo: 4711", logMessage);
 
     // Verify that the the BAR environment variable in the job overrode the agent config
-    // TODO (dano): is this sane or should it be the other way around. Either way it should be well defined.
     assertContains("bar: deadbeef", logMessage);
 
     // Stop the agent
