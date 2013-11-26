@@ -5,18 +5,21 @@
 package com.spotify.helios.master;
 
 import com.google.common.base.Predicate;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 
 import com.spotify.helios.common.AgentDoesNotExistException;
-import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
+import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.coordination.Paths;
@@ -31,6 +34,7 @@ import com.spotify.helios.common.descriptors.RuntimeInfo;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobStatus;
+import com.spotify.helios.common.protocol.TaskStatusEvent;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -41,6 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
@@ -51,6 +56,20 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 public class ZooKeeperMasterModel implements MasterModel {
+
+  public static final class EventComparator implements Comparator<TaskStatusEvent> {
+    @Override
+    public int compare(TaskStatusEvent arg0, TaskStatusEvent arg1) {
+      if (arg1.getTimestamp() > arg0.getTimestamp()) {
+        return -1;
+      } else if (arg1.getTimestamp() == arg0.getTimestamp()) {
+        return 0;
+      } else {
+        return 1;
+      }
+    }
+  }
+  private static final EventComparator EVENT_COMPARATOR = new EventComparator();
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperMasterModel.class);
 
@@ -131,13 +150,57 @@ public class ZooKeeperMasterModel implements MasterModel {
       // TODO (dano): do this in a transaction
       final String jobPath = Paths.configJob(job.getId());
       client.createAndSetData(jobPath, job.toJsonBytes());
+
       final String jobAgentsPath = Paths.configJobAgents(job.getId());
       client.create(jobAgentsPath);
+
+      client.ensurePath(Paths.historyJob(job.getId()));
     } catch (KeeperException.NodeExistsException e) {
       throw new JobExistsException(job.getId().toString());
     } catch (KeeperException e) {
       throw new HeliosException("adding job " + job + " failed", e);
     }
+  }
+
+  @Override
+  public List<TaskStatusEvent> getJobHistory(final JobId jobId) throws HeliosException {
+    final Job descriptor = getJob(jobId);
+    if (descriptor == null) {
+      throw new JobDoesNotExistException(jobId);
+    }
+
+    final List<String> agents;
+    try {
+      agents = client.getChildren(Paths.historyJobAgents(jobId));
+    } catch (NoNodeException e) {
+      return ImmutableList.<TaskStatusEvent>of();
+    } catch (KeeperException e) {
+      throw Throwables.propagate(e);
+    }
+
+    final List<TaskStatusEvent> jsEvents = Lists.newArrayList();
+
+    for (String agent : agents) {
+      final List<String> events;
+      try {
+        events = client.getChildren(Paths.historyJobAgentEvents(jobId, agent));
+      } catch (KeeperException e) {
+        throw Throwables.propagate(e);
+      }
+
+      for (String event : events) {
+        try {
+          byte[] data = client.getData(Paths.historyJobAgentEventsTimestamp(
+              jobId, agent, Long.valueOf(event)));
+          final TaskStatus status = Json.read(data, TaskStatus.class);
+          jsEvents.add(new TaskStatusEvent(status, Long.valueOf(event), agent));
+        } catch (KeeperException | IOException e) {
+          throw Throwables.propagate(e);
+        }
+      }
+    }
+
+    return Ordering.from(EVENT_COMPARATOR).sortedCopy(jsEvents);
   }
 
   @Override

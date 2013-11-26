@@ -161,7 +161,7 @@ public class SupervisorTest {
     assertEquals(IMAGE, containerConfig.getImage());
     assertEquals(EXPECTED_CONTAINER_ENV, ImmutableSet.copyOf(containerConfig.getEnv()));
     final String containerName = containerNameCaptor.getValue();
-    final UUID uuid = uuidFromContainerName(containerName);
+    uuidFromContainerName(containerName);
     assertEquals(DESCRIPTOR.getId(), jobIdFromContainerName(containerName));
 
     // Verify that the container is started

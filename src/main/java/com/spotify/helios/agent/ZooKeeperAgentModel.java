@@ -19,6 +19,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.joda.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -81,12 +82,16 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
       // Check if the node already exists.
       final Stat stat = client.stat(path);
 
+      byte[] jsonBytes = status.toJsonBytes();
       if (stat != null) {
         // The node already exists, overwrite it.
-        client.setData(path, status.toJsonBytes());
+        client.setData(path, jsonBytes);
       } else {
-        client.createAndSetData(path, status.toJsonBytes());
+        client.createAndSetData(path, jsonBytes);
       }
+      String historyPath = Paths.historyJobAgentEventsTimestamp(
+          jobId, agent, new Instant().getMillis());
+      client.createAndSetData(historyPath, jsonBytes);
     } catch (KeeperException e) {
       throw Throwables.propagate(e);
     }

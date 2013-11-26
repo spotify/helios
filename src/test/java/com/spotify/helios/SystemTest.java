@@ -4,6 +4,7 @@
 
 package com.spotify.helios;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
@@ -21,11 +22,14 @@ import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
+import com.spotify.helios.common.protocol.TaskStatusEvent;
+import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.master.MasterMain;
 import com.spotify.hermes.Hermes;
 import com.spotify.nameless.Service;
@@ -72,6 +76,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -268,6 +274,39 @@ public class SystemTest extends ZooKeeperTestBase {
 
     assertTrue("missing hermes nameless entry", hermesFound);
     assertTrue("missing http nameless entry", httpFound);
+  }
+
+  @Test
+  public void testJobHistory() throws Exception {
+    startDefaultMaster();
+
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    startDefaultAgent(TEST_AGENT);
+    JobId jobId = createJob("JOB_NAME", "JOB_VERSION", "busybox", ImmutableList.of("/bin/true"));
+    deployJob(jobId, TEST_AGENT);
+    awaitJobState(control, TEST_AGENT, jobId, EXITED, 10, SECONDS);
+    undeployJob(jobId, TEST_AGENT);
+    TaskStatusEvents events = control.jobHistory(jobId).get();
+    List<TaskStatusEvent> eventsList = events.getEvents();
+    assertFalse(eventsList.isEmpty());
+
+    final TaskStatusEvent event1 = eventsList.get(0);
+    assertEquals(State.CREATING, event1.getStatus().getState());
+    assertNull(event1.getStatus().getContainerId());
+
+    final TaskStatusEvent event2 = eventsList.get(1);
+    assertEquals(State.STARTING, event2.getStatus().getState());
+    assertNotNull(event2.getStatus().getContainerId());
+
+    final TaskStatusEvent event3 = eventsList.get(2);
+    assertEquals(State.RUNNING, event3.getStatus().getState());
+
+    final TaskStatusEvent event4 = eventsList.get(3);
+    assertEquals(State.EXITED, event4.getStatus().getState());
   }
 
   @Test
@@ -717,7 +756,7 @@ public class SystemTest extends ZooKeeperTestBase {
     awaitAgentStatus(client, agentName, UP, 10, SECONDS);
 
     // Wait for the job to be restarted in a new container
-    final TaskStatus thirdTaskStatus = await(1, MINUTES, new Callable<TaskStatus>() {
+    await(1, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final AgentStatus agentStatus = client.agentStatus(agentName).get();
