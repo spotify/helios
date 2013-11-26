@@ -6,7 +6,6 @@ package com.spotify.helios.cli.command;
 
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 
@@ -16,17 +15,14 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.PrintStream;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
-import static com.google.common.collect.Iterables.getLast;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
-public class JobDeployCommand extends ControlCommand {
+public class JobDeployCommand extends WildcardJobCommand {
 
-  private final Argument jobArg;
   private final Argument hostsArg;
   private final Argument noStartArg;
 
@@ -34,9 +30,6 @@ public class JobDeployCommand extends ControlCommand {
     super(parser);
 
     parser.help("deploy a job to hosts");
-
-    jobArg = parser.addArgument("job")
-        .help("Job id.");
 
     noStartArg = parser.addArgument("--no-start")
         .action(storeTrue())
@@ -48,23 +41,10 @@ public class JobDeployCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out, final boolean json)
+  protected int runWithJobId(final Namespace options, final Client client, final PrintStream out,
+                             final boolean json, final JobId jobId)
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
-
-    final String jobIdString = options.getString(jobArg.getDest());
-
-    final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
-
-    if (jobs.size() == 0) {
-      out.printf("Unknown job: %s%n", jobIdString);
-      return 1;
-    } else if (jobs.size() > 1) {
-      out.printf("Ambiguous job reference: %s%n", jobIdString);
-      return 1;
-    }
-
-    final JobId jobId = getLast(jobs.keySet());
 
     final Deployment job = Deployment.of(jobId,
                                          options.getBoolean(noStartArg.getDest()) ? STOP : START);

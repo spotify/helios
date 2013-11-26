@@ -14,22 +14,19 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class JobStartCommand extends ControlCommand {
+public class JobStartCommand extends WildcardJobCommand {
 
   private final Argument hostsArg;
-  private final Argument jobArg;
 
   public JobStartCommand(Subparser parser) {
     super(parser);
 
     parser.help("start a job on hosts");
-
-    jobArg = parser.addArgument("job")
-        .help("Job to start.");
 
     hostsArg = parser.addArgument("hosts")
         .nargs("+")
@@ -37,10 +34,11 @@ public class JobStartCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out, final boolean json)
-      throws ExecutionException, InterruptedException {
+  protected int runWithJobId(final Namespace options, final Client client, final PrintStream out,
+                             final boolean json, final JobId jobId)
+      throws ExecutionException, InterruptedException, IOException {
+
     final List<String> hosts = options.getList(hostsArg.getDest());
-    final JobId jobId = JobId.fromString(options.getString(jobArg.getDest()));
 
     final Deployment deployment = new Deployment.Builder()
         .setGoal(Goal.START)

@@ -39,7 +39,7 @@ public class JobListCommand extends ControlCommand {
 
     patternArg = parser.addArgument("pattern")
         .nargs("?")
-        .help("Job id pattern");
+        .help("Job reference to filter on");
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())

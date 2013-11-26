@@ -533,7 +533,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final String stop1 = stopJob(jobId, BOGUS_AGENT);
     assertContains("AGENT_NOT_FOUND", stop1);
     final String stop2 = stopJob(BOGUS_JOB, TEST_AGENT);
-    assertContains("JOB_NOT_FOUND", stop2);
+    assertContains("Unknown job", stop2);
     final String stop3 = stopJob(jobId, TEST_AGENT);
     assertContains(TEST_AGENT + ": done", stop3);
 
