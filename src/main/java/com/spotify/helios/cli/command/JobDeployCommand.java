@@ -60,7 +60,7 @@ public class JobDeployCommand extends ControlCommand {
       out.printf("Unknown job: %s%n", jobIdString);
       return 1;
     } else if (jobs.size() > 1) {
-      out.printf("Ambiguous job id: %s%n", jobIdString);
+      out.printf("Ambiguous job reference: %s%n", jobIdString);
       return 1;
     }
 
