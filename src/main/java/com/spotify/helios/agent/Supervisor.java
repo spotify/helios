@@ -273,8 +273,7 @@ class Supervisor {
   private String[] containerEnv(final Job descriptor) {
     final Map<String, String> env = Maps.newHashMap(envVars);
 
-    // Let job environment variables take precedence.
-    // TODO (dano): is this sane or should it be the other way around?
+    // Job environment variables take precedence.
     env.putAll(descriptor.getEnv());
 
     final List<String> envList = Lists.newArrayList();

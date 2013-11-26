@@ -39,7 +39,7 @@ public class JobStatusCommand extends ControlCommand {
 
     jobsArg = parser.addArgument("job")
         .nargs("+")
-        .help("Job id");
+        .help("Job reference");
   }
 
   @Override
