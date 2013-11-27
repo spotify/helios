@@ -56,10 +56,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Supervises docker containers for a single job.
  */
 class Supervisor {
+
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
   private static final long DEFAULT_RESTART_INTERVAL_MILLIS = 100;
   private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
+
 
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
       new ThreadFactoryBuilder().setNameFormat("helios-supervisor-runner-%d").build();

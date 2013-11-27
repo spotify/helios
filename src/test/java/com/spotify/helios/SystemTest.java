@@ -320,7 +320,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setUser(TEST_USER)
         .setEndpoints(masterEndpoint)
         .build();
-   awaitJobFlapping(control, TEST_AGENT, jobId, TaskStatus.ThrottleState.FLAPPING, 20, SECONDS);
+   awaitJobThrottle(control, TEST_AGENT, jobId, TaskStatus.ThrottleState.FLAPPING, 20, SECONDS);
   }
 
   @Test
@@ -466,7 +466,7 @@ public class SystemTest extends ZooKeeperTestBase {
     });
   }
 
-  private TaskStatus awaitJobFlapping(final Client controlClient, final String slave,
+  private TaskStatus awaitJobThrottle(final Client controlClient, final String slave,
                                       final JobId jobId,
                                       final TaskStatus.ThrottleState throttled, final int timeout,
                                       final TimeUnit timeunit) throws Exception {
@@ -479,6 +479,7 @@ public class SystemTest extends ZooKeeperTestBase {
       }
     });
   }
+
   private void awaitAgentRegistered(final Client controlClient, final String slave,
                                     final int timeout,
                                     final TimeUnit timeUnit) throws Exception {
