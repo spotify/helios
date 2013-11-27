@@ -19,27 +19,31 @@ public class TaskStatus extends Descriptor {
     STARTING,
     RUNNING,
     EXITED,
-    STOPPED,
-    EXITED_FLAPPING
+    STOPPED
+  }
+
+  public enum ThrottleState {
+    NO,
+    FLAPPING
   }
 
   private final Job job;
   private final State state;
   private final String containerId;
-  private final boolean flapping;
+  private final ThrottleState throttled;
 
   public TaskStatus(@JsonProperty("job") final Job job,
                     @JsonProperty("state") final State state,
                     @Nullable @JsonProperty("containerId") final String containerId,
-                    @JsonProperty("flapping") final boolean flapping) {
+                    @JsonProperty("throttled") final ThrottleState throttled) {
     this.job = checkNotNull(job, "job");
     this.state = checkNotNull(state, "state");
     this.containerId = containerId;
-    this.flapping = flapping;
+    this.throttled = throttled;
   }
 
-  public boolean isFlapping() {
-    return flapping;
+  public ThrottleState getThrottled() {
+    return throttled;
   }
 
   @Nullable
@@ -61,7 +65,7 @@ public class TaskStatus extends Descriptor {
         .add("job", job)
         .add("state", state)
         .add("containerId", containerId)
-        .add("flapping", flapping)
+        .add("throttled", throttled)
         .toString();
   }
 
@@ -87,7 +91,7 @@ public class TaskStatus extends Descriptor {
       return false;
     }
 
-    if (flapping != status.flapping) {
+    if (throttled != status.throttled) {
       return false;
     }
 
@@ -99,7 +103,7 @@ public class TaskStatus extends Descriptor {
     int result = job != null ? job.hashCode() : 0;
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (containerId != null ? containerId.hashCode() : 0);
-    result = 31 * result + (flapping ? 1231 : 1237);
+    result = 31 * result + ((throttled == null) ? 0 : throttled.hashCode());
     return result;
   }
 }

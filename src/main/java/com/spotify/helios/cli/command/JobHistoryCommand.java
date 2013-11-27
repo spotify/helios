@@ -65,7 +65,7 @@ public class JobHistoryCommand extends ControlCommand {
     }
 
     final Table table = table(out);
-    table.row("AGENT", "TIMESTAMP", "STATE", "CONTAINERID");
+    table.row("AGENT", "TIMESTAMP", "STATE", "THROTTLED", "CONTAINERID");
     List<TaskStatusEvent> events = result.getEvents();
     DateTimeFormatter format = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS");
 
@@ -77,7 +77,7 @@ public class JobHistoryCommand extends ControlCommand {
       String containerId = status.getContainerId();
       containerId = containerId == null ? "<none>" : containerId;
 
-      table.row(agent, format.print(timestamp), state, containerId);
+      table.row(agent, format.print(timestamp), state, status.getThrottled(), containerId);
     }
     table.print();
     return 0;

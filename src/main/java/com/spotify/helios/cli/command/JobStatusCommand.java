@@ -14,6 +14,7 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TaskStatus.ThrottleState;
 import com.spotify.helios.common.protocol.JobStatus;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -73,7 +74,7 @@ public class JobStatusCommand extends ControlCommand {
           final TaskStatus ts = taskStatuses.get(host);
           final String command = on(' ').join(ts.getJob().getCommand());
           final String env = Joiner.on(" ").withKeyValueSeparator("=").join(ts.getJob().getEnv());
-          table.row(jobId, host, ts.getState(), ts.getContainerId(), command, ts.isFlapping(), env);
+          table.row(jobId, host, ts.getState(), ts.getContainerId(), command, ts.getThrottled(), env);
         }
       }
       table.print();

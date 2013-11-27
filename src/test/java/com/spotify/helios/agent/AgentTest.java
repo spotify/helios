@@ -128,9 +128,11 @@ public class AgentTest {
     configure(BAR_DESCRIPTOR, STOP);
 
     jobStatuses.put(FOO_DESCRIPTOR.getId(),
-                    new TaskStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1", false));
+                    new TaskStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1",
+                        TaskStatus.ThrottleState.NO));
     jobStatuses.put(BAR_DESCRIPTOR.getId(),
-                    new TaskStatus(BAR_DESCRIPTOR, RUNNING, "bar-container-1", false));
+                    new TaskStatus(BAR_DESCRIPTOR, RUNNING, "bar-container-1",
+                        TaskStatus.ThrottleState.NO));
 
     when(fooSupervisor.isStarting()).thenReturn(false);
     when(barSupervisor.isStarting()).thenReturn(true);
@@ -154,7 +156,8 @@ public class AgentTest {
   @Test
   public void verifyAgentRecoversStateAndStopsUndesiredSupervisors() {
     jobStatuses.put(FOO_DESCRIPTOR.getId(),
-                    new TaskStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1", false));
+                    new TaskStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1",
+                        TaskStatus.ThrottleState.NO));
 
     startAgent();
 

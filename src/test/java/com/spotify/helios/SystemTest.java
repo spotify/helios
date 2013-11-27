@@ -23,6 +23,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
+import com.spotify.helios.common.descriptors.TaskStatus.ThrottleState;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
@@ -66,7 +67,6 @@ import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED_FLAPPING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.lang.System.nanoTime;
@@ -320,7 +320,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setUser(TEST_USER)
         .setEndpoints(masterEndpoint)
         .build();
-   awaitJobState(control, TEST_AGENT, jobId, EXITED_FLAPPING, 20, SECONDS);
+   awaitJobFlapping(control, TEST_AGENT, jobId, TaskStatus.ThrottleState.FLAPPING, 20, SECONDS);
   }
 
   @Test
@@ -466,6 +466,19 @@ public class SystemTest extends ZooKeeperTestBase {
     });
   }
 
+  private TaskStatus awaitJobFlapping(final Client controlClient, final String slave,
+                                      final JobId jobId,
+                                      final TaskStatus.ThrottleState throttled, final int timeout,
+                                      final TimeUnit timeunit) throws Exception {
+      return await(timeout, timeunit, new Callable<TaskStatus>() {
+      @Override
+      public TaskStatus call() throws Exception {
+        final AgentStatus agentStatus = controlClient.agentStatus(slave).get();
+        final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
+        return (taskStatus != null && taskStatus.getThrottled() == throttled) ? taskStatus : null;
+      }
+    });
+  }
   private void awaitAgentRegistered(final Client controlClient, final String slave,
                                     final int timeout,
                                     final TimeUnit timeUnit) throws Exception {
