@@ -4,6 +4,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TaskStatus.ThrottleState;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -12,20 +14,20 @@ import java.util.List;
 
 public class FlapController {
   private static class Exit {
-    private final boolean prevWasFlapping;
     private final long timestamp;
+    private final ThrottleState throttle;
 
-    public Exit(boolean prevWasFlapping, long timestamp) {
-      this.prevWasFlapping = prevWasFlapping;
+    public Exit(long timestamp, TaskStatus.ThrottleState throttle) {
       this.timestamp = timestamp;
-    }
-
-    public boolean isPrevWasFlapping() {
-      return prevWasFlapping;
+      this.throttle = throttle;
     }
 
     public long getTimestamp() {
       return timestamp;
+    }
+
+    public ThrottleState getThrottle() {
+      return throttle;
     }
   }
 
@@ -35,28 +37,26 @@ public class FlapController {
   private static final int DEFAULT_FLAPPING_RESTART_COUNT = 10;
   /** If total runtime of the container over the last n restarts is less than this, we throttle. */
   private static final long DEFAULT_FLAPPING_TIME_RANGE_MILLIS = 60000;
-  /** Restart throttle interval if job is flapping */
-  private static final long DEFAULT_FLAPPING_RESTART_THROTTLE_MILLIS = 30000;
 
   private final int restartCount;
   private final long timeRangeMillis;
-  private final long throttleMillis;
+  private final RestartPolicy restartPolicy;
   private final JobId jobId;
   private final Clock clock;
 
   private volatile boolean isFlapping;
   private volatile ImmutableList<Exit> lastExits = ImmutableList.<Exit>of();
 
-  private FlapController(JobId jobId, int flappingRestartCount, long flappingTimeRangeMillis,
-                         long throttleMillis, Clock clock) {
+  private FlapController(final JobId jobId, final int flappingRestartCount, final long flappingTimeRangeMillis,
+                         final RestartPolicy restartPolicy, final Clock clock) {
     this.restartCount = flappingRestartCount;
     this.timeRangeMillis = flappingTimeRangeMillis;
     this.jobId = jobId;
-    this.throttleMillis = throttleMillis;
+    this.restartPolicy = restartPolicy;
     this.clock = clock;
   }
 
-  public void jobDied() {
+  public void jobDied(ThrottleState throttle) {
     // The CAS-loop here might be overkill...
     ImmutableList<Exit> newExits;
 
@@ -68,7 +68,7 @@ public class FlapController {
 
     newExits = ImmutableList.<Exit>builder()
         .addAll(trimmed)
-        .add(new Exit(isFlapping, clock.now().getMillis()))
+        .add(new Exit(clock.now().getMillis(), throttle))
         .build();
 
     lastExits = newExits;
@@ -83,9 +83,7 @@ public class FlapController {
     long totalTime = 0;
     for (int i = 1 ; i < restartCount; i++) {
       long deltaT = newExits.get(i).getTimestamp() - newExits.get(i-1).getTimestamp();
-      if (newExits.get(i-1).isPrevWasFlapping()) {
-        deltaT -= throttleMillis;
-      }
+      deltaT -= restartPolicy.restartThrottle((newExits.get(i).getThrottle()));
       totalTime += deltaT;
     }
 
@@ -105,20 +103,16 @@ public class FlapController {
     return isFlapping;
   }
 
-  public long getThrottleMillis() {
-    return throttleMillis;
-  }
-
   public static Builder newBuilder() {
     return new Builder();
   }
 
   public static class Builder {
     private JobId jobId;
-    private long throttleMillis = DEFAULT_FLAPPING_RESTART_THROTTLE_MILLIS;
     private int restartCount = DEFAULT_FLAPPING_RESTART_COUNT;
     private long timeRangeMillis = DEFAULT_FLAPPING_TIME_RANGE_MILLIS;
     private Clock clock = new SystemClock();
+    private RestartPolicy restartPolicy;
 
     private Builder() { }
 
@@ -127,8 +121,8 @@ public class FlapController {
       return this;
     }
 
-    public Builder setThrottleMillis(long throttleMillis) {
-      this.throttleMillis = throttleMillis;
+    public Builder setRestartPolicy(final RestartPolicy restartPolicy) {
+      this.restartPolicy = restartPolicy;
       return this;
     }
 
@@ -148,7 +142,7 @@ public class FlapController {
     }
 
     public FlapController build() {
-      return new FlapController(jobId, restartCount, timeRangeMillis, throttleMillis, clock);
+      return new FlapController(jobId, restartCount, timeRangeMillis, restartPolicy, clock);
     }
   }
 }

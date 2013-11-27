@@ -59,7 +59,6 @@ class Supervisor {
 
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
-  private static final long DEFAULT_RESTART_INTERVAL_MILLIS = 100;
   private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
 
 
@@ -73,7 +72,6 @@ class Supervisor {
   private final JobId jobId;
   private final Job job;
   private final AgentModel model;
-  private final long restartIntervalMillis;
   private final long retryIntervalMillis;
   private final Map<String, String> envVars;
   private final FlapController flapController;
@@ -82,6 +80,8 @@ class Supervisor {
   private volatile boolean closed;
   private volatile boolean starting;
   private volatile TaskStatus.State status;
+  private volatile TaskStatus.ThrottleState throttle = TaskStatus.ThrottleState.NO;
+  private RestartPolicy restartPolicy;
 
 
   /**
@@ -94,13 +94,13 @@ class Supervisor {
    */
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
-                     final long restartIntervalMillis, final long retryIntervalMillis,
+                     final RestartPolicy restartPolicy, final long retryIntervalMillis,
                      final Map<String, String> envVars, final FlapController flapController) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
     this.docker = checkNotNull(dockerClient);
-    this.restartIntervalMillis = restartIntervalMillis;
+    this.restartPolicy = checkNotNull(restartPolicy);
     this.retryIntervalMillis = retryIntervalMillis;
     this.envVars = checkNotNull(envVars);
     this.flapController = checkNotNull(flapController);
@@ -157,7 +157,7 @@ class Supervisor {
       @Override
       public void onSuccess(final Integer exitCode) {
         synchronized (sync) {
-          startJob(flapController.isFlapping() ? flapController.getThrottleMillis() : restartIntervalMillis);
+          startJob(restartPolicy.restartThrottle(throttle));
         }
       }
 
@@ -385,7 +385,9 @@ class Supervisor {
         // Wait for container to die
         final int exitCode = docker.waitContainer(containerId).get();
         log.info("container exited: {}: {}: {}", job, containerId, exitCode);
-        flapController.jobDied();
+        flapController.jobDied(throttle);
+        throttle = flapController.isFlapping()
+            ? TaskStatus.ThrottleState.FLAPPING : TaskStatus.ThrottleState.NO;
         setStatus(EXITED, containerId);
 
         set(exitCode);
@@ -456,13 +458,18 @@ class Supervisor {
     private Job descriptor;
     private AgentModel model;
     private AsyncDockerClient dockerClient;
-    private long restartIntervalMillis = DEFAULT_RESTART_INTERVAL_MILLIS;
     private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
     private Map<String, String> envVars = Collections.emptyMap();
     private FlapController flapController;
+    private RestartPolicy restartPolicy;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
+      return this;
+    }
+
+    public Builder setRestartPolicy(final RestartPolicy restartPolicy) {
+      this.restartPolicy = restartPolicy;
       return this;
     }
 
@@ -478,11 +485,6 @@ class Supervisor {
 
     public Builder setDockerClient(final AsyncDockerClient dockerClient) {
       this.dockerClient = dockerClient;
-      return this;
-    }
-
-    public Builder setRestartIntervalMillis(final long restartIntervalMillis) {
-      this.restartIntervalMillis = restartIntervalMillis;
       return this;
     }
 
@@ -503,7 +505,7 @@ class Supervisor {
 
 
     public Supervisor build() {
-      return new Supervisor(jobId, descriptor, model, dockerClient, restartIntervalMillis,
+      return new Supervisor(jobId, descriptor, model, dockerClient, restartPolicy,
                             retryIntervalMillis, envVars, flapController);
     }
   }
