@@ -23,7 +23,7 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.descriptors.TaskStatus.ThrottleState;
+import com.spotify.helios.common.descriptors.ThrottleState;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.slf4j.Logger;
@@ -80,7 +80,7 @@ class Supervisor {
   private volatile boolean closed;
   private volatile boolean starting;
   private volatile TaskStatus.State status;
-  private volatile TaskStatus.ThrottleState throttle = TaskStatus.ThrottleState.NO;
+  private volatile ThrottleState throttle = ThrottleState.NO;
   private RestartPolicy restartPolicy;
 
 
@@ -387,7 +387,7 @@ class Supervisor {
         log.info("container exited: {}: {}: {}", job, containerId, exitCode);
         flapController.jobDied(throttle);
         throttle = flapController.isFlapping()
-            ? TaskStatus.ThrottleState.FLAPPING : TaskStatus.ThrottleState.NO;
+            ? ThrottleState.FLAPPING : ThrottleState.NO;
         setStatus(EXITED, containerId);
 
         set(exitCode);

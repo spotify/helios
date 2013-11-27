@@ -1,7 +1,6 @@
 package com.spotify.helios.agent;
 
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.joda.time.Instant;
 import org.junit.Test;
@@ -9,13 +8,11 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static org.junit.Assert.assertEquals;
+import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
+import static com.spotify.helios.common.descriptors.ThrottleState.NO;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
-
-import static com.spotify.helios.common.descriptors.TaskStatus.ThrottleState.NO;
-import static com.spotify.helios.common.descriptors.TaskStatus.ThrottleState.FLAPPING;;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FlapControllerTest {

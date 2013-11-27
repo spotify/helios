@@ -16,6 +16,7 @@ import com.kpelykh.docker.client.model.Image;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.ThrottleState;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -157,7 +158,7 @@ public class SupervisorTest {
                                                   containerNameCaptor.capture());
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, CREATING, null,
-                                               TaskStatus.ThrottleState.NO)));
+                                               ThrottleState.NO)));
     assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
@@ -172,7 +173,7 @@ public class SupervisorTest {
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, STARTING,
                                                                  containerId,
-                                                                 TaskStatus.ThrottleState.NO)));
+                                                                 ThrottleState.NO)));
     assertEquals(STARTING, sut.getStatus());
     startFuture.set(null);
 
@@ -180,7 +181,7 @@ public class SupervisorTest {
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, RUNNING,
                                                                  containerId,
-                                                                 TaskStatus.ThrottleState.NO)));
+                                                                 ThrottleState.NO)));
     assertEquals(RUNNING, sut.getStatus());
 
     // Stop the job
@@ -204,7 +205,7 @@ public class SupervisorTest {
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, STOPPED,
                                                                  containerId,
-                                                                 TaskStatus.ThrottleState.NO)));
+                                                                 ThrottleState.NO)));
     assertEquals(STOPPED, sut.getStatus());
   }
 

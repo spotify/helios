@@ -13,6 +13,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.ThrottleState;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -129,10 +130,10 @@ public class AgentTest {
 
     jobStatuses.put(FOO_DESCRIPTOR.getId(),
                     new TaskStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1",
-                        TaskStatus.ThrottleState.NO));
+                        ThrottleState.NO));
     jobStatuses.put(BAR_DESCRIPTOR.getId(),
                     new TaskStatus(BAR_DESCRIPTOR, RUNNING, "bar-container-1",
-                        TaskStatus.ThrottleState.NO));
+                        ThrottleState.NO));
 
     when(fooSupervisor.isStarting()).thenReturn(false);
     when(barSupervisor.isStarting()).thenReturn(true);
@@ -157,7 +158,7 @@ public class AgentTest {
   public void verifyAgentRecoversStateAndStopsUndesiredSupervisors() {
     jobStatuses.put(FOO_DESCRIPTOR.getId(),
                     new TaskStatus(FOO_DESCRIPTOR, CREATING, "foo-container-1",
-                        TaskStatus.ThrottleState.NO));
+                        ThrottleState.NO));
 
     startAgent();
 

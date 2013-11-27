@@ -1,6 +1,6 @@
 package com.spotify.helios.agent;
 
-import com.spotify.helios.common.descriptors.TaskStatus.ThrottleState;
+import com.spotify.helios.common.descriptors.ThrottleState;
 
 public class RestartPolicy {
   /** Restart throttle interval if job is flapping */

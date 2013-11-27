@@ -23,7 +23,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
-import com.spotify.helios.common.descriptors.TaskStatus.ThrottleState;
+import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
@@ -320,7 +320,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setUser(TEST_USER)
         .setEndpoints(masterEndpoint)
         .build();
-   awaitJobThrottle(control, TEST_AGENT, jobId, TaskStatus.ThrottleState.FLAPPING, 20, SECONDS);
+   awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.FLAPPING, 20, SECONDS);
   }
 
   @Test
@@ -468,7 +468,7 @@ public class SystemTest extends ZooKeeperTestBase {
 
   private TaskStatus awaitJobThrottle(final Client controlClient, final String slave,
                                       final JobId jobId,
-                                      final TaskStatus.ThrottleState throttled, final int timeout,
+                                      final ThrottleState throttled, final int timeout,
                                       final TimeUnit timeunit) throws Exception {
       return await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override

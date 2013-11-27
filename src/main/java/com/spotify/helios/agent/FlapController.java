@@ -4,8 +4,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.descriptors.TaskStatus.ThrottleState;
+import com.spotify.helios.common.descriptors.ThrottleState;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,7 +16,7 @@ public class FlapController {
     private final long timestamp;
     private final ThrottleState throttle;
 
-    public Exit(long timestamp, TaskStatus.ThrottleState throttle) {
+    public Exit(long timestamp, ThrottleState throttle) {
       this.timestamp = timestamp;
       this.throttle = throttle;
     }

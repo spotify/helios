@@ -14,7 +14,6 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.descriptors.TaskStatus.ThrottleState;
 import com.spotify.helios.common.protocol.JobStatus;
 
 import net.sourceforge.argparse4j.inf.Argument;

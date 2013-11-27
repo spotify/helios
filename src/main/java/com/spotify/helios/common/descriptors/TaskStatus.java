@@ -22,11 +22,6 @@ public class TaskStatus extends Descriptor {
     STOPPED
   }
 
-  public enum ThrottleState {
-    NO,
-    FLAPPING
-  }
-
   private final Job job;
   private final State state;
   private final String containerId;
