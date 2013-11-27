@@ -21,12 +21,6 @@ public class FlapControllerTest {
 
   @Test
   public void testEnterAndExitFlapping() throws Exception {
-    when(clock.now()).thenReturn(
-      new Instant(1),
-      new Instant(2),
-      new Instant(8),
-      new Instant(34));
-
     RestartPolicy policy = RestartPolicy.newBuilder()
         .setFlappingThrottleMills(5)
         .setNormalRestartIntervalMillis(0)
@@ -41,15 +35,20 @@ public class FlapControllerTest {
         .build();
 
     assertFalse(controller.isFlapping());
+
+    when(clock.now()).thenReturn(new Instant(1));
     controller.jobDied(NO); // 1 second of runtime T=1
     assertFalse(controller.isFlapping());
 
+    when(clock.now()).thenReturn(new Instant(2));
     controller.jobDied(NO); // total of 2ms of runtime T=2
     assertTrue(controller.isFlapping()); // next time job would start would be at t=7 seconds
 
+    when(clock.now()).thenReturn(new Instant(8));
     controller.jobDied(NO); // total of 3ms of runtime T=8 (5 of that is throttle)
     assertTrue(controller.isFlapping()); // next time job would start would be at t=13
 
+    when(clock.now()).thenReturn(new Instant(34));
     controller.jobDied(FLAPPING); // ran 21ms additionally here, so should disengage flapping T=34
     assertFalse(controller.isFlapping());
   }
