@@ -93,7 +93,7 @@ public class FlapController {
     setFlapping(totalTime < timeRangeMillis);
   }
 
-  public void setFlapping(boolean isFlapping) {
+  private void setFlapping(boolean isFlapping) {
     if (this.isFlapping != isFlapping) {
       log.info("JobId {} flapping status changed from {} to {}", jobId,
           this.isFlapping, isFlapping);
@@ -139,6 +139,11 @@ public class FlapController {
 
     public Builder setTimeRangeMillis(final long timeRangeMillis) {
       this.timeRangeMillis = timeRangeMillis;
+      return this;
+    }
+
+    public Builder setClock(final Clock clock) {
+      this.clock = clock;
       return this;
     }
 
