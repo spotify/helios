@@ -69,7 +69,7 @@ public class JobCreateCommand extends ControlCommand {
 
     final boolean quiet = options.getBoolean(quietArg.getDest());
 
-    final List<List<String>> envList = options.getList("env");
+    final List<List<String>> envList = options.getList(envArg.getDest());
     final Map<String, String> env = Maps.newHashMap();
     if (env != null) {
       for (final List<String> group : envList) {
