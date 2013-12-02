@@ -56,10 +56,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Supervises docker containers for a single job.
  */
 class Supervisor {
-
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
-
-
 
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
       new ThreadFactoryBuilder().setNameFormat("helios-supervisor-runner-%d").build();
@@ -73,14 +70,13 @@ class Supervisor {
   private final AgentModel model;
   private final Map<String, String> envVars;
   private final FlapController flapController;
+  private final RestartPolicy restartPolicy;
 
   private volatile Runner runner;
   private volatile boolean closed;
   private volatile boolean starting;
   private volatile TaskStatus.State status;
   private volatile ThrottleState throttle = ThrottleState.NO;
-  private RestartPolicy restartPolicy;
-
 
   /**
    * Create a new job supervisor.

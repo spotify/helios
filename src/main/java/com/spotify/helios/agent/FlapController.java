@@ -58,20 +58,16 @@ public class FlapController {
   }
 
   public void jobDied() {
-    // The CAS-loop here might be overkill...
-    ImmutableList<Exit> newExits;
-
     List<Exit> trimmed = Lists.newArrayList(lastExits);
 
     while (trimmed.size() >= restartCount) {
       trimmed.remove(0);
     }
 
-    newExits = ImmutableList.<Exit>builder()
+    ImmutableList<Exit> newExits = ImmutableList.<Exit>builder()
         .addAll(trimmed)
         .add(new Exit(mostRecentStartTime, clock.now().getMillis()))
         .build();
-
     lastExits = newExits;
 
     // Not restarted enough times to be considered flapping
