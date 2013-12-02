@@ -23,6 +23,7 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.ThrottleState;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.slf4j.Logger;
@@ -55,12 +56,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Supervises docker containers for a single job.
  */
 class Supervisor {
-
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
-
-  private static final long DEFAULT_RESTART_INTERVAL_MILLIS = 100;
-  private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
-
 
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
       new ThreadFactoryBuilder().setNameFormat("helios-supervisor-runner-%d").build();
@@ -72,15 +68,15 @@ class Supervisor {
   private final JobId jobId;
   private final Job job;
   private final AgentModel model;
-  private final long restartIntervalMillis;
-  private final long retryIntervalMillis;
   private final Map<String, String> envVars;
+  private final FlapController flapController;
+  private final RestartPolicy restartPolicy;
 
   private volatile Runner runner;
   private volatile boolean closed;
   private volatile boolean starting;
   private volatile TaskStatus.State status;
-
+  private volatile ThrottleState throttle = ThrottleState.NO;
 
   /**
    * Create a new job supervisor.
@@ -92,15 +88,15 @@ class Supervisor {
    */
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
-                     final long restartIntervalMillis, final long retryIntervalMillis,
-                     final Map<String, String> envVars) {
+                     final RestartPolicy restartPolicy, final Map<String, String> envVars,
+                     final FlapController flapController) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
     this.docker = checkNotNull(dockerClient);
-    this.restartIntervalMillis = restartIntervalMillis;
-    this.retryIntervalMillis = retryIntervalMillis;
+    this.restartPolicy = checkNotNull(restartPolicy);
     this.envVars = checkNotNull(envVars);
+    this.flapController = checkNotNull(flapController);
   }
 
   /**
@@ -154,7 +150,7 @@ class Supervisor {
       @Override
       public void onSuccess(final Integer exitCode) {
         synchronized (sync) {
-          startJob(restartIntervalMillis);
+          startJob(restartPolicy.restartThrottle(throttle));
         }
       }
 
@@ -166,7 +162,7 @@ class Supervisor {
           log.error("task runner threw exception", t);
         }
         synchronized (sync) {
-          startJob(retryIntervalMillis);
+          startJob(restartPolicy.getRetryIntervalMillis());
         }
       }
     });
@@ -244,7 +240,8 @@ class Supervisor {
    * Persist job status.
    */
   private void setStatus(final TaskStatus.State status, final String containerId) {
-    model.setTaskStatus(jobId, new TaskStatus(job, status, containerId));
+    model.setTaskStatus(jobId, new TaskStatus(job, status, containerId,
+        flapController.isFlapping() ? ThrottleState.FLAPPING : ThrottleState.NO));
     this.status = status;
   }
 
@@ -375,12 +372,15 @@ class Supervisor {
           startFuture.get();
           log.info("started container: {}: {}: {}", job, containerId, containerInfo);
         }
-
+        flapController.jobStarted();
         setStatus(RUNNING, containerId);
 
         // Wait for container to die
         final int exitCode = docker.waitContainer(containerId).get();
         log.info("container exited: {}: {}: {}", job, containerId, exitCode);
+        flapController.jobDied();
+        throttle = flapController.isFlapping()
+            ? ThrottleState.FLAPPING : ThrottleState.NO;
         setStatus(EXITED, containerId);
 
         set(exitCode);
@@ -451,12 +451,17 @@ class Supervisor {
     private Job descriptor;
     private AgentModel model;
     private AsyncDockerClient dockerClient;
-    private long restartIntervalMillis = DEFAULT_RESTART_INTERVAL_MILLIS;
-    private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
     private Map<String, String> envVars = Collections.emptyMap();
+    private FlapController flapController;
+    private RestartPolicy restartPolicy;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
+      return this;
+    }
+
+    public Builder setRestartPolicy(final RestartPolicy restartPolicy) {
+      this.restartPolicy = restartPolicy;
       return this;
     }
 
@@ -475,25 +480,21 @@ class Supervisor {
       return this;
     }
 
-    public Builder setRestartIntervalMillis(final long restartIntervalMillis) {
-      this.restartIntervalMillis = restartIntervalMillis;
-      return this;
-    }
-
-    public Builder setRetryIntervalMillis(final long retryIntervalMillis) {
-      this.retryIntervalMillis = retryIntervalMillis;
-      return this;
-    }
 
     public Builder setEnvVars(Map<String, String> envVars) {
       this.envVars = envVars;
       return this;
     }
 
-    public Supervisor build() {
-      return new Supervisor(jobId, descriptor, model, dockerClient, restartIntervalMillis,
-                            retryIntervalMillis, envVars);
+    public Builder setFlapController(FlapController flapController) {
+      this.flapController = flapController;
+      return this;
     }
 
+
+    public Supervisor build() {
+      return new Supervisor(jobId, descriptor, model, dockerClient, restartPolicy,
+                            envVars, flapController);
+    }
   }
 }

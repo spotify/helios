@@ -16,6 +16,7 @@ import com.kpelykh.docker.client.model.Image;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.ThrottleState;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -88,14 +89,18 @@ public class SupervisorTest {
 
   @Before
   public void setup() {
+    RestartPolicy policy = RestartPolicy.newBuilder()
+        .setNormalRestartIntervalMillis(10)
+        .setRetryIntervalMillis(10)
+        .build();
     sut = Supervisor.newBuilder()
         .setJobId(JOB_ID)
         .setDescriptor(DESCRIPTOR)
         .setModel(model)
         .setDockerClient(docker)
-        .setRestartIntervalMillis(10)
-        .setRetryIntervalMillis(10)
+        .setRestartPolicy(policy)
         .setEnvVars(ENV)
+        .setFlapController(FlapController.newBuilder().setJobId(JOB_ID).build())
         .build();
     when(docker.getImages(IMAGE)).thenReturn(immediateFuture(DOCKER_IMAGES));
 
@@ -154,7 +159,8 @@ public class SupervisorTest {
     verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture(),
                                                   containerNameCaptor.capture());
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
-                                               eq(new TaskStatus(DESCRIPTOR, CREATING, null)));
+                                               eq(new TaskStatus(DESCRIPTOR, CREATING, null,
+                                               ThrottleState.NO)));
     assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
@@ -168,14 +174,16 @@ public class SupervisorTest {
     verify(docker, timeout(1000)).startContainer(containerId);
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, STARTING,
-                                                                 containerId)));
+                                                                 containerId,
+                                                                 ThrottleState.NO)));
     assertEquals(STARTING, sut.getStatus());
     startFuture.set(null);
 
     verify(docker, timeout(1000)).waitContainer(containerId);
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, RUNNING,
-                                                                 containerId)));
+                                                                 containerId,
+                                                                 ThrottleState.NO)));
     assertEquals(RUNNING, sut.getStatus());
 
     // Stop the job
@@ -198,7 +206,8 @@ public class SupervisorTest {
     // Verify that the stopped state is signalled
     verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
                                                eq(new TaskStatus(DESCRIPTOR, STOPPED,
-                                                                 containerId)));
+                                                                 containerId,
+                                                                 ThrottleState.NO)));
     assertEquals(STOPPED, sut.getStatus());
   }
 

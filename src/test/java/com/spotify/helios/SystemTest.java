@@ -23,6 +23,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
+import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
@@ -310,6 +311,19 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   @Test
+  public void testFlapping() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(TEST_AGENT);
+    JobId jobId = createJob("JOB_NAME", "JOB_VERSION", "busybox", ImmutableList.of("/bin/true"));
+    deployJob(jobId, TEST_AGENT);
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+   awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.FLAPPING, 20, SECONDS);
+  }
+
+  @Test
   public void testService() throws Exception {
     final String agentName = "foobar";
     final String jobName = "foo";
@@ -448,6 +462,20 @@ public class SystemTest extends ZooKeeperTestBase {
         final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
         return (taskStatus != null && taskStatus.getState() == state) ? taskStatus
                                                                       : null;
+      }
+    });
+  }
+
+  private TaskStatus awaitJobThrottle(final Client controlClient, final String slave,
+                                      final JobId jobId,
+                                      final ThrottleState throttled, final int timeout,
+                                      final TimeUnit timeunit) throws Exception {
+      return await(timeout, timeunit, new Callable<TaskStatus>() {
+      @Override
+      public TaskStatus call() throws Exception {
+        final AgentStatus agentStatus = controlClient.agentStatus(slave).get();
+        final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
+        return (taskStatus != null && taskStatus.getThrottled() == throttled) ? taskStatus : null;
       }
     });
   }

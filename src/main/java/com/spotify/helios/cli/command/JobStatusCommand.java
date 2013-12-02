@@ -65,7 +65,7 @@ public class JobStatusCommand extends ControlCommand {
     } else {
       // TODO (dano): this explodes the job into one row per agent, is that sane/expected?
       final Table table = table(out);
-      table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND", "ENVIRONMENT");
+      table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND", "THROTTLED?", "ENVIRONMENT");
       for (final JobId jobId : jobIds) {
         final JobStatus jobStatus = statuses.get(jobId);
         final Map<String, TaskStatus> taskStatuses = jobStatus.getTaskStatuses();
@@ -73,7 +73,7 @@ public class JobStatusCommand extends ControlCommand {
           final TaskStatus ts = taskStatuses.get(host);
           final String command = on(' ').join(ts.getJob().getCommand());
           final String env = Joiner.on(" ").withKeyValueSeparator("=").join(ts.getJob().getEnv());
-          table.row(jobId, host, ts.getState(), ts.getContainerId(), command, env);
+          table.row(jobId, host, ts.getState(), ts.getContainerId(), command, ts.getThrottled(), env);
         }
       }
       table.print();

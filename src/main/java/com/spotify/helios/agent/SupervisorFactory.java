@@ -32,6 +32,10 @@ public class SupervisorFactory {
    * @return A new container.
    */
   public Supervisor create(final JobId jobId, final Job descriptor) {
+    final RestartPolicy policy = RestartPolicy.newBuilder().build();
+    final FlapController flapController = FlapController.newBuilder()
+        .setJobId(jobId)
+        .build();
     final AsyncDockerClient dockerClient = new AsyncDockerClient(dockerClientFactory);
     return Supervisor.newBuilder()
         .setJobId(jobId)
@@ -39,6 +43,8 @@ public class SupervisorFactory {
         .setModel(model)
         .setDockerClient(dockerClient)
         .setEnvVars(envVars)
+        .setFlapController(flapController)
+        .setRestartPolicy(policy)
         .build();
   }
 }
