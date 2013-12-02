@@ -35,7 +35,6 @@ public class SupervisorFactory {
     final RestartPolicy policy = RestartPolicy.newBuilder().build();
     final FlapController flapDetector = FlapController.newBuilder()
         .setJobId(jobId)
-        .setRestartPolicy(policy)
         .build();
     final AsyncDockerClient dockerClient = new AsyncDockerClient(dockerClientFactory);
     return Supervisor.newBuilder()

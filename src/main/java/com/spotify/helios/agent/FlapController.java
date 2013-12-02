@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.ThrottleState;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,20 +12,20 @@ import java.util.List;
 
 public class FlapController {
   private static class Exit {
-    private final long timestamp;
-    private final ThrottleState throttle;
+    private final long start;
+    private final long stop;
 
-    public Exit(long timestamp, ThrottleState throttle) {
-      this.timestamp = timestamp;
-      this.throttle = throttle;
+    public Exit(long start, long stop) {
+      this.start = start;
+      this.stop = stop;
     }
 
-    public long getTimestamp() {
-      return timestamp;
+    public long getStart() {
+      return start;
     }
 
-    public ThrottleState getThrottle() {
-      return throttle;
+    public long getStop() {
+      return stop;
     }
   }
 
@@ -39,23 +38,26 @@ public class FlapController {
 
   private final int restartCount;
   private final long timeRangeMillis;
-  private final RestartPolicy restartPolicy;
   private final JobId jobId;
   private final Clock clock;
 
   private volatile boolean isFlapping;
   private volatile ImmutableList<Exit> lastExits = ImmutableList.<Exit>of();
+  private volatile long mostRecentStartTime = 0;
 
-  private FlapController(final JobId jobId, final int flappingRestartCount, final long flappingTimeRangeMillis,
-                         final RestartPolicy restartPolicy, final Clock clock) {
+  private FlapController(final JobId jobId, final int flappingRestartCount,
+                         final long flappingTimeRangeMillis, final Clock clock) {
     this.restartCount = flappingRestartCount;
     this.timeRangeMillis = flappingTimeRangeMillis;
     this.jobId = jobId;
-    this.restartPolicy = restartPolicy;
     this.clock = clock;
   }
 
-  public void jobDied(ThrottleState throttle) {
+  public void jobStarted() {
+    mostRecentStartTime = clock.now().getMillis();
+  }
+
+  public void jobDied() {
     // The CAS-loop here might be overkill...
     ImmutableList<Exit> newExits;
 
@@ -67,7 +69,7 @@ public class FlapController {
 
     newExits = ImmutableList.<Exit>builder()
         .addAll(trimmed)
-        .add(new Exit(clock.now().getMillis(), throttle))
+        .add(new Exit(mostRecentStartTime, clock.now().getMillis()))
         .build();
 
     lastExits = newExits;
@@ -78,16 +80,13 @@ public class FlapController {
       return;
     }
 
-    // Compute the amount of time between exits, adjusting for the restart throttle
-    long totalTime = 0;
-    for (int i = 1 ; i < restartCount; i++) {
-      long deltaT = newExits.get(i).getTimestamp() - newExits.get(i-1).getTimestamp();
-      deltaT -= restartPolicy.restartThrottle((newExits.get(i).getThrottle()));
-      totalTime += deltaT;
+    int totalRunningTime = 0;
+    for (Exit exit : newExits) {
+      totalRunningTime += exit.getStop() - exit.getStart();
     }
 
     // If not running enough, we're flapping
-    setFlapping(totalTime < timeRangeMillis);
+    setFlapping(totalRunningTime < timeRangeMillis);
   }
 
   private void setFlapping(boolean isFlapping) {
@@ -111,17 +110,11 @@ public class FlapController {
     private int restartCount = DEFAULT_FLAPPING_RESTART_COUNT;
     private long timeRangeMillis = DEFAULT_FLAPPING_TIME_RANGE_MILLIS;
     private Clock clock = new SystemClock();
-    private RestartPolicy restartPolicy;
 
     private Builder() { }
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
-      return this;
-    }
-
-    public Builder setRestartPolicy(final RestartPolicy restartPolicy) {
-      this.restartPolicy = restartPolicy;
       return this;
     }
 
@@ -141,7 +134,7 @@ public class FlapController {
     }
 
     public FlapController build() {
-      return new FlapController(jobId, restartCount, timeRangeMillis, restartPolicy, clock);
+      return new FlapController(jobId, restartCount, timeRangeMillis, clock);
     }
   }
 }

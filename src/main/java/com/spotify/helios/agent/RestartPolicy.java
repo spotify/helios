@@ -3,17 +3,23 @@ package com.spotify.helios.agent;
 import com.spotify.helios.common.descriptors.ThrottleState;
 
 public class RestartPolicy {
-  /** Restart throttle interval if job is flapping */
   private static final long DEFAULT_FLAPPING_RESTART_THROTTLE_MILLIS = 30000;
-
   private static final long DEFAULT_RESTART_INTERVAL_MILLIS = 100;
+  private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
 
   private final long restartIntervalMillis;
   private final long flappingThrottleMillis;
+  private final long retryIntervalMillis;
 
-  public RestartPolicy(long restartIntervalMillis, long flappingThrottleMillis) {
+  public RestartPolicy(long restartIntervalMillis, long flappingThrottleMillis,
+                       long retryIntervalMillis) {
     this.restartIntervalMillis = restartIntervalMillis;
     this.flappingThrottleMillis = flappingThrottleMillis;
+    this.retryIntervalMillis = retryIntervalMillis;
+  }
+
+  public long getRetryIntervalMillis() {
+    return retryIntervalMillis;
   }
 
   public long restartThrottle(ThrottleState throttle) {
@@ -33,6 +39,7 @@ public class RestartPolicy {
   public static class Builder {
     private long restartIntervalMillis = DEFAULT_RESTART_INTERVAL_MILLIS;
     private long flappingThrottleMillis = DEFAULT_FLAPPING_RESTART_THROTTLE_MILLIS;
+    private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
 
     private Builder() {}
 
@@ -46,8 +53,13 @@ public class RestartPolicy {
       return this;
     }
 
+    public Builder setRetryIntervalMillis(long retryIntervalMillis) {
+      this.retryIntervalMillis = retryIntervalMillis;
+      return this;
+    }
+
     public RestartPolicy build() {
-      return new RestartPolicy(restartIntervalMillis, flappingThrottleMillis);
+      return new RestartPolicy(restartIntervalMillis, flappingThrottleMillis, retryIntervalMillis);
     }
   }
 }

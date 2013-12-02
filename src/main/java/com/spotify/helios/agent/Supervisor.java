@@ -59,7 +59,6 @@ class Supervisor {
 
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
-  private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
 
 
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
@@ -72,7 +71,6 @@ class Supervisor {
   private final JobId jobId;
   private final Job job;
   private final AgentModel model;
-  private final long retryIntervalMillis;
   private final Map<String, String> envVars;
   private final FlapController flapController;
 
@@ -94,14 +92,13 @@ class Supervisor {
    */
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
-                     final RestartPolicy restartPolicy, final long retryIntervalMillis,
-                     final Map<String, String> envVars, final FlapController flapController) {
+                     final RestartPolicy restartPolicy, final Map<String, String> envVars,
+                     final FlapController flapController) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
     this.docker = checkNotNull(dockerClient);
     this.restartPolicy = checkNotNull(restartPolicy);
-    this.retryIntervalMillis = retryIntervalMillis;
     this.envVars = checkNotNull(envVars);
     this.flapController = checkNotNull(flapController);
   }
@@ -169,7 +166,7 @@ class Supervisor {
           log.error("task runner threw exception", t);
         }
         synchronized (sync) {
-          startJob(retryIntervalMillis);
+          startJob(restartPolicy.getRetryIntervalMillis());
         }
       }
     });
@@ -379,13 +376,13 @@ class Supervisor {
           startFuture.get();
           log.info("started container: {}: {}: {}", job, containerId, containerInfo);
         }
-
+        flapController.jobStarted();
         setStatus(RUNNING, containerId);
 
         // Wait for container to die
         final int exitCode = docker.waitContainer(containerId).get();
         log.info("container exited: {}: {}: {}", job, containerId, exitCode);
-        flapController.jobDied(throttle);
+        flapController.jobDied();
         throttle = flapController.isFlapping()
             ? ThrottleState.FLAPPING : ThrottleState.NO;
         setStatus(EXITED, containerId);
@@ -458,7 +455,6 @@ class Supervisor {
     private Job descriptor;
     private AgentModel model;
     private AsyncDockerClient dockerClient;
-    private long retryIntervalMillis = DEFAULT_RETRY_INTERVAL_MILLIS;
     private Map<String, String> envVars = Collections.emptyMap();
     private FlapController flapController;
     private RestartPolicy restartPolicy;
@@ -488,10 +484,6 @@ class Supervisor {
       return this;
     }
 
-    public Builder setRetryIntervalMillis(final long retryIntervalMillis) {
-      this.retryIntervalMillis = retryIntervalMillis;
-      return this;
-    }
 
     public Builder setEnvVars(Map<String, String> envVars) {
       this.envVars = envVars;
@@ -506,7 +498,7 @@ class Supervisor {
 
     public Supervisor build() {
       return new Supervisor(jobId, descriptor, model, dockerClient, restartPolicy,
-                            retryIntervalMillis, envVars, flapController);
+                            envVars, flapController);
     }
   }
 }

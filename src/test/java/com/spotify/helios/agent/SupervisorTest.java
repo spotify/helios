@@ -89,14 +89,16 @@ public class SupervisorTest {
 
   @Before
   public void setup() {
-    RestartPolicy policy = RestartPolicy.newBuilder().setNormalRestartIntervalMillis(10).build();
+    RestartPolicy policy = RestartPolicy.newBuilder()
+        .setNormalRestartIntervalMillis(10)
+        .setRetryIntervalMillis(10)
+        .build();
     sut = Supervisor.newBuilder()
         .setJobId(JOB_ID)
         .setDescriptor(DESCRIPTOR)
         .setModel(model)
         .setDockerClient(docker)
         .setRestartPolicy(policy)
-        .setRetryIntervalMillis(10)
         .setEnvVars(ENV)
         .setFlapController(FlapController.newBuilder().setJobId(JOB_ID).build())
         .build();
