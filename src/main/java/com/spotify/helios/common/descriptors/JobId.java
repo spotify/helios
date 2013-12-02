@@ -14,7 +14,7 @@ import javax.annotation.Nullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class JobId implements Comparable<JobId> {
+public class JobId extends Descriptor implements Comparable<JobId> {
 
   private final String name;
   private final String version;

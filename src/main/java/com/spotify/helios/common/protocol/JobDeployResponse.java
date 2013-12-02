@@ -9,6 +9,7 @@ public class JobDeployResponse {
   public enum Status {
     OK,
     JOB_NOT_FOUND,
+    PORT_CONFLICT,
     AGENT_NOT_FOUND,
     JOB_ALREADY_DEPLOYED,
     ID_MISMATCH,

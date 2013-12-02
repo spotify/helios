@@ -67,6 +67,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
@@ -322,6 +323,53 @@ public class SystemTest extends ZooKeeperTestBase {
         .setEndpoints(masterEndpoint)
         .build();
    awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.FLAPPING, 20, SECONDS);
+  }
+
+  @Test
+  public void testPortCollision() throws Exception {
+    final String agentName = "foobar";
+    final int externalPort = 4711;
+
+    startDefaultMaster();
+    startDefaultAgent(agentName);
+
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    final List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
+
+
+    final Job job1 = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("busybox")
+        .setCommand(command)
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(10001, externalPort)))
+        .build();
+
+    final Job job2 = Job.newBuilder()
+        .setName("bar")
+        .setVersion("1")
+        .setImage("busybox")
+        .setCommand(command)
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(10002, externalPort)))
+        .build();
+
+    final CreateJobResponse created1 = control.createJob(job1).get();
+    assertEquals(CreateJobResponse.Status.OK, created1.getStatus());
+
+    final CreateJobResponse created2 = control.createJob(job2).get();
+    assertEquals(CreateJobResponse.Status.OK, created2.getStatus());
+
+    final Deployment deployment1 = Deployment.of(job1.getId(), STOP);
+    final JobDeployResponse deployed1 = control.deploy(deployment1, agentName).get();
+    assertEquals(JobDeployResponse.Status.OK, deployed1.getStatus());
+
+    final Deployment deployment2 = Deployment.of(job2.getId(), STOP);
+    final JobDeployResponse deployed2 = control.deploy(deployment2, agentName).get();
+    assertEquals(JobDeployResponse.Status.PORT_CONFLICT, deployed2.getStatus());
   }
 
   @Test

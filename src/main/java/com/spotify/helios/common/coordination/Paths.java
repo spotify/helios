@@ -18,6 +18,7 @@ public class Paths {
   public static final String HISTORY = "history";
   private static final String HOSTINFO = "hostinfo";
   private static final String RUNTIMEINFO = "runtimeinfo";
+  private static final String PORTS = "ports";
 
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
   private static final PathFactory CONFIG_AGENTS = new PathFactory("/", CONFIG, AGENTS);
@@ -55,6 +56,14 @@ public class Paths {
 
   public static String configAgentJob(final String agent, final JobId jobId) {
     return CONFIG_AGENTS.path(agent, JOBS, jobId.toString());
+  }
+
+  public static String configAgentPorts(final String agent) {
+    return CONFIG_AGENTS.path(agent, PORTS);
+  }
+
+  public static String configAgentPort(final String agent, final int port) {
+    return CONFIG_AGENTS.path(agent, PORTS, String.valueOf(port));
   }
 
   public static String statusAgent(final String agent) {

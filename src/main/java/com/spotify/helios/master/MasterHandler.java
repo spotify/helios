@@ -15,6 +15,7 @@ import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.JobNotDeployedException;
+import com.spotify.helios.common.JobPortAllocationConflictException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.Json;
@@ -219,6 +220,9 @@ public class MasterHandler extends MatchingHandler {
 
     try {
       model.deployJob(agent, deployment);
+    } catch (JobPortAllocationConflictException e){
+      code = BAD_REQUEST;
+      detailStatus = JobDeployResponse.Status.PORT_CONFLICT;
     } catch (JobDoesNotExistException e) {
       code = NOT_FOUND;
       detailStatus = JobDeployResponse.Status.JOB_NOT_FOUND;
