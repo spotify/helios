@@ -13,6 +13,7 @@ import com.kpelykh.docker.client.model.Container;
 import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
+import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.Image;
 import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.sun.jersey.api.client.ClientResponse;
@@ -88,6 +89,17 @@ public class AsyncDockerClient {
       @Override
       public Void call() throws Exception {
         client().startContainer(containerId);
+        return null;
+      }
+    });
+  }
+
+  public ListenableFuture<Void> startContainer(final String containerId,
+                                               final HostConfig hostConfig) {
+    return executor.submit(new Callable<Void>() {
+      @Override
+      public Void call() throws Exception {
+        client().startContainer(containerId, hostConfig);
         return null;
       }
     });

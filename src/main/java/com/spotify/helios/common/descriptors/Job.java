@@ -29,22 +29,26 @@ import static java.util.Collections.emptyMap;
 public class Job extends Descriptor implements Comparable<Job> {
 
   public static final Map<String, String> EMPTY_ENV = emptyMap();
+  private static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
 
   private final JobId id;
   private final String image;
   private final List<String> command;
   private final Map<String, String> env;
+  private final Map<String, PortMapping> ports;
 
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
              @JsonProperty("command") final List<String> command,
-             @JsonProperty("env") final Map<String, String> env) {
+             @JsonProperty("env") final Map<String, String> env,
+             @JsonProperty("ports") final Map<String, PortMapping> ports) {
     this.id = checkNotNull(id, "id");
     this.image = checkNotNull(image, "image");
     this.command = checkNotNull(command, "command");
 
     // Optional
     this.env = Optional.fromNullable(env).or(EMPTY_ENV);
+    this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -52,6 +56,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.image = checkNotNull(p.image, "image");
     this.command = ImmutableList.copyOf(checkNotNull(p.command, "command"));
     this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
+    this.ports = ImmutableMap.copyOf(checkNotNull(p.ports, "ports"));
   }
 
   public JobId getId() {
@@ -69,6 +74,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public Map<String, String> getEnv() {
     return env;
+  }
+
+  public Map<String, PortMapping> getPorts() {
+    return ports;
   }
 
   public static Builder newBuilder() {
@@ -136,7 +145,8 @@ public class Job extends Descriptor implements Comparable<Job> {
       public String version;
       public String image;
       public List<String> command;
-      public Map<String, String> env = emptyMap();
+      public Map<String, String> env = EMPTY_ENV;
+      public Map<String, PortMapping> ports = EMPTY_PORTS;
     }
 
     final Parameters p = new Parameters();
@@ -168,6 +178,11 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Builder setEnv(final Map<String, String> env) {
       p.env = env;
+      return this;
+    }
+
+    public Builder setPorts(final Map<String, PortMapping> ports) {
+      p.ports = ports;
       return this;
     }
 

@@ -19,19 +19,30 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
 public class JobTest {
 
+  private Map<String, Object> map(final Object... objects) {
+    final ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();
+    checkArgument(objects.length % 2 == 0);
+    for (int i = 0; i < objects.length; i += 2) {
+      builder.put((String) objects[i], objects[i + 1]);
+    }
+    return builder.build();
+  }
+
   @Test
   public void verifySha1ID() throws IOException {
-    final Map<String, Object> expectedConfig = ImmutableMap.of("command", asList("foo", "bar"),
-                                                               "image", "testStartStop:4711",
-                                                               "name", "foozbarz",
-                                                               "version", "17",
-                                                               "env", new HashMap<>());
+    final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
+                                                   "image", "testStartStop:4711",
+                                                   "name", "foozbarz",
+                                                   "version", "17",
+                                                   "env", new HashMap<>(),
+                                                   "ports", new HashMap<>());
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
@@ -50,11 +61,12 @@ public class JobTest {
   @Test
   public void verifySha1IDWithEnv() throws IOException {
     final Map<String, String> env = ImmutableMap.of("FOO", "BAR");
-    final Map<String, Object> expectedConfig = ImmutableMap.of("command", asList("foo", "bar"),
-                                                               "image", "testStartStop:4711",
-                                                               "name", "foozbarz",
-                                                               "version", "17",
-                                                               "env", env);
+    final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
+                                                   "image", "testStartStop:4711",
+                                                   "name", "foozbarz",
+                                                   "version", "17",
+                                                   "env", env,
+                                                   "ports", new HashMap<>());
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));

@@ -4,6 +4,8 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractFuture;
@@ -18,10 +20,13 @@ import com.kpelykh.docker.client.DockerException;
 import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
+import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.Image;
+import com.kpelykh.docker.client.model.PortBinding;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.sun.jersey.api.client.ClientResponse;
@@ -31,7 +36,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -48,6 +52,8 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -56,10 +62,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Supervises docker containers for a single job.
  */
 class Supervisor {
+
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
       new ThreadFactoryBuilder().setNameFormat("helios-supervisor-runner-%d").build();
+
+  private static final Map<String, List<PortBinding>> EMPTY_PORTS = emptyMap();
 
   private final Object sync = new Object() {};
 
@@ -81,9 +90,9 @@ class Supervisor {
   /**
    * Create a new job supervisor.
    *
-   * @param jobId The job id.
-   * @param job   The job.
-   * @param model The model to use.
+   * @param jobId   The job id.
+   * @param job     The job.
+   * @param model   The model to use.
    * @param envVars Environment variables to expose to child containers.
    */
   private Supervisor(final JobId jobId, final Job job,
@@ -240,8 +249,22 @@ class Supervisor {
    * Persist job status.
    */
   private void setStatus(final TaskStatus.State status, final String containerId) {
-    model.setTaskStatus(jobId, new TaskStatus(job, status, containerId,
-        flapController.isFlapping() ? ThrottleState.FLAPPING : ThrottleState.NO));
+    setStatus(status, containerId, null);
+  }
+
+  /**
+   * Persist job status with port mapping.
+   */
+  private void setStatus(final TaskStatus.State status, final String containerId,
+                         final Map<String, PortMapping> ports) {
+    final TaskStatus taskStatus = TaskStatus.newBuilder()
+        .setJob(job)
+        .setState(status)
+        .setContainerId(containerId)
+        .setPorts(ports)
+        .setThrottled(flapController.isFlapping() ? ThrottleState.FLAPPING : ThrottleState.NO)
+        .build();
+    model.setTaskStatus(jobId, taskStatus);
     this.status = status;
   }
 
@@ -261,7 +284,55 @@ class Supervisor {
     final List<String> command = descriptor.getCommand();
     containerConfig.setCmd(command.toArray(new String[command.size()]));
     containerConfig.setEnv(containerEnv(descriptor));
+    containerConfig.setExposedPorts(containerExposedPorts(descriptor));
     return containerConfig;
+  }
+
+  /**
+   * Create container port exposure configuration for a job.
+   */
+  private Map<String, Void> containerExposedPorts(final Job job) {
+    final Map<String, Void> ports = Maps.newHashMap();
+    for (final Map.Entry<String, PortMapping> entry : job.getPorts().entrySet()) {
+      final String name = entry.getKey();
+      final PortMapping mapping = entry.getValue();
+      ports.put(containerPort(name, mapping.getInternalPort()), null);
+    }
+    return ports;
+  }
+
+  /**
+   * Create a docker port exposure/mapping entry.
+   */
+  private String containerPort(final String name, final int port) {
+    return port + "/" + name;
+  }
+
+  /**
+   * Create a container host configuration for a job.
+   */
+  private HostConfig hostConfig(final Job job) {
+    final HostConfig hostConfig = new HostConfig();
+    hostConfig.portBindings = portBindings(job);
+    return hostConfig;
+  }
+
+  /**
+   * Create a port binding configuration for a job.
+   */
+  private Map<String, List<PortBinding>> portBindings(final Job job) {
+    final Map<String, List<PortBinding>> ports = Maps.newHashMap();
+    for (final Map.Entry<String, PortMapping> e : job.getPorts().entrySet()) {
+      final String name = e.getKey();
+      final PortMapping mapping = e.getValue();
+      final PortBinding binding = new PortBinding();
+      if (mapping.getExternalPort() != null) {
+        binding.hostPort = mapping.getExternalPort().toString();
+      }
+      final String entry = containerPort(name, mapping.getInternalPort());
+      ports.put(entry, asList(binding));
+    }
+    return ports;
   }
 
   /**
@@ -368,12 +439,18 @@ class Supervisor {
 
           setStatus(STARTING, containerId);
           log.info("starting container: {}: {}", job, containerId);
-          startFuture = docker.startContainer(containerId);
+          final HostConfig hostConfig = hostConfig(job);
+          startFuture = docker.startContainer(containerId, hostConfig);
           startFuture.get();
           log.info("started container: {}: {}: {}", job, containerId, containerInfo);
         }
+
+        // Look up ports
+        final ContainerInspectResponse runningContainerInfo =
+            docker.inspectContainer(containerId).get();
+        final Map<String, PortMapping> ports = parsePortBindings(runningContainerInfo);
         flapController.jobStarted();
-        setStatus(RUNNING, containerId);
+        setStatus(RUNNING, containerId, ports);
 
         // Wait for container to die
         final int exitCode = docker.waitContainer(containerId).get();
@@ -426,6 +503,22 @@ class Supervisor {
     }
   }
 
+  private Map<String, PortMapping> parsePortBindings(final ContainerInspectResponse info) {
+    if (info.networkSettings.ports == null) {
+      return emptyMap();
+    }
+    return parsePortBindings(info.networkSettings.ports);
+  }
+
+  private Map<String, PortMapping> parsePortBindings(final Map<String, List<PortBinding>> ports) {
+    final ImmutableMap.Builder<String, PortMapping> builder = ImmutableMap.builder();
+    for (final Map.Entry<String, List<PortBinding>> e : ports.entrySet()) {
+      final PortBindingParser parser = new PortBindingParser(e.getKey(), e.getValue());
+      builder.put(parser.getName(), parser.getMapping());
+    }
+    return builder.build();
+  }
+
   /**
    * Tail a json stream until it finishes.
    */
@@ -451,7 +544,7 @@ class Supervisor {
     private Job descriptor;
     private AgentModel model;
     private AsyncDockerClient dockerClient;
-    private Map<String, String> envVars = Collections.emptyMap();
+    private Map<String, String> envVars = emptyMap();
     private FlapController flapController;
     private RestartPolicy restartPolicy;
 
@@ -495,6 +588,53 @@ class Supervisor {
     public Supervisor build() {
       return new Supervisor(jobId, descriptor, model, dockerClient, restartPolicy,
                             envVars, flapController);
+    }
+  }
+
+  /**
+   * Assumes port binding matches output of {@link #portBindings(Job)}
+   */
+  private class PortBindingParser {
+
+    private String name;
+    private PortMapping mapping;
+
+    public PortBindingParser(final String entry, final List<PortBinding> bindings) {
+      final List<String> parts = Splitter.on('/').splitToList(entry);
+      if (parts.size() != 2) {
+        throw new IllegalArgumentException("Invalid port binding: " + entry);
+      }
+
+      this.name = parts.get(1);
+
+      final int internalPort;
+      try {
+        internalPort = Integer.parseInt(parts.get(0));
+      } catch (NumberFormatException ex) {
+        throw new IllegalArgumentException("Invalid port binding: " + entry, ex);
+      }
+
+      if (bindings.size() != 1) {
+        throw new IllegalArgumentException("Expected single binding, got " + bindings.size());
+      }
+
+      final PortBinding binding = bindings.get(0);
+      final int externalPort;
+      try {
+        externalPort = Integer.parseInt(binding.hostPort);
+      } catch (NumberFormatException e1) {
+        throw new IllegalArgumentException("Invalid host port: " + binding.hostPort);
+      }
+
+      this.mapping = PortMapping.of(internalPort, externalPort);
+    }
+
+    public String getName() {
+      return name;
+    }
+
+    public PortMapping getMapping() {
+      return mapping;
     }
   }
 }

@@ -21,6 +21,7 @@ import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.ThrottleState;
@@ -66,6 +67,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
@@ -324,10 +326,59 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   @Test
+  public void testPortCollision() throws Exception {
+    final String agentName = "foobar";
+    final int externalPort = 4711;
+
+    startDefaultMaster();
+    startDefaultAgent(agentName);
+
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    final List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
+
+
+    final Job job1 = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("busybox")
+        .setCommand(command)
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(10001, externalPort)))
+        .build();
+
+    final Job job2 = Job.newBuilder()
+        .setName("bar")
+        .setVersion("1")
+        .setImage("busybox")
+        .setCommand(command)
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(10002, externalPort)))
+        .build();
+
+    final CreateJobResponse created1 = control.createJob(job1).get();
+    assertEquals(CreateJobResponse.Status.OK, created1.getStatus());
+
+    final CreateJobResponse created2 = control.createJob(job2).get();
+    assertEquals(CreateJobResponse.Status.OK, created2.getStatus());
+
+    final Deployment deployment1 = Deployment.of(job1.getId(), STOP);
+    final JobDeployResponse deployed1 = control.deploy(deployment1, agentName).get();
+    assertEquals(JobDeployResponse.Status.OK, deployed1.getStatus());
+
+    final Deployment deployment2 = Deployment.of(job2.getId(), STOP);
+    final JobDeployResponse deployed2 = control.deploy(deployment2, agentName).get();
+    assertEquals(JobDeployResponse.Status.PORT_CONFLICT, deployed2.getStatus());
+  }
+
+  @Test
   public void testService() throws Exception {
     final String agentName = "foobar";
     final String jobName = "foo";
     final String jobVersion = "17";
+    final List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
+    final Map<String, PortMapping> ports = ImmutableMap.of("foos", PortMapping.of(17, 4711));
 
     startDefaultMaster();
 
@@ -341,13 +392,13 @@ public class SystemTest extends ZooKeeperTestBase {
 
     final AgentMain agent = startDefaultAgent(agentName);
 
-    List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
     // Create a job
     final Job job = Job.newBuilder()
         .setName(jobName)
         .setVersion(jobVersion)
         .setImage("busybox")
         .setCommand(command)
+        .setPorts(ports)
         .build();
     final JobId jobId = job.getId();
     final CreateJobResponse created = control.createJob(job).get();

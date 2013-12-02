@@ -20,6 +20,7 @@ import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.JobNotDeployedException;
+import com.spotify.helios.common.JobPortAllocationConflictException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.coordination.Paths;
@@ -30,6 +31,7 @@ import com.spotify.helios.common.descriptors.Descriptor;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.RuntimeInfo;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -38,7 +40,6 @@ import com.spotify.helios.common.protocol.TaskStatusEvent;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -58,6 +59,7 @@ import static java.util.Collections.emptyMap;
 public class ZooKeeperMasterModel implements MasterModel {
 
   public static final class EventComparator implements Comparator<TaskStatusEvent> {
+
     @Override
     public int compare(TaskStatusEvent arg0, TaskStatusEvent arg1) {
       if (arg1.getTimestamp() > arg0.getTimestamp()) {
@@ -69,6 +71,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       }
     }
   }
+
   private static final EventComparator EVENT_COMPARATOR = new EventComparator();
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperMasterModel.class);
@@ -88,6 +91,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       client.ensurePath(Paths.configAgent(agent));
       client.ensurePath(Paths.configAgentJobs(agent));
+      client.ensurePath(Paths.configAgentPorts(agent));
     } catch (Exception e) {
       throw new HeliosException("adding slave " + agent + " failed", e);
     }
@@ -317,22 +321,65 @@ public class ZooKeeperMasterModel implements MasterModel {
     log.debug("adding agent job: agent={}, job={}", agent, deployment);
 
     final JobId id = deployment.getJobId();
-    final Job descriptor = getJob(id);
+    final Job job = getJob(id);
 
-    if (descriptor == null) {
+    if (job == null) {
       throw new JobDoesNotExistException(id);
     }
+
+    // TODO (dano): do all of the below in a transaction
+
+    // Check if the job was already deployed
+    final String taskPath = Paths.configAgentJob(agent, id);
+    try {
+      if (client.stat(taskPath) != null) {
+        throw new JobAlreadyDeployedException(agent, id);
+      }
+    } catch (KeeperException e) {
+      throw new HeliosException("checking job deployment failed", e);
+    }
+
+    // Check for static port collisions
+    // TODO (dano): this check might be possible to remove when we use transactions
+    final List<Integer> staticPorts = staticPorts(job);
+    for (final int port : staticPorts) {
+      final String path = Paths.configAgentPort(agent, port);
+      try {
+        if (client.stat(path) == null) {
+          continue;
+        }
+        final byte[] b = client.getData(path);
+        final JobId existingJobId = parse(b, JobId.class);
+        throw new JobPortAllocationConflictException(id, existingJobId, agent, port);
+      } catch (KeeperException | IOException e) {
+        throw new HeliosException("checking port allocations failed", e);
+      }
+    }
+
     // TODO(drewc): do the assert and the createAndSetData in a txn
     assertAgentExists(agent);
-    final Task task = new Task(descriptor, deployment.getGoal());
+    final Task task = new Task(job, deployment.getGoal());
     try {
-      client.createAndSetData(Paths.configAgentJob(agent, id), task.toJsonBytes());
+      final byte[] idJson = id.toJsonBytes();
+      for (final int port : staticPorts) {
+        final String path = Paths.configAgentPort(agent, port);
+        client.createAndSetData(path, idJson);
+      }
+      client.createAndSetData(taskPath, task.toJsonBytes());
       client.create(Paths.configJobAgent(id, agent));
-    } catch (NodeExistsException e) {
-      throw new JobAlreadyDeployedException(agent, id);
     } catch (Exception e) {
-      throw new HeliosException("adding slave container failed", e);
+      throw new HeliosException("deploying job failed", e);
     }
+  }
+
+  private List<Integer> staticPorts(final Job job) {
+    final List<Integer> staticPorts = Lists.newArrayList();
+    for (final PortMapping portMapping : job.getPorts().values()) {
+      if (portMapping.getExternalPort() != null) {
+        staticPorts.add(portMapping.getExternalPort());
+      }
+    }
+    return staticPorts;
   }
 
   @Override
@@ -521,26 +568,36 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     assertAgentExists(agent);
 
-    final Deployment job = getDeployment(agent, jobId);
-    if (job == null) {
+    final Deployment deployment = getDeployment(agent, jobId);
+    if (deployment == null) {
       throw new JobDoesNotExistException(String.format("Job [%s] does not exist on agent [%s]",
                                                        jobId, agent));
     }
 
-      // TODO (dano): do this in a txn
+    // TODO (dano): do this in a txn
     try {
       client.delete(Paths.configAgentJob(agent, jobId));
     } catch (KeeperException.NoNodeException ignore) {
     } catch (KeeperException e) {
       throw new HeliosException("removing agent job failed", e);
     }
-
     try {
       client.delete(Paths.configJobAgent(jobId, agent));
     } catch (KeeperException.NoNodeException ignore) {
     } catch (KeeperException e) {
       throw new HeliosException("removing agent job failed", e);
     }
-    return job;
+    final Job job = getJob(jobId);
+    final List<Integer> staticPorts = staticPorts(job);
+    for (int port : staticPorts) {
+      try {
+        client.delete(Paths.configAgentPort(agent, port));
+      } catch (KeeperException.NoNodeException ignore) {
+      } catch (KeeperException e) {
+        throw new HeliosException("removing agent job failed", e);
+      }
+    }
+
+    return deployment;
   }
 }
