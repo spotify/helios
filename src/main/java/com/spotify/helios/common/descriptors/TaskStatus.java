@@ -48,6 +48,15 @@ public class TaskStatus extends Descriptor {
     this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
   }
 
+  public Builder asBuilder() {
+    return newBuilder()
+        .setJob(job)
+        .setState(state)
+        .setContainerId(containerId)
+        .setThrottled(throttled)
+        .setPorts(ports);
+  }
+
   private TaskStatus(final Builder builder) {
     this.job = checkNotNull(builder.job, "job");
     this.state = checkNotNull(builder.state, "state");

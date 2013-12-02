@@ -94,6 +94,11 @@ public class SupervisorTest {
         .setNormalRestartIntervalMillis(10)
         .setRetryIntervalMillis(10)
         .build();
+    TaskStatusManagerImpl manager = TaskStatusManagerImpl.newBuilder()
+        .setJob(DESCRIPTOR)
+        .setJobId(JOB_ID)
+        .setModel(model)
+        .build();
     sut = Supervisor.newBuilder()
         .setJobId(JOB_ID)
         .setDescriptor(DESCRIPTOR)
@@ -101,7 +106,11 @@ public class SupervisorTest {
         .setDockerClient(docker)
         .setRestartPolicy(policy)
         .setEnvVars(ENV)
-        .setFlapController(FlapController.newBuilder().setJobId(JOB_ID).build())
+        .setFlapController(FlapController.newBuilder()
+                               .setJobId(JOB_ID)
+                               .setTaskStatusManager(manager)
+                               .build())
+        .setTaskStatusManager(manager)
         .build();
     when(docker.getImages(IMAGE)).thenReturn(immediateFuture(DOCKER_IMAGES));
 
