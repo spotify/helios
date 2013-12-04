@@ -29,6 +29,8 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
+import com.spotify.nameless.client.NamelessRegistrar;
+import com.spotify.nameless.client.RegistrationHandle;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.slf4j.Logger;
@@ -38,11 +40,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeoutException;
+
+import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Uninterruptibles.getUninterruptibly;
@@ -79,24 +84,28 @@ class Supervisor {
   private final FlapController flapController;
   private final RestartPolicy restartPolicy;
   private final TaskStatusManager stateManager;
+  private final NamelessRegistrar registrar;
 
   private volatile Runner runner;
   private volatile boolean closed;
   private volatile boolean starting;
   private volatile ThrottleState throttle = ThrottleState.NO;
 
+
   /**
    * Create a new job supervisor.
    *
-   * @param jobId   The job id.
-   * @param job     The job.
-   * @param model   The model to use.
-   * @param envVars Environment variables to expose to child containers.
+   * @param jobId     The job id.
+   * @param job       The job.
+   * @param model     The model to use.
+   * @param envVars   Environment variables to expose to child containers.
+   * @param registrar The Nameless registrar to register ports with.
    */
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
                      final RestartPolicy restartPolicy, final Map<String, String> envVars,
-                     final FlapController flapController, TaskStatusManager stateManager) {
+                     final FlapController flapController, TaskStatusManager stateManager,
+                     final @Nullable NamelessRegistrar registrar) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
@@ -105,6 +114,7 @@ class Supervisor {
     this.envVars = checkNotNull(envVars);
     this.flapController = checkNotNull(flapController);
     this.stateManager = checkNotNull(stateManager);
+    this.registrar = registrar;
   }
 
   /**
@@ -370,6 +380,7 @@ class Supervisor {
 
     private ListenableFuture<Void> startFuture;
     private volatile InputStream pullStream;
+    private List<RegistrationHandle> namelessRegistrationHandles;
 
     public RunnerImpl(final long delayMillis) {
       this.delayMillis = delayMillis;
@@ -379,6 +390,52 @@ class Supervisor {
     @Override
     public ListenableFuture<Integer> result() {
       return this;
+    }
+
+    private void handleNamelessRegistration(Map<String, PortMapping> ports) {
+      if (registrar == null) {
+        return;
+      }
+
+      List<ListenableFuture<RegistrationHandle>> futures = Lists.newArrayList();
+      for (Entry<String, PortMapping> entry: ports.entrySet()) {
+        final String portName = entry.getKey();
+        final PortMapping mapping = entry.getValue();
+
+        if (!(job.getService() == null || portName == null)) {
+          futures.add(registrar.register(job.getService(), portName, mapping.getExternalPort()));
+        }
+      }
+      try {
+        namelessRegistrationHandles = Futures.allAsList(futures).get();
+      } catch (InterruptedException | ExecutionException e) {
+        // DANO -- Or should we tear down the task when nameless is hosed?  I'm thinking logging
+        // and swallowing is *probably* the best choice.
+        log.error("Error registering with nameless", e);
+        if (e instanceof InterruptedException) {
+          Thread.interrupted();
+        }
+      }
+    }
+
+    private void handleNamelessDeregistration() {
+      if (registrar == null) {
+        return;
+      }
+      List<ListenableFuture<Void>> futures = Lists.newArrayList();
+      for (RegistrationHandle handle : namelessRegistrationHandles) {
+        futures.add(registrar.unregister(handle));
+      }
+
+      try {
+        Futures.allAsList(futures).get();
+      } catch (InterruptedException | ExecutionException e) {
+        // DANO -- do you have a better idea about what to do if unregistering borks?
+        log.error("Error unregistering with nameless", e);
+        if (e instanceof InterruptedException) {
+          Thread.interrupted();
+        }
+      }
     }
 
     @SuppressWarnings("TryWithIdenticalCatches")
@@ -439,6 +496,7 @@ class Supervisor {
             docker.inspectContainer(containerId).get();
         final Map<String, PortMapping> ports = parsePortBindings(runningContainerInfo);
         flapController.jobStarted();
+        handleNamelessRegistration(ports);
         setStatus(RUNNING, containerId, ports);
 
         // Wait for container to die
@@ -448,6 +506,7 @@ class Supervisor {
         throttle = flapController.isFlapping()
             ? ThrottleState.FLAPPING : ThrottleState.NO;
         setStatus(EXITED, containerId);
+        handleNamelessDeregistration();
 
         set(exitCode);
       } catch (InterruptedException e) {
@@ -537,6 +596,7 @@ class Supervisor {
     private FlapController flapController;
     private RestartPolicy restartPolicy;
     private TaskStatusManager stateManager;
+    private NamelessRegistrar registrar;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -579,9 +639,14 @@ class Supervisor {
       return this;
     }
 
+    public Builder setNamelessRegistrar(final @Nullable NamelessRegistrar registrar) {
+      this.registrar = registrar;
+      return this;
+    }
+
     public Supervisor build() {
       return new Supervisor(jobId, descriptor, model, dockerClient, restartPolicy,
-                            envVars, flapController, stateManager);
+                            envVars, flapController, stateManager, registrar);
     }
   }
 

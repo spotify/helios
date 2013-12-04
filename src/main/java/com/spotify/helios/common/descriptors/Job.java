@@ -18,6 +18,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
+import javax.annotation.Nullable;
+
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -36,12 +38,14 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final List<String> command;
   private final Map<String, String> env;
   private final Map<String, PortMapping> ports;
+  private final String service;
 
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
              @JsonProperty("command") final List<String> command,
-             @JsonProperty("env") final Map<String, String> env,
-             @JsonProperty("ports") final Map<String, PortMapping> ports) {
+             @JsonProperty("env") final @Nullable Map<String, String> env,
+             @JsonProperty("ports") final @Nullable Map<String, PortMapping> ports,
+             @JsonProperty("service") final @Nullable String service) {
     this.id = checkNotNull(id, "id");
     this.image = checkNotNull(image, "image");
     this.command = checkNotNull(command, "command");
@@ -49,6 +53,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     // Optional
     this.env = Optional.fromNullable(env).or(EMPTY_ENV);
     this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
+    this.service = service;
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -57,15 +62,19 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.command = ImmutableList.copyOf(checkNotNull(p.command, "command"));
     this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
     this.ports = ImmutableMap.copyOf(checkNotNull(p.ports, "ports"));
+    this.service = p.service;
   }
 
   public JobId getId() {
     return id;
   }
 
-
   public String getImage() {
     return image;
+  }
+
+  public String getService() {
+    return service;
   }
 
   public List<String> getCommand() {
@@ -112,7 +121,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (image != null ? !image.equals(job.image) : job.image != null) {
       return false;
     }
-
+    if (service != null ? !service.equals(job.service) : job.service != null) {
+      return false;
+    }
     return true;
   }
 
@@ -122,6 +133,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (image != null ? image.hashCode() : 0);
     result = 31 * result + (command != null ? command.hashCode() : 0);
     result = 31 * result + (env != null ? env.hashCode() : 0);
+    result = 31 * result + (service != null ? service.hashCode() : 0);
     return result;
   }
 
@@ -132,6 +144,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("image", image)
         .add("command", command)
         .add("env", env)
+        .add("service", service)
         .toString();
   }
 
@@ -147,6 +160,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public List<String> command;
       public Map<String, String> env = EMPTY_ENV;
       public Map<String, PortMapping> ports = EMPTY_PORTS;
+      public String service;
     }
 
     final Parameters p = new Parameters();
@@ -158,6 +172,11 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Builder setName(final String name) {
       p.name = name;
+      return this;
+    }
+
+    public Builder setService(final String service) {
+      p.service = service;
       return this;
     }
 

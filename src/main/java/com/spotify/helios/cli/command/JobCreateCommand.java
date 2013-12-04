@@ -39,6 +39,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument envArg;
   private final Argument argsArg;
   private final Argument portArg;
+  private final Argument namelessService;
 
   public JobCreateCommand(final Subparser parser) {
     super(parser);
@@ -73,6 +74,9 @@ public class JobCreateCommand extends ControlCommand {
               "static port mapping. E.g., foo=4711 will map the internal port 4711 of the job to " +
               "an arbitrary external port on the host. Specifying foo=4711:80 will map internal " +
               "port 4711 of the job to port 80 on the host.");
+
+    namelessService = parser.addArgument("-r", "--service")
+        .help("Set the Nameless service name for the job");
 
     argsArg = parser.addArgument("args")
         .nargs("*")
@@ -129,6 +133,7 @@ public class JobCreateCommand extends ControlCommand {
         .setCommand(command)
         .setEnv(env)
         .setPorts(ports)
+        .setService(options.getString(namelessService.getDest()))
         .build();
 
     final Collection<String> errors = JOB_VALIDATOR.validate(job);

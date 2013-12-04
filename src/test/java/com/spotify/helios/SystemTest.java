@@ -88,11 +88,17 @@ import static org.junit.Assert.fail;
 @RunWith(MockitoJUnitRunner.class)
 public class SystemTest extends ZooKeeperTestBase {
 
+  private static final String NAMELESS_SERVICE = "service";
+  private static final int INTERNAL_PORT = 4444;
+  private static final int EXTERNAL_PORT = 5555;
+  private static final ImmutableMap<String, String> EMPTY_ENV = ImmutableMap.<String, String>of();
   private static final JobId BOGUS_JOB = new JobId("bogus", "job", "badfood");
   private static final String BOGUS_AGENT = "BOGUS_AGENT";
 
   private static final String TEST_USER = "TestUser";
   private static final String TEST_AGENT = "test-agent";
+  private static final List<String> DO_NOTHING_COMMAND = asList("sh", "-c",
+      "while :; do sleep 1; done");
 
   private final int masterPort = ZooKeeperTestBase.PORT_COUNTER.incrementAndGet();
   private final String masterEndpoint = "tcp://localhost:" + masterPort;
@@ -237,12 +243,12 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   @Test
-  public void testNamelessRegistration() throws Exception {
+  public void testMasterNamelessRegistration() throws Exception {
     startMaster("-vvvv",
                 "--no-log-setup",
                 "--munin-port", "0",
                 "--site", "localhost",
-                "--http", "0.0.0.0:5555",
+                "--http", "0.0.0.0:" + EXTERNAL_PORT,
                 "--hm", masterEndpoint,
                 "--zk", zookeeperEndpoint);
 
@@ -268,7 +274,7 @@ public class SystemTest extends ZooKeeperTestBase {
           break;
         case "http":
           httpFound = true;
-          assertEquals("wrong port", endpoint.getPort(), 5555);
+          assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT);
           break;
         default:
           fail("unknown protocol " + protocol);
@@ -277,6 +283,61 @@ public class SystemTest extends ZooKeeperTestBase {
 
     assertTrue("missing hermes nameless entry", hermesFound);
     assertTrue("missing http nameless entry", httpFound);
+  }
+
+  @Test
+  public void testContainerNamelessRegistration() throws Exception {
+    startDefaultMaster();
+
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    startAgent("-vvvv",
+               "--no-log-setup",
+               "--munin-port", "0",
+               "--name", TEST_AGENT,
+               "--docker", dockerEndpoint,
+               "--zk", zookeeperEndpoint,
+               "--site", "localhost",
+               "--zk-session-timeout", "100");
+
+    ImmutableMap<String, PortMapping> portMapping = ImmutableMap.<String, PortMapping>of(
+        "PROTOCOL", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
+    final JobId jobId = createJob("JOB_NAME", "JOB_VERSION", "busybox", DO_NOTHING_COMMAND,
+        EMPTY_ENV, portMapping,
+        NAMELESS_SERVICE);
+
+    deployJob(jobId, TEST_AGENT);
+    awaitJobState(control, TEST_AGENT, jobId, RUNNING, 10, SECONDS);
+    // Give it some time for the registration to register.
+    Thread.sleep(1000);
+    try {
+      final NamelessClient client = new NamelessClient(Hermes.newClient("tcp://localhost:4999"));
+      final List<Messages.RegistryEntry> entries = client.queryEndpoints(
+          EndpointFilter.everything()).get();
+
+      boolean portFound = false;
+
+      for (Messages.RegistryEntry entry : entries) {
+        final Messages.Endpoint endpoint = entry.getEndpoint();
+        assertEquals("wrong service", NAMELESS_SERVICE, endpoint.getService());
+        final String protocol = endpoint.getProtocol();
+
+        switch (protocol) {
+          case "PROTOCOL":
+            portFound = true;
+            assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT);
+            break;
+          default:
+            fail("unknown protocol " + protocol);
+        }
+      }
+      assertTrue("Did not find nameless registered port", portFound);
+    } finally {  // if this isn't done, your docker will be unhappy across subsequent test runs
+      undeployJob(jobId, TEST_AGENT);
+    }
   }
 
   @Test
@@ -338,14 +399,11 @@ public class SystemTest extends ZooKeeperTestBase {
         .setEndpoints(masterEndpoint)
         .build();
 
-    final List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
-
-
     final Job job1 = Job.newBuilder()
         .setName("foo")
         .setVersion("1")
         .setImage("busybox")
-        .setCommand(command)
+        .setCommand(DO_NOTHING_COMMAND)
         .setPorts(ImmutableMap.of("foo", PortMapping.of(10001, externalPort)))
         .build();
 
@@ -353,7 +411,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setName("bar")
         .setVersion("1")
         .setImage("busybox")
-        .setCommand(command)
+        .setCommand(DO_NOTHING_COMMAND)
         .setPorts(ImmutableMap.of("foo", PortMapping.of(10002, externalPort)))
         .build();
 
@@ -377,7 +435,6 @@ public class SystemTest extends ZooKeeperTestBase {
     final String agentName = "foobar";
     final String jobName = "foo";
     final String jobVersion = "17";
-    final List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
     final Map<String, PortMapping> ports = ImmutableMap.of("foos", PortMapping.of(17, 4711));
 
     startDefaultMaster();
@@ -397,7 +454,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setName(jobName)
         .setVersion(jobVersion)
         .setImage("busybox")
-        .setCommand(command)
+        .setCommand(DO_NOTHING_COMMAND)
         .setPorts(ports)
         .build();
     final JobId jobId = job.getId();
@@ -585,13 +642,11 @@ public class SystemTest extends ZooKeeperTestBase {
     final String jobName = "test";
     final String jobVersion = "17";
     final String jobImage = "busybox";
-    final List<String> command = asList("sh", "-c", "while :; do sleep 1; done");
-
     // Wait for agent to come up
     awaitAgentRegistered(TEST_AGENT, 10, SECONDS);
 
     // Create job
-    final JobId jobId = createJob(jobName, jobVersion, jobImage, command);
+    final JobId jobId = createJob(jobName, jobVersion, jobImage, DO_NOTHING_COMMAND);
 
     // Query for job
     assertContains(jobId.toString(), control("job", "list", jobName, "-q"));
@@ -599,7 +654,7 @@ public class SystemTest extends ZooKeeperTestBase {
     assertTrue(control("job", "list", "foozbarz", "-q").trim().isEmpty());
 
     final String duplicateJob = control(
-        "job", "create", jobName, jobVersion, jobImage, "--", command);
+        "job", "create", jobName, jobVersion, jobImage, "--", DO_NOTHING_COMMAND);
     assertContains("JOB_ALREADY_EXISTS", duplicateJob);
 
     final String prestop = stopJob(jobId, TEST_AGENT);
@@ -872,11 +927,19 @@ public class SystemTest extends ZooKeeperTestBase {
 
   private JobId createJob(final String name, final String version, final String image,
                           final List<String> command) throws Exception {
-    return createJob(name, version, image, command, new HashMap<String, String>());
+    return createJob(name, version, image, command, EMPTY_ENV,
+                     new HashMap<String, PortMapping>(), null);
   }
 
   private JobId createJob(final String name, final String version, final String image,
-                          final List<String> command, final Map<String, String> env)
+                          final List<String> command, final ImmutableMap<String, String> env)
+      throws Exception {
+    return createJob(name, version, image, command, env, new HashMap<String, PortMapping>(), null);
+  }
+
+  private JobId createJob(final String name, final String version, final String image,
+                          final List<String> command, final Map<String, String> env,
+                          final Map<String, PortMapping> ports, final String namelessService)
       throws Exception {
     final List<String> args = Lists.newArrayList("-q", name, version, image);
 
@@ -885,6 +948,21 @@ public class SystemTest extends ZooKeeperTestBase {
       for (final Map.Entry<String, String> entry : env.entrySet()) {
         args.add(entry.getKey() + "=" + entry.getValue());
       }
+    }
+
+    if (!ports.isEmpty()) {
+      args.add("--port");
+      for (final Map.Entry<String, PortMapping> entry : ports.entrySet()) {
+        String value = "" + entry.getValue().getInternalPort();
+        if (entry.getValue().getExternalPort() != null) {
+          value += ":" + entry.getValue().getExternalPort();
+        }
+        args.add(entry.getKey() + "=" + value);
+      }
+    }
+
+    if (namelessService != null) {
+      args.add("--service=" + namelessService);
     }
 
     args.add("--");

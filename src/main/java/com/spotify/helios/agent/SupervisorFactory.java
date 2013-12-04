@@ -3,8 +3,11 @@ package com.spotify.helios.agent;
 import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.nameless.client.NamelessRegistrar;
 
 import java.util.Map;
+
+import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -18,12 +21,15 @@ public class SupervisorFactory {
   private final AgentModel model;
   private final DockerClientFactory dockerClientFactory;
   private final Map<String, String> envVars;
+  private final NamelessRegistrar registrar;
 
   public SupervisorFactory(final AgentModel model, final DockerClientFactory dockerClientFactory,
-                           final Map<String, String> envVars) {
+                           final Map<String, String> envVars,
+                           final @Nullable NamelessRegistrar registrar) {
     this.dockerClientFactory = dockerClientFactory;
     this.model = checkNotNull(model);
     this.envVars = checkNotNull(envVars);
+    this.registrar = registrar;
   }
 
   /**
@@ -52,6 +58,7 @@ public class SupervisorFactory {
         .setFlapController(flapController)
         .setRestartPolicy(policy)
         .setTaskStatusManager(manager)
+        .setNamelessRegistrar(registrar)
         .build();
   }
 }
