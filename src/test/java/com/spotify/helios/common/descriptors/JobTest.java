@@ -42,7 +42,8 @@ public class JobTest {
                                                    "name", "foozbarz",
                                                    "version", "17",
                                                    "env", new HashMap<>(),
-                                                   "ports", new HashMap<>());
+                                                   "ports", new HashMap<>(),
+                                                   "service", "");
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
@@ -66,7 +67,8 @@ public class JobTest {
                                                    "name", "foozbarz",
                                                    "version", "17",
                                                    "env", env,
-                                                   "ports", new HashMap<>());
+                                                   "ports", new HashMap<>(),
+                                                   "service", "");
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));

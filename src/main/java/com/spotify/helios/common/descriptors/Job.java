@@ -160,7 +160,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public List<String> command;
       public Map<String, String> env = EMPTY_ENV;
       public Map<String, PortMapping> ports = EMPTY_PORTS;
-      public String service;
+      public String service = "";
     }
 
     final Parameters p = new Parameters();

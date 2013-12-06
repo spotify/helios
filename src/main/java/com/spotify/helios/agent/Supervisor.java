@@ -402,7 +402,7 @@ class Supervisor {
         final String portName = entry.getKey();
         final PortMapping mapping = entry.getValue();
 
-        if (!(job.getService() == null || portName == null)) {
+        if (!(job.getService().equals("") || portName == null)) {
           futures.add(registrar.register(job.getService(), portName, mapping.getExternalPort()));
         }
       }
