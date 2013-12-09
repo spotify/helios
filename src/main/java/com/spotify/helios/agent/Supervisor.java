@@ -68,8 +68,6 @@ class Supervisor {
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
       new ThreadFactoryBuilder().setNameFormat("helios-supervisor-runner-%d").build();
 
-  private static final Map<String, List<PortBinding>> EMPTY_PORTS = emptyMap();
-
   private final Object sync = new Object() {};
 
   private final AsyncDockerClient docker;
@@ -80,11 +78,11 @@ class Supervisor {
   private final Map<String, String> envVars;
   private final FlapController flapController;
   private final RestartPolicy restartPolicy;
+  private final TaskStatusManager stateManager;
 
   private volatile Runner runner;
   private volatile boolean closed;
   private volatile boolean starting;
-  private volatile TaskStatus.State status;
   private volatile ThrottleState throttle = ThrottleState.NO;
 
   /**
@@ -98,7 +96,7 @@ class Supervisor {
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
                      final RestartPolicy restartPolicy, final Map<String, String> envVars,
-                     final FlapController flapController) {
+                     final FlapController flapController, TaskStatusManager stateManager) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
@@ -106,6 +104,7 @@ class Supervisor {
     this.restartPolicy = checkNotNull(restartPolicy);
     this.envVars = checkNotNull(envVars);
     this.flapController = checkNotNull(flapController);
+    this.stateManager = checkNotNull(stateManager);
   }
 
   /**
@@ -257,22 +256,14 @@ class Supervisor {
    */
   private void setStatus(final TaskStatus.State status, final String containerId,
                          final Map<String, PortMapping> ports) {
-    final TaskStatus taskStatus = TaskStatus.newBuilder()
-        .setJob(job)
-        .setState(status)
-        .setContainerId(containerId)
-        .setPorts(ports)
-        .setThrottled(flapController.isFlapping() ? ThrottleState.FLAPPING : ThrottleState.NO)
-        .build();
-    model.setTaskStatus(jobId, taskStatus);
-    this.status = status;
+    stateManager.setStatus(status, flapController.isFlapping(), containerId, ports);
   }
 
   /**
    * Get the current job status.
    */
   public TaskStatus.State getStatus() {
-    return status;
+    return stateManager.getStatus();
   }
 
   /**
@@ -399,9 +390,7 @@ class Supervisor {
 
         // Get centrally registered status
         final TaskStatus taskStatus = model.getTaskStatus(jobId);
-        final
-        String
-            registeredContainerId =
+        final String registeredContainerId =
             (taskStatus == null) ? null : taskStatus.getContainerId();
 
         // Check if container exists
@@ -453,7 +442,7 @@ class Supervisor {
         setStatus(RUNNING, containerId, ports);
 
         // Wait for container to die
-        final int exitCode = docker.waitContainer(containerId).get();
+        final int exitCode = flapController.waitFuture(docker.waitContainer(containerId));
         log.info("container exited: {}: {}: {}", job, containerId, exitCode);
         flapController.jobDied();
         throttle = flapController.isFlapping()
@@ -547,6 +536,7 @@ class Supervisor {
     private Map<String, String> envVars = emptyMap();
     private FlapController flapController;
     private RestartPolicy restartPolicy;
+    private TaskStatusManager stateManager;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -584,10 +574,14 @@ class Supervisor {
       return this;
     }
 
+    public Builder setTaskStatusManager(final TaskStatusManager manager) {
+      stateManager = manager;
+      return this;
+    }
 
     public Supervisor build() {
       return new Supervisor(jobId, descriptor, model, dockerClient, restartPolicy,
-                            envVars, flapController);
+                            envVars, flapController, stateManager);
     }
   }
 
