@@ -14,6 +14,8 @@ import com.spotify.helios.common.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
+import com.spotify.nameless.client.Nameless;
+import com.spotify.nameless.client.NamelessRegistrar;
 import com.sun.management.OperatingSystemMXBean;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricsRegistry;
@@ -56,8 +58,19 @@ public class AgentService {
 
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
+
+    final NamelessRegistrar registrar;
+    if (config.getSite() != null)  {
+      registrar =
+          config.getSite().equals("localhost") ?
+              Nameless.newRegistrar("tcp://localhost:4999") :
+                Nameless.newRegistrarForDomain(config.getSite());
+    } else {
+      registrar = null;
+    }
+
     final SupervisorFactory supervisorFactory = new SupervisorFactory(model, dockerClientFactory,
-        config.getEnvVars());
+        config.getEnvVars(), registrar);
     final ReactorFactory reactorFactory = new ReactorFactory();
 
     this.hostInfoReporter = HostInfoReporter.newBuilder()
