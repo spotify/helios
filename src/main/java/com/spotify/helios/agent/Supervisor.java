@@ -390,9 +390,7 @@ class Supervisor {
 
         // Get centrally registered status
         final TaskStatus taskStatus = model.getTaskStatus(jobId);
-        final
-        String
-            registeredContainerId =
+        final String registeredContainerId =
             (taskStatus == null) ? null : taskStatus.getContainerId();
 
         // Check if container exists
@@ -444,10 +442,11 @@ class Supervisor {
         setStatus(RUNNING, containerId, ports);
 
         // Wait for container to die
-        final int exitCode = docker.waitContainer(containerId).get();
+        final int exitCode = flapController.waitFuture(docker.waitContainer(containerId));
         log.info("container exited: {}: {}: {}", job, containerId, exitCode);
         flapController.jobDied();
-        throttle = flapController.isFlapping() ? ThrottleState.FLAPPING : ThrottleState.NO;
+        throttle = flapController.isFlapping()
+            ? ThrottleState.FLAPPING : ThrottleState.NO;
         setStatus(EXITED, containerId);
 
         set(exitCode);

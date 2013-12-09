@@ -1,5 +1,10 @@
 package com.spotify.helios.agent;
 
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
+
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 
@@ -10,10 +15,13 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
@@ -59,6 +67,8 @@ public class FlapControllerTest {
 
   @Test
   public void testRecoveryFromFlappingWhileRunning() throws Exception {
+    final ListeningExecutorService executor = MoreExecutors.listeningDecorator(
+        Executors.newSingleThreadExecutor());
     final TestTaskStatusManager manager = new TestTaskStatusManager();
     manager.clearIsUpdatedIsFlapping();
 
@@ -89,55 +99,57 @@ public class FlapControllerTest {
 
     // reset the fact that the isFlapping state was updated
     manager.clearIsUpdatedIsFlapping();
-    final CyclicBarrier barrier = new CyclicBarrier(2);
-    synchronized (manager) {
-      controller.jobStarted();
-      when(clock.now()).thenReturn(new Instant(3));
-      // Have to do this in a separate thread because controller.jobDied then calls our
-      // manager.updateFlappingState which still holds the manager lock which then manager.notify
-      // gets called before we hit the wait() below.  This is not a problem in normal circumstances
-      // because only the waiter normally is waiting and it *is* in a separate thread, so this hack
-      // is only necessary for the test.
-      new Thread(new Runnable() {
-        @Override public void run() {
-          manager.clearIsUpdatedIsFlapping();
-          controller.jobDied();
-            try {
-              barrier.await(10, TimeUnit.SECONDS);
-            } catch (InterruptedException | BrokenBarrierException | TimeoutException e) {
-              e.printStackTrace();
-            }
-        }
-      }).start();
-      long start = System.currentTimeMillis();
-      manager.wait(LOCK_WAIT_TIME);
-      assertTrue("shouldn't take that long", System.currentTimeMillis() - start < LOCK_WAIT_TIME);
-    }
-    // Make sure jobDied has definitely been called by here.  If it hasn't, something
-    // has gone bad, and this will throw a TimeoutException.  This is to make sure if something
-    // goes bad that the test fails in a reasonable amount of time, but normally should proceed
-    // quickly.
-    barrier.await(10, TimeUnit.SECONDS);
+    assertEquals((Integer)5, controller.waitFuture(Futures.immediateFuture(5)));
+    assertTrue(controller.isFlapping());
+    controller.jobDied();
+    assertTrue(controller.isFlapping());
 
-    assertTrue(manager.isUpdatedIsFlapping());  // i.e. we didn't time out on wait()
-    assertTrue(controller.isFlapping());        // still
-    assertTrue(manager.isFlapping());           // proof we set the state for real
+    //// Now test that the state will update while the future is running
 
-
-    //// See that the state recovers from the flapping state.
-
-    // reset the fact that the isFlapping state was updated for next scenario
+    // Made all thready because API requires it but done in such a way so that it normally will
+    // run really fast.
     manager.clearIsUpdatedIsFlapping();
-    synchronized (manager) {
-      manager.setState(State.RUNNING);
-      controller.jobStarted();
-      when(clock.now()).thenReturn(new Instant(40));
-      long start = System.currentTimeMillis();
-      manager.wait(LOCK_WAIT_TIME);
-      assertTrue("shouldn't take that long", System.currentTimeMillis() - start < LOCK_WAIT_TIME);
-    }
-    assertTrue(manager.isUpdatedIsFlapping()); // i.e. we didn't time out on wait()
-    assertFalse(controller.isFlapping());      // The controller sees correct flapstate before die
+    final CyclicBarrier barrier = new CyclicBarrier(2);
+    ListenableFuture<Integer> waitContainer = executor.submit(new Callable<Integer>() {
+      @Override public Integer call() throws Exception {
+        // runs until we tell it not to
+        barrier.await(10, TimeUnit.SECONDS);
+        return 3;
+      }
+    });
+
+    controller.jobStarted();
+    when(clock.now()).thenReturn(new Instant(3));
+
+    new Thread(new Runnable() {
+      @Override public void run() {
+        try {
+          long start;
+
+          // wait for the manager's state to change
+          synchronized(manager) {
+            start = System.currentTimeMillis();
+            manager.wait(LOCK_WAIT_TIME);
+            assertTrue("manager wait shouldn't take that long",
+                System.currentTimeMillis() - start < LOCK_WAIT_TIME);
+          }
+          assertFalse(controller.isFlapping());
+
+          // tell waitContainer to finish
+          start = System.currentTimeMillis();
+          barrier.await(10, TimeUnit.SECONDS);
+          assertTrue("barrier wait shouldn't take that long",
+              System.currentTimeMillis() - start < LOCK_WAIT_TIME);
+        } catch (RuntimeException | InterruptedException | BrokenBarrierException
+                 | TimeoutException e) {
+          e.printStackTrace();
+        }
+      }
+    }).start();
+
+    assertEquals((Integer)3, controller.waitFuture(waitContainer));
+
+    when(clock.now()).thenReturn(new Instant(23));
     controller.jobDied();
     assertFalse(controller.isFlapping());
   }
