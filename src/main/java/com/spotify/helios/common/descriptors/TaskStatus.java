@@ -6,6 +6,7 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -33,12 +34,14 @@ public class TaskStatus extends Descriptor {
   private final String containerId;
   private final ThrottleState throttled;
   private final Map<String, PortMapping> ports;
+  private final Map<String, String> env;
 
   public TaskStatus(@JsonProperty("job") final Job job,
                     @JsonProperty("state") final State state,
                     @Nullable @JsonProperty("containerId") final String containerId,
                     @JsonProperty("throttled") final ThrottleState throttled,
-                    @JsonProperty("ports") final Map<String, PortMapping> ports) {
+                    @JsonProperty("ports") final Map<String, PortMapping> ports,
+                    @Nullable @JsonProperty("env") final Map<String, String> env) {
     this.job = checkNotNull(job, "job");
     this.state = checkNotNull(state, "state");
 
@@ -46,6 +49,7 @@ public class TaskStatus extends Descriptor {
     this.containerId = containerId;
     this.throttled = Optional.fromNullable(throttled).or(ThrottleState.NO);
     this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
+    this.env = Optional.fromNullable(env).or(Maps.<String, String>newHashMap());
   }
 
   public Builder asBuilder() {
@@ -54,17 +58,13 @@ public class TaskStatus extends Descriptor {
         .setState(state)
         .setContainerId(containerId)
         .setThrottled(throttled)
-        .setPorts(ports);
+        .setPorts(ports)
+        .setEnv(env);
   }
 
   private TaskStatus(final Builder builder) {
-    this.job = checkNotNull(builder.job, "job");
-    this.state = checkNotNull(builder.state, "state");
-
-    // Optional
-    this.containerId = builder.containerId;
-    this.throttled = Optional.fromNullable(builder.throttled).or(ThrottleState.NO);
-    this.ports = Optional.fromNullable(builder.ports).or(EMPTY_PORTS);
+    this(builder.job, builder.state, builder.containerId, builder.throttled, builder.ports,
+        builder.env);
   }
 
   public ThrottleState getThrottled() {
@@ -88,6 +88,10 @@ public class TaskStatus extends Descriptor {
     return ports;
   }
 
+  public Map<String, String> getEnv() {
+    return env;
+  }
+
   @Override
   public String toString() {
     return Objects.toStringHelper(this)
@@ -96,6 +100,7 @@ public class TaskStatus extends Descriptor {
         .add("containerId", containerId)
         .add("throttled", throttled)
         .add("ports", ports)
+        .add("env", env)
         .toString();
   }
 
@@ -125,7 +130,9 @@ public class TaskStatus extends Descriptor {
     if (throttled != that.throttled) {
       return false;
     }
-
+    if (!env.equals(that.env)) {
+      return false;
+    }
     return true;
   }
 
@@ -136,6 +143,7 @@ public class TaskStatus extends Descriptor {
     result = 31 * result + (containerId != null ? containerId.hashCode() : 0);
     result = 31 * result + (throttled != null ? throttled.hashCode() : 0);
     result = 31 * result + (ports != null ? ports.hashCode() : 0);
+    result = 31 * result + (env != null ? env.hashCode() : 0);
     return result;
   }
 
@@ -152,6 +160,12 @@ public class TaskStatus extends Descriptor {
     private String containerId;
     private Map<String, PortMapping> ports;
     private ThrottleState throttled;
+    private Map<String, String> env;
+
+    public Builder setEnv(final Map<String, String> env) {
+      this.env = env;
+      return this;
+    }
 
     public Builder setJob(final Job job) {
       this.job = job;

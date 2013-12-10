@@ -41,7 +41,8 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
 
   @Override
   public void setStatus(State status, boolean isFlapping, String containerId,
-                        Map<String, PortMapping> ports) {
+                        Map<String, PortMapping> ports, Map<String, String> env) {
+
     this.isFlapping = isFlapping;
     this.status = status;
 
@@ -51,12 +52,24 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
         .setContainerId(containerId)
         .setPorts(ports);
 
+    // If no env passed, get whatever the existing one is/was -- most necessary for the case
+    // where there was an agent restart while the thing is running.
+    if (env == null) {
+      TaskStatus existing = model.getTaskStatus(jobId);
+
+      if (existing != null) {
+        builder.setEnv(existing.getEnv());
+      }
+    } else {
+      builder.setEnv(env);
+    }
     updateModelStatus(builder);
   }
 
   private void updateModelStatus(TaskStatus.Builder builder) {
     builder.setThrottled(isFlapping ? ThrottleState.FLAPPING : ThrottleState.NO);
     model.setTaskStatus(jobId, builder.build());
+    taskStatus = builder.build();
   }
 
   @Override

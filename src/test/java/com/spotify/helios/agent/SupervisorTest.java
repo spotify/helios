@@ -193,6 +193,7 @@ public class SupervisorTest {
                                                       .setJob(DESCRIPTOR)
                                                       .setState(STARTING)
                                                       .setContainerId(containerId)
+                                                      .setEnv(ENV)
                                                       .build()));
     assertEquals(STARTING, sut.getStatus());
     when(docker.inspectContainer(eq(containerId))).thenReturn(immediateFuture(runningResponse));
@@ -204,6 +205,7 @@ public class SupervisorTest {
                                                       .setJob(DESCRIPTOR)
                                                       .setState(RUNNING)
                                                       .setContainerId(containerId)
+                                                      .setEnv(ENV)
                                                       .build()));
     assertEquals(RUNNING, sut.getStatus());
 
@@ -229,6 +231,7 @@ public class SupervisorTest {
                                                       .setJob(DESCRIPTOR)
                                                       .setState(STOPPED)
                                                       .setContainerId(containerId)
+                                                      .setEnv(ENV)
                                                       .build()));
     assertEquals(STOPPED, sut.getStatus());
   }

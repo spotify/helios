@@ -72,7 +72,7 @@ public class JobStatusCommand extends ControlCommand {
         for (final String host : taskStatuses.keySet()) {
           final TaskStatus ts = taskStatuses.get(host);
           final String command = on(' ').join(ts.getJob().getCommand());
-          final String env = Joiner.on(" ").withKeyValueSeparator("=").join(ts.getJob().getEnv());
+          final String env = Joiner.on(" ").withKeyValueSeparator("=").join(ts.getEnv());
           table.row(jobId, host, ts.getState(), ts.getContainerId(), command, ts.getThrottled(), env);
         }
       }

@@ -8,7 +8,7 @@ import java.util.Map;
 public interface TaskStatusManager {
 
   void setStatus(State status, boolean isFlapping, String containerId,
-      Map<String, PortMapping> ports);
+                 Map<String, PortMapping> ports, Map<String, String> env);
 
   void updateFlappingState(boolean isFlapping);
 

@@ -258,15 +258,16 @@ class Supervisor {
    * Persist job status.
    */
   private void setStatus(final TaskStatus.State status, final String containerId) {
-    setStatus(status, containerId, null);
+    setStatus(status, containerId, null, null);
   }
 
   /**
    * Persist job status with port mapping.
    */
   private void setStatus(final TaskStatus.State status, final String containerId,
-                         final Map<String, PortMapping> ports) {
-    stateManager.setStatus(status, flapController.isFlapping(), containerId, ports);
+                         final Map<String, PortMapping> ports,
+                         final Map<String, String> env) {
+    stateManager.setStatus(status, flapController.isFlapping(), containerId, ports, env);
   }
 
   /**
@@ -340,10 +341,7 @@ class Supervisor {
    * Compute docker container environment variables.
    */
   private String[] containerEnv(final Job descriptor) {
-    final Map<String, String> env = Maps.newHashMap(envVars);
-
-    // Job environment variables take precedence.
-    env.putAll(descriptor.getEnv());
+    final Map<String, String> env = getContainerEnvMap(descriptor);
 
     final List<String> envList = Lists.newArrayList();
     for (final Map.Entry<String, String> entry : env.entrySet()) {
@@ -351,6 +349,13 @@ class Supervisor {
     }
 
     return envList.toArray(new String[envList.size()]);
+  }
+
+  private Map<String, String> getContainerEnvMap(final Job descriptor) {
+    final Map<String, String> env = Maps.newHashMap(envVars);
+    // Job environment variables take precedence.
+    env.putAll(descriptor.getEnv());
+    return env;
   }
 
   /**
@@ -483,7 +488,7 @@ class Supervisor {
           containerId = container.id;
           log.info("created container: {}: {}", job, container);
 
-          setStatus(STARTING, containerId);
+          setStatus(STARTING, containerId, null, getContainerEnvMap(job));
           log.info("starting container: {}: {}", job, containerId);
           final HostConfig hostConfig = hostConfig(job);
           startFuture = docker.startContainer(containerId, hostConfig);
@@ -497,7 +502,7 @@ class Supervisor {
         final Map<String, PortMapping> ports = parsePortBindings(runningContainerInfo);
         flapController.jobStarted();
         handleNamelessRegistration(ports);
-        setStatus(RUNNING, containerId, ports);
+        setStatus(RUNNING, containerId, ports, null);
 
         // Wait for container to die
         final int exitCode = flapController.waitFuture(docker.waitContainer(containerId));

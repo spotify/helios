@@ -14,7 +14,7 @@ class FakeTaskStatusManager implements TaskStatusManager {
 
   @Override
   public void setStatus(State status, boolean isFlapping, String containerId,
-                        Map<String, PortMapping> ports) {
+                        Map<String, PortMapping> ports, Map<String, String> env) {
     this.state = status;
     this.isFlapping = isFlapping;
   }
