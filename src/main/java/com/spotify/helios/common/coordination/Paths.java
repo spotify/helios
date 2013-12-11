@@ -19,6 +19,7 @@ public class Paths {
   private static final String HOSTINFO = "hostinfo";
   private static final String RUNTIMEINFO = "runtimeinfo";
   private static final String PORTS = "ports";
+  private static final String ENVIRONMENTVARS = "environment";
 
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
   private static final PathFactory CONFIG_AGENTS = new PathFactory("/", CONFIG, AGENTS);
@@ -96,6 +97,10 @@ public class Paths {
 
   public static String statusAgentRuntimeInfo(final String agent) {
     return STATUS_AGENTS.path(agent, RUNTIMEINFO);
+  }
+
+  public static String statusAgentEnvVars(final String agent) {
+    return STATUS_AGENTS.path(agent, ENVIRONMENTVARS);
   }
 
   public static String historyJobAgentEventsTimestamp(final JobId jobId,
