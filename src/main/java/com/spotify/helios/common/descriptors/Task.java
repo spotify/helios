@@ -6,7 +6,7 @@ package com.spotify.helios.common.descriptors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import static org.mockito.internal.util.Checks.checkNotNull;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class Task extends Descriptor {
 
