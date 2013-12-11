@@ -13,6 +13,9 @@ db_version 2.0
 
 case "$1" in
   configure)
+    mkdir -p $DIST_USER_HOME
+    mkdir -p $RUNDIR
+
     getent passwd $USER >/dev/null ||       adduser --quiet --system --group \
                                                 --home $RUNDIR --no-create-home $USER
     [ -d $RUNDIR ] || mkdir -p $RUNDIR
