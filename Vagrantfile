@@ -14,17 +14,12 @@ Vagrant::Config.run do |config|
   config.vm.box_url = BOX_URI
 
   config.ssh.forward_agent = true
-  config.vm.forward_port 4243, 4160
+  config.vm.forward_port 4160, 4160
 
   # Provision docker and new kernel if deployment was not done.
   # It is assumed Vagrant can successfully launch the provider instance.
   if Dir.glob("#{File.dirname(__FILE__)}/.vagrant/machines/default/*/id").empty?
     pkg_cmd = "export DEBIAN_FRONTEND=noninteractive; "
-
-    # Add lxc-docker package
-    pkg_cmd << "wget -q -O - https://get.docker.io/gpg | apt-key add -; " \
-      "echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list; " \
-      "apt-get update -q; apt-get install -q -y --force-yes lxc-docker; "
 
     # Add Ubuntu raring backported kernel
     pkg_cmd << "apt-get update -qq; apt-get install -q -y linux-image-generic-lts-raring; "
@@ -41,16 +36,63 @@ Vagrant::Config.run do |config|
         "echo yes | /mnt/VBoxLinuxAdditions.run\numount /mnt\n" \
           "rm /root/guest_additions.sh; ' > /root/guest_additions.sh; " \
         "chmod 700 /root/guest_additions.sh; " \
-        "sed -i -E 's#^exit 0#[ -x /root/guest_additions.sh ] \\&\\& /root/guest_additions.sh#' /etc/rc.local; " \
-        "echo 'Installation of VBox Guest Additions is proceeding in the background.'; " \
-        "echo '\"vagrant reload\" can be used in about 2 minutes to activate the new guest additions.'; "
+        "sed -i -E 's#^exit 0#[ -x /root/guest_additions.sh ] \\&\\& /root/guest_additions.sh#' /etc/rc.local; "
     end
 
+    # Use our dns
+    pkg_cmd << <<-END.gsub(/^ {6}/, '')
+      echo "\
+      domain spotify.net
+      search spotify.net spotify.net.
+      nameserver 193.182.13.186
+      nameserver 193.182.13.179
+      " > /etc/resolv.conf
+      END
+
+    # Use spotify apt sources
+    pkg_cmd << "apt-get --allow-unauthenticated update && apt-get --allow-unauthenticated install --force-yes -y apt-utils apt-transport-https; "
+    pkg_cmd << <<-END.gsub(/^ {6}/, '')
+      echo "\
+      # precise-backports
+      deb http://debmirror:9999/ubuntu/ precise-backports main restricted universe
+      deb-src http://debmirror:9999/ubuntu/ precise-backports main restricted universe
+
+      # precise-security
+      deb http://debmirror:9999/ubuntu-security/ precise-security main restricted universe
+      deb-src http://debmirror:9999/ubuntu-security/ precise-security main restricted universe
+
+      # precise-standard
+      deb http://debmirror:9999/ubuntu/ precise main restricted universe
+      deb-src http://debmirror:9999/ubuntu/ precise main restricted universe
+
+      # precise-updates
+      deb http://debmirror:9999/ubuntu/ precise-updates main restricted universe
+      deb-src http://debmirror:9999/ubuntu/ precise-updates main restricted universe
+
+      # spotify-private-stable
+      deb http://spotify:fuph3AM0ti3ohXugu5ip@debmirror:9444/precise/debian/ stable main non-free
+      deb-src http://spotify:fuph3AM0ti3ohXugu5ip@debmirror:9444/precise/debian/ stable main non-free
+
+      # spotify-private-testing
+      deb http://spotify:fuph3AM0ti3ohXugu5ip@debmirror:9444/precise/debian/ testing main non-free
+      deb-src http://spotify:fuph3AM0ti3ohXugu5ip@debmirror:9444/precise/debian/ testing main non-free
+
+      # spotify-private-unstable
+      deb http://spotify:fuph3AM0ti3ohXugu5ip@debmirror:9444/precise/debian/ unstable main non-free
+      deb-src http://spotify:fuph3AM0ti3ohXugu5ip@debmirror:9444/precise/debian/ unstable main non-free
+      " > /etc/apt/sources.list ;
+      END
+    pkg_cmd << "apt-get --allow-unauthenticated update && apt-get --allow-unauthenticated install --force-yes -y spotify-apt-keys; "
+    pkg_cmd << "apt-get --allow-unauthenticated update; "
+
+    # Add lxc-docker package
+    pkg_cmd << "apt-get --allow-unauthenticated install -qq --force-yes lxc-docker; "
+
     # Set up to listen on TCP
-    pkg_cmd << "grep '0.0.0.0' /etc/init/docker.conf || sed -e 's/-d/-d -H 0.0.0.0:4243 -H 0.0.0.0:4160 -H unix:\\/\\/\\/var\\/run\\/docker.sock/' /etc/init/docker.conf -i;\n"
+    pkg_cmd << "grep '0.0.0.0' /etc/init/docker.conf || sed -e 's/-d/-d -H 0.0.0.0:4160 -H unix:\\/\\/\\/var\\/run\\/docker.sock/' /etc/init/docker.conf -i;\n"
 
     # Add vagrant user to the docker group
-    pkg_cmd << "usermod -a -G docker vagrant; "
+    # pkg_cmd << "usermod -a -G docker vagrant; "
 
     # Activate new kernel
     pkg_cmd << "shutdown -r +1; "
