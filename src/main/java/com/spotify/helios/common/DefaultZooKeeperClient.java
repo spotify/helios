@@ -1,6 +1,10 @@
 package com.spotify.helios.common;
 
+import com.google.common.collect.Lists;
+
 import com.netflix.curator.framework.CuratorFramework;
+import com.netflix.curator.framework.api.transaction.CuratorTransaction;
+import com.netflix.curator.framework.api.transaction.CuratorTransactionFinal;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 import com.netflix.curator.utils.EnsurePath;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
@@ -15,6 +19,7 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.collect.Lists.reverse;
 import static com.netflix.curator.framework.imps.CuratorFrameworkState.STARTED;
 
 public class DefaultZooKeeperClient implements ZooKeeperClient {
@@ -70,7 +75,15 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   public void deleteRecursive(final String path) throws KeeperException {
     try {
-      ZKUtil.deleteRecursive(client.getZookeeperClient().getZooKeeper(), path);
+      final List<String> nodes = ZKUtil.listSubTreeBFS(client.getZookeeperClient().getZooKeeper(), path);
+      if (nodes.isEmpty()) {
+        return;
+      }
+      final CuratorTransactionFinal t = client.inTransaction().check().forPath(path).and();
+      for (final String node : reverse(nodes))  {
+        t.delete().forPath(node).and();
+      }
+      t.commit();
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);

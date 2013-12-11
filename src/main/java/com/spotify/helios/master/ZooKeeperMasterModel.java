@@ -138,7 +138,6 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   @Override
   public void removeAgent(final String agent) throws HeliosException {
-    assertAgentExists(agent);
     try {
       client.deleteRecursive(Paths.configAgent(agent));
     } catch (NoNodeException e) {
