@@ -26,6 +26,8 @@ Package: spotify-helios-agent
 Architecture: all
 Depends:
  spotify-helios-common,
+Suggests:
+ lxc-docker,
 Description: Spotify Helios Agent
 
 Package: spotify-helios-common
