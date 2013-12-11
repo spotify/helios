@@ -41,6 +41,7 @@ public class AgentService {
   private final DefaultZooKeeperClient zooKeeperClient;
   private final HostInfoReporter hostInfoReporter;
   private final RuntimeInfoReporter runtimeInfoReporter;
+  private final EnvironmentVariableReporter environmentVariableReporter;
 
   /**
    * Create a new agent instance.
@@ -85,6 +86,8 @@ public class AgentService {
         .setAgent(config.getName())
         .build();
 
+    this.environmentVariableReporter = new EnvironmentVariableReporter(config.getName(),
+        config.getEnvVars(), zooKeeperClient);
     this.agent = new Agent(model, supervisorFactory, reactorFactory);
   }
 
@@ -149,6 +152,7 @@ public class AgentService {
     agent.start();
     hostInfoReporter.start();
     runtimeInfoReporter.start();
+    environmentVariableReporter.start();
   }
 
   /**

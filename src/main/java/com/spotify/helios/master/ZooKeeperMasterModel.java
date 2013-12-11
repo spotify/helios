@@ -14,6 +14,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobAlreadyDeployedException;
@@ -449,6 +450,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final RuntimeInfo runtimeInfo = getAgentRuntimeInfo(agent);
     final Map<JobId, Deployment> jobs = getTasks(agent);
     final Map<JobId, TaskStatus> statuses = getTaskStatuses(agent);
+    final Map<String, String> environment = getEnvironment(agent);
     if (jobs == null) {
       return null;
     }
@@ -458,29 +460,38 @@ public class ZooKeeperMasterModel implements MasterModel {
         .setHostInfo(hostInfo)
         .setRuntimeInfo(runtimeInfo)
         .setStatus(up ? UP : DOWN)
+        .setEnvironment(environment)
         .build();
   }
 
-  private RuntimeInfo getAgentRuntimeInfo(final String agent) throws HeliosException {
+  private <T> T getAgentStatusData(String path, TypeReference<T> type, String thing)
+      throws HeliosException {
     try {
-      final byte[] data = client.getData(Paths.statusAgentRuntimeInfo(agent));
-      return Json.read(data, RuntimeInfo.class);
+      final byte[] data = client.getData(path);
+      return Json.read(data, type);
     } catch (NoNodeException e) {
       return null;
     } catch (KeeperException | IOException e) {
-      throw new HeliosException("getting agent runtime info failed", e);
+      throw new HeliosException("getting agent " + thing + " info failed", e);
     }
   }
 
+  private Map<String, String> getEnvironment(final String agent) throws HeliosException {
+    return getAgentStatusData(Paths.statusAgentEnvVars(agent),
+                              new TypeReference<Map<String,String>>(){},
+                              "environment");
+  }
+
+  private RuntimeInfo getAgentRuntimeInfo(final String agent) throws HeliosException {
+    return getAgentStatusData(Paths.statusAgentRuntimeInfo(agent),
+                              new TypeReference<RuntimeInfo>(){},
+                              "runtime info");
+  }
+
   private HostInfo getAgentHostInfo(final String agent) throws HeliosException {
-    try {
-      final byte[] data = client.getData(Paths.statusAgentHostInfo(agent));
-      return Json.read(data, HostInfo.class);
-    } catch (NoNodeException e) {
-      return null;
-    } catch (KeeperException | IOException e) {
-      throw new HeliosException("getting agent host info failed", e);
-    }
+    return getAgentStatusData(Paths.statusAgentHostInfo(agent),
+                              new TypeReference<HostInfo>(){},
+                              "host info");
   }
 
   private boolean checkAgentUp(final String agent) throws HeliosException {

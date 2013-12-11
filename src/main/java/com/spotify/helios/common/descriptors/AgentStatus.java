@@ -4,11 +4,16 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Iterables;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Map;
+import java.util.Map.Entry;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -24,19 +29,26 @@ public class AgentStatus extends Descriptor {
   private final RuntimeInfo runtimeInfo;
   private final Map<JobId, Deployment> jobs;
   private final Map<JobId, TaskStatus> statuses;
+  private final Map<String, String> environment;
 
   public AgentStatus(@JsonProperty("jobs") final Map<JobId, Deployment> jobs,
                      @JsonProperty("statuses") final Map<JobId, TaskStatus> statuses,
                      @JsonProperty("status") final Status status,
                      @JsonProperty("hostInfo") final HostInfo hostInfo,
-                     @JsonProperty("runtimeInfo") final RuntimeInfo runtimeInfo) {
+                     @JsonProperty("runtimeInfo") final RuntimeInfo runtimeInfo,
+                     @JsonProperty("environment") final Map<String, String> environment) {
     this.status = checkNotNull(status, "status");
     this.jobs = checkNotNull(jobs, "jobs");
     this.statuses = checkNotNull(statuses, "statuses");
+    this.environment = checkNotNull(environment, "environment");
 
     // Host and runtime info might not be available
     this.hostInfo = hostInfo;
     this.runtimeInfo = runtimeInfo;
+  }
+
+  public Map<String, String> getEnvironment() {
+    return environment;
   }
 
   public Status getStatus() {
@@ -72,6 +84,7 @@ public class AgentStatus extends Descriptor {
     private Status status;
     private HostInfo hostInfo;
     private RuntimeInfo runtimeInfo;
+    private Map<String, String> environment;
 
     public Builder setJobs(final Map<JobId, Deployment> jobs) {
       this.jobs = jobs;
@@ -98,8 +111,13 @@ public class AgentStatus extends Descriptor {
       return this;
     }
 
+    public Builder setEnvironment(final Map<String, String> environment) {
+      this.environment = environment;
+      return this;
+    }
+
     public AgentStatus build() {
-      return new AgentStatus(jobs, statuses, status, hostInfo, runtimeInfo);
+      return new AgentStatus(jobs, statuses, status, hostInfo, runtimeInfo, environment);
     }
   }
 
@@ -129,6 +147,9 @@ public class AgentStatus extends Descriptor {
     if (statuses != null ? !statuses.equals(that.statuses) : that.statuses != null) {
       return false;
     }
+    if (environment != null ? !environment.equals(that.environment) : that.environment != null) {
+      return false;
+    }
 
     return true;
   }
@@ -140,17 +161,26 @@ public class AgentStatus extends Descriptor {
     result = 31 * result + (runtimeInfo != null ? runtimeInfo.hashCode() : 0);
     result = 31 * result + (jobs != null ? jobs.hashCode() : 0);
     result = 31 * result + (statuses != null ? statuses.hashCode() : 0);
+    result = 31 * result + (environment != null ? environment.hashCode() : 0);
     return result;
   }
 
   @Override
   public String toString() {
+    final String strEnv = Joiner.on(", ").join(
+        Iterables.transform(environment.entrySet(), new Function<Entry<String, String>, String>() {
+          @Override
+          public String apply(Entry<String, String> entry) {
+            return entry.getKey() + "=" + entry.getValue();
+          }
+        }));
     return "AgentStatus{" +
            "status=" + status +
            ", hostInfo=" + hostInfo +
            ", runtimeInfo=" + runtimeInfo +
            ", jobs=" + jobs +
            ", statuses=" + statuses +
+           ", environment={" + strEnv + "}" +
            '}';
   }
 }
