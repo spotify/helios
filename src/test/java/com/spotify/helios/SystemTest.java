@@ -547,6 +547,60 @@ public class SystemTest extends ZooKeeperTestBase {
     awaitAgentStatus(control, agentName, DOWN, WAIT_TIMEOUT_SECONDS, SECONDS);
   }
 
+  @Test
+  public void testImagesWithPredefinedPortsAreDeployable() throws Exception {
+    final String agentName = "foobar";
+    startDefaultMaster();
+
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    startDefaultAgent(agentName);
+
+    // Create a job using an image exposing port 80 but without mapping it
+    final Job job1 = Job.newBuilder()
+        .setName("wordpress")
+        .setVersion("v1")
+        .setImage("jbfink/wordpress")
+        .setCommand(DO_NOTHING_COMMAND)
+        .build();
+    final JobId jobId1 = job1.getId();
+    control.createJob(job1).get();
+
+    // Create a job using an image exposing port 80 and map it to 8080
+    final Job job2 = Job.newBuilder()
+        .setName("wordpress")
+        .setVersion("v2")
+        .setImage("jbfink/wordpress")
+        .setCommand(DO_NOTHING_COMMAND)
+        .setPorts(ImmutableMap.of("tcp", PortMapping.of(80, 8080)))
+        .build();
+    final JobId jobId2 = job2.getId();
+    control.createJob(job2).get();
+
+    // Wait for agent to come up
+    awaitAgentRegistered(control, agentName, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(control, agentName, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+
+    // Deploy the jobs on the agent
+    control.deploy(Deployment.of(jobId1, START), agentName).get();
+    control.deploy(Deployment.of(jobId2, START), agentName).get();
+
+    // Wait for the jobs to run
+    awaitJobState(control, agentName, jobId1, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(control, agentName, jobId2, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+
+    // Undeploy the jobs
+    control.undeploy(jobId1, agentName).get();
+    control.undeploy(jobId2, agentName).get();
+
+    // Wait for the jobs to enter the STOPPED state
+    awaitJobState(control, agentName, jobId1, STOPPED, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitJobState(control, agentName, jobId2, STOPPED, WAIT_TIMEOUT_SECONDS, SECONDS);
+  }
+
   private void startDefaultMaster() throws Exception {
     startMaster("-vvvv",
                 "--no-log-setup",

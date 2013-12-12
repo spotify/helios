@@ -566,8 +566,15 @@ class Supervisor {
   private Map<String, PortMapping> parsePortBindings(final Map<String, List<PortBinding>> ports) {
     final ImmutableMap.Builder<String, PortMapping> builder = ImmutableMap.builder();
     for (final Map.Entry<String, List<PortBinding>> e : ports.entrySet()) {
+      final List<PortBinding> bindings = e.getValue();
       final PortBindingParser parser = new PortBindingParser(e.getKey(), e.getValue());
-      builder.put(parser.getName(), parser.getMapping());
+      final String name = parser.getName();
+      final PortMapping mapping = parser.getMapping();
+      if (mapping.getExternalPort() == null) {
+        log.debug("unbound port: {}/{}", name, mapping.getInternalPort());
+        continue;
+      }
+      builder.put(name, mapping);
     }
     return builder.build();
   }
@@ -678,19 +685,23 @@ class Supervisor {
         throw new IllegalArgumentException("Invalid port binding: " + entry, ex);
       }
 
-      if (bindings.size() != 1) {
-        throw new IllegalArgumentException("Expected single binding, got " + bindings.size());
+      if (bindings == null) {
+        this.mapping = PortMapping.of(internalPort);
+      } else {
+        if (bindings.size() != 1) {
+          throw new IllegalArgumentException("Expected single binding, got " + bindings.size());
+        }
+
+        final PortBinding binding = bindings.get(0);
+        final int externalPort;
+        try {
+          externalPort = Integer.parseInt(binding.hostPort);
+        } catch (NumberFormatException e1) {
+          throw new IllegalArgumentException("Invalid host port: " + binding.hostPort);
+        }
+        this.mapping = PortMapping.of(internalPort, externalPort);
       }
 
-      final PortBinding binding = bindings.get(0);
-      final int externalPort;
-      try {
-        externalPort = Integer.parseInt(binding.hostPort);
-      } catch (NumberFormatException e1) {
-        throw new IllegalArgumentException("Invalid host port: " + binding.hostPort);
-      }
-
-      this.mapping = PortMapping.of(internalPort, externalPort);
     }
 
     public String getName() {
