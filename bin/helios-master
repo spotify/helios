@@ -1,9 +1,7 @@
 #!/bin/bash -e
 
-jmxport=9202
-keystore="/etc/spotify/jmx/keystore"
-jmxpassword="/etc/spotify/jmx/password"
-jmxaccess="/etc/spotify/jmx/helios.access"
+: ${JMXPORT=9202}
+
 args=()
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
@@ -15,29 +13,16 @@ else
     jar="/usr/share/java/spotify-helios.jar"
 fi
 
-if [[ -e "$keystore" && -e "$jmxpassword" && -e "$jmxaccess" ]]; then
-    # A JMX keystore exists. Enable remote JMX over SSL.
-    # Keystore password should perhaps not be here, but we trust
-    # the file system for security.
-    args=(
-        "${args[@]}"
-        -Dcom.sun.management.jmxremote.port=$jmxport
-        -Djavax.net.ssl.keyStore="$keystore"
-        -Djavax.net.ssl.keyStorePassword=spotify
-        -Dcom.sun.management.jmxremote.password.file="$jmxpassword"
-        -Dcom.sun.management.jmxremote.access.file="$jmxaccess" )
-else
-    args=(
-        "${args[@]}"
-        -Dcom.sun.management.jmxremote.port=$jmxport
-        -Dcom.sun.management.jmxremote.ssl=false
-        -Dcom.sun.management.jmxremote.authenticate=false )
+if [ $JMXPORT ]; then
+    args=("${args[@]}"
+          -Dcom.sun.management.jmxremote.port=$JMXPORT
+          -Dcom.sun.management.jmxremote.ssl=false
+          -Dcom.sun.management.jmxremote.authenticate=false )
 fi
 
 if [[ -e /etc/spotify/helios.args ]]; then
-    args=(
-        "${args[@]}"
-        $(cat /etc/spotify/helios.args | grep -v \#) )
+    args=("${args[@]}"
+          $(cat /etc/spotify/helios.args | grep -v \#) )
 fi
 
 exec java \
