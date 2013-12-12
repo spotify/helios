@@ -74,6 +74,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -94,7 +95,8 @@ public class SystemTest extends ZooKeeperTestBase {
   private static final String NAMELESS_SERVICE = "service";
   private static final int INTERNAL_PORT = 4444;
   private static final int EXTERNAL_PORT = 5555;
-  private static final ImmutableMap<String, String> EMPTY_ENV = ImmutableMap.<String, String>of();
+  private static final Map<String, String> EMPTY_ENV = emptyMap();
+  private static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
   private static final JobId BOGUS_JOB = new JobId("bogus", "job", "badfood");
   private static final String BOGUS_AGENT = "BOGUS_AGENT";
 
@@ -438,6 +440,23 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   @Test
+  public void testCreateJobWithIdMismatchFails() throws Exception {
+    startDefaultMaster();
+
+    final Client client = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    final CreateJobResponse createIdMismatch = client.createJob(
+        new Job(JobId.fromString("bad:job:deadbeef"), "busyBox", DO_NOTHING_COMMAND, EMPTY_ENV,
+                EMPTY_PORTS, null)).get();
+
+    // TODO (dano): Maybe this should be ID_MISMATCH but then JobValidator must become able to communicate that
+    assertEquals(CreateJobResponse.Status.INVALID_JOB_DEFINITION, createIdMismatch.getStatus());
+  }
+
+  @Test
   public void testService() throws Exception {
     final String agentName = "foobar";
     final String jobName = "foo";
@@ -483,14 +502,6 @@ public class SystemTest extends ZooKeeperTestBase {
 
     final Map<JobId, Job> matchJobs3 = control.jobs(job.getId().toString()).get();
     assertEquals(ImmutableMap.of(jobId, job), matchJobs3);
-
-    // TODO: reimplement this test
-//    final CreateJobResponse createIdMismatch = control.createJob(
-//        new Job("foo", jobName, jobVersion, "busyBox", command) {
-//          @Override
-//          public JobId getId() { return JobId.fromString("bad:job:deadbeef"); }
-//        }).get();
-//    assertEquals(CreateJobResponse.Status.ID_MISMATCH, createIdMismatch.getStatus());
 
     // Wait for agent to come up
     awaitAgentRegistered(control, agentName, WAIT_TIMEOUT_SECONDS, SECONDS);
