@@ -152,6 +152,16 @@ public class ZooKeeperMasterModel implements MasterModel {
     log.debug("adding job: {}", job);
     try {
       // TODO (dano): do this in a transaction
+
+      // Enforce job name:version unique constraint
+      final Map<JobId, Job> existingJobs = getJobs();
+      for (final JobId existingJobId : existingJobs.keySet()) {
+        if (existingJobId.getName().equals(job.getId().getName()) &&
+            existingJobId.getVersion().equals(job.getId().getVersion())) {
+          throw new JobExistsException(job.getId().toString());
+        }
+      }
+
       final String jobPath = Paths.configJob(job.getId());
       client.createAndSetData(jobPath, job.toJsonBytes());
 
