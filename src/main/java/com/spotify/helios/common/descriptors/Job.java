@@ -25,13 +25,15 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.helios.common.Hash.sha1digest;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class Job extends Descriptor implements Comparable<Job> {
 
   public static final Map<String, String> EMPTY_ENV = emptyMap();
-  private static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
+  public static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
+  public static final List<String> EMPTY_COMMAND = emptyList();
 
   private final JobId id;
   private final String image;
@@ -148,16 +150,30 @@ public class Job extends Descriptor implements Comparable<Job> {
         .toString();
   }
 
+  public Builder toBuilder() {
+    return newBuilder()
+        .setName(id.getName())
+        .setVersion(id.getVersion())
+        .setImage(image)
+        .setCommand(command)
+        .setEnv(env)
+        .setPorts(ports)
+        .setService(service);
+  }
+
   public static class Builder {
 
     private String hash;
 
-    private static class Parameters {
+    public static class Parameters {
+
+      // Note: Changing the fields of this class will affect the id's of all jobs as it is based
+      //       on the sha1 json hash of instances of Parameters.
 
       public String name;
       public String version;
       public String image;
-      public List<String> command;
+      public List<String> command = EMPTY_COMMAND;
       public Map<String, String> env = EMPTY_ENV;
       public Map<String, PortMapping> ports = EMPTY_PORTS;
       public String service = "";
@@ -191,17 +207,17 @@ public class Job extends Descriptor implements Comparable<Job> {
     }
 
     public Builder setCommand(final List<String> command) {
-      p.command = command;
+      p.command = ImmutableList.copyOf(command);
       return this;
     }
 
     public Builder setEnv(final Map<String, String> env) {
-      p.env = env;
+      p.env = ImmutableMap.copyOf(env);
       return this;
     }
 
     public Builder setPorts(final Map<String, PortMapping> ports) {
-      p.ports = ports;
+      p.ports = ImmutableMap.copyOf(ports);
       return this;
     }
 

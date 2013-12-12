@@ -4,7 +4,10 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -16,6 +19,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -131,5 +135,34 @@ public class JobTest {
     final Job parsedJob = parse(modifiedJobJson, Job.class);
 
     assertEquals(job, parsedJob);
+  }
+
+  @Test
+  public void verifyJobIsImmutable() {
+    final List<String> expectedCommand = ImmutableList.of("foo");
+    final Map<String, String> expectedEnv = ImmutableMap.of("e1", "1");
+    final Map<String, PortMapping> expectedPorts = ImmutableMap.of("p1", PortMapping.of(1, 2));
+
+    final List<String> mutableCommand = Lists.newArrayList(expectedCommand);
+    final Map<String, String> mutableEnv = Maps.newHashMap(expectedEnv);
+    final Map<String, PortMapping> mutablePorts = Maps.newHashMap(expectedPorts);
+
+    final Job job = Job.newBuilder()
+        .setCommand(mutableCommand)
+        .setEnv(mutableEnv)
+        .setPorts(mutablePorts)
+        .setImage("foobar:4711")
+        .setName("foozbarz")
+        .setVersion("17")
+        .setService("foo")
+        .build();
+
+    mutableCommand.add("bar");
+    mutableEnv.put("e2", "2");
+    mutablePorts.put("p2", PortMapping.of(3, 4));
+
+    assertEquals(expectedCommand, job.getCommand());
+    assertEquals(expectedEnv, job.getEnv());
+    assertEquals(expectedPorts, job.getPorts());
   }
 }
