@@ -103,6 +103,9 @@ public class SystemTest extends ZooKeeperTestBase {
   private static final List<String> DO_NOTHING_COMMAND = asList("sh", "-c",
       "while :; do sleep 1; done");
 
+  public static final TypeReference<Map<JobId, JobStatus>> STATUSES_TYPE =
+      new TypeReference<Map<JobId, JobStatus>>() {};
+
   private final int masterPort = ZooKeeperTestBase.PORT_COUNTER.incrementAndGet();
   private final String masterEndpoint = "tcp://localhost:" + masterPort;
   private final String masterName = "test-master";
@@ -389,6 +392,7 @@ public class SystemTest extends ZooKeeperTestBase {
    awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.FLAPPING, WAIT_TIMEOUT_SECONDS, SECONDS);
   }
 
+
   @Test
   public void testPortCollision() throws Exception {
     final String agentName = "foobar";
@@ -642,22 +646,33 @@ public class SystemTest extends ZooKeeperTestBase {
 
     startDefaultAgent(TEST_AGENT);
 
-    final String jobName = "test";
-    final String jobVersion = "17";
-    final String jobImage = "busybox";
+    final String name = "test";
+    final String version = "17";
+    final String image = "busybox";
+    final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711),
+                                                           "bar", PortMapping.of(5000, 6000));
+    final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
     // Wait for agent to come up
     awaitAgentRegistered(TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     // Create job
-    final JobId jobId = createJob(jobName, jobVersion, jobImage, DO_NOTHING_COMMAND);
+    final JobId jobId = createJob(name, version, image, DO_NOTHING_COMMAND, env, ports);
 
     // Query for job
-    assertContains(jobId.toString(), control("job", "list", jobName, "-q"));
-    assertContains(jobId.toString(), control("job", "list", jobName + ":" + jobVersion, "-q"));
+    assertContains(jobId.toString(), control("job", "list", name, "-q"));
+    assertContains(jobId.toString(), control("job", "list", name + ":" + version, "-q"));
     assertTrue(control("job", "list", "foozbarz", "-q").trim().isEmpty());
 
+    // Verify that port mapping and environment variables are correct
+    final String statusString = control("job", "status", jobId.toString(), "--json");
+    final Map<JobId, JobStatus> statuses = Json.read(statusString, STATUSES_TYPE);
+    final Job job = statuses.get(jobId).getJob();
+    assertEquals(4711, job.getPorts().get("foo").getInternalPort());
+    assertEquals(PortMapping.of(5000, 6000), job.getPorts().get("bar"));
+    assertEquals("f00d", job.getEnv().get("BAD"));
+
     final String duplicateJob = control(
-        "job", "create", jobName, jobVersion, jobImage, "--", DO_NOTHING_COMMAND);
+        "job", "create", name, version, image, "--", DO_NOTHING_COMMAND);
     assertContains("JOB_ALREADY_EXISTS", duplicateJob);
 
     final String prestop = stopJob(jobId, TEST_AGENT);
@@ -944,6 +959,12 @@ public class SystemTest extends ZooKeeperTestBase {
                           final List<String> command, final ImmutableMap<String, String> env)
       throws Exception {
     return createJob(name, version, image, command, env, new HashMap<String, PortMapping>(), null);
+  }
+
+  private JobId createJob(final String name, final String version, final String image,
+                          final List<String> command, final Map<String, String> env,
+                          final Map<String, PortMapping> ports) throws Exception {
+    return createJob(name, version, image, command, env, ports, null);
   }
 
   private JobId createJob(final String name, final String version, final String image,

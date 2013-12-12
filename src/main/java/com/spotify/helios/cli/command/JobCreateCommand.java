@@ -109,7 +109,7 @@ public class JobCreateCommand extends ControlCommand {
     final Map<String, PortMapping> ports = Maps.newHashMap();
     for (final List<String> specs : portSpecLists) {
       for (final String spec : specs) {
-        final Matcher matcher = compile("(?<n>\\w+)=(?<i>\\d+)(:?(?<e>\\d+))").matcher(spec);
+        final Matcher matcher = compile("(?<n>\\w+)=(?<i>\\d+)(:(?<e>\\d+))?").matcher(spec);
         if (!matcher.matches()) {
           throw new IllegalArgumentException("Bad port mapping: " + spec);
         }
@@ -122,7 +122,14 @@ public class JobCreateCommand extends ControlCommand {
           throw new IllegalArgumentException("Duplicate port mapping: " + name);
         }
 
-        ports.put(name, PortMapping.of(internal, external));
+        final PortMapping mapping;
+        if (external == null) {
+          mapping = PortMapping.of(internal);
+        } else {
+          mapping = PortMapping.of(internal, external);
+        }
+
+        ports.put(name, mapping);
       }
     }
 
