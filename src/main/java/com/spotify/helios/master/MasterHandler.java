@@ -220,6 +220,7 @@ public class MasterHandler extends MatchingHandler {
 
     try {
       model.deployJob(agent, deployment);
+      log.info("added job {} to agent {}", deployment, agent);
     } catch (JobPortAllocationConflictException e){
       code = BAD_REQUEST;
       detailStatus = JobDeployResponse.Status.PORT_CONFLICT;
@@ -236,8 +237,6 @@ public class MasterHandler extends MatchingHandler {
       log.error("failed to add job {} to agent {}", deployment, agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
     }
-
-    log.info("added job {} to agent {}", deployment, agent);
 
     respond(request, code, new JobDeployResponse(detailStatus, agent, job));
   }
