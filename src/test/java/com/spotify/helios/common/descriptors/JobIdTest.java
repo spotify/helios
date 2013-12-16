@@ -12,6 +12,17 @@ import org.junit.Test;
 import java.io.IOException;
 
 public class JobIdTest {
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testColonInNameNotAllowed() {
+    JobId.newBuilder().setName("foo:bar").setVersion("17").setHash("badfood").build();
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void testColonInVersionNotAllowed() {
+    JobId.newBuilder().setName("foo").setVersion("release:17").setHash("badfood").build();
+  }
+
   @Test
   public void testJsonParsing() throws IOException {
     final String json = "\"foo:17:deadbeef\"";

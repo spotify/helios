@@ -26,9 +26,15 @@ public class JobId extends Descriptor implements Comparable<JobId> {
   public JobId(final String name,
                final String version,
                final String hash) {
-    checkArgument(!checkNotNull(name, "name is null").isEmpty(), "name is empty");
-    checkArgument(!checkNotNull(version, "version is null").isEmpty(), "version is empty");
-    checkArgument(!checkNotNull(hash, "hash is null").isEmpty(), "hash is empty");
+    checkNotNull(name, "name");
+    checkNotNull(version, "version");
+    checkNotNull(hash, "hash");
+    checkArgument(!name.isEmpty(), "name is empty");
+    checkArgument(!version.isEmpty(), "version is empty");
+    checkArgument(!hash.isEmpty(), "hash is empty");
+    checkArgument(name.indexOf(':') == -1, "name contains colon");
+    checkArgument(version.indexOf(':') == -1, "version contains colon");
+    checkArgument(hash.indexOf(':') == -1, "hash contains colon");
     this.name = name;
     this.version = version;
     this.hash = hash;
@@ -39,8 +45,12 @@ public class JobId extends Descriptor implements Comparable<JobId> {
    */
   public JobId(final String name,
                final String version) {
-    checkArgument(!checkNotNull(name, "name is null").isEmpty(), "name is empty");
-    checkArgument(!checkNotNull(version, "version is null").isEmpty(), "version is empty");
+    checkNotNull(name, "name");
+    checkNotNull(version, "version");
+    checkArgument(!name.isEmpty(), "name is empty");
+    checkArgument(!version.isEmpty(), "version is empty");
+    checkArgument(name.indexOf(':') == -1, "name contains colon");
+    checkArgument(version.indexOf(':') == -1, "version contains colon");
     this.name = name;
     this.version = version;
     this.hash = null;
