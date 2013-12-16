@@ -26,6 +26,7 @@ Package: spotify-helios-agent
 Architecture: all
 Depends:
  spotify-helios-common,
+ syslog-redirector,
 Suggests:
  lxc-docker,
 Description: Spotify Helios Agent
