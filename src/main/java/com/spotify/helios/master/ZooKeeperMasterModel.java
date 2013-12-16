@@ -307,13 +307,10 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     // TODO(drewc): this should be transactional -- possibly by tagging the job as
     // attempting to delete so that no agents try to start it while we're deleting it
-    for (String agent : getAgents()) {
-      if (getDeployment(agent, id) != null) {
-        throw new JobStillInUseException(id, agent);
-      }
+    final List<String> agents = listJobAgents(id);
+    if (!agents.isEmpty()) {
+      throw new JobStillInUseException(id, agents);
     }
-
-    listJobAgents(id);
 
     try {
       client.delete(Paths.configJobAgents(id));

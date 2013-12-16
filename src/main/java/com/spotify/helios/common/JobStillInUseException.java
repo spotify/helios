@@ -2,22 +2,24 @@ package com.spotify.helios.common;
 
 import com.spotify.helios.common.descriptors.JobId;
 
+import java.util.List;
+
 public class JobStillInUseException extends HeliosException {
 
   private final JobId id;
-  private final String agent;
+  private final List<String> agents;
 
-  public JobStillInUseException(JobId id, String agent) {
-    super(String.format("job id %s still in use by host %s", id, agent));
+  public JobStillInUseException(JobId id, List<String> agents) {
+    super(String.format("job id %s still in use by hosts %s", id, agents));
     this.id = id;
-    this.agent = agent;
+    this.agents = agents;
   }
 
   public JobId getId() {
     return id;
   }
 
-  public String getAgent() {
-    return agent;
+  public List<String> getAgents() {
+    return agents;
   }
 }
