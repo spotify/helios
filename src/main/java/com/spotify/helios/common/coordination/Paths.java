@@ -67,6 +67,10 @@ public class Paths {
     return CONFIG_AGENTS.path(agent, PORTS, String.valueOf(port));
   }
 
+  public static String statusAgents() {
+    return STATUS_AGENTS.path();
+  }
+
   public static String statusAgent(final String agent) {
     return STATUS_AGENTS.path(agent);
   }
@@ -85,6 +89,10 @@ public class Paths {
 
   public static String statusMasterUp(final String master) {
     return STATUS_MASTERS.path(master, UP);
+  }
+
+  public static String statusMasters() {
+    return STATUS_MASTERS.path();
   }
 
   public static String statusMaster() {

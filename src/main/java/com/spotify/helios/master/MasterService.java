@@ -10,6 +10,7 @@ import com.netflix.curator.framework.CuratorFrameworkFactory;
 import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.AbstractClient;
 import com.spotify.helios.common.DefaultZooKeeperClient;
+import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.master.http.HttpServiceRequest;
 import com.spotify.hermes.Hermes;
@@ -114,11 +115,12 @@ public class MasterService {
 
     final ZooKeeperClient curator = new DefaultZooKeeperClient(client);
 
+    // TODO (dano): move directory initialization elsewhere
     try {
-      curator.ensurePath("/config/agents");
-      curator.ensurePath("/config/jobs");
-      curator.ensurePath("/status/agents");
-      curator.ensurePath("/status/masters");
+      curator.ensurePath(Paths.configAgents());
+      curator.ensurePath(Paths.configJobs());
+      curator.ensurePath(Paths.statusAgents());
+      curator.ensurePath(Paths.statusMasters());
 
       final String upNode = format("/status/masters/%s/up", config.getName());
       if (curator.stat(upNode) != null) {
