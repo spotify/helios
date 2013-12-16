@@ -11,16 +11,28 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static org.junit.Assert.assertEquals;
+
 public class JobIdTest {
+
+  public void testFullToString() {
+    final JobId id = JobId.newBuilder().setName("foo").setVersion("bar").setHash("baz").build();
+    assertEquals("foo:bar:baz", id.toString());
+  }
+
+  public void testShortToString() {
+    final JobId id = JobId.newBuilder().setName("foo").setVersion("bar").build();
+    assertEquals("foo:bar", id.toString());
+  }
 
   @Test(expected = IllegalArgumentException.class)
   public void testColonInNameNotAllowed() {
-    JobId.newBuilder().setName("foo:bar").setVersion("17").setHash("badfood").build();
+    JobId.newBuilder().setName("foo:bar").setVersion("17").build();
   }
 
   @Test(expected = IllegalArgumentException.class)
   public void testColonInVersionNotAllowed() {
-    JobId.newBuilder().setName("foo").setVersion("release:17").setHash("badfood").build();
+    JobId.newBuilder().setName("foo").setVersion("release:17").build();
   }
 
   @Test
@@ -34,7 +46,7 @@ public class JobIdTest {
         .setHash("deadbeef")
         .build();
 
-    Assert.assertEquals(expectedJobId, jobId);
+    assertEquals(expectedJobId, jobId);
   }
 
   @Test
@@ -48,6 +60,6 @@ public class JobIdTest {
         .build();
 
     final String json = Json.asStringUnchecked(jobId);
-    Assert.assertEquals(expectedJson, json);
+    assertEquals(expectedJson, json);
   }
 }

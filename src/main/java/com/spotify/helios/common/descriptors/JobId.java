@@ -126,7 +126,11 @@ public class JobId extends Descriptor implements Comparable<JobId> {
 
   @JsonValue
   public String toString() {
-    return name + ":" + version + ":" + hash;
+    if (hash == null) {
+      return name + ":" + version;
+    } else {
+      return name + ":" + version + ":" + hash;
+    }
   }
 
   public String getName() {
@@ -204,7 +208,11 @@ public class JobId extends Descriptor implements Comparable<JobId> {
     }
 
     public JobId build() {
-      return new JobId(name, version, hash);
+      if (hash == null) {
+        return new JobId(name, version);
+      } else {
+        return new JobId(name, version, hash);
+      }
     }
   }
 }
