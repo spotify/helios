@@ -1,11 +1,13 @@
 package com.spotify.helios.common.coordination;
 
+import com.netflix.curator.framework.api.transaction.CuratorTransactionResult;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -36,5 +38,11 @@ public interface ZooKeeperClient {
 
   void deleteRecursive(String path) throws KeeperException;
 
+  List<String> listRecursive(String path) throws KeeperException;
+
   void create(String path) throws KeeperException;
+
+  Collection<CuratorTransactionResult> transaction(List<ZooKeeperOperation> operations) throws KeeperException;
+
+  Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations) throws KeeperException;
 }

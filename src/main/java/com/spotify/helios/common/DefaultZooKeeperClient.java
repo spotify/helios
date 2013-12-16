@@ -1,26 +1,30 @@
 package com.spotify.helios.common;
 
-import com.google.common.collect.Lists;
-
 import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.api.transaction.CuratorTransaction;
 import com.netflix.curator.framework.api.transaction.CuratorTransactionFinal;
+import com.netflix.curator.framework.api.transaction.CuratorTransactionResult;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 import com.netflix.curator.utils.EnsurePath;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
+import com.spotify.helios.common.coordination.ZooKeeperOperation;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.data.Stat;
 
+import java.util.Collection;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.collect.Lists.reverse;
 import static com.netflix.curator.framework.imps.CuratorFrameworkState.STARTED;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 
 public class DefaultZooKeeperClient implements ZooKeeperClient {
 
@@ -75,7 +79,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   public void deleteRecursive(final String path) throws KeeperException {
     try {
-      final List<String> nodes = ZKUtil.listSubTreeBFS(client.getZookeeperClient().getZooKeeper(), path);
+      final List<String> nodes = listRecursive(path);
       if (nodes.isEmpty()) {
         return;
       }
@@ -84,6 +88,16 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
         t.delete().forPath(node).and();
       }
       t.commit();
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
+  public List<String> listRecursive(final String path) throws KeeperException {
+    try {
+      return ZKUtil.listSubTreeBFS(client.getZookeeperClient().getZooKeeper(), path);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
@@ -156,5 +170,40 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   public PathChildrenCache pathChildrenCache(final String path, final boolean cacheData) {
     return new PathChildrenCache(client, path, cacheData);
+  }
+
+  @Override
+  public Collection<CuratorTransactionResult> transaction(final List<ZooKeeperOperation> operations)
+      throws KeeperException {
+
+    // Assemble transaction
+    final CuratorTransaction transaction = client.inTransaction();
+    CuratorTransactionFinal transactionFinal = null;
+    for (final ZooKeeperOperation operation : operations) {
+      try {
+        transactionFinal = checkNotNull(operation.register(transaction).and());
+      } catch (final Exception e) {
+        throw propagate(e);
+      }
+    }
+
+    // Bail if the list of operations was empty
+    if (transactionFinal == null) {
+      return emptyList();
+    }
+
+    // Commit
+    try {
+      return transactionFinal.commit();
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
+  public Collection<CuratorTransactionResult> transaction(final ZooKeeperOperation... operations)
+      throws KeeperException {
+    return transaction(asList(operations));
   }
 }

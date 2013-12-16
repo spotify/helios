@@ -12,6 +12,7 @@ import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.JobStillInUseException;
+import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
@@ -64,6 +65,9 @@ public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
 
     client.start();
     curator = new DefaultZooKeeperClient(client);
+
+    curator.ensurePath(Paths.configJobs());
+    curator.ensurePath(Paths.configJobRefs());
 
     model = new ZooKeeperMasterModel(curator);
   }

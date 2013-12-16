@@ -12,6 +12,7 @@ public class Paths {
   public static final String CONFIG = "config";
   public static final String STATUS = "status";
   public static final String JOBS = "jobs";
+  public static final String JOBREFS = "jobrefs";
   public static final String AGENTS = "agents";
   public static final String EVENTS = "events";
   public static final String MASTERS = "masters";
@@ -22,6 +23,7 @@ public class Paths {
   private static final String ENVIRONMENTVARS = "environment";
 
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
+  private static final PathFactory CONFIG_JOBREFS = new PathFactory("/", CONFIG, JOBREFS);
   private static final PathFactory CONFIG_AGENTS = new PathFactory("/", CONFIG, AGENTS);
   private static final PathFactory STATUS_AGENTS = new PathFactory("/", STATUS, AGENTS);
   private static final PathFactory STATUS_MASTERS = new PathFactory("/", STATUS, MASTERS);
@@ -35,8 +37,16 @@ public class Paths {
     return CONFIG_JOBS.path();
   }
 
+  public static String configJobRefs() {
+    return CONFIG_JOBREFS.path();
+  }
+
   public static String configJob(final JobId id) {
     return CONFIG_JOBS.path(id.toString());
+  }
+
+  public static String configJobRefShort(final JobId id) {
+    return CONFIG_JOBREFS.path(id.getName() + ":" + id.getVersion());
   }
 
   public static String configJobAgents(final JobId jobId) {

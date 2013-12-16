@@ -117,6 +117,7 @@ public class MasterService {
     try {
       curator.ensurePath(Paths.configAgents());
       curator.ensurePath(Paths.configJobs());
+      curator.ensurePath(Paths.configJobRefs());
       curator.ensurePath(Paths.statusAgents());
       curator.ensurePath(Paths.statusMasters());
       curator.ensurePath(Paths.historyJobs());

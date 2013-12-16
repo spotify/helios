@@ -51,6 +51,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import static com.spotify.helios.common.coordination.ZooKeeperOperations.create;
+import static com.spotify.helios.common.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
@@ -150,28 +152,18 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public void addJob(final Job job) throws HeliosException {
     log.debug("adding job: {}", job);
+    final JobId id = job.getId();
+    List<String> children = null;
     try {
-      // TODO (dano): do this in a transaction
-
-      // Enforce job name:version unique constraint
-      final Map<JobId, Job> existingJobs = getJobs();
-      for (final JobId existingJobId : existingJobs.keySet()) {
-        if (existingJobId.getName().equals(job.getId().getName()) &&
-            existingJobId.getVersion().equals(job.getId().getVersion())) {
-          throw new JobExistsException(job.getId().toString());
-        }
-      }
-
-      final String jobPath = Paths.configJob(job.getId());
-      client.createAndSetData(jobPath, job.toJsonBytes());
-
-      final String jobAgentsPath = Paths.configJobAgents(job.getId());
-      client.create(jobAgentsPath);
-
-      client.ensurePath(Paths.historyJob(job.getId()));
-    } catch (KeeperException.NodeExistsException e) {
-      throw new JobExistsException(job.getId().toString());
-    } catch (KeeperException e) {
+      children = client.listRecursive("/config");
+      client.ensurePath(Paths.historyJob(id));
+      client.transaction(create(Paths.configJob(id), job),
+                         create(Paths.configJobRefShort(id), id),
+                         create(Paths.configJobAgents(id)));
+    } catch (final KeeperException.NodeExistsException e) {
+      throw new JobExistsException(id.toString());
+    } catch (final KeeperException e) {
+      System.out.println(children);
       throw new HeliosException("adding job " + job + " failed", e);
     }
   }
@@ -303,19 +295,15 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public Job removeJob(final JobId id) throws HeliosException {
     log.debug("removing job: id={}", id);
-    Job old = getJob(id);
-
-    // TODO(drewc): this should be transactional -- possibly by tagging the job as
-    // attempting to delete so that no agents try to start it while we're deleting it
-    final List<String> agents = listJobAgents(id);
-    if (!agents.isEmpty()) {
-      throw new JobStillInUseException(id, agents);
-    }
-
+    final Job old = getJob(id);
     try {
-      client.delete(Paths.configJobAgents(id));
-      client.delete(Paths.configJob(id));
-    } catch (KeeperException e) {
+      client.transaction(delete(Paths.configJobAgents(id)),
+                         delete(Paths.configJobRefShort(id)),
+                         delete(Paths.configJob(id)));
+    } catch (final KeeperException.NotEmptyException e) {
+      final List<String> agents = listJobAgents(id);
+      throw new JobStillInUseException(id, agents);
+    } catch (final KeeperException e) {
       throw new HeliosException("removing job " + id + " failed", e);
     }
 
