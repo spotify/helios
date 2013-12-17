@@ -603,28 +603,20 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                        jobId, agent));
     }
 
-    // TODO (dano): do this in a txn
-    try {
-      client.delete(Paths.configAgentJob(agent, jobId));
-    } catch (KeeperException.NoNodeException ignore) {
-    } catch (KeeperException e) {
-      throw new HeliosException("removing agent job failed", e);
-    }
-    try {
-      client.delete(Paths.configJobAgent(jobId, agent));
-    } catch (KeeperException.NoNodeException ignore) {
-    } catch (KeeperException e) {
-      throw new HeliosException("removing agent job failed", e);
-    }
     final Job job = getJob(jobId);
     final List<Integer> staticPorts = staticPorts(job);
+    final List<String> portNodes = Lists.newArrayList();
     for (int port : staticPorts) {
-      try {
-        client.delete(Paths.configAgentPort(agent, port));
-      } catch (KeeperException.NoNodeException ignore) {
-      } catch (KeeperException e) {
-        throw new HeliosException("removing agent job failed", e);
-      }
+      portNodes.add(Paths.configAgentPort(agent, port));
+    }
+
+    try {
+      client.transaction(delete(portNodes),
+                         delete(Paths.configAgentJob(agent, jobId)),
+                         delete(Paths.configJobAgent(jobId, agent)));
+    } catch (KeeperException.NoNodeException ignore) {
+    } catch (KeeperException e) {
+      throw new HeliosException("removing agent job failed", e);
     }
 
     return deployment;
