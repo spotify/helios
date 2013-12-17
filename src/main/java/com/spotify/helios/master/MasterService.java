@@ -35,8 +35,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.ExecutionException;
 
-import static java.lang.String.format;
-
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.hermes.message.ProtocolVersion.V2;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL;
@@ -123,7 +121,7 @@ public class MasterService {
       curator.ensurePath(Paths.statusMasters());
       curator.ensurePath(Paths.historyJobs());
 
-      final String upNode = format("/status/masters/%s/up", config.getName());
+      final String upNode = Paths.statusMasterUp(config.getName());
       if (curator.stat(upNode) != null) {
         curator.delete(upNode);
       }
