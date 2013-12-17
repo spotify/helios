@@ -2,7 +2,7 @@
  * Copyright (C) 2013 Spotify AB
  */
 
-package com.spotify.helios.common.coordination;
+package com.spotify.helios.common;
 
 public class HeliosRuntimeException extends RuntimeException {
 
