@@ -16,6 +16,7 @@ public class AgentConfig {
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
   private Map<String, String> envVars;
+  private String redirectToSyslog;
 
   public String getName() {
     return name;
@@ -28,6 +29,15 @@ public class AgentConfig {
 
   public int getMuninReporterPort() {
     return muninReporterPort;
+  }
+
+  public AgentConfig setRedirectToSyslog(final String redirect) {
+    this.redirectToSyslog = redirect;
+    return this;
+  }
+
+  public String getRedirectToSyslog() {
+    return redirectToSyslog;
   }
 
   public AgentConfig setMuninReporterPort(final int port) {

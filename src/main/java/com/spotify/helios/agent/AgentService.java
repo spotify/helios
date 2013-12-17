@@ -68,9 +68,11 @@ public class AgentService {
     } else {
       registrar = null;
     }
-
     final SupervisorFactory supervisorFactory = new SupervisorFactory(model, dockerClientFactory,
-        config.getEnvVars(), registrar);
+        config.getEnvVars(), registrar,
+        config.getRedirectToSyslog() != null
+            ? new SyslogRedirectingCommandWrapper(config.getRedirectToSyslog())
+            : new NoOpCommandWrapper());
     final ReactorFactory reactorFactory = new ReactorFactory();
 
     this.hostInfoReporter = HostInfoReporter.newBuilder()

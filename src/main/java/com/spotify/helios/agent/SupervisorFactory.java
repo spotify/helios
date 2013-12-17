@@ -21,14 +21,17 @@ public class SupervisorFactory {
   private final DockerClientFactory dockerClientFactory;
   private final Map<String, String> envVars;
   private final NamelessRegistrar registrar;
+  private final CommandWrapper commandWrapper;
 
   public SupervisorFactory(final AgentModel model, final DockerClientFactory dockerClientFactory,
                            final Map<String, String> envVars,
-                           final @Nullable NamelessRegistrar registrar) {
+                           final @Nullable NamelessRegistrar registrar,
+                           final CommandWrapper commandWrapper) {
     this.dockerClientFactory = dockerClientFactory;
     this.model = checkNotNull(model);
     this.envVars = checkNotNull(envVars);
     this.registrar = registrar;
+    this.commandWrapper = commandWrapper;
   }
 
   /**
@@ -58,6 +61,7 @@ public class SupervisorFactory {
         .setRestartPolicy(policy)
         .setTaskStatusManager(manager)
         .setNamelessRegistrar(registrar)
+        .setCommandWrapper(commandWrapper)
         .build();
   }
 }

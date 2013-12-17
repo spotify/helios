@@ -59,7 +59,8 @@ public class AgentParser extends ServiceParser {
         .setSite(options.getString("site"))
         .setMuninReporterPort(options.getInt("munin_port"))
         .setEnvVars(envVars)
-        .setDockerEndpoint(options.getString("docker"));
+        .setDockerEndpoint(options.getString("docker"))
+        .setRedirectToSyslog(options.getString("syslog_redirect_to"));
   }
 
   @Override
@@ -82,6 +83,9 @@ public class AgentParser extends ServiceParser {
         .setDefault(new ArrayList<String>())
         .nargs("+")
         .help("Specify environment variables that will pass down to all containers");
+
+    parser.addArgument("--syslog-redirect-to")
+        .help("redirect container's stdout/stderr to syslog running at host:port");
   }
 
   private static String getHostName() {

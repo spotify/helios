@@ -791,6 +791,51 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   @Test
+  public void testSyslogRedirection() throws Exception {
+    // While this test doesn't specifically test that the output actually goes to syslog, it tests
+    // just about every other part of it, and specifically, that the output doesn't get to
+    // docker, and that the redirector executable exists and doesn't do anything terribly stupid.
+    startDefaultMaster();
+    AgentMain agent = startAgent("-vvvv",
+                                 "--no-log-setup",
+                                 "--munin-port", "0",
+                                 "--name", TEST_AGENT,
+                                 "--docker", dockerEndpoint,
+                                 "--zk", zookeeperEndpoint,
+                                 "--zk-session-timeout", "100",
+                                 "--syslog-redirect", "10.0.3.1:6514");
+
+    final DockerClient dockerClient = new DockerClient(dockerEndpoint);
+
+    final List<String> command = asList("sh", "-c", "echo should-be-redirected");
+
+    // Create job
+    final JobId jobId = createJob("NAME", "VERSION", "busybox:latest", command,
+                                  ImmutableMap.of("FOO", "4711",
+                                                  "BAR", "deadbeef"));
+
+    // deploy
+    deployJob(jobId, TEST_AGENT);
+
+    final TaskStatus taskStatus = awaitTaskState(jobId, TEST_AGENT, EXITED);
+
+    final ClientResponse response = dockerClient.logContainer(taskStatus.getContainerId());
+    final String logMessage = readLogFully(response);
+    // should be nothing in the docker output log, either error text or our message
+    assertEquals("", logMessage);
+
+    // Stop the agent
+    agent.stopAsync().awaitTerminated();
+
+    final Client client = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    awaitAgentStatus(client, TEST_AGENT, DOWN, WAIT_TIMEOUT_SECONDS, SECONDS);
+  }
+
+  @Test
   public void testEnvVariables() throws Exception {
     startDefaultMaster();
     AgentMain agent = startAgent("-vvvv",

@@ -49,6 +49,15 @@ Vagrant::Config.run do |config|
       " > /etc/resolv.conf
       END
 
+    # Fire up syslog on a tcp port
+    pkg_cmd << <<-END.gsub(/^ {6}/, '')
+      echo "\
+      \\$ModLoad imtcp # needs to be done just once
+      \\$InputTCPMaxSessions 500
+      \\$InputTCPServerRun 6514
+      " > /etc/rsyslog.d/1-tcp.conf
+      END
+
     # Use spotify apt sources
     pkg_cmd << "apt-get --allow-unauthenticated update && apt-get --allow-unauthenticated install --force-yes -y apt-utils apt-transport-https; "
     pkg_cmd << <<-END.gsub(/^ {6}/, '')
@@ -87,6 +96,9 @@ Vagrant::Config.run do |config|
 
     # Add lxc-docker package
     pkg_cmd << "apt-get --allow-unauthenticated install -qq --force-yes lxc-docker; "
+
+    # Add syslog-redirector package
+    pkg_cmd << "apt-get --allow-unauthenticated install -qq --force-yes syslog-redirector; "
 
     # Set up to listen on TCP
     pkg_cmd << "grep '0.0.0.0' /etc/init/docker.conf || sed -e 's/-d/-d -H 0.0.0.0:4160 -H unix:\\/\\/\\/var\\/run\\/docker.sock/' /etc/init/docker.conf -i;\n"

@@ -111,6 +111,7 @@ public class SupervisorTest {
                                .setTaskStatusManager(manager)
                                .build())
         .setTaskStatusManager(manager)
+        .setCommandWrapper(new NoOpCommandWrapper())
         .build();
     when(docker.getImages(IMAGE)).thenReturn(immediateFuture(DOCKER_IMAGES));
 
