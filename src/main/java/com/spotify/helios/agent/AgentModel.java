@@ -76,4 +76,22 @@ public interface AgentModel {
      */
     void tasksChanged(AgentModel model);
   }
+
+  /**
+   * Safely (transactionally speaking) removes an UNDEPLOY tombstone.
+   *
+   * @param jobId The {@link JobId} of the job that is tombstoned.
+   */
+  void removeUndeployTombstone(JobId jobId);
+
+  /**
+   * Safely (exceptionally speaking) removes an UNDEPLOY tombstone.
+   *
+   * Realistically, removing a tombstone should never fail any operation, as we can run just fine
+   * with them in place, so this is the same as {@link #removeUndeployTombstone(JobId)}, but
+   * swallows any exceptions.
+   *
+   * @param jobId The {@link JobId} of the job that is tombstoned.
+   */
+  void safeRemoveUndeployTombstone(JobId jobId);
 }

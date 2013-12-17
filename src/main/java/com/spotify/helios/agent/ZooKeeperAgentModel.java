@@ -11,13 +11,16 @@ import com.netflix.curator.framework.CuratorFramework;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCacheListener;
-import com.spotify.helios.common.coordination.ZooKeeperClient;
+import com.spotify.helios.common.VersionedBytes;
 import com.spotify.helios.common.coordination.Paths;
+import com.spotify.helios.common.coordination.ZooKeeperClient;
+import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.data.Stat;
 import org.joda.time.Instant;
 import org.slf4j.Logger;
@@ -31,7 +34,7 @@ import java.util.concurrent.CountDownLatch;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.netflix.curator.framework.recipes.cache.PathChildrenCache.StartMode.POST_INITIALIZED_EVENT;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
-import static org.apache.zookeeper.KeeperException.NoNodeException;
+import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 
 public class ZooKeeperAgentModel extends AbstractAgentModel {
 
@@ -130,6 +133,31 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
     }
   }
 
+  @Override
+  public void safeRemoveUndeployTombstone(final JobId jobId) {
+    try {
+      removeUndeployTombstone(jobId);
+    } catch (RuntimeException e) {
+      // swallow it.
+    }
+  }
+
+  @Override
+  public void removeUndeployTombstone(final JobId jobId) {
+    try {
+      String path = Paths.configAgentJob(agent, jobId);
+      VersionedBytes vb = client.getDataVersioned(path);
+      Deployment deployment = parse(vb.getBytes(), Deployment.class);
+      if (deployment.getGoal() == UNDEPLOY) {
+        client.delete(path, vb.getVersion());
+      }
+    } catch (KeeperException e) {
+      throw Throwables.propagate(e);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
   public void start() {
     log.debug("starting");
     try {
@@ -169,6 +197,11 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
         }
         case INITIALIZED:
           jobsInitialized.countDown();
+          break;
+        case CONNECTION_LOST:
+        case CONNECTION_RECONNECTED:
+        case CONNECTION_SUSPENDED:
+          // ignored
           break;
       }
     }

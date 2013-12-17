@@ -6,7 +6,6 @@ package com.spotify.helios.common.descriptors;
 
 import com.spotify.helios.common.Json;
 
-import org.junit.Assert;
 import org.junit.Test;
 
 import java.io.IOException;

@@ -114,9 +114,11 @@ public class Agent {
           }
           break;
         case UNDEPLOY:
+          // Shouldn't get here, but just in case ....
           if (supervisor.isStarting()) {
             supervisor.stop();
           }
+          model.safeRemoveUndeployTombstone(task.getJob().getId());
           break;
       }
     }
@@ -169,7 +171,9 @@ public class Agent {
       for (final JobId jobId : intersection(undesirableJobIds,  currentJobIds)) {
         final Supervisor supervisor = supervisors.get(jobId);
         supervisor.stop();
-      }
+        supervisors.remove(jobId);
+        model.safeRemoveUndeployTombstone(jobId);
+     }
 
       // Create new supervisors
       // desired - current == not running that should run

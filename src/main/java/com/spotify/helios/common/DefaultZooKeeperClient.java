@@ -65,6 +65,18 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
+  public VersionedBytes getDataVersioned(final String path) throws KeeperException {
+    final Stat stat = new Stat();
+    try {
+      byte[] bytes = client.getData().storingStatIn(stat).forPath(path);
+      return new VersionedBytes(bytes, stat.getVersion());
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
   public List<String> getChildren(final String path) throws KeeperException {
     try {
       return client.getChildren().forPath(path);
@@ -106,6 +118,16 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   public void delete(final String path) throws KeeperException {
     try {
       client.delete().forPath(path);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
+  public void delete(final String path, final int version) throws KeeperException {
+    try {
+      client.getZookeeperClient().getZooKeeper().delete(path, version);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);

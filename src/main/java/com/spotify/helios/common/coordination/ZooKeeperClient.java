@@ -2,6 +2,7 @@ package com.spotify.helios.common.coordination;
 
 import com.netflix.curator.framework.api.transaction.CuratorTransactionResult;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
+import com.spotify.helios.common.VersionedBytes;
 
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -45,4 +46,8 @@ public interface ZooKeeperClient {
   Collection<CuratorTransactionResult> transaction(List<ZooKeeperOperation> operations) throws KeeperException;
 
   Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations) throws KeeperException;
+
+  void delete(String path, int version) throws KeeperException;
+
+  VersionedBytes getDataVersioned(String path) throws KeeperException;
 }

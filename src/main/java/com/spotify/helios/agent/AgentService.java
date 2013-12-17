@@ -20,8 +20,6 @@ import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricsRegistry;
 
 import org.apache.zookeeper.KeeperException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
@@ -31,8 +29,6 @@ import static org.apache.zookeeper.CreateMode.EPHEMERAL;
  * The Helios agent.
  */
 public class AgentService {
-
-  private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
   private final Agent agent;
 
