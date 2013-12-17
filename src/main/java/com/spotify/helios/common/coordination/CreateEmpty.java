@@ -1,7 +1,6 @@
 package com.spotify.helios.common.coordination;
 
 import com.netflix.curator.framework.api.transaction.CuratorTransaction;
-import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
 
 class CreateEmpty implements ZooKeeperOperation {
 
@@ -12,7 +11,7 @@ class CreateEmpty implements ZooKeeperOperation {
   }
 
   @Override
-  public CuratorTransactionBridge register(final CuratorTransaction transaction) throws Exception {
-    return transaction.create().forPath(path);
+  public void register(final CuratorTransaction transaction) throws Exception {
+    transaction.create().forPath(path);
   }
 }

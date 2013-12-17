@@ -1,7 +1,6 @@
 package com.spotify.helios.common.coordination;
 
 import com.netflix.curator.framework.api.transaction.CuratorTransaction;
-import com.netflix.curator.framework.api.transaction.CuratorTransactionBridge;
 
 class Delete implements ZooKeeperOperation {
 
@@ -12,7 +11,7 @@ class Delete implements ZooKeeperOperation {
   }
 
   @Override
-  public CuratorTransactionBridge register(final CuratorTransaction transaction) throws Exception {
-    return transaction.delete().forPath(path);
+  public void register(final CuratorTransaction transaction) throws Exception {
+    transaction.delete().forPath(path);
   }
 }

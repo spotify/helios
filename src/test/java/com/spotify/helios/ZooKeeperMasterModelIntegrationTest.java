@@ -66,8 +66,13 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
     client.start();
     curator = new DefaultZooKeeperClient(client);
 
+    // TODO (dano): this bootstrapping is essentially duplicated from MasterService, should be moved into ZooKeeperMasterModel?
+    curator.ensurePath(Paths.configAgents());
     curator.ensurePath(Paths.configJobs());
     curator.ensurePath(Paths.configJobRefs());
+    curator.ensurePath(Paths.statusAgents());
+    curator.ensurePath(Paths.statusMasters());
+    curator.ensurePath(Paths.historyJobs());
 
     model = new ZooKeeperMasterModel(curator);
   }

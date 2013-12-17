@@ -1,7 +1,6 @@
 package com.spotify.helios.common;
 
 import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.api.transaction.CuratorTransaction;
 import com.netflix.curator.framework.api.transaction.CuratorTransactionFinal;
 import com.netflix.curator.framework.api.transaction.CuratorTransactionResult;
 import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
@@ -18,7 +17,6 @@ import java.util.Collection;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.collect.Lists.reverse;
@@ -176,25 +174,23 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   public Collection<CuratorTransactionResult> transaction(final List<ZooKeeperOperation> operations)
       throws KeeperException {
 
+    if (operations.isEmpty()) {
+      return emptyList();
+    }
+
     // Assemble transaction
-    final CuratorTransaction transaction = client.inTransaction();
-    CuratorTransactionFinal transactionFinal = null;
+    final CuratorTransactionFinal transaction = (CuratorTransactionFinal) client.inTransaction();
     for (final ZooKeeperOperation operation : operations) {
       try {
-        transactionFinal = checkNotNull(operation.register(transaction).and());
+        operation.register(transaction);
       } catch (final Exception e) {
         throw propagate(e);
       }
     }
 
-    // Bail if the list of operations was empty
-    if (transactionFinal == null) {
-      return emptyList();
-    }
-
     // Commit
     try {
-      return transactionFinal.commit();
+      return transaction.commit();
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);

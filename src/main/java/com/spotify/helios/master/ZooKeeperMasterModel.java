@@ -51,6 +51,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
@@ -92,9 +93,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     log.debug("adding agent: {}", agent);
 
     try {
-      client.ensurePath(Paths.configAgent(agent));
-      client.ensurePath(Paths.configAgentJobs(agent));
-      client.ensurePath(Paths.configAgentPorts(agent));
+      client.transaction(create(Paths.configAgent(agent)),
+                         create(Paths.configAgentJobs(agent)),
+                         create(Paths.configAgentPorts(agent)));
     } catch (Exception e) {
       throw new HeliosException("adding slave " + agent + " failed", e);
     }
@@ -141,7 +142,9 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public void removeAgent(final String agent) throws HeliosException {
     try {
-      client.deleteRecursive(Paths.configAgent(agent));
+      // TODO (dano): This might fail in a race with someone concurrently deploying jobs to this agent. Do we care?
+      final List<String> nodes = reverse(client.listRecursive(Paths.configAgent(agent)));
+      client.transaction(delete(nodes));
     } catch (NoNodeException e) {
       throw new AgentDoesNotExistException(agent);
     } catch (KeeperException e) {
