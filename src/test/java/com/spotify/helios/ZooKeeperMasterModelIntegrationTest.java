@@ -39,7 +39,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ZooKeeperCoordinatorIntegrationTest extends ZooKeeperTestBase {
+public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
 
   private static final String IMAGE = "IMAGE";
   private static final String COMMAND = "COMMAND";
