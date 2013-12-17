@@ -4,6 +4,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -19,9 +20,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
+import static com.google.common.collect.Sets.intersection;
+
 import static com.google.common.collect.Sets.difference;
+import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -108,6 +113,11 @@ public class Agent {
             supervisor.stop();
           }
           break;
+        case UNDEPLOY:
+          if (supervisor.isStarting()) {
+            supervisor.stop();
+          }
+          break;
       }
     }
   }
@@ -138,16 +148,25 @@ public class Agent {
         }
       }
 
-      // Get a snapshot of the desired state
-      final Map<JobId, Task> desiredJobs = model.getTasks();
-      final Set<JobId> desiredJobIds = desiredJobs.keySet();
+      // Get a snapshot of currently configured jobs
+      final Map<JobId, Task> jobConfigs = model.getTasks();
+      final Map<JobId, Task> activeJobConfigs = Maps.filterEntries(
+          jobConfigs,
+          new Predicate<Entry<JobId, Task>>() {
+            @Override public boolean apply(Entry<JobId, Task> entry) {
+              return entry.getValue().getGoal() != UNDEPLOY;
+            }
+          });
+      // Compute the set we want to keep
+      final Set<JobId> desiredJobIds = activeJobConfigs.keySet();
+      // The opposite is what we want to get rid of
+      final Set<JobId> undesirableJobIds = difference(jobConfigs.keySet(), desiredJobIds);
 
       // Get a snapshot of the current state
       final Set<JobId> currentJobIds = Sets.newHashSet(supervisors.keySet());
 
-      // Stop removed supervisors
-      // current - desired == running that shouldn't run
-      for (final JobId jobId : difference(currentJobIds, desiredJobIds)) {
+      // Stop tombstoned supervisors
+      for (final JobId jobId : intersection(undesirableJobIds,  currentJobIds)) {
         final Supervisor supervisor = supervisors.get(jobId);
         supervisor.stop();
       }
@@ -155,12 +174,12 @@ public class Agent {
       // Create new supervisors
       // desired - current == not running that should run
       for (final JobId jobId : difference(desiredJobIds, currentJobIds)) {
-        final Task jobDescriptor = desiredJobs.get(jobId);
+        final Task jobDescriptor = activeJobConfigs.get(jobId);
         createSupervisor(jobId, jobDescriptor.getJob());
       }
 
       // Update job goals
-      for (final Map.Entry<JobId, Task> entry : desiredJobs.entrySet()) {
+      for (final Map.Entry<JobId, Task> entry : activeJobConfigs.entrySet()) {
         final JobId jobId = entry.getKey();
         final Supervisor supervisor = supervisors.get(jobId);
         delegate(supervisor, entry.getValue());

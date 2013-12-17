@@ -26,9 +26,11 @@ import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
+import com.spotify.helios.common.coordination.ZooKeeperOperation;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Descriptor;
+import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -50,6 +52,7 @@ import java.io.IOException;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.check;
@@ -58,6 +61,7 @@ import static com.spotify.helios.common.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
+import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static org.apache.zookeeper.KeeperException.NodeExistsException;
@@ -452,6 +456,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       final byte[] data = client.getData(path);
       final Task task = parse(data, Task.class);
+      if (task.getGoal() == UNDEPLOY) {
+        return null;
+      }
       return Deployment.of(jobId, task.getGoal());
     } catch (KeeperException.NoNodeException e) {
       return null;
@@ -466,12 +473,19 @@ public class ZooKeeperMasterModel implements MasterModel {
     final boolean up = checkAgentUp(agent);
     final HostInfo hostInfo = getAgentHostInfo(agent);
     final RuntimeInfo runtimeInfo = getAgentRuntimeInfo(agent);
-    final Map<JobId, Deployment> jobs = getTasks(agent);
-    final Map<JobId, TaskStatus> statuses = getTaskStatuses(agent);
-    final Map<String, String> environment = getEnvironment(agent);
-    if (jobs == null) {
+    final Map<JobId, Deployment> tasks = getTasks(agent);
+    if (tasks == null) {
       return null;
     }
+    final Map<JobId, Deployment> jobs = Maps.filterEntries(tasks,
+        new Predicate<Entry<JobId, Deployment>>() {
+          @Override public boolean apply(Entry<JobId, Deployment> entry) {
+            return entry.getValue().getGoal() != UNDEPLOY;
+          }
+        });
+    final Map<JobId, TaskStatus> statuses = getTaskStatuses(agent);
+    final Map<String, String> environment = getEnvironment(agent);
+
     return AgentStatus.newBuilder()
         .setJobs(jobs)
         .setStatuses(statuses == null ? EMPTY_STATUSES : statuses)
@@ -578,6 +592,9 @@ public class ZooKeeperMasterModel implements MasterModel {
         try {
           final byte[] data = client.getData(containerPath);
           final Task task = parse(data, Task.class);
+          if (task.getGoal() == UNDEPLOY) {
+            continue;
+          }
           jobs.put(jobId, Deployment.of(jobId, task.getGoal()));
         } catch (KeeperException.NoNodeException ignored) {
           log.debug("agent job config node disappeared: {}", jobIdString);
@@ -603,22 +620,23 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                        jobId, agent));
     }
 
+    updateDeployment(agent, Deployment.of(jobId, Goal.UNDEPLOY));
+    List<ZooKeeperOperation> operations = Lists.newArrayList(
+        delete(Paths.configJobAgent(jobId, agent)));
+    // This could be deleted by the agent when it undeploys, though they could stick around
+    // fairly indefinitely as we ignore/filter them as appropriate.
+    //        delete(Paths.configAgentJob(agent, jobId)),
+
     final Job job = getJob(jobId);
     final List<Integer> staticPorts = staticPorts(job);
-    final List<String> portNodes = Lists.newArrayList();
     for (int port : staticPorts) {
-      portNodes.add(Paths.configAgentPort(agent, port));
+        operations.add(delete(Paths.configAgentPort(agent, port)));
     }
-
     try {
-      client.transaction(delete(portNodes),
-                         delete(Paths.configAgentJob(agent, jobId)),
-                         delete(Paths.configJobAgent(jobId, agent)));
-    } catch (KeeperException.NoNodeException ignore) {
+      client.transaction(operations);
     } catch (KeeperException e) {
-      throw new HeliosException("removing agent job failed", e);
+      throw new HeliosException("Removing agent job failed", e);
     }
-
     return deployment;
   }
 }

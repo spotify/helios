@@ -27,6 +27,7 @@ import java.util.Map;
 
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
+import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
@@ -41,38 +42,36 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class AgentTest {
 
-  @Mock AgentModel model;
-  @Mock SupervisorFactory supervisorFactory;
-  @Mock ReactorFactory reactorFactory;
+  @Mock private AgentModel model;
+  @Mock private SupervisorFactory supervisorFactory;
+  @Mock private ReactorFactory reactorFactory;
 
-  @Mock Supervisor fooSupervisor;
-  @Mock Supervisor barSupervisor;
-  @Mock Reactor reactor;
+  @Mock private Supervisor fooSupervisor;
+  @Mock private Supervisor barSupervisor;
+  @Mock private Reactor reactor;
 
-  @Captor ArgumentCaptor<Runnable> callbackCaptor;
-  @Captor ArgumentCaptor<AgentModel.Listener> listenerCaptor;
-  @Captor ArgumentCaptor<Long> timeoutCaptor;
+  @Captor private ArgumentCaptor<Runnable> callbackCaptor;
+  @Captor private ArgumentCaptor<AgentModel.Listener> listenerCaptor;
+  @Captor private ArgumentCaptor<Long> timeoutCaptor;
 
-  final Map<JobId, Task> jobs = Maps.newHashMap();
-  final Map<JobId, Task> unmodifiableJobs = Collections.unmodifiableMap(jobs);
+  private final Map<JobId, Task> jobs = Maps.newHashMap();
+  private final Map<JobId, Task> unmodifiableJobs = Collections.unmodifiableMap(jobs);
 
-  final Map<JobId, TaskStatus> jobStatuses = Maps.newHashMap();
-  final Map<JobId, TaskStatus> unmodifiableJobStatuses = Collections.unmodifiableMap(jobStatuses);
+  private final Map<JobId, TaskStatus> jobStatuses = Maps.newHashMap();
+  private final Map<JobId, TaskStatus> unmodifiableJobStatuses = Collections.unmodifiableMap(jobStatuses);
 
-  Agent sut;
-  Runnable callback;
-  AgentModel.Listener listener;
+  private Agent sut;
+  private Runnable callback;
+  private AgentModel.Listener listener;
 
-  static final String FOO_JOB = "foojob";
-  static final Job FOO_DESCRIPTOR = Job.newBuilder()
+  private static final Job FOO_DESCRIPTOR = Job.newBuilder()
       .setCommand(asList("foo", "foo"))
       .setImage("foo:4711")
       .setName("foo")
       .setVersion("17")
       .build();
 
-  static final String BAR_JOB = "barjob";
-  static final Job BAR_DESCRIPTOR = Job.newBuilder()
+  private static final Job BAR_DESCRIPTOR = Job.newBuilder()
       .setCommand(asList("bar", "bar"))
       .setImage("bar:5656")
       .setName("bar")
@@ -110,8 +109,13 @@ public class AgentTest {
     callback.run();
   }
 
-  private void stop(Job descriptor) {
+  private void badStop(Job descriptor) {
     jobs.remove(descriptor.getId());
+    callback.run();
+  }
+
+  private void stop(Job descriptor) {
+    jobs.put(descriptor.getId(), new Task(descriptor, UNDEPLOY));
     callback.run();
   }
 
@@ -201,6 +205,14 @@ public class AgentTest {
 
     // Verify that supervisor is stopped
     start(BAR_DESCRIPTOR);
+    verify(barSupervisor).start();
+
+    // Verify that removal of the job *doesn't* stop the supervisor
+    badStop(BAR_DESCRIPTOR);
+    // Stop should *not* have been called.
+    verify(barSupervisor, never()).stop();
+
+    // Stop it the correct way
     stop(BAR_DESCRIPTOR);
     verify(barSupervisor).stop();
     when(barSupervisor.getStatus()).thenReturn(STOPPED);

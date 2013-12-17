@@ -566,7 +566,6 @@ class Supervisor {
   private Map<String, PortMapping> parsePortBindings(final Map<String, List<PortBinding>> ports) {
     final ImmutableMap.Builder<String, PortMapping> builder = ImmutableMap.builder();
     for (final Map.Entry<String, List<PortBinding>> e : ports.entrySet()) {
-      final List<PortBinding> bindings = e.getValue();
       final PortBindingParser parser = new PortBindingParser(e.getKey(), e.getValue());
       final String name = parser.getName();
       final PortMapping mapping = parser.getMapping();
