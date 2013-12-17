@@ -153,9 +153,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public void addJob(final Job job) throws HeliosException {
     log.debug("adding job: {}", job);
     final JobId id = job.getId();
-    List<String> children = null;
     try {
-      children = client.listRecursive("/config");
       client.ensurePath(Paths.historyJob(id));
       client.transaction(create(Paths.configJob(id), job),
                          create(Paths.configJobRefShort(id), id),
@@ -163,7 +161,6 @@ public class ZooKeeperMasterModel implements MasterModel {
     } catch (final KeeperException.NodeExistsException e) {
       throw new JobExistsException(id.toString());
     } catch (final KeeperException e) {
-      System.out.println(children);
       throw new HeliosException("adding job " + job + " failed", e);
     }
   }
