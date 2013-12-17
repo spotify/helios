@@ -53,28 +53,28 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
       .build();
   private static final JobId JOB_ID = JOB.getId();
 
-  private ZooKeeperClient curator;
+  private ZooKeeperClient client;
   private ZooKeeperMasterModel model;
 
   @Before
   public void setup() throws Exception {
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
 
-    final CuratorFramework client = CuratorFrameworkFactory.newClient(
+    final CuratorFramework curator = CuratorFrameworkFactory.newClient(
         zookeeperEndpoint, zooKeeperRetryPolicy);
 
-    client.start();
-    curator = new DefaultZooKeeperClient(client);
+    curator.start();
+    client = new DefaultZooKeeperClient(curator);
 
     // TODO (dano): this bootstrapping is essentially duplicated from MasterService, should be moved into ZooKeeperMasterModel?
-    curator.ensurePath(Paths.configAgents());
-    curator.ensurePath(Paths.configJobs());
-    curator.ensurePath(Paths.configJobRefs());
-    curator.ensurePath(Paths.statusAgents());
-    curator.ensurePath(Paths.statusMasters());
-    curator.ensurePath(Paths.historyJobs());
+    client.ensurePath(Paths.configAgents());
+    client.ensurePath(Paths.configJobs());
+    client.ensurePath(Paths.configJobRefs());
+    client.ensurePath(Paths.statusAgents());
+    client.ensurePath(Paths.statusMasters());
+    client.ensurePath(Paths.historyJobs());
 
-    model = new ZooKeeperMasterModel(curator);
+    model = new ZooKeeperMasterModel(client);
   }
 
   @Test
