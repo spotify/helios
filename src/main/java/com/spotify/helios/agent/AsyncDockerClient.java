@@ -15,7 +15,6 @@ import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.Image;
-import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.sun.jersey.api.client.ClientResponse;
 
 import java.util.List;

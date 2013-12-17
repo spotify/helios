@@ -11,7 +11,6 @@ import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.ReactorFactory;
 import com.spotify.helios.common.ZooKeeperNodeUpdaterFactory;
-import com.spotify.helios.common.coordination.DockerClientFactory;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.nameless.client.Nameless;
