@@ -52,6 +52,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.collect.Lists.reverse;
+import static com.spotify.helios.common.coordination.ZooKeeperOperations.check;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
@@ -59,6 +60,7 @@ import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static org.apache.zookeeper.KeeperException.NodeExistsException;
 
 public class ZooKeeperMasterModel implements MasterModel {
 
@@ -97,7 +99,7 @@ public class ZooKeeperMasterModel implements MasterModel {
                          create(Paths.configAgentJobs(agent)),
                          create(Paths.configAgentPorts(agent)));
     } catch (Exception e) {
-      throw new HeliosException("adding slave " + agent + " failed", e);
+      throw new HeliosException("adding agent " + agent + " failed", e);
     }
   }
 
@@ -161,7 +163,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       client.transaction(create(Paths.configJob(id), job),
                          create(Paths.configJobRefShort(id), id),
                          create(Paths.configJobAgents(id)));
-    } catch (final KeeperException.NodeExistsException e) {
+    } catch (final NodeExistsException e) {
       throw new JobExistsException(id.toString());
     } catch (final KeeperException e) {
       throw new HeliosException("adding job " + job + " failed", e);
@@ -322,48 +324,70 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new JobDoesNotExistException(id);
     }
 
-    // TODO (dano): do all of the below in a transaction
-
-    // Check if the job was already deployed
+    final String jobPath = Paths.configJob(id);
     final String taskPath = Paths.configAgentJob(agent, id);
-    try {
-      if (client.stat(taskPath) != null) {
-        throw new JobAlreadyDeployedException(agent, id);
-      }
-    } catch (KeeperException e) {
-      throw new HeliosException("checking job deployment failed", e);
-    }
 
-    // Check for static port collisions
-    // TODO (dano): this check might be possible to remove when we use transactions
     final List<Integer> staticPorts = staticPorts(job);
+    final Map<String, byte[]> portNodes = Maps.newHashMap();
+    final byte[] idJson = id.toJsonBytes();
     for (final int port : staticPorts) {
       final String path = Paths.configAgentPort(agent, port);
-      try {
-        if (client.stat(path) == null) {
-          continue;
-        }
-        final byte[] b = client.getData(path);
-        final JobId existingJobId = parse(b, JobId.class);
-        throw new JobPortAllocationConflictException(id, existingJobId, agent, port);
-      } catch (KeeperException | IOException e) {
-        throw new HeliosException("checking port allocations failed", e);
-      }
+      portNodes.put(path, idJson);
     }
 
-    // TODO(drewc): do the assert and the createAndSetData in a txn
-    assertAgentExists(agent);
+    // TODO (dano): Failure handling is racy wrt agent and job modifications. Probably rare, but still.
+
     final Task task = new Task(job, deployment.getGoal());
     try {
-      final byte[] idJson = id.toJsonBytes();
+      client.transaction(check(jobPath),
+                         create(portNodes),
+                         create(taskPath, task),
+                         create(Paths.configJobAgent(id, agent)));
+    } catch (NoNodeException e) {
+      // Either the job or the agent went away
+      assertJobExists(id);
+      assertAgentExists(agent);
+      throw new HeliosException("deploying job failed", e);
+    } catch (NodeExistsException e) {
+      try {
+        // Check if the job was already deployed
+        if (client.stat(taskPath) != null) {
+          throw new JobAlreadyDeployedException(agent, id);
+        }
+      } catch (KeeperException ex) {
+        throw new HeliosException("checking job deployment failed", e);
+      }
+
+      // Check for static port collisions
       for (final int port : staticPorts) {
         final String path = Paths.configAgentPort(agent, port);
-        client.createAndSetData(path, idJson);
+        try {
+          if (client.stat(path) == null) {
+            continue;
+          }
+          final byte[] b = client.getData(path);
+          final JobId existingJobId = parse(b, JobId.class);
+          throw new JobPortAllocationConflictException(id, existingJobId, agent, port);
+        } catch (KeeperException | IOException ex) {
+          throw new HeliosException("checking port allocations failed", e);
+        }
       }
-      client.createAndSetData(taskPath, task.toJsonBytes());
-      client.create(Paths.configJobAgent(id, agent));
+
+      // Catch all for logic and ephemeral issues
+      throw new HeliosException("deploying job failed", e);
     } catch (Exception e) {
       throw new HeliosException("deploying job failed", e);
+    }
+  }
+
+  private void assertJobExists(final JobId id) throws HeliosException {
+    try {
+      final String path = Paths.configJob(id);
+      if (client.stat(path) == null) {
+        throw new JobDoesNotExistException(id);
+      }
+    } catch (KeeperException ex) {
+      throw new HeliosException("checking job existence failed", ex);
     }
   }
 

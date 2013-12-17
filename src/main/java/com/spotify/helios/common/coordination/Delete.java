@@ -14,4 +14,11 @@ class Delete implements ZooKeeperOperation {
   public void register(final CuratorTransaction transaction) throws Exception {
     transaction.delete().forPath(path);
   }
+
+  @Override
+  public String toString() {
+    return "Delete{" +
+           "path='" + path + '\'' +
+           '}';
+  }
 }

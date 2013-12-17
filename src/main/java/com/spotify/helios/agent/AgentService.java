@@ -108,10 +108,11 @@ public class AgentService {
     final ZooKeeperClient curator = new DefaultZooKeeperClient(client);
 
     try {
-      // TODO: this logic should probably live in the agent
+      // TODO: this logic should probably live in the agent model
 
       final String name = config.getName();
       curator.ensurePath(Paths.configAgentJobs(name));
+      curator.ensurePath(Paths.configAgentPorts(name));
       curator.ensurePath(Paths.statusAgentJobs(name));
 
       final String upNode = Paths.statusAgentUp(name);

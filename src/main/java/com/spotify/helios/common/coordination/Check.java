@@ -2,22 +2,22 @@ package com.spotify.helios.common.coordination;
 
 import com.netflix.curator.framework.api.transaction.CuratorTransaction;
 
-class CreateEmpty implements ZooKeeperOperation {
+public class Check implements ZooKeeperOperation {
 
   private final String path;
 
-  CreateEmpty(final String path) {
+  public Check(final String path) {
     this.path = path;
   }
 
   @Override
   public void register(final CuratorTransaction transaction) throws Exception {
-    transaction.create().forPath(path);
+    transaction.check().forPath(path);
   }
 
   @Override
   public String toString() {
-    return "CreateEmpty{" +
+    return "Check{" +
            "path='" + path + '\'' +
            '}';
   }

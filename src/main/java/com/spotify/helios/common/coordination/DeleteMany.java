@@ -18,4 +18,11 @@ public class DeleteMany implements ZooKeeperOperation {
       transaction.delete().forPath(path);
     }
   }
+
+  @Override
+  public String toString() {
+    return "DeleteMany{" +
+           "paths=" + paths +
+           '}';
+  }
 }
