@@ -128,4 +128,8 @@ public class Paths {
   public static String historyJob(final JobId jobId) {
     return HISTORY_JOBS.path(jobId.toString());
   }
+
+  public static String historyJobs() {
+    return HISTORY_JOBS.path();
+  }
 }

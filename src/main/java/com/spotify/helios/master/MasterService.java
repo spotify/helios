@@ -121,6 +121,7 @@ public class MasterService {
       curator.ensurePath(Paths.configJobs());
       curator.ensurePath(Paths.statusAgents());
       curator.ensurePath(Paths.statusMasters());
+      curator.ensurePath(Paths.historyJobs());
 
       final String upNode = format("/status/masters/%s/up", config.getName());
       if (curator.stat(upNode) != null) {
