@@ -1,6 +1,6 @@
 Package: spotify-helios-agent
 Version: [[version]]
-Section: misc
+Section: non-free/net
 Priority: optional
 Architecture: all
 Depends: default-jdk, spotify-helios-common
