@@ -14,6 +14,7 @@ import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.Image;
+import com.kpelykh.docker.client.model.ImageInspectResponse;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -56,10 +57,10 @@ public class SupervisorTest {
 
   final Executor executor = Executors.newCachedThreadPool();
 
-  static final String REPOSITORY = "testStartStop";
+  static final String REPOSITORY = "spotify";
   static final String TAG = "17";
   static final String IMAGE = REPOSITORY + ":" + TAG;
-  static final String NAME = "testStartStop";
+  static final String NAME = "foobar";
   static final JobId JOB_ID = new JobId("test", "job", "deadbeef");
   static final List<String> COMMAND = asList("foo", "bar");
   static final String VERSION = "4711";
@@ -161,8 +162,13 @@ public class SupervisorTest {
     final SettableFuture<ContainerCreateResponse> createFuture = SettableFuture.create();
     when(docker.createContainer(any(ContainerConfig.class),
                                 any(String.class))).thenReturn(createFuture);
+
     final SettableFuture<Void> startFuture = SettableFuture.create();
     when(docker.startContainer(eq(containerId), any(HostConfig.class))).thenReturn(startFuture);
+
+    final ImageInspectResponse imageInfo = new ImageInspectResponse();
+    when(docker.inspectImage(IMAGE)).thenReturn(immediateFuture(imageInfo));
+
     final SettableFuture<Integer> waitFuture = SettableFuture.create();
     when(docker.waitContainer(containerId)).thenReturn(waitFuture);
 
@@ -252,12 +258,15 @@ public class SupervisorTest {
   public void verifySupervisorRestartsExitedContainer() throws InterruptedException {
     final String containerId1 = "deadbeef1";
     final String containerId2 = "deadbeef2";
+
     final ContainerCreateResponse createResponse1 = new ContainerCreateResponse() {{
       id = containerId1;
     }};
+
     final ContainerCreateResponse createResponse2 = new ContainerCreateResponse() {{
       id = containerId2;
     }};
+
     final ContainerInspectResponse runningResponse = new ContainerInspectResponse() {{
       state = new ContainerState() {{
         running = true;
@@ -266,11 +275,18 @@ public class SupervisorTest {
         ports = emptyMap();
       }};
     }};
+
     when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
         .thenReturn(immediateFuture(createResponse1));
+
     when(docker.startContainer(eq(containerId1), any(HostConfig.class)))
         .thenReturn(immediateFuture((Void) null));
+
+    final ImageInspectResponse imageInfo = new ImageInspectResponse();
+    when(docker.inspectImage(IMAGE)).thenReturn(immediateFuture(imageInfo));
+
     when(docker.inspectContainer(eq(containerId1))).thenReturn(immediateFuture(runningResponse));
+
     final SettableFuture<Integer> waitFuture1 = SettableFuture.create();
     final SettableFuture<Integer> waitFuture2 = SettableFuture.create();
     when(docker.waitContainer(containerId1)).thenReturn(waitFuture1);
