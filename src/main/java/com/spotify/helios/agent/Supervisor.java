@@ -22,6 +22,7 @@ import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.Image;
+import com.kpelykh.docker.client.model.ImageInspectResponse;
 import com.kpelykh.docker.client.model.PortBinding;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
@@ -85,12 +86,12 @@ class Supervisor {
   private final RestartPolicy restartPolicy;
   private final TaskStatusManager stateManager;
   private final NamelessRegistrar registrar;
+  private final CommandWrapper commandWrapper;
 
   private volatile Runner runner;
   private volatile boolean closed;
   private volatile boolean starting;
   private volatile ThrottleState throttle = ThrottleState.NO;
-
 
   /**
    * Create a new job supervisor.
@@ -105,7 +106,8 @@ class Supervisor {
                      final AgentModel model, final AsyncDockerClient dockerClient,
                      final RestartPolicy restartPolicy, final Map<String, String> envVars,
                      final FlapController flapController, TaskStatusManager stateManager,
-                     final @Nullable NamelessRegistrar registrar) {
+                     final @Nullable NamelessRegistrar registrar,
+                     final CommandWrapper commandWrapper) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
@@ -115,6 +117,7 @@ class Supervisor {
     this.flapController = checkNotNull(flapController);
     this.stateManager = checkNotNull(stateManager);
     this.registrar = registrar;
+    this.commandWrapper = checkNotNull(commandWrapper);
   }
 
   /**
@@ -248,6 +251,27 @@ class Supervisor {
       }
       // XXX (dano): checking for string in exception message is a kludge
       if (!e.getMessage().contains("No such container")) {
+        throw e;
+      }
+      return null;
+    }
+  }
+
+  /**
+   * A wrapper around {@link AsyncDockerClient#inspectImage(String)} that returns null instead
+   * of throwing an exception if the image is missing.
+   */
+  private ImageInspectResponse inspectImage(final String image)
+      throws DockerException {
+    // TODO (dano): this or something like it should probably go into the docker client itself
+    try {
+      return Futures.get(docker.inspectImage(image), DockerException.class);
+    } catch (DockerException e) {
+      if (e.getCause().getClass() == InterruptedException.class) {
+        Thread.interrupted(); // or else we get a cool endless loop of IE's
+      }
+      // XXX (dano): checking for string in exception message is a kludge
+      if (!e.getMessage().contains("No such image")) {
         throw e;
       }
       return null;
@@ -455,53 +479,23 @@ class Supervisor {
         final String registeredContainerId =
             (taskStatus == null) ? null : taskStatus.getContainerId();
 
-        // Check if container exists
-        final ContainerInspectResponse containerInfo;
-        if (registeredContainerId != null) {
-          log.info("inspecting container: {}: {}", job, registeredContainerId);
-          containerInfo = inspectContainer(registeredContainerId);
-        } else {
-          containerInfo = null;
-        }
+        // Find out if the container is already running
+        final ContainerInspectResponse containerInfo =
+            getRunningContainerInfo(registeredContainerId);
 
-        // Check if the image exists
+        // Ensure we have the image
         final String image = job.getImage();
-        final List<Image> images = docker.getImages(image).get();
-        if (images.isEmpty()) {
-          final ClientResponse pull = docker.pull(image).get();
-          // Wait until image is completely pulled
-          pullStream = pull.getEntityInputStream();
-          jsonTail("pull " + image, pullStream);
-        }
+        maybePullImage(image);
 
         // Create and start container if necessary
         final String containerId;
         if (containerInfo != null && containerInfo.state.running) {
           containerId = registeredContainerId;
         } else {
-          setStatus(CREATING, null);
-          final ContainerConfig containerConfig = containerConfig(job);
-          final UUID uuid = UUID.randomUUID();
-          final String name = job.getId() + ":" + uuid;
-          final ContainerCreateResponse container =
-              docker.createContainer(containerConfig, name).get();
-          containerId = container.id;
-          log.info("created container: {}: {}", job, container);
-
-          setStatus(STARTING, containerId, null, getContainerEnvMap(job));
-          log.info("starting container: {}: {}", job, containerId);
-          final HostConfig hostConfig = hostConfig(job);
-          startFuture = docker.startContainer(containerId, hostConfig);
-          startFuture.get();
-          log.info("started container: {}: {}: {}", job, containerId, containerInfo);
+          containerId = startContainer(image);
         }
 
-        // Look up ports
-        final ContainerInspectResponse runningContainerInfo =
-            docker.inspectContainer(containerId).get();
-        final Map<String, PortMapping> ports = parsePortBindings(runningContainerInfo);
-        flapController.jobStarted();
-        handleNamelessRegistration(ports);
+        final Map<String, PortMapping> ports = setUpExposedPorts(containerId);
         setStatus(RUNNING, containerId, ports, null);
 
         // Wait for container to die
@@ -519,6 +513,64 @@ class Supervisor {
       } catch (Exception e) {
         // Keep separate catch clauses to simplify setting breakpoints on actual errors
         setException(e);
+      }
+    }
+
+    private Map<String, PortMapping> setUpExposedPorts(final String containerId)
+        throws InterruptedException, ExecutionException {
+      // Look up ports
+      final ContainerInspectResponse runningContainerInfo =
+          docker.inspectContainer(containerId).get();
+      final Map<String, PortMapping> ports = parsePortBindings(runningContainerInfo);
+      flapController.jobStarted();
+      handleNamelessRegistration(ports);
+      return ports;
+    }
+
+    private String startContainer(final String image)
+        throws InterruptedException, ExecutionException, DockerException {
+      setStatus(CREATING, null);
+      final ContainerConfig containerConfig = containerConfig(job);
+
+      commandWrapper.modifyCreateConfig(image, job, inspectImage(image), containerConfig);
+
+      final UUID uuid = UUID.randomUUID();
+      final String name = job.getId() + ":" + uuid;
+      final ContainerCreateResponse container = docker.createContainer(containerConfig, name).get();
+      final String containerId = container.id;
+      log.info("created container: {}: {}", job, container);
+
+      final HostConfig hostConfig = hostConfig(job);
+      commandWrapper.modifyStartConfig(hostConfig);
+
+      setStatus(STARTING, containerId, null, getContainerEnvMap(job));
+      log.info("starting container: {}: {}", job, containerId);
+      startFuture = docker.startContainer(containerId, hostConfig);
+      startFuture.get();
+      log.info("started container: {}: {}", job, containerId);
+      return containerId;
+    }
+
+    private ContainerInspectResponse getRunningContainerInfo(final String registeredContainerId)
+        throws DockerException {
+      final ContainerInspectResponse containerInfo;
+      if (registeredContainerId != null) {
+        log.info("inspecting container: {}: {}", job, registeredContainerId);
+        containerInfo = inspectContainer(registeredContainerId);
+      } else {
+        containerInfo = null;
+      }
+      return containerInfo;
+    }
+
+    private void maybePullImage(final String image) throws InterruptedException,
+        ExecutionException, IOException {
+      final List<Image> images = docker.getImages(image).get();
+      if (images.isEmpty()) {
+        final ClientResponse pull = docker.pull(image).get();
+        // Wait until image is completely pulled
+        pullStream = pull.getEntityInputStream();
+        jsonTail("pull " + image, pullStream);
       }
     }
 
@@ -608,6 +660,7 @@ class Supervisor {
     private RestartPolicy restartPolicy;
     private TaskStatusManager stateManager;
     private NamelessRegistrar registrar;
+    private CommandWrapper commandWrapper;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -655,9 +708,15 @@ class Supervisor {
       return this;
     }
 
+    public Builder setCommandWrapper(final CommandWrapper commandWrapper) {
+      this.commandWrapper = commandWrapper;
+      return this;
+    }
+
     public Supervisor build() {
       return new Supervisor(jobId, descriptor, model, dockerClient, restartPolicy,
-                            envVars, flapController, stateManager, registrar);
+                            envVars, flapController, stateManager, registrar,
+                            commandWrapper);
     }
   }
 

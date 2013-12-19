@@ -15,6 +15,7 @@ import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.Image;
+import com.kpelykh.docker.client.model.ImageInspectResponse;
 import com.sun.jersey.api.client.ClientResponse;
 
 import java.util.List;
@@ -46,6 +47,14 @@ public class AsyncDockerClient {
     });
   }
 
+  public ListenableFuture<ImageInspectResponse> inspectImage(final String image) {
+    return executor.submit(new Callable<ImageInspectResponse>() {
+      @Override
+      public ImageInspectResponse call() throws Exception {
+        return client().inspectImage(image);
+      }
+    });
+  }
   public ListenableFuture<List<Image>> getImages(final String name) {
     return executor.submit(new Callable<List<Image>>() {
       @Override
