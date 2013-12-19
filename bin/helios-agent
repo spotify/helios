@@ -7,10 +7,10 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [[ -e "$dir/../../helios" ]]; then
     jar="$(ls -t $dir/../target/helios*.jar | grep -v sources | grep -v javadoc | head -n 1)"
-    jar="$(cd $(dirname $jar) && pwd -P)/$(basename $jar)"
-    echo "running in helios project, using $jar" 1>&2
+    CLASSPATH="$(cd $(dirname $jar) && pwd -P)/$(basename $jar)"
+    echo "running in helios project, using $CLASSPATH" 1>&2
 else
-    jar="/usr/share/java/spotify-helios.jar"
+    CLASSPATH="/usr/share/spotify-helios/lib/*"
 fi
 
 if [ $JMXPORT ]; then
@@ -28,6 +28,6 @@ fi
 exec java \
     "${args[@]}" \
     -Djava.net.preferIPv4Stack=true \
-    -cp "$jar" \
+    -cp "$CLASSPATH" \
     com.spotify.helios.agent.AgentMain \
     "$@"

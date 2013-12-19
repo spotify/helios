@@ -1,0 +1,9 @@
+Package: spotify-helios
+Version: [[version]]
+Section: misc
+Priority: optional
+Architecture: all
+Depends: default-jdk, spotify-helios-common
+Maintainer: Daniel Norberg <dano@spotify.com>
+Description: Spotify Helios Command Line Tool
+Distribution: development

@@ -244,6 +244,148 @@
           </reportPlugins>
         </configuration>
       </plugin>
+
+      <plugin>
+        <groupId>pl.project13.maven</groupId>
+        <artifactId>git-commit-id-plugin</artifactId>
+        <version>2.1.7</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>revision</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <gitDescribe>
+            <abbrev>7</abbrev>
+            <always>true</always>
+            <forceLongFormat>true</forceLongFormat>
+            <dirty>-DIRTY</dirty>
+          </gitDescribe>
+        </configuration>
+      </plugin>
+
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <version>1.6</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <configuration>
+              <tasks>
+                <echoproperties />
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <artifactId>jdeb</artifactId>
+        <groupId>org.vafer</groupId>
+        <version>1.0</version>
+        <executions>
+
+          <!--spotify-helios (cli)-->
+          <execution>
+            <id>spotify-helios</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jdeb</goal>
+            </goals>
+            <configuration>
+              <deb>${project.build.directory}/spotify-helios_${project.version}~${git.commit.id.describe}.deb</deb>
+              <controlDir>src/deb/spotify-helios</controlDir>
+              <dataSet>
+                <data>
+                  <src>${basedir}/bin/helios</src>
+                  <type>file</type>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/bin/</prefix>
+                    <filemode>755</filemode>
+                  </mapper>
+                </data>
+              </dataSet>
+            </configuration>
+          </execution>
+
+          <!--spotify-helios-master-->
+          <execution>
+            <id>spotify-helios-master</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jdeb</goal>
+            </goals>
+            <configuration>
+              <deb>${project.build.directory}/spotify-helios-master_${project.version}~${git.commit.id.describe}.deb</deb>
+              <controlDir>src/deb/spotify-helios-master</controlDir>
+              <dataSet>
+                <data>
+                  <src>${basedir}/bin/helios-master</src>
+                  <type>file</type>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/bin/</prefix>
+                    <filemode>755</filemode>
+                  </mapper>
+                </data>
+              </dataSet>
+            </configuration>
+          </execution>
+
+          <!--spotify-helios-agent-->
+          <execution>
+            <id>spotify-helios-agent</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jdeb</goal>
+            </goals>
+            <configuration>
+              <deb>${project.build.directory}/spotify-helios-agent_${project.version}~${git.commit.id.describe}.deb</deb>
+              <controlDir>src/deb/spotify-helios-agent</controlDir>
+              <dataSet>
+                <data>
+                  <src>${basedir}/bin/helios-agent</src>
+                  <type>file</type>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/bin/</prefix>
+                    <filemode>755</filemode>
+                  </mapper>
+                </data>
+              </dataSet>
+            </configuration>
+          </execution>
+
+          <!--spotify-helios-common-->
+          <execution>
+            <id>spotify-helios-common</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jdeb</goal>
+            </goals>
+            <configuration>
+              <deb>${project.build.directory}/spotify-helios-common_${project.version}~${git.commit.id.describe}.deb</deb>
+              <controlDir>src/deb/spotify-helios-common</controlDir>
+              <dataSet>
+                <data>
+                  <src>${project.build.directory}/${project.build.finalName}.jar</src>
+                  <type>file</type>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/share/spotify-helios/lib</prefix>
+                  </mapper>
+                </data>
+              </dataSet>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>
