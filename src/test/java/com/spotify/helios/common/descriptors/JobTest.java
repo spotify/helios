@@ -42,7 +42,7 @@ public class JobTest {
   @Test
   public void verifySha1ID() throws IOException {
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
-                                                   "image", "testStartStop:4711",
+                                                   "image", "foobar:4711",
                                                    "name", "foozbarz",
                                                    "version", "17",
                                                    "env", new HashMap<>(),
@@ -55,7 +55,7 @@ public class JobTest {
 
     final Job job = Job.newBuilder()
         .setCommand(asList("foo", "bar"))
-        .setImage("testStartStop:4711")
+        .setImage("foobar:4711")
         .setName("foozbarz")
         .setVersion("17")
         .build();
@@ -67,7 +67,7 @@ public class JobTest {
   public void verifySha1IDWithEnv() throws IOException {
     final Map<String, String> env = ImmutableMap.of("FOO", "BAR");
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
-                                                   "image", "testStartStop:4711",
+                                                   "image", "foobar:4711",
                                                    "name", "foozbarz",
                                                    "version", "17",
                                                    "env", env,
@@ -80,7 +80,7 @@ public class JobTest {
 
     final Job job = Job.newBuilder()
         .setCommand(asList("foo", "bar"))
-        .setImage("testStartStop:4711")
+        .setImage("foobar:4711")
         .setName("foozbarz")
         .setVersion("17")
         .setEnv(env)
@@ -97,7 +97,7 @@ public class JobTest {
   public void verifyCanParseJobWithUnknownFields() throws Exception {
     final Job job = Job.newBuilder()
         .setCommand(asList("foo", "bar"))
-        .setImage("testStartStop:4711")
+        .setImage("foobar:4711")
         .setName("foozbarz")
         .setVersion("17")
         .build();
@@ -119,7 +119,7 @@ public class JobTest {
   public void verifyCanParseJobWithMissingEnv() throws Exception {
     final Job job = Job.newBuilder()
         .setCommand(asList("foo", "bar"))
-        .setImage("testStartStop:4711")
+        .setImage("foobar:4711")
         .setName("foozbarz")
         .setVersion("17")
         .build();
