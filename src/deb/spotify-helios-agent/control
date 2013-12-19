@@ -1,5 +1,5 @@
 Package: spotify-helios-agent
-Version: [[version]]
+Version: [[version]]~[[git.commit.id.describe]]
 Section: non-free/net
 Priority: optional
 Architecture: all

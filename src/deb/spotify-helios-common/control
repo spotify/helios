@@ -1,5 +1,5 @@
 Package: spotify-helios-common
-Version: [[version]]
+Version: [[version]]~[[git.commit.id.describe]]
 Section: non-free/net
 Priority: optional
 Architecture: all
