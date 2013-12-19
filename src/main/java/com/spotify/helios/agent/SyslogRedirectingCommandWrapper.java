@@ -18,7 +18,8 @@ import java.util.Map;
  * executable there to redirect container stdout/err to syslog.
  */
 public class SyslogRedirectingCommandWrapper implements CommandWrapper {
-  private String syslogHostPort;
+
+  private final String syslogHostPort;
 
   public SyslogRedirectingCommandWrapper(String syslogHostPort) {
     this.syslogHostPort = syslogHostPort;
@@ -41,7 +42,7 @@ public class SyslogRedirectingCommandWrapper implements CommandWrapper {
 
     @SuppressWarnings("unchecked")
     Map<String, Object> volumes = (Map<String, Object>) containerConfig.getVolumes();
-    final Builder<String, Object> builder = new ImmutableMap.Builder<String, Object>();
+    final Builder<String, Object> builder = ImmutableMap.builder();
     if (volumes != null) {
       builder.putAll(volumes);
     }
@@ -54,6 +55,6 @@ public class SyslogRedirectingCommandWrapper implements CommandWrapper {
     List<String> result = Lists.newArrayList(
         "/helios/syslog-redirector", "-h", syslogHostPort, "-n", job.getId().toString(), "--");
     result.addAll(ImmutableList.copyOf(command));
-    return result.toArray(new String[]{});
+    return result.toArray(new String[result.size()]);
   }
 }
