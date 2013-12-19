@@ -11,3 +11,6 @@ pom.xml.versionsBackup
 
 # Mac OS X Finder
 .DS_Store
+
+# Vagrant
+.vagrant
