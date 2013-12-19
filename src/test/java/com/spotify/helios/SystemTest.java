@@ -822,7 +822,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final ClientResponse response = dockerClient.logContainer(taskStatus.getContainerId());
     final String logMessage = readLogFully(response);
     // should be nothing in the docker output log, either error text or our message
-    assertEquals(logMessage, "");
+    assertEquals("", logMessage);
 
     // Stop the agent
     agent.stopAsync().awaitTerminated();
