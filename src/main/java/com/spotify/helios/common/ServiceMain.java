@@ -55,7 +55,10 @@ public abstract class ServiceMain extends AbstractIdleService {
       } else {
         LoggingConfigurator.configureDefaults("helios", level);
       }
+      String sentryDsn = System.getenv("SENTRY_DSN");
+      if (sentryDsn != null) {
+        LoggingConfigurator.addSentryAppender(sentryDsn);
+      }
     }
   }
-
 }
