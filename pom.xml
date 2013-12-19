@@ -21,6 +21,7 @@
     <sonar.jdbc.password>Aecausuupaijahshae2re6ie</sonar.jdbc.password>
     <version.template.file>src/main/java/com/spotify/helios/common/Version.java.template</version.template.file>
     <version.file>src/main/java/com/spotify/helios/common/Version.java</version.file>
+    <imageName>registry.spotify.net/spotify/${project.artifactId}</imageName>
   </properties>
 
   <profiles>
@@ -273,7 +274,6 @@
           </reportPlugins>
         </configuration>
       </plugin>
-
       <plugin>
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
@@ -462,6 +462,52 @@
 			</replacements>
 		</configuration>
       </plugin>
-	  </plugins>
-	  </build>
+      <plugin>
+        <groupId>com.spotify</groupId>
+        <artifactId>docker-maven-plugin</artifactId>
+        <version>0.0.1</version>
+        <executions>
+          <execution>
+            <id>build</id>
+            <goals>
+              <goal>build</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <imageName>${imageName}:latest</imageName>
+              <resources>
+                <resource>
+                  <targetPath>tmp/jar</targetPath>
+                  <directory>${project.build.directory}</directory>
+                  <include>${project.artifactId}*.jar</include>
+                </resource>
+                <resource>
+                  <targetPath>tmp/bin</targetPath>
+                  <directory>${basedir}/bin</directory>
+                </resource>
+                <resource>
+                  <targetPath>tmp/conf</targetPath>
+                  <directory>${basedir}</directory>
+                  <include>${project.artifactId}.conf</include>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
+          <execution>
+            <id>tag</id>
+            <goals>
+              <goal>tag</goal>
+            </goals>
+            <phase>package</phase>
+            <configuration>
+              <image>${imageName}:latest</image>
+              <newName>${imageName}</newName>
+              <useGitCommitId>true</useGitCommitId>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      
+    </plugins>
+  </build>
 </project>

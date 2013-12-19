@@ -1,0 +1,98 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+# Copyright (c) 2013 Spotify AB
+
+from argparse import ArgumentParser, ArgumentDefaultsHelpFormatter
+from string import Template
+from subprocess import call, check_call
+from sys import exit
+import os
+
+# This should contain whatever arguments are specified in your .supervision file. 
+COMMAND = ['helios-agent', '--syslog',
+    '--zk', os.environ["ZOOKEEPER"],
+    '--docker', 'tcp://172.17.42.1:4160',
+    '--env',
+    "SPOTIFY_ROLE=" + os.environ["SPOTIFY_ROLE"],
+    "SPOTIFY_DOMAIN=" + os.environ["SPOTIFY_DOMAIN"],
+    "SPOTIFY_SITE=" + os.environ["SPOTIFY_SITE"],
+]
+
+
+def header(string):
+    print '\n----------------------------------------------------------------------------'
+    print string
+    print '----------------------------------------------------------------------------'
+
+
+def write_template(source, destination, mapping):
+    print destination
+    with open(source) as f:
+        template = Template(f.read())
+    with open(destination, 'w') as f:
+        f.write(template.substitute(mapping))
+
+
+def write_templates(config):
+    header('WRITING TEMPLATES')
+
+    # syslog conf
+    write_template('templates/syslog-ng.conf.template', '/etc/syslog-ng/syslog-ng.conf',
+                   {'host': config['syslog_host'], 'port': config['syslog_port']})
+
+
+def start_syslog():
+    header('STARTING SYSLOG')
+    check_call(['/etc/init.d/syslog-ng', 'start'])
+
+
+def run(config):
+    level = config['run_level']
+
+    # perform template substitution
+    if level >= 2:
+        write_templates(config)
+
+    # start syslog
+    if level >= 3:
+        start_syslog()
+
+    # run service for level 4, bash for everything else
+    if level < 4:
+        cmd = 'bin/bash'
+    else:
+        cmd = COMMAND
+
+    header('STARTING %s' % cmd)
+    exit(call(cmd))
+
+
+def main():
+    parser = ArgumentParser(description='startup script', formatter_class=ArgumentDefaultsHelpFormatter)
+
+    # Run levels:
+    #  1 - Run bash
+    #  2 - Write templates, run bash
+    #  3 - Write templates, start dependencies, run bash
+    #  4 - Write templates, start dependencies, run service
+    parser.add_argument('-r', '--run-level', default=4, help='run level (1 - 4), default is 4')
+    args = parser.parse_args()
+
+    # Syslog ip is set to ip of docker bridge. This will forward logs to the host machine,
+    # and needs to be overridden only if you want to forward logs to some other machine.
+    config = {
+        'domain': os.getenv('DOMAIN', 'shared.cloud.spotify.net'),
+        'run_level': int(args.run_level),
+        'syslog_host': os.getenv('SYSLOG_HOST', '172.17.42.1'),
+        'syslog_port': int(os.getenv('SYSLOG_PORT', '514'))
+    }
+
+    header('CONFIGURATION')
+    for key in sorted(config.keys()):
+        print'%-11s : %s' % (key, config[key])
+
+    run(config)
+
+
+if __name__ == '__main__':
+    main()
