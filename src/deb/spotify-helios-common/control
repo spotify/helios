@@ -3,7 +3,7 @@ Version: [[version]]
 Section: non-free/net
 Priority: optional
 Architecture: all
-Depends: default-jdk, spotify-helios-common
+Depends: default-jdk
 Maintainer: Daniel Norberg <dano@spotify.com>
 Description: Spotify Helios common files
 Distribution: development
