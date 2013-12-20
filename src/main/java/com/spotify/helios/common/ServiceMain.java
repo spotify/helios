@@ -20,22 +20,7 @@ public abstract class ServiceMain extends AbstractIdleService {
   protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
   protected ServiceMain(LoggingConfig loggingConfig) {
-    addShutdownHook();
     setupLogging(loggingConfig);
-  }
-
-  private void addShutdownHook() {
-    Runtime.getRuntime().addShutdownHook(new Thread(new Runnable() {
-      @Override
-      public void run() {
-        try {
-          stopAsync();
-          awaitTerminated();
-        } catch (Exception e) {
-          log.error("Exception stopping service", e);
-        }
-      }
-    }));
   }
 
   protected void setupLogging(LoggingConfig config) {
