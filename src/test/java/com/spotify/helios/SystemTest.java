@@ -876,7 +876,17 @@ public class SystemTest extends ZooKeeperTestBase {
 
     Map<String, AgentStatus> status = Json.read(control("host", "status", TEST_AGENT, "--json"),
                                                 new TypeReference<Map<String, AgentStatus>>() {});
-    assertEquals("PODNAME", status.get(TEST_AGENT).getEnvironment().get("SPOTIFY_POD"));
+
+    assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
+                                 "SPOTIFY_ROLE", "ROLENAME",
+                                 "BAR", "badfood"),
+                 status.get(TEST_AGENT).getEnvironment());
+
+    assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
+                                 "SPOTIFY_ROLE", "ROLENAME",
+                                 "BAR", "deadbeef",
+                                 "FOO", "4711"),
+                 status.get(TEST_AGENT).getStatuses().get(jobId).getEnv());
 
     // Stop the agent
     agent.stopAsync().awaitTerminated();

@@ -183,6 +183,7 @@ public class SupervisorTest {
                                                       .setJob(DESCRIPTOR)
                                                       .setState(CREATING)
                                                       .setContainerId(null)
+                                                      .setEnv(ENV)
                                                       .build()));
     assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);

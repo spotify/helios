@@ -282,16 +282,16 @@ class Supervisor {
    * Persist job status.
    */
   private void setStatus(final TaskStatus.State status, final String containerId) {
-    setStatus(status, containerId, null, null);
+    setStatus(status, containerId, null);
   }
 
   /**
    * Persist job status with port mapping.
    */
   private void setStatus(final TaskStatus.State status, final String containerId,
-                         final Map<String, PortMapping> ports,
-                         final Map<String, String> env) {
-    stateManager.setStatus(status, flapController.isFlapping(), containerId, ports, env);
+                         final Map<String, PortMapping> ports) {
+    stateManager.setStatus(status, flapController.isFlapping(), containerId, ports,
+                           getContainerEnvMap(job));
   }
 
   /**
@@ -496,7 +496,7 @@ class Supervisor {
         }
 
         final Map<String, PortMapping> ports = setUpExposedPorts(containerId);
-        setStatus(RUNNING, containerId, ports, null);
+        setStatus(RUNNING, containerId, ports);
 
         // Wait for container to die
         final int exitCode = flapController.waitFuture(docker.waitContainer(containerId));
@@ -543,7 +543,7 @@ class Supervisor {
       final HostConfig hostConfig = hostConfig(job);
       commandWrapper.modifyStartConfig(hostConfig);
 
-      setStatus(STARTING, containerId, null, getContainerEnvMap(job));
+      setStatus(STARTING, containerId, null);
       log.info("starting container: {}: {}", job, containerId);
       startFuture = docker.startContainer(containerId, hostConfig);
       startFuture.get();

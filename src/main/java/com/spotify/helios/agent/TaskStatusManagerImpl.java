@@ -50,19 +50,9 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
         .setJob(job)
         .setState(status)
         .setContainerId(containerId)
-        .setPorts(ports);
+        .setPorts(ports)
+        .setEnv(env);
 
-    // If no env passed, get whatever the existing one is/was -- most necessary for the case
-    // where there was an agent restart while the thing is running.
-    if (env == null) {
-      TaskStatus existing = model.getTaskStatus(jobId);
-
-      if (existing != null) {
-        builder.setEnv(existing.getEnv());
-      }
-    } else {
-      builder.setEnv(env);
-    }
     updateModelStatus(builder);
   }
 
