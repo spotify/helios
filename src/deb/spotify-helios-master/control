@@ -1,5 +1,5 @@
 Package: spotify-helios-master
-Version: [[version]]~[[git.commit.id.describe]]
+Version: [[project.version]]~[[git.commitsCount]].[[maven.build.timestamp]].[[git.commit.id.describe]][[version_suffix]]
 Section: non-free/net
 Priority: optional
 Architecture: all

@@ -12,12 +12,36 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.build.timestamp.format>yyyyMMdd-HHmmss.SSS</maven.build.timestamp.format>
 
     <sonar.host.url>https://sonar.spotify.net</sonar.host.url>
     <sonar.jdbc.url>jdbc:postgresql://real.sonar.spotify.net/sonardb</sonar.jdbc.url>
     <sonar.jdbc.username>sonaruser</sonar.jdbc.username>
     <sonar.jdbc.password>Aecausuupaijahshae2re6ie</sonar.jdbc.password>
   </properties>
+
+  <profiles>
+    <profile>
+      <id>default</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <version_suffix>.LOCAL</version_suffix>
+      </properties>
+    </profile>
+    <profile>
+      <id>teamcity</id>
+      <activation>
+        <property>
+          <name>teamcity.version</name>
+        </property>
+      </activation>
+      <properties>
+        <version_suffix>.${build.number}</version_suffix>
+      </properties>
+    </profile>
+  </profiles>
 
   <dependencies>
     <!--compile scope-->
@@ -267,6 +291,21 @@
       </plugin>
 
       <plugin>
+        <groupId>ru.concerteza.buildnumber</groupId>
+        <artifactId>maven-jgit-buildnumber-plugin</artifactId>
+        <version>1.2.7</version>
+        <executions>
+          <execution>
+            <id>git-buildnumber</id>
+            <goals>
+              <goal>extract-buildnumber</goal>
+            </goals>
+            <phase>prepare-package</phase>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <version>1.6</version>
         <executions>
@@ -298,7 +337,7 @@
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/spotify-helios_${project.version}~${git.commit.id.describe}_all.deb</deb>
+              <deb>${project.build.directory}/spotify-helios_${project.version}~${git.commitsCount}.${maven.build.timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
               <controlDir>src/deb/spotify-helios</controlDir>
               <dataSet>
                 <data>
@@ -322,7 +361,7 @@
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/spotify-helios-master_${project.version}~${git.commit.id.describe}_all.deb</deb>
+              <deb>${project.build.directory}/spotify-helios-master_${project.version}~${git.commitsCount}.${maven.build.timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
               <controlDir>src/deb/spotify-helios-master</controlDir>
               <dataSet>
                 <data>
@@ -346,7 +385,7 @@
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/spotify-helios-agent_${project.version}~${git.commit.id.describe}_all.deb</deb>
+              <deb>${project.build.directory}/spotify-helios-agent_${project.version}~${git.commitsCount}.${maven.build.timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
               <controlDir>src/deb/spotify-helios-agent</controlDir>
               <dataSet>
                 <data>
@@ -370,7 +409,7 @@
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/spotify-helios-common_${project.version}~${git.commit.id.describe}_all.deb</deb>
+              <deb>${project.build.directory}/spotify-helios-common_${project.version}~${git.commitsCount}.${maven.build.timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
               <controlDir>src/deb/spotify-helios-common</controlDir>
               <dataSet>
                 <data>
