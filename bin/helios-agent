@@ -1,6 +1,7 @@
 #!/bin/bash -e
 
 : ${JMXPORT=9203}
+: ${JDWPPORT=5006}
 
 args=()
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
@@ -29,5 +30,6 @@ exec java \
     "${args[@]}" \
     -Djava.net.preferIPv4Stack=true \
     -cp "$CLASSPATH" \
+    -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$JDWPPORT \
     com.spotify.helios.agent.AgentMain \
     "$@"
