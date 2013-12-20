@@ -7,10 +7,10 @@ package com.spotify.helios.agent;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
-import com.netflix.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import com.netflix.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
+import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
 import com.spotify.helios.common.VersionedBytes;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
@@ -32,7 +32,7 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.netflix.curator.framework.recipes.cache.PathChildrenCache.StartMode.POST_INITIALIZED_EVENT;
+import static org.apache.curator.framework.recipes.cache.PathChildrenCache.StartMode.POST_INITIALIZED_EVENT;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 

@@ -1,13 +1,13 @@
 package com.spotify.helios.common;
 
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.api.transaction.CuratorTransactionFinal;
-import com.netflix.curator.framework.api.transaction.CuratorTransactionResult;
-import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
-import com.netflix.curator.utils.EnsurePath;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.coordination.ZooKeeperOperation;
 
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
@@ -20,9 +20,9 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.collect.Lists.reverse;
-import static com.netflix.curator.framework.imps.CuratorFrameworkState.STARTED;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
+import static org.apache.curator.framework.imps.CuratorFrameworkState.STARTED;
 
 public class DefaultZooKeeperClient implements ZooKeeperClient {
 

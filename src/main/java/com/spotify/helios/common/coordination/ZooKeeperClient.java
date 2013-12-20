@@ -1,7 +1,7 @@
 package com.spotify.helios.common.coordination;
 
-import com.netflix.curator.framework.api.transaction.CuratorTransactionResult;
-import com.netflix.curator.framework.recipes.cache.PathChildrenCache;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import com.spotify.helios.common.VersionedBytes;
 
 import org.apache.zookeeper.CreateMode;

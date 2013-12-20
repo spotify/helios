@@ -4,10 +4,6 @@
 
 package com.spotify.helios.master;
 
-import com.netflix.curator.RetryPolicy;
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.AbstractClient;
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.coordination.Paths;
@@ -26,6 +22,10 @@ import com.spotify.nameless.client.RegistrationHandle;
 import com.yammer.metrics.Metrics;
 import com.yammer.metrics.core.MetricsRegistry;
 
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

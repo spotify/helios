@@ -2,10 +2,10 @@ package com.spotify.helios;
 
 import com.google.common.collect.ImmutableList;
 
-import com.netflix.curator.RetryPolicy;
-import com.netflix.curator.framework.CuratorFramework;
-import com.netflix.curator.framework.CuratorFrameworkFactory;
-import com.netflix.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.HeliosException;
