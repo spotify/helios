@@ -40,6 +40,28 @@
       <properties>
         <version_suffix>.${build.number}</version_suffix>
       </properties>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.soebes.maven.plugins</groupId>
+            <artifactId>maven-echo-plugin</artifactId>
+            <version>0.1</version>
+            <executions>
+              <execution>
+                <phase>generate-sources</phase>
+                <goals>
+                  <goal>echo</goal>
+                </goals>
+              </execution>
+            </executions>
+            <configuration>
+              <echos>
+                <echo>##teamcity[buildNumber '${project.version}~${git.commitsCount}.${maven.build.timestamp}.${git.commit.id.describe}${version_suffix}']</echo>
+              </echos>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
   </profiles>
 
@@ -278,6 +300,7 @@
             <goals>
               <goal>revision</goal>
             </goals>
+            <phase>initialize</phase>
           </execution>
         </executions>
         <configuration>
@@ -300,7 +323,7 @@
             <goals>
               <goal>extract-buildnumber</goal>
             </goals>
-            <phase>prepare-package</phase>
+            <phase>initialize</phase>
           </execution>
         </executions>
       </plugin>
