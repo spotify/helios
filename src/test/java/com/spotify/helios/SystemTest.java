@@ -41,7 +41,6 @@ import com.spotify.nameless.proto.Messages;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.commons.lang.StringUtils;
-import org.json.JSONObject;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -875,9 +874,9 @@ public class SystemTest extends ZooKeeperTestBase {
     // Verify that the the BAR environment variable in the job overrode the agent config
     assertContains("bar: deadbeef", logMessage);
 
-    JSONObject status = new JSONObject(control("host", "status", TEST_AGENT, "--json"));
-    JSONObject env = (status.getJSONObject(TEST_AGENT)).getJSONObject("environment");
-    assertEquals("PODNAME", env.getString("SPOTIFY_POD"));
+    Map<String, AgentStatus> status = Json.read(control("host", "status", TEST_AGENT, "--json"),
+                                                new TypeReference<Map<String, AgentStatus>>() {});
+    assertEquals("PODNAME", status.get(TEST_AGENT).getEnvironment().get("SPOTIFY_POD"));
 
     // Stop the agent
     agent.stopAsync().awaitTerminated();
