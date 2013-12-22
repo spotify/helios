@@ -113,7 +113,7 @@ check_initial_puppet_run() {
 
   echo "Checking if initial puppet run on $HOST is still going"
 
-  while ssh -t -A $HOST 'ps -ef | grep puppet | grep -v grep' > /dev/null
+  while ssh -t -A $HOST 'ps -ef | grep 'puppet agent' | grep -v grep' > /dev/null
   do  
     sleep 60
     echo "  ...still going"
