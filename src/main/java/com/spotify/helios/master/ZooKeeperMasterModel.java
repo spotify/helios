@@ -24,6 +24,7 @@ import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.JobPortAllocationConflictException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.VersionedBytes;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.coordination.ZooKeeperOperation;
@@ -43,6 +44,7 @@ import com.spotify.helios.common.protocol.TaskStatusEvent;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -58,13 +60,13 @@ import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.check;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.delete;
+import static com.spotify.helios.common.coordination.ZooKeeperOperations.set;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static org.apache.zookeeper.KeeperException.NodeExistsException;
 
 public class ZooKeeperMasterModel implements MasterModel {
 
@@ -319,6 +321,14 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public void deployJob(final String agent, final Deployment deployment)
       throws HeliosException {
+    deployJobRetry(agent, deployment, 0);
+  }
+
+  private void deployJobRetry(final String agent, final Deployment deployment, int count)
+      throws HeliosException {
+    if (count == 3) {
+      throw new HeliosException("3 concurrent modifications! while deploying");
+    }
     log.debug("adding agent job: agent={}, job={}", agent, deployment);
 
     final JobId id = deployment.getJobId();
@@ -339,14 +349,31 @@ public class ZooKeeperMasterModel implements MasterModel {
       portNodes.put(path, idJson);
     }
 
-    // TODO (dano): Failure handling is racy wrt agent and job modifications. Probably rare, but still.
-
     final Task task = new Task(job, deployment.getGoal());
+    List<ZooKeeperOperation> operations = Lists.newArrayList(
+        check(jobPath), create(portNodes), create(Paths.configJobAgent(id, agent)));
+
+    // Attempt to read a task here.  If it's goal is UNDEPLOY, it's as good as not existing
     try {
-      client.transaction(check(jobPath),
-                         create(portNodes),
-                         create(taskPath, task),
-                         create(Paths.configJobAgent(id, agent)));
+      VersionedBytes existing = client.getDataVersioned(taskPath);
+      byte[] bytes = existing.getBytes();
+      Task readTask = Json.read(bytes, Task.class);
+      if (readTask.getGoal() != Goal.UNDEPLOY) {
+        throw new JobAlreadyDeployedException(agent, id);
+      }
+      operations.add(check(taskPath, existing.getVersion()));
+      operations.add(set(taskPath, task));
+    } catch (NoNodeException e) {
+      operations.add(create(taskPath, task));
+    } catch (KeeperException e) {
+      throw new HeliosException("reading existing task description failed", e);
+    } catch (IOException e) {
+      throw new HeliosException("parsing existing task description failed", e);
+    }
+
+    // TODO (dano): Failure handling is racy wrt agent and job modifications. Probably rare, but still.
+    try {
+      client.transaction(operations);
     } catch (NoNodeException e) {
       // Either the job or the agent went away
       assertJobExists(id);

@@ -7,6 +7,7 @@ package com.spotify.helios;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
@@ -520,6 +521,13 @@ public class SystemTest extends ZooKeeperTestBase {
 
     final JobDeployResponse deployed4 = control.deploy(deployment, BOGUS_AGENT).get();
     assertEquals(JobDeployResponse.Status.AGENT_NOT_FOUND, deployed4.getStatus());
+
+    // undeploy and redeploy to make sure things still work in the face of the tombstone
+    JobUndeployResponse undeployResp = control.undeploy(jobId, agentName).get();
+    assertEquals(JobUndeployResponse.Status.OK, undeployResp.getStatus());
+
+    final JobDeployResponse redeployed = control.deploy(deployment, agentName).get();
+    assertEquals(JobDeployResponse.Status.OK, redeployed.getStatus());
 
     // Check that the job is in the desired state
     final Deployment fetchedDeployment = control.stat(agentName, jobId).get();

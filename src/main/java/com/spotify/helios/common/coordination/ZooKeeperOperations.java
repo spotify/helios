@@ -6,6 +6,13 @@ import java.util.List;
 import java.util.Map;
 
 public class ZooKeeperOperations {
+  public static ZooKeeperOperation set(final String path, Descriptor data) {
+    return new SetData(path, data.toJsonBytes());
+  }
+
+  public static ZooKeeperOperation set(final String path, byte[] bytes) {
+    return new SetData(path, bytes);
+  }
 
   public static ZooKeeperOperation check(final String path, final int version) {
     return new CheckWithVersion(path, version);
