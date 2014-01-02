@@ -2,6 +2,7 @@ package com.spotify.helios.agent;
 
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
+import com.spotify.helios.common.descriptors.ThrottleState;
 
 import java.util.Map;
 
@@ -13,10 +14,9 @@ class FakeTaskStatusManager implements TaskStatusManager {
   private volatile boolean isFlapping;
 
   @Override
-  public void setStatus(State status, boolean isFlapping, String containerId,
+  public void setStatus(State status, ThrottleState throttle, String containerId,
                         Map<String, PortMapping> ports, Map<String, String> env) {
     this.state = status;
-    this.isFlapping = isFlapping;
   }
 
   public void setState(State state) {

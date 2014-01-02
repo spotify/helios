@@ -17,6 +17,7 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
   private boolean isFlapping;
   private State status;
   private TaskStatus taskStatus;
+  private ThrottleState throttle;
 
   public TaskStatusManagerImpl(AgentModel model, JobId jobId, Job job) {
     this.model = model;
@@ -31,6 +32,12 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
     }
 
     this.isFlapping = isFlapping;
+    if (this.isFlapping && throttle == ThrottleState.NO) {
+      throttle = ThrottleState.FLAPPING;
+    } else if (throttle == ThrottleState.FLAPPING && isFlapping == false) {
+      throttle = ThrottleState.NO;
+    }
+
     updateModelStatus(taskStatus.asBuilder());
   }
 
@@ -40,10 +47,10 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
   }
 
   @Override
-  public void setStatus(State status, boolean isFlapping, String containerId,
+  public void setStatus(State status, ThrottleState throttle, String containerId,
                         Map<String, PortMapping> ports, Map<String, String> env) {
 
-    this.isFlapping = isFlapping;
+    this.throttle = throttle;
     this.status = status;
 
     TaskStatus.Builder builder = TaskStatus.newBuilder()
@@ -57,7 +64,7 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
   }
 
   private void updateModelStatus(TaskStatus.Builder builder) {
-    builder.setThrottled(isFlapping ? ThrottleState.FLAPPING : ThrottleState.NO);
+    builder.setThrottled(throttle);
     model.setTaskStatus(jobId, builder.build());
     taskStatus = builder.build();
   }

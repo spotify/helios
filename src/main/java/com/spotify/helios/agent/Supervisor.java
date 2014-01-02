@@ -24,6 +24,7 @@ import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.Image;
 import com.kpelykh.docker.client.model.ImageInspectResponse;
 import com.kpelykh.docker.client.model.PortBinding;
+import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -183,7 +184,10 @@ class Supervisor {
           log.error("task runner threw exception", t);
         }
         synchronized (sync) {
-          startJob(restartPolicy.getRetryIntervalMillis());
+          long restartDelay = restartPolicy.getRetryIntervalMillis();
+          long throttleDelay = restartPolicy.restartThrottle(throttle);
+
+          startJob(Math.max(restartDelay, throttleDelay));
         }
       }
     });
@@ -290,7 +294,7 @@ class Supervisor {
    */
   private void setStatus(final TaskStatus.State status, final String containerId,
                          final Map<String, PortMapping> ports) {
-    stateManager.setStatus(status, flapController.isFlapping(), containerId, ports,
+    stateManager.setStatus(status, throttle, containerId, ports,
                            getContainerEnvMap(job));
   }
 
@@ -471,6 +475,7 @@ class Supervisor {
     @Override
     public void run() {
       try {
+        log.error("Sleeping {} ms", delayMillis);
         // Delay
         Thread.sleep(delayMillis);
 
@@ -485,7 +490,14 @@ class Supervisor {
 
         // Ensure we have the image
         final String image = job.getImage();
-        maybePullImage(image);
+        try {
+          maybePullImage(image);
+        } catch (HeliosRuntimeException e) { // error
+          throttle = ThrottleState.IMAGE_MISSING;
+          setStatus(TaskStatus.State.FAILED, null);
+          setException(e);
+          return;
+        }
 
         // Create and start container if necessary
         final String containerId;
@@ -632,13 +644,22 @@ class Supervisor {
 
   /**
    * Tail a json stream until it finishes.
+   * @return
    */
-  private static void jsonTail(final String operation, final InputStream stream)
-      throws IOException {
-    final MappingIterator<Map<String, Object>> messages =
-        Json.readValues(stream, new TypeReference<Map<String, Object>>() {});
+  private static void jsonTail(final String operation, final InputStream stream) {
+    MappingIterator<Map<String, Object>> messages;
+    try {
+      messages = Json.readValues(stream, new TypeReference<Map<String, Object>>() {});
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
     while (messages.hasNext()) {
-      log.info("{}: {}", operation, messages.next());
+      Map<String, Object> message = messages.next();
+      if (message.containsKey("errorDetail")) {
+        throw new HeliosRuntimeException("Error retrieving image: " + message.get("errorDetail"));
+      }
+      log.info("{}: {}", operation, message);
     }
   }
 

@@ -394,6 +394,24 @@ public class SystemTest extends ZooKeeperTestBase {
    awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.FLAPPING, WAIT_TIMEOUT_SECONDS, SECONDS);
   }
 
+  @Test
+  public void testImageMissing() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(TEST_AGENT);
+    JobId jobId = createJob("JOB_NAME", "JOB_VERSION", "this_sould_not_exist",
+        ImmutableList.of("/bin/true"));
+    deployJob(jobId, TEST_AGENT);
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+    awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.IMAGE_MISSING, WAIT_TIMEOUT_SECONDS,
+        SECONDS);
+
+    final AgentStatus agentStatus = control.agentStatus(TEST_AGENT).get();
+    final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
+    assertEquals(TaskStatus.State.FAILED, taskStatus.getState());
+  }
 
   @Test
   public void testPortCollision() throws Exception {
