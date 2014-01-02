@@ -7,6 +7,8 @@ public class RestartPolicy {
   private static final long DEFAULT_FLAPPING_RESTART_THROTTLE_MILLIS = 30 * 1000;  // 30 seconds
   private static final long DEFAULT_RESTART_INTERVAL_MILLIS = 100;
   private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
+  // Normally the supervisor logic should prevent retry to start with, but paranoia dictates this.
+  private static final long IMAGE_NAME_INVALID_THROTTLE_MILLIS = 60 * 60 * 1000; // one hour
 
   private final long restartIntervalMillis;
   private final long flappingThrottleMillis;
@@ -33,6 +35,10 @@ public class RestartPolicy {
         return imageMissingThrottleMillis;
       case FLAPPING:
         return flappingThrottleMillis;
+      case IMAGE_NAME_INVALID:
+        return IMAGE_NAME_INVALID_THROTTLE_MILLIS;
+      default:
+        break;
     }
     throw new IllegalStateException("Should never get here, covered both cases");
   }

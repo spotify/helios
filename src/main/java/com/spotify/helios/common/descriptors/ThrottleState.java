@@ -4,5 +4,6 @@ package com.spotify.helios.common.descriptors;
 public enum ThrottleState {
   NO,
   FLAPPING,
-  IMAGE_MISSING
+  IMAGE_MISSING,
+  IMAGE_NAME_INVALID
 }

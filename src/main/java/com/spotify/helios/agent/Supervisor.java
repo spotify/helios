@@ -14,6 +14,7 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.kpelykh.docker.client.DockerException;
@@ -69,6 +70,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Supervises docker containers for a single job.
  */
 class Supervisor {
+
+  private static class BogusNameException extends Exception {
+    public BogusNameException(JsonParseException jpe) {
+      super(jpe);
+    }
+  }
 
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
@@ -475,7 +482,6 @@ class Supervisor {
     @Override
     public void run() {
       try {
-        log.error("Sleeping {} ms", delayMillis);
         // Delay
         Thread.sleep(delayMillis);
 
@@ -496,6 +502,11 @@ class Supervisor {
           throttle = ThrottleState.IMAGE_MISSING;
           setStatus(TaskStatus.State.FAILED, null);
           setException(e);
+          return;
+        } catch (BogusNameException e) {
+          throttle = ThrottleState.IMAGE_NAME_INVALID;
+          setStatus(TaskStatus.State.FAILED, null);
+          // Don't set exception or return value to prevent restarting, just return
           return;
         }
 
@@ -576,7 +587,7 @@ class Supervisor {
     }
 
     private void maybePullImage(final String image) throws InterruptedException,
-        ExecutionException, IOException {
+        ExecutionException, IOException, BogusNameException {
       final List<Image> images = docker.getImages(image).get();
       if (images.isEmpty()) {
         final ClientResponse pull = docker.pull(image).get();
@@ -645,8 +656,10 @@ class Supervisor {
   /**
    * Tail a json stream until it finishes.
    * @return
+   * @throws BogusNameException
    */
-  private static void jsonTail(final String operation, final InputStream stream) {
+  private static void jsonTail(final String operation, final InputStream stream)
+      throws BogusNameException {
     MappingIterator<Map<String, Object>> messages;
     try {
       messages = Json.readValues(stream, new TypeReference<Map<String, Object>>() {});
@@ -654,12 +667,24 @@ class Supervisor {
       throw new RuntimeException(e);
     }
 
-    while (messages.hasNext()) {
-      Map<String, Object> message = messages.next();
-      if (message.containsKey("errorDetail")) {
-        throw new HeliosRuntimeException("Error retrieving image: " + message.get("errorDetail"));
+    try {
+      while (messages.hasNext()) {
+        Map<String, Object> message = messages.next();
+        if (message.containsKey("errorDetail")) {
+          throw new HeliosRuntimeException("Error retrieving image: " + message.get("errorDetail"));
+        }
+        log.info("{}: {}", operation, message);
       }
-      log.info("{}: {}", operation, message);
+    } catch (RuntimeException e) {
+      if (!(e.getCause() instanceof JsonParseException)) {
+        throw e;
+      } else {
+        JsonParseException jpe = (JsonParseException) e.getCause();
+        if (jpe.getMessage().contains("Invalid': was expecting 'null', 'true', 'false' or NaN")) {
+          throw new BogusNameException(jpe);
+        }
+        throw e;
+      }
     }
   }
 

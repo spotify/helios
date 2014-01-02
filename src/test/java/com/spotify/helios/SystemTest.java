@@ -414,6 +414,25 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   @Test
+  public void testImageNameBogus() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(TEST_AGENT);
+    JobId jobId = createJob("JOB_NAME", "JOB_VERSION", "DOES_NOT_LIKE_AT_ALL-CAPITALS",
+        ImmutableList.of("/bin/true"));
+    deployJob(jobId, TEST_AGENT);
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+    awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.IMAGE_NAME_INVALID,
+        WAIT_TIMEOUT_SECONDS, SECONDS);
+
+    final AgentStatus agentStatus = control.agentStatus(TEST_AGENT).get();
+    final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
+    assertEquals(TaskStatus.State.FAILED, taskStatus.getState());
+  }
+
+  @Test
   public void testPortCollision() throws Exception {
     final String agentName = "foobar";
     final int externalPort = 4711;
