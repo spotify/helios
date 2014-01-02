@@ -506,6 +506,7 @@ class Supervisor {
         } catch (BogusNameException e) {
           throttle = ThrottleState.IMAGE_NAME_INVALID;
           setStatus(TaskStatus.State.FAILED, null);
+          setException(e);
           // Don't set exception or return value to prevent restarting, just return
           return;
         }
