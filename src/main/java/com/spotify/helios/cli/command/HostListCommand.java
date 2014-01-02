@@ -71,6 +71,9 @@ public class HostListCommand extends ControlCommand {
         final Set<TaskStatus> runningDeployedJobs = Sets.newHashSet();
         for (final JobId jobId : s.getJobs().keySet()) {
           final TaskStatus taskStatus = s.getStatuses().get(jobId);
+          if (taskStatus == null) {
+            continue;
+          }
           if (taskStatus.getState() == TaskStatus.State.RUNNING) {
             runningDeployedJobs.add(taskStatus);
           }
