@@ -342,7 +342,7 @@ class Supervisor {
    * Create a docker port exposure/mapping entry.
    */
   private String containerPort(final String name, final int port) {
-    return port + "/" + name;
+    return port + "/tcp"; //name;
   }
 
   /**
@@ -529,7 +529,7 @@ class Supervisor {
         throttle = flapController.isFlapping()
             ? ThrottleState.FLAPPING : ThrottleState.NO;
         setStatus(EXITED, containerId);
-        handleNamelessDeregistration();
+//        handleNamelessDeregistration();
 
         set(exitCode);
       } catch (InterruptedException e) {
@@ -547,7 +547,7 @@ class Supervisor {
           docker.inspectContainer(containerId).get();
       final Map<String, PortMapping> ports = parsePortBindings(runningContainerInfo);
       flapController.jobStarted();
-      handleNamelessRegistration(ports);
+//      handleNamelessRegistration(ports);
       return ports;
     }
 
@@ -643,15 +643,30 @@ class Supervisor {
     final ImmutableMap.Builder<String, PortMapping> builder = ImmutableMap.builder();
     for (final Map.Entry<String, List<PortBinding>> e : ports.entrySet()) {
       final PortBindingParser parser = new PortBindingParser(e.getKey(), e.getValue());
-      final String name = parser.getName();
       final PortMapping mapping = parser.getMapping();
-      if (mapping.getExternalPort() == null) {
+      final String name = getPortNameForPortNumber(mapping.getInternalPort());
+      if (name == null) {
+        log.info("got internal port unknown to the job: {}", mapping.getInternalPort());
+      } else if (mapping.getExternalPort() == null) {
         log.debug("unbound port: {}/{}", name, mapping.getInternalPort());
-        continue;
+      } else {
+        builder.put(name, mapping);
       }
-      builder.put(name, mapping);
     }
     return builder.build();
+  }
+
+  private String getPortNameForPortNumber(final int internalPort) {
+    for (final Entry<String, PortMapping> portMapping : job.getPorts().entrySet()) {
+      if (portMapping.getValue().getInternalPort() == internalPort) {
+        log.info("found mapping for internal port {} {} -> {}",
+            internalPort,
+            portMapping.getValue().getInternalPort(),
+            portMapping.getKey());
+        return portMapping.getKey();
+      }
+    }
+    return null;
   }
 
   /**

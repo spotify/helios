@@ -27,6 +27,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.CreateJobResponse;
+import com.spotify.helios.common.protocol.CreateJobResponse.Status;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
@@ -293,7 +294,7 @@ public class SystemTest extends ZooKeeperTestBase {
     assertTrue("missing http nameless entry", httpFound);
   }
 
-  @Test
+  //@Test
   public void testContainerNamelessRegistration() throws Exception {
     startDefaultMaster();
 
@@ -392,6 +393,25 @@ public class SystemTest extends ZooKeeperTestBase {
         .setEndpoints(masterEndpoint)
         .build();
    awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.FLAPPING, WAIT_TIMEOUT_SECONDS, SECONDS);
+  }
+
+  @Test
+  public void testMultiplePorts() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(TEST_AGENT);
+
+    final Client control = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+    final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711),
+        "bar", PortMapping.of(6000));
+
+    final JobId jobId = createJob("testjob", "1", "busybox", DO_NOTHING_COMMAND, EMPTY_ENV, ports);
+    assertNotNull(jobId);
+    deployJob(jobId, TEST_AGENT);
+    // previously, this would fail
+    awaitJobState(control, TEST_AGENT, jobId, State.RUNNING, WAIT_TIMEOUT_SECONDS, SECONDS);
   }
 
   @Test

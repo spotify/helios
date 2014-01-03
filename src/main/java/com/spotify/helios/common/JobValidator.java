@@ -28,10 +28,11 @@ public class JobValidator {
     // Check that there's not external port collission
     final Set<Integer> externalPorts = Sets.newHashSet();
     for (final PortMapping mapping : job.getPorts().values()) {
-      if (externalPorts.contains(mapping.getExternalPort())) {
-        errors.add(format("Duplicate external port mapping: %s", mapping.getExternalPort()));
+      Integer externalMappedPort = mapping.getExternalPort();
+      if (externalPorts.contains(externalMappedPort) && externalMappedPort != null) {
+        errors.add(format("Duplicate external port mapping: %s", externalMappedPort));
       }
-      externalPorts.add(mapping.getExternalPort());
+      externalPorts.add(externalMappedPort);
     }
 
     return errors;
