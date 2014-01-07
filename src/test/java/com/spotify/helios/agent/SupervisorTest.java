@@ -101,6 +101,7 @@ public class SupervisorTest {
         .setModel(model)
         .build();
     sut = Supervisor.newBuilder()
+        .setAgentName("AGENT_NAME")
         .setJobId(JOB_ID)
         .setDescriptor(DESCRIPTOR)
         .setModel(model)

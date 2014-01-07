@@ -95,6 +95,7 @@ class Supervisor {
   private final TaskStatusManager stateManager;
   private final NamelessRegistrar registrar;
   private final CommandWrapper commandWrapper;
+  private final String agentName;
 
   private volatile Runner runner;
   private volatile boolean closed;
@@ -109,13 +110,14 @@ class Supervisor {
    * @param model     The model to use.
    * @param envVars   Environment variables to expose to child containers.
    * @param registrar The Nameless registrar to register ports with.
+   * @param agentName
    */
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
                      final RestartPolicy restartPolicy, final Map<String, String> envVars,
                      final FlapController flapController, TaskStatusManager stateManager,
                      final @Nullable NamelessRegistrar registrar,
-                     final CommandWrapper commandWrapper) {
+                     final CommandWrapper commandWrapper, String agentName) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
@@ -126,6 +128,7 @@ class Supervisor {
     this.stateManager = checkNotNull(stateManager);
     this.registrar = registrar;
     this.commandWrapper = checkNotNull(commandWrapper);
+    this.agentName = checkNotNull(agentName);
   }
 
   /**
@@ -322,7 +325,25 @@ class Supervisor {
     containerConfig.setCmd(command.toArray(new String[command.size()]));
     containerConfig.setEnv(containerEnv(descriptor));
     containerConfig.setExposedPorts(containerExposedPorts(descriptor));
+    containerConfig.setHostName(
+        safeHostNameify(descriptor.getId().getName() + "_" + descriptor.getId().getVersion())
+        + "." + agentName);
     return containerConfig;
+  }
+
+  private String safeHostNameify(String name) {
+    StringBuilder sb = new StringBuilder();
+    for (int i = 0; i < name.length(); i++) {
+      char c = name.charAt(i);
+      if ( (c >= 'A' && c <= 'Z')
+           || (c >= 'a' && c <= 'z')
+           || (c >= '0' && c <= '9')) {
+        sb.append(c);
+      } else {
+        sb.append('_');
+      }
+    }
+    return sb.toString();
   }
 
   /**
@@ -723,6 +744,7 @@ class Supervisor {
     private TaskStatusManager stateManager;
     private NamelessRegistrar registrar;
     private CommandWrapper commandWrapper;
+    private String agentName;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -778,7 +800,12 @@ class Supervisor {
     public Supervisor build() {
       return new Supervisor(jobId, descriptor, model, dockerClient, restartPolicy,
                             envVars, flapController, stateManager, registrar,
-                            commandWrapper);
+                            commandWrapper, agentName);
+    }
+
+    public Builder setAgentName(String agentName) {
+      this.agentName = agentName;
+      return this;
     }
   }
 

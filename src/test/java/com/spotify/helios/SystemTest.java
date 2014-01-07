@@ -900,6 +900,29 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   @Test
+  public void testContainerHostName() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(TEST_AGENT);
+    final DockerClient dockerClient = new DockerClient(dockerEndpoint);
+
+    final List<String> command = asList("hostname");
+
+    // Create job
+    final JobId jobId = createJob("NA*&ME", "VE.@#RSION", "busybox", command, EMPTY_ENV,
+        EMPTY_PORTS);
+
+    // deploy
+    deployJob(jobId, TEST_AGENT);
+
+    final TaskStatus taskStatus = awaitTaskState(jobId, TEST_AGENT, EXITED);
+
+    final ClientResponse response = dockerClient.logContainer(taskStatus.getContainerId());
+    final String logMessage = readLogFully(response);
+
+    assertContains("NA__ME_VE___RSION.test-agent", logMessage);
+  }
+
+  @Test
   public void testEnvVariables() throws Exception {
     startDefaultMaster();
     AgentMain agent = startAgent("-vvvv",

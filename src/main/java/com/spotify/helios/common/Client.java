@@ -5,7 +5,9 @@
 package com.spotify.helios.common;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -35,11 +37,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.collect.Iterables.transform;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
@@ -74,7 +78,24 @@ public class Client {
   private URI uri(final String resource, final Object... args) {
     // TODO: use a uri builder and clean this mess up
     checkArgument(resource.startsWith("/"));
-    final String uri = "hm://helios" + format(resource, args);
+    final String path;
+    if (args.length == 0) {
+      path = resource;
+    } else {
+      Object[] encoded = ImmutableList.copyOf(transform(ImmutableList.copyOf(args),
+          new Function<Object, String>() {
+          @Override
+          public String apply(Object arg0) {
+            try {
+              return java.net.URLEncoder.encode(arg0.toString(), "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+              throw new UnsupportedOperationException("SHOULD NOT HAPPEN, EVER");
+            }
+          }
+        })).toArray(new String[args.length]);
+      path = format(resource, encoded);
+    }
+    final String uri = "hm://helios" + path;
     final String q = uri.contains("?") ? "&" : "?";
     return URI.create(uri + q + "user=" + user);
   }

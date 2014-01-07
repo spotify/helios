@@ -22,16 +22,19 @@ public class SupervisorFactory {
   private final Map<String, String> envVars;
   private final NamelessRegistrar registrar;
   private final CommandWrapper commandWrapper;
+  private final String agentName;
 
   public SupervisorFactory(final AgentModel model, final DockerClientFactory dockerClientFactory,
                            final Map<String, String> envVars,
                            final @Nullable NamelessRegistrar registrar,
-                           final CommandWrapper commandWrapper) {
+                           final CommandWrapper commandWrapper,
+                           String agentName) {
     this.dockerClientFactory = dockerClientFactory;
     this.model = checkNotNull(model);
     this.envVars = checkNotNull(envVars);
     this.registrar = registrar;
     this.commandWrapper = commandWrapper;
+    this.agentName = agentName;
   }
 
   /**
@@ -52,6 +55,7 @@ public class SupervisorFactory {
         .build();
     final AsyncDockerClient dockerClient = new AsyncDockerClient(dockerClientFactory);
     return Supervisor.newBuilder()
+        .setAgentName(agentName)
         .setJobId(jobId)
         .setDescriptor(descriptor)
         .setModel(model)

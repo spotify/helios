@@ -45,6 +45,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.net.URLDecoder;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -69,8 +71,16 @@ public class MasterHandler extends MatchingHandler {
     this.model = model;
   }
 
+  public String safeURLDecode(String s) {
+    try {
+      return URLDecoder.decode(s, "UTF-8");
+    } catch (UnsupportedEncodingException e) {
+      throw new RuntimeException("URL Decoding failed for " + s, e);
+    }
+  }
+
   @Match(uri = "hm://helios/jobs/<id>", methods = "PUT")
-  public void jobPut(final ServiceRequest request, final String id) {
+  public void jobPut(final ServiceRequest request, final String rawId) {
     final Message message = request.getMessage();
     if (message.getPayloads().size() != 1) {
       throw new RequestHandlerException(BAD_REQUEST);
@@ -84,6 +94,7 @@ public class MasterHandler extends MatchingHandler {
       throw new RequestHandlerException(BAD_REQUEST);
     }
 
+    final String id = safeURLDecode(rawId);
     if (!job.getId().equals(parseJobId(id))) {
       respond(request, BAD_REQUEST, new CreateJobResponse(CreateJobResponse.Status.ID_MISMATCH));
       return;
@@ -113,7 +124,8 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/jobs/<id>", methods = "GET")
-  public void jobGet(final ServiceRequest request, final String id) {
+  public void jobGet(final ServiceRequest request, final String rawId) {
+    final String id = safeURLDecode(rawId);
     final JobId jobId = parseJobId(id);
     try {
       final Job job = model.getJob(jobId);
@@ -156,7 +168,8 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/jobs/<id>", methods = "DELETE")
-  public void jobDelete(final ServiceRequest request, final String id) {
+  public void jobDelete(final ServiceRequest request, final String rawId) {
+    final String id = safeURLDecode(rawId);
     try {
       model.removeJob(parseJobId(id));
       respond(request, OK, new JobDeleteResponse(JobDeleteResponse.Status.OK));
@@ -169,7 +182,8 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/jobs/<id>/status", methods = "GET")
-  public void jobStatusGet(final ServiceRequest request, final String id) {
+  public void jobStatusGet(final ServiceRequest request, final String rawId) {
+    final String id = safeURLDecode(rawId);
     final JobId jobId = parseJobId(id);
     try {
       final JobStatus jobStatus = model.getJobStatus(jobId);
@@ -181,7 +195,8 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/agents/<agent>", methods = "PUT")
-  public void agentPut(final ServiceRequest request, final String agent) {
+  public void agentPut(final ServiceRequest request, final String rawAgent) {
+    final String agent = safeURLDecode(rawAgent);
     try {
       model.addAgent(agent);
     } catch (HeliosException e) {
@@ -195,9 +210,11 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "PUT")
-  public void agentJobPut(final ServiceRequest request, final String agent,
-                          final String job)
+  public void agentJobPut(final ServiceRequest request, final String rawAgent,
+                          final String rawJob)
       throws RequestHandlerException {
+    final String agent = safeURLDecode(rawAgent);
+    final String job = safeURLDecode(rawJob);
     final Deployment deployment = parseDeployment(request);
 
     final JobId jobId;
@@ -243,10 +260,11 @@ public class MasterHandler extends MatchingHandler {
 
   @Match(uri = "hm://helios/agents/<agent>/jobs/<id>", methods = "PATCH")
   public void jobPatch(final ServiceRequest request,
-                       final String agent,
-                       final String job) {
+                       final String rawAgent,
+                       final String rawJob) {
     final Deployment deployment = parseDeployment(request);
-
+    final String job = safeURLDecode(rawJob);
+    final String agent = safeURLDecode(rawAgent);
     final JobId jobId;
     try {
       jobId = JobId.parse(job);
@@ -303,10 +321,11 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "GET")
-  public void agentJobGet(final ServiceRequest request, final String agent,
-                          final String jobId)
+  public void agentJobGet(final ServiceRequest request, final String rawAgent,
+                          final String rawJobId)
       throws RequestHandlerException {
-
+    final String agent = safeURLDecode(rawAgent);
+    final String jobId = safeURLDecode(rawJobId);
     final Deployment deployment;
     try {
       deployment = model.getDeployment(agent, parseJobId(jobId));
@@ -324,7 +343,8 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/agents/<agent>", methods = "DELETE")
-  public void agentDelete(final ServiceRequest request, final String agent) {
+  public void agentDelete(final ServiceRequest request, final String rawAgent) {
+    final String agent = safeURLDecode(rawAgent);
     try {
       model.removeAgent(agent);
     } catch (AgentDoesNotExistException e) {
@@ -340,10 +360,11 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/agents/<agent>/jobs/<job>", methods = "DELETE")
-  public void agentJobDelete(final ServiceRequest request, final String agent,
-                             final String jobId)
+  public void agentJobDelete(final ServiceRequest request, final String rawAgent,
+                             final String rawJobId)
       throws RequestHandlerException {
-
+    final String agent = safeURLDecode(rawAgent);
+    final String jobId = safeURLDecode(rawJobId);
     StatusCode code = OK;
     Status detail = JobUndeployResponse.Status.OK;
     try {
@@ -363,9 +384,9 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/agents/<agent>/status", methods = "GET")
-  public void agentStatusGet(final ServiceRequest request, final String agent)
+  public void agentStatusGet(final ServiceRequest request, final String rawAgent)
       throws RequestHandlerException {
-
+    final String agent = safeURLDecode(rawAgent);
     final AgentStatus agentStatus;
     try {
       agentStatus = model.getAgentStatus(agent);
@@ -405,8 +426,9 @@ public class MasterHandler extends MatchingHandler {
   }
 
   @Match(uri = "hm://helios/history/jobs/<jobid>", methods = "GET")
-  public void jobHistoryGet(final ServiceRequest request, final String jobId)
+  public void jobHistoryGet(final ServiceRequest request, final String rawJobId)
       throws HeliosException, JobIdParseException, JsonProcessingException {
+    final String jobId = safeURLDecode(rawJobId);
     try {
       List<TaskStatusEvent> history = model.getJobHistory(JobId.parse(jobId));
       TaskStatusEvents events = new TaskStatusEvents(history, TaskStatusEvents.Status.OK);
