@@ -1,0 +1,10 @@
+package com.spotify.helios.common;
+
+// This is a generated file from Version.java.template
+// EDITS TO THIS FILE WILL BE LOST
+public final class Version {
+    public static final String POM_VERSION="@pomversion@";
+
+    // This should be manually maintained once we get to 1.0 (FIXME)
+    public static final String RECOMMENDED_VERSION="@pomversion@";
+}

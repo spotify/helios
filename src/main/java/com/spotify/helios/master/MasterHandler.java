@@ -19,6 +19,9 @@ import com.spotify.helios.common.JobPortAllocationConflictException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.Version;
+import com.spotify.helios.common.VersionCheckResponse;
+import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
@@ -77,6 +80,20 @@ public class MasterHandler extends MatchingHandler {
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException("URL Decoding failed for " + s, e);
     }
+  }
+
+  @Match(uri = "hm://helios/version_check/<version>", methods = "GET")
+  public void versionCheck(final ServiceRequest request, final String rawVersion) {
+    final PomVersion clientVersion = PomVersion.parse(safeURLDecode(rawVersion));
+    final PomVersion serverVersion = PomVersion.parse(Version.POM_VERSION);
+
+    final VersionCompatibility.Status status = VersionCompatibility.getStatus(serverVersion,
+        clientVersion);
+    final VersionCheckResponse resp = new VersionCheckResponse(
+        status,
+        serverVersion,
+        Version.RECOMMENDED_VERSION);
+    respond(request, OK, resp);
   }
 
   @Match(uri = "hm://helios/jobs/<id>", methods = "PUT")

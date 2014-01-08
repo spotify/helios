@@ -15,6 +15,7 @@ import com.google.protobuf.ByteString;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
+import com.spotify.helios.common.VersionCompatibility.Status;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Descriptor;
@@ -41,6 +42,7 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.collect.Iterables.transform;
@@ -61,6 +63,8 @@ public class Client {
 
   private final String user;
   private final com.spotify.hermes.service.Client hermesClient;
+
+  private boolean hasCheckedVersion;
 
   public Client(final String user, final com.spotify.hermes.service.Client hermesClient) {
     this.user = user;
@@ -110,12 +114,48 @@ public class Client {
     return hermesClient.send(message);
   }
 
+  private void doVersionCheck() {
+    if (hasCheckedVersion) {
+      return;
+    }
+
+    try {
+      hasCheckedVersion = true; // so as to avoid endless recursion while actually checking the version
+      final VersionCheckResponse response = transform(
+          request(uri("/version_check/%s", Version.POM_VERSION), "GET"),
+          ConvertResponseToPojo.create(VersionCheckResponse.class, ImmutableSet.of(OK)))
+          .get();
+      Status status = response.getStatus();
+      if (status == Status.INCOMPATIBLE) {
+        throw new HeliosRuntimeException(format(
+            "Server protocol version (%s) is incompatible with the client's (%s).  Upgrade your "
+            + "Helios client to the recommended version (%s)",
+            response.getServerVersion(), Version.POM_VERSION, response.getRecommendedVersion()));
+      } else if (status == Status.MAYBE) {
+        log.warn(format(
+            "Server protocol version (%s) might not include features potentially used in your "
+            + "Helios client (%s).  The current recommended client version is (%s)",
+            response.getServerVersion(), Version.POM_VERSION, response.getRecommendedVersion()));
+      } else if (status == Status.WARN) {
+        log.warn(format("A newer Helios client version you want to use is available, please "
+            + "upgrade to the recommended Helios client version (%s)",
+            response.getRecommendedVersion()));
+      }
+    } catch (RuntimeException e) {
+      hasCheckedVersion = false;
+      throw e;
+    } catch (InterruptedException | ExecutionException e) {
+      throw new HeliosRuntimeException("Error checking client/server version compatibility", e);
+    }
+  }
+
   private ListenableFuture<Message> request(final URI uri, final String method) {
     return request(Hermes.newRequestBuilder(uri.toString(), method));
   }
 
   private ListenableFuture<Message> request(final URI uri, final String method,
                                             final Descriptor... descriptors) {
+    doVersionCheck();
     final List<ByteString> payloadsJson = Lists.newArrayList();
     for (final Descriptor descriptor : descriptors) {
       payloadsJson.add(descriptor.toJsonByteString());

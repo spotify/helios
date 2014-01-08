@@ -19,6 +19,8 @@
     <sonar.jdbc.url>jdbc:postgresql://real.sonar.spotify.net/sonardb</sonar.jdbc.url>
     <sonar.jdbc.username>sonaruser</sonar.jdbc.username>
     <sonar.jdbc.password>Aecausuupaijahshae2re6ie</sonar.jdbc.password>
+    <version.template.file>src/main/java/com/spotify/helios/common/Version.java.template</version.template.file>
+    <version.file>src/main/java/com/spotify/helios/common/Version.java</version.file>
   </properties>
 
   <profiles>
@@ -429,6 +431,37 @@
           </execution>
         </executions>
       </plugin>
-    </plugins>
-  </build>
+	  <plugin>
+		<groupId>com.google.code.maven-replacer-plugin</groupId>
+		<artifactId>maven-replacer-plugin</artifactId>
+		<version>1.4.0</version>
+		<executions>
+			<execution>
+				<phase>process-sources</phase>
+				<goals>
+					<goal>replace</goal>
+				</goals>
+			</execution>
+		</executions>
+		<configuration>
+			<file>${version.template.file}</file>
+			<outputFile>${version.file}</outputFile>
+			<replacements>
+				<replacement>
+					<token>@buildnumber@</token>
+					<value>${svn.revision}</value>
+				</replacement>
+				<replacement>
+					<token>@buildtime@</token>
+					<value>${maven.build.timestamp}</value>
+				</replacement>
+				<replacement>
+					<token>@pomversion@</token>
+					<value>${project.version}</value>
+				</replacement>
+			</replacements>
+		</configuration>
+      </plugin>
+	  </plugins>
+	  </build>
 </project>
