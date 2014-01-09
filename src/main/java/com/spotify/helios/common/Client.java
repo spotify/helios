@@ -109,6 +109,7 @@ public class Client {
   }
 
   private ListenableFuture<Message> request(final MessageBuilder messageBuilder) {
+    doVersionCheck();
     final Message message = messageBuilder.setTtlMillis(TimeUnit.SECONDS.toMillis(30)).build();
     log.debug("request: {}", message);
     return hermesClient.send(message);
@@ -145,6 +146,7 @@ public class Client {
       hasCheckedVersion = false;
       throw e;
     } catch (InterruptedException | ExecutionException e) {
+      hasCheckedVersion = false;
       throw new HeliosRuntimeException("Error checking client/server version compatibility", e);
     }
   }
