@@ -4,6 +4,8 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.base.Objects;
+
 import com.spotify.helios.common.Defaults;
 import com.spotify.helios.common.ServiceParser;
 
@@ -18,6 +20,8 @@ import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
 import static com.google.common.base.Throwables.propagate;
+import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class MasterParser extends ServiceParser {
 
@@ -36,6 +40,7 @@ public class MasterParser extends ServiceParser {
         .setZooKeeperConnectString(options.getString("zk"))
         .setSite(options.getString("site"))
         .setName(options.getString("name"))
+        .setInhibitMetrics(Objects.equal(options.getBoolean("no_metrics"), true))
         .setMuninReporterPort(options.getInt("munin_port"));
   }
 
@@ -58,6 +63,10 @@ public class MasterParser extends ServiceParser {
         .setDefault(getHostName())
         .help("master name");
 
+    parser.addArgument("--no-metrics")
+        .setDefault(SUPPRESS)
+        .action(storeTrue())
+        .help("Turn off all collection and reporting of metrics");
   }
 
   private static String getHostName() {

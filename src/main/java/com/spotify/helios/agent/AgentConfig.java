@@ -17,6 +17,16 @@ public class AgentConfig {
   private int zooKeeperConnectionTimeoutMillis;
   private Map<String, String> envVars;
   private String redirectToSyslog;
+  private boolean inhibitMetrics;
+
+  public boolean isInhibitMetrics() {
+    return inhibitMetrics;
+  }
+
+  public AgentConfig setInhibitMetrics(boolean inhibitMetrics) {
+    this.inhibitMetrics = inhibitMetrics;
+    return this;
+  }
 
   public String getName() {
     return name;

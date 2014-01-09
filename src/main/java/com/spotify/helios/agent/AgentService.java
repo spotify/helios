@@ -4,22 +4,25 @@
 
 package com.spotify.helios.agent;
 
-import org.apache.curator.RetryPolicy;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.ReactorFactory;
 import com.spotify.helios.common.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
+import com.spotify.helios.common.statistics.Metrics;
+import com.spotify.helios.common.statistics.MetricsImpl;
+import com.spotify.helios.common.statistics.NoopMetrics;
 import com.spotify.nameless.client.Nameless;
 import com.spotify.nameless.client.NamelessRegistrar;
 import com.sun.management.OperatingSystemMXBean;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.MetricsRegistry;
 
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
@@ -29,6 +32,7 @@ import static org.apache.zookeeper.CreateMode.EPHEMERAL;
  * The Helios agent.
  */
 public class AgentService {
+  private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
   private final Agent agent;
 
@@ -44,8 +48,16 @@ public class AgentService {
    * @param config The service configuration.
    */
   public AgentService(final AgentConfig config) {
+    // Configure metrics
+    log.info("Starting metrics");
+    Metrics metrics;
 
-    final MetricsRegistry metricsRegistry = Metrics.defaultRegistry();
+    if (config.isInhibitMetrics()) {
+      metrics = new NoopMetrics();
+    } else {
+      metrics = new MetricsImpl(config.getMuninReporterPort());
+    }
+    metrics.start();
 
     this.zooKeeperCurator = setupZookeeperCurator(config);
     this.zooKeeperClient = new DefaultZooKeeperClient(zooKeeperCurator);
@@ -69,7 +81,8 @@ public class AgentService {
         config.getRedirectToSyslog() != null
             ? new SyslogRedirectingCommandWrapper(config.getRedirectToSyslog())
             : new NoOpCommandWrapper(),
-        config.getName());
+        config.getName(),
+        metrics.getSupervisorMetrics());
     final ReactorFactory reactorFactory = new ReactorFactory();
 
     this.hostInfoReporter = HostInfoReporter.newBuilder()

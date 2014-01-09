@@ -1,5 +1,6 @@
 package com.spotify.helios.agent;
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 import com.google.common.io.CharStreams;
 
@@ -18,7 +19,9 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Throwables.propagate;
+import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class AgentParser extends ServiceParser {
 
@@ -60,6 +63,7 @@ public class AgentParser extends ServiceParser {
         .setMuninReporterPort(options.getInt("munin_port"))
         .setEnvVars(envVars)
         .setDockerEndpoint(options.getString("docker"))
+        .setInhibitMetrics(Objects.equal(options.getBoolean("no_metrics"), true))
         .setRedirectToSyslog(options.getString("syslog_redirect_to"));
   }
 
@@ -86,6 +90,11 @@ public class AgentParser extends ServiceParser {
 
     parser.addArgument("--syslog-redirect-to")
         .help("redirect container's stdout/stderr to syslog running at host:port");
+
+    parser.addArgument("--no-metrics")
+        .setDefault(SUPPRESS)
+        .action(storeTrue())
+        .help("Turn off all collection and reporting of metrics");
   }
 
   private static String getHostName() {
