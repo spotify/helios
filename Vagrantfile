@@ -48,6 +48,12 @@ Vagrant::Config.run do |config|
       nameserver 193.182.13.179
       " > /etc/resolv.conf
       END
+    pkg_cmd << <<-END.gsub(/^ {6}/, '')
+      echo "\
+      domain spotify.net
+      search spotify.net spotify.net.
+      " > /etc/resolvconf/resolv.conf.d/base
+      END
 
     # Fire up syslog on a tcp port
     pkg_cmd << <<-END.gsub(/^ {6}/, '')
