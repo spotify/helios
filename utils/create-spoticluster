@@ -37,7 +37,8 @@ git checkout -b $PUPPET_BRANCH production
 HIERA_FILE=hiera-data/domain/$PROJECT.cloud.spotify.net.yaml
 cat <<EOF > $HIERA_FILE
 ---
-zookeeper::heliostest::servers: 
+helios::zookeeper::ensemble: ''
+helios::zookeeper::servers:
   - zookeeper-1.$PROJECT.cloud.spotify.net
   - zookeeper-2.$PROJECT.cloud.spotify.net
   - zookeeper-3.$PROJECT.cloud.spotify.net
@@ -58,7 +59,7 @@ do
       --project=$PROJECT \
       --name=zookeeper-$i \
       --branch=$PUPPET_BRANCH \
-      --classes=zookeeper::heliostest
+      --classes=helios::zookeeper
 done
 
 for i in 1 2 3
