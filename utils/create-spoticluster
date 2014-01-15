@@ -3,8 +3,8 @@
 # Tool to create a 9 machine cluster in spoticloud
 # 3 zookeepers, 3 masters, 3 agents
 
-###### NOTE:  If you need to hack the script to have it skip a machine because 
-###### of puppet superawesomeness, keep everything from here to where it makes 
+###### NOTE:  If you need to hack the script to have it skip a machine because
+###### of puppet superawesomeness, keep everything from here to where it makes
 ###### puppet branch, then hack/slash as necessary.  In general, if PROJECT is
 ###### not set, your day will be bad.
 
@@ -37,7 +37,8 @@ git checkout -b $PUPPET_BRANCH production
 HIERA_FILE=hiera-data/domain/$PROJECT.cloud.spotify.net.yaml
 cat <<EOF > $HIERA_FILE
 ---
-zookeeper::heliostest::servers: 
+helios::zookeeper::ensemble: ''
+helios::zookeeper::servers:
   - zookeeper-1.$PROJECT.cloud.spotify.net
   - zookeeper-2.$PROJECT.cloud.spotify.net
   - zookeeper-3.$PROJECT.cloud.spotify.net
@@ -53,12 +54,12 @@ git push -f origin $PUPPET_BRANCH
 ### Create VMs
 
 for i in 1 2 3
-do   
+do
     spcloud create \
       --project=$PROJECT \
       --name=zookeeper-$i \
       --branch=$PUPPET_BRANCH \
-      --classes=zookeeper::heliostest
+      --classes=helios::zookeeper
 done
 
 for i in 1 2 3
@@ -114,7 +115,7 @@ check_initial_puppet_run() {
   echo "Checking if initial puppet run on $HOST is still going"
 
   while ssh -t -A $HOST 'ps -ef | grep 'puppet agent' | grep -v grep' > /dev/null
-  do  
+  do
     sleep 60
     echo "  ...still going"
   done
@@ -126,7 +127,7 @@ for i in 1 2 3
 do
   check_ssh_keys zookeeper-$i.$PROJECT.cloud.spotify.net
   check_initial_puppet_run zookeeper-$i.$PROJECT.cloud.spotify.net
-  
+
   ssh -t -A zookeeper-$i.$PROJECT.cloud.spotify.net '
   while ! (test -f /etc/zookeeper/conf/zoo.cfg && head -1 /etc/zookeeper/conf/zoo.cfg | grep puppet) > /dev/null
   do
@@ -135,7 +136,7 @@ do
   '
 done
 
-## The next two were inlined from a loop to help you hack the script should 
+## The next two were inlined from a loop to help you hack the script should
 ## puppet be super-awesome and get the machine into a state where running
 ## the agent will never fix the mess it made.
 role=master
@@ -158,7 +159,7 @@ done
 
 ### -----------------------------------
 ### Reboot the world so everything comes up
-for role in helios-master helios-agent zookeeper 
+for role in helios-master helios-agent zookeeper
 do
     for instance in 1 2 3
     do
