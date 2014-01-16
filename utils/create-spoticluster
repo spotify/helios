@@ -4,16 +4,9 @@
 # 3 zookeepers, 3 masters, 3 agents
 
 ###### NOTE:  If you need to hack the script to have it skip a machine because
-###### of puppet superawesomeness, keep everything from here to where it makes
-###### puppet branch, then hack/slash as necessary.  In general, if PROJECT is
-###### not set, your day will be bad.
-
-echo -n "Puppet branch name to create: [default $LOGNAME/helios] "
-read PUPPET_BRANCH
-if [ -z "$PUPPET_BRANCH" ]
-then
-  PUPPET_BRANCH=$LOGNAME/helios
-fi
+###### of puppet superawesomeness, keep everything from here to where it creates
+###### the vms, then hack/slash as necessary.  In general, if PROJECT is not
+###### set, your day will be bad.
 
 echo -n "Spoticloud project name for nodes: [default $LOGNAME-helios] "
 read PROJECT
@@ -21,34 +14,6 @@ if [ -z "$PROJECT" ]
 then
   PROJECT=$LOGNAME-helios
 fi
-
-echo "Create puppet branch $PUPPET_BRANCH with project $PROJECT [press enter to continue]"
-read foo
-
-### -----------------------------------
-### Make puppet branch
-
-TMPDIR=$(mktemp -d /tmp/helios-spcloud.XXXXXXXXXX)
-cd $TMPDIR
-echo git repo will be under $TMPDIR
-git clone git.spotify.net:spotify-puppet.git
-cd spotify-puppet
-git checkout -b $PUPPET_BRANCH production
-HIERA_FILE=hiera-data/domain/$PROJECT.cloud.spotify.net.yaml
-cat <<EOF > $HIERA_FILE
----
-helios::zookeeper::ensemble: ''
-helios::zookeeper::servers:
-  - zookeeper-1.$PROJECT.cloud.spotify.net
-  - zookeeper-2.$PROJECT.cloud.spotify.net
-  - zookeeper-3.$PROJECT.cloud.spotify.net
-helios::master::zk_connect_string: zookeeper-1.$PROJECT.cloud.spotify.net:2181,zookeeper-2.$PROJECT.cloud.spotify.net:2181,zookeeper-3.$PROJECT.cloud.spotify.net:2181
-helios::agent::zk_connect_string: zookeeper-1.$PROJECT.cloud.spotify.net:2181,zookeeper-2.$PROJECT.cloud.spotify.net:2181,zookeeper-3.$PROJECT.cloud.spotify.net:2181
-EOF
-
-git add $HIERA_FILE
-git commit -am "Added spoticloud project $PROJECT settings"
-git push -f origin $PUPPET_BRANCH
 
 ### -----------------------------------
 ### Create VMs
@@ -58,7 +23,6 @@ do
     spcloud create \
       --project=$PROJECT \
       --name=zookeeper-$i \
-      --branch=$PUPPET_BRANCH \
       --classes=helios::zookeeper
 done
 
@@ -67,7 +31,6 @@ do
     spcloud create \
       --project=$PROJECT \
       --name=helios-master-$i \
-      --branch=$PUPPET_BRANCH \
       --dist=precise \
       --classes=helios::master
 done
@@ -77,7 +40,6 @@ do
     spcloud create \
       --project=$PROJECT \
       --name=helios-agent-$i \
-      --branch=$PUPPET_BRANCH \
       --dist=precise \
       --classes=helios::agent
 done
