@@ -29,7 +29,6 @@ public class CliConfig {
   private final List<String> sites;
   private final String srvName;
   private final List<String> masterEndpoints;
-  ;
 
   public CliConfig(List<String> sites, String srvName, List<String> masterEndpoints) {
     this.username = System.getProperty("user.name");

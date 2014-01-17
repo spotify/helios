@@ -49,7 +49,7 @@ public class Target {
   public static List<Target> targetsFrom(final String srvName, final Iterable<String> sites) {
     final ImmutableList.Builder<Target> builder = ImmutableList.builder();
     for (final String site : sites) {
-      builder.add(targetFrom(srvName, site));
+      builder.add(targetFrom(srvName, "services." + site));
     }
     return builder.build();
   }
@@ -57,7 +57,7 @@ public class Target {
   /**
    * Create a target for a site
    */
-  public static Target targetFrom(final String srvName, final String site) {
+  private static Target targetFrom(final String srvName, final String site) {
     return new Target(site, endpoint(srvName, site));
   }
 
