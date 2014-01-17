@@ -4,6 +4,9 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
+
 import com.spotify.helios.common.AbstractClient;
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.coordination.Paths;
@@ -134,6 +137,10 @@ public class MasterService {
     return client;
   }
 
+  int getHermesPort(String s) {
+    return Integer.valueOf(Iterables.getLast(Splitter.on(":").split(s)));
+  }
+
   /**
    * Start the service. Binds the control interfaces.
    */
@@ -146,10 +153,11 @@ public class MasterService {
     if (this.registrar != null) {
       try {
         log.info("registering with nameless");
-        final int hermesPort = new URI(hermesEndpoint).getPort();
+        final int hermesPort = getHermesPort(hermesEndpoint);
+
         namelessHermesHandle = registrar.register("helios", "hm", hermesPort).get();
         namelessHttpHandle = registrar.register("helios", "http", httpEndpoint.getPort()).get();
-      } catch(InterruptedException | ExecutionException | URISyntaxException e) {
+      } catch (InterruptedException | ExecutionException e) {
         throw propagate(e);
       }
     }
