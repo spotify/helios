@@ -150,11 +150,11 @@ public class MasterService {
     hermesServer.bind(hermesEndpoint);
     httpServer.bind(httpEndpoint);
 
+    final int hermesPort = getHermesPort(hermesEndpoint);
+    log.info("hermes port: {}", hermesPort);
     if (this.registrar != null) {
       try {
         log.info("registering with nameless");
-        final int hermesPort = getHermesPort(hermesEndpoint);
-
         namelessHermesHandle = registrar.register("helios", "hm", hermesPort).get();
         namelessHttpHandle = registrar.register("helios", "http", httpEndpoint.getPort()).get();
       } catch (InterruptedException | ExecutionException e) {
