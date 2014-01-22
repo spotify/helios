@@ -884,7 +884,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final List<String> command = asList("sh", "-c", "echo should-be-redirected");
 
     // Create job
-    final JobId jobId = createJob("NAME", "VERSION", "busybox:latest", command,
+    final JobId jobId = createJob("NAME", "VERSION", "ubuntu:12.04", command,
                                   ImmutableMap.of("FOO", "4711",
                                                   "BAR", "deadbeef"));
 

@@ -32,7 +32,6 @@ import org.mockito.stubbing.Answer;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.UUID;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
@@ -192,8 +191,8 @@ public class SupervisorTest {
     assertEquals(IMAGE, containerConfig.getImage());
     assertEquals(EXPECTED_CONTAINER_ENV, ImmutableSet.copyOf(containerConfig.getEnv()));
     final String containerName = containerNameCaptor.getValue();
-    uuidFromContainerName(containerName);
-    assertEquals(DESCRIPTOR.getId(), jobIdFromContainerName(containerName));
+    assertEquals(Supervisor.getAbbreviatedJobId(DESCRIPTOR.getId()),
+        jobIdFromContainerName(containerName));
 
     // Verify that the container is started
     verify(docker, timeout(1000)).startContainer(eq(containerId), any(HostConfig.class));
@@ -245,15 +244,9 @@ public class SupervisorTest {
     assertEquals(STOPPED, sut.getStatus());
   }
 
-  private UUID uuidFromContainerName(final String containerName) {
+  private String jobIdFromContainerName(final String containerName) {
     final int lastColon = containerName.lastIndexOf(':');
-    final String uuid = containerName.substring(lastColon + 1);
-    return UUID.fromString(uuid);
-  }
-
-  private JobId jobIdFromContainerName(final String containerName) {
-    final int lastColon = containerName.lastIndexOf(':');
-    return JobId.fromString(containerName.substring(0, lastColon));
+    return containerName.substring(0, lastColon);
   }
 
   @Test

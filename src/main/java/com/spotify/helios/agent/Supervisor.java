@@ -35,7 +35,6 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.nameless.client.NamelessRegistrar;
 import com.spotify.nameless.client.RegistrationHandle;
-import com.sun.jersey.api.client.ClientResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -416,6 +415,12 @@ class Supervisor {
     return env;
   }
 
+  static String getAbbreviatedJobId(JobId id) {
+    List<String> bits = Lists.newArrayList(Splitter.on(":").split(id.toString()));
+    bits.set(2, bits.get(2).substring(0, Supervisor.JOB_HASH_LENGTH));
+    return Joiner.on(":").join(bits);
+  }
+
   /**
    * Abstract interface for a runner capable of executing a container once.
    */
@@ -581,9 +586,10 @@ class Supervisor {
 
       commandWrapper.modifyCreateConfig(image, job, inspectImage(image), containerConfig);
 
-      final String uuid = Joiner.on("").join(Splitter.on('-').split(UUID.randomUUID().toString()))
-          .substring(0, JOB_HASH_LENGTH);
-      final String name = job.getId().toString().substring(0, JOB_HASH_LENGTH) + ":" + uuid;
+      final UUID uuid = UUID.randomUUID();
+//      final String uuid = Joiner.on("").join(Splitter.on('-').split(UUID.randomUUID().toString()))
+//          .substring(0, JOB_HASH_LENGTH);
+      final String name = getAbbreviatedJobId(job.getId()) + ":" + uuid;
       final ContainerCreateResponse container = docker.createContainer(containerConfig, name).get();
       final String containerId = container.id;
       log.info("created container: {}: {}", job, container);
