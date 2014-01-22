@@ -4,6 +4,8 @@
 
 package com.spotify.helios.cli;
 
+import com.google.common.collect.Sets;
+
 import com.spotify.helios.cli.command.ControlCommand;
 import com.spotify.helios.cli.command.HostDeregisterCommand;
 import com.spotify.helios.cli.command.HostJobsCommand;
@@ -28,6 +30,7 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.ArgumentGroup;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import net.sourceforge.argparse4j.inf.FeatureControl;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import net.sourceforge.argparse4j.inf.Subparsers;
@@ -36,10 +39,12 @@ import org.json.JSONException;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 
 import static com.google.common.base.Objects.equal;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
+import static com.google.common.collect.Iterables.addAll;
 import static com.google.common.collect.Iterables.filter;
 import static com.spotify.helios.cli.Target.targetsFrom;
 import static java.lang.String.format;
@@ -71,7 +76,7 @@ public class CliParser {
 
     cliConfig = CliConfig.fromUserConfig();
 
-    final GlobalArgs globalArgs = addGlobalArgs(parser, cliConfig);
+    final GlobalArgs globalArgs = addGlobalArgs(parser, cliConfig, true);
 
     commandParsers = parser.addSubparsers().title("commands");
 
@@ -94,7 +99,7 @@ public class CliParser {
 
     // Merge sites and explicit endpoints into master endpoints
     final List<String> explicitEndpoints = options.getList(globalArgs.masterArg.getDest());
-    final List<String> sitesArgument = options.getList(globalArgs.sitesArg.getDest());
+    final List<String> sitesArguments = options.getList(globalArgs.sitesArg.getDest());
     final String srvName = options.getString(globalArgs.srvNameArg.getDest());
 
     // Order of target precedence:
@@ -108,8 +113,8 @@ public class CliParser {
 
     if (explicitEndpoints != null && !explicitEndpoints.isEmpty()) {
       this.targets = targetsFrom(explicitEndpoints);
-    } else if (sitesArgument != null && !sitesArgument.isEmpty()) {
-      final Iterable<String> sites = sitesArgument;
+    } else if (sitesArguments != null && !sitesArguments.isEmpty()) {
+      final Iterable<String> sites = parseSitesStrings(sitesArguments);
       this.targets = targetsFrom(srvName, sites);
     } else if (!cliConfig.getMasterEndpoints().isEmpty()) {
       this.targets = targetsFrom(cliConfig.getMasterEndpoints());
@@ -123,6 +128,14 @@ public class CliParser {
     if (targets.isEmpty()) {
       parser.handleError(new ArgumentParserException("no masters specified", parser));
     }
+  }
+
+  private Iterable<String> parseSitesStrings(final List<String> sitesStrings) {
+    final Set<String> sites = Sets.newLinkedHashSet();
+    for (final String s : sitesStrings) {
+      addAll(sites, parseSitesString(s));
+    }
+    return sites;
   }
 
   private Iterable<String> parseSitesString(final String sitesString) {
@@ -194,43 +207,59 @@ public class CliParser {
     private final Argument noLogSetup;
     private final Argument jsonArg;
 
-    GlobalArgs(final ArgumentParser parser, final CliConfig cliConfig) {
-      final ArgumentGroup globalArgs = parser.addArgumentGroup("global options");
+    private final ArgumentGroup globalArgs;
+    private final boolean topLevel;
 
-      masterArg = globalArgs.addArgument("-z", "--master")
+
+    GlobalArgs(final ArgumentParser parser, final CliConfig cliConfig) {
+      this(parser, cliConfig, false);
+    }
+
+    GlobalArgs(final ArgumentParser parser, final CliConfig cliConfig, final boolean topLevel) {
+      this.globalArgs = parser.addArgumentGroup("global options");
+      this.topLevel = topLevel;
+
+      masterArg = addArgument("-z", "--master")
           .action(append())
-          .setDefault(SUPPRESS)
           .help(format("master endpoint (default: %s)", getDefaultMasterEndpoints(cliConfig)));
 
-      sitesArg = globalArgs.addArgument("-s", "--sites")
+      sitesArg = addArgument("-s", "--sites")
           .action(append())
-          .setDefault(SUPPRESS)
           .help(format("sites (default: %s)", cliConfig.getSitesString()));
 
-      srvNameArg = globalArgs.addArgument("--srv-name")
+      srvNameArg = addArgument("--srv-name")
           .setDefault(cliConfig.getSrvName())
           .help("master srv name");
 
-      usernameArg = globalArgs.addArgument("-u", "--username")
+      usernameArg = addArgument("-u", "--username")
           .setDefault(System.getProperty("user.name"))
           .help("username");
 
-      verbose = globalArgs.addArgument("-v", "--verbose")
+      verbose = addArgument("-v", "--verbose")
           .action(Arguments.count());
 
-      jsonArg = globalArgs.addArgument("--json")
-          .setDefault(SUPPRESS)
+      jsonArg = addArgument("--json")
           .action(storeTrue())
           .help("json output");
 
-      noLogSetup = globalArgs.addArgument("--no-log-setup")
+      noLogSetup = addArgument("--no-log-setup")
           .action(storeTrue())
           .help(SUPPRESS);
+    }
+
+    private Argument addArgument(final String... nameOrFlags) {
+      final FeatureControl defaultControl = topLevel ? null : SUPPRESS;
+      return globalArgs.addArgument(nameOrFlags).setDefault(defaultControl);
     }
   }
 
   private GlobalArgs addGlobalArgs(final ArgumentParser parser, final CliConfig cliConfig) {
     return new GlobalArgs(parser, cliConfig);
+  }
+
+  private GlobalArgs addGlobalArgs(final ArgumentParser parser, final CliConfig cliConfig,
+                                   final boolean topLevel) {
+    return new GlobalArgs(parser, cliConfig, topLevel);
   }
 
   public Namespace getNamespace() {

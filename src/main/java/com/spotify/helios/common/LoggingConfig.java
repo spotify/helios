@@ -11,10 +11,10 @@ public class LoggingConfig {
   private final int verbosity;
   private final boolean syslog;
   private final File configFile;
-  private final Boolean noLogSetup;
+  private final boolean noLogSetup;
 
   public LoggingConfig(final int verbosity, final boolean syslog, final File configFile,
-                       final Boolean noLogSetup) {
+                       final boolean noLogSetup) {
     this.verbosity = verbosity;
     this.syslog = syslog;
     this.configFile = configFile;
@@ -33,7 +33,7 @@ public class LoggingConfig {
     return configFile;
   }
 
-  public Boolean getNoLogSetup() {
+  public boolean getNoLogSetup() {
     return noLogSetup;
   }
 }
