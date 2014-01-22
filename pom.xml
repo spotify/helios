@@ -157,7 +157,7 @@
     <dependency>
       <groupId>com.kpelykh</groupId>
       <artifactId>docker-java</artifactId>
-      <version>0.6.5.4</version>
+      <version>0.6.5.5</version>
     </dependency>
     <dependency>
       <groupId>net.sourceforge.argparse4j</groupId>

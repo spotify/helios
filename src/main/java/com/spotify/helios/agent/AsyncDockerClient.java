@@ -16,7 +16,6 @@ import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.Image;
 import com.kpelykh.docker.client.model.ImageInspectResponse;
-import com.sun.jersey.api.client.ClientResponse;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -42,7 +41,12 @@ public class AsyncDockerClient {
     return executor.submit(new Callable<ContainerInspectResponse>() {
       @Override
       public ContainerInspectResponse call() throws Exception {
-        return client().inspectContainer(containerId);
+        DockerClient client = client();
+        try {
+          return client.inspectContainer(containerId);
+        } finally {
+          client.closeConnection();
+        }
       }
     });
   }
@@ -51,7 +55,12 @@ public class AsyncDockerClient {
     return executor.submit(new Callable<ImageInspectResponse>() {
       @Override
       public ImageInspectResponse call() throws Exception {
-        return client().inspectImage(image);
+        DockerClient client = client();
+        try {
+          return client.inspectImage(image);
+        } finally {
+          client.closeConnection();
+        }
       }
     });
   }
@@ -59,16 +68,27 @@ public class AsyncDockerClient {
     return executor.submit(new Callable<List<Image>>() {
       @Override
       public List<Image> call() throws Exception {
-        return client().getImages(name);
+        DockerClient client = client();
+        try {
+          return client.getImages(name);
+        } finally {
+          client.closeConnection();
+        }
       }
     });
   }
 
-  public ListenableFuture<ClientResponse> pull(final String repository) {
-    return executor.submit(new Callable<ClientResponse>() {
+  public ListenableFuture<PullClientResponse> pull(final String repository) {
+    return executor.submit(new Callable<PullClientResponse>() {
       @Override
-      public ClientResponse call() throws Exception {
-        return client().pull(repository);
+      public PullClientResponse call() throws Exception {
+        DockerClient client = client();
+        try {
+          return new PullClientResponse(client.pull(repository), client);
+        } catch (Exception e) {
+          client.closeConnection();
+          throw e;
+        }
       }
     });
   }
@@ -77,17 +97,27 @@ public class AsyncDockerClient {
     return executor.submit(new Callable<ContainerCreateResponse>() {
       @Override
       public ContainerCreateResponse call() throws Exception {
-        return client().createContainer(config);
+        DockerClient client = client();
+        try {
+          return client.createContainer(config);
+        } finally {
+          client.closeConnection();
+        }
       }
     });
   }
 
   public ListenableFuture<ContainerCreateResponse> createContainer(final ContainerConfig config,
-                                                                   final String name) {
+    final String name) {
     return executor.submit(new Callable<ContainerCreateResponse>() {
       @Override
       public ContainerCreateResponse call() throws Exception {
-        return client().createContainer(config, name);
+        DockerClient client = client();
+        try {
+          return client.createContainer(config, name);
+        } finally {
+          client.closeConnection();
+        }
       }
     });
   }
@@ -96,18 +126,29 @@ public class AsyncDockerClient {
     return executor.submit(new Callable<Void>() {
       @Override
       public Void call() throws Exception {
-        client().startContainer(containerId);
-        return null;
+        DockerClient client = client();
+        try {
+          client.startContainer(containerId);
+          return null;
+        } finally {
+          client.closeConnection();
+        }
       }
     });
   }
 
+
   public ListenableFuture<Void> startContainer(final String containerId,
-                                               final HostConfig hostConfig) {
+    final HostConfig hostConfig) {
     return executor.submit(new Callable<Void>() {
       @Override
       public Void call() throws Exception {
-        client().startContainer(containerId, hostConfig);
+        DockerClient client = client();
+        try {
+          client.startContainer(containerId, hostConfig);
+        } finally {
+          client.closeConnection();
+        }
         return null;
       }
     });
@@ -117,7 +158,12 @@ public class AsyncDockerClient {
     return executor.submit(new Callable<Integer>() {
       @Override
       public Integer call() throws Exception {
-        return client().waitContainer(containerId);
+        DockerClient client = client();
+        try {
+          return client.waitContainer(containerId);
+        } finally {
+          client.closeConnection();
+        }
       }
     });
   }
@@ -126,7 +172,12 @@ public class AsyncDockerClient {
     return executor.submit(new Callable<Void>() {
       @Override
       public Void call() throws Exception {
-        client().kill(containerId);
+        DockerClient client = client();
+        try {
+          client.kill(containerId);
+        } finally {
+          client.closeConnection();
+        }
         return null;
       }
     });
@@ -136,7 +187,12 @@ public class AsyncDockerClient {
     return executor.submit(new Callable<List<Container>>() {
       @Override
       public List<Container> call() throws Exception {
-        return client().listContainers(allContainers);
+        DockerClient client = client();
+        try {
+          return client.listContainers(allContainers);
+        } finally {
+          client.closeConnection();
+        }
       }
     });
   }

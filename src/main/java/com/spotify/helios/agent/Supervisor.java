@@ -612,10 +612,14 @@ class Supervisor {
         ExecutionException, IOException, BogusNameException {
       final List<Image> images = docker.getImages(image).get();
       if (images.isEmpty()) {
-        final ClientResponse pull = docker.pull(image).get();
-        // Wait until image is completely pulled
-        pullStream = pull.getEntityInputStream();
-        jsonTail("pull " + image, pullStream);
+        final PullClientResponse pull = docker.pull(image).get();
+        try {
+          // Wait until image is completely pulled
+          pullStream = pull.getResponse().getEntityInputStream();
+          jsonTail("pull " + image, pullStream);
+        } finally {
+          pull.close();
+        }
       }
     }
 
