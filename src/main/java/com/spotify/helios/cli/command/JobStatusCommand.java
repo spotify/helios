@@ -13,6 +13,7 @@ import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobStatus;
 
@@ -21,6 +22,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -65,17 +67,26 @@ public class JobStatusCommand extends ControlCommand {
     } else {
       // TODO (dano): this explodes the job into one row per agent, is that sane/expected?
       final Table table = table(out);
-      table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND", "THROTTLED?", "ENVIRONMENT");
+      table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND",
+                "THROTTLED?", "PORTS", "ENVIRONMENT");
       for (final JobId jobId : jobIds) {
         final JobStatus jobStatus = statuses.get(jobId);
         final Map<String, TaskStatus> taskStatuses = jobStatus.getTaskStatuses();
         for (final String host : taskStatuses.keySet()) {
           final TaskStatus ts = taskStatuses.get(host);
           final String command = on(' ').join(ts.getJob().getCommand());
+          final List<String> portMappings = new ArrayList<>();
+          for (Map.Entry<String, PortMapping> entry : ts.getPorts().entrySet()) {
+            final PortMapping portMapping = entry.getValue();
+            portMappings.add(String.format("%s=%d:%d", entry.getKey(),
+                                           portMapping.getInternalPort(),
+                                           portMapping.getExternalPort()));
+          }
+          final String ports = Joiner.on(" ").join(portMappings);
           final String env = Joiner.on(" ").withKeyValueSeparator("=").join(ts.getEnv());
           String containerId = ts.getContainerId();
           table.row(jobId, host, ts.getState(), containerId == null ? "null" : containerId,
-              command, ts.getThrottled(), env);
+              command, ts.getThrottled(), ports, env);
         }
       }
       table.print();
