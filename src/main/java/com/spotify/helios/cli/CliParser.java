@@ -199,9 +199,12 @@ public class CliParser {
 
       masterArg = globalArgs.addArgument("-z", "--master")
           .action(append())
+          .setDefault(SUPPRESS)
           .help(format("master endpoint (default: %s)", getDefaultMasterEndpoints(cliConfig)));
 
       sitesArg = globalArgs.addArgument("-s", "--sites")
+          .action(append())
+          .setDefault(SUPPRESS)
           .help(format("sites (default: %s)", cliConfig.getSitesString()));
 
       srvNameArg = globalArgs.addArgument("--srv-name")
