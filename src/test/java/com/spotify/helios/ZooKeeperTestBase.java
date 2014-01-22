@@ -18,7 +18,10 @@ import static org.apache.commons.io.FileUtils.deleteDirectory;
 public class ZooKeeperTestBase {
   //* You can use PORT_COUNTER for your own tests if you need ports.  See SystemTest.java for deets
   static final AtomicInteger PORT_COUNTER = new AtomicInteger(5000);
-  protected final int zookeeperPort = PORT_COUNTER.incrementAndGet();
+  protected final int zookeeperIntendedPort = PORT_COUNTER.incrementAndGet();
+  // We skip 5037 because TeamCity
+  protected final int zookeeperPort =
+      zookeeperIntendedPort == 5037 ? PORT_COUNTER.incrementAndGet() : zookeeperIntendedPort;
   protected final String zookeeperEndpoint = "localhost:" + zookeeperPort;
 
   private File tempDir;
