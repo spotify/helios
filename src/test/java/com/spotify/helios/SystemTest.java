@@ -7,7 +7,6 @@ package com.spotify.helios;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
@@ -27,7 +26,6 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.CreateJobResponse;
-import com.spotify.helios.common.protocol.CreateJobResponse.Status;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
@@ -511,6 +509,18 @@ public class SystemTest extends ZooKeeperTestBase {
 
     // TODO (dano): Maybe this should be ID_MISMATCH but then JobValidator must become able to communicate that
     assertEquals(CreateJobResponse.Status.INVALID_JOB_DEFINITION, createIdMismatch.getStatus());
+  }
+
+  @Test
+  public void testTimeoutMessage() throws Exception {
+    final String[] commands = {"job", "list", "--no-log-setup", "-s", "bogussite"};
+
+    final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+    final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
+    new CliMain(new PrintStream(stdout), new PrintStream(stderr), commands).run();
+    String string = stderr.toString();
+    assertContains("we tried to connect to", string);
+    assertContains("bogussite", string);
   }
 
   @Test
