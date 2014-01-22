@@ -3,42 +3,52 @@ package com.spotify.helios.cli.command;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.protocol.AgentDeleteResponse;
 
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 
 public class HostDeregisterCommand extends ControlCommand {
 
-  private Argument agentArg;
-  private Argument confirmArg;
+  private final Argument hostArg;
+  private final Argument forceArg;
 
   public HostDeregisterCommand(Subparser parser) {
     super(parser);
 
     parser.help("deregister a host");
 
-    agentArg = parser.addArgument("host")
+    hostArg = parser.addArgument("host")
         .help("Host name to deregister.");
 
-    // TODO(drewc): perhaps require the enter in today's date or something?
-    confirmArg = parser.addArgument("sure")
-        .help("Are you really sure?  Set arg to yes.");
+    forceArg = parser.addArgument("--force")
+        .action(Arguments.storeTrue())
+        .help("Force deregistration.");
   }
 
   @Override
   int run(Namespace options, Client client, PrintStream out, final boolean json)
-      throws ExecutionException, InterruptedException {
-    String host = options.getString(agentArg.getDest());
+      throws ExecutionException, InterruptedException, IOException {
+    final String host = options.getString(hostArg.getDest());
+    final boolean force = options.getBoolean(forceArg.getDest());
 
-    if (!"yes".equals(options.getString(confirmArg.getDest()))) {
-      out.printf("Will not delete a host unconfirmed.  Add yes to your command line.");
-      return 1;
+    if (!force) {
+      out.printf("This will deregister the host %s%n", host);
+      out.printf("Do you want to continue? [Y/n]%n");
+
+      // TODO (dano): pass in stdin instead using System.in
+      final int c = System.in.read();
+
+      if (c != 'Y' && c != 'y') {
+        return 1;
+      }
     }
 
-    out.printf("Removing agent %s%n", host);
+    out.printf("Deregistering host %s%n", host);
 
     int code = 0;
 

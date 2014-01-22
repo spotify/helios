@@ -162,7 +162,7 @@ public class CliParser {
     new HostListCommand(p(host, "list"));
     new HostJobsCommand(p(host, "jobs"));
     new HostRegisterCommand(p(host, "register"));
-    new HostDeregisterCommand(p(host, "delete"));
+    new HostDeregisterCommand(p(host, "deregister"));
     new HostStatusCommand(p(host, "status"));
 
     // Master Commands

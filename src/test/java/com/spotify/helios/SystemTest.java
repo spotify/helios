@@ -1163,7 +1163,7 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   private String deleteAgent(final String testAgent) throws Exception {
-    return control("host", "delete", testAgent, "yes");
+    return control("host", "deregister", testAgent, "--force");
   }
 
   private JobId createJob(final String name, final String version, final String image,
