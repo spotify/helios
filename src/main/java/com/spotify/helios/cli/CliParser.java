@@ -94,7 +94,7 @@ public class CliParser {
 
     // Merge sites and explicit endpoints into master endpoints
     final List<String> explicitEndpoints = options.getList(globalArgs.masterArg.getDest());
-    final String sitesArgument = options.getString(globalArgs.sitesArg.getDest());
+    final List<String> sitesArgument = options.getList(globalArgs.sitesArg.getDest());
     final String srvName = options.getString(globalArgs.srvNameArg.getDest());
 
     // Order of target precedence:
@@ -109,7 +109,7 @@ public class CliParser {
     if (explicitEndpoints != null && !explicitEndpoints.isEmpty()) {
       this.targets = targetsFrom(explicitEndpoints);
     } else if (sitesArgument != null && !sitesArgument.isEmpty()) {
-      final Iterable<String> sites = parseSitesString(sitesArgument);
+      final Iterable<String> sites = sitesArgument;
       this.targets = targetsFrom(srvName, sites);
     } else if (!cliConfig.getMasterEndpoints().isEmpty()) {
       this.targets = targetsFrom(cliConfig.getMasterEndpoints());
