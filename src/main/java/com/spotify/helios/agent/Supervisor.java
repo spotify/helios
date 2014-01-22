@@ -4,6 +4,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -70,6 +71,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Supervises docker containers for a single job.
  */
 class Supervisor {
+  public static final int JOB_HASH_LENGTH = 10;
 
   private static class BogusNameException extends Exception {
     public BogusNameException(JsonParseException jpe) {
@@ -579,8 +581,9 @@ class Supervisor {
 
       commandWrapper.modifyCreateConfig(image, job, inspectImage(image), containerConfig);
 
-      final UUID uuid = UUID.randomUUID();
-      final String name = job.getId() + ":" + uuid;
+      final String uuid = Joiner.on("").join(Splitter.on('-').split(UUID.randomUUID().toString()))
+          .substring(0, JOB_HASH_LENGTH);
+      final String name = job.getId().toString().substring(0, JOB_HASH_LENGTH) + ":" + uuid;
       final ContainerCreateResponse container = docker.createContainer(containerConfig, name).get();
       final String containerId = container.id;
       log.info("created container: {}: {}", job, container);

@@ -40,7 +40,7 @@ public class JobRemoveCommand extends WildcardJobCommand {
       // TODO (dano): pass in stdin instead using System.in
       final int c = System.in.read();
 
-      if (c != 'Y') {
+      if (c != 'Y' && c != 'y') {
         return 1;
       }
     }
