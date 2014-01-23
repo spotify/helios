@@ -90,7 +90,10 @@ public class HostJobsCommand extends ControlCommand {
           final List<JobId> sortedJobIds = natural().sortedCopy(jobIds);
           for (final JobId jobId : sortedJobIds) {
             final Goal goal = agentStatus.getJobs().get(jobId).getGoal();
-            final TaskStatus.State state = agentStatus.getStatuses().get(jobId).getState();
+            Map<JobId, TaskStatus> statuses = agentStatus.getStatuses();
+            TaskStatus taskStatus = statuses.get(jobId);
+            final TaskStatus.State state =
+                taskStatus == null ? TaskStatus.State.UNKNOWN : taskStatus.getState();
             table.row(host, jobId, jobId.getName(), jobId.getVersion(), goal, state);
           }
         }

@@ -27,7 +27,8 @@ public class TaskStatus extends Descriptor {
     RUNNING,
     EXITED,
     STOPPED,
-    FAILED
+    FAILED,
+    UNKNOWN
   }
 
   private final Job job;
