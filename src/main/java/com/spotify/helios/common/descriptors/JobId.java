@@ -62,12 +62,12 @@ public class JobId extends Descriptor implements Comparable<JobId> {
   @JsonCreator
   private JobId(final String id) {
     final String[] parts = id.split(":");
-    if (parts.length != 3) {
+    if (parts.length != 2 && parts.length != 3) {
       throw new IllegalArgumentException("Invalid Job id: " + id);
     }
     this.name = parts[0];
     this.version = parts[1];
-    this.hash = parts[2];
+    this.hash = (parts.length == 3) ? parts[2] : null;
   }
 
   /**
