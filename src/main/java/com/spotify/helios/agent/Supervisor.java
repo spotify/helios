@@ -230,7 +230,7 @@ class Supervisor {
       // See if the container is running
       try {
         final ContainerInspectResponse containerInfo = inspectContainer(containerId);
-        if (!containerInfo.state.running) {
+        if (containerInfo == null || containerInfo.state == null || !containerInfo.state.running) {
           break;
         }
       } catch (DockerException e) {
