@@ -12,6 +12,7 @@ import com.google.common.io.Files;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
+import com.kpelykh.docker.client.model.Container;
 import com.kpelykh.docker.client.utils.LogReader;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
@@ -143,6 +144,21 @@ public class SystemTest extends ZooKeeperTestBase {
     executorService.awaitTermination(30, SECONDS);
 
     nameless.stop();
+
+    // Clean up docker
+    try {
+      final DockerClient dockerClient = new DockerClient(dockerEndpoint);
+      final List<Container> containers = dockerClient.listContainers(false);
+      for (final Container container : containers) {
+        try {
+          dockerClient.kill(container.id);
+        } catch (DockerException e) {
+          e.printStackTrace();
+        }
+      }
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
 
     super.teardown();
   }
