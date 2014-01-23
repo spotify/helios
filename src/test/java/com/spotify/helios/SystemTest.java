@@ -7,6 +7,7 @@ package com.spotify.helios;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.io.Files;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
@@ -48,6 +49,7 @@ import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
@@ -116,6 +118,9 @@ public class SystemTest extends ZooKeeperTestBase {
   private List<ServiceMain> mains = newArrayList();
   private final ExecutorService executorService = Executors.newCachedThreadPool();
   private Service nameless;
+
+  public static final TypeReference<Map<String, Object>> OBJECT_TYPE =
+      new TypeReference<Map<String, Object>>() {};
 
   @Override
   @Before
@@ -833,6 +838,44 @@ public class SystemTest extends ZooKeeperTestBase {
 
     assertContains(TEST_AGENT + ": done", deleteAgent(TEST_AGENT));
   }
+
+  @Test
+  public void testCreateJobWithConfigurationFile() throws Exception {
+    startDefaultMaster();
+
+    final Client client = Client.newBuilder()
+        .setUser(TEST_USER)
+        .setEndpoints(masterEndpoint)
+        .build();
+
+    final String name = "test";
+    final String version = "17";
+    final String image = "busybox";
+    final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711),
+                                                           "bar", PortMapping.of(5000, 6000));
+    final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
+
+    final Map<String, Object> configuration = ImmutableMap.of("id", name + ":" + version,
+                                                              "image", image,
+                                                              "ports", ports,
+                                                              "env", env);
+
+    final File file = File.createTempFile("helios", "json");
+    file.deleteOnExit();
+    Files.write(Json.asBytes(configuration), file);
+
+    final String output = control("job", "create", "-q", "-f", file.getAbsolutePath());
+    final JobId jobId = JobId.parse(StringUtils.strip(output));
+
+    final Map<JobId, Job> jobs = client.jobs().get();
+    final Job job = jobs.get(jobId);
+
+    assertEquals(name, job.getId().getName());
+    assertEquals(version, job.getId().getVersion());
+    assertEquals(ports, job.getPorts());
+    assertEquals(env, job.getEnv());
+  }
+
 
   private TaskStatus awaitTaskState(final JobId jobId, final String agent,
                                     final TaskStatus.State state) throws Exception {
