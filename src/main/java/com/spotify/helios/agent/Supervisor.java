@@ -33,8 +33,11 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
+import com.spotify.helios.common.statistics.MetricsContext;
+import com.spotify.helios.common.statistics.SupervisorMetrics;
 import com.spotify.nameless.client.NamelessRegistrar;
 import com.spotify.nameless.client.RegistrationHandle;
+import com.sun.jersey.api.client.ClientResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,6 +100,7 @@ class Supervisor {
   private final NamelessRegistrar registrar;
   private final CommandWrapper commandWrapper;
   private final String agentName;
+  private final SupervisorMetrics metrics;
 
   private volatile Runner runner;
   private volatile boolean closed;
@@ -112,13 +116,15 @@ class Supervisor {
    * @param envVars   Environment variables to expose to child containers.
    * @param registrar The Nameless registrar to register ports with.
    * @param agentName
+   * @param metrics
    */
   private Supervisor(final JobId jobId, final Job job,
                      final AgentModel model, final AsyncDockerClient dockerClient,
                      final RestartPolicy restartPolicy, final Map<String, String> envVars,
-                     final FlapController flapController, TaskStatusManager stateManager,
+                     final FlapController flapController, final TaskStatusManager stateManager,
                      final @Nullable NamelessRegistrar registrar,
-                     final CommandWrapper commandWrapper, String agentName) {
+                     final CommandWrapper commandWrapper, final String agentName,
+                     final SupervisorMetrics metrics) {
     this.jobId = checkNotNull(jobId);
     this.job = checkNotNull(job);
     this.model = checkNotNull(model);
@@ -130,6 +136,7 @@ class Supervisor {
     this.registrar = registrar;
     this.commandWrapper = checkNotNull(commandWrapper);
     this.agentName = checkNotNull(agentName);
+    this.metrics = checkNotNull(metrics);
   }
 
   /**
@@ -140,6 +147,7 @@ class Supervisor {
       starting = true;
       startJob(0);
     }
+    metrics.supervisorStarted();
   }
 
   /**
@@ -150,6 +158,7 @@ class Supervisor {
       starting = false;
       stopJob();
     }
+    metrics.supervisorStopped();
   }
 
   /**
@@ -162,6 +171,7 @@ class Supervisor {
         runner.stop();
       }
     }
+    metrics.supervisorClosed();
   }
 
   public boolean isStarting() {
@@ -549,6 +559,7 @@ class Supervisor {
 
         final Map<String, PortMapping> ports = setUpExposedPorts(containerId);
         setStatus(RUNNING, containerId, ports);
+        metrics.containersRunning();
 
         // Wait for container to die
         final int exitCode = flapController.waitFuture(docker.waitContainer(containerId));
@@ -557,14 +568,17 @@ class Supervisor {
         throttle = flapController.isFlapping()
             ? ThrottleState.FLAPPING : ThrottleState.NO;
         setStatus(EXITED, containerId);
+        metrics.containersExited();
 //        handleNamelessDeregistration();
 
         set(exitCode);
       } catch (InterruptedException e) {
         setException(e);
+        metrics.containersThrewException();
       } catch (Exception e) {
         // Keep separate catch clauses to simplify setting breakpoints on actual errors
         setException(e);
+        metrics.containersThrewException();
       }
     }
 
@@ -602,6 +616,7 @@ class Supervisor {
       startFuture = docker.startContainer(containerId, hostConfig);
       startFuture.get();
       log.info("started container: {}: {}", job, containerId);
+      metrics.containerStarted();
       return containerId;
     }
 
@@ -617,18 +632,32 @@ class Supervisor {
       return containerInfo;
     }
 
-    private void maybePullImage(final String image) throws InterruptedException,
-        ExecutionException, IOException, BogusNameException {
+    private void maybePullImage(final String image)
+        throws InterruptedException, ExecutionException, BogusNameException {
       final List<Image> images = docker.getImages(image).get();
       if (images.isEmpty()) {
-        final PullClientResponse pull = docker.pull(image).get();
+        MetricsContext context = metrics.containerPull();
+        PullClientResponse pull = null;
         try {
+          pull = docker.pull(image).get();
           // Wait until image is completely pulled
           pullStream = pull.getResponse().getEntityInputStream();
           jsonTail("pull " + image, pullStream);
+          context.success();
+        } catch (InterruptedException | ExecutionException e) {
+          // may be overclassifying user errors as failures here
+          context.failure();
+          throw e;
+        } catch (BogusNameException e) {
+          context.userError();
+          throw e;
         } finally {
-          pull.close();
+          if (pull != null) {
+            pull.close();
+          }
         }
+      } else {
+        metrics.imageCacheHit();
       }
     }
 
@@ -758,6 +787,7 @@ class Supervisor {
     private NamelessRegistrar registrar;
     private CommandWrapper commandWrapper;
     private String agentName;
+    private SupervisorMetrics metrics;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -813,11 +843,16 @@ class Supervisor {
     public Supervisor build() {
       return new Supervisor(jobId, descriptor, model, dockerClient, restartPolicy,
                             envVars, flapController, stateManager, registrar,
-                            commandWrapper, agentName);
+                            commandWrapper, agentName, metrics);
     }
 
     public Builder setAgentName(String agentName) {
       this.agentName = agentName;
+      return this;
+    }
+
+    public Builder setMetrics(SupervisorMetrics metrics) {
+      this.metrics = metrics;
       return this;
     }
   }

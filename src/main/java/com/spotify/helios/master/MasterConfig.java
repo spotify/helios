@@ -14,6 +14,7 @@ public class MasterConfig {
   private String name;
   private int muninReporterPort;
   private InetSocketAddress httpEndpoint;
+  private boolean inhibitMetrics;
 
   public int getMuninReporterPort() {
     return muninReporterPort;
@@ -67,5 +68,14 @@ public class MasterConfig {
   public MasterConfig setZooKeeperConnectString(final String zooKeeperConnectString) {
     this.zooKeeperConnectString = zooKeeperConnectString;
     return this;
+  }
+
+  public MasterConfig setInhibitMetrics(boolean inhibit) {
+    this.inhibitMetrics = inhibit;
+    return this;
+  }
+
+  public boolean isInhibitMetrics() {
+    return inhibitMetrics;
   }
 }

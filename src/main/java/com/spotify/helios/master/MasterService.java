@@ -11,6 +11,9 @@ import com.spotify.helios.common.AbstractClient;
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
+import com.spotify.helios.common.statistics.Metrics;
+import com.spotify.helios.common.statistics.MetricsImpl;
+import com.spotify.helios.common.statistics.NoopMetrics;
 import com.spotify.helios.master.http.HttpServiceRequest;
 import com.spotify.hermes.Hermes;
 import com.spotify.hermes.http.HermesHttpRequestDispatcher;
@@ -22,8 +25,6 @@ import com.spotify.hermes.service.Server;
 import com.spotify.nameless.client.Nameless;
 import com.spotify.nameless.client.NamelessRegistrar;
 import com.spotify.nameless.client.RegistrationHandle;
-import com.yammer.metrics.Metrics;
-import com.yammer.metrics.core.MetricsRegistry;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -70,8 +71,16 @@ public class MasterService {
 
     this.hermesEndpoint = config.getHermesEndpoint();
 
-    // Set up statistics
-    final MetricsRegistry metricsRegistry = Metrics.defaultRegistry();
+    // Configure metrics
+    log.info("Starting metrics");
+    Metrics metrics;
+
+    if (config.isInhibitMetrics()) {
+      metrics = new NoopMetrics();
+    } else {
+      metrics = new MetricsImpl(config.getMuninReporterPort());
+    }
+    metrics.start();
 
     // Set up clients
     this.zooKeeperClient = setupZookeeperClient(config);
@@ -79,7 +88,7 @@ public class MasterService {
     // Set up the master interface
     final DefaultZooKeeperClient curator = new DefaultZooKeeperClient(zooKeeperClient);
     final MasterModel model = new ZooKeeperMasterModel(curator);
-    final MasterHandler handler = new MasterHandler(model);
+    final MasterHandler handler = new MasterHandler(model, metrics.getMasterMetrics());
 
     // master server
     this.hermesServer = Hermes.newServer(handler);

@@ -23,9 +23,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import static com.google.common.collect.Sets.intersection;
-
 import static com.google.common.collect.Sets.difference;
+import static com.google.common.collect.Sets.intersection;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.concurrent.TimeUnit.SECONDS;

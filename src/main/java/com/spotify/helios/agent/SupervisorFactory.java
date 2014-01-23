@@ -2,6 +2,7 @@ package com.spotify.helios.agent;
 
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.statistics.SupervisorMetrics;
 import com.spotify.nameless.client.NamelessRegistrar;
 
 import java.util.Map;
@@ -23,18 +24,21 @@ public class SupervisorFactory {
   private final NamelessRegistrar registrar;
   private final CommandWrapper commandWrapper;
   private final String agentName;
+  private final SupervisorMetrics metrics;
 
   public SupervisorFactory(final AgentModel model, final DockerClientFactory dockerClientFactory,
                            final Map<String, String> envVars,
                            final @Nullable NamelessRegistrar registrar,
                            final CommandWrapper commandWrapper,
-                           String agentName) {
+                           final String agentName,
+                           final SupervisorMetrics supervisorMetrics) {
     this.dockerClientFactory = dockerClientFactory;
     this.model = checkNotNull(model);
     this.envVars = checkNotNull(envVars);
     this.registrar = registrar;
     this.commandWrapper = commandWrapper;
     this.agentName = agentName;
+    this.metrics = supervisorMetrics;
   }
 
   /**
@@ -66,6 +70,7 @@ public class SupervisorFactory {
         .setTaskStatusManager(manager)
         .setNamelessRegistrar(registrar)
         .setCommandWrapper(commandWrapper)
+        .setMetrics(metrics)
         .build();
   }
 }
