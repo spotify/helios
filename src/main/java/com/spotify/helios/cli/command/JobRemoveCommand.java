@@ -35,7 +35,7 @@ public class JobRemoveCommand extends WildcardJobCommand {
 
     if (!force) {
       out.printf("This will remove the job %s%n", jobId);
-      out.printf("Do you want to continue? [Y/n]%n");
+      out.printf("Do you want to continue? [y/N]%n");
 
       // TODO (dano): pass in stdin instead using System.in
       final int c = System.in.read();

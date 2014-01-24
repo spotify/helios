@@ -38,7 +38,7 @@ public class HostDeregisterCommand extends ControlCommand {
 
     if (!force) {
       out.printf("This will deregister the host %s%n", host);
-      out.printf("Do you want to continue? [Y/n]%n");
+      out.printf("Do you want to continue? [y/N]%n");
 
       // TODO (dano): pass in stdin instead using System.in
       final int c = System.in.read();
