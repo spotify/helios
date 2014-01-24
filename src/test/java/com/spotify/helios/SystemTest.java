@@ -142,6 +142,8 @@ public class SystemTest extends ZooKeeperTestBase {
     executorService.shutdownNow();
     executorService.awaitTermination(30, SECONDS);
 
+    nameless.stop();
+
     super.teardown();
   }
 
