@@ -3,6 +3,7 @@
 .m2-repository/
 target/
 pom.xml.versionsBackup
+docker/tmp/
 
 # Stuff from various IDE's and editors
 *.iml
