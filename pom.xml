@@ -472,7 +472,6 @@
             <goals>
               <goal>build</goal>
             </goals>
-            <phase>package</phase>
             <configuration>
               <imageName>${imageName}:latest</imageName>
               <resources>
@@ -498,7 +497,6 @@
             <goals>
               <goal>tag</goal>
             </goals>
-            <phase>package</phase>
             <configuration>
               <image>${imageName}:latest</image>
               <newName>${imageName}</newName>
