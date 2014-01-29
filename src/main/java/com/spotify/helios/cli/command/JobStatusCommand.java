@@ -7,6 +7,7 @@ package com.spotify.helios.cli.command;
 import com.google.common.base.Joiner;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.Client;
@@ -29,6 +30,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Joiner.on;
 import static com.spotify.helios.cli.Output.table;
+import static com.spotify.helios.cli.Utils.allAsMap;
 
 public class JobStatusCommand extends ControlCommand {
 
@@ -48,19 +50,25 @@ public class JobStatusCommand extends ControlCommand {
   int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> jobIdStrings = options.getList(jobsArg.getDest());
-    final List<JobId> jobIds = Lists.newArrayList();
+    final List<ListenableFuture<Map<JobId, Job>>> jobIdFutures = Lists.newArrayList();
     for (final String jobIdString : jobIdStrings) {
-      final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
       // TODO (dano): complain if there were no matching jobs?
-      jobIds.addAll(jobs.keySet());
+      jobIdFutures.add(client.jobs(jobIdString));
+    }
+
+    final List<JobId> jobIds = Lists.newArrayList();
+    for (ListenableFuture<Map<JobId, Job>> future : jobIdFutures) {
+      jobIds.addAll(future.get().keySet());
     }
 
     // TODO (dano): it would sure be nice to be able to report container/task uptime
 
-    final Map<JobId, JobStatus> statuses = Maps.newHashMap();
+    final Map<JobId, ListenableFuture<JobStatus>> futures = Maps.newTreeMap();
     for (final JobId jobId : jobIds) {
-      statuses.put(jobId, client.jobStatus(jobId).get());
+      futures.put(jobId, client.jobStatus(jobId));
     }
+    final Map<JobId, JobStatus> statuses = Maps.newTreeMap();
+    statuses.putAll(allAsMap(futures));
 
     if (json) {
       out.println(Json.asPrettyStringUnchecked(statuses));
@@ -86,7 +94,7 @@ public class JobStatusCommand extends ControlCommand {
           final String env = Joiner.on(" ").withKeyValueSeparator("=").join(ts.getEnv());
           String containerId = ts.getContainerId();
           table.row(jobId, host, ts.getState(), containerId == null ? "null" : containerId,
-              command, ts.getThrottled(), ports, env);
+                    command, ts.getThrottled(), ports, env);
         }
       }
       table.print();
@@ -94,5 +102,4 @@ public class JobStatusCommand extends ControlCommand {
 
     return 0;
   }
-
 }

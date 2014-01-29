@@ -133,6 +133,14 @@ public class JobId extends Descriptor implements Comparable<JobId> {
     }
   }
 
+  public String toShortString() {
+    if (hash == null) {
+      return name + ":" + version;
+    } else {
+      return name + ":" + version + ":" + hash.substring(0, 7);
+    }
+  }
+
   public String getName() {
     return name;
   }

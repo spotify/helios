@@ -5,7 +5,9 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.Client;
@@ -75,9 +77,16 @@ public class JobListCommand extends ControlCommand {
       } else {
         final Table table = table(out);
         table.row("JOB ID", "NAME", "VERSION", "HOSTS", "COMMAND", "ENVIRONMENT");
+
+        final Map<JobId, ListenableFuture<JobStatus>> statuses = Maps.newTreeMap();
         for (final JobId jobId : sortedJobIds) {
+          statuses.put(jobId, client.jobStatus(jobId));
+        }
+
+        for (final Map.Entry<JobId, ListenableFuture<JobStatus>> e : statuses.entrySet()) {
+          final JobId jobId = e.getKey();
+          final JobStatus status = e.getValue().get();
           final Job job = jobs.get(jobId);
-          final JobStatus status = client.jobStatus(jobId).get();
           final String command = on(' ').join(job.getCommand());
           final String env = Joiner.on(" ").withKeyValueSeparator("=").join(job.getEnv());
           table.row(jobId, jobId.getName(), jobId.getVersion(), status.getDeployedHosts().size(),

@@ -7,7 +7,6 @@ package com.spotify.helios.common;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -26,9 +25,9 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
-import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
+import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.hermes.Hermes;
 import com.spotify.hermes.message.Message;
 import com.spotify.hermes.message.MessageBuilder;
@@ -45,8 +44,8 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.collect.Iterables.transform;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.collect.Iterables.transform;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
@@ -326,6 +325,7 @@ public class Client {
 
   public static class Builder {
 
+    private com.spotify.hermes.service.Client client;
     private String user;
     private Iterable<String> endpoints;
 
@@ -343,8 +343,17 @@ public class Client {
       return setEndpoints(asList(endpoints));
     }
 
+    public Builder setClient(final com.spotify.hermes.service.Client client) {
+      this.client = client;
+      return this;
+    }
+
     public Client build() {
-      return new Client(user, endpoints);
+      if (client == null) {
+        return new Client(user, endpoints);
+      } else {
+        return new Client(user, client);
+      }
     }
   }
 }

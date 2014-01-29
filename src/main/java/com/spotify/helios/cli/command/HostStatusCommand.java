@@ -5,6 +5,7 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
@@ -18,6 +19,8 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
+import static com.spotify.helios.cli.Utils.allAsMap;
 
 public class HostStatusCommand extends ControlCommand {
 
@@ -43,12 +46,12 @@ public class HostStatusCommand extends ControlCommand {
       hosts = client.listAgents().get();
     }
 
-    final Map<String, AgentStatus> statuses = Maps.newHashMap();
-
+    final Map<String, ListenableFuture<AgentStatus>> futures = Maps.newHashMap();
     for (final String host : hosts) {
-      final AgentStatus status = client.agentStatus(host).get();
-      statuses.put(host, status);
+      futures.put(host, client.agentStatus(host));
     }
+
+    final Map<String, AgentStatus> statuses = allAsMap(futures);
 
     out.println(Json.asPrettyStringUnchecked(statuses));
 

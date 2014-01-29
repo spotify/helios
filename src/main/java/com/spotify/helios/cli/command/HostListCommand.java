@@ -4,7 +4,9 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.Client;
@@ -19,6 +21,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -61,8 +64,15 @@ public class HostListCommand extends ControlCommand {
       table.row("HOST", "STATUS", "DEPLOYED", "RUNNING",
                 "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS", "VERSION");
 
+      final Map<String, ListenableFuture<AgentStatus>> statuses = Maps.newTreeMap();
       for (final String host : hosts) {
-        final AgentStatus s = client.agentStatus(host).get();
+        statuses.put(host, client.agentStatus(host));
+      }
+
+      for (final Map.Entry<String, ListenableFuture<AgentStatus>> e : statuses.entrySet()) {
+
+        final String host = e.getKey();
+        final AgentStatus s = e.getValue().get();
 
         if (s == null) {
           continue;

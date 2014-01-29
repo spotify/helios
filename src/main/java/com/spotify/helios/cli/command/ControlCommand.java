@@ -8,6 +8,7 @@ import com.google.common.base.Throwables;
 
 import com.spotify.helios.cli.Target;
 import com.spotify.helios.common.Client;
+import com.spotify.hermes.Hermes;
 import com.spotify.hermes.service.RequestTimeoutException;
 import com.spotify.hermes.service.SendFailureException;
 
@@ -26,6 +27,9 @@ import static com.google.common.base.Strings.repeat;
 import static java.lang.String.format;
 
 public abstract class ControlCommand {
+
+  public static final int BATCH_SIZE = 10;
+  public static final int QUEUE_SIZE = 1000;
 
   private final Logger log = LoggerFactory.getLogger(this.getClass());
 
@@ -70,9 +74,14 @@ public abstract class ControlCommand {
                       final String username, final boolean json)
       throws InterruptedException, IOException {
 
+    final com.spotify.hermes.service.Client hermesClient = Hermes.newClient(target.getEndpoint());
+
+    final com.spotify.hermes.service.Client batchingHermesClient =
+        new BatchingHermesClient(hermesClient, BATCH_SIZE, QUEUE_SIZE);
+
     final Client client = Client.newBuilder()
+        .setClient(batchingHermesClient)
         .setUser(username)
-        .setEndpoints(target.getEndpoint())
         .build();
 
     try {
