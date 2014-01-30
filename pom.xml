@@ -319,7 +319,7 @@
             <phase>package</phase>
             <configuration>
               <tasks>
-                <echoproperties />
+                <echoproperties/>
               </tasks>
             </configuration>
             <goals>
@@ -431,36 +431,36 @@
           </execution>
         </executions>
       </plugin>
-	  <plugin>
-		<groupId>com.google.code.maven-replacer-plugin</groupId>
-		<artifactId>maven-replacer-plugin</artifactId>
-		<version>1.4.0</version>
-		<executions>
-			<execution>
-				<phase>process-sources</phase>
-				<goals>
-					<goal>replace</goal>
-				</goals>
-			</execution>
-		</executions>
-		<configuration>
-			<file>${version.template.file}</file>
-			<outputFile>${version.file}</outputFile>
-			<replacements>
-				<replacement>
-					<token>@buildnumber@</token>
-					<value>${svn.revision}</value>
-				</replacement>
-				<replacement>
-					<token>@buildtime@</token>
-					<value>${maven.build.timestamp}</value>
-				</replacement>
-				<replacement>
-					<token>@pomversion@</token>
-					<value>${project.version}</value>
-				</replacement>
-			</replacements>
-		</configuration>
+      <plugin>
+        <groupId>com.google.code.maven-replacer-plugin</groupId>
+        <artifactId>maven-replacer-plugin</artifactId>
+        <version>1.4.0</version>
+        <executions>
+          <execution>
+            <phase>process-sources</phase>
+            <goals>
+              <goal>replace</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <file>${version.template.file}</file>
+          <outputFile>${version.file}</outputFile>
+          <replacements>
+            <replacement>
+              <token>@buildnumber@</token>
+              <value>${svn.revision}</value>
+            </replacement>
+            <replacement>
+              <token>@buildtime@</token>
+              <value>${maven.build.timestamp}</value>
+            </replacement>
+            <replacement>
+              <token>@pomversion@</token>
+              <value>${project.version}</value>
+            </replacement>
+          </replacements>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>com.spotify</groupId>
@@ -505,7 +505,6 @@
           </execution>
         </executions>
       </plugin>
-      
     </plugins>
   </build>
 </project>
