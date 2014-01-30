@@ -1115,7 +1115,9 @@ public class SystemTest extends ZooKeeperTestBase {
     // A simple netcat echo server
     final List<String> command =
         asList("bash", "-c",
-               "DEBIAN_FRONTEND=noninteractive apt-get install -q -y nmap && ncat -l -p 4711 -c \"while true; do read i && echo $i; done\"");
+               "DEBIAN_FRONTEND=noninteractive " +
+               "apt-get install -q -y --force-yes nmap && " +
+               "ncat -l -p 4711 -c \"while true; do read i && echo $i; done\"");
 
     // TODO (dano): connect to the server during the test and verify that the connection is never broken
 
