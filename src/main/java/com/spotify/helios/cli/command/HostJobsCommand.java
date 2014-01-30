@@ -36,6 +36,7 @@ public class HostJobsCommand extends ControlCommand {
 
   private final Argument hostArg;
   private final Argument quietArg;
+  private final Argument fullArg;
 
   public HostJobsCommand(final Subparser parser) {
     super(parser);
@@ -45,6 +46,10 @@ public class HostJobsCommand extends ControlCommand {
     hostArg = parser.addArgument("host")
         .nargs("+")
         .help("The hosts to list jobs for.");
+
+    fullArg = parser.addArgument("-f")
+        .action(storeTrue())
+        .help("Print full job id's.");
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
@@ -57,6 +62,7 @@ public class HostJobsCommand extends ControlCommand {
       throws ExecutionException, InterruptedException {
 
     final List<String> hosts = options.getList(hostArg.getDest());
+    final boolean full = options.getBoolean(fullArg.getDest());
     final boolean quiet = options.getBoolean(quietArg.getDest());
 
     final Map<String, ListenableFuture<AgentStatus>> futures = Maps.newHashMap();
@@ -95,7 +101,8 @@ public class HostJobsCommand extends ControlCommand {
             final Map<JobId, TaskStatus> taskStatuses = agentStatus.getStatuses();
             final TaskStatus taskStatus = taskStatuses.get(jobId);
             final TaskStatus.State state = taskStatus == null ? UNKNOWN : taskStatus.getState();
-            table.row(host, jobId, jobId.getName(), jobId.getVersion(), goal, state);
+            table.row(host, full ? jobId : jobId.toShortString(), jobId.getName(),
+                      jobId.getVersion(), goal, state);
           }
         }
         table.print();

@@ -33,6 +33,7 @@ public class JobListCommand extends ControlCommand {
 
   private final Argument quietArg;
   private final Argument patternArg;
+  private final Argument fullArg;
 
   public JobListCommand(final Subparser parser) {
     super(parser);
@@ -43,6 +44,10 @@ public class JobListCommand extends ControlCommand {
         .nargs("?")
         .help("Job reference to filter on");
 
+    fullArg = parser.addArgument("-f")
+        .action(storeTrue())
+        .help("Print full job id's.");
+
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
         .help("only print job id's");
@@ -51,6 +56,7 @@ public class JobListCommand extends ControlCommand {
   @Override
   int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
+    final boolean full = options.getBoolean(fullArg.getDest());
     final boolean quiet = options.getBoolean(quietArg.getDest());
     final String pattern = options.getString(patternArg.getDest());
 
@@ -89,8 +95,8 @@ public class JobListCommand extends ControlCommand {
           final Job job = jobs.get(jobId);
           final String command = on(' ').join(job.getCommand());
           final String env = Joiner.on(" ").withKeyValueSeparator("=").join(job.getEnv());
-          table.row(jobId, jobId.getName(), jobId.getVersion(), status.getDeployedHosts().size(),
-                    command, env);
+          table.row(full ? jobId : jobId.toShortString(), jobId.getName(), jobId.getVersion(),
+                    status.getDeployedHosts().size(), command, env);
         }
         table.print();
       }

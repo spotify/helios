@@ -5,6 +5,7 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -31,10 +32,13 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.base.Joiner.on;
 import static com.spotify.helios.cli.Output.table;
 import static com.spotify.helios.cli.Utils.allAsMap;
+import static com.spotify.helios.cli.Utils.truncate;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class JobStatusCommand extends ControlCommand {
 
   private final Argument jobsArg;
+  private final Argument fullArg;
 
   public JobStatusCommand(final Subparser parser) {
     super(parser);
@@ -44,12 +48,17 @@ public class JobStatusCommand extends ControlCommand {
     jobsArg = parser.addArgument("job")
         .nargs("+")
         .help("Job reference");
+
+    fullArg = parser.addArgument("-f")
+        .action(storeTrue())
+        .help("Print full job and container id's.");
   }
 
   @Override
   int run(Namespace options, Client client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> jobIdStrings = options.getList(jobsArg.getDest());
+    final boolean full = options.getBoolean(fullArg.getDest());
     final List<ListenableFuture<Map<JobId, Job>>> jobIdFutures = Lists.newArrayList();
     for (final String jobIdString : jobIdStrings) {
       // TODO (dano): complain if there were no matching jobs?
@@ -92,9 +101,10 @@ public class JobStatusCommand extends ControlCommand {
           }
           final String ports = Joiner.on(" ").join(portMappings);
           final String env = Joiner.on(" ").withKeyValueSeparator("=").join(ts.getEnv());
-          String containerId = ts.getContainerId();
-          table.row(jobId, host, ts.getState(), containerId == null ? "null" : containerId,
-                    command, ts.getThrottled(), ports, env);
+          final String containerId = Optional.fromNullable(ts.getContainerId()).or("null");
+          table.row(full ? jobId : jobId.toShortString(), host, ts.getState(),
+                    full ? containerId : truncate(containerId, 7), command, ts.getThrottled(),
+                    ports, env);
         }
       }
       table.print();
