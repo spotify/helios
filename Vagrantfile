@@ -8,13 +8,14 @@ AWS_REGION = ENV['AWS_REGION'] || "us-east-1"
 AWS_AMI    = ENV['AWS_AMI']    || "ami-d0f89fb9"
 FORWARD_DOCKER_PORTS = ENV['FORWARD_DOCKER_PORTS']
 
-Vagrant::Config.run do |config|
+Vagrant.configure("2") do |config|
   # Setup virtual machine box. This VM configuration code is always executed.
   config.vm.box = BOX_NAME
   config.vm.box_url = BOX_URI
 
   config.ssh.forward_agent = true
-  config.vm.forward_port 4160, 4160
+  config.vm.network :forwarded_port, guest: 4160, host: 4160
+  config.vm.network :private_network, ip: "192.168.33.10"
 
   # Provision docker and new kernel if deployment was not done.
   # It is assumed Vagrant can successfully launch the provider instance.
@@ -43,7 +44,7 @@ Vagrant::Config.run do |config|
     pkg_cmd << <<-END.gsub(/^ {6}/, '')
       echo "\
       domain spotify.net
-      search spotify.net spotify.net.
+      search spotify.net.
       nameserver 193.182.13.186
       nameserver 193.182.13.179
       " > /etc/resolv.conf
@@ -51,7 +52,7 @@ Vagrant::Config.run do |config|
     pkg_cmd << <<-END.gsub(/^ {6}/, '')
       echo "\
       domain spotify.net
-      search spotify.net spotify.net.
+      search spotify.net.
       " > /etc/resolvconf/resolv.conf.d/base
       END
 
