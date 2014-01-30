@@ -135,15 +135,27 @@ public class SystemTest extends ZooKeeperTestBase {
   @After
   public void teardown() throws Exception {
     for (final ServiceMain main : mains) {
-      main.stopAsync();
-      main.awaitTerminated();
+      try {
+        main.stopAsync();
+        main.awaitTerminated();
+      } catch (Exception e) {
+        e.printStackTrace();
+      }
     }
     mains = null;
 
-    executorService.shutdownNow();
-    executorService.awaitTermination(30, SECONDS);
+    try {
+      executorService.shutdownNow();
+      executorService.awaitTermination(30, SECONDS);
+    } catch (InterruptedException e) {
+      e.printStackTrace();
+    }
 
-    nameless.stop();
+    try {
+      nameless.stop();
+    } catch (Exception e) {
+      e.printStackTrace();
+    }
 
     // Clean up docker
     try {
