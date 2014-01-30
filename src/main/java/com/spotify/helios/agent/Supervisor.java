@@ -4,7 +4,6 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -37,17 +36,16 @@ import com.spotify.helios.common.statistics.MetricsContext;
 import com.spotify.helios.common.statistics.SupervisorMetrics;
 import com.spotify.nameless.client.NamelessRegistrar;
 import com.spotify.nameless.client.RegistrationHandle;
-import com.sun.jersey.api.client.ClientResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.UUID;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ThreadFactory;
@@ -73,8 +71,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Supervises docker containers for a single job.
  */
 class Supervisor {
-  public static final int JOB_HASH_LENGTH = 10;
-
   private static class BogusNameException extends Exception {
     public BogusNameException(JsonParseException jpe) {
       super(jpe);
@@ -425,10 +421,9 @@ class Supervisor {
     return env;
   }
 
-  static String getAbbreviatedJobId(JobId id) {
-    List<String> bits = Lists.newArrayList(Splitter.on(":").split(id.toString()));
-    bits.set(2, bits.get(2).substring(0, Supervisor.JOB_HASH_LENGTH));
-    return Joiner.on(":").join(bits);
+  private static String containerName(final JobId id) {
+    final String random = Integer.toHexString(new SecureRandom().nextInt());
+    return id.toShortString() + ":" + random;
   }
 
   /**
@@ -600,10 +595,7 @@ class Supervisor {
 
       commandWrapper.modifyCreateConfig(image, job, inspectImage(image), containerConfig);
 
-      final UUID uuid = UUID.randomUUID();
-//      final String uuid = Joiner.on("").join(Splitter.on('-').split(UUID.randomUUID().toString()))
-//          .substring(0, JOB_HASH_LENGTH);
-      final String name = getAbbreviatedJobId(job.getId()) + ":" + uuid;
+      final String name = containerName(job.getId());
       final ContainerCreateResponse container = docker.createContainer(containerConfig, name).get();
       final String containerId = container.id;
       log.info("created container: {}: {}", job, container);

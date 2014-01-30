@@ -193,8 +193,8 @@ public class SupervisorTest {
     assertEquals(IMAGE, containerConfig.getImage());
     assertEquals(EXPECTED_CONTAINER_ENV, ImmutableSet.copyOf(containerConfig.getEnv()));
     final String containerName = containerNameCaptor.getValue();
-    assertEquals(Supervisor.getAbbreviatedJobId(DESCRIPTOR.getId()),
-        jobIdFromContainerName(containerName));
+
+    assertEquals(DESCRIPTOR.getId().toShortString(), shortJobIdFromContainerName(containerName));
 
     // Verify that the container is started
     verify(docker, timeout(1000)).startContainer(eq(containerId), any(HostConfig.class));
@@ -246,7 +246,7 @@ public class SupervisorTest {
     assertEquals(STOPPED, sut.getStatus());
   }
 
-  private String jobIdFromContainerName(final String containerName) {
+  private String shortJobIdFromContainerName(final String containerName) {
     final int lastColon = containerName.lastIndexOf(':');
     return containerName.substring(0, lastColon);
   }
