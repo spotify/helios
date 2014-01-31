@@ -35,7 +35,7 @@ public class RestartPolicy {
         return imageMissingThrottleMillis;
       case FLAPPING:
         return flappingThrottleMillis;
-      case IMAGE_NAME_INVALID:
+      case IMAGE_PULL_FAILED:
         return IMAGE_NAME_INVALID_THROTTLE_MILLIS;
       default:
         break;

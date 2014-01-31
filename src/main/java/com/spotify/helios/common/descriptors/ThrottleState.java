@@ -5,5 +5,5 @@ public enum ThrottleState {
   NO,
   FLAPPING,
   IMAGE_MISSING,
-  IMAGE_NAME_INVALID
+  IMAGE_PULL_FAILED
 }

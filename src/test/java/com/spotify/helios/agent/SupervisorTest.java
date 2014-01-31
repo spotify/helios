@@ -13,8 +13,8 @@ import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
-import com.kpelykh.docker.client.model.Image;
 import com.kpelykh.docker.client.model.ImageInspectResponse;
+import com.kpelykh.docker.client.model.ListImage;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -74,12 +74,8 @@ public class SupervisorTest {
                                                          "bar", "4711");
   static final Set<String> EXPECTED_CONTAINER_ENV = ImmutableSet.of("foo=17", "bar=4711");
 
-  static final Image DOCKER_IMAGE = new Image() {{
-    repository = IMAGE;
-    tag = TAG;
-    id = "badf00d";
-  }};
-  static final List<Image> DOCKER_IMAGES = asList(DOCKER_IMAGE);
+  static final ListImage DOCKER_IMAGE = new ListImage() {{ }};
+  static final List<ListImage> DOCKER_IMAGES = asList(DOCKER_IMAGE);
 
   @Mock AgentModel model;
   @Mock AsyncDockerClient docker;
@@ -247,8 +243,8 @@ public class SupervisorTest {
   }
 
   private String shortJobIdFromContainerName(final String containerName) {
-    final int lastColon = containerName.lastIndexOf(':');
-    return containerName.substring(0, lastColon);
+    final int lastUnderscore = containerName.lastIndexOf('_');
+    return containerName.substring(0, lastUnderscore).replace('_', ':');
   }
 
   @Test

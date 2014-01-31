@@ -14,8 +14,8 @@ import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
-import com.kpelykh.docker.client.model.Image;
 import com.kpelykh.docker.client.model.ImageInspectResponse;
+import com.kpelykh.docker.client.model.ListImage;
 
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -64,10 +64,10 @@ public class AsyncDockerClient {
       }
     });
   }
-  public ListenableFuture<List<Image>> getImages(final String name) {
-    return executor.submit(new Callable<List<Image>>() {
+  public ListenableFuture<List<ListImage>> getImages(final String name) {
+    return executor.submit(new Callable<List<ListImage>>() {
       @Override
-      public List<Image> call() throws Exception {
+      public List<ListImage> call() throws Exception {
         DockerClient client = client();
         try {
           return client.getImages(name);

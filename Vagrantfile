@@ -102,7 +102,7 @@ Vagrant.configure("2") do |config|
     pkg_cmd << "apt-get --allow-unauthenticated update; "
 
     # Add lxc-docker package
-    pkg_cmd << "apt-get --allow-unauthenticated install -qq --force-yes lxc-docker; "
+    pkg_cmd << "apt-get --allow-unauthenticated install -qq --force-yes lxc-docker=0.7.6-1~0.0.0.5842.7cb3399.86; "
 
     # Add syslog-redirector package
     pkg_cmd << "apt-get --allow-unauthenticated install -qq --force-yes syslog-redirector; "

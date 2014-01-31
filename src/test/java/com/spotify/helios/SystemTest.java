@@ -477,7 +477,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setUser(TEST_USER)
         .setEndpoints(masterEndpoint)
         .build();
-    awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.IMAGE_NAME_INVALID,
+    awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.IMAGE_PULL_FAILED,
         WAIT_TIMEOUT_SECONDS, SECONDS);
 
     final AgentStatus agentStatus = control.agentStatus(TEST_AGENT).get();
@@ -991,8 +991,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final List<String> command = asList("hostname");
 
     // Create job
-    final JobId jobId = createJob("NA*&ME", "VE.@#RSION", "busybox", command, EMPTY_ENV,
-        EMPTY_PORTS);
+    final JobId jobId = createJob("NAME", "VERSION", "busybox", command);
 
     // deploy
     deployJob(jobId, TEST_AGENT);
@@ -1002,7 +1001,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final ClientResponse response = dockerClient.logContainer(taskStatus.getContainerId());
     final String logMessage = readLogFully(response);
 
-    assertContains("NA__ME_VE___RSION.test-agent", logMessage);
+    assertContains("NAME_VERSION." + TEST_AGENT, logMessage);
   }
 
   @Test
