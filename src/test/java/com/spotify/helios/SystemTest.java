@@ -45,7 +45,9 @@ import com.sun.jersey.api.client.ClientResponse;
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -122,6 +124,9 @@ public class SystemTest extends ZooKeeperTestBase {
 
   public static final TypeReference<Map<String, Object>> OBJECT_TYPE =
       new TypeReference<Map<String, Object>>() {};
+
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
 
   @Override
   @Before
@@ -470,19 +475,9 @@ public class SystemTest extends ZooKeeperTestBase {
   public void testImageNameBogus() throws Exception {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
-    JobId jobId = createJob("JOB_NAME", "JOB_VERSION", "DOES_NOT_LIKE_AT_ALL-CAPITALS",
-        ImmutableList.of("/bin/true"));
-    deployJob(jobId, TEST_AGENT);
-    final Client control = Client.newBuilder()
-        .setUser(TEST_USER)
-        .setEndpoints(masterEndpoint)
-        .build();
-    awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.IMAGE_PULL_FAILED,
-        WAIT_TIMEOUT_SECONDS, SECONDS);
-
-    final AgentStatus agentStatus = control.agentStatus(TEST_AGENT).get();
-    final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
-    assertEquals(TaskStatus.State.FAILED, taskStatus.getState());
+    exception.expect(IllegalArgumentException.class);
+    createJob("JOB_NAME", "JOB_VERSION", "DOES_NOT_LIKE_AT_ALL-CAPITALS",
+              ImmutableList.of("/bin/true"));
   }
 
   @Test
