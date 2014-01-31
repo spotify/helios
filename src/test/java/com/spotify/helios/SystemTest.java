@@ -77,6 +77,8 @@ import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
+import static com.spotify.helios.common.descriptors.ThrottleState.IMAGE_MISSING;
 import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -109,13 +111,13 @@ public class SystemTest extends ZooKeeperTestBase {
 
   private static final String TEST_USER = "TestUser";
   private static final String TEST_AGENT = "test-agent";
-  private static final List<String> DO_NOTHING_COMMAND = asList("sh", "-c",
-      "while :; do sleep 1; done");
+  private static final List<String> DO_NOTHING_COMMAND =
+      asList("sh", "-c", "while :; do sleep 1; done");
 
   public static final TypeReference<Map<JobId, JobStatus>> STATUSES_TYPE =
       new TypeReference<Map<JobId, JobStatus>>() {};
 
-  private final int masterPort = ZooKeeperTestBase.PORT_COUNTER.incrementAndGet();
+  private final int masterPort = PortAllocator.allocatePort();
   private final String masterEndpoint = "tcp://localhost:" + masterPort;
   private final String masterName = "test-master";
 
@@ -130,6 +132,7 @@ public class SystemTest extends ZooKeeperTestBase {
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
+
   public static final String JOB_NAME = PREFIX + "foo";
   public static final String JOB_VERSION = "17";
   public static final String AGENT_NAME = "foobar";
@@ -364,8 +367,8 @@ public class SystemTest extends ZooKeeperTestBase {
     ImmutableMap<String, PortMapping> portMapping = ImmutableMap.<String, PortMapping>of(
         "PROTOCOL", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
-        EMPTY_ENV, portMapping,
-        NAMELESS_SERVICE);
+                                  EMPTY_ENV, portMapping,
+                                  NAMELESS_SERVICE);
 
     deployJob(jobId, TEST_AGENT);
     awaitJobState(control, TEST_AGENT, jobId, RUNNING, WAIT_TIMEOUT_SECONDS, SECONDS);
@@ -441,7 +444,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setUser(TEST_USER)
         .setEndpoints(masterEndpoint)
         .build();
-   awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.FLAPPING, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitJobThrottle(control, TEST_AGENT, jobId, FLAPPING, WAIT_TIMEOUT_SECONDS, SECONDS);
   }
 
   @Test
@@ -454,9 +457,10 @@ public class SystemTest extends ZooKeeperTestBase {
         .setEndpoints(masterEndpoint)
         .build();
     final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711),
-        "bar", PortMapping.of(6000));
+                                                           "bar", PortMapping.of(6000));
 
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND, EMPTY_ENV, ports);
+    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND, EMPTY_ENV,
+                                  ports);
     assertNotNull(jobId);
     deployJob(jobId, TEST_AGENT);
     // previously, this would fail
@@ -468,14 +472,14 @@ public class SystemTest extends ZooKeeperTestBase {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
     JobId jobId = createJob(JOB_NAME, JOB_VERSION, "this_sould_not_exist",
-        ImmutableList.of("/bin/true"));
+                            ImmutableList.of("/bin/true"));
     deployJob(jobId, TEST_AGENT);
     final Client control = Client.newBuilder()
         .setUser(TEST_USER)
         .setEndpoints(masterEndpoint)
         .build();
-    awaitJobThrottle(control, TEST_AGENT, jobId, ThrottleState.IMAGE_MISSING, WAIT_TIMEOUT_SECONDS,
-        SECONDS);
+    awaitJobThrottle(control, TEST_AGENT, jobId, IMAGE_MISSING, WAIT_TIMEOUT_SECONDS,
+                     SECONDS);
 
     final AgentStatus agentStatus = control.agentStatus(TEST_AGENT).get();
     final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
@@ -694,7 +698,7 @@ public class SystemTest extends ZooKeeperTestBase {
 
     // Create a job using an image exposing port 80 and map it to 8080
     final Job job2 = Job.newBuilder()
-        .setName(PREFIX +"wordpress")
+        .setName(PREFIX + "wordpress")
         .setVersion("v2")
         .setImage("jbfink/wordpress")
         .setCommand(DO_NOTHING_COMMAND)
@@ -762,7 +766,7 @@ public class SystemTest extends ZooKeeperTestBase {
                                       final JobId jobId,
                                       final ThrottleState throttled, final int timeout,
                                       final TimeUnit timeunit) throws Exception {
-      return await(timeout, timeunit, new Callable<TaskStatus>() {
+    return await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final AgentStatus agentStatus = controlClient.agentStatus(slave).get();
@@ -1169,18 +1173,20 @@ public class SystemTest extends ZooKeeperTestBase {
     awaitAgentStatus(client, AGENT_NAME, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     // Wait for the job to be restarted in a new container
-    final TaskStatus secondTaskStatus = await(LONG_WAIT_MINUTES, MINUTES,
-                                              new Callable<TaskStatus>() {
-      @Override
-      public TaskStatus call() throws Exception {
-        final AgentStatus agentStatus = client.agentStatus(AGENT_NAME).get();
-        final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
-        return (taskStatus != null && taskStatus.getContainerId() != null &&
-                taskStatus.getState() == RUNNING &&
-                !taskStatus.getContainerId().equals(firstTaskStatus.getContainerId())) ? taskStatus
-                                                                                       : null;
-      }
-    });
+    final TaskStatus secondTaskStatus = await(
+        LONG_WAIT_MINUTES, MINUTES,
+        new Callable<TaskStatus>() {
+          @Override
+          public TaskStatus call() throws Exception {
+            final AgentStatus agentStatus = client.agentStatus(AGENT_NAME).get();
+            final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
+            return (taskStatus != null && taskStatus.getContainerId() != null &&
+                    taskStatus.getState() == RUNNING &&
+                    !taskStatus.getContainerId().equals(firstTaskStatus.getContainerId()))
+                   ? taskStatus
+                   : null;
+          }
+        });
 
     // Stop the agent
     agent3.stopAsync().awaitTerminated();
