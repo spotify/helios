@@ -40,6 +40,20 @@ Vagrant.configure("2") do |config|
         "sed -i -E 's#^exit 0#[ -x /root/guest_additions.sh ] \\&\\& /root/guest_additions.sh#' /etc/rc.local; "
     end
 
+    # Set up the spotify0 network bridge
+    pkg_cmd << <<-END.gsub(/^ {6}/, '')
+      echo "
+      auto spotify0
+         iface spotify0 inet static
+         bridge_ports none
+         bridge_stp off
+         bridge_fd 0
+         bridge_waitport 0
+         netmask 255.255.0.0
+         address 10.99.0.1
+      " >> /etc/network/interfaces
+      END
+
     # Use our dns
     pkg_cmd << <<-END.gsub(/^ {6}/, '')
       echo "\
@@ -107,8 +121,8 @@ Vagrant.configure("2") do |config|
     # Add syslog-redirector package
     pkg_cmd << "apt-get --allow-unauthenticated install -qq --force-yes syslog-redirector; "
 
-    # Set up to listen on TCP
-    pkg_cmd << "grep '0.0.0.0' /etc/init/docker.conf || sed -e 's/-d/-d -H 0.0.0.0:4160 -H unix:\\/\\/\\/var\\/run\\/docker.sock/' /etc/init/docker.conf -i;\n"
+    # Set up docker to listen on 0.0.0.0:4160 and to use the spotify0 network bridge
+    pkg_cmd << "echo 'DOCKER_OPTS=\"-H=tcp://0.0.0.0:4160 -H=unix:///var/run/docker.sock -b=spotify0\"' > /etc/default/docker; "
 
     # Add vagrant user to the docker group
     # pkg_cmd << "usermod -a -G docker vagrant; "
