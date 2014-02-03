@@ -21,21 +21,6 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-      <groupId>commons-codec</groupId>
-      <artifactId>commons-codec</artifactId>
-      <version>1.8</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.httpcomponents</groupId>
-      <artifactId>httpclient</artifactId>
-      <version>4.2.5</version>
-    </dependency>
-    <dependency>
-      <groupId>com.sun.jersey</groupId>
-      <artifactId>jersey-client</artifactId>
-      <version>1.17.1</version>
-    </dependency>
-    <dependency>
       <groupId>joda-time</groupId>
       <artifactId>joda-time</artifactId>
       <version>2.3</version>
@@ -52,13 +37,13 @@
     </dependency>
     <dependency>
       <groupId>com.spotify</groupId>
-      <artifactId>hermes-java</artifactId>
-      <version>2.3.1</version>
-    </dependency>
-    <dependency>
-      <groupId>com.spotify</groupId>
       <artifactId>logging</artifactId>
       <version>2.0.13</version>
+    </dependency>
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-core</artifactId>
+      <version>1.1.1</version>
     </dependency>
     <dependency>
       <groupId>com.yammer.metrics</groupId>
@@ -66,14 +51,9 @@
       <version>2.2.0</version>
     </dependency>
     <dependency>
-      <groupId>io.netty</groupId>
-      <artifactId>netty</artifactId>
-      <version>3.8.0.Final</version>
-    </dependency>
-    <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.5</version>
+      <version>1.7.6</version>
     </dependency>
     <dependency>
       <groupId>net.sourceforge.argparse4j</groupId>

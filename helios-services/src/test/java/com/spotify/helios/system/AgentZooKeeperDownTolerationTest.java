@@ -7,7 +7,7 @@ package com.spotify.helios.system;
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.model.Container;
 import com.spotify.helios.agent.AgentMain;
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -39,7 +39,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
-    final Client client = defaultClient();
+    final HeliosClient client = defaultClient();
 
     final AgentMain agent1 = startDefaultAgent(TEST_AGENT);
 

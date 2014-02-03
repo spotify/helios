@@ -4,8 +4,7 @@
 
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.common.Client;
-import com.spotify.hermes.message.StatusCode;
+import com.spotify.helios.common.HeliosClient;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -29,7 +28,7 @@ public class HostRegisterCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out, final boolean json)
+  int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
 
@@ -38,8 +37,8 @@ public class HostRegisterCommand extends ControlCommand {
     int code = 0;
     for (final String host : hosts) {
       out.printf("%s: ", host);
-      final StatusCode result = client.registerAgent(host).get();
-      if (result == StatusCode.OK) {
+      final int result = client.registerAgent(host).get();
+      if (result == 200) {
         out.printf("done%n");
       } else {
         out.printf("failed: %s%n", result);

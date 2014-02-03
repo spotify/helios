@@ -5,6 +5,7 @@
 package com.spotify.helios.cli;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import com.spotify.helios.cli.command.ControlCommand;
@@ -37,9 +38,8 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import net.sourceforge.argparse4j.inf.Subparsers;
 
-import org.json.JSONException;
-
 import java.io.IOException;
+import java.net.URI;
 import java.util.List;
 import java.util.Set;
 
@@ -48,7 +48,6 @@ import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.addAll;
 import static com.google.common.collect.Iterables.filter;
-import static com.spotify.helios.cli.Target.targetsFrom;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
@@ -72,7 +71,7 @@ public class CliParser {
   private boolean json;
 
   public CliParser(final String... args)
-      throws ArgumentParserException, IOException, JSONException {
+      throws ArgumentParserException, IOException {
 
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("helios")
         .defaultHelp(true)
@@ -118,23 +117,27 @@ public class CliParser {
     // 4. sites from config file
 
     // TODO (dano): this is kind of complex, make sure it matches the defaults in the help and maybe factor out and unit test it
-    List<Target> toBeTargets = computeTargets(parser, explicitEndpoints, sitesArguments, srvName);
-    this.targets = toBeTargets;
+    this.targets = computeTargets(parser, explicitEndpoints, sitesArguments, srvName);
   }
 
   private List<Target> computeTargets(final ArgumentParser parser,
-      final List<String> explicitEndpoints, final List<String> sitesArguments, final String srvName) {
+                                      final List<String> explicitEndpoints,
+                                      final List<String> sitesArguments, final String srvName) {
 
     if (explicitEndpoints != null && !explicitEndpoints.isEmpty()) {
-      return targetsFrom(explicitEndpoints);
+      final List<URI> explicitEndpointURIs = Lists.newArrayList();
+      for (final String endpoint : explicitEndpoints) {
+        explicitEndpointURIs.add(URI.create(endpoint));
+      }
+      return asList(Target.from(explicitEndpointURIs));
     } else if (sitesArguments != null && !sitesArguments.isEmpty()) {
       final Iterable<String> sites = parseSitesStrings(sitesArguments);
-      return targetsFrom(srvName, sites);
+      return Target.from(srvName, sites);
     } else if (!cliConfig.getMasterEndpoints().isEmpty()) {
-      return targetsFrom(cliConfig.getMasterEndpoints());
+      return asList(Target.from(cliConfig.getMasterEndpoints()));
     } else if (!cliConfig.getSitesString().isEmpty()) {
       final Iterable<String> sites = parseSitesString(cliConfig.getSitesString());
-      return targetsFrom(srvName, sites);
+      return Target.from(srvName, sites);
     }
 
     handleError(parser, new ArgumentParserException(

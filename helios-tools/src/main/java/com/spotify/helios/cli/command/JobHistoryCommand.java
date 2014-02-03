@@ -1,7 +1,7 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.cli.Table;
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -40,7 +40,7 @@ public class JobHistoryCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out, boolean json)
+  int run(Namespace options, HeliosClient client, PrintStream out, boolean json)
       throws ExecutionException, InterruptedException {
 
     String jobIdString = options.getString(jobIdArg.getDest());

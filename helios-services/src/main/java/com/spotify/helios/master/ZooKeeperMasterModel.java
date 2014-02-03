@@ -320,6 +320,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       client.transaction(delete(Paths.configJobAgents(id)),
                          delete(Paths.configJobRefShort(id)),
                          delete(Paths.configJob(id)));
+    } catch (final NoNodeException e) {
+      throw new JobDoesNotExistException(id);
     } catch (final KeeperException.NotEmptyException e) {
       final List<String> agents = listJobAgents(id);
       throw new JobStillInUseException(id, agents);

@@ -19,7 +19,7 @@ import com.spotify.helios.PortAllocator;
 import com.spotify.helios.ZooKeeperTestBase;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -37,6 +37,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TestRule;
@@ -46,10 +47,12 @@ import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -100,7 +103,7 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
   static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
   static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
 
-  static final JobId BOGUS_JOB = new JobId("bogus", "job", "badfood");
+  static final JobId BOGUS_JOB = new JobId("bogus", "job", Strings.repeat("0", 40));
   static final String BOGUS_AGENT = "BOGUS_AGENT";
 
   static final String TEST_USER = "test-user";
@@ -113,7 +116,8 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
       new TypeReference<Map<JobId, JobStatus>>() {};
 
   final int masterPort = PortAllocator.allocatePort("helios master");
-  final String masterEndpoint = "tcp://localhost:" + masterPort;
+  final int masterAdminPort = PortAllocator.allocatePort("helios master admin");
+  final String masterEndpoint = "http://localhost:" + masterPort;
 
   static final String DOCKER_ENDPOINT =
       fromNullable(getenv("DOCKER_ENDPOINT")).or("http://localhost:4160");
@@ -155,8 +159,14 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
   static final String JOB_NAME = PREFIX + "foo";
   static final String JOB_VERSION = "17";
 
-  final List<Client> clients = Lists.newArrayList();
+  final List<HeliosClient> clients = Lists.newArrayList();
   final List<com.spotify.hermes.service.Client> hermesClients = Lists.newArrayList();
+
+  @BeforeClass
+  public static void staticSetup() {
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
+  }
 
   @Override
   @Before
@@ -171,7 +181,7 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
   @Override
   @After
   public void teardown() throws Exception {
-    for (final Client client : clients) {
+    for (final HeliosClient client : clients) {
       client.close();
     }
     clients.clear();
@@ -257,7 +267,8 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
   void startDefaultMaster() throws Exception {
     startMaster("-vvvv",
                 "--no-log-setup",
-                "--hm", masterEndpoint,
+                "--http", masterEndpoint,
+                "--admin=" + masterAdminPort,
                 "--name", TEST_MASTER,
                 "--zk", zookeeperEndpoint);
   }
@@ -278,14 +289,14 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
 
   MasterMain startMaster(final String... args) throws Exception {
     final MasterMain main = new MasterMain(args);
-    main.startAsync();
+    main.startAsync().awaitRunning();
     services.add(main);
     return main;
   }
 
   AgentMain startAgent(final String... args) throws Exception {
     final AgentMain main = new AgentMain(args);
-    main.startAsync();
+    main.startAsync().awaitRunning();
     services.add(main);
     return main;
   }
@@ -453,7 +464,7 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     });
   }
 
-  TaskStatus awaitJobState(final Client client, final String slave,
+  TaskStatus awaitJobState(final HeliosClient client, final String slave,
                            final JobId jobId,
                            final TaskStatus.State state, final int timeout,
                            final TimeUnit timeunit) throws Exception {
@@ -468,7 +479,7 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     });
   }
 
-  TaskStatus awaitJobThrottle(final Client client, final String slave,
+  TaskStatus awaitJobThrottle(final HeliosClient client, final String slave,
                               final JobId jobId,
                               final ThrottleState throttled, final int timeout,
                               final TimeUnit timeunit) throws Exception {
@@ -482,7 +493,7 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     });
   }
 
-  void awaitAgentRegistered(final Client client, final String slave,
+  void awaitAgentRegistered(final HeliosClient client, final String slave,
                             final int timeout,
                             final TimeUnit timeUnit) throws Exception {
     await(timeout, timeUnit, new Callable<AgentStatus>() {
@@ -493,7 +504,7 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     });
   }
 
-  AgentStatus awaitAgentStatus(final Client client, final String slave,
+  AgentStatus awaitAgentStatus(final HeliosClient client, final String slave,
                                final AgentStatus.Status status,
                                final int timeout,
                                final TimeUnit timeUnit) throws Exception {
@@ -539,7 +550,7 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     });
   }
 
-  void awaitTaskGone(final Client client, final String host, final JobId jobId,
+  void awaitTaskGone(final HeliosClient client, final String host, final JobId jobId,
                      final long timeout, final TimeUnit timeunit) throws Exception {
     await(timeout, timeunit, new Callable<Boolean>() {
       @Override
@@ -579,10 +590,12 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     final List<Container> containers = dockerClient.listContainers(false);
     final List<Container> matches = Lists.newArrayList();
     for (final Container container : containers) {
-      for (final String name : container.names) {
-        if (name.contains(needle)) {
-          matches.add(container);
-          break;
+      if (container.names != null) {
+        for (final String name : container.names) {
+          if (name.contains(needle)) {
+            matches.add(container);
+            break;
+          }
         }
       }
     }
@@ -624,14 +637,14 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     return client;
   }
 
-  Client defaultClient() {
+  HeliosClient defaultClient() {
     return client(TEST_USER, masterEndpoint);
   }
 
-  Client client(final String user, final String endpoint) {
-    final Client client = Client.newBuilder()
+  HeliosClient client(final String user, final String endpoint) {
+    final HeliosClient client = HeliosClient.newBuilder()
         .setUser(user)
-        .setEndpoints(endpoint)
+        .setEndpoints(asList(URI.create(endpoint)))
         .build();
     clients.add(client);
     return client;

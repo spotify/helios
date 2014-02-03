@@ -1,6 +1,6 @@
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.protocol.AgentDeleteResponse;
 
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -31,7 +31,7 @@ public class HostDeregisterCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out, final boolean json)
+  int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException, IOException {
     final String host = options.getString(hostArg.getDest());
     final boolean force = options.getBoolean(forceArg.getDest());

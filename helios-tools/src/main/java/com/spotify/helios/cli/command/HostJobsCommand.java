@@ -9,7 +9,7 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.Table;
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Goal;
@@ -58,7 +58,7 @@ public class HostJobsCommand extends ControlCommand {
   }
 
   @Override
-  int run(final Namespace options, final Client client, final PrintStream out, final boolean json)
+  int run(final Namespace options, final HeliosClient client, final PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
 
     final List<String> hosts = options.getList(hostArg.getDest());

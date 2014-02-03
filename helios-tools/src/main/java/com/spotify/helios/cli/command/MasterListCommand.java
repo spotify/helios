@@ -1,6 +1,6 @@
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
@@ -16,7 +16,7 @@ public class MasterListCommand extends ControlCommand {
   }
 
   @Override
-  int run(final Namespace options, final Client client, final PrintStream out, final boolean json)
+  int run(final Namespace options, final HeliosClient client, final PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> masters = client.listMasters().get();
     for (final String master : masters) {

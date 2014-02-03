@@ -9,8 +9,6 @@ import com.google.common.base.Function;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 
-import javax.annotation.Nullable;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -96,9 +94,8 @@ public class JobId extends Descriptor implements Comparable<JobId> {
   }
 
   public static final Function<String, JobId> FROM_STRING = new Function<String, JobId>() {
-    @Nullable
     @Override
-    public JobId apply(@Nullable final String s) {
+    public JobId apply(final String s) {
       return fromString(s);
     }
   };
@@ -192,6 +189,10 @@ public class JobId extends Descriptor implements Comparable<JobId> {
 
   public static Builder newBuilder() {
     return new Builder();
+  }
+
+  public boolean isFullyQualified() {
+    return name != null && version != null && hash != null && hash.length() == 40;
   }
 
   public static class Builder {

@@ -3,6 +3,7 @@ package com.spotify.helios.common.protocol;
 import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.descriptors.JobId;
 
 public class JobDeployResponse {
 
@@ -17,12 +18,12 @@ public class JobDeployResponse {
   }
 
   private final Status status;
-  private final String job;
+  private final JobId job;
   private final String agent;
 
   public JobDeployResponse(@JsonProperty("status") Status status,
                            @JsonProperty("agent") String agent,
-                           @JsonProperty("job") String job) {
+                           @JsonProperty("job") JobId job) {
     this.status = status;
     this.job = job;
     this.agent = agent;
@@ -32,7 +33,7 @@ public class JobDeployResponse {
     return status;
   }
 
-  public String getJob() {
+  public JobId getJob() {
     return job;
   }
 

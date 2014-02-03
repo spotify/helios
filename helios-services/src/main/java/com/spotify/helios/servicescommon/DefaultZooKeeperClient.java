@@ -91,6 +91,16 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
+  public void start() {
+    client.start();
+  }
+
+  @Override
+  public void close() {
+    client.close();
+  }
+
+  @Override
   public List<String> getChildren(final String path) throws KeeperException {
     try {
       return client.getChildren().forPath(path);

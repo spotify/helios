@@ -7,7 +7,7 @@ package com.spotify.helios.cli.command;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentStatus;
 
@@ -37,7 +37,7 @@ public class HostStatusCommand extends ControlCommand {
   }
 
   @Override
-  int run(final Namespace options, final Client client, final PrintStream out, final boolean json)
+  int run(final Namespace options, final HeliosClient client, final PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
 
     List<String> hosts = options.getList(hostsArg.getDest());

@@ -5,11 +5,13 @@
 package com.spotify.helios.servicescommon;
 
 
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+
 public class ZooKeeperNodeUpdaterFactory implements NodeUpdaterFactory {
 
-  final DefaultZooKeeperClient zooKeeperClient;
+  final ZooKeeperClient zooKeeperClient;
 
-  public ZooKeeperNodeUpdaterFactory(final DefaultZooKeeperClient zooKeeperClient) {
+  public ZooKeeperNodeUpdaterFactory(final ZooKeeperClient zooKeeperClient) {
     this.zooKeeperClient = zooKeeperClient;
   }
 

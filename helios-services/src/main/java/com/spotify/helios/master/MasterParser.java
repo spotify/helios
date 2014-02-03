@@ -4,10 +4,8 @@
 
 package com.spotify.helios.master;
 
-import com.google.common.base.Objects;
-
-import com.spotify.helios.common.Defaults;
 import com.spotify.helios.servicescommon.ServiceParser;
+import com.yammer.dropwizard.config.HttpConfiguration;
 
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -19,6 +17,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 
+import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Throwables.propagate;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
@@ -31,30 +30,34 @@ public class MasterParser extends ServiceParser {
     super("helios-master", "Spotify Helios Master", args);
 
     final Namespace options = getNamespace();
-    final String bindHttp = options.getString("http");
-    final InetSocketAddress bindHttpAddress = parseSocketAddress(bindHttp);
+    final InetSocketAddress httpAddress = parseSocketAddress(options.getString("http"));
 
-    this.masterConfig = new MasterConfig()
-        .setHermesEndpoint(options.getString("hm"))
-        .setHttpEndpoint(bindHttpAddress)
+    final MasterConfig config = new MasterConfig()
         .setZooKeeperConnectString(options.getString("zk"))
         .setSite(options.getString("site"))
         .setName(options.getString("name"))
-        .setInhibitMetrics(Objects.equal(options.getBoolean("no_metrics"), true))
         .setStatsdHostPort(options.getString("statsd_host_port"))
         .setRiemannHostPort(options.getString("riemann_host_port"))
-        ;
+        .setInhibitMetrics(fromNullable(options.getBoolean("no_metrics")).or(false));
+
+    final HttpConfiguration http = config.getHttpConfiguration();
+    http.setPort(httpAddress.getPort());
+    http.setBindHost(httpAddress.getHostString());
+    http.setAdminPort(options.getInt("admin"));
+
+    this.masterConfig = config;
   }
 
   @Override
   protected void addArgs(final ArgumentParser parser) {
-    parser.addArgument("--hm")
-        .setDefault(Defaults.MASTER_HM_BIND)
-        .help("hermes endpoint");
-
     parser.addArgument("--http")
-        .setDefault(Defaults.MASTER_HTTP_BIND)
+        .setDefault("http://0.0.0.0:5801")
         .help("http endpoint");
+
+    parser.addArgument("--admin")
+        .type(Integer.class)
+        .setDefault(5802)
+        .help("admin http port");
 
     parser.addArgument("--name")
         .setDefault(getHostName())
@@ -87,7 +90,7 @@ public class MasterParser extends ServiceParser {
   private InetSocketAddress parseSocketAddress(final String addressString) {
     final InetSocketAddress address;
     try {
-      final URI u = new URI("http://" + addressString);
+      final URI u = new URI(addressString);
       address = new InetSocketAddress(u.getHost(), u.getPort());
     } catch (URISyntaxException e) {
       throw new IllegalArgumentException("Bad address: " + addressString, e);

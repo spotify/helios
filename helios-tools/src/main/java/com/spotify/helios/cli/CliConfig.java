@@ -5,32 +5,36 @@
 package com.spotify.helios.cli;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
-import com.spotify.config.SpotifyConfigNode;
-import com.spotify.helios.common.Defaults;
-import com.spotify.json.SpJSON;
-
-import org.json.JSONException;
-import org.json.JSONObject;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.helios.common.Json;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class CliConfig {
 
   private static final String CONFIG_PATH = ".helios" + File.separator + "config";
-  public static final List<String> EMPTY_STRING_LIST = Collections.<String>emptyList();
+  public static final List<String> EMPTY_STRING_LIST = Collections.emptyList();
+  public static final TypeReference<Map<String, Object>> OBJECT_TYPE =
+      new TypeReference<Map<String, Object>>() {};
 
   private final String username;
   private final List<String> sites;
   private final String srvName;
-  private final List<String> masterEndpoints;
+  private final List<URI> masterEndpoints;
 
-  public CliConfig(List<String> sites, String srvName, List<String> masterEndpoints) {
+  public CliConfig(List<String> sites, String srvName, List<URI> masterEndpoints) {
     this.username = System.getProperty("user.name");
     this.sites = checkNotNull(sites);
     this.srvName = checkNotNull(srvName);
@@ -53,7 +57,7 @@ public class CliConfig {
     return srvName;
   }
 
-  public List<String> getMasterEndpoints() {
+  public List<URI> getMasterEndpoints() {
     return masterEndpoints;
   }
 
@@ -66,14 +70,11 @@ public class CliConfig {
    * If the file is not found, a CliConfig with pre-defined values will be returned.
    *
    * @throws IOException   If the file exists but could not be read
-   * @throws JSONException If the file exists but could not be parsed
    */
-  public static CliConfig fromUserConfig()
-      throws IOException, JSONException {
+  public static CliConfig fromUserConfig() throws IOException {
     final String userHome = System.getProperty("user.home");
     final String defaults = userHome + File.separator + CONFIG_PATH;
     final File defaultsFile = new File(defaults);
-
     return fromFile(defaultsFile);
   }
 
@@ -84,18 +85,15 @@ public class CliConfig {
    *
    * @param defaultsFile The file to parse from
    * @throws IOException   If the file exists but could not be read
-   * @throws JSONException If the file exists but could not be parsed
    */
-  public static CliConfig fromFile(File defaultsFile) throws IOException, JSONException {
-    final SpotifyConfigNode config;
+  public static CliConfig fromFile(File defaultsFile) throws IOException {
+    final Map<String, Object> config;
     if (defaultsFile.exists() && defaultsFile.canRead()) {
-      final JSONObject defaultsJson = SpJSON.newJSONObject(defaultsFile);
-      config = new SpotifyConfigNode(defaultsJson);
+      config = Json.read(Files.readAllBytes(defaultsFile.toPath()), OBJECT_TYPE);
     } else {
-      config = new SpotifyConfigNode(SpJSON.newJSONObject("{}"));
+      config = ImmutableMap.of();
     }
-
-    return fromConfigNode(config);
+    return fromMap(config);
   }
 
   /**
@@ -103,14 +101,26 @@ public class CliConfig {
    *
    * Any value missing in the config tree will get a pre-defined default value.
    */
-  public static CliConfig fromConfigNode(SpotifyConfigNode config) {
+  public static CliConfig fromMap(Map<String, Object> config) {
     checkNotNull(config);
-
-    final List<String> sites = config.getList("sites", EMPTY_STRING_LIST, String.class);
-    final String srvName = config.getString("srvName", Defaults.SRV_NAME);
-    final List<String> masterEndpoints = config.getList("masterEndpoints",
-                                                        EMPTY_STRING_LIST, String.class);
-
+    final List<String> sites = getList(config, "sites", EMPTY_STRING_LIST);
+    final String srvName = getString(config, "srvName", "helios");
+    final List<URI> masterEndpoints = Lists.newArrayList();
+    for (final String endpoint : getList(config, "masterEndpoints", EMPTY_STRING_LIST)) {
+      masterEndpoints.add(URI.create(endpoint));
+    }
     return new CliConfig(sites, srvName, masterEndpoints);
+  }
+
+  private static String getString(final Map<String, Object> config, final String key,
+                                  final String defaultValue) {
+    return Optional.fromNullable((String) config.get(key)).or(defaultValue);
+  }
+
+  @SuppressWarnings("unchecked")
+  private static <T> List<T> getList(final Map<String, Object> config, final String key,
+                                     final List<T> defaultValue) {
+    final List<T> value = (List<T>) config.get(key);
+    return Optional.fromNullable(value).or(defaultValue);
   }
 }

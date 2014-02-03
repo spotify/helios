@@ -13,17 +13,15 @@ import java.io.PrintStream;
 
 import static org.junit.Assert.assertTrue;
 
-public class TimeoutMessageTest {
+public class MasterResolutionFailureMessageTest {
 
   @Test
   public void test() throws Exception {
     final String[] commands = {"job", "list", "--no-log-setup", "-s", "bogussite"};
-
     final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
     final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
     new CliMain(new PrintStream(stdout), new PrintStream(stderr), commands).run();
-    String string = stderr.toString();
-    assertTrue(string.contains("Request timed out to master"));
-    assertTrue(string.contains("bogussite"));
+    final String string = stderr.toString();
+    assertTrue(string.trim().equals("Failed to resolve helios master in bogussite (srv: helios)"));
   }
 }

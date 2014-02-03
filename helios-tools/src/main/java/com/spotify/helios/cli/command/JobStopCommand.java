@@ -1,6 +1,6 @@
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.JobId;
@@ -30,7 +30,7 @@ public class JobStopCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJobId(final Namespace options, final Client client, final PrintStream out,
+  protected int runWithJobId(final Namespace options, final HeliosClient client, final PrintStream out,
                              final boolean json, final JobId jobId)
       throws ExecutionException, InterruptedException, IOException {
     final List<String> hosts = options.getList(hostsArg.getDest());

@@ -6,27 +6,25 @@ import com.yammer.metrics.reporting.JmxReporter;
 public class MetricsImpl implements Metrics {
 
   private static final String GROUP = "helios";
-  private MasterMetrics masterMetrics;
-  private SupervisorMetrics supervisorMetrics;
+
+  private final SupervisorMetrics supervisorMetrics;
+  private final MasterMetrics masterMetrics;
+  private final JmxReporter jmxReporter;
+
+  public MetricsImpl(final MetricsRegistry registry) {
+    this.masterMetrics = new MasterMetricsImpl(GROUP, registry);
+    this.supervisorMetrics = new SupervisorMetricsImpl(GROUP, registry);
+    this.jmxReporter = new JmxReporter(registry);
+  }
 
   @Override
   public void start() {
-    final MetricsRegistry registry = getRegistry();
-
-    // setup JMX reporting
-    JmxReporter.startDefault(registry);
-
-    // agent, master and zookeeper metrics
-    masterMetrics = new MasterMetricsImpl(GROUP, registry);
-    supervisorMetrics = new SupervisorMetricsImpl(GROUP, registry);
+    jmxReporter.start();
   }
 
   @Override
   public void stop() {
-  }
-
-  public static MetricsRegistry getRegistry() {
-    return com.yammer.metrics.Metrics.defaultRegistry();
+    jmxReporter.shutdown();
   }
 
   @Override

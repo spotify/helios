@@ -6,7 +6,7 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
@@ -17,6 +17,7 @@ import com.spotify.nameless.proto.Messages;
 
 import org.junit.Test;
 
+import java.net.URI;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -37,25 +38,26 @@ public class NamelessRegistrationTest extends NamelessTestBase {
     startMaster("-vvvv",
                 "--no-log-setup",
                 "--site", "localhost",
-                "--http", "0.0.0.0:" + EXTERNAL_PORT,
-                "--hm", masterEndpoint,
+                "--http", masterEndpoint,
+                "--admin=" + masterAdminPort,
                 "--zk", zookeeperEndpoint);
+    final int masterPort = URI.create(masterEndpoint).getPort();
 
     final NamelessClient client = new NamelessClient(hermesClient("tcp://localhost:4999"));
 
     // Wait for the master to get registered with nameless
-    List<RegistryEntry> entries = await(LONG_WAIT_MINUTES, MINUTES, new Callable<List<RegistryEntry>>() {
+    final List<RegistryEntry> entries = await(
+        LONG_WAIT_MINUTES, MINUTES, new Callable<List<RegistryEntry>>() {
       @Override
       public List<RegistryEntry> call() throws Exception {
         List<RegistryEntry> entries = client.queryEndpoints(EndpointFilter.everything()).get();
-        return entries.size() == 2 ? entries : null;
+        return entries.size() == 1 ? entries : null;
       }
     });
 
     client.close();
 
     boolean httpFound = false;
-    boolean hermesFound = false;
 
     for (RegistryEntry entry : entries) {
       final Messages.Endpoint endpoint = entry.getEndpoint();
@@ -63,20 +65,15 @@ public class NamelessRegistrationTest extends NamelessTestBase {
       final String protocol = endpoint.getProtocol();
 
       switch (protocol) {
-        case "hm":
-          hermesFound = true;
-          assertEquals("wrong port", endpoint.getPort(), masterPort);
-          break;
         case "http":
           httpFound = true;
-          assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT);
+          assertEquals("wrong port", endpoint.getPort(), masterPort);
           break;
         default:
           fail("unknown protocol " + protocol);
       }
     }
 
-    assertTrue("missing hermes nameless entry", hermesFound);
     assertTrue("missing http nameless entry", httpFound);
   }
 
@@ -84,7 +81,7 @@ public class NamelessRegistrationTest extends NamelessTestBase {
   public void containerTest() throws Exception {
     startDefaultMaster();
 
-    final Client client = defaultClient();
+    final HeliosClient client = defaultClient();
 
     startDefaultAgent(TEST_AGENT, "--site=localhost");
     awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);

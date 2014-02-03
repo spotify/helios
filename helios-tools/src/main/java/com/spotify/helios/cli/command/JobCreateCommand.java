@@ -8,7 +8,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
@@ -119,7 +119,7 @@ public class JobCreateCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out, final boolean json)
+  int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException, IOException {
 
     final boolean quiet = options.getBoolean(quietArg.getDest());

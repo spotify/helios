@@ -14,15 +14,16 @@
     <target>System.err</target>
   </appender>
 
-  <logger name="org.apache.curator" level="${loggingLevel:-ERROR}" additivity="false">
+  <logger name="org.apache.curator" level="${externalLoggingLevel:-ERROR}" additivity="false">
     <appender-ref ref="STDERR_NOPEX"/>
   </logger>
-  <logger name="org.apache.zookeeper" level="${loggingLevel:-ERROR}" additivity="false">
+  <logger name="org.apache.zookeeper" level="${externalLoggingLevel:-ERROR}" additivity="false">
     <appender-ref ref="STDERR_NOPEX"/>
   </logger>
-  <logger name="com.spotify.hermes" level="${loggingLevel:-ERROR}"/>
+  <logger name="com.spotify.hermes" level="${externalLoggingLevel:-ERROR}"/>
+  <logger name="com.spotify.helios" level="${heliosLoggingLevel:-DEBUG}"/>
 
-  <root level="${loggingLevel:-DEBUG}">
+  <root level="${rootLoggingLevel:-DEBUG}">
     <appender-ref ref="STDERR"/>
   </root>
 

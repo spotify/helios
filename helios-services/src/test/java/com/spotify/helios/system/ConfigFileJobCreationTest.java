@@ -6,7 +6,7 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -29,7 +29,7 @@ public class ConfigFileJobCreationTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
 
-    final Client client = defaultClient();
+    final HeliosClient client = defaultClient();
 
     final String name = "test";
     final String version = "17";

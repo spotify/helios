@@ -7,6 +7,7 @@ import com.spotify.logging.LoggingConfigurator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;
 
@@ -28,6 +29,10 @@ public abstract class ServiceMain extends AbstractIdleService {
     if (config.getNoLogSetup()) {
       return;
     }
+
+    // Hijack JUL
+    SLF4JBridgeHandler.removeHandlersForRootLogger();
+    SLF4JBridgeHandler.install();
 
     final int verbose = config.getVerbosity();
     final LoggingConfigurator.Level level = get(asList(INFO, DEBUG, ALL), verbose, ALL);

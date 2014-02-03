@@ -11,7 +11,7 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.Table;
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -55,7 +55,7 @@ public class JobStatusCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out, final boolean json)
+  int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> jobIdStrings = options.getList(jobsArg.getDest());
     final boolean full = options.getBoolean(fullArg.getDest());

@@ -7,10 +7,7 @@ package com.spotify.helios.cli.command;
 import com.google.common.base.Throwables;
 
 import com.spotify.helios.cli.Target;
-import com.spotify.helios.common.Client;
-import com.spotify.hermes.Hermes;
-import com.spotify.hermes.service.RequestTimeoutException;
-import com.spotify.hermes.service.SendFailureException;
+import com.spotify.helios.common.HeliosClient;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
@@ -20,8 +17,10 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Strings.repeat;
 import static java.lang.String.format;
@@ -46,8 +45,8 @@ public abstract class ControlCommand {
     // Execute the control command over each target cluster
     for (final Target target : targets) {
       if (targets.size() > 1) {
-        final String header = target.getName() == null ? target.getEndpoint() :
-                              format("%s (%s)", target.getName(), target.getEndpoint());
+        final List<URI> endpoints = target.getEndpointSupplier().get();
+        final String header = format("%s (%s)", target.getName(), endpoints);
         out.println(header);
         out.println(repeat("-", header.length()));
         out.flush();
@@ -63,7 +62,6 @@ public abstract class ControlCommand {
     return successful ? 0 : 1;
   }
 
-
   /**
    * Execute against a cluster at a specific endpoint
    */
@@ -71,13 +69,14 @@ public abstract class ControlCommand {
                       final PrintStream err, final String username, final boolean json)
       throws InterruptedException, IOException {
 
-    final com.spotify.hermes.service.Client hermesClient = Hermes.newClient(target.getEndpoint());
+    final List<URI> endpoints = target.getEndpointSupplier().get();
+    if (endpoints.size() == 0) {
+      err.println("Failed to resolve helios master in " + target);
+      return false;
+    }
 
-    final com.spotify.hermes.service.Client batchingHermesClient =
-        new BatchingHermesClient(hermesClient, BATCH_SIZE, QUEUE_SIZE);
-
-    final Client client = Client.newBuilder()
-        .setClient(batchingHermesClient)
+    final HeliosClient client = HeliosClient.newBuilder()
+        .setEndpointSupplier(target.getEndpointSupplier())
         .setUser(username)
         .build();
 
@@ -87,15 +86,10 @@ public abstract class ControlCommand {
     } catch (ExecutionException e) {
       final Throwable cause = e.getCause();
       // if target is a site, print message like
-      // "Request timed out to master in ash.spotify.net (srv://helios.services.ash.spotify.net)",
-      // otherwise "Request timed out to master tcp://master.ash.spotify.net:5800"
-      final String msg = target.getEndpoint().startsWith("srv")
-                         ? format("in %s (%s)", target.getName(), target.getEndpoint())
-                         : target.getEndpoint();
-      if (cause instanceof SendFailureException) {
-        err.println("Failure sending message to master " + msg);
-      } else if (cause instanceof RequestTimeoutException) {
-        err.println("Request timed out to master " + msg);
+      // "Request timed out to master in ash.spotify.net (http://ash2-helios-a4.ash2.spotify.net)",
+      // otherwise "Request timed out to master http://ash2-helios-a4.ash2.spotify.net:5800"
+      if (cause instanceof TimeoutException) {
+        err.println("Request timed out to master in " + target);
       } else {
         throw Throwables.propagate(cause);
       }
@@ -105,7 +99,7 @@ public abstract class ControlCommand {
     }
   }
 
-  abstract int run(final Namespace options, final Client client, PrintStream out,
+  abstract int run(final Namespace options, final HeliosClient client, PrintStream out,
                    final boolean json)
       throws ExecutionException, InterruptedException, IOException;
 }

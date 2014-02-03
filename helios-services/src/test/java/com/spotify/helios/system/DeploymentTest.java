@@ -7,7 +7,7 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.agent.AgentMain;
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
@@ -41,7 +41,7 @@ public class DeploymentTest extends SystemTestBase {
 
     startDefaultMaster();
 
-    final Client client = defaultClient();
+    final HeliosClient client = defaultClient();
 
     AgentStatus v = client.agentStatus(TEST_AGENT).get();
     assertNull(v); // for NOT_FOUND

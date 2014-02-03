@@ -4,6 +4,8 @@
 
 package com.spotify.helios.servicescommon;
 
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -16,10 +18,10 @@ public class ZooKeeperNodeUpdater implements NodeUpdater {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperNodeUpdater.class);
 
-  private final DefaultZooKeeperClient zooKeeperClient;
+  private final ZooKeeperClient zooKeeperClient;
   private final String path;
 
-  public ZooKeeperNodeUpdater(final String path, final DefaultZooKeeperClient zooKeeperClient) {
+  public ZooKeeperNodeUpdater(final String path, final ZooKeeperClient zooKeeperClient) {
     this.zooKeeperClient = zooKeeperClient;
     this.path = path;
   }

@@ -4,7 +4,7 @@
 
 package com.spotify.helios.system;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.CreateJobResponse;
@@ -18,7 +18,7 @@ public class IdMismatchJobCreateTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    final Client client = defaultClient();
+    final HeliosClient client = defaultClient();
 
     final CreateJobResponse createIdMismatch = client.createJob(
         new Job(JobId.fromString("bad:job:deadbeef"), "busyBox", DO_NOTHING_COMMAND, EMPTY_ENV,

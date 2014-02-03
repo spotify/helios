@@ -5,7 +5,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
 import com.aphyr.riemann.client.RiemannClient;
-import com.spotify.helios.servicescommon.statistics.MetricsImpl;
+import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.reporting.RiemannReporter;
 import com.yammer.metrics.reporting.RiemannReporter.Config;
 
@@ -14,10 +14,13 @@ import java.io.IOException;
 public class RiemannSupport {
   private final String host;
   private final int port;
+  private final MetricsRegistry metricsRegistry;
   private final String name;
   private RiemannClient client = null;
 
-  public RiemannSupport(String hostPort, String name) {
+  public RiemannSupport(final MetricsRegistry metricsRegistry, final String hostPort,
+                        final String name) {
+    this.metricsRegistry = metricsRegistry;
     this.name = name;
     if (Strings.isNullOrEmpty(hostPort)) {
       host = null;
@@ -62,7 +65,7 @@ public class RiemannSupport {
       return null;
     }
     Config c = Config.newBuilder()
-        .metricsRegistry(MetricsImpl.getRegistry())
+        .metricsRegistry(metricsRegistry)
         .name(name)
         .host(host)
         .port(port)

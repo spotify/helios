@@ -9,12 +9,11 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
-import com.bealetech.metrics.reporting.StatsdReporter;
 import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
+import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannSupport;
-import com.spotify.helios.servicescommon.StatsdSupport;
 import com.spotify.helios.servicescommon.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -24,6 +23,7 @@ import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 import com.spotify.nameless.client.Nameless;
 import com.spotify.nameless.client.NamelessRegistrar;
 import com.sun.management.OperatingSystemMXBean;
+import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.reporting.RiemannReporter;
 
 import org.apache.curator.RetryPolicy;
@@ -41,13 +41,13 @@ import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
 /**
@@ -60,8 +60,7 @@ public class AgentService extends AbstractIdleService {
 
   private final Agent agent;
 
-  private final CuratorFramework zooKeeperCurator;
-  private final DefaultZooKeeperClient zooKeeperClient;
+  private final ZooKeeperClient zooKeeperClient;
   private final HostInfoReporter hostInfoReporter;
   private final RuntimeInfoReporter runtimeInfoReporter;
   private final EnvironmentVariableReporter environmentVariableReporter;
@@ -70,9 +69,9 @@ public class AgentService extends AbstractIdleService {
   private final AgentModel model;
   private final Metrics metrics;
   private final NamelessRegistrar namelessRegistrar;
-  private final StatsdReporter statsdReporter;
-  private final RiemannFacade riemannFacade;
   private final RiemannReporter riemannReporter;
+  private final ManagedStatsdReporter statsdReporter;
+  private final MetricsRegistry metricsRegistry;
 
   private PersistentEphemeralNode upNode;
   private AgentRegistrar registrar;
@@ -127,21 +126,22 @@ public class AgentService extends AbstractIdleService {
     // Configure metrics
     log.info("Starting metrics");
 
-    RiemannSupport riemannSupport = new RiemannSupport(config.getRiemannHostPort(), "helios-agent");
-    riemannFacade = riemannSupport.getFacade();
+    metricsRegistry = new MetricsRegistry();
+    RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(), "helios-agent");
+    final RiemannFacade riemannFacade = riemannSupport.getFacade();
     if (config.isInhibitMetrics()) {
+      log.info("Not starting metrics");
       metrics = new NoopMetrics();
       statsdReporter = null;
       riemannReporter = null;
     } else {
-      metrics = new MetricsImpl();
-      metrics.start();  //must be started here for statsd to be happy
-      statsdReporter = StatsdSupport.getStatsdReporter(config.getStatsdHostPort(), "helios-agent");
+      log.info("Starting metrics");
+      metrics = new MetricsImpl(metricsRegistry);
+      statsdReporter = new ManagedStatsdReporter(config.getStatsdHostPort(), "helios-agent");
       riemannReporter = riemannSupport.getReporter();
     }
 
-    this.zooKeeperCurator = setupZookeeperCurator(config, id);
-    this.zooKeeperClient = new DefaultZooKeeperClient(zooKeeperCurator);
+    this.zooKeeperClient = setupZookeeperClient(config, id);
 
     this.model = setupModel(config, zooKeeperClient, stateDirectory);
 
@@ -198,7 +198,7 @@ public class AgentService extends AbstractIdleService {
    * @param id
    * @return A zookeeper client.
    */
-  private CuratorFramework setupZookeeperCurator(final AgentConfig config, final String id) {
+  private ZooKeeperClient setupZookeeperClient(final AgentConfig config, final String id) {
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
     final CuratorFramework curator = CuratorFrameworkFactory.newClient(
         config.getZooKeeperConnectionString(),
@@ -221,11 +221,12 @@ public class AgentService extends AbstractIdleService {
       }
     }, MoreExecutors.sameThreadExecutor());
 
-    return curator;
+    return new DefaultZooKeeperClient(curator);
   }
 
   /**
    * Set up an agent state using zookeeper.
+   *
    *
    *
    * @param config          The service configuration.
@@ -234,7 +235,7 @@ public class AgentService extends AbstractIdleService {
    * @return An agent state.
    */
   private static AgentModel setupModel(final AgentConfig config,
-                                       final DefaultZooKeeperClient zooKeeperClient,
+                                       final ZooKeeperClient zooKeeperClient,
                                        final Path stateDirectory) {
     final ZooKeeperAgentModel model;
     try {
@@ -247,18 +248,20 @@ public class AgentService extends AbstractIdleService {
 
   @Override
   protected void startUp() throws Exception {
-    zooKeeperCurator.start();
+    zooKeeperClient.start();
     model.startAsync().awaitRunning();
     registrar.startAsync().awaitRunning();
     agent.startAsync().awaitRunning();
     hostInfoReporter.startAsync();
     runtimeInfoReporter.startAsync();
     environmentVariableReporter.startAsync();
+    metrics.start();
+    statsdReporter.start();
     if (statsdReporter != null) {
-      statsdReporter.start(15, TimeUnit.SECONDS);
+      statsdReporter.start();
     }
     if (riemannReporter != null) {
-      riemannReporter.start(15, TimeUnit.SECONDS);
+      riemannReporter.start(15, SECONDS);
     }
   }
 
@@ -281,7 +284,8 @@ public class AgentService extends AbstractIdleService {
       }
     }
     metrics.stop();
-    zooKeeperCurator.close();
+    metricsRegistry.shutdown();
+    zooKeeperClient.close();
     try {
       stateLock.release();
     } catch (IOException e) {
@@ -292,9 +296,8 @@ public class AgentService extends AbstractIdleService {
     } catch (IOException e) {
       log.error("Failed to close state lock file", e);
     }
-
     if (statsdReporter != null) {
-      statsdReporter.shutdown();
+      statsdReporter.stop();
     }
     if (riemannReporter != null) {
       riemannReporter.shutdown();

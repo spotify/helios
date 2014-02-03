@@ -100,7 +100,7 @@ public class AgentParser extends ServiceParser {
         .help("Turn off all collection and reporting of metrics");
 
     parser.addArgument("--statsd-host-port")
-        .setDefault((String) null)
+        .type(String.class)
         .help("host:port of where to send statsd metrics "
             + "(to be useful, --no-metrics must *NOT* be specified)");
 

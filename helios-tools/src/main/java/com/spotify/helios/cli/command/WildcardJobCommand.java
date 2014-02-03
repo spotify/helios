@@ -4,7 +4,7 @@
 
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 
@@ -31,7 +31,7 @@ abstract class WildcardJobCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out, final boolean json)
+  int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException, IOException {
 
     final String jobIdString = options.getString(jobArg.getDest());
@@ -50,7 +50,7 @@ abstract class WildcardJobCommand extends ControlCommand {
     return runWithJobId(options, client, out, json, jobId);
   }
 
-  protected abstract int runWithJobId(final Namespace options, final Client client,
+  protected abstract int runWithJobId(final Namespace options, final HeliosClient client,
                                       final PrintStream out, final boolean json, final JobId jobId)
       throws ExecutionException, InterruptedException, IOException;
 }

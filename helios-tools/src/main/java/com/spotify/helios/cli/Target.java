@@ -4,74 +4,94 @@
 
 package com.spotify.helios.cli;
 
+import com.google.common.base.Joiner;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 
-import java.util.List;
+import com.spotify.helios.common.Resolver;
 
-import static java.lang.String.format;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+import java.util.List;
 
 /**
  * A target cluster identified by an endpoint string that can be used with a {@link
- * com.spotify.helios.common.Client}.
+ * com.spotify.helios.common.HeliosClient}.
  */
-public class Target {
+public abstract class Target {
+
+  private static final Logger log = LoggerFactory.getLogger(Target.class);
 
   private final String name;
-  private final String endpoint;
 
-  Target(final String name, final String endpoint) {
+  Target(final String name) {
     this.name = name;
-    this.endpoint = endpoint;
   }
+
+  public abstract Supplier<List<URI>> getEndpointSupplier();
 
   public String getName() {
     return name;
   }
 
-  public String getEndpoint() {
-    return endpoint;
+  private static class SrvTarget extends Target {
+    private final String srv;
+    private final String domain;
+
+    private SrvTarget(final String srv, final String domain) {
+      super(srv);
+      this.srv = srv;
+      this.domain = domain;
+    }
+
+    @Override
+    public Supplier<List<URI>> getEndpointSupplier() {
+      return Resolver.supplier(srv, domain);
+    }
+
+    @Override
+    public String toString() {
+      return domain + " (srv: " + srv + ")";
+    }
+  }
+
+  private static class ExplicitTarget extends Target {
+    private final List<URI> endpoints;
+
+    private ExplicitTarget(final Iterable<URI> endpoints) {
+      super(Joiner.on(',').join(endpoints));
+      this.endpoints = ImmutableList.copyOf(endpoints);
+    }
+
+    @Override
+    public Supplier<List<URI>> getEndpointSupplier() {
+      return Suppliers.ofInstance(endpoints);
+    }
+
+    @Override
+    public String toString() {
+      return Joiner.on(',').join(endpoints);
+    }
   }
 
   /**
-   * Create targets from a list of explicit endpoints
+   * Create a target from a list of explicit endpoints
    */
-  public static List<Target> targetsFrom(final Iterable<String> endpoints) {
-    final ImmutableList.Builder<Target> builder = ImmutableList.builder();
-    for (final String endpoint : endpoints) {
-      builder.add(new Target(null, endpoint));
-    }
-    return builder.build();
+  public static Target from(final Iterable<URI> endpoints) {
+    return new ExplicitTarget(endpoints);
   }
 
   /**
    * Create targets for a list of sites
    */
-  public static List<Target> targetsFrom(final String srvName, final Iterable<String> sites) {
+  public static List<Target> from(final String srvName, final Iterable<String> sites) {
     final ImmutableList.Builder<Target> builder = ImmutableList.builder();
     for (final String site : sites) {
-      builder.add(targetFrom(srvName, site));
+      builder.add(new SrvTarget(srvName, site));
     }
     return builder.build();
-  }
-
-  /**
-   * Create a target for a site
-   */
-  private static Target targetFrom(final String srvName, final String site) {
-    String point = endpoint(srvName, "services." + site);
-    return new Target(site, point);
-  }
-
-  /**
-   * Transform a site into a fully qualified endpoint. E.g. lon -> srv://helios-master.lon.spotify.net.
-   */
-  private static String endpoint(final String name, final String site) {
-    final String domain;
-    if (site.contains("spotify.net") || site.endsWith(".")) {
-      domain = site;
-    } else {
-      domain = site + ".spotify.net.";
-    }
-    return format("srv://%s.%s", name, domain);
   }
 }

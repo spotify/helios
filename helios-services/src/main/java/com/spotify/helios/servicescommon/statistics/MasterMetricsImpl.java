@@ -1,8 +1,8 @@
 package com.spotify.helios.servicescommon.statistics;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.Maps;
 
+import com.spotify.helios.servicescommon.MasterRequestMetrics;
 import com.yammer.metrics.core.Counter;
 import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.MetricName;
@@ -10,15 +10,10 @@ import com.yammer.metrics.core.MetricsRegistry;
 
 import java.util.Map;
 
-/**
- * Defines the metrics which will be collected, and the graphs which will be generated,
- * for all calls to the Affinity service. Exposes methods for updating metrics which
- * should be invoked for each call to the service.
- */
 public class MasterMetricsImpl implements MasterMetrics {
   private static final String TYPE = "master";
 
-  private final Map<RequestType, RequestMetrics> metrics;
+  private final Map<String, MasterRequestMetrics> requestMetrics = Maps.newConcurrentMap();
 
   private final MetricName jobsInJobList;
   private final MetricName eventsInJobHistory;
@@ -27,18 +22,13 @@ public class MasterMetricsImpl implements MasterMetrics {
   private final Histogram jobsInJobListHist;
   private final Histogram eventsInJobHistoryHist;
   private final Counter zookeeperTransientErrorCounter;
+  private final String group;
+  private final MetricsRegistry registry;
 
   public MasterMetricsImpl(final String group,
                            final MetricsRegistry registry) {
-
-    final Builder<RequestType, RequestMetrics> metricsBuilder = ImmutableMap.builder();
-    final Object[] possibleValues = RequestType.class.getEnumConstants();
-    for (int i = 0; i < possibleValues.length; i++) {
-      final RequestType t = (RequestType) possibleValues[i];
-      final RequestMetrics metric = new RequestMetrics(group, TYPE, t.getMetricsName());
-      metricsBuilder.put(t, metric);
-    }
-    metrics = metricsBuilder.build();
+    this.group = group;
+    this.registry = registry;
 
     eventsInJobHistory = new MetricName(group, TYPE, "events_in_job_history");
     jobsInJobList = new MetricName(group, TYPE, "jobs_in_job_list");
@@ -50,8 +40,27 @@ public class MasterMetricsImpl implements MasterMetrics {
   }
 
   @Override
-  public MetricsContext beginRequest(RequestType requestType) {
-    return new MetricsContextImpl(metrics.get(requestType));
+  public void success(final String name) {
+    request(name).success();
+  }
+
+  @Override
+  public void failure(final String name) {
+    request(name).failure();
+  }
+
+  @Override
+  public void badRequest(final String name) {
+    request(name).userError();
+  }
+
+  private MasterRequestMetrics request(final String name) {
+    MasterRequestMetrics m = requestMetrics.get(name);
+    if (m == null) {
+      m = new MasterRequestMetrics(group, TYPE, name, registry);
+      requestMetrics.put(name, m);
+    }
+    return m;
   }
 
   @Override

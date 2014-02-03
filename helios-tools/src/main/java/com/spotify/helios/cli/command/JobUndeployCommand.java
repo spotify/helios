@@ -4,7 +4,7 @@
 
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
@@ -32,7 +32,7 @@ public class JobUndeployCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJobId(final Namespace options, final Client client, final PrintStream out,
+  protected int runWithJobId(final Namespace options, final HeliosClient client, final PrintStream out,
                              final boolean json, final JobId jobId)
       throws ExecutionException, InterruptedException, IOException {
 

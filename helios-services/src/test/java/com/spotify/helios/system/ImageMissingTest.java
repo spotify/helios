@@ -6,7 +6,7 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableList;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -25,7 +25,7 @@ public class ImageMissingTest extends SystemTestBase {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
 
-    final Client client = defaultClient();
+    final HeliosClient client = defaultClient();
 
     awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 

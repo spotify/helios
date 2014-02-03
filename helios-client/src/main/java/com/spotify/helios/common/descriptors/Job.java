@@ -14,11 +14,11 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 
+import org.jetbrains.annotations.Nullable;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
-
-import javax.annotation.Nullable;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;

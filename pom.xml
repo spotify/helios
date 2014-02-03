@@ -56,7 +56,9 @@
               <!--needed by cobertura-->
               <argLine>-XX:-UseSplitVerifier -Xmx128m</argLine>
               <systemPropertyVariables>
-                <loggingLevel>OFF</loggingLevel>
+                <heliosLoggingLevel>OFF</heliosLoggingLevel>
+                <externalLoggingLevel>OFF</externalLoggingLevel>
+                <rootLoggingLevel>OFF</rootLoggingLevel>
               </systemPropertyVariables>
             </configuration>
           </plugin>
@@ -80,6 +82,11 @@
             <configuration>
               <!--needed by cobertura-->
               <argLine>-XX:-UseSplitVerifier</argLine>
+              <systemPropertyVariables>
+                <heliosLoggingLevel>DEBUG</heliosLoggingLevel>
+                <externalLoggingLevel>ERROR</externalLoggingLevel>
+                <rootLoggingLevel>ERROR</rootLoggingLevel>
+              </systemPropertyVariables>
             </configuration>
           </plugin>
         </plugins>
@@ -183,6 +190,18 @@
               </configuration>
             </plugin>
           </reportPlugins>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>2.4</version>
+        <configuration>
+          <archive>
+            <manifest>
+              <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+            </manifest>
+          </archive>
         </configuration>
       </plugin>
     </plugins>

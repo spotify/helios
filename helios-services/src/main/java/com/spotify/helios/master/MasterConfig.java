@@ -4,15 +4,14 @@
 
 package com.spotify.helios.master;
 
-import java.net.InetSocketAddress;
+import com.yammer.dropwizard.config.Configuration;
 
-public class MasterConfig {
+public class MasterConfig extends Configuration {
 
   private String site;
   private String endpoint;
   private String zooKeeperConnectString;
   private String name;
-  private InetSocketAddress httpEndpoint;
   private boolean inhibitMetrics;
   private String statsdHostPort;
   private String riemannHostPort;
@@ -23,15 +22,6 @@ public class MasterConfig {
 
   public MasterConfig setHermesEndpoint(final String endpoint) {
     this.endpoint = endpoint;
-    return this;
-  }
-
-  public InetSocketAddress getHttpEndpoint() {
-    return httpEndpoint;
-  }
-
-  public MasterConfig setHttpEndpoint(final InetSocketAddress endpoint) {
-    this.httpEndpoint = endpoint;
     return this;
   }
 

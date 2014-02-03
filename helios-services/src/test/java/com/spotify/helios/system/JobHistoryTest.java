@@ -10,7 +10,7 @@ public class JobHistoryTest {
 //  public void testJobHistory() throws Exception {
 //    startDefaultMaster();
 //
-//    final Client client = Client.newBuilder()
+//    final HeliosClient client = HeliosClient.newBuilder()
 //        .setUser(TEST_USER)
 //        .setEndpoints(masterEndpoint)
 //        .build();

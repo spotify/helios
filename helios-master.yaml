@@ -1,0 +1,10 @@
+http:
+  port: 5801
+  adminPort: 5802
+#  @NotEmpty @JsonProperty private String site;
+#  @NotEmpty @JsonProperty private String endpoint;
+#  @NotEmpty @JsonProperty private String zooKeeperConnectString;
+#  @NotEmpty @JsonProperty private String name;
+#  @NotEmpty @JsonProperty private int muninReporterPort;
+#  @NotEmpty @JsonProperty private InetSocketAddress httpEndpoint;
+#  @NotEmpty @JsonProperty private boolean inhibitMetrics;

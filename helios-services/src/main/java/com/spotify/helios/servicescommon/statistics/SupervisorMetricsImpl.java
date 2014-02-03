@@ -52,7 +52,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     supervisorStoppedCounter = registry.newCounter(supervisorStopped);
     dockerTimeoutCounter = registry.newCounter(dockerTimeout);
 
-    imagePull = new RequestMetrics(group, TYPE, "image_pull");
+    imagePull = new RequestMetrics(group, TYPE, "image_pull", registry);
   }
 
   @Override

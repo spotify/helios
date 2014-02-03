@@ -4,7 +4,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -56,7 +56,7 @@ public class JobWatchCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, Client client, PrintStream out, boolean json)
+  int run(Namespace options, HeliosClient client, PrintStream out, boolean json)
       throws ExecutionException, InterruptedException, IOException {
     boolean exact = options.getBoolean(exactArg.getDest());
     final List<String> prefixes = options.getList(prefixesArg.getDest());
@@ -75,7 +75,7 @@ public class JobWatchCommand extends ControlCommand {
   }
 
   static void watchJobsOnHosts(PrintStream out, boolean exact, final List<String> prefixes,
-      final List<JobId> jobIds, final int interval, final Client client)
+      final List<JobId> jobIds, final int interval, final HeliosClient client)
       throws InterruptedException, ExecutionException {
     out.println("Control-C to stop");
     out.println("JOB                  HOST                           STATE    THROTTLED?");
@@ -136,7 +136,7 @@ public class JobWatchCommand extends ControlCommand {
     return s.substring(0, len);
   }
 
-  private static Map<JobId, JobStatus> getStatuses(Client client, final List<JobId> jobIds)
+  private static Map<JobId, JobStatus> getStatuses(HeliosClient client, final List<JobId> jobIds)
       throws ExecutionException, InterruptedException {
     final Map<JobId, ListenableFuture<JobStatus>> futures = Maps.newTreeMap();
     for (final JobId jobId : jobIds) {

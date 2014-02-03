@@ -19,14 +19,14 @@ public class RequestMetrics {
   private final MetricName userErrorName;
   private final MetricName timerName;
 
-  public RequestMetrics(String group, String type, String requestName) {
+  public RequestMetrics(final String group, final String type, final String requestName,
+                        final MetricsRegistry registry) {
 
     successName = new MetricName(group, type, requestName + "_successful");
     failureName = new MetricName(group, type, requestName + "_failed");
     userErrorName = new MetricName(group, type, requestName + "_failed");
     timerName = new MetricName(group, type, requestName + "_latency");
 
-    final MetricsRegistry registry = MetricsImpl.getRegistry();
     successCounter = registry.newCounter(successName);
     failureCounter = registry.newCounter(failureName);
     userErrorCounter = registry.newCounter(userErrorName);

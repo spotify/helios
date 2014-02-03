@@ -6,7 +6,7 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
 
-import com.spotify.helios.common.Client;
+import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -27,7 +27,7 @@ public class PortCollisionJobTest extends SystemTestBase {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
 
-    final Client client = defaultClient();
+    final HeliosClient client = defaultClient();
 
     awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
