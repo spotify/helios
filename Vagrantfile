@@ -122,7 +122,7 @@ Vagrant.configure("2") do |config|
     pkg_cmd << "apt-get --allow-unauthenticated install -qq --force-yes syslog-redirector; "
 
     # Set up docker to listen on 0.0.0.0:4160 and to use the spotify0 network bridge
-    pkg_cmd << "echo 'DOCKER_OPTS=\"-H=tcp://0.0.0.0:4160 -H=unix:///var/run/docker.sock -b=spotify0\"' > /etc/default/docker; "
+    pkg_cmd << "echo 'DOCKER_OPTS=\"-D=true -H=tcp://0.0.0.0:4160 -H=unix:///var/run/docker.sock -b=spotify0\"' > /etc/default/docker; "
 
     # Add vagrant user to the docker group
     # pkg_cmd << "usermod -a -G docker vagrant; "
