@@ -21,19 +21,22 @@ public class PortAllocator {
   @SuppressWarnings("ThrowFromFinallyBlock")
   public static int allocatePort() {
     while (true) {
-      final Socket s = new Socket();
       final int port = PORT_COUNTER.incrementAndGet();
       if (port > 65535) {
         PORT_COUNTER.set(30000);
         return allocatePort();
       }
+      Socket s = null;
       try {
+        s = new Socket();
         s.bind(new InetSocketAddress("127.0.0.1", port));
         return port;
       } catch (IOException ignore) {
       } finally {
         try {
-          s.close();
+          if (s != null) {
+            s.close();
+          }
         } catch (IOException e) {
           throw Throwables.propagate(e);
         }

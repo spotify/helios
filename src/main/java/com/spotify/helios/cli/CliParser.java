@@ -4,6 +4,7 @@
 
 package com.spotify.helios.cli;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
 import com.spotify.helios.cli.command.ControlCommand;
@@ -49,14 +50,11 @@ import static com.google.common.collect.Iterables.filter;
 import static com.spotify.helios.cli.Target.targetsFrom;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyList;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class CliParser {
-
-  private static final List<String> DEFAULT_MASTER_ENDPOINTS = asList("tcp://localhost:5800");
 
   private final Namespace options;
   private final ControlCommand command;
@@ -73,7 +71,6 @@ public class CliParser {
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("helios")
         .defaultHelp(true)
         .description("Spotify Helios CLI");
-
     cliConfig = CliConfig.fromUserConfig();
 
     final GlobalArgs globalArgs = addGlobalArgs(parser, cliConfig, true);
@@ -110,24 +107,29 @@ public class CliParser {
     // 3. default (localhost)
 
     // TODO (dano): this is kind of complex, make sure it matches the defaults in the help and maybe factor out and unit test it
+    List<Target> toBeTargets = computeTargets(parser, explicitEndpoints, sitesArguments, srvName);
+    this.targets = toBeTargets;
+  }
+
+  private List<Target> computeTargets(final ArgumentParser parser,
+      final List<String> explicitEndpoints, final List<String> sitesArguments, final String srvName) {
 
     if (explicitEndpoints != null && !explicitEndpoints.isEmpty()) {
-      this.targets = targetsFrom(explicitEndpoints);
+      return targetsFrom(explicitEndpoints);
     } else if (sitesArguments != null && !sitesArguments.isEmpty()) {
       final Iterable<String> sites = parseSitesStrings(sitesArguments);
-      this.targets = targetsFrom(srvName, sites);
+      return targetsFrom(srvName, sites);
     } else if (!cliConfig.getMasterEndpoints().isEmpty()) {
-      this.targets = targetsFrom(cliConfig.getMasterEndpoints());
+      return targetsFrom(cliConfig.getMasterEndpoints());
     } else if (!cliConfig.getSitesString().isEmpty()) {
       final Iterable<String> sites = parseSitesString(cliConfig.getSitesString());
-      this.targets = targetsFrom(srvName, sites);
-    } else {
-      this.targets = targetsFrom(DEFAULT_MASTER_ENDPOINTS);
+      return targetsFrom(srvName, sites);
     }
 
-    if (targets.isEmpty()) {
-      parser.handleError(new ArgumentParserException("no masters specified", parser));
-    }
+    parser.handleError(new ArgumentParserException(
+        "no masters specified.  Use the -z or -s option to specify which helios "
+        + "cluster/master to connect to", parser));
+    return ImmutableList.of();
   }
 
   private Iterable<String> parseSitesStrings(final List<String> sitesStrings) {
@@ -183,20 +185,6 @@ public class CliParser {
     return json;
   }
 
-  private static List<String> getDefaultMasterEndpoints(final CliConfig cliConfig) {
-    final List<String> defaultMaster;
-    if (cliConfig.getSites().isEmpty()) {
-      if (!cliConfig.getMasterEndpoints().isEmpty()) {
-        defaultMaster = cliConfig.getMasterEndpoints();
-      } else {
-        defaultMaster = DEFAULT_MASTER_ENDPOINTS;
-      }
-    } else {
-      defaultMaster = emptyList();
-    }
-    return defaultMaster;
-  }
-
   private static class GlobalArgs {
 
     private final Argument masterArg;
@@ -221,11 +209,11 @@ public class CliParser {
 
       masterArg = addArgument("-z", "--master")
           .action(append())
-          .help(format("master endpoint (default: %s)", getDefaultMasterEndpoints(cliConfig)));
+          .help("master endpoints");
 
       sitesArg = addArgument("-s", "--sites")
           .action(append())
-          .help(format("sites (default: %s)", cliConfig.getSitesString()));
+          .help(format("sites"));
 
       srvNameArg = addArgument("--srv-name")
           .setDefault(cliConfig.getSrvName())
