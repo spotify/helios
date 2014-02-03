@@ -28,6 +28,8 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.statistics.MetricsContext;
@@ -304,8 +306,7 @@ class Supervisor {
    */
   private void setStatus(final TaskStatus.State status, final String containerId,
                          final Map<String, PortMapping> ports) {
-    stateManager.setStatus(status, throttle, containerId, ports,
-                           getContainerEnvMap(job));
+    stateManager.setStatus(status, throttle, containerId, ports, getContainerEnvMap(job));
   }
 
   /**
@@ -352,9 +353,8 @@ class Supervisor {
   private Map<String, Void> containerExposedPorts(final Job job) {
     final Map<String, Void> ports = Maps.newHashMap();
     for (final Map.Entry<String, PortMapping> entry : job.getPorts().entrySet()) {
-      final String name = entry.getKey();
       final PortMapping mapping = entry.getValue();
-      ports.put(containerPort(name, mapping.getInternalPort()), null);
+      ports.put(containerPort(mapping.getInternalPort(), mapping.getProtocol()), null);
     }
     return ports;
   }
@@ -362,8 +362,8 @@ class Supervisor {
   /**
    * Create a docker port exposure/mapping entry.
    */
-  private String containerPort(final String name, final int port) {
-    return port + "/tcp"; //name;
+  private String containerPort(final int port, final String protocol) {
+    return port + "/" + protocol;
   }
 
   /**
@@ -381,13 +381,12 @@ class Supervisor {
   private Map<String, List<PortBinding>> portBindings(final Job job) {
     final Map<String, List<PortBinding>> ports = Maps.newHashMap();
     for (final Map.Entry<String, PortMapping> e : job.getPorts().entrySet()) {
-      final String name = e.getKey();
       final PortMapping mapping = e.getValue();
       final PortBinding binding = new PortBinding();
       if (mapping.getExternalPort() != null) {
         binding.hostPort = mapping.getExternalPort().toString();
       }
-      final String entry = containerPort(name, mapping.getInternalPort());
+      final String entry = containerPort(mapping.getInternalPort(), mapping.getProtocol());
       ports.put(entry, asList(binding));
     }
     return ports;
@@ -446,7 +445,6 @@ class Supervisor {
 
     private ListenableFuture<Void> startFuture;
     private volatile InputStream pullStream;
-    private List<RegistrationHandle> namelessRegistrationHandles;
 
     public RunnerImpl(final long delayMillis) {
       this.delayMillis = delayMillis;
@@ -458,45 +456,53 @@ class Supervisor {
       return this;
     }
 
-    private void handleNamelessRegistration(Map<String, PortMapping> ports) {
+    private List<RegistrationHandle> namelessRegister(Map<String, PortMapping> ports)
+        throws InterruptedException {
       if (registrar == null) {
-        return;
+        return null;
       }
 
-      List<ListenableFuture<RegistrationHandle>> futures = Lists.newArrayList();
-      for (Entry<String, PortMapping> entry: ports.entrySet()) {
-        final String portName = entry.getKey();
-        final PortMapping mapping = entry.getValue();
-
-        if (!(job.getService().equals("") || portName == null)) {
-          futures.add(registrar.register(job.getService(), portName, mapping.getExternalPort()));
+      final List<ListenableFuture<RegistrationHandle>> futures = Lists.newArrayList();
+      for (final Entry<ServiceEndpoint, ServicePorts> entry :
+          job.getRegistration().entrySet()) {
+        final ServiceEndpoint registration = entry.getKey();
+        final ServicePorts servicePorts = entry.getValue();
+        for (String portName : servicePorts.getPorts().keySet()) {
+          final PortMapping mapping = ports.get(portName);
+          if (mapping == null) {
+            log.error("no '{}' port mapped for registration: '{}'", portName, registration);
+            continue;
+          }
+          if (mapping.getExternalPort() == null) {
+            log.error("no external '{}' port for registration: '{}'", portName, registration);
+            continue;
+          }
+          futures.add(registrar.register(registration.getName(), registration.getProtocol(),
+                                         mapping.getExternalPort()));
         }
       }
+
       try {
-        namelessRegistrationHandles = Futures.allAsList(futures).get();
-      } catch (InterruptedException | ExecutionException e) {
-        // DANO -- Or should we tear down the task when nameless is hosed?  I'm thinking logging
-        // and swallowing is *probably* the best choice.
+        return Futures.allAsList(futures).get();
+      } catch (ExecutionException e) {
         log.error("Error registering with nameless", e);
-        if (e instanceof InterruptedException) {
-          Thread.interrupted();
-        }
       }
+      return null;
     }
 
-    private void handleNamelessDeregistration() {
+    private void namelessDeregister(final List<RegistrationHandle> handles) {
       if (registrar == null) {
         return;
       }
-      List<ListenableFuture<Void>> futures = Lists.newArrayList();
-      for (RegistrationHandle handle : namelessRegistrationHandles) {
+
+      final List<ListenableFuture<Void>> futures = Lists.newArrayList();
+      for (RegistrationHandle handle : handles) {
         futures.add(registrar.unregister(handle));
       }
 
       try {
         Futures.allAsList(futures).get();
       } catch (InterruptedException | ExecutionException e) {
-        // DANO -- do you have a better idea about what to do if unregistering borks?
         log.error("Error unregistering with nameless", e);
         if (e instanceof InterruptedException) {
           Thread.interrupted();
@@ -544,19 +550,27 @@ class Supervisor {
           containerId = startContainer(image);
         }
 
-        final Map<String, PortMapping> ports = setUpExposedPorts(containerId);
+        // Expose ports
+        final ContainerInspectResponse runningContainerInfo =
+            docker.inspectContainer(containerId).get();
+        final Map<String, PortMapping> ports = parsePortBindings(runningContainerInfo);
         setStatus(RUNNING, containerId, ports);
         metrics.containersRunning();
 
         // Wait for container to die
-        final int exitCode = flapController.waitFuture(docker.waitContainer(containerId));
+        flapController.jobStarted();
+        final List<RegistrationHandle> registrationHandles = namelessRegister(ports);
+        final int exitCode;
+        try {
+          exitCode = flapController.waitFuture(docker.waitContainer(containerId));
+        } finally {
+          namelessDeregister(registrationHandles);
+        }
         log.info("container exited: {}: {}: {}", job, containerId, exitCode);
         flapController.jobDied();
-        throttle = flapController.isFlapping()
-            ? ThrottleState.FLAPPING : ThrottleState.NO;
-        setStatus(EXITED, containerId);
+        throttle = flapController.isFlapping() ? ThrottleState.FLAPPING : ThrottleState.NO;
+        setStatus(EXITED, containerId, ports);
         metrics.containersExited();
-//        handleNamelessDeregistration();
 
         set(exitCode);
       } catch (InterruptedException e) {
@@ -567,17 +581,6 @@ class Supervisor {
         setException(e);
         metrics.containersThrewException();
       }
-    }
-
-    private Map<String, PortMapping> setUpExposedPorts(final String containerId)
-        throws InterruptedException, ExecutionException {
-      // Look up ports
-      final ContainerInspectResponse runningContainerInfo =
-          docker.inspectContainer(containerId).get();
-      final Map<String, PortMapping> ports = parsePortBindings(runningContainerInfo);
-      flapController.jobStarted();
-//      handleNamelessRegistration(ports);
-      return ports;
     }
 
     private String startContainer(final String image)
@@ -686,8 +689,7 @@ class Supervisor {
   private Map<String, PortMapping> parsePortBindings(final Map<String, List<PortBinding>> ports) {
     final ImmutableMap.Builder<String, PortMapping> builder = ImmutableMap.builder();
     for (final Map.Entry<String, List<PortBinding>> e : ports.entrySet()) {
-      final PortBindingParser parser = new PortBindingParser(e.getKey(), e.getValue());
-      final PortMapping mapping = parser.getMapping();
+      final PortMapping mapping = parsePortBinding(e.getKey(), e.getValue());
       final String name = getPortNameForPortNumber(mapping.getInternalPort());
       if (name == null) {
         log.info("got internal port unknown to the job: {}", mapping.getInternalPort());
@@ -698,6 +700,42 @@ class Supervisor {
       }
     }
     return builder.build();
+  }
+
+  /**
+   * Assumes port binding matches output of {@link #portBindings(Job)}
+   */
+  private PortMapping parsePortBinding(final String entry, final List<PortBinding> bindings) {
+    final List<String> parts = Splitter.on('/').splitToList(entry);
+    if (parts.size() != 2) {
+      throw new IllegalArgumentException("Invalid port binding: " + entry);
+    }
+
+    final String protocol = parts.get(1);
+
+    final int internalPort;
+    try {
+      internalPort = Integer.parseInt(parts.get(0));
+    } catch (NumberFormatException ex) {
+      throw new IllegalArgumentException("Invalid port binding: " + entry, ex);
+    }
+
+    if (bindings == null) {
+      return PortMapping.of(internalPort);
+    } else {
+      if (bindings.size() != 1) {
+        throw new IllegalArgumentException("Expected single binding, got " + bindings.size());
+      }
+
+      final PortBinding binding = bindings.get(0);
+      final int externalPort;
+      try {
+        externalPort = Integer.parseInt(binding.hostPort);
+      } catch (NumberFormatException e1) {
+        throw new IllegalArgumentException("Invalid host port: " + binding.hostPort);
+      }
+      return PortMapping.of(internalPort, externalPort, protocol);
+    }
   }
 
   private String getPortNameForPortNumber(final int internalPort) {
@@ -823,57 +861,6 @@ class Supervisor {
     public Builder setMetrics(SupervisorMetrics metrics) {
       this.metrics = metrics;
       return this;
-    }
-  }
-
-  /**
-   * Assumes port binding matches output of {@link #portBindings(Job)}
-   */
-  private class PortBindingParser {
-
-    private String name;
-    private PortMapping mapping;
-
-    public PortBindingParser(final String entry, final List<PortBinding> bindings) {
-      final List<String> parts = Splitter.on('/').splitToList(entry);
-      if (parts.size() != 2) {
-        throw new IllegalArgumentException("Invalid port binding: " + entry);
-      }
-
-      this.name = parts.get(1);
-
-      final int internalPort;
-      try {
-        internalPort = Integer.parseInt(parts.get(0));
-      } catch (NumberFormatException ex) {
-        throw new IllegalArgumentException("Invalid port binding: " + entry, ex);
-      }
-
-      if (bindings == null) {
-        this.mapping = PortMapping.of(internalPort);
-      } else {
-        if (bindings.size() != 1) {
-          throw new IllegalArgumentException("Expected single binding, got " + bindings.size());
-        }
-
-        final PortBinding binding = bindings.get(0);
-        final int externalPort;
-        try {
-          externalPort = Integer.parseInt(binding.hostPort);
-        } catch (NumberFormatException e1) {
-          throw new IllegalArgumentException("Invalid host port: " + binding.hostPort);
-        }
-        this.mapping = PortMapping.of(internalPort, externalPort);
-      }
-
-    }
-
-    public String getName() {
-      return name;
-    }
-
-    public PortMapping getMapping() {
-      return mapping;
     }
   }
 

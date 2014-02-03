@@ -47,7 +47,7 @@ public class JobTest {
                                                    "version", "17",
                                                    "env", new HashMap<>(),
                                                    "ports", new HashMap<>(),
-                                                   "service", "");
+                                                   "registration", new HashMap<>());
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
@@ -72,7 +72,7 @@ public class JobTest {
                                                    "version", "17",
                                                    "env", env,
                                                    "ports", new HashMap<>(),
-                                                   "service", "");
+                                                   "registration", new HashMap<>());
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
@@ -142,10 +142,14 @@ public class JobTest {
     final List<String> expectedCommand = ImmutableList.of("foo");
     final Map<String, String> expectedEnv = ImmutableMap.of("e1", "1");
     final Map<String, PortMapping> expectedPorts = ImmutableMap.of("p1", PortMapping.of(1, 2));
+    final Map<ServiceEndpoint, ServicePorts> expectedRegistration =
+        ImmutableMap.of(ServiceEndpoint.of("foo", "tcp"), ServicePorts.of("p1"));
 
     final List<String> mutableCommand = Lists.newArrayList(expectedCommand);
     final Map<String, String> mutableEnv = Maps.newHashMap(expectedEnv);
     final Map<String, PortMapping> mutablePorts = Maps.newHashMap(expectedPorts);
+    final HashMap<ServiceEndpoint, ServicePorts> mutableRegistration =
+        Maps.newHashMap(expectedRegistration);
 
     final Job job = Job.newBuilder()
         .setCommand(mutableCommand)
@@ -154,15 +158,17 @@ public class JobTest {
         .setImage("foobar:4711")
         .setName("foozbarz")
         .setVersion("17")
-        .setService("foo")
+        .setRegistration(mutableRegistration)
         .build();
 
     mutableCommand.add("bar");
     mutableEnv.put("e2", "2");
     mutablePorts.put("p2", PortMapping.of(3, 4));
+    mutableRegistration.put(ServiceEndpoint.of("bar", "udp"), ServicePorts.of("p2"));
 
     assertEquals(expectedCommand, job.getCommand());
     assertEquals(expectedEnv, job.getEnv());
     assertEquals(expectedPorts, job.getPorts());
+    assertEquals(expectedRegistration, job.getRegistration());
   }
 }

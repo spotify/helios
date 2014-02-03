@@ -12,18 +12,31 @@ import org.jetbrains.annotations.Nullable;
 
 public class PortMapping extends Descriptor {
 
+  public static final String TCP = "tcp";
+  public static final String UDP = "udp";
+
   private final int internalPort;
   private final Integer externalPort;
+  private final String protocol;
 
   public PortMapping(@JsonProperty("internalPort") final int internalPort,
-                     @JsonProperty("externalPort") final Integer externalPort) {
+                     @JsonProperty("externalPort") final Integer externalPort,
+                     @JsonProperty("protocol") final String protocol) {
     this.internalPort = internalPort;
     this.externalPort = externalPort;
+    this.protocol = protocol;
+  }
+
+  public PortMapping(final int internalPort, final Integer externalPort) {
+    this.internalPort = internalPort;
+    this.externalPort = externalPort;
+    this.protocol = TCP;
   }
 
   public PortMapping(final int internalPort) {
     this.internalPort = internalPort;
     this.externalPort = null;
+    this.protocol = TCP;
   }
 
   public int getInternalPort() {
@@ -35,12 +48,25 @@ public class PortMapping extends Descriptor {
     return externalPort;
   }
 
+  public String getProtocol() {
+    return protocol;
+  }
+
   public static PortMapping of(final int internalPort) {
     return new PortMapping(internalPort);
   }
 
-  public static PortMapping of(final int internalPort, final int externalPort) {
+  public static PortMapping of(final int internalPort, final Integer externalPort) {
     return new PortMapping(internalPort, externalPort);
+  }
+
+  public static PortMapping of(final int internalPort, final Integer externalPort,
+                               final String protocol) {
+    return new PortMapping(internalPort, externalPort, protocol);
+  }
+
+  public static PortMapping of(final int internalPort, final String protocol) {
+    return new PortMapping(internalPort, null, protocol);
   }
 
   @Override
@@ -61,6 +87,9 @@ public class PortMapping extends Descriptor {
                              : that.externalPort != null) {
       return false;
     }
+    if (protocol != null ? !protocol.equals(that.protocol) : that.protocol != null) {
+      return false;
+    }
 
     return true;
   }
@@ -69,6 +98,7 @@ public class PortMapping extends Descriptor {
   public int hashCode() {
     int result = internalPort;
     result = 31 * result + (externalPort != null ? externalPort.hashCode() : 0);
+    result = 31 * result + (protocol != null ? protocol.hashCode() : 0);
     return result;
   }
 
@@ -77,6 +107,7 @@ public class PortMapping extends Descriptor {
     return Objects.toStringHelper(this)
         .add("internalPort", internalPort)
         .add("externalPort", externalPort)
+        .add("protocol", protocol)
         .toString();
   }
 }

@@ -477,7 +477,7 @@ public class MasterHandler extends MatchingHandler {
       log.error("failed to get status for agent {}", agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
     }
-    if (agent == null) {
+    if (agentStatus == null) {
       context.userError();
       request.reply(NOT_FOUND);
       return;

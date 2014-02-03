@@ -9,12 +9,16 @@ import com.google.common.collect.Sets;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePorts;
 
 import java.util.Collection;
+import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import static java.lang.String.format;
+import static java.util.regex.Pattern.compile;
 
 public class JobValidator {
 
@@ -28,6 +32,10 @@ public class JobValidator {
   public static final Pattern NAMESPACE_PATTERN = Pattern.compile("^([a-z0-9_]{4,30})$");
   public static final Pattern REPO_PATTERN = Pattern.compile("^([a-z0-9-_.]+)$");
   public static final Pattern DIGIT_PERIOD = Pattern.compile("^[0-9.]+$");
+
+  public static final Pattern PORT_MAPPING_PROTO_PATTERN = compile("(tcp|udp)");
+  public static final Pattern PORT_MAPPING_NAME_PATTERN = compile("\\S+");
+  public static final Pattern REGISTRATION_NAME_PATTERN = compile("[_\\-\\w]+");
 
   public Set<String> validate(final Job job) {
     final Set<String> errors = Sets.newHashSet();
@@ -58,6 +66,38 @@ public class JobValidator {
         errors.add(format("Duplicate external port mapping: %s", externalMappedPort));
       }
       externalPorts.add(externalMappedPort);
+    }
+
+    // Verify port mappings
+    for (final Map.Entry<String, PortMapping> entry : job.getPorts().entrySet()) {
+      final String name = entry.getKey();
+      final PortMapping mapping = entry.getValue();
+      if (!PORT_MAPPING_PROTO_PATTERN.matcher(mapping.getProtocol()).matches()) {
+        errors.add(format("Invalid port mapping protocol: %s", mapping.getProtocol()));
+      }
+      if (!legalPort(mapping.getInternalPort())) {
+        errors.add(format("Invalid internal port: %d", mapping.getInternalPort()));
+      }
+      if (mapping.getExternalPort() != null && !legalPort(mapping.getExternalPort())) {
+        errors.add(format("Invalid external port: %d", mapping.getExternalPort()));
+      }
+      if (!PORT_MAPPING_NAME_PATTERN.matcher(name).matches()) {
+        errors.add(format("Invalid port mapping endpoint name: %s", name));
+      }
+    }
+
+    // Verify service registrations
+    for (final ServiceEndpoint registration : job.getRegistration().keySet()) {
+      final ServicePorts servicePorts = job.getRegistration().get(registration);
+      for (final String portName : servicePorts.getPorts().keySet()) {
+        if (!job.getPorts().containsKey(portName)) {
+          errors.add(format("Service registration refers to missing port mapping: %s=%s",
+                            registration, portName));
+        }
+        if (!REGISTRATION_NAME_PATTERN.matcher(registration.getName()).matches()) {
+          errors.add(format("Invalid service registration name: %s", registration.getName()));
+        }
+      }
     }
 
     return errors;
@@ -187,5 +227,9 @@ public class JobValidator {
       valid = false;
     }
     return valid;
+  }
+
+  private boolean legalPort(final int port) {
+    return port >= 0 && port <= 65535;
   }
 }

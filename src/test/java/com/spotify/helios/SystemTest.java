@@ -24,6 +24,8 @@ import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.ThrottleState;
@@ -68,6 +70,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
@@ -79,6 +83,8 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
 import static com.spotify.helios.common.descriptors.ThrottleState.IMAGE_MISSING;
+import static java.lang.String.format;
+import static java.lang.System.getenv;
 import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -101,18 +107,19 @@ public class SystemTest extends ZooKeeperTestBase {
 
   private static final int WAIT_TIMEOUT_SECONDS = 40;
   private static final int LONG_WAIT_MINUTES = 2;
-  private static final String NAMELESS_SERVICE = "service";
   private static final int INTERNAL_PORT = 4444;
-  private static final int EXTERNAL_PORT = 5555;
+  private static final int EXTERNAL_PORT = new SecureRandom().nextInt(30000) + 30000;
   private static final Map<String, String> EMPTY_ENV = emptyMap();
   private static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
+  private static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
+
   private static final JobId BOGUS_JOB = new JobId("bogus", "job", "badfood");
   private static final String BOGUS_AGENT = "BOGUS_AGENT";
 
   private static final String TEST_USER = "TestUser";
   private static final String TEST_AGENT = "test-agent";
-  private static final List<String> DO_NOTHING_COMMAND =
-      asList("sh", "-c", "while :; do sleep 1; done");
+  private static final List<String> DO_NOTHING_COMMAND = asList("sh", "-c",
+                                                                "while :; do sleep 1; done");
 
   public static final TypeReference<Map<JobId, JobStatus>> STATUSES_TYPE =
       new TypeReference<Map<JobId, JobStatus>>() {};
@@ -121,7 +128,8 @@ public class SystemTest extends ZooKeeperTestBase {
   private final String masterEndpoint = "tcp://localhost:" + masterPort;
   private final String masterName = "test-master";
 
-  private final String dockerEndpoint = getDockerEndpoint();
+  private static final String DOCKER_ENDPOINT =
+      fromNullable(getenv("DOCKER_ENDPOINT")).or("http://localhost:4160");
 
   private List<ServiceMain> mains = newArrayList();
   private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -173,7 +181,7 @@ public class SystemTest extends ZooKeeperTestBase {
 
     // Clean up docker
     try {
-      final DockerClient dockerClient = new DockerClient(dockerEndpoint);
+      final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
       final List<Container> containers = dockerClient.listContainers(false);
       for (final Container container : containers) {
         for (final String name : container.names) {
@@ -346,7 +354,7 @@ public class SystemTest extends ZooKeeperTestBase {
     assertTrue("missing http nameless entry", httpFound);
   }
 
-  //@Test
+  @Test
   public void testContainerNamelessRegistration() throws Exception {
     startDefaultMaster();
 
@@ -359,46 +367,41 @@ public class SystemTest extends ZooKeeperTestBase {
                "--no-log-setup",
                "--munin-port", "0",
                "--name", TEST_AGENT,
-               "--docker", dockerEndpoint,
+               "--docker", DOCKER_ENDPOINT,
                "--zk", zookeeperEndpoint,
                "--site", "localhost",
                "--zk-session-timeout", "100");
 
-    ImmutableMap<String, PortMapping> portMapping = ImmutableMap.<String, PortMapping>of(
-        "PROTOCOL", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
+    ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
+        "PORT_NAME", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
+
+    final String serviceName = "SERVICE";
+    final String serviceProto = "PROTO";
+
+    ImmutableMap<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
+        ServiceEndpoint.of(serviceName, serviceProto), ServicePorts.of("PORT_NAME"));
+
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
-                                  EMPTY_ENV, portMapping,
-                                  NAMELESS_SERVICE);
+                                  EMPTY_ENV, portMapping, registration);
 
     deployJob(jobId, TEST_AGENT);
     awaitJobState(control, TEST_AGENT, jobId, RUNNING, WAIT_TIMEOUT_SECONDS, SECONDS);
     // Give it some time for the registration to register.
     Thread.sleep(1000);
-    try {
       final NamelessClient client = new NamelessClient(Hermes.newClient("tcp://localhost:4999"));
-      final List<Messages.RegistryEntry> entries = client.queryEndpoints(
-          EndpointFilter.everything()).get();
+    final EndpointFilter filter = EndpointFilter.newBuilder()
+        .port(EXTERNAL_PORT)
+        .protocol(serviceProto)
+        .service(serviceName)
+        .build();
 
-      boolean portFound = false;
-
-      for (Messages.RegistryEntry entry : entries) {
-        final Messages.Endpoint endpoint = entry.getEndpoint();
-        assertEquals("wrong service", NAMELESS_SERVICE, endpoint.getService());
-        final String protocol = endpoint.getProtocol();
-
-        switch (protocol) {
-          case "PROTOCOL":
-            portFound = true;
-            assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT);
-            break;
-          default:
-            fail("unknown protocol " + protocol);
-        }
-      }
-      assertTrue("Did not find nameless registered port", portFound);
-    } finally {  // if this isn't done, your docker will be unhappy across subsequent test runs
-      undeployJob(jobId, TEST_AGENT);
-    }
+    final List<Messages.RegistryEntry> entries = client.queryEndpoints(filter).get();
+    assertTrue(entries.size() == 1);
+    final Messages.RegistryEntry entry = entries.get(0);
+    final Messages.Endpoint endpoint = entry.getEndpoint();
+    assertEquals("wrong service", serviceName, endpoint.getService());
+    assertEquals("wrong protocol", serviceProto, endpoint.getProtocol());
+    assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT);
   }
 
   @Test
@@ -550,7 +553,7 @@ public class SystemTest extends ZooKeeperTestBase {
 
     final CreateJobResponse createIdMismatch = client.createJob(
         new Job(JobId.fromString("bad:job:deadbeef"), "busyBox", DO_NOTHING_COMMAND, EMPTY_ENV,
-                EMPTY_PORTS, null)).get();
+                EMPTY_PORTS, EMPTY_REGISTRATION)).get();
 
     // TODO (dano): Maybe this should be ID_MISMATCH but then JobValidator must become able to communicate that
     assertEquals(CreateJobResponse.Status.INVALID_JOB_DEFINITION, createIdMismatch.getStatus());
@@ -742,7 +745,7 @@ public class SystemTest extends ZooKeeperTestBase {
                       "--no-log-setup",
                       "--munin-port", "0",
                       "--name", agentName,
-                      "--docker", dockerEndpoint,
+                      "--docker", DOCKER_ENDPOINT,
                       "--zk", zookeeperEndpoint,
                       "--zk-session-timeout", "100");
   }
@@ -830,12 +833,17 @@ public class SystemTest extends ZooKeeperTestBase {
     final String image = "busybox";
     final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711),
                                                            "bar", PortMapping.of(5000, 6000));
+    final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
+        ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
+        ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
     final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
+
     // Wait for agent to come up
     awaitAgentRegistered(TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     // Create job
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, image, DO_NOTHING_COMMAND, env, ports);
+    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, image, DO_NOTHING_COMMAND, env, ports,
+                                  registration);
 
     // Query for job
     assertContains(jobId.toString(), control("job", "list", JOB_NAME, "-q"));
@@ -846,6 +854,10 @@ public class SystemTest extends ZooKeeperTestBase {
     final String statusString = control("job", "status", jobId.toString(), "--json");
     final Map<JobId, JobStatus> statuses = Json.read(statusString, STATUSES_TYPE);
     final Job job = statuses.get(jobId).getJob();
+    assertEquals(ServicePorts.of("foo"),
+                 job.getRegistration().get(ServiceEndpoint.of("foo-service", "hm")));
+    assertEquals(ServicePorts.of("bar"),
+                 job.getRegistration().get(ServiceEndpoint.of("bar-service", "http")));
     assertEquals(4711, job.getPorts().get("foo").getInternalPort());
     assertEquals(PortMapping.of(5000, 6000), job.getPorts().get("bar"));
     assertEquals("f00d", job.getEnv().get("BAD"));
@@ -888,11 +900,15 @@ public class SystemTest extends ZooKeeperTestBase {
     final String image = "busybox";
     final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711),
                                                            "bar", PortMapping.of(5000, 6000));
+    final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
+        ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
+        ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
     final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
 
     final Map<String, Object> configuration = ImmutableMap.of("id", name + ":" + version,
                                                               "image", image,
                                                               "ports", ports,
+                                                              "registration", registration,
                                                               "env", env);
 
     final File file = File.createTempFile("helios", "json");
@@ -909,6 +925,7 @@ public class SystemTest extends ZooKeeperTestBase {
     assertEquals(version, job.getId().getVersion());
     assertEquals(ports, job.getPorts());
     assertEquals(env, job.getEnv());
+    assertEquals(registration, job.getRegistration());
   }
 
 
@@ -952,12 +969,12 @@ public class SystemTest extends ZooKeeperTestBase {
                                  "--no-log-setup",
                                  "--munin-port", "0",
                                  "--name", TEST_AGENT,
-                                 "--docker", dockerEndpoint,
+                                 "--docker", DOCKER_ENDPOINT,
                                  "--zk", zookeeperEndpoint,
                                  "--zk-session-timeout", "100",
                                  "--syslog-redirect", "10.0.3.1:6514");
 
-    final DockerClient dockerClient = new DockerClient(dockerEndpoint);
+    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
     final List<String> command = asList("sh", "-c", "echo should-be-redirected");
 
@@ -991,7 +1008,7 @@ public class SystemTest extends ZooKeeperTestBase {
   public void testContainerHostName() throws Exception {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
-    final DockerClient dockerClient = new DockerClient(dockerEndpoint);
+    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
     final List<String> command = asList("hostname");
 
@@ -1016,7 +1033,7 @@ public class SystemTest extends ZooKeeperTestBase {
                                  "--no-log-setup",
                                  "--munin-port", "0",
                                  "--name", TEST_AGENT,
-                                 "--docker", dockerEndpoint,
+                                 "--docker", DOCKER_ENDPOINT,
                                  "--zk", zookeeperEndpoint,
                                  "--zk-session-timeout", "100",
                                  "--env",
@@ -1024,7 +1041,7 @@ public class SystemTest extends ZooKeeperTestBase {
                                  "SPOTIFY_ROLE=ROLENAME",
                                  "BAR=badfood");
 
-    final DockerClient dockerClient = new DockerClient(dockerEndpoint);
+    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
     final List<String> command = asList("sh", "-c",
                                         "echo pod: $SPOTIFY_POD role: $SPOTIFY_ROLE foo: $FOO bar: $BAR");
@@ -1103,7 +1120,7 @@ public class SystemTest extends ZooKeeperTestBase {
   public void testAgentRestart() throws Exception {
     startDefaultMaster();
 
-    final DockerClient dockerClient = new DockerClient(dockerEndpoint);
+    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
     final Client client = Client.newBuilder()
         .setUser(TEST_USER)
@@ -1263,8 +1280,11 @@ public class SystemTest extends ZooKeeperTestBase {
 
   private JobId createJob(final String name, final String version, final String image,
                           final List<String> command, final Map<String, String> env,
-                          final Map<String, PortMapping> ports, final String namelessService)
-      throws Exception {
+                          final Map<String, PortMapping> ports,
+                          final Map<ServiceEndpoint, ServicePorts> registration)
+  throws Exception {
+    checkArgument(name.contains(PREFIX), "Job name must contain PREFIX to enable cleanup");
+
     final List<String> args = Lists.newArrayList("-q", name, version, image);
 
     if (!env.isEmpty()) {
@@ -1281,12 +1301,22 @@ public class SystemTest extends ZooKeeperTestBase {
         if (entry.getValue().getExternalPort() != null) {
           value += ":" + entry.getValue().getExternalPort();
         }
+        if (entry.getValue().getProtocol() != null) {
+          value += "/" + entry.getValue().getProtocol();
+        }
         args.add(entry.getKey() + "=" + value);
       }
     }
 
-    if (namelessService != null) {
-      args.add("--service=" + namelessService);
+    if (registration != null) {
+      for (final Map.Entry<ServiceEndpoint, ServicePorts> entry : registration.entrySet()) {
+        final ServiceEndpoint r = entry.getKey();
+        for (String portName : entry.getValue().getPorts().keySet()) {
+          args.add("--register=" + ((r.getProtocol() == null)
+                                    ? format("%s=%s", r.getName(), portName)
+                                    : format("%s/%s=%s", r.getName(), r.getProtocol(), portName)));
+        }
+      }
     }
 
     args.add("--");
@@ -1298,10 +1328,5 @@ public class SystemTest extends ZooKeeperTestBase {
     final String listOutput = control("job", "list", "-q");
     assertContains(jobId, listOutput);
     return JobId.fromString(jobId);
-  }
-
-  private static String getDockerEndpoint() {
-    final String endpoint = System.getenv("DOCKER_ENDPOINT");
-    return endpoint == null ? "http://localhost:4160" : endpoint;
   }
 }
