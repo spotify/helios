@@ -4,6 +4,8 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.collect.ImmutableList;
+
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.JobId;
@@ -25,6 +27,8 @@ public class JobDeployCommand extends WildcardJobCommand {
 
   private final Argument hostsArg;
   private final Argument noStartArg;
+  private final Argument watchArg;
+  private final Argument intervalArg;
 
   public JobDeployCommand(final Subparser parser) {
     super(parser);
@@ -38,6 +42,14 @@ public class JobDeployCommand extends WildcardJobCommand {
     hostsArg = parser.addArgument("hosts")
         .nargs("+")
         .help("The hosts to deploy the job on.");
+
+    watchArg = parser.addArgument("--watch")
+        .action(storeTrue())
+        .help("Watch the newly deployed job (like running job watch right after)");
+
+    intervalArg = parser.addArgument("--interval")
+        .setDefault(1)
+        .help("if --watch is specified, the polling interval, default 1 second");
   }
 
   @Override
@@ -64,6 +76,10 @@ public class JobDeployCommand extends WildcardJobCommand {
       }
     }
 
+    if (code == 0 && options.getBoolean(watchArg.getDest())) {
+      JobWatchCommand.watchJobsOnHosts(out, true, hosts, ImmutableList.of(jobId),
+        options.getInt(intervalArg.getDest()), client);
+    }
     return code;
   }
 }

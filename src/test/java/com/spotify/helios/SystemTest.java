@@ -4,6 +4,7 @@
 
 package com.spotify.helios;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -56,7 +57,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintStream;
+import java.nio.ByteBuffer;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -68,6 +71,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
@@ -1101,6 +1105,65 @@ public class SystemTest extends ZooKeeperTestBase {
     }
     logReader.close();
     return stringBuilder.toString();
+  }
+
+  @Test
+  public void testJobWatch() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(AGENT_NAME);
+
+    // Create job
+    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
+                                  ImmutableMap.of("FOO", "4711",
+                                                  "BAR", "deadbeef"));
+
+    // deploy
+    deployJob(jobId, AGENT_NAME);
+
+    final String[] commands = new String[]{"job", "watch", "--exact", "-z", masterEndpoint,
+        "--no-log-setup", jobId.toString(), AGENT_NAME, "FAKE_AGENT_NAME"};
+
+    final long now = System.currentTimeMillis();
+    final AtomicBoolean success = new AtomicBoolean(false);
+
+    final OutputStream out = new OutputStream() {
+      private boolean seenKnownState = false;
+      private boolean seenUnknownAgent = false;
+      private int counter = 0;
+      private final byte[] lineBuffer = new byte[8192];
+
+      @Override
+      public void write(int b) throws IOException {
+        if (System.currentTimeMillis() - now > 10000) {
+          throw new IOException("timed out trying to succeed");
+        }
+        lineBuffer[counter] = (byte) b;
+        counter ++;
+
+        if (b != 10) {
+          return;
+        }
+
+        String line = Charsets.UTF_8.decode(
+            ByteBuffer.wrap(lineBuffer, 0, counter)).toString();
+        counter = 0;
+
+        if (line.contains(AGENT_NAME) && !line.contains("UNKNOWN")) {
+          seenKnownState = true;
+        }
+        if (line.contains("FAKE_AGENT_NAME") && line.contains("UNKNOWN")) {
+          seenUnknownAgent = true;
+        }
+        if (seenKnownState && seenUnknownAgent) {
+          success.set(true);
+          throw new IOException("output closed");
+        }
+      }
+    };
+    final CliMain main = new CliMain(new PrintStream(out),
+       new PrintStream(new ByteArrayOutputStream()), commands);
+    main.run();
+    assertTrue("Should have stopped the stream due to success", success.get());
   }
 
   /**
