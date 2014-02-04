@@ -22,7 +22,6 @@ import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.ImageInspectResponse;
-import com.kpelykh.docker.client.model.ListImage;
 import com.kpelykh.docker.client.model.PortBinding;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
@@ -621,8 +620,7 @@ class Supervisor {
 
     private void maybePullImage(final String image)
         throws InterruptedException, ExecutionException, ImageMissingException {
-      final List<ListImage> images = docker.getImages(image).get();
-      if (images.isEmpty()) {
+      if (!imageExists(image)) {
         MetricsContext context = metrics.containerPull();
         PullClientResponse pull = null;
         try {
@@ -642,6 +640,19 @@ class Supervisor {
         }
       } else {
         metrics.imageCacheHit();
+      }
+    }
+
+    private boolean imageExists(final String image)
+        throws ExecutionException, InterruptedException {
+      try {
+        return docker.inspectImage(image).get() != null;
+      } catch (ExecutionException e) {
+        if (e.getMessage().contains("No such image")) {
+          return false;
+        } else {
+          throw e;
+        }
       }
     }
 
