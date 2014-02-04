@@ -189,7 +189,7 @@ public class MasterHandler extends MatchingHandler {
         for (final JobId jobId : allJobs.keySet()) {
           if (needle.getName().equals(jobId.getName()) &&
               (needle.getVersion() == null || needle.getVersion().equals(jobId.getVersion())) &&
-              (needle.getHash() == null || needle.getHash().equals((jobId.getHash())))) {
+              (needle.getHash() == null || jobId.getHash().startsWith(needle.getHash()))) {
             filteredJobs.put(jobId, allJobs.get(jobId));
           }
         }
