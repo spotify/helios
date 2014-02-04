@@ -5,6 +5,7 @@
 package com.spotify.helios;
 
 import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -1108,7 +1109,7 @@ public class SystemTest extends ZooKeeperTestBase {
   }
 
   @Test
-  public void testJobWatch() throws Exception {
+  public void testJobWatchExact() throws Exception {
     startDefaultMaster();
     startDefaultAgent(AGENT_NAME);
 
@@ -1125,6 +1126,7 @@ public class SystemTest extends ZooKeeperTestBase {
 
     final long now = System.currentTimeMillis();
     final AtomicBoolean success = new AtomicBoolean(false);
+    final List<String> outputLines = Lists.newArrayList();
 
     final OutputStream out = new OutputStream() {
       private boolean seenKnownState = false;
@@ -1146,6 +1148,7 @@ public class SystemTest extends ZooKeeperTestBase {
 
         String line = Charsets.UTF_8.decode(
             ByteBuffer.wrap(lineBuffer, 0, counter)).toString();
+        outputLines.add(line);
         counter = 0;
 
         if (line.contains(AGENT_NAME) && !line.contains("UNKNOWN")) {
@@ -1163,7 +1166,61 @@ public class SystemTest extends ZooKeeperTestBase {
     final CliMain main = new CliMain(new PrintStream(out),
        new PrintStream(new ByteArrayOutputStream()), commands);
     main.run();
-    assertTrue("Should have stopped the stream due to success", success.get());
+    assertTrue("Should have stopped the stream due to success: got\n"
+        + Joiner.on("").join(outputLines), success.get());
+  }
+
+  @Test
+  public void testJobWatch() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(AGENT_NAME);
+
+    // Create job
+    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
+                                  ImmutableMap.of("FOO", "4711",
+                                                  "BAR", "deadbeef"));
+
+    // deploy
+    deployJob(jobId, AGENT_NAME);
+
+    final String[] commands = new String[]{"job", "watch", "-z", masterEndpoint,
+        "--no-log-setup", jobId.toString()};
+
+    final long now = System.currentTimeMillis();
+    final AtomicBoolean success = new AtomicBoolean(false);
+    final List<String> outputLines = Lists.newArrayList();
+    final OutputStream out = new OutputStream() {
+      private int counter = 0;
+      private final byte[] lineBuffer = new byte[8192];
+
+      @Override
+      public void write(int b) throws IOException {
+        if (System.currentTimeMillis() - now > 10000) {
+          throw new IOException("timed out trying to succeed");
+        }
+        lineBuffer[counter] = (byte) b;
+        counter ++;
+
+        if (b != 10) {
+          return;
+        }
+
+        String line = Charsets.UTF_8.decode(
+            ByteBuffer.wrap(lineBuffer, 0, counter)).toString();
+        outputLines.add(line);
+        counter = 0;
+
+        if (line.contains(AGENT_NAME) && !line.contains("UNKNOWN")) {
+          success.set(true);
+          throw new IOException("output closed");
+        }
+      }
+    };
+    final CliMain main = new CliMain(new PrintStream(out),
+       new PrintStream(new ByteArrayOutputStream()), commands);
+    main.run();
+    assertTrue("Should have stopped the stream due to success: got\n"
+        + Joiner.on("").join(outputLines), success.get());
   }
 
   /**

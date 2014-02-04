@@ -77,6 +77,7 @@ public class JobWatchCommand extends ControlCommand {
   static void watchJobsOnHosts(PrintStream out, boolean exact, final List<String> prefixes,
       final List<JobId> jobIds, final int interval, final Client client)
       throws InterruptedException, ExecutionException {
+    out.println("Control-C to stop");
     out.println("JOB                  HOST                           STATE    THROTTLED?");
     DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-DD HH:mm:ss");
     while (true) {
@@ -117,6 +118,9 @@ public class JobWatchCommand extends ControlCommand {
   }
 
   private static boolean hostMatches(final List<String> prefixes, final String host) {
+    if (prefixes.isEmpty()) {
+      return true;
+    }
     for (String prefix : prefixes) {
       if (host.startsWith(prefix)) {
         return true;
