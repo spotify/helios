@@ -6,6 +6,8 @@ package com.spotify.helios.common.coordination;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.AbstractFuture;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.common.Reactor;
 
@@ -28,8 +30,8 @@ public class RetryingZooKeeperNodeWriter {
 
   private final Reactor reactor;
 
-  private final Map<String, byte[]> front = Maps.newHashMap();
-  private final Map<String, byte[]> back = Maps.newHashMap();
+  private final Map<String, Write> front = Maps.newHashMap();
+  private final Map<String, Write> back = Maps.newHashMap();
   private final Object lock = new Object() {};
 
   public RetryingZooKeeperNodeWriter(final ZooKeeperClient client) {
@@ -37,11 +39,17 @@ public class RetryingZooKeeperNodeWriter {
     this.reactor = new Reactor(new Update(), RETRY_INTERVAL_MILLIS);
   }
 
-  public void set(final String path, final byte[] data) {
+  public ListenableFuture<Void> set(final String path, final byte[] data) {
+    final Write write = new Write(data);
+    final Write prev;
     synchronized (lock) {
-      front.put(path, data);
+      prev = front.put(path, write);
     }
     reactor.update();
+    if (prev != null) {
+      prev.cancel(false);
+    }
+    return write;
   }
 
   public void close() throws InterruptedException {
@@ -56,24 +64,43 @@ public class RetryingZooKeeperNodeWriter {
         return;
       }
       synchronized (lock) {
-        back.putAll(front);
+        for (Map.Entry<String, Write> entry : front.entrySet()) {
+          final Write prev = back.put(entry.getKey(), entry.getValue());
+          if (prev != null) {
+            prev.cancel(false);
+          }
+        }
         front.clear();
       }
       log.debug("writing: {}", back.keySet());
-      for (Map.Entry<String, byte[]> entry : ImmutableMap.copyOf(back).entrySet()) {
+      for (Map.Entry<String, Write> entry : ImmutableMap.copyOf(back).entrySet()) {
         final String path = entry.getKey();
-        final byte[] data = entry.getValue();
+        final Write write = entry.getValue();
         try {
           if (client.stat(path) == null) {
-            client.createAndSetData(path, data);
+            client.createAndSetData(path, write.data);
           } else {
-            client.setData(path, data);
+            client.setData(path, write.data);
           }
           back.remove(path);
+          write.done();
         } catch (KeeperException e) {
           log.error("Failed writing node: {}", path, e);
         }
       }
+    }
+  }
+
+  private class Write extends AbstractFuture<Void> {
+
+    final byte[] data;
+
+    private Write(final byte[] data) {
+      this.data = data;
+    }
+
+    public void done() {
+      set(null);
     }
   }
 }

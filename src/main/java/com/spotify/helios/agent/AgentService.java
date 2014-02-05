@@ -5,12 +5,14 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.ReactorFactory;
-import com.spotify.helios.common.coordination.RetryingZooKeeperNodeWriter;
 import com.spotify.helios.common.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.common.coordination.Paths;
+import com.spotify.helios.common.coordination.RetryingZooKeeperNodeWriter;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.statistics.Metrics;
 import com.spotify.helios.common.statistics.MetricsImpl;
@@ -33,11 +35,14 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
+import static com.google.common.util.concurrent.Futures.allAsList;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.Arrays.asList;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
 /**
@@ -165,14 +170,23 @@ public class AgentService {
 
     // TODO (dano): this stuff should probably live in the agent model
     final String name = config.getName();
-    upNode = new PersistentEphemeralNode(curator, EPHEMERAL, Paths.statusAgentUp(name),
-                                         EMPTY_BYTES);
-    upNode.start();
-
     this.baseNodes = new RetryingZooKeeperNodeWriter(client);
-    baseNodes.set(Paths.configAgentJobs(name), EMPTY_BYTES);
-    baseNodes.set(Paths.configAgentPorts(name), EMPTY_BYTES);
-    baseNodes.set(Paths.statusAgentJobs(name), EMPTY_BYTES);
+
+    // Write base nodes
+    final ListenableFuture<List<Void>> baseNodesFuture = allAsList(
+        asList(baseNodes.set(Paths.configAgentJobs(name), EMPTY_BYTES),
+               baseNodes.set(Paths.configAgentPorts(name), EMPTY_BYTES),
+               baseNodes.set(Paths.statusAgentJobs(name), EMPTY_BYTES)));
+
+    // Create the ephemeral node after all base nodes have been written
+    final String upPath = Paths.statusAgentUp(name);
+    this.upNode = new PersistentEphemeralNode(curator, EPHEMERAL, upPath, EMPTY_BYTES);
+    baseNodesFuture.addListener(new Runnable() {
+      @Override
+      public void run() {
+        upNode.start();
+      }
+    }, MoreExecutors.sameThreadExecutor());
 
     return curator;
   }
