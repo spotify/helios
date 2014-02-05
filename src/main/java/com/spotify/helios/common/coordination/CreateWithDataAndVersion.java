@@ -2,8 +2,6 @@ package com.spotify.helios.common.coordination;
 
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 
-import java.util.Arrays;
-
 class CreateWithDataAndVersion implements ZooKeeperOperation {
 
   private final String path;
@@ -27,7 +25,6 @@ class CreateWithDataAndVersion implements ZooKeeperOperation {
   public String toString() {
     return "CreateWithDataAndVersion{" +
            "path='" + path + '\'' +
-           ", data=" + Arrays.toString(data) +
            ", version=" + version +
            '}';
   }

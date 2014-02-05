@@ -17,4 +17,10 @@ public class SetData implements ZooKeeperOperation {
     transaction.setData().forPath(path, bytes);
   }
 
+  @Override
+  public String toString() {
+    return "SetData{" +
+           "path='" + path + '\'' +
+           '}';
+  }
 }
