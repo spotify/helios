@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -64,7 +65,8 @@ public class AgentParser extends ServiceParser {
         .setEnvVars(envVars)
         .setDockerEndpoint(options.getString("docker"))
         .setInhibitMetrics(Objects.equal(options.getBoolean("no_metrics"), true))
-        .setRedirectToSyslog(options.getString("syslog_redirect_to"));
+        .setRedirectToSyslog(options.getString("syslog_redirect_to"))
+        .setStateDirectory(Paths.get(options.getString("state_dir")));
   }
 
   @Override
@@ -72,6 +74,10 @@ public class AgentParser extends ServiceParser {
     parser.addArgument("--name")
         .setDefault(getHostName())
         .help("agent name");
+
+    parser.addArgument("--state-dir")
+        .setDefault(".")
+        .help("Directory for persisting agent state locally.");
 
     parser.addArgument("--munin-port")
         .type(Integer.class)

@@ -1,13 +1,12 @@
 package com.spotify.helios.common.coordination;
 
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import com.spotify.helios.common.VersionedBytes;
-
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
@@ -35,13 +34,13 @@ public interface ZooKeeperClient {
 
   Stat stat(String path) throws KeeperException;
 
-  PathChildrenCache pathChildrenCache(String path, boolean cacheData);
-
   void deleteRecursive(String path) throws KeeperException;
 
   List<String> listRecursive(String path) throws KeeperException;
 
   void create(String path) throws KeeperException;
+
+  PersistentPathChildrenCache pathChildrenCache(String path, Path snapshotFile) throws IOException;
 
   Collection<CuratorTransactionResult> transaction(List<ZooKeeperOperation> operations) throws KeeperException;
 
@@ -49,5 +48,5 @@ public interface ZooKeeperClient {
 
   void delete(String path, int version) throws KeeperException;
 
-  VersionedBytes getDataVersioned(String path) throws KeeperException;
+  Node getNode(String path) throws KeeperException;
 }

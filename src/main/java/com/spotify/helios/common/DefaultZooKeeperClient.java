@@ -1,18 +1,23 @@
 package com.spotify.helios.common;
 
+import com.spotify.helios.common.coordination.Node;
+import com.spotify.helios.common.coordination.PersistentPathChildrenCache;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.coordination.ZooKeeperOperation;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.data.Stat;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
@@ -25,6 +30,8 @@ import static java.util.Collections.emptyList;
 import static org.apache.curator.framework.imps.CuratorFrameworkState.STARTED;
 
 public class DefaultZooKeeperClient implements ZooKeeperClient {
+
+  private static final Logger log = LoggerFactory.getLogger(DefaultZooKeeperClient.class);
 
   private final CuratorFramework client;
 
@@ -65,11 +72,11 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
-  public VersionedBytes getDataVersioned(final String path) throws KeeperException {
+  public Node getNode(final String path) throws KeeperException {
     final Stat stat = new Stat();
     try {
       byte[] bytes = client.getData().storingStatIn(stat).forPath(path);
-      return new VersionedBytes(bytes, stat.getVersion());
+      return new Node(path, bytes, stat);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
@@ -188,13 +195,16 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
-  public PathChildrenCache pathChildrenCache(final String path, final boolean cacheData) {
-    return new PathChildrenCache(client, path, cacheData);
+  public PersistentPathChildrenCache pathChildrenCache(final String path, final Path snapshotFile)
+      throws IOException {
+    return new PersistentPathChildrenCache(client, path, snapshotFile);
   }
 
   @Override
   public Collection<CuratorTransactionResult> transaction(final List<ZooKeeperOperation> operations)
       throws KeeperException {
+
+    log.debug("transaction: {}", operations);
 
     if (operations.isEmpty()) {
       return emptyList();

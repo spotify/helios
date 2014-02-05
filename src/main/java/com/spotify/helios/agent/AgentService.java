@@ -4,8 +4,11 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Throwables;
+
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.ReactorFactory;
+import com.spotify.helios.common.coordination.RetryingZooKeeperNodeWriter;
 import com.spotify.helios.common.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
@@ -19,20 +22,31 @@ import com.sun.management.OperatingSystemMXBean;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
+import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
-import static org.apache.zookeeper.CreateMode.EPHEMERAL;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
+import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
 /**
  * The Helios agent.
  */
 public class AgentService {
+
   private static final Logger log = LoggerFactory.getLogger(AgentService.class);
+  public static final byte[] EMPTY_BYTES = new byte[]{};
 
   private final Agent agent;
 
@@ -41,6 +55,12 @@ public class AgentService {
   private final HostInfoReporter hostInfoReporter;
   private final RuntimeInfoReporter runtimeInfoReporter;
   private final EnvironmentVariableReporter environmentVariableReporter;
+  private final Path stateDirectory;
+  private final FileChannel stateLockFile;
+  private final FileLock stateLock;
+
+  private PersistentEphemeralNode upNode;
+  private RetryingZooKeeperNodeWriter baseNodes;
 
   /**
    * Create a new agent instance.
@@ -48,6 +68,31 @@ public class AgentService {
    * @param config The service configuration.
    */
   public AgentService(final AgentConfig config) {
+
+    // Create state directory, if necessary
+    stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
+    if (!Files.exists(stateDirectory)) {
+      try {
+        Files.createDirectories(stateDirectory);
+      } catch (IOException e) {
+        log.error("Failed to create state directory: {}", stateDirectory, e);
+        throw Throwables.propagate(e);
+      }
+    }
+
+    // Take a file lock in the state directory to ensure this is the only agent using it
+    final Path lockPath = config.getStateDirectory().resolve("lock");
+    try {
+      stateLockFile = FileChannel.open(lockPath, CREATE, WRITE);
+      stateLock = stateLockFile.tryLock();
+      if (stateLock == null) {
+        throw new IllegalStateException("State lock file already locked: " + lockPath);
+      }
+    } catch (OverlappingFileLockException | IOException e) {
+      log.error("Failed to take state lock: {}", lockPath, e);
+      throw Throwables.propagate(e);
+    }
+
     // Configure metrics
     log.info("Starting metrics");
     Metrics metrics;
@@ -62,17 +107,16 @@ public class AgentService {
     this.zooKeeperCurator = setupZookeeperCurator(config);
     this.zooKeeperClient = new DefaultZooKeeperClient(zooKeeperCurator);
 
-    final AgentModel model = setupState(config, zooKeeperClient);
+    final AgentModel model = setupModel(config, zooKeeperClient, stateDirectory);
 
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
 
     final NamelessRegistrar registrar;
-    if (config.getSite() != null)  {
-      registrar =
-          config.getSite().equals("localhost") ?
-              Nameless.newRegistrar("tcp://localhost:4999") :
-                Nameless.newRegistrarForDomain(config.getSite());
+    if (config.getSite() != null) {
+      registrar = config.getSite().equals("localhost")
+                  ? Nameless.newRegistrar("tcp://localhost:4999")
+                  : Nameless.newRegistrarForDomain(config.getSite());
     } else {
       registrar = null;
     }
@@ -110,46 +154,44 @@ public class AgentService {
    */
   private CuratorFramework setupZookeeperCurator(final AgentConfig config) {
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
-    final CuratorFramework client = CuratorFrameworkFactory.newClient(
+    final CuratorFramework curator = CuratorFrameworkFactory.newClient(
         config.getZooKeeperConnectionString(),
         config.getZooKeeperSessionTimeoutMillis(),
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy);
 
-    client.start();
-    final ZooKeeperClient curator = new DefaultZooKeeperClient(client);
+    curator.start();
+    final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
 
-    try {
-      // TODO: this logic should probably live in the agent model
+    // TODO (dano): this stuff should probably live in the agent model
+    final String name = config.getName();
+    upNode = new PersistentEphemeralNode(curator, EPHEMERAL, Paths.statusAgentUp(name),
+                                         EMPTY_BYTES);
+    upNode.start();
 
-      final String name = config.getName();
-      curator.ensurePath(Paths.configAgentJobs(name));
-      curator.ensurePath(Paths.configAgentPorts(name));
-      curator.ensurePath(Paths.statusAgentJobs(name));
+    this.baseNodes = new RetryingZooKeeperNodeWriter(client);
+    baseNodes.set(Paths.configAgentJobs(name), EMPTY_BYTES);
+    baseNodes.set(Paths.configAgentPorts(name), EMPTY_BYTES);
+    baseNodes.set(Paths.statusAgentJobs(name), EMPTY_BYTES);
 
-      final String upNode = Paths.statusAgentUp(name);
-      if (curator.stat(upNode) != null) {
-        curator.delete(upNode);
-      }
-      curator.createWithMode(upNode, EPHEMERAL);
-    } catch (KeeperException e) {
-      throw new RuntimeException("zookeeper initialization failed", e);
-    }
-
-    return client;
+    return curator;
   }
 
   /**
    * Set up an agent state using zookeeper.
    *
+   *
    * @param config          The service configuration.
    * @param zooKeeperClient The ZooKeeper client to use.
+   * @param stateDirectory  The state directory to use.
    * @return An agent state.
    */
-  private static AgentModel setupState(final AgentConfig config,
-                                       final DefaultZooKeeperClient zooKeeperClient) {
-    final ZooKeeperAgentModel model = new ZooKeeperAgentModel(zooKeeperClient, config.getName());
+  private static AgentModel setupModel(final AgentConfig config,
+                                       final DefaultZooKeeperClient zooKeeperClient,
+                                       final Path stateDirectory) {
+    final ZooKeeperAgentModel model;
     try {
+      model = new ZooKeeperAgentModel(zooKeeperClient, config.getName(), stateDirectory);
       model.start();
     } catch (Exception e) {
       throw new RuntimeException("state initialization failed", e);
@@ -170,11 +212,23 @@ public class AgentService {
   /**
    * Stop the agent.
    */
-  public void stop() {
+  public void stop() throws InterruptedException {
     agent.close();
     hostInfoReporter.close();
     runtimeInfoReporter.close();
+    environmentVariableReporter.close();
+    baseNodes.close();
     zooKeeperCurator.close();
+    try {
+      stateLock.release();
+    } catch (IOException e) {
+      log.error("Failed to release state lock", e);
+    }
+    try {
+      stateLockFile.close();
+    } catch (IOException e) {
+      log.error("Failed to close state lock file", e);
+    }
   }
 }
 

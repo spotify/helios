@@ -40,11 +40,11 @@ public class AgentStatus extends Descriptor {
     this.status = checkNotNull(status, "status");
     this.jobs = checkNotNull(jobs, "jobs");
     this.statuses = checkNotNull(statuses, "statuses");
-    this.environment = checkNotNull(environment, "environment");
 
-    // Host and runtime info might not be available
+    // Host, runtime info and environment might not be available
     this.hostInfo = hostInfo;
     this.runtimeInfo = runtimeInfo;
+    this.environment = environment;
   }
 
   public Map<String, String> getEnvironment() {

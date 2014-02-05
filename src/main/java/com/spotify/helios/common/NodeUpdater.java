@@ -4,7 +4,9 @@
 
 package com.spotify.helios.common;
 
+import java.io.IOException;
+
 public interface NodeUpdater {
 
-  void update(byte[] bytes);
+  void update(byte[] bytes) throws IOException;
 }

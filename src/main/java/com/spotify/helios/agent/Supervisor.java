@@ -12,6 +12,7 @@ import com.google.common.util.concurrent.AbstractFuture;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -47,7 +48,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
@@ -62,7 +65,6 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -439,7 +441,8 @@ class Supervisor {
    */
   class RunnerImpl extends AbstractFuture<Integer> implements Runner, Runnable {
 
-    private final ExecutorService executor = newSingleThreadExecutor(RUNNER_THREAD_FACTORY);
+    private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
+        (ThreadPoolExecutor) Executors.newFixedThreadPool(1, RUNNER_THREAD_FACTORY), 0, SECONDS);
     private final long delayMillis;
 
     private ListenableFuture<Void> startFuture;

@@ -24,7 +24,7 @@ import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.JobPortAllocationConflictException;
 import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.VersionedBytes;
+import com.spotify.helios.common.coordination.Node;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.coordination.ZooKeeperOperation;
@@ -56,6 +56,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.check;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.create;
@@ -327,9 +328,10 @@ public class ZooKeeperMasterModel implements MasterModel {
   private void deployJobRetry(final String agent, final Deployment deployment, int count)
       throws HeliosException {
     if (count == 3) {
-      throw new HeliosException("3 concurrent modifications! while deploying");
+      throw new HeliosException("3 failures (possibly concurrent modifications) while " +
+                                "deploying. Giving up.");
     }
-    log.debug("adding agent job: agent={}, job={}", agent, deployment);
+    log.debug("adding deployment: agent={}, job={}", agent, deployment);
 
     final JobId id = deployment.getJobId();
     final Job job = getJob(id);
@@ -355,13 +357,13 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     // Attempt to read a task here.  If it's goal is UNDEPLOY, it's as good as not existing
     try {
-      VersionedBytes existing = client.getDataVersioned(taskPath);
+      Node existing = client.getNode(taskPath);
       byte[] bytes = existing.getBytes();
       Task readTask = Json.read(bytes, Task.class);
       if (readTask.getGoal() != Goal.UNDEPLOY) {
         throw new JobAlreadyDeployedException(agent, id);
       }
-      operations.add(check(taskPath, existing.getVersion()));
+      operations.add(check(taskPath, existing.getStat().getVersion()));
       operations.add(set(taskPath, task));
     } catch (NoNodeException e) {
       operations.add(create(taskPath, task));
@@ -378,7 +380,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       // Either the job or the agent went away
       assertJobExists(id);
       assertAgentExists(agent);
-      throw new HeliosException("deploying job failed", e);
+      // Retry
+      deployJobRetry(agent, deployment, count + 1);
     } catch (NodeExistsException e) {
       try {
         // Check if the job was already deployed
@@ -435,7 +438,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public void updateDeployment(final String agent, final Deployment deployment)
       throws HeliosException {
-    log.debug("updating agent job: agent={}, job={}", agent, deployment);
+    log.debug("updating deployment: agent={}, job={}", agent, deployment);
 
     final JobId jobId = deployment.getJobId();
     final Job descriptor = getJob(jobId);
@@ -515,7 +518,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     return AgentStatus.newBuilder()
         .setJobs(jobs)
-        .setStatuses(statuses == null ? EMPTY_STATUSES : statuses)
+        .setStatuses(fromNullable(statuses).or(EMPTY_STATUSES))
         .setHostInfo(hostInfo)
         .setRuntimeInfo(runtimeInfo)
         .setStatus(up ? UP : DOWN)
@@ -624,11 +627,11 @@ public class ZooKeeperMasterModel implements MasterModel {
           }
           jobs.put(jobId, Deployment.of(jobId, task.getGoal()));
         } catch (KeeperException.NoNodeException ignored) {
-          log.debug("agent job config node disappeared: {}", jobIdString);
+          log.debug("deploymenty config node disappeared: {}", jobIdString);
         }
       }
     } catch (KeeperException | IOException e) {
-      throw new HeliosException("getting agent job config failed", e);
+      throw new HeliosException("getting deployment config failed", e);
     }
 
     return jobs;
@@ -637,7 +640,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public Deployment undeployJob(final String agent, final JobId jobId)
       throws HeliosException {
-    log.debug("removing agent job: agent={}, job={}", agent, jobId);
+    log.debug("removing deployment: agent={}, job={}", agent, jobId);
 
     assertAgentExists(agent);
 
@@ -662,7 +665,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       client.transaction(operations);
     } catch (KeeperException e) {
-      throw new HeliosException("Removing agent job failed", e);
+      throw new HeliosException("Removing deployment failed", e);
     }
     return deployment;
   }

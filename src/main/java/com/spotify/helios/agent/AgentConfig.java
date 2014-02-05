@@ -4,6 +4,7 @@
 
 package com.spotify.helios.agent;
 
+import java.nio.file.Path;
 import java.util.Map;
 
 public class AgentConfig {
@@ -18,6 +19,7 @@ public class AgentConfig {
   private Map<String, String> envVars;
   private String redirectToSyslog;
   private boolean inhibitMetrics;
+  private Path stateDirectory;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -107,5 +109,14 @@ public class AgentConfig {
 
   public Map<String, String> getEnvVars() {
     return envVars;
+  }
+
+  public AgentConfig setStateDirectory(final Path stateDirectory) {
+    this.stateDirectory = stateDirectory;
+    return this;
+  }
+
+  public Path getStateDirectory() {
+    return stateDirectory;
   }
 }

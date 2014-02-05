@@ -7,6 +7,10 @@
     <target>System.err</target>
   </appender>
 
+  <logger name="org.apache.curator" level="ERROR" />
+  <logger name="org.apache.zookeeper" level="ERROR" />
+  <logger name="com.spotify.hermes" level="ERROR" />
+
   <root level="DEBUG">
     <appender-ref ref="STDERR"/>
   </root>

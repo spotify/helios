@@ -17,9 +17,9 @@ import java.util.Map;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static com.google.common.util.concurrent.MoreExecutors.getExitingScheduledExecutorService;
 import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class EnvironmentVariableReporter {
   private static final Logger log = LoggerFactory.getLogger(EnvironmentVariableReporter.class);
@@ -43,12 +43,18 @@ public class EnvironmentVariableReporter {
 
   public void start() {
     updateFuture = executor.scheduleWithFixedDelay(new Report(), 0, DEFAULT_INTERVAL,
-        DEFAUL_TIMEUNIT);
+                                                   DEFAUL_TIMEUNIT);
+  }
+
+  public void close() {
+    if (updateFuture != null) {
+      updateFuture.cancel(true);
+    }
   }
 
   private class Report implements Runnable {
     @Override public void run() {
-      while (true) {
+      while (!updateFuture.isDone()) {
         final String path = Paths.statusAgentEnvVars(agent);
         try {
           // Check if the node already exists.
@@ -63,7 +69,11 @@ public class EnvironmentVariableReporter {
           }
           updateFuture.cancel(true);
         } catch (KeeperException | JsonProcessingException e) {
-          log.error("Error updating with our environment variables", e);
+          log.error("Error updating agent environment variables", e);
+          try {
+            Thread.sleep(1000);
+          } catch (InterruptedException ignore) {
+          }
         }
       }
     }

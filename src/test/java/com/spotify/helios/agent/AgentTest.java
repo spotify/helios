@@ -89,12 +89,12 @@ public class AgentTest {
     when(model.getTasks()).thenReturn(unmodifiableJobs);
     when(model.getTaskStatuses()).thenReturn(unmodifiableJobStatuses);
     sut = new Agent(model, supervisorFactory, reactorFactory);
-    verify(reactorFactory).create(any(Runnable.class), anyLong());
-    callback = callbackCaptor.getValue();
   }
 
   private void startAgent() {
     sut.start();
+    verify(reactorFactory).create(any(Runnable.class), anyLong());
+    callback = callbackCaptor.getValue();
     verify(model).addListener(listenerCaptor.capture());
     listener = listenerCaptor.getValue();
   }
@@ -225,7 +225,7 @@ public class AgentTest {
   }
 
   @Test
-  public void verifyCloseDoesNotStopJobs() {
+  public void verifyCloseDoesNotStopJobs() throws Exception {
     startAgent();
 
     start(FOO_DESCRIPTOR);

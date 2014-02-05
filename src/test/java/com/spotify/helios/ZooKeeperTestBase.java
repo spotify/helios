@@ -29,7 +29,7 @@ public class ZooKeeperTestBase {
     UncaughtExceptionLogger.setDefaultUncaughtExceptionHandler();
     tempDir = Files.createTempDir();
 
-    startZookeeper(tempDir);
+    startZookeeper();
   }
 
   @After
@@ -40,6 +40,10 @@ public class ZooKeeperTestBase {
     tempDir = null;
   }
 
+  protected void startZookeeper() throws Exception {
+    startZookeeper(tempDir);
+  }
+
   private void startZookeeper(final File tempDir) throws Exception {
     zkServer = new ZooKeeperServer();
     zkServer.setTxnLogFactory(new FileTxnSnapLog(tempDir, tempDir));
@@ -48,7 +52,7 @@ public class ZooKeeperTestBase {
     cnxnFactory.startup(zkServer);
   }
 
-  private void stopZookeeper() throws Exception {
+  protected void stopZookeeper() throws Exception {
     cnxnFactory.shutdown();
     zkServer.shutdown();
   }

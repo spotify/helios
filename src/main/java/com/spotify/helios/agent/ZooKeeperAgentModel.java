@@ -4,35 +4,29 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.recipes.cache.PathChildrenCache;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
-import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
-import com.spotify.helios.common.VersionedBytes;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.coordination.Node;
 import com.spotify.helios.common.coordination.Paths;
+import com.spotify.helios.common.coordination.PersistentPathChildrenCache;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
-import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.coordination.ZooKeeperPersistentNodeRemover;
+import com.spotify.helios.common.coordination.ZooKeeperUpdatingPersistentMap;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.data.Stat;
-import org.joda.time.Instant;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.List;
+import java.nio.file.Path;
 import java.util.Map;
-import java.util.concurrent.CountDownLatch;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static org.apache.curator.framework.recipes.cache.PathChildrenCache.StartMode.POST_INITIALIZED_EVENT;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 
@@ -40,169 +34,141 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperAgentModel.class);
 
-  private final PathChildrenCache jobs;
-  private final CountDownLatch jobsInitialized = new CountDownLatch(1);
+  private static final String TASK_CONFIG_FILENAME = "task-config.json";
+  private static final String TASK_STATUS_FILENAME = "task-status.json";
+  private static final String TASK_REMOVER_FILENAME = "remove.json";
+
+  private final PersistentPathChildrenCache tasks;
+  private final ZooKeeperUpdatingPersistentMap taskStatuses;
+  private final ZooKeeperPersistentNodeRemover taskRemover;
 
   private final ZooKeeperClient client;
   private final String agent;
 
-  public ZooKeeperAgentModel(final ZooKeeperClient client, final String agent) {
+  public ZooKeeperAgentModel(final ZooKeeperClient client, final String agent,
+                             final Path stateDirectory) throws IOException {
     this.client = checkNotNull(client);
     this.agent = checkNotNull(agent);
-    this.jobs = client.pathChildrenCache(Paths.configAgentJobs(agent), true);
-    jobs.getListenable().addListener(new ContainersListener());
+    final Path taskConfigFile = stateDirectory.resolve(TASK_CONFIG_FILENAME);
+    this.tasks = client.pathChildrenCache(Paths.configAgentJobs(agent), taskConfigFile);
+    tasks.addListener(new JobsListener());
+    final Path taskStatusFile = stateDirectory.resolve(TASK_STATUS_FILENAME);
+    this.taskStatuses = ZooKeeperUpdatingPersistentMap.create(client, taskStatusFile);
+    final Path removerFile = stateDirectory.resolve(TASK_REMOVER_FILENAME);
+    this.taskRemover = ZooKeeperPersistentNodeRemover.create(client, removerFile,
+                                                             new TaskRemovalPredicate());
   }
 
-  private JobId jobId(final String path) {
+  private JobId jobIdFromTaskPath(final String path) {
     final String prefix = Paths.configAgentJobs(agent) + "/";
     return JobId.fromString(path.replaceFirst(prefix, ""));
   }
 
+  private JobId jobIdFromTaskStatusPath(final String path) {
+    final String prefix = Paths.statusAgentJobs(agent) + "/";
+    return JobId.fromString(path.replaceFirst(prefix, ""));
+  }
+
+  @Override
+  public Map<JobId, Task> getTasks() {
+    final Map<JobId, Task> tasks = Maps.newHashMap();
+    for (Map.Entry<String, byte[]> entry : this.tasks.getNodes().entrySet()) {
+      try {
+        final JobId id = jobIdFromTaskPath(entry.getKey());
+        final Task task = Json.read(entry.getValue(), Task.class);
+        tasks.put(id, task);
+      } catch (IOException e) {
+        throw Throwables.propagate(e);
+      }
+    }
+    return tasks;
+  }
+
   @Override
   public Map<JobId, TaskStatus> getTaskStatuses() {
-    final String path = Paths.statusAgentJobs(agent);
-    final Map<JobId, TaskStatus> jobs = Maps.newHashMap();
-    try {
-      final List<String> children = client.getChildren(path);
-      for (final String jobIdString : children) {
-        final JobId jobId = JobId.fromString(jobIdString);
-        final TaskStatus taskStatus = getTaskStatus(jobId);
-        jobs.put(jobId, taskStatus);
+    final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
+    for (Map.Entry<String, byte[]> entry : this.taskStatuses.entrySet()) {
+      try {
+        final JobId id = jobIdFromTaskStatusPath(entry.getKey());
+        final TaskStatus status = Json.read(entry.getValue(), TaskStatus.class);
+        statuses.put(id, status);
+      } catch (IOException e) {
+        throw Throwables.propagate(e);
       }
-    } catch (KeeperException e) {
-      throw Throwables.propagate(e);
     }
-    return jobs;
+    return statuses;
   }
 
   @Override
   public void setTaskStatus(final JobId jobId, final TaskStatus status) {
-    log.debug("setting job status: {}", status);
+    log.debug("setting task status: {}", status);
+    taskStatuses.put(Paths.statusAgentJob(agent, jobId), status.toJsonBytes());
 
-    final String path = Paths.statusAgentJob(agent, jobId);
-
-    try {
-      // Check if the node already exists.
-      final Stat stat = client.stat(path);
-
-      byte[] jsonBytes = status.toJsonBytes();
-      if (stat != null) {
-        // The node already exists, overwrite it.
-        client.setData(path, jsonBytes);
-      } else {
-        client.createAndSetData(path, jsonBytes);
-      }
-      String historyPath = Paths.historyJobAgentEventsTimestamp(
-          jobId, agent, new Instant().getMillis());
-      client.createAndSetData(historyPath, jsonBytes);
-    } catch (KeeperException e) {
-      throw Throwables.propagate(e);
-    }
+    // TODO (dano): restore task status history and make sure that it's bounded as well
+//    final String historyPath = Paths.historyJobAgentEventsTimestamp(
+//        jobId, agent, System.currentTimeMillis());
+//    client.createAndSetData(historyPath, status.toJsonBytes());
   }
 
   @Override
   public TaskStatus getTaskStatus(final JobId jobId) {
     final String path = Paths.statusAgentJob(agent, jobId);
+    final byte[] data = taskStatuses.get(path);
+    if (data == null) {
+      return null;
+    }
     try {
-      final byte[] data = client.getData(path);
-      if (data == null) {
-        // No data, treat that as no state
-        return null;
-      }
       return parse(data, TaskStatus.class);
-    } catch (NoNodeException e) {
-      // No node -> no state
-      return null;
     } catch (IOException e) {
-      // State couldn't be parsed, treat that as no state
-      return null;
-    } catch (KeeperException e) {
       throw Throwables.propagate(e);
     }
   }
 
   @Override
   public void removeTaskStatus(final JobId jobId) {
-    log.debug("removing job status: name={}", jobId);
-    try {
-      client.delete(Paths.statusAgentJob(agent, jobId));
-    } catch (NoNodeException e) {
-      log.debug("application node did not exist");
-    } catch (KeeperException e) {
-      throw Throwables.propagate(e);
-    }
+    final String path = Paths.statusAgentJob(agent, jobId);
+    taskStatuses.remove(path);
   }
 
   @Override
-  public void safeRemoveUndeployTombstone(final JobId jobId) {
-    try {
-      removeUndeployTombstone(jobId);
-    } catch (RuntimeException e) {
-      // swallow it.
-    }
+  public void close() throws InterruptedException {
+    tasks.close();
+    taskStatuses.close();
+    taskRemover.close();
   }
 
   @Override
   public void removeUndeployTombstone(final JobId jobId) {
-    try {
-      String path = Paths.configAgentJob(agent, jobId);
-      VersionedBytes vb = client.getDataVersioned(path);
-      Deployment deployment = parse(vb.getBytes(), Deployment.class);
-      if (deployment.getGoal() == UNDEPLOY) {
-        client.delete(path, vb.getVersion());
-      }
-    } catch (KeeperException e) {
-      throw Throwables.propagate(e);
-    } catch (IOException e) {
-      throw Throwables.propagate(e);
-    }
+    String path = Paths.configAgentJob(agent, jobId);
+    taskRemover.remove(path);
   }
 
   public void start() {
     log.debug("starting");
     try {
-      jobs.start(POST_INITIALIZED_EVENT);
-      jobsInitialized.await();
+      tasks.start();
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }
   }
 
-  private class ContainersListener implements PathChildrenCacheListener {
+  private class JobsListener implements PersistentPathChildrenCache.Listener {
 
     @Override
-    public void childEvent(final CuratorFramework client, final PathChildrenCacheEvent event)
-        throws Exception {
-      log.debug("agent jobs event: event={}", event);
+    public void nodesChanged(final PersistentPathChildrenCache cache) {
+      fireTasksUpdated();
+    }
+  }
 
-      switch (event.getType()) {
-        case CHILD_ADDED: {
-          final byte[] data = event.getData().getData();
-          final JobId jobId = jobId(event.getData().getPath());
-          final Task descriptor = parse(data, Task.class);
-          doAddJob(jobId, descriptor);
-          break;
-        }
-        case CHILD_UPDATED: {
-          final byte[] data = event.getData().getData();
-          final JobId jobId = jobId(event.getData().getPath());
-          final Task descriptor = parse(data, Task.class);
-          doUpdateJob(jobId, descriptor);
-          break;
-        }
-        case CHILD_REMOVED: {
-          final JobId jobId = jobId(event.getData().getPath());
-          doRemoveJob(jobId);
-          break;
-        }
-        case INITIALIZED:
-          jobsInitialized.countDown();
-          break;
-        case CONNECTION_LOST:
-        case CONNECTION_RECONNECTED:
-        case CONNECTION_SUSPENDED:
-          // ignored
-          break;
+  private class TaskRemovalPredicate implements Predicate<Node> {
+
+    @Override
+    public boolean apply(final Node node) {
+      try {
+        final Task task = parse(node.getBytes(), Task.class);
+        return task.getGoal() == UNDEPLOY;
+      } catch (IOException e) {
+        throw Throwables.propagate(e);
       }
     }
   }
