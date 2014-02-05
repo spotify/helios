@@ -276,6 +276,25 @@ public class SystemTest extends ZooKeeperTestBase {
     });
   }
 
+  private AgentStatus awaitAgentStatus(final String name,
+                                       final AgentStatus.Status status,
+                                       final int timeout,
+                                       final TimeUnit timeUnit) throws Exception {
+    return await(timeout, timeUnit, new Callable<AgentStatus>() {
+      @Override
+      public AgentStatus call() throws Exception {
+        final String output = control("host", "status", name, "--json");
+        final Map<String, AgentStatus> statuses = Json.read(
+            output, new TypeReference<Map<String, AgentStatus>>() {});
+        final AgentStatus agentStatus = statuses.get(name);
+        if (agentStatus == null) {
+          return null;
+        }
+        return (agentStatus.getStatus() == status) ? agentStatus : null;
+      }
+    });
+  }
+
   private void assertContains(String needle, String haystack) {
     assertThat(haystack, containsString(needle));
   }
@@ -389,7 +408,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .build();
 
     startDefaultAgent(TEST_AGENT, "--site=localhost");
-    awaitAgentRegistered(control, TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(control, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
         "PORT_NAME", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
@@ -467,7 +486,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setEndpoints(masterEndpoint)
         .build();
 
-    awaitAgentRegistered(control, TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(control, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", ImmutableList.of("/bin/true"));
     deployJob(jobId, TEST_AGENT);
@@ -484,7 +503,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setEndpoints(masterEndpoint)
         .build();
 
-    awaitAgentRegistered(control, TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(control, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711),
                                                            "bar", PortMapping.of(6000));
@@ -506,7 +525,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setEndpoints(masterEndpoint)
         .build();
 
-    awaitAgentRegistered(control, TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(control, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     JobId jobId = createJob(JOB_NAME, JOB_VERSION, "this_sould_not_exist",
                             ImmutableList.of("/bin/true"));
@@ -540,7 +559,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setEndpoints(masterEndpoint)
         .build();
 
-    awaitAgentRegistered(control, TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(control, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     final Job job1 = Job.newBuilder()
         .setName(PREFIX + "foo")
@@ -867,6 +886,7 @@ public class SystemTest extends ZooKeeperTestBase {
 
     // Wait for agent to come up
     awaitAgentRegistered(TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     // Create job
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, image, DO_NOTHING_COMMAND, env, ports,
@@ -993,7 +1013,7 @@ public class SystemTest extends ZooKeeperTestBase {
     // docker, and that the redirector executable exists and doesn't do anything terribly stupid.
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT, "--syslog-redirect", "10.0.3.1:6514");
-    awaitAgentRegistered(TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
@@ -1019,7 +1039,7 @@ public class SystemTest extends ZooKeeperTestBase {
   public void testContainerHostName() throws Exception {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
-    awaitAgentRegistered(TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
@@ -1047,7 +1067,7 @@ public class SystemTest extends ZooKeeperTestBase {
                       "SPOTIFY_POD=PODNAME",
                       "SPOTIFY_ROLE=ROLENAME",
                       "BAR=badfood");
-    awaitAgentRegistered(TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
@@ -1104,7 +1124,7 @@ public class SystemTest extends ZooKeeperTestBase {
   public void testJobWatchExact() throws Exception {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
-    awaitAgentRegistered(TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     // Create job
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
@@ -1167,7 +1187,7 @@ public class SystemTest extends ZooKeeperTestBase {
   public void testJobWatch() throws Exception {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
-    awaitAgentRegistered(TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     // Create job
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
