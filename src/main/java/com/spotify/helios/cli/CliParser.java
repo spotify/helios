@@ -4,6 +4,7 @@
 
 package com.spotify.helios.cli;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -57,6 +58,11 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class CliParser {
 
+  private static final String HELP_JIRA =
+      "Report improvements/bugs at https://jira.spotify.net/browse/HEL";
+  private static final String HELP_WIKI =
+      "For documentation see https://wiki.spotify.net/wiki/Helios";
+
   private final Namespace options;
   private final ControlCommand command;
   private final LoggingConfig loggingConfig;
@@ -71,7 +77,8 @@ public class CliParser {
 
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("helios")
         .defaultHelp(true)
-        .description("Spotify Helios CLI");
+        .description(Joiner.on("\n").join("Spotify Helios CLI", HELP_JIRA, HELP_WIKI));
+
     cliConfig = CliConfig.fromUserConfig();
 
     final GlobalArgs globalArgs = addGlobalArgs(parser, cliConfig, true);
@@ -83,7 +90,7 @@ public class CliParser {
     try {
       this.options = parser.parseArgs(args);
     } catch (ArgumentParserException e) {
-      parser.handleError(e);
+      handleError(parser, e);
       throw e;
     }
 
@@ -127,7 +134,7 @@ public class CliParser {
       return targetsFrom(srvName, sites);
     }
 
-    parser.handleError(new ArgumentParserException(
+    handleError(parser, new ArgumentParserException(
         "no masters specified.  Use the -z or -s option to specify which helios "
         + "cluster/master to connect to", parser));
     return ImmutableList.of();
@@ -173,6 +180,20 @@ public class CliParser {
     final Subparsers master = p("master").help("master commands")
         .addSubparsers().title("master commands").metavar("COMMAND").help("additional help");
     new MasterListCommand(p(master, "list"));
+  }
+
+  /**
+   * Use this instead of calling parser.handle error directly. This will print a header with
+   * links to jira and documentation before the standard error message is printed.
+   * @param parser the parser which will print the standard error message
+   * @param e the exception that will be printed
+   */
+  @SuppressWarnings("UseOfSystemOutOrSystemErr")
+  private void handleError(ArgumentParser parser, ArgumentParserException e) {
+    System.err.println("# " + HELP_JIRA);
+    System.err.println("# " + HELP_WIKI);
+    System.err.println("# ---------------------------------------------------------------");
+    parser.handleError(e);
   }
 
   public List<Target> getTargets() {
