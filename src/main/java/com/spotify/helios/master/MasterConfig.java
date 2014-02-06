@@ -15,6 +15,7 @@ public class MasterConfig {
   private int muninReporterPort;
   private InetSocketAddress httpEndpoint;
   private boolean inhibitMetrics;
+  private String statsdHostPort;
 
   public int getMuninReporterPort() {
     return muninReporterPort;
@@ -77,5 +78,14 @@ public class MasterConfig {
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
+  }
+
+  public MasterConfig setStatsdHostPort(String hostPort) {
+    this.statsdHostPort = hostPort;
+    return this;
+  }
+
+  public String getStatsdHostPort() {
+    return statsdHostPort;
   }
 }

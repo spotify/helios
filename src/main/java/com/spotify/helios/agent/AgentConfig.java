@@ -20,6 +20,7 @@ public class AgentConfig {
   private String redirectToSyslog;
   private boolean inhibitMetrics;
   private Path stateDirectory;
+  private String statsdHostPort;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -118,5 +119,14 @@ public class AgentConfig {
 
   public Path getStateDirectory() {
     return stateDirectory;
+  }
+
+  public AgentConfig setStatsdHostPort(String hostPort) {
+    this.statsdHostPort = hostPort;
+    return this;
+  }
+
+  public String getStatsdHostPort() {
+    return statsdHostPort;
   }
 }

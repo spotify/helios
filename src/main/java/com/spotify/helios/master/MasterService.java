@@ -7,8 +7,10 @@ package com.spotify.helios.master;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Iterables;
 
+import com.bealetech.metrics.reporting.StatsdReporter;
 import com.spotify.helios.common.AbstractClient;
 import com.spotify.helios.common.DefaultZooKeeperClient;
+import com.spotify.helios.common.StatsdSupport;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.statistics.Metrics;
@@ -36,6 +38,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.hermes.message.ProtocolVersion.V2;
@@ -55,6 +58,8 @@ public class MasterService {
   private final HttpServer httpServer;
   private final InetSocketAddress httpEndpoint;
   private final NamelessRegistrar registrar;
+  private final Metrics metrics;
+  private final StatsdReporter statsdReporter;
 
   private RegistrationHandle namelessHermesHandle;
   private RegistrationHandle namelessHttpHandle;
@@ -71,14 +76,14 @@ public class MasterService {
 
     // Configure metrics
     log.info("Starting metrics");
-    Metrics metrics;
-
     if (config.isInhibitMetrics()) {
       metrics = new NoopMetrics();
+      statsdReporter = null;
     } else {
       metrics = new MetricsImpl(config.getMuninReporterPort());
+      metrics.start(); //must be started here for statsd to be happy
+      statsdReporter = StatsdSupport.getStatsdReporter(config.getStatsdHostPort(), "helios-master");
     }
-    metrics.start();
 
     // Set up clients
     this.zooKeeperClient = setupZookeeperClient(config);
@@ -169,6 +174,9 @@ public class MasterService {
         throw propagate(e);
       }
     }
+    if (statsdReporter != null) {
+      statsdReporter.start(15, TimeUnit.SECONDS);
+    }
   }
 
   /**
@@ -190,6 +198,10 @@ public class MasterService {
     hermesServer.stop();
     httpServer.stop();
     zooKeeperClient.close();
+
+    if (statsdReporter != null) {
+      statsdReporter.shutdown();
+    }
   }
 
   // TODO: move

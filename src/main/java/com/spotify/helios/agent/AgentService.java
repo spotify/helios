@@ -9,8 +9,10 @@ import com.google.common.io.BaseEncoding;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import com.bealetech.metrics.reporting.StatsdReporter;
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.ReactorFactory;
+import com.spotify.helios.common.StatsdSupport;
 import com.spotify.helios.common.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.common.coordination.Paths;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
@@ -36,6 +38,7 @@ import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
@@ -64,6 +67,7 @@ public class AgentService extends AbstractIdleService {
   private final AgentModel model;
   private final Metrics metrics;
   private final NamelessRegistrar namelessRegistrar;
+  private final StatsdReporter statsdReporter;
 
   private PersistentEphemeralNode upNode;
   private AgentRegistrar registrar;
@@ -120,11 +124,12 @@ public class AgentService extends AbstractIdleService {
 
     if (config.isInhibitMetrics()) {
       metrics = new NoopMetrics();
+      statsdReporter = null;
     } else {
       metrics = new MetricsImpl(config.getMuninReporterPort());
+      metrics.start();  //must be started here for statsd to be happy
+      statsdReporter = StatsdSupport.getStatsdReporter(config.getStatsdHostPort(), "helios-agent");
     }
-    // TODO (dano): move this to #startUp()
-    metrics.start();
 
     this.zooKeeperCurator = setupZookeeperCurator(config, id);
     this.zooKeeperClient = new DefaultZooKeeperClient(zooKeeperCurator);
@@ -240,6 +245,9 @@ public class AgentService extends AbstractIdleService {
     hostInfoReporter.startAsync();
     runtimeInfoReporter.startAsync();
     environmentVariableReporter.startAsync();
+    if (statsdReporter != null) {
+      statsdReporter.start(15, TimeUnit.SECONDS);
+    }
   }
 
   @Override
@@ -271,6 +279,10 @@ public class AgentService extends AbstractIdleService {
       stateLockFile.close();
     } catch (IOException e) {
       log.error("Failed to close state lock file", e);
+    }
+
+    if (statsdReporter != null) {
+      statsdReporter.shutdown();
     }
   }
 }

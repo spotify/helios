@@ -66,7 +66,8 @@ public class AgentParser extends ServiceParser {
         .setDockerEndpoint(options.getString("docker"))
         .setInhibitMetrics(Objects.equal(options.getBoolean("no_metrics"), true))
         .setRedirectToSyslog(options.getString("syslog_redirect_to"))
-        .setStateDirectory(Paths.get(options.getString("state_dir")));
+        .setStateDirectory(Paths.get(options.getString("state_dir")))
+        .setStatsdHostPort(options.getString("statsd_host_port"));
   }
 
   @Override
@@ -101,6 +102,11 @@ public class AgentParser extends ServiceParser {
         .setDefault(SUPPRESS)
         .action(storeTrue())
         .help("Turn off all collection and reporting of metrics");
+
+    parser.addArgument("--statsd-host-port")
+        .setDefault((String) null)
+        .help("host:port of where to send statsd metrics "
+            + "(to be useful, --no-metrics must *NOT* be specified)");
   }
 
   private static String getHostName() {

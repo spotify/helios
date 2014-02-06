@@ -41,7 +41,8 @@ public class MasterParser extends ServiceParser {
         .setSite(options.getString("site"))
         .setName(options.getString("name"))
         .setInhibitMetrics(Objects.equal(options.getBoolean("no_metrics"), true))
-        .setMuninReporterPort(options.getInt("munin_port"));
+        .setMuninReporterPort(options.getInt("munin_port"))
+        .setStatsdHostPort(options.getString("statsd_host_port"));
   }
 
   @Override
@@ -67,6 +68,11 @@ public class MasterParser extends ServiceParser {
         .setDefault(SUPPRESS)
         .action(storeTrue())
         .help("Turn off all collection and reporting of metrics");
+
+    parser.addArgument("--statsd-host-port")
+        .setDefault((String) null)
+        .help("host:port of where to send statsd metrics "
+            + "(to be useful, --no-metrics must *NOT* be specified)");
   }
 
   private static String getHostName() {
