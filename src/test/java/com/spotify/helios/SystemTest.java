@@ -168,7 +168,7 @@ public class SystemTest extends ZooKeeperTestBase {
     listThreads();
     nameless = new Service();
     nameless.start();
-    LoggingConfigurator.configure(new File(getClass().getResource("/test-logback.xml").getFile()));
+    LoggingConfigurator.configure(new File(getClass().getResource("/logback-test.xml").getFile()));
     super.setUp();
     ensure("/config");
     ensure("/status");
