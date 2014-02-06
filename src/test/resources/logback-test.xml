@@ -9,7 +9,7 @@
 
   <appender name="STDERR_NOPEX" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-5level %F:%L - %msg%n %nopex</pattern>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %F:%L - %msg%nopex%n</pattern>
     </encoder>
     <target>System.err</target>
   </appender>
