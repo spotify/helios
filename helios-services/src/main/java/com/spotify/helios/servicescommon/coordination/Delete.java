@@ -1,0 +1,24 @@
+package com.spotify.helios.servicescommon.coordination;
+
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
+
+class Delete implements ZooKeeperOperation {
+
+  private final String path;
+
+  Delete(final String path) {
+    this.path = path;
+  }
+
+  @Override
+  public void register(final CuratorTransaction transaction) throws Exception {
+    transaction.delete().forPath(path);
+  }
+
+  @Override
+  public String toString() {
+    return "Delete{" +
+           "path='" + path + '\'' +
+           '}';
+  }
+}
