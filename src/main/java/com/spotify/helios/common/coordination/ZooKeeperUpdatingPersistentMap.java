@@ -39,7 +39,7 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperUpdatingPersistentMap.class);
 
-  private static final long RETRY_INTERVAL = 5000;
+  private static final long RETRY_INTERVAL_MILLIS = 5000;
 
   private static final Map<String, byte[]> EMPTY_ENTRIES = Collections.emptyMap();
   private static final TypeReference<Map<String, byte[]>> ENTRIES_TYPE =
@@ -60,7 +60,7 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractIdleService {
                                                     Suppliers.ofInstance(EMPTY_ENTRIES));
     this.written = PersistentAtomicReference.create(stateFile.toString() + ".written", ENTRIES_TYPE,
                                                     Suppliers.ofInstance(EMPTY_ENTRIES));
-    this.reactor = new DefaultReactor(name, new Update(), RETRY_INTERVAL);
+    this.reactor = new DefaultReactor(name, new Update(), RETRY_INTERVAL_MILLIS);
   }
 
   public Map<String, byte[]> map() {

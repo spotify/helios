@@ -37,7 +37,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
       new TypeReference<List<String>>() {};
   private static final List<String> EMPTY_PATHS = Collections.emptyList();
 
-  private static final long RETRY_INTERVAL = 5000;
+  private static final long RETRY_INTERVAL_MILLIS = 5000;
 
   private final ZooKeeperClient client;
   private final Reactor reactor;
@@ -57,7 +57,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
                                                   Suppliers.ofInstance(EMPTY_PATHS));
     this.back = PersistentAtomicReference.create(stateFile.toString() + ".back", PATHS_TYPE,
                                                  Suppliers.ofInstance(EMPTY_PATHS));
-    this.reactor = new DefaultReactor(name, new Update(), RETRY_INTERVAL);
+    this.reactor = new DefaultReactor(name, new Update(), RETRY_INTERVAL_MILLIS);
   }
 
   public void remove(final String path) {
