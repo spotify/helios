@@ -55,6 +55,8 @@ public class Agent extends AbstractIdleService {
         }
       };
 
+  public static final long UPDATE_INTERVAL = SECONDS.toMillis(30);
+
   private final AgentModel model;
   private final SupervisorFactory supervisorFactory;
 
@@ -74,7 +76,7 @@ public class Agent extends AbstractIdleService {
                final ReactorFactory reactorFactory) {
     this.model = model;
     this.supervisorFactory = supervisorFactory;
-    this.reactor = reactorFactory.create("agent", new Update(), SECONDS.toMillis(1));
+    this.reactor = reactorFactory.create("agent", new Update(), UPDATE_INTERVAL);
   }
 
   @Override

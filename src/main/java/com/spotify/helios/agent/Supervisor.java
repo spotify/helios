@@ -127,7 +127,7 @@ class Supervisor {
     this.commandWrapper = checkNotNull(commandWrapper);
     this.agentName = checkNotNull(agentName);
     this.metrics = checkNotNull(metrics);
-    this.reactor = new DefaultReactor("supervisor-" + jobId, new Update(), 1000);
+    this.reactor = new DefaultReactor("supervisor-" + jobId, new Update(), SECONDS.toMillis(30));
     this.reactor.startAsync();
   }
 
