@@ -22,7 +22,7 @@ public class CreateMany implements ZooKeeperOperation {
   @Override
   public String toString() {
     return "CreateMany{" +
-           "nodes=" + nodes +
+           "nodes=" + nodes.keySet() +
            '}';
   }
 }

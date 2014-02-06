@@ -102,9 +102,20 @@ public class ZooKeeperMasterModel implements MasterModel {
     log.debug("adding agent: {}", agent);
 
     try {
-      client.transaction(create(Paths.configAgent(agent)),
-                         create(Paths.configAgentJobs(agent)),
-                         create(Paths.configAgentPorts(agent)));
+      // TODO (dano): this code is replicated in AgentRegistrar
+
+      // This would've been nice to do in a transaction but PathChildrenCache ensures paths
+      // so we can't know what paths already exist so assembling a suitable transaction is too
+      // painful.
+      client.ensurePath(Paths.configAgent(agent));
+      client.ensurePath(Paths.configAgent(agent));
+      client.ensurePath(Paths.configAgentJobs(agent));
+      client.ensurePath(Paths.configAgentPorts(agent));
+      client.ensurePath(Paths.statusAgent(agent));
+      client.ensurePath(Paths.statusAgentJobs(agent));
+
+      // Finish registration by creating the id node last
+      client.ensurePath(Paths.configAgentId(agent));
     } catch (Exception e) {
       throw new HeliosException("adding agent " + agent + " failed", e);
     }
@@ -500,13 +511,22 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public AgentStatus getAgentStatus(final String agent)
       throws HeliosException {
+    final Stat stat;
+    try {
+      stat = client.exists(Paths.configAgentId(agent));
+    } catch (KeeperException e) {
+      throw new HeliosException("Failed to check agent status", e);
+    }
+
+    if (stat == null) {
+      return null;
+    }
+
     final boolean up = checkAgentUp(agent);
     final HostInfo hostInfo = getAgentHostInfo(agent);
     final RuntimeInfo runtimeInfo = getAgentRuntimeInfo(agent);
     final Map<JobId, Deployment> tasks = getTasks(agent);
-    if (tasks == null) {
-      return null;
-    }
+
     final Map<JobId, Deployment> jobs = Maps.filterEntries(tasks,
         new Predicate<Entry<JobId, Deployment>>() {
           @Override public boolean apply(Entry<JobId, Deployment> entry) {

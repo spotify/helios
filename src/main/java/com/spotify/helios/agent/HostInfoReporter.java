@@ -5,8 +5,7 @@
 package com.spotify.helios.agent;
 
 import com.google.common.io.CharStreams;
-import com.google.common.util.concurrent.ListenableScheduledFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.AbstractScheduledService;
 
 import com.spotify.helios.common.NodeUpdaterFactory;
 import com.spotify.helios.common.ZooKeeperNodeUpdater;
@@ -16,28 +15,21 @@ import com.sun.management.OperatingSystemMXBean;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
-import static com.google.common.util.concurrent.MoreExecutors.getExitingScheduledExecutorService;
-import static com.google.common.util.concurrent.MoreExecutors.listeningDecorator;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class HostInfoReporter implements AutoCloseable {
+public class HostInfoReporter extends AbstractScheduledService {
 
   public static final int DEFAULT_INTERVAL = 1;
   public static final TimeUnit DEFAUL_TIMEUNIT = MINUTES;
-
-  private final ListeningScheduledExecutorService executor =
-      listeningDecorator(getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(1)));
 
   private final OperatingSystemMXBean operatingSystemMXBean;
   private final ZooKeeperNodeUpdater nodeUpdater;
   private final int interval;
   private final TimeUnit timeUnit;
-  private ListenableScheduledFuture<?> updateFuture;
 
   HostInfoReporter(final Builder builder) {
     this.operatingSystemMXBean = checkNotNull(builder.operatingSystemMXBean);
@@ -46,20 +38,8 @@ public class HostInfoReporter implements AutoCloseable {
     this.timeUnit = checkNotNull(builder.timeUnit);
   }
 
-  public void start() {
-    updateFuture = executor.scheduleWithFixedDelay(new Report(), 0, interval, timeUnit);
-  }
-
   @Override
-  public void close() {
-    updateFuture.cancel(true);
-  }
-
-  private class Report implements Runnable {
-
-    @Override
-    public void run() {
-
+  protected void runOneIteration() throws Exception {
       final String hostname = exec("uname -n").trim();
       final String uname = exec("uname -a").trim();
 
@@ -78,7 +58,11 @@ public class HostInfoReporter implements AutoCloseable {
           .build();
 
       nodeUpdater.update(hostInfo.toJsonBytes());
-    }
+  }
+
+  @Override
+  protected Scheduler scheduler() {
+    return Scheduler.newFixedDelaySchedule(0, interval, timeUnit);
   }
 
   private String exec(final String command) {

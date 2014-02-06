@@ -2,13 +2,24 @@
 
   <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %F:%L - %msg%n</pattern>
     </encoder>
     <target>System.err</target>
   </appender>
 
-  <logger name="org.apache.curator" level="ERROR" />
-  <logger name="org.apache.zookeeper" level="ERROR" />
+  <appender name="STDERR_NOPEX" class="ch.qos.logback.core.ConsoleAppender">
+    <encoder>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %F:%L - %msg%n %nopex</pattern>
+    </encoder>
+    <target>System.err</target>
+  </appender>
+
+  <logger name="org.apache.curator" level="ERROR">
+    <appender-ref ref="STDERR_NOPEX"/>
+  </logger>
+  <logger name="org.apache.zookeeper" level="ERROR">
+    <appender-ref ref="STDERR_NOPEX"/>
+  </logger>
   <logger name="com.spotify.hermes" level="ERROR" />
 
   <root level="DEBUG">

@@ -21,6 +21,7 @@ public class Paths {
   private static final String RUNTIMEINFO = "runtimeinfo";
   private static final String PORTS = "ports";
   private static final String ENVIRONMENTVARS = "environment";
+  private static final String ID = "id";
 
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
   private static final PathFactory CONFIG_JOBREFS = new PathFactory("/", CONFIG, JOBREFS);
@@ -59,6 +60,10 @@ public class Paths {
 
   public static String configAgent(final String agent) {
     return CONFIG_AGENTS.path(agent);
+  }
+
+  public static String configAgentId(final String agent) {
+    return CONFIG_AGENTS.path(agent, ID);
   }
 
   public static String configAgentJobs(final String agent) {

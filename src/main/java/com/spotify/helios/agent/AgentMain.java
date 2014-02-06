@@ -33,12 +33,14 @@ public class AgentMain extends ServiceMain {
   @Override
   protected void startUp() throws Exception {
     service = new AgentService(agentConfig);
-    service.start();
+    service.startAsync().awaitRunning();
   }
 
   @Override
   protected void shutDown() throws Exception {
-    service.stop();
+    if (service != null) {
+      service.stopAsync().awaitTerminated();
+    }
   }
 
   public static void main(final String... args) {

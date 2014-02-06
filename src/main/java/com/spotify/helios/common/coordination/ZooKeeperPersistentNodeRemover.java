@@ -9,8 +9,10 @@ import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.helios.common.DefaultReactor;
 import com.spotify.helios.common.PersistentAtomicReference;
 import com.spotify.helios.common.Reactor;
 
@@ -27,7 +29,7 @@ import java.util.Set;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.check;
 import static com.spotify.helios.common.coordination.ZooKeeperOperations.delete;
 
-public class ZooKeeperPersistentNodeRemover {
+public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperPersistentNodeRemover.class);
 
@@ -46,8 +48,8 @@ public class ZooKeeperPersistentNodeRemover {
 
   private final Object lock = new Object() {};
 
-  public ZooKeeperPersistentNodeRemover(final ZooKeeperClient client, final Path stateFile,
-                                        final Predicate<Node> predicate)
+  public ZooKeeperPersistentNodeRemover(final String name, final ZooKeeperClient client,
+                                        final Path stateFile, final Predicate<Node> predicate)
       throws IOException {
     this.client = client;
     this.predicate = predicate;
@@ -55,7 +57,7 @@ public class ZooKeeperPersistentNodeRemover {
                                                   Suppliers.ofInstance(EMPTY_PATHS));
     this.back = PersistentAtomicReference.create(stateFile.toString() + ".back", PATHS_TYPE,
                                                  Suppliers.ofInstance(EMPTY_PATHS));
-    this.reactor = new Reactor(new Update(), RETRY_INTERVAL);
+    this.reactor = new DefaultReactor(name, new Update(), RETRY_INTERVAL);
   }
 
   public void remove(final String path) {
@@ -79,68 +81,92 @@ public class ZooKeeperPersistentNodeRemover {
     reactor.update();
   }
 
-  public static ZooKeeperPersistentNodeRemover create(final ZooKeeperClient client,
+  public static ZooKeeperPersistentNodeRemover create(final String name,
+                                                      final ZooKeeperClient client,
                                                       final Path stateFile,
                                                       final Predicate<Node> predicate)
       throws IOException {
-    return new ZooKeeperPersistentNodeRemover(client, stateFile, predicate);
+    return new ZooKeeperPersistentNodeRemover(name, client, stateFile, predicate);
   }
 
-  public void close() throws InterruptedException {
-    reactor.close();
+  @Override
+  protected void startUp() throws Exception {
+    reactor.startAsync().awaitRunning();
   }
 
-  private class Update implements Runnable {
+  @Override
+  protected void shutDown() throws Exception {
+    reactor.stopAsync().awaitTerminated();
+  }
+
+  private class Update implements Reactor.Callback {
 
     @Override
     public void run() {
-      // Drain the front
-      final Set<String> backPaths;
+      // Drain the front to the backlog
+      final Set<String> backPaths = Sets.newHashSet(back.get());
       synchronized (lock) {
-        final List<String> frontPaths = front.get();
-        backPaths = Sets.newHashSet(back.get());
-        backPaths.addAll(frontPaths);
-        try {
-          back.set(ImmutableList.copyOf(backPaths));
-          front.set(EMPTY_PATHS);
-        } catch (IOException e) {
-          log.error("Error draining front", e);
-          throw Throwables.propagate(e);
+        if (!front.get().isEmpty()) {
+          final List<String> frontPaths = front.get();
+          backPaths.addAll(frontPaths);
+          try {
+            back.set(ImmutableList.copyOf(backPaths));
+            front.set(EMPTY_PATHS);
+          } catch (IOException e) {
+            log.error("Error draining front", e);
+            throw Throwables.propagate(e);
+          }
         }
       }
 
-      final Set<String> newBacknodes = Sets.newHashSet(backPaths);
+      // Remove all nodes in the backlog
+      final Set<String> newBackPaths = Sets.newHashSet(backPaths);
       for (final String path : backPaths) {
+        Node node = null;
         try {
-          Node node = null;
+          node = client.getNode(path);
+        } catch (KeeperException.NoNodeException ignore) {
+          // we're done here
+          newBackPaths.remove(path);
+        } catch (KeeperException.ConnectionLossException e) {
+          log.warn("ZooKeeper connection lost while inspecting node: {}", path);
+          throw Throwables.propagate(e);
+        } catch (KeeperException e) {
+          log.error("Failed inspecting node: {}", path);
+        }
+        if (node != null) {
           try {
-            node = client.getNode(path);
-          } catch (KeeperException.NoNodeException ignore) {
-            // we're done here
-          }
-          if (node != null) {
             final boolean remove;
             try {
               remove = evaluate(node);
             } catch (Exception e) {
-              log.error("Condition threw exception", e);
+              log.error("Condition threw exception for node: {}", e, path);
               continue;
             }
             if (remove) {
               client.transaction(check(path, node.getStat().getVersion()),
                                  delete(path));
+              // we're done here
+              newBackPaths.remove(path);
+              log.debug("Removed node: {}", path);
             }
+          } catch (KeeperException.BadVersionException ignore) {
+            // we're done here
+            newBackPaths.remove(path);
+          } catch (KeeperException.ConnectionLossException e) {
+            log.warn("ZooKeeper connection lost while removing node: {}", path);
+            throw Throwables.propagate(e);
+          } catch (KeeperException e) {
+            log.error("Failed removing node: {}", path);
           }
-        } catch (KeeperException.BadVersionException ignore) {
-          // we're done here
-        } catch (KeeperException e) {
-          log.error("Failed removing node: {}", path);
         }
-        newBacknodes.remove(path);
       }
 
       try {
-        back.set(ImmutableList.copyOf(newBacknodes));
+        final ImmutableList<String> newBackPathsList = ImmutableList.copyOf(newBackPaths);
+        if (!back.get().equals(newBackPathsList)) {
+          back.set(newBackPathsList);
+        }
       } catch (IOException e) {
         log.error("Error writing back", e);
         throw Throwables.propagate(e);

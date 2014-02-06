@@ -4,6 +4,8 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.util.concurrent.Service;
+
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -14,7 +16,7 @@ import java.util.Map;
  * Models the desired state of a host as provided by mastera and provides a way for an agent to
  * indicate its current state.
  */
-public interface AgentModel {
+public interface AgentModel extends Service {
 
   /**
    * Get a map of tasks.
@@ -63,8 +65,6 @@ public interface AgentModel {
    * @see #addListener(Listener)
    */
   void removeListener(Listener listener);
-
-  void close() throws InterruptedException;
 
   /**
    * A listener for changes to the set of tasks.

@@ -7,6 +7,7 @@ package com.spotify.helios.agent;
 import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.coordination.Node;
@@ -25,38 +26,54 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Map;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 
-public class ZooKeeperAgentModel extends AbstractAgentModel {
+public class ZooKeeperAgentModel extends AbstractIdleService implements AgentModel {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperAgentModel.class);
 
   private static final String TASK_CONFIG_FILENAME = "task-config.json";
   private static final String TASK_STATUS_FILENAME = "task-status.json";
   private static final String TASK_REMOVER_FILENAME = "remove.json";
+  private static final Predicate<Node> TASK_GOAL_IS_UNDEPLOY = new TaskGoalIsUndeployPredicate();
 
   private final PersistentPathChildrenCache tasks;
   private final ZooKeeperUpdatingPersistentMap taskStatuses;
   private final ZooKeeperPersistentNodeRemover taskRemover;
 
-  private final ZooKeeperClient client;
   private final String agent;
+  private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
 
   public ZooKeeperAgentModel(final ZooKeeperClient client, final String agent,
                              final Path stateDirectory) throws IOException {
-    this.client = checkNotNull(client);
     this.agent = checkNotNull(agent);
     final Path taskConfigFile = stateDirectory.resolve(TASK_CONFIG_FILENAME);
     this.tasks = client.pathChildrenCache(Paths.configAgentJobs(agent), taskConfigFile);
     tasks.addListener(new JobsListener());
     final Path taskStatusFile = stateDirectory.resolve(TASK_STATUS_FILENAME);
-    this.taskStatuses = ZooKeeperUpdatingPersistentMap.create(client, taskStatusFile);
+    this.taskStatuses = ZooKeeperUpdatingPersistentMap.create("agent-model-task-statuses", client,
+                                                              taskStatusFile);
     final Path removerFile = stateDirectory.resolve(TASK_REMOVER_FILENAME);
-    this.taskRemover = ZooKeeperPersistentNodeRemover.create(client, removerFile,
-                                                             new TaskRemovalPredicate());
+    this.taskRemover = ZooKeeperPersistentNodeRemover.create("agent-model-task-remover", client,
+                                                             removerFile, TASK_GOAL_IS_UNDEPLOY);
+  }
+
+  @Override
+  protected void startUp() throws Exception {
+    tasks.startAsync().awaitRunning();
+    taskStatuses.startAsync().awaitRunning();
+    taskRemover.startAsync().awaitRunning();
+  }
+
+  @Override
+  protected void shutDown() throws Exception {
+    tasks.stopAsync().awaitTerminated();
+    taskStatuses.stopAsync().awaitTerminated();
+    taskRemover.stopAsync().awaitTerminated();
   }
 
   private JobId jobIdFromTaskPath(final String path) {
@@ -87,7 +104,7 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
   @Override
   public Map<JobId, TaskStatus> getTaskStatuses() {
     final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
-    for (Map.Entry<String, byte[]> entry : this.taskStatuses.entrySet()) {
+    for (Map.Entry<String, byte[]> entry : this.taskStatuses.map().entrySet()) {
       try {
         final JobId id = jobIdFromTaskStatusPath(entry.getKey());
         final TaskStatus status = Json.read(entry.getValue(), TaskStatus.class);
@@ -102,7 +119,7 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
   @Override
   public void setTaskStatus(final JobId jobId, final TaskStatus status) {
     log.debug("setting task status: {}", status);
-    taskStatuses.put(Paths.statusAgentJob(agent, jobId), status.toJsonBytes());
+    taskStatuses.map().put(Paths.statusAgentJob(agent, jobId), status.toJsonBytes());
 
     // TODO (dano): restore task status history and make sure that it's bounded as well
 //    final String historyPath = Paths.historyJobAgentEventsTimestamp(
@@ -113,7 +130,7 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
   @Override
   public TaskStatus getTaskStatus(final JobId jobId) {
     final String path = Paths.statusAgentJob(agent, jobId);
-    final byte[] data = taskStatuses.get(path);
+    final byte[] data = taskStatuses.map().get(path);
     if (data == null) {
       return null;
     }
@@ -127,14 +144,7 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
   @Override
   public void removeTaskStatus(final JobId jobId) {
     final String path = Paths.statusAgentJob(agent, jobId);
-    taskStatuses.remove(path);
-  }
-
-  @Override
-  public void close() throws InterruptedException {
-    tasks.close();
-    taskStatuses.close();
-    taskRemover.close();
+    taskStatuses.map().remove(path);
   }
 
   @Override
@@ -143,12 +153,24 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
     taskRemover.remove(path);
   }
 
-  public void start() {
-    log.debug("starting");
-    try {
-      tasks.start();
-    } catch (Exception e) {
-      throw Throwables.propagate(e);
+  @Override
+  public void addListener(final AgentModel.Listener listener) {
+    listeners.add(listener);
+    listener.tasksChanged(this);
+  }
+
+  @Override
+  public void removeListener(final AgentModel.Listener listener) {
+    listeners.remove(listener);
+  }
+
+  protected void fireTasksUpdated() {
+    for (final AgentModel.Listener listener : listeners) {
+      try {
+        listener.tasksChanged(this);
+      } catch (Exception e) {
+        log.error("listener threw exception", e);
+      }
     }
   }
 
@@ -160,7 +182,7 @@ public class ZooKeeperAgentModel extends AbstractAgentModel {
     }
   }
 
-  private class TaskRemovalPredicate implements Predicate<Node> {
+  private static class TaskGoalIsUndeployPredicate implements Predicate<Node> {
 
     @Override
     public boolean apply(final Node node) {

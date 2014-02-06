@@ -7,8 +7,10 @@ package com.spotify.helios.common.coordination;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractFuture;
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import com.spotify.helios.common.DefaultReactor;
 import com.spotify.helios.common.Reactor;
 
 import org.apache.zookeeper.KeeperException;
@@ -20,7 +22,7 @@ import java.util.Map;
 /**
  * A ZooKeeper node writer that retries forever.
  */
-public class RetryingZooKeeperNodeWriter {
+public class RetryingZooKeeperNodeWriter extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(RetryingZooKeeperNodeWriter.class);
 
@@ -34,9 +36,9 @@ public class RetryingZooKeeperNodeWriter {
   private final Map<String, Write> back = Maps.newHashMap();
   private final Object lock = new Object() {};
 
-  public RetryingZooKeeperNodeWriter(final ZooKeeperClient client) {
+  public RetryingZooKeeperNodeWriter(final String name, final ZooKeeperClient client) {
     this.client = client;
-    this.reactor = new Reactor(new Update(), RETRY_INTERVAL_MILLIS);
+    this.reactor = new DefaultReactor(name, new Update(), RETRY_INTERVAL_MILLIS);
   }
 
   public ListenableFuture<Void> set(final String path, final byte[] data) {
@@ -52,11 +54,17 @@ public class RetryingZooKeeperNodeWriter {
     return write;
   }
 
-  public void close() throws InterruptedException {
-    reactor.close();
+  @Override
+  protected void startUp() throws Exception {
+    reactor.startAsync().awaitRunning();
   }
 
-  private class Update implements Runnable {
+  @Override
+  protected void shutDown() throws Exception {
+    reactor.stopAsync().awaitTerminated();
+  }
+
+  private class Update implements Reactor.Callback {
 
     @Override
     public void run() {

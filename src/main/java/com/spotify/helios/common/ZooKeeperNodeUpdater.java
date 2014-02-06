@@ -4,6 +4,7 @@
 
 package com.spotify.helios.common;
 
+import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -24,16 +25,24 @@ public class ZooKeeperNodeUpdater implements NodeUpdater {
   }
 
   @Override
-  public void update(final byte[] bytes) {
-    // TODO (dano): implement retries and make it asynchronous in order to enable fire-and-forget use
+  public boolean update(final byte[] bytes) {
+    final String parent = ZKPaths.getPathAndNode(path).getPath();
     try {
+      if (zooKeeperClient.stat(parent) == null) {
+        return false;
+      }
       if (zooKeeperClient.stat(path) == null) {
         zooKeeperClient.createAndSetData(path, bytes);
       } else {
         zooKeeperClient.setData(path, bytes);
       }
+      return true;
+    } catch (KeeperException.ConnectionLossException e) {
+      log.warn("ZooKeeper connection lost while updating node: {}", path);
+      return false;
     } catch (KeeperException e) {
       log.error("failed to update node: {}", path, e);
+      return false;
     }
   }
 }

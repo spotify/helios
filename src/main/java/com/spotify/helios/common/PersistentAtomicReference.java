@@ -46,7 +46,7 @@ public class PersistentAtomicReference<T> {
   }
 
   public void set(T newValue) throws IOException {
-    log.debug("set: {}", newValue);
+    log.debug("set: ({}) {}", filename, newValue);
     synchronized (sync) {
       final String json = Json.asPrettyStringUnchecked(newValue);
       Files.write(tempfilename, json.getBytes(UTF_8));

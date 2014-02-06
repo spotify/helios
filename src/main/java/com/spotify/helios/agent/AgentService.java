@@ -5,14 +5,14 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Throwables;
-import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.io.BaseEncoding;
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import com.spotify.helios.common.DefaultZooKeeperClient;
 import com.spotify.helios.common.ReactorFactory;
 import com.spotify.helios.common.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.common.coordination.Paths;
-import com.spotify.helios.common.coordination.RetryingZooKeeperNodeWriter;
 import com.spotify.helios.common.coordination.ZooKeeperClient;
 import com.spotify.helios.common.statistics.Metrics;
 import com.spotify.helios.common.statistics.MetricsImpl;
@@ -35,20 +35,19 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
+import java.security.SecureRandom;
 
-import static com.google.common.util.concurrent.Futures.allAsList;
+import static com.google.common.base.Charsets.UTF_8;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static java.util.Arrays.asList;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
 /**
  * The Helios agent.
  */
-public class AgentService {
+public class AgentService extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(AgentService.class);
   public static final byte[] EMPTY_BYTES = new byte[]{};
@@ -60,12 +59,14 @@ public class AgentService {
   private final HostInfoReporter hostInfoReporter;
   private final RuntimeInfoReporter runtimeInfoReporter;
   private final EnvironmentVariableReporter environmentVariableReporter;
-  private final Path stateDirectory;
   private final FileChannel stateLockFile;
   private final FileLock stateLock;
+  private final AgentModel model;
+  private final Metrics metrics;
+  private final NamelessRegistrar namelessRegistrar;
 
   private PersistentEphemeralNode upNode;
-  private RetryingZooKeeperNodeWriter baseNodes;
+  private AgentRegistrar registrar;
 
   /**
    * Create a new agent instance.
@@ -75,7 +76,7 @@ public class AgentService {
   public AgentService(final AgentConfig config) {
 
     // Create state directory, if necessary
-    stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
+    final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
     if (!Files.exists(stateDirectory)) {
       try {
         Files.createDirectories(stateDirectory);
@@ -98,66 +99,91 @@ public class AgentService {
       throw Throwables.propagate(e);
     }
 
+    final Path idPath = config.getStateDirectory().resolve("id");
+    final String id;
+    try {
+      if (Files.exists(idPath)) {
+        id = new String(Files.readAllBytes(idPath), UTF_8);
+      } else {
+        final byte[] idBytes = new byte[20];
+        new SecureRandom().nextBytes(idBytes);
+        id = BaseEncoding.base16().encode(idBytes);
+        Files.write(idPath, id.getBytes(UTF_8));
+      }
+    } catch (IOException e) {
+      log.error("Failed to set up id file: {}", idPath, e);
+      throw Throwables.propagate(e);
+    }
+
     // Configure metrics
     log.info("Starting metrics");
-    Metrics metrics;
 
     if (config.isInhibitMetrics()) {
       metrics = new NoopMetrics();
     } else {
       metrics = new MetricsImpl(config.getMuninReporterPort());
     }
+    // TODO (dano): move this to #startUp()
     metrics.start();
 
-    this.zooKeeperCurator = setupZookeeperCurator(config);
+    this.zooKeeperCurator = setupZookeeperCurator(config, id);
     this.zooKeeperClient = new DefaultZooKeeperClient(zooKeeperCurator);
 
-    final AgentModel model = setupModel(config, zooKeeperClient, stateDirectory);
+    this.model = setupModel(config, zooKeeperClient, stateDirectory);
 
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
 
-    final NamelessRegistrar registrar;
     if (config.getSite() != null) {
-      registrar = config.getSite().equals("localhost")
-                  ? Nameless.newRegistrar("tcp://localhost:4999")
+      namelessRegistrar = config.getSite().equals("localhost")
+                          ? Nameless.newRegistrar("tcp://localhost:4999")
                   : Nameless.newRegistrarForDomain(config.getSite());
     } else {
-      registrar = null;
+      namelessRegistrar = null;
     }
-    final SupervisorFactory supervisorFactory = new SupervisorFactory(model, dockerClientFactory,
-        config.getEnvVars(), registrar,
-        config.getRedirectToSyslog() != null
-            ? new SyslogRedirectingCommandWrapper(config.getRedirectToSyslog())
-            : new NoOpCommandWrapper(),
-        config.getName(),
-        metrics.getSupervisorMetrics());
-    final ReactorFactory reactorFactory = new ReactorFactory();
+
+    final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =
+        new ZooKeeperNodeUpdaterFactory(zooKeeperClient);
 
     this.hostInfoReporter = HostInfoReporter.newBuilder()
-        .setNodeUpdaterFactory(new ZooKeeperNodeUpdaterFactory(zooKeeperClient))
+        .setNodeUpdaterFactory(nodeUpdaterFactory)
         .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
         .setAgent(config.getName())
         .build();
 
     this.runtimeInfoReporter = RuntimeInfoReporter.newBuilder()
-        .setNodeUpdaterFactory(new ZooKeeperNodeUpdaterFactory(zooKeeperClient))
+        .setNodeUpdaterFactory(nodeUpdaterFactory)
         .setRuntimeMXBean(getRuntimeMXBean())
         .setAgent(config.getName())
         .build();
 
     this.environmentVariableReporter = new EnvironmentVariableReporter(config.getName(),
-        config.getEnvVars(), zooKeeperClient);
+                                                                       config.getEnvVars(),
+                                                                       nodeUpdaterFactory);
+
+    final SupervisorFactory supervisorFactory = new SupervisorFactory(
+        model, dockerClientFactory,
+        config.getEnvVars(), namelessRegistrar,
+        config.getRedirectToSyslog() != null
+        ? new SyslogRedirectingCommandWrapper(config.getRedirectToSyslog())
+        : new NoOpCommandWrapper(),
+        config.getName(),
+        metrics.getSupervisorMetrics());
+
+    final ReactorFactory reactorFactory = new ReactorFactory();
+
     this.agent = new Agent(model, supervisorFactory, reactorFactory);
   }
 
   /**
    * Create a Zookeeper client and create the control and state nodes if needed.
    *
+   *
    * @param config The service configuration.
+   * @param id
    * @return A zookeeper client.
    */
-  private CuratorFramework setupZookeeperCurator(final AgentConfig config) {
+  private CuratorFramework setupZookeeperCurator(final AgentConfig config, final String id) {
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
     final CuratorFramework curator = CuratorFrameworkFactory.newClient(
         config.getZooKeeperConnectionString(),
@@ -165,25 +191,18 @@ public class AgentService {
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy);
 
-    curator.start();
+//    curator.start();
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
 
-    // TODO (dano): this stuff should probably live in the agent model
-    final String name = config.getName();
-    this.baseNodes = new RetryingZooKeeperNodeWriter(client);
+    // Register the agent
+    this.registrar = new AgentRegistrar(client, config.getName(), id);
+    final String upPath = Paths.statusAgentUp(config.getName());
 
-    // Write base nodes
-    final ListenableFuture<List<Void>> baseNodesFuture = allAsList(
-        asList(baseNodes.set(Paths.configAgentJobs(name), EMPTY_BYTES),
-               baseNodes.set(Paths.configAgentPorts(name), EMPTY_BYTES),
-               baseNodes.set(Paths.statusAgentJobs(name), EMPTY_BYTES)));
-
-    // Create the ephemeral node after all base nodes have been written
-    final String upPath = Paths.statusAgentUp(name);
-    this.upNode = new PersistentEphemeralNode(curator, EPHEMERAL, upPath, EMPTY_BYTES);
-    baseNodesFuture.addListener(new Runnable() {
+    // Create the ephemeral up node after agent registration completes
+    this.registrar.getCompletionFuture().addListener(new Runnable() {
       @Override
       public void run() {
+        upNode = new PersistentEphemeralNode(curator, EPHEMERAL, upPath, EMPTY_BYTES);
         upNode.start();
       }
     }, MoreExecutors.sameThreadExecutor());
@@ -206,32 +225,42 @@ public class AgentService {
     final ZooKeeperAgentModel model;
     try {
       model = new ZooKeeperAgentModel(zooKeeperClient, config.getName(), stateDirectory);
-      model.start();
     } catch (Exception e) {
       throw new RuntimeException("state initialization failed", e);
     }
     return model;
   }
 
-  /**
-   * Start the agent.
-   */
-  public void start() {
-    agent.start();
-    hostInfoReporter.start();
-    runtimeInfoReporter.start();
-    environmentVariableReporter.start();
+  @Override
+  protected void startUp() throws Exception {
+    zooKeeperCurator.start();
+    model.startAsync().awaitRunning();
+    registrar.startAsync().awaitRunning();
+    agent.startAsync().awaitRunning();
+    hostInfoReporter.startAsync();
+    runtimeInfoReporter.startAsync();
+    environmentVariableReporter.startAsync();
   }
 
-  /**
-   * Stop the agent.
-   */
-  public void stop() throws InterruptedException {
-    agent.close();
-    hostInfoReporter.close();
-    runtimeInfoReporter.close();
-    environmentVariableReporter.close();
-    baseNodes.close();
+  @Override
+  protected void shutDown() throws Exception {
+    hostInfoReporter.stopAsync().awaitTerminated();
+    runtimeInfoReporter.stopAsync().awaitTerminated();
+    environmentVariableReporter.stopAsync().awaitTerminated();
+    agent.stopAsync().awaitTerminated();
+    if (namelessRegistrar != null) {
+      namelessRegistrar.shutdown().get();
+    }
+    registrar.stopAsync().awaitTerminated();
+    model.stopAsync().awaitTerminated();
+    if (upNode != null) {
+      try {
+        upNode.close();
+      } catch (IOException e) {
+        log.warn("Exception on closing up node", e.getMessage());
+      }
+    }
+    metrics.stop();
     zooKeeperCurator.close();
     try {
       stateLock.release();

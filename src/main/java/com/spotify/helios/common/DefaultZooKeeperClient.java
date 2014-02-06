@@ -21,13 +21,11 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.collect.Lists.reverse;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static org.apache.curator.framework.imps.CuratorFrameworkState.STARTED;
 
 public class DefaultZooKeeperClient implements ZooKeeperClient {
 
@@ -36,7 +34,6 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   private final CuratorFramework client;
 
   public DefaultZooKeeperClient(CuratorFramework client) {
-    checkArgument(client.getState() == STARTED);
     this.client = client;
   }
 
@@ -77,6 +74,16 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     try {
       byte[] bytes = client.getData().storingStatIn(stat).forPath(path);
       return new Node(path, bytes, stat);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
+  public Stat exists(final String path) throws KeeperException {
+    try {
+      return client.checkExists().forPath(path);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
@@ -143,7 +150,6 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void createAndSetData(final String path, final byte[] data) throws KeeperException {
-    ensurePath(path, true);
     try {
       client.create().forPath(path, data);
     } catch (Exception e) {
@@ -154,7 +160,6 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void create(final String path) throws KeeperException {
-    ensurePath(path, true);
     try {
       client.create().forPath(path);
     } catch (Exception e) {
@@ -165,7 +170,6 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void createWithMode(final String path, final CreateMode mode) throws KeeperException {
-    ensurePath(path, true);
     try {
       client.create().withMode(mode).forPath(path);
     } catch (Exception e) {

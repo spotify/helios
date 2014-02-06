@@ -9,8 +9,10 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.helios.common.DefaultReactor;
 import com.spotify.helios.common.PersistentAtomicReference;
 import com.spotify.helios.common.Reactor;
 
@@ -33,7 +35,7 @@ import static com.google.common.collect.MapDifference.ValueDifference;
  * read from, so this is not a distributed map. Multiple changes to the same key are folded and only
  * the last value is written to ZooKeeper.
  */
-public class ZooKeeperUpdatingPersistentMap extends AbstractMap<String, byte[]> {
+public class ZooKeeperUpdatingPersistentMap extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperUpdatingPersistentMap.class);
 
@@ -50,69 +52,38 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractMap<String, byte[]> 
 
   private final Object lock = new Object() {};
 
-  private ZooKeeperUpdatingPersistentMap(final ZooKeeperClient client, final Path stateFile)
-      throws IOException {
+  private ZooKeeperUpdatingPersistentMap(final String name, final ZooKeeperClient client,
+                                         final Path stateFile)
+  throws IOException {
     this.client = client;
     this.entries = PersistentAtomicReference.create(stateFile, ENTRIES_TYPE,
                                                     Suppliers.ofInstance(EMPTY_ENTRIES));
     this.written = PersistentAtomicReference.create(stateFile.toString() + ".written", ENTRIES_TYPE,
                                                     Suppliers.ofInstance(EMPTY_ENTRIES));
-    this.reactor = new Reactor(new Update(), RETRY_INTERVAL);
+    this.reactor = new DefaultReactor(name, new Update(), RETRY_INTERVAL);
   }
 
-  @Override
-  public byte[] put(final String key, final byte[] value) {
-    synchronized (lock) {
-      final Map<String, byte[]> mutable = Maps.newHashMap(entries.get());
-      final byte[] prev = mutable.put(key, value);
-      try {
-        entries.set(ImmutableMap.copyOf(mutable));
-      } catch (IOException e) {
-        throw Throwables.propagate(e);
-      }
-      reactor.update();
-      return prev;
-    }
+  public Map<String, byte[]> map() {
+    return new MapView();
   }
 
-  @Override
-  public byte[] remove(final Object key) {
-    if (!(key instanceof String)) {
-      return null;
-    }
-    synchronized (lock) {
-      final Map<String, byte[]> mutable = Maps.newHashMap(entries.get());
-      final byte[] value = mutable.remove(key);
-      try {
-        entries.set(ImmutableMap.copyOf(mutable));
-      } catch (IOException e) {
-        throw Throwables.propagate(e);
-      }
-      reactor.update();
-      return value;
-    }
-  }
-
-  @Override
-  public byte[] get(final Object key) {
-    return entries.get().get(key);
-  }
-
-  @Override
-  public Set<Entry<String, byte[]>> entrySet() {
-    return entries.get().entrySet();
-  }
-
-  public static ZooKeeperUpdatingPersistentMap create(final ZooKeeperClient client,
+  public static ZooKeeperUpdatingPersistentMap create(final String name,
+                                                      final ZooKeeperClient client,
                                                       final Path stateFile) throws IOException {
-    return new ZooKeeperUpdatingPersistentMap(client, stateFile);
+    return new ZooKeeperUpdatingPersistentMap(name, client, stateFile);
   }
 
-  public void close() throws InterruptedException {
-    reactor.close();
+  @Override
+  protected void startUp() throws Exception {
+    reactor.startAsync().awaitRunning();
   }
 
-  private class Update implements Runnable {
+  @Override
+  protected void shutDown() throws Exception {
+    reactor.stopAsync().awaitTerminated();
+  }
+
+  private class Update implements Reactor.Callback {
 
     @Override
     public void run() {
@@ -132,17 +103,17 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractMap<String, byte[]> 
       log.debug("update: {}", update.keySet());
       log.debug("delete: {}", delete.keySet());
 
-      for (final Entry<String, byte[]> entry : create.entrySet()) {
+      for (final Map.Entry<String, byte[]> entry : create.entrySet()) {
         write(entry.getKey(), entry.getValue());
         newWritten.put(entry.getKey(), entry.getValue());
       }
 
-      for (final Entry<String, ValueDifference<byte[]>> entry : update.entrySet()) {
+      for (final Map.Entry<String, ValueDifference<byte[]>> entry : update.entrySet()) {
         write(entry.getKey(), entry.getValue().leftValue());
         newWritten.put(entry.getKey(), entry.getValue().leftValue());
       }
 
-      for (final Entry<String, byte[]> entry : delete.entrySet()) {
+      for (final Map.Entry<String, byte[]> entry : delete.entrySet()) {
         delete(entry.getKey());
         newWritten.remove(entry.getKey());
       }
@@ -159,7 +130,11 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractMap<String, byte[]> 
       try {
         if (client.stat(path) != null) {
           client.delete(path);
+          log.debug("Deleted node: {}", path);
         }
+      } catch (KeeperException.ConnectionLossException e) {
+        log.warn("ZooKeeper connection lost while deleting node: {}", path);
+        throw Throwables.propagate(e);
       } catch (KeeperException e) {
         log.error("Failed to delete node: {}", path, e);
         throw Throwables.propagate(e);
@@ -170,13 +145,66 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractMap<String, byte[]> 
       try {
         if (client.stat(path) != null) {
           client.setData(path, data);
+          log.debug("Wrote node: {}", path);
         } else {
           client.createAndSetData(path, data);
+          log.debug("Created node: {}", path);
         }
+      } catch (KeeperException.ConnectionLossException e) {
+        log.warn("ZooKeeper connection lost while writing node: {}", path);
+        throw Throwables.propagate(e);
       } catch (KeeperException e) {
         log.error("Failed to write node: {}", path, e);
         throw Throwables.propagate(e);
       }
+    }
+  }
+
+  private class MapView extends AbstractMap<String, byte[]> {
+
+    @Override
+    public byte[] put(final String key, final byte[] value) {
+      final byte[] prev;
+      synchronized (lock) {
+        final Map<String, byte[]> mutable = Maps.newHashMap(entries.get());
+        prev = mutable.put(key, value);
+        try {
+          entries.set(ImmutableMap.copyOf(mutable));
+        } catch (IOException e) {
+          throw Throwables.propagate(e);
+        }
+      }
+      reactor.update();
+      return prev;
+    }
+
+    @Override
+    public byte[] remove(final Object key) {
+      if (!(key instanceof String)) {
+        return null;
+      }
+      final byte[] value;
+      synchronized (lock) {
+        final Map<String, byte[]> mutable = Maps.newHashMap(entries.get());
+        value = mutable.remove(key);
+        try {
+          entries.set(ImmutableMap.copyOf(mutable));
+        } catch (IOException e) {
+          throw Throwables.propagate(e);
+        }
+      }
+      reactor.update();
+      return value;
+    }
+
+    @Override
+    public byte[] get(final Object key) {
+      return entries.get().get(key);
+    }
+
+    @Override
+    public Set<Entry<String, byte[]>> entrySet() {
+      return entries.get().entrySet();
     }
   }
 }

@@ -5,6 +5,7 @@
 package com.spotify.helios.agent;
 
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.Service;
 
 import com.spotify.helios.common.Reactor;
 import com.spotify.helios.common.ReactorFactory;
@@ -34,6 +35,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -50,7 +52,7 @@ public class AgentTest {
   @Mock private Supervisor barSupervisor;
   @Mock private Reactor reactor;
 
-  @Captor private ArgumentCaptor<Runnable> callbackCaptor;
+  @Captor private ArgumentCaptor<Reactor.Callback> callbackCaptor;
   @Captor private ArgumentCaptor<AgentModel.Listener> listenerCaptor;
   @Captor private ArgumentCaptor<Long> timeoutCaptor;
 
@@ -61,7 +63,7 @@ public class AgentTest {
   private final Map<JobId, TaskStatus> unmodifiableJobStatuses = Collections.unmodifiableMap(jobStatuses);
 
   private Agent sut;
-  private Runnable callback;
+  private Reactor.Callback callback;
   private AgentModel.Listener listener;
 
   private static final Job FOO_DESCRIPTOR = Job.newBuilder()
@@ -84,16 +86,23 @@ public class AgentTest {
         .thenReturn(fooSupervisor);
     when(supervisorFactory.create(BAR_DESCRIPTOR.getId(), BAR_DESCRIPTOR))
         .thenReturn(barSupervisor);
-    when(reactorFactory.create(callbackCaptor.capture(), timeoutCaptor.capture()))
+    mockService(reactor);
+    mockService(model);
+    when(reactorFactory.create(anyString(), callbackCaptor.capture(), timeoutCaptor.capture()))
         .thenReturn(reactor);
     when(model.getTasks()).thenReturn(unmodifiableJobs);
     when(model.getTaskStatuses()).thenReturn(unmodifiableJobStatuses);
     sut = new Agent(model, supervisorFactory, reactorFactory);
   }
 
+  private void mockService(final Service service) {
+    when(service.stopAsync()).thenReturn(service);
+    when(service.startAsync()).thenReturn(service);
+  }
+
   private void startAgent() {
-    sut.start();
-    verify(reactorFactory).create(any(Runnable.class), anyLong());
+    sut.startAsync().awaitRunning();
+    verify(reactorFactory).create(anyString(), any(Reactor.Callback.class), anyLong());
     callback = callbackCaptor.getValue();
     verify(model).addListener(listenerCaptor.capture());
     listener = listenerCaptor.getValue();
@@ -104,17 +113,17 @@ public class AgentTest {
     jobs.put(job.getId(), task);
   }
 
-  private void start(Job descriptor) {
+  private void start(Job descriptor) throws InterruptedException {
     configure(descriptor, START);
     callback.run();
   }
 
-  private void badStop(Job descriptor) {
+  private void badStop(Job descriptor) throws InterruptedException {
     jobs.remove(descriptor.getId());
     callback.run();
   }
 
-  private void stop(Job descriptor) {
+  private void stop(Job descriptor) throws InterruptedException {
     jobs.put(descriptor.getId(), new Task(descriptor, UNDEPLOY));
     callback.run();
   }
@@ -127,7 +136,7 @@ public class AgentTest {
   }
 
   @Test
-  public void verifyAgentRecoversState() {
+  public void verifyAgentRecoversState() throws InterruptedException {
     configure(FOO_DESCRIPTOR, START);
     configure(BAR_DESCRIPTOR, STOP);
 
@@ -144,18 +153,18 @@ public class AgentTest {
                         .setContainerId("bar-container-1")
                         .build());
 
-    when(fooSupervisor.isStarting()).thenReturn(false);
-    when(barSupervisor.isStarting()).thenReturn(true);
+    when(fooSupervisor.isRunning()).thenReturn(false);
+    when(barSupervisor.isRunning()).thenReturn(true);
 
     startAgent();
 
     verify(supervisorFactory).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR);
     verify(fooSupervisor).start();
-    when(fooSupervisor.isStarting()).thenReturn(true);
+    when(fooSupervisor.isRunning()).thenReturn(true);
 
     verify(supervisorFactory).create(BAR_DESCRIPTOR.getId(), BAR_DESCRIPTOR);
     verify(barSupervisor).stop();
-    when(barSupervisor.isStarting()).thenReturn(false);
+    when(barSupervisor.isRunning()).thenReturn(false);
 
     callback.run();
 
@@ -164,7 +173,7 @@ public class AgentTest {
   }
 
   @Test
-  public void verifyAgentRecoversStateAndStopsUndesiredSupervisors() {
+  public void verifyAgentRecoversStateAndStopsUndesiredSupervisors() throws InterruptedException {
     jobStatuses.put(FOO_DESCRIPTOR.getId(),
                     TaskStatus.newBuilder()
                         .setJob(FOO_DESCRIPTOR)
@@ -180,18 +189,18 @@ public class AgentTest {
   }
 
   @Test
-  public void verifyAgentStartsSupervisors() {
+  public void verifyAgentStartsSupervisors() throws InterruptedException {
     startAgent();
 
     start(FOO_DESCRIPTOR);
     verify(supervisorFactory).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR);
     verify(fooSupervisor).start();
-    when(fooSupervisor.isStarting()).thenReturn(true);
+    when(fooSupervisor.isRunning()).thenReturn(true);
 
     start(BAR_DESCRIPTOR);
     verify(supervisorFactory).create(BAR_DESCRIPTOR.getId(), BAR_DESCRIPTOR);
     verify(barSupervisor).start();
-    when(barSupervisor.isStarting()).thenReturn(true);
+    when(barSupervisor.isRunning()).thenReturn(true);
 
     callback.run();
 
@@ -200,7 +209,7 @@ public class AgentTest {
   }
 
   @Test
-  public void verifyAgentStopsAndRecreatesSupervisors() {
+  public void verifyAgentStopsAndRecreatesSupervisors() throws InterruptedException {
     startAgent();
 
     // Verify that supervisor is stopped
@@ -229,7 +238,7 @@ public class AgentTest {
     startAgent();
 
     start(FOO_DESCRIPTOR);
-    sut.close();
+    sut.stopAsync().awaitTerminated();
     verify(fooSupervisor).close();
     verify(fooSupervisor, never()).stop();
   }

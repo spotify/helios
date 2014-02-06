@@ -4,11 +4,11 @@
 
 package com.spotify.helios.common.coordination;
 
-import com.google.common.base.Equivalence;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -33,7 +33,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class PersistentPathChildrenCache {
+public class PersistentPathChildrenCache extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(PersistentPathChildrenCache.class);
 
@@ -42,7 +42,6 @@ public class PersistentPathChildrenCache {
   private static final Map<String, byte[]> EMPTY_NODES = Collections.emptyMap();
   private static final TypeReference<Map<String, byte[]>> NODES_TYPE =
       new TypeReference<Map<String, byte[]>>() {};
-  private static final Equivalence<byte[]> BYTE_ARRAY_EQUIVALENCE = new ByteArrayEquivalence();
 
   private final PathChildrenCache cache;
   private final PersistentAtomicReference<Map<String, byte[]>> snapshot;
@@ -69,7 +68,8 @@ public class PersistentPathChildrenCache {
     listeners.remove(listener);
   }
 
-  public void start() {
+  @Override
+  protected void startUp() throws Exception {
     log.debug("starting cache");
     try {
       cache.start();
@@ -78,17 +78,18 @@ public class PersistentPathChildrenCache {
     }
   }
 
-  public Map<String, byte[]> getNodes() {
-    return snapshot.get();
-  }
-
-  public void close() throws InterruptedException {
+  @Override
+  protected void shutDown() throws Exception {
     try {
       cache.close();
     } catch (IOException e) {
       log.error("Failed to close cache", e);
     }
     executorService.awaitTermination(5, SECONDS);
+  }
+
+  public Map<String, byte[]> getNodes() {
+    return snapshot.get();
   }
 
   private class CacheListener implements PathChildrenCacheListener {
@@ -107,8 +108,13 @@ public class PersistentPathChildrenCache {
       switch (event.getType()) {
         case CHILD_ADDED:
         case CHILD_UPDATED: {
-          newSnapshot.put(event.getData().getPath(), event.getData().getData());
-          mutated = true;
+          final String path = event.getData().getPath();
+          final byte[] currentData = newSnapshot.get(path);
+          final byte[] newData = event.getData().getData();
+          if (!Arrays.equals(currentData, newData)) {
+            newSnapshot.put(path, newData);
+            mutated = true;
+          }
           break;
         }
         case CHILD_REMOVED: {
@@ -145,19 +151,6 @@ public class PersistentPathChildrenCache {
       }
     }
 
-  }
-
-  private static class ByteArrayEquivalence extends Equivalence<byte[]> {
-
-    @Override
-    protected boolean doEquivalent(final byte[] a, final byte[] b) {
-      return Arrays.equals(a, b);
-    }
-
-    @Override
-    protected int doHash(final byte[] bytes) {
-      return Arrays.hashCode(bytes);
-    }
   }
 
   public interface Listener {

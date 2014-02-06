@@ -4,6 +4,9 @@ import com.google.common.io.Files;
 
 import com.spotify.logging.UncaughtExceptionLogger;
 
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
@@ -24,16 +27,27 @@ public class ZooKeeperTestBase {
   private ZooKeeperServer zkServer;
   private ServerCnxnFactory cnxnFactory;
 
+  protected CuratorFramework curator;
+
   @Before
   public void setUp() throws Exception {
     UncaughtExceptionLogger.setDefaultUncaughtExceptionHandler();
     tempDir = Files.createTempDir();
 
     startZookeeper();
+
+    curator = CuratorFrameworkFactory.newClient(zookeeperEndpoint,
+                                                new ExponentialBackoffRetry(1000, 3));
+  }
+
+  public void ensure(String path) throws Exception {
+    curator.newNamespaceAwareEnsurePath(path).ensure(curator.getZookeeperClient());
   }
 
   @After
   public void teardown() throws Exception {
+    curator.close();
+
     stopZookeeper();
 
     deleteDirectory(tempDir);

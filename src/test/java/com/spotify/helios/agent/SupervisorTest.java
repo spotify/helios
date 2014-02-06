@@ -33,8 +33,9 @@ import org.mockito.stubbing.Answer;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
@@ -55,7 +56,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class SupervisorTest {
 
-  final Executor executor = Executors.newCachedThreadPool();
+  final ExecutorService executor = Executors.newCachedThreadPool();
 
   static final String REPOSITORY = "spotify";
   static final String TAG = "17";
@@ -218,14 +219,15 @@ public class SupervisorTest {
     // Stop the job
     final SettableFuture<Void> killFuture = SettableFuture.create();
     when(docker.kill(eq(containerId))).thenReturn(killFuture);
-    executor.execute(new Runnable() {
+    executor.submit(new Callable<Void>() {
       @Override
-      public void run() {
+      public Void call() throws Exception {
         // TODO (dano): Make Supervisor.stop() asynchronous
         sut.stop();
+        return null;
       }
     });
-    verify(docker, timeout(100000)).kill(eq(containerId));
+    verify(docker, timeout(1000)).kill(eq(containerId));
 
     // Change docker container state to stopped when it's killed
     when(docker.inspectContainer(eq(containerId))).thenReturn(immediateFuture(stoppedResponse));

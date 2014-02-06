@@ -8,5 +8,5 @@ import java.io.IOException;
 
 public interface NodeUpdater {
 
-  void update(byte[] bytes) throws IOException;
+  boolean update(byte[] bytes) throws IOException;
 }

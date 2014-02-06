@@ -8,6 +8,7 @@ import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.Reactor;
 import com.spotify.helios.common.ReactorFactory;
@@ -25,6 +26,8 @@ import java.util.Set;
 
 import static com.google.common.collect.Sets.difference;
 import static com.google.common.collect.Sets.intersection;
+import static com.spotify.helios.common.Reactor.Callback;
+import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -32,13 +35,28 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Runs jobs to implement the desired container deployment state.
  */
-public class Agent {
+public class Agent extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(Agent.class);
 
+  private static final Predicate<Entry<JobId, Task>> DEPLOYED_PRED =
+      new Predicate<Entry<JobId, Task>>() {
+        @Override
+        public boolean apply(Entry<JobId, Task> entry) {
+          return entry.getValue().getGoal() != UNDEPLOY;
+        }
+      };
+
+  private static final Predicate<Entry<JobId, Task>> START_PRED =
+      new Predicate<Entry<JobId, Task>>() {
+        @Override
+        public boolean apply(Entry<JobId, Task> entry) {
+          return entry.getValue().getGoal() == START;
+        }
+      };
+
   private final AgentModel model;
   private final SupervisorFactory supervisorFactory;
-  private final ReactorFactory reactorFactory;
 
   private final ModelListener modelListener = new ModelListener();
   private final Map<JobId, Supervisor> supervisors = Maps.newHashMap();
@@ -56,10 +74,11 @@ public class Agent {
                final ReactorFactory reactorFactory) {
     this.model = model;
     this.supervisorFactory = supervisorFactory;
-    this.reactorFactory = reactorFactory;
+    this.reactor = reactorFactory.create("agent", new Update(), SECONDS.toMillis(1));
   }
 
-  public void start() {
+  @Override
+  protected void startUp() throws Exception {
     final Map<JobId, Task> tasks = model.getTasks();
     final Map<JobId, TaskStatus> tasksStatuses = model.getTaskStatuses();
     for (final Entry<JobId, TaskStatus> entry : tasksStatuses.entrySet()) {
@@ -74,17 +93,14 @@ public class Agent {
         delegate(supervisor, task, true);
       }
     }
-    reactor = reactorFactory.create(new Update(), SECONDS.toMillis(1));
     model.addListener(modelListener);
+    reactor.startAsync().awaitRunning();
   }
 
-  /**
-   * Stop this worker.
-   */
-  public void close() throws InterruptedException {
-    reactor.close();
-    this.model.removeListener(modelListener);
-    model.close();
+  @Override
+  protected void shutDown() throws Exception {
+    reactor.stopAsync().awaitTerminated();
+    model.stopAsync().awaitTerminated();
     for (final Map.Entry<JobId, Supervisor> entry : supervisors.entrySet()) {
       entry.getValue().close();
     }
@@ -106,20 +122,21 @@ public class Agent {
   /**
    * Instructor supervisor to start or stop job depending on configuration.
    */
-  private void delegate(final Supervisor supervisor, final Task task, final boolean boot) {
+  private void delegate(final Supervisor supervisor, final Task task, final boolean boot)
+      throws InterruptedException {
     switch (task.getGoal()) {
       case START:
-        if (!supervisor.isStarting()) {
+        if (boot || !supervisor.isRunning()) {
           supervisor.start();
         }
         break;
       case STOP:
-        if (supervisor.isStarting() || boot) {
+        if (boot || supervisor.isRunning()) {
           supervisor.stop();
         }
         break;
       case UNDEPLOY:
-        if (supervisor.isStarting() || boot) {
+        if (boot || supervisor.isRunning()) {
           supervisor.stop();
         }
         model.removeUndeployTombstone(task.getJob().getId());
@@ -142,57 +159,75 @@ public class Agent {
   /**
    * Starts and stops supervisors to reflect the desired state. Called by the reactor.
    */
-  private class Update implements Runnable {
+  private class Update implements Callback {
 
     @Override
-    public void run() {
+    public void run() throws InterruptedException {
+
+      // Note: when changing this code:
+      // * Ensure that supervisors for the same container never run concurrently.
+      // * A supervisor must not be released before its container is stopped.
+      // * A new container must either reuse an existing supervisor or wait for the old supervisor
+      //   to die before spawning a new one.
+      // * Book-keeping a supervisor of one job should not block processing of other jobs
+
       // Remove stopped supervisors
-      for (final JobId name : ImmutableSet.copyOf(supervisors.keySet())) {
-        final Supervisor supervisor = supervisors.get(name);
+      for (final JobId jobId : ImmutableSet.copyOf(supervisors.keySet())) {
+        final Supervisor supervisor = supervisors.get(jobId);
         if (supervisor.getStatus() == STOPPED) {
-          supervisors.remove(name);
+          log.debug("releasing stopped supervisor: {}", jobId);
+          supervisor.close();
+          supervisors.remove(jobId);
         }
       }
 
       // Get a snapshot of currently configured tasks
       final Map<JobId, Task> tasks = model.getTasks();
-      final Map<JobId, Task> activeTasks = Maps.filterEntries(
-          tasks,
-          new Predicate<Entry<JobId, Task>>() {
-            @Override
-            public boolean apply(Entry<JobId, Task> entry) {
-              return entry.getValue().getGoal() != UNDEPLOY;
-            }
-          });
+      final Map<JobId, Task> deployedTasks = Maps.filterEntries(tasks, DEPLOYED_PRED);
+      final Map<JobId, Task> startTasks = Maps.filterEntries(tasks, START_PRED);
+
       // Compute the set we want to keep
-      final Set<JobId> desiredJobIds = activeTasks.keySet();
+      final Set<JobId> deployedJobIds = deployedTasks.keySet();
+      final Set<JobId> startJobIds = startTasks.keySet();
+
       // The opposite is what we want to get rid of
-      final Set<JobId> undesirableJobIds = difference(tasks.keySet(), desiredJobIds);
+      final Set<JobId> undeployedJobIds = difference(tasks.keySet(), deployedJobIds);
+//      log.debug("tasks: {}", tasks.keySet());
+//      log.debug("deployed: {}", deployedJobIds);
+//      log.debug("undeployed: {}", undeployedJobIds);
 
       // Get a snapshot of the current state
       final Set<JobId> currentJobIds = Sets.newHashSet(supervisors.keySet());
 
-      // Stop tombstoned supervisors
-      for (final JobId jobId : intersection(undesirableJobIds, currentJobIds)) {
+      // Stop tombstoned supervisors and remove tombstoned tasks if the supervisor is gone
+      for (final JobId jobId : intersection(undeployedJobIds, currentJobIds)) {
         final Supervisor supervisor = supervisors.get(jobId);
+        log.debug("Stopping tombstoned supervisor: {}", jobId);
         supervisor.stop();
-        supervisors.remove(jobId);
-        model.removeUndeployTombstone(jobId);
-        model.removeTaskStatus(jobId);
+      }
+      for (final JobId jobId : undeployedJobIds) {
+        final Supervisor supervisor = supervisors.get(jobId);
+        if (supervisor == null) {
+          log.debug("Removing tombstoned task: {}", jobId);
+          model.removeUndeployTombstone(jobId);
+          model.removeTaskStatus(jobId);
+        }
       }
 
       // Create new supervisors
-      // desired - current == not running that should run
-      for (final JobId jobId : difference(desiredJobIds, currentJobIds)) {
-        final Task jobDescriptor = activeTasks.get(jobId);
+      // start - current == not running that should run
+      for (final JobId jobId : difference(startJobIds, currentJobIds)) {
+        final Task jobDescriptor = deployedTasks.get(jobId);
         createSupervisor(jobId, jobDescriptor.getJob());
       }
 
       // Update job goals
-      for (final Map.Entry<JobId, Task> entry : activeTasks.entrySet()) {
+      for (final Map.Entry<JobId, Task> entry : deployedTasks.entrySet()) {
         final JobId jobId = entry.getKey();
         final Supervisor supervisor = supervisors.get(jobId);
-        delegate(supervisor, entry.getValue(), false);
+        if (supervisor != null) {
+          delegate(supervisor, entry.getValue(), false);
+        }
       }
     }
   }

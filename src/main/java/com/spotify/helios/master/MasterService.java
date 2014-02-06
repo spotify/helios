@@ -133,6 +133,7 @@ public class MasterService {
       curator.ensurePath(Paths.historyJobs());
 
       final String upNode = Paths.statusMasterUp(config.getName());
+      curator.ensurePath(upNode, true);
       if (curator.stat(upNode) != null) {
         curator.delete(upNode);
       }

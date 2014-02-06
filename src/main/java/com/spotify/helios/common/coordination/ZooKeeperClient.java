@@ -49,4 +49,6 @@ public interface ZooKeeperClient {
   void delete(String path, int version) throws KeeperException;
 
   Node getNode(String path) throws KeeperException;
+
+  Stat exists(String path) throws KeeperException;
 }
