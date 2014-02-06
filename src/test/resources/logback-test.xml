@@ -2,7 +2,7 @@
 
   <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-5level %F:%L - %msg%n</pattern>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %logger{1} %F:%L - %msg%n</pattern>
     </encoder>
     <target>System.err</target>
   </appender>
