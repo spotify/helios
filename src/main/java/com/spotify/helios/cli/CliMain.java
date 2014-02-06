@@ -39,8 +39,7 @@ public class CliMain {
       int exitCode = new CliMain(args).run();
       System.exit(exitCode);
     } catch (Throwable e) {
-      // TODO (dano): don't swallow exceptions
-      //log.error("Uncaught exception", e);
+      log.error("Uncaught exception", e);
       System.exit(1);
     }
   }
