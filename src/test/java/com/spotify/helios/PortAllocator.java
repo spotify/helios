@@ -20,6 +20,7 @@ public class PortAllocator {
 
   final static Logger log = LoggerFactory.getLogger(PortAllocator.class);
 
+  @SuppressWarnings("ThrowFromFinallyBlock")
   public static int allocatePort(final String name) {
     while (true) {
       final int port = ThreadLocalRandom.current().nextInt(49152, 65536);
