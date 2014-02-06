@@ -173,16 +173,6 @@ public class Agent extends AbstractIdleService {
       //   to die before spawning a new one.
       // * Book-keeping a supervisor of one job should not block processing of other jobs
 
-      // Remove stopped supervisors
-      for (final JobId jobId : ImmutableSet.copyOf(supervisors.keySet())) {
-        final Supervisor supervisor = supervisors.get(jobId);
-        if (supervisor.getStatus() == STOPPED) {
-          log.debug("releasing stopped supervisor: {}", jobId);
-          supervisor.close();
-          supervisors.remove(jobId);
-        }
-      }
-
       // Get a snapshot of currently configured tasks
       final Map<JobId, Task> tasks = model.getTasks();
       final Map<JobId, Task> deployedTasks = Maps.filterEntries(tasks, DEPLOYED_PRED);
@@ -194,9 +184,21 @@ public class Agent extends AbstractIdleService {
 
       // The opposite is what we want to get rid of
       final Set<JobId> undeployedJobIds = difference(tasks.keySet(), deployedJobIds);
-//      log.debug("tasks: {}", tasks.keySet());
-//      log.debug("deployed: {}", deployedJobIds);
-//      log.debug("undeployed: {}", undeployedJobIds);
+      log.debug("tasks: {}", tasks.keySet());
+      log.debug("deployed: {}", deployedJobIds);
+      log.debug("undeployed: {}", undeployedJobIds);
+      log.debug("start: {}", startJobIds);
+      log.debug("current: {}", supervisors.keySet());
+
+      // Remove stopped supervisors
+      for (final JobId jobId : ImmutableSet.copyOf(supervisors.keySet())) {
+        final Supervisor supervisor = supervisors.get(jobId);
+        if (supervisor.getStatus() == STOPPED && !startJobIds.contains(jobId)) {
+          log.debug("releasing stopped supervisor: {}", jobId);
+          supervisor.close();
+          supervisors.remove(jobId);
+        }
+      }
 
       // Get a snapshot of the current state
       final Set<JobId> currentJobIds = Sets.newHashSet(supervisors.keySet());
