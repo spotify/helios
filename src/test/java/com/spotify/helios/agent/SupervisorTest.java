@@ -20,6 +20,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.statistics.NoopSupervisorMetrics;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -133,6 +134,13 @@ public class SupervisorTest {
         return statusMap.get(jobId);
       }
     });
+  }
+
+  @After
+  public void teardown() throws Exception {
+    if (sut != null) {
+      sut.close();
+    }
   }
 
   @Test
