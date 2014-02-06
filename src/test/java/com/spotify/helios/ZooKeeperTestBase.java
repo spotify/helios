@@ -20,7 +20,7 @@ import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 public class ZooKeeperTestBase {
 
-  protected final int zookeeperPort = PortAllocator.allocatePort();
+  protected final int zookeeperPort = PortAllocator.allocatePort("zookeeper");
   protected final String zookeeperEndpoint = "localhost:" + zookeeperPort;
 
   private File tempDir;

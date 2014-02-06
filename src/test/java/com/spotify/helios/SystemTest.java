@@ -137,7 +137,7 @@ public class SystemTest extends ZooKeeperTestBase {
   public static final TypeReference<Map<JobId, JobStatus>> STATUSES_TYPE =
       new TypeReference<Map<JobId, JobStatus>>() {};
 
-  private final int masterPort = PortAllocator.allocatePort();
+  private final int masterPort = PortAllocator.allocatePort("helios master");
   private final String masterEndpoint = "tcp://localhost:" + masterPort;
   private final String masterName = "test-master";
 
