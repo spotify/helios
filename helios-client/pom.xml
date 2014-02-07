@@ -69,16 +69,6 @@
       <version>2.2.0</version>
     </dependency>
     <dependency>
-      <groupId>com.bealetech</groupId>
-      <artifactId>metrics-statsd</artifactId>
-      <version>2.3.0</version>
-    </dependency>
-    <dependency>
-      <groupId>com.spotify</groupId>
-      <artifactId>logging</artifactId>
-      <version>2.0.12</version>
-    </dependency>
-    <dependency>
       <groupId>net.sourceforge.argparse4j</groupId>
       <artifactId>argparse4j</artifactId>
       <version>0.4.1</version>
@@ -112,25 +102,6 @@
       <groupId>com.spotify</groupId>
       <artifactId>statistics</artifactId>
       <version>0.8.12</version>
-    </dependency>
-    <dependency>
-      <groupId>org.apache.curator</groupId>
-      <artifactId>curator-recipes</artifactId>
-      <version>2.3.0</version>
-      <exclusions>
-        <exclusion>
-          <groupId>org.slf4j</groupId>
-          <artifactId>slf4j-log4j12</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>log4j</groupId>
-          <artifactId>log4j</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>org.jboss.netty</groupId>
-          <artifactId>netty</artifactId>
-        </exclusion>
-      </exclusions>
     </dependency>
 
     <!-- test deps -->
@@ -297,49 +268,6 @@
             </replacement>
           </replacements>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.spotify</groupId>
-        <artifactId>docker-maven-plugin</artifactId>
-        <version>0.0.1</version>
-        <executions>
-          <execution>
-            <id>build</id>
-            <goals>
-              <goal>build</goal>
-            </goals>
-            <configuration>
-              <imageName>${imageName}:latest</imageName>
-              <resources>
-                <resource>
-                  <targetPath>tmp/jar</targetPath>
-                  <directory>${project.build.directory}</directory>
-                  <include>${project.artifactId}*.jar</include>
-                </resource>
-                <resource>
-                  <targetPath>tmp/bin</targetPath>
-                  <directory>${basedir}/bin</directory>
-                </resource>
-                <resource>
-                  <targetPath>tmp/conf</targetPath>
-                  <directory>${basedir}</directory>
-                  <include>${project.artifactId}.conf</include>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>tag</id>
-            <goals>
-              <goal>tag</goal>
-            </goals>
-            <configuration>
-              <image>${imageName}:latest</image>
-              <newName>${imageName}</newName>
-              <useGitCommitId>true</useGitCommitId>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
     </plugins>
   </build>
