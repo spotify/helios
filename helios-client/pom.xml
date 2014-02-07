@@ -62,6 +62,7 @@
   </profiles>
 
   <dependencies>
+    <!--compile deps-->
     <dependency>
       <groupId>com.yammer.metrics</groupId>
       <artifactId>metrics-core</artifactId>

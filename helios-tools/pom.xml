@@ -59,12 +59,12 @@
   </profiles>
 
   <dependencies>
+    <!--compile deps-->
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>helios-client</artifactId>
       <version>0.0.5-SNAPSHOT</version>
     </dependency>
-    <!--compile scope-->
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
@@ -185,7 +185,7 @@
       <version>2.3.0</version>
     </dependency>
 
-    <!--test scope-->
+    <!--test deps-->
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>

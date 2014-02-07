@@ -63,7 +63,7 @@
   </profiles>
 
   <dependencies>
-    <!--compile scope-->
+    <!--compile deps-->
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>helios-client</artifactId>
@@ -189,7 +189,7 @@
       <version>2.3.0</version>
     </dependency>
 
-    <!--test scope-->
+    <!--test deps-->
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>helios-tools</artifactId>
