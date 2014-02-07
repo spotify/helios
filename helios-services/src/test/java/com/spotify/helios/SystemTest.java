@@ -21,7 +21,6 @@ import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.servicescommon.ServiceMain;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
@@ -39,6 +38,7 @@ import com.spotify.helios.common.protocol.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.master.MasterMain;
+import com.spotify.helios.servicescommon.ServiceMain;
 import com.spotify.hermes.Hermes;
 import com.spotify.logging.LoggingConfigurator;
 import com.spotify.nameless.Service;
@@ -558,7 +558,7 @@ public class SystemTest extends ZooKeeperTestBase {
     awaitAgentStatus(client, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
 
     final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711),
-                                                           "bar", PortMapping.of(6000));
+                                                           "bar", PortMapping.of(EXTERNAL_PORT));
 
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND, EMPTY_ENV,
                                   ports);
@@ -598,8 +598,6 @@ public class SystemTest extends ZooKeeperTestBase {
 
   @Test
   public void testPortCollision() throws Exception {
-    final int externalPort = 4711;
-
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
 
@@ -612,7 +610,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setVersion("1")
         .setImage("busybox")
         .setCommand(DO_NOTHING_COMMAND)
-        .setPorts(ImmutableMap.of("foo", PortMapping.of(10001, externalPort)))
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(10001, EXTERNAL_PORT)))
         .build();
 
     final Job job2 = Job.newBuilder()
@@ -620,7 +618,7 @@ public class SystemTest extends ZooKeeperTestBase {
         .setVersion("1")
         .setImage("busybox")
         .setCommand(DO_NOTHING_COMMAND)
-        .setPorts(ImmutableMap.of("foo", PortMapping.of(10002, externalPort)))
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(10002, EXTERNAL_PORT)))
         .build();
 
     final CreateJobResponse created1 = client.createJob(job1).get();
@@ -666,7 +664,8 @@ public class SystemTest extends ZooKeeperTestBase {
 
   @Test
   public void testService() throws Exception {
-    final Map<String, PortMapping> ports = ImmutableMap.of("foos", PortMapping.of(17, 4711));
+    final Map<String, PortMapping> ports = ImmutableMap.of(
+        "foos", PortMapping.of(17, EXTERNAL_PORT));
 
     startDefaultMaster();
 
@@ -786,13 +785,13 @@ public class SystemTest extends ZooKeeperTestBase {
     final JobId jobId1 = job1.getId();
     client.createJob(job1).get();
 
-    // Create a job using an image exposing port 80 and map it to 8080
+    // Create a job using an image exposing port 80 and map it to a specific external port
     final Job job2 = Job.newBuilder()
         .setName(PREFIX + "wordpress")
         .setVersion("v2")
         .setImage("jbfink/wordpress")
         .setCommand(DO_NOTHING_COMMAND)
-        .setPorts(ImmutableMap.of("tcp", PortMapping.of(80, 8080)))
+        .setPorts(ImmutableMap.of("tcp", PortMapping.of(80, EXTERNAL_PORT)))
         .build();
     final JobId jobId2 = job2.getId();
     client.createJob(job2).get();
@@ -914,8 +913,9 @@ public class SystemTest extends ZooKeeperTestBase {
     startDefaultAgent(TEST_AGENT);
 
     final String image = "busybox";
-    final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711),
-                                                           "bar", PortMapping.of(5000, 6000));
+    final Map<String, PortMapping> ports = ImmutableMap.of(
+        "foo", PortMapping.of(4711),
+        "bar", PortMapping.of(5000, EXTERNAL_PORT));
     final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
         ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
         ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
@@ -943,7 +943,7 @@ public class SystemTest extends ZooKeeperTestBase {
     assertEquals(ServicePorts.of("bar"),
                  job.getRegistration().get(ServiceEndpoint.of("bar-service", "http")));
     assertEquals(4711, job.getPorts().get("foo").getInternalPort());
-    assertEquals(PortMapping.of(5000, 6000), job.getPorts().get("bar"));
+    assertEquals(PortMapping.of(5000, EXTERNAL_PORT), job.getPorts().get("bar"));
     assertEquals("f00d", job.getEnv().get("BAD"));
 
     final String duplicateJob = control(
@@ -979,8 +979,9 @@ public class SystemTest extends ZooKeeperTestBase {
     final String name = "test";
     final String version = "17";
     final String image = "busybox";
-    final Map<String, PortMapping> ports = ImmutableMap.of("foo", PortMapping.of(4711),
-                                                           "bar", PortMapping.of(5000, 6000));
+    final Map<String, PortMapping> ports = ImmutableMap.of(
+        "foo", PortMapping.of(4711),
+        "bar", PortMapping.of(5000, EXTERNAL_PORT));
     final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
         ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
         ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
