@@ -246,9 +246,10 @@ public class SystemTest extends ZooKeeperTestBase {
   private void listThreads() {
     final Set<Thread> threads = Thread.getAllStackTraces().keySet();
     final Map<String, Thread> sorted = Maps.newTreeMap();
-    for (final Thread thread : threads) {
-      if (thread.isAlive() && !thread.getThreadGroup().getName().equals("system")) {
-        sorted.put(thread.getName(), thread);
+    for (final Thread t : threads) {
+      final ThreadGroup tg = t.getThreadGroup();
+      if (t.isAlive() && (tg == null || !tg.getName().equals("system"))) {
+        sorted.put(t.getName(), t);
       }
     }
     out.println("= THREADS " + Strings.repeat("=", 70));
