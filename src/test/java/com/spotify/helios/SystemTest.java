@@ -253,8 +253,10 @@ public class SystemTest extends ZooKeeperTestBase {
     }
     out.println("= THREADS " + Strings.repeat("=", 70));
     for (final Thread t : sorted.values()) {
+      final ThreadGroup tg = t.getThreadGroup();
       out.printf("%4d: \"%s\" (%s%s)%n", t.getId(), t.getName(),
-                 t.getThreadGroup().getName(), (t.isDaemon() ? " daemon" : ""));
+                 (tg == null ? "" : tg.getName() + " "),
+                 (t.isDaemon() ? "daemon" : ""));
     }
     out.println(Strings.repeat("=", 80));
   }
