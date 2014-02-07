@@ -40,7 +40,7 @@ public abstract class ControlCommand {
 
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
                  final PrintStream err, final String username, final boolean json)
-      throws IOException {
+      throws IOException, InterruptedException {
     boolean successful = true;
 
     // Execute the control command over each target cluster
@@ -53,11 +53,7 @@ public abstract class ControlCommand {
         out.flush();
       }
 
-      try {
-        successful &= run(options, target, out, err, username, json);
-      } catch (InterruptedException e) {
-        log.error("Error running control command", e);
-      }
+      successful &= run(options, target, out, err, username, json);
 
       if (targets.size() > 1) {
         out.println();
