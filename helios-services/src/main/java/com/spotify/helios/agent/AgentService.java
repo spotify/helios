@@ -10,7 +10,7 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import com.bealetech.metrics.reporting.StatsdReporter;
-import com.spotify.helios.common.StatsdSupport;
+import com.spotify.helios.servicescommon.StatsdSupport;
 import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.ZooKeeperNodeUpdaterFactory;

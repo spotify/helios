@@ -1,7 +1,8 @@
-package com.spotify.helios.common;
+package com.spotify.helios.servicescommon;
 
 import com.google.common.util.concurrent.AbstractIdleService;
 
+import com.spotify.helios.common.LoggingConfig;
 import com.spotify.logging.LoggingConfigurator;
 
 import org.slf4j.Logger;

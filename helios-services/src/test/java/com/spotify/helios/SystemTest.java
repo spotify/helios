@@ -21,7 +21,7 @@ import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.Client;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.ServiceMain;
+import com.spotify.helios.servicescommon.ServiceMain;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;

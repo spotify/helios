@@ -1,4 +1,4 @@
-package com.spotify.helios.common;
+package com.spotify.helios.servicescommon;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;

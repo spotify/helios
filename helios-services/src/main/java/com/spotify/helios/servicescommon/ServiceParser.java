@@ -1,4 +1,6 @@
-package com.spotify.helios.common;
+package com.spotify.helios.servicescommon;
+
+import com.spotify.helios.common.LoggingConfig;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;

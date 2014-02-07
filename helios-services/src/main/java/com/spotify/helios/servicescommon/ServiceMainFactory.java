@@ -1,4 +1,4 @@
-package com.spotify.helios.common;
+package com.spotify.helios.servicescommon;
 
 public interface ServiceMainFactory {
 

@@ -9,7 +9,7 @@ import com.google.common.collect.Iterables;
 
 import com.bealetech.metrics.reporting.StatsdReporter;
 import com.spotify.helios.common.AbstractClient;
-import com.spotify.helios.common.StatsdSupport;
+import com.spotify.helios.servicescommon.StatsdSupport;
 import com.spotify.helios.master.http.HttpServiceRequest;
 import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
