@@ -63,7 +63,7 @@
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>helios-client</artifactId>
-      <version>0.0.5-SNAPSHOT</version>
+      <version>${project.version}</version>
     </dependency>
     <dependency>
       <groupId>commons-codec</groupId>
