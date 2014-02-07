@@ -202,6 +202,15 @@
         <version>2.2</version>
         <configuration>
           <createDependencyReducedPom>false</createDependencyReducedPom>
+          <minimizeJar>true</minimizeJar>
+          <filters>
+            <filter>
+              <artifact>net.java.dev.jna</artifact>
+              <includes>
+                <include>com/sun/jna/**</include>
+              </includes>
+            </filter>
+          </filters>
           <transformers>
             <!--The ServicesResourceTransformer is needed to make jersey (docker-java) happy-->
             <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
