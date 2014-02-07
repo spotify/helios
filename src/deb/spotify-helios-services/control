@@ -1,9 +1,9 @@
-Package: spotify-helios-master
+Package: spotify-helios-services
 Version: [[project.version]]~[[git.commitsCount]].[[timestamp]].[[git.commit.id.describe]][[version_suffix]]
 Section: non-free/net
 Priority: optional
 Architecture: all
-Depends: default-jdk, spotify-helios-services (= [[project.version]]~[[git.commitsCount]].[[timestamp]].[[git.commit.id.describe]][[version_suffix]])
+Depends: default-jdk
 Maintainer: Daniel Norberg <dano@spotify.com>
-Description: Spotify Helios Master
+Description: Spotify Helios services common files
 Distribution: development

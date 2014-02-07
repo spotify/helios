@@ -429,6 +429,28 @@
               </dataSet>
             </configuration>
           </execution>
+          <!--spotify-helios-services-->
+          <execution>
+            <id>spotify-helios-services</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jdeb</goal>
+            </goals>
+            <configuration>
+              <deb>${project.build.directory}/spotify-helios-services_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
+              <controlDir>src/deb/spotify-helios-services</controlDir>
+              <dataSet>
+		<data>
+                  <src>${project.build.directory}/${project.build.finalName}.jar</src>
+                  <type>file</type>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/share/spotify-helios/lib</prefix>
+                  </mapper>
+                </data>
+              </dataSet>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>

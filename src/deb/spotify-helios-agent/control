@@ -3,7 +3,7 @@ Version: [[project.version]]~[[git.commitsCount]].[[timestamp]].[[git.commit.id.
 Section: non-free/net
 Priority: optional
 Architecture: all
-Depends: default-jdk, spotify-helios-common (= [[project.version]]~[[git.commitsCount]].[[timestamp]].[[git.commit.id.describe]][[version_suffix]])
+Depends: default-jdk, spotify-helios-services (= [[project.version]]~[[git.commitsCount]].[[timestamp]].[[git.commit.id.describe]][[version_suffix]])
 Maintainer: Daniel Norberg <dano@spotify.com>
 Description: Spotify Helios Agent
 Distribution: development
