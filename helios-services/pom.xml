@@ -271,6 +271,7 @@
         <artifactId>maven-shade-plugin</artifactId>
         <version>2.2</version>
         <configuration>
+          <createDependencyReducedPom>false</createDependencyReducedPom>
           <transformers>
             <!--The ServicesResourceTransformer is needed to make jersey (docker-java) happy-->
             <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
