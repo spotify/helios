@@ -3,17 +3,14 @@
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>com.spotify</groupId>
-    <artifactId>helios</artifactId>
+    <artifactId>helios-parent</artifactId>
     <version>0.0.5-SNAPSHOT</version>
   </parent>
 
-  <groupId>com.spotify</groupId>
   <artifactId>helios-testing</artifactId>
-  <version>0.0.5-SNAPSHOT</version>
   <packaging>jar</packaging>
 
   <name>Spotify Helios Testing</name>
-  <url>http://maven.apache.org</url>
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>

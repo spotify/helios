@@ -4,12 +4,22 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
-  <name>Spotify Helios</name>
+  <name>Spotify Helios Parent</name>
   <groupId>com.spotify</groupId>
-  <artifactId>helios</artifactId>
+  <artifactId>helios-parent</artifactId>
   <version>0.0.5-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <build.timestamp.format>yyyyMMdd-HHmmss.SSS</build.timestamp.format>
+    <timestamp>${build.timestamp}</timestamp>
+
+    <sonar.host.url>https://sonar.spotify.net</sonar.host.url>
+    <sonar.jdbc.url>jdbc:postgresql://real.sonar.spotify.net/sonardb</sonar.jdbc.url>
+    <sonar.jdbc.username>sonaruser</sonar.jdbc.username>
+    <sonar.jdbc.password>Aecausuupaijahshae2re6ie</sonar.jdbc.password>
+  </properties>
 
   <modules>
     <module>helios-testing</module>
