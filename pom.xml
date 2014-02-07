@@ -10,6 +10,15 @@
   <version>0.0.5-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <dependencies>
+    <dependency>
+      <groupId>com.intellij</groupId>
+      <artifactId>annotations</artifactId>
+      <version>12.0</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build.timestamp.format>yyyyMMdd-HHmmss.SSS</build.timestamp.format>
