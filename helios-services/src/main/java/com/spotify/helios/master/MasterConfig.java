@@ -15,6 +15,7 @@ public class MasterConfig {
   private InetSocketAddress httpEndpoint;
   private boolean inhibitMetrics;
   private String statsdHostPort;
+  private String riemannHostPort;
 
   public String getHermesEndpoint() {
     return endpoint;
@@ -77,5 +78,14 @@ public class MasterConfig {
 
   public String getStatsdHostPort() {
     return statsdHostPort;
+  }
+
+  public MasterConfig setRiemannHostPort(String hostPort) {
+    this.riemannHostPort = hostPort;
+    return this;
+  }
+
+  public String getRiemannHostPort() {
+    return riemannHostPort;
   }
 }

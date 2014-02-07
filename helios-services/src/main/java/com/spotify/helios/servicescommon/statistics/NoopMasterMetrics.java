@@ -13,4 +13,6 @@ public class NoopMasterMetrics implements MasterMetrics {
   @Override
   public void jobsHistoryEventSize(int count) {}
 
+  @Override
+  public void zookeeperTransientError() {}
 }

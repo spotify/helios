@@ -41,7 +41,9 @@ public class MasterParser extends ServiceParser {
         .setSite(options.getString("site"))
         .setName(options.getString("name"))
         .setInhibitMetrics(Objects.equal(options.getBoolean("no_metrics"), true))
-        .setStatsdHostPort(options.getString("statsd_host_port"));
+        .setStatsdHostPort(options.getString("statsd_host_port"))
+        .setRiemannHostPort(options.getString("riemann_host_port"))
+        ;
   }
 
   @Override
@@ -67,6 +69,11 @@ public class MasterParser extends ServiceParser {
         .setDefault((String) null)
         .help("host:port of where to send statsd metrics "
             + "(to be useful, --no-metrics must *NOT* be specified)");
+
+    parser.addArgument("--riemann-host-port")
+        .setDefault((String) null)
+        .help("host:port of where to send riemann events and metrics "
+            + "(to be useful, --no-metrics must *NOT* be specified)");
   }
 
   private static String getHostName() {
@@ -91,5 +98,4 @@ public class MasterParser extends ServiceParser {
   public MasterConfig getMasterConfig() {
     return masterConfig;
   }
-
 }

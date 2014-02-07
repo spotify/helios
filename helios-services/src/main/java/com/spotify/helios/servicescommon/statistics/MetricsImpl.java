@@ -3,12 +3,8 @@ package com.spotify.helios.servicescommon.statistics;
 import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.reporting.JmxReporter;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 public class MetricsImpl implements Metrics {
 
-  private static final Logger log = LoggerFactory.getLogger(MetricsImpl.class);
   private static final String GROUP = "helios";
   private MasterMetrics masterMetrics;
   private SupervisorMetrics supervisorMetrics;

@@ -20,6 +20,7 @@ public class AgentConfig {
   private boolean inhibitMetrics;
   private Path stateDirectory;
   private String statsdHostPort;
+  private String riemannHostPort;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -118,5 +119,13 @@ public class AgentConfig {
 
   public String getStatsdHostPort() {
     return statsdHostPort;
+  }
+  public AgentConfig setRiemannHostPort(String hostPort) {
+    this.riemannHostPort = hostPort;
+    return this;
+  }
+
+  public String getRiemannHostPort() {
+    return riemannHostPort;
   }
 }

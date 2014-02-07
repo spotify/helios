@@ -10,9 +10,11 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import com.bealetech.metrics.reporting.StatsdReporter;
-import com.spotify.helios.servicescommon.StatsdSupport;
 import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.ReactorFactory;
+import com.spotify.helios.servicescommon.RiemannFacade;
+import com.spotify.helios.servicescommon.RiemannSupport;
+import com.spotify.helios.servicescommon.StatsdSupport;
 import com.spotify.helios.servicescommon.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -22,6 +24,7 @@ import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 import com.spotify.nameless.client.Nameless;
 import com.spotify.nameless.client.NamelessRegistrar;
 import com.sun.management.OperatingSystemMXBean;
+import com.yammer.metrics.reporting.RiemannReporter;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -68,6 +71,8 @@ public class AgentService extends AbstractIdleService {
   private final Metrics metrics;
   private final NamelessRegistrar namelessRegistrar;
   private final StatsdReporter statsdReporter;
+  private final RiemannFacade riemannFacade;
+  private final RiemannReporter riemannReporter;
 
   private PersistentEphemeralNode upNode;
   private AgentRegistrar registrar;
@@ -122,13 +127,17 @@ public class AgentService extends AbstractIdleService {
     // Configure metrics
     log.info("Starting metrics");
 
+    RiemannSupport riemannSupport = new RiemannSupport(config.getRiemannHostPort(), "helios-agent");
+    riemannFacade = riemannSupport.getFacade();
     if (config.isInhibitMetrics()) {
       metrics = new NoopMetrics();
       statsdReporter = null;
+      riemannReporter = null;
     } else {
       metrics = new MetricsImpl();
       metrics.start();  //must be started here for statsd to be happy
       statsdReporter = StatsdSupport.getStatsdReporter(config.getStatsdHostPort(), "helios-agent");
+      riemannReporter = riemannSupport.getReporter();
     }
 
     this.zooKeeperCurator = setupZookeeperCurator(config, id);
@@ -173,7 +182,8 @@ public class AgentService extends AbstractIdleService {
         ? new SyslogRedirectingCommandWrapper(config.getRedirectToSyslog())
         : new NoOpCommandWrapper(),
         config.getName(),
-        metrics.getSupervisorMetrics());
+        metrics.getSupervisorMetrics(),
+        riemannFacade);
 
     final ReactorFactory reactorFactory = new ReactorFactory();
 
@@ -196,7 +206,6 @@ public class AgentService extends AbstractIdleService {
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy);
 
-//    curator.start();
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
 
     // Register the agent
@@ -248,6 +257,9 @@ public class AgentService extends AbstractIdleService {
     if (statsdReporter != null) {
       statsdReporter.start(15, TimeUnit.SECONDS);
     }
+    if (riemannReporter != null) {
+      riemannReporter.start(15, TimeUnit.SECONDS);
+    }
   }
 
   @Override
@@ -283,6 +295,9 @@ public class AgentService extends AbstractIdleService {
 
     if (statsdReporter != null) {
       statsdReporter.shutdown();
+    }
+    if (riemannReporter != null) {
+      riemannReporter.shutdown();
     }
   }
 }

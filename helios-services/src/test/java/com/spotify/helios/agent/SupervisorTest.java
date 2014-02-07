@@ -18,6 +18,7 @@ import com.kpelykh.docker.client.model.ListImage;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.servicescommon.NoOpRiemannClient;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
 
 import org.junit.After;
@@ -113,6 +114,7 @@ public class SupervisorTest {
         .setTaskStatusManager(manager)
         .setCommandWrapper(new NoOpCommandWrapper())
         .setMetrics(new NoopSupervisorMetrics())
+        .setRiemannFacade(NoOpRiemannClient.facade())
         .build();
     when(docker.getImages(IMAGE)).thenReturn(immediateFuture(DOCKER_IMAGES));
 

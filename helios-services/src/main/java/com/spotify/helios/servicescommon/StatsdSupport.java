@@ -16,7 +16,7 @@ public class StatsdSupport {
     Iterable<String> parts = Splitter.on(":").split(hostPort);
     if (Iterables.size(parts) != 2) {
       throw new RuntimeException(
-        "specification of statsd host port has wrong number of parts.  Should be host:port");
+          "specification of statsd host port has wrong number of parts.  Should be host:port");
     }
     String host = Iterables.get(parts, 0);
     int port = Integer.valueOf(Iterables.get(parts, 1));

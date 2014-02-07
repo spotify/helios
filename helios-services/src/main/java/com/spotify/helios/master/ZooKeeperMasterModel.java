@@ -56,17 +56,16 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.check;
-import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
-import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
-import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
-
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.check;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 

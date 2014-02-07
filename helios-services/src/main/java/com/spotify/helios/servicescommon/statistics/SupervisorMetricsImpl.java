@@ -17,16 +17,17 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
   private final Counter supervisorClosedCounter;
   private final Counter supervisorStartedCounter;
   private final Counter supervisorStoppedCounter;
+  private final Counter dockerTimeoutCounter;
 
   private final MetricName containerStarted;
   private final MetricName containersExited;
   private final MetricName containersRunning;
   private final MetricName containersThrewException;
+  private final MetricName dockerTimeout;
   private final MetricName imageCacheHit;
   private final MetricName supervisorClosed;
   private final MetricName supervisorStarted;
   private final MetricName supervisorStopped;
-
 
   public SupervisorMetricsImpl(final String group,
                                final MetricsRegistry registry) {
@@ -39,6 +40,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     supervisorClosed = new MetricName(group, TYPE, "supervisor_closed");
     supervisorStarted = new MetricName(group, TYPE, "supervisors_created");
     supervisorStopped = new MetricName(group, TYPE, "supervisor_stopped");
+    dockerTimeout = new MetricName(group, TYPE, "docker_timeout");
 
     containerStartedCounter = registry.newCounter(containerStarted);
     containersExitedCounter = registry.newCounter(containersExited);
@@ -48,6 +50,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     supervisorClosedCounter = registry.newCounter(supervisorClosed);
     supervisorStartedCounter = registry.newCounter(supervisorStarted);
     supervisorStoppedCounter = registry.newCounter(supervisorStopped);
+    dockerTimeoutCounter = registry.newCounter(dockerTimeout);
 
     imagePull = new RequestMetrics(group, TYPE, "image_pull");
   }
@@ -59,32 +62,32 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
 
   @Override
   public void supervisorStopped() {
-      supervisorStoppedCounter.inc();
+    supervisorStoppedCounter.inc();
   }
 
   @Override
   public void supervisorClosed() {
-      supervisorClosedCounter.inc();
+    supervisorClosedCounter.inc();
   }
 
   @Override
   public void containersRunning() {
-      containersRunningCounter.inc();
+    containersRunningCounter.inc();
   }
 
   @Override
   public void containersExited() {
-      containersExitedCounter.inc();
+    containersExitedCounter.inc();
   }
 
   @Override
   public void containersThrewException() {
-      containersThrewExceptionCounter.inc();
+    containersThrewExceptionCounter.inc();
   }
 
   @Override
   public void containerStarted() {
-      containerStartedCounter.inc();
+    containerStartedCounter.inc();
   }
 
   @Override
@@ -95,6 +98,11 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
   @Override
   public void imageCacheHit() {
       imageCacheHitCounter.inc();
+  }
+
+  @Override
+  public void dockerTimeout() {
+    dockerTimeoutCounter.inc();
   }
 
 }

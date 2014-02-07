@@ -31,4 +31,7 @@ public class NoopSupervisorMetrics implements SupervisorMetrics {
 
   @Override
   public void imageCacheHit() {}
+
+  @Override
+  public void dockerTimeout() {}
 }

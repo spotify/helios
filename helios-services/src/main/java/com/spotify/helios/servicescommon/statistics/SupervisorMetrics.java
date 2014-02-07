@@ -20,4 +20,6 @@ public interface SupervisorMetrics {
 
   public void imageCacheHit();
 
+  public void dockerTimeout();
+
 }

@@ -52,6 +52,8 @@ public class NamelessRegistrationTest extends NamelessTestBase {
       }
     });
 
+    client.close();
+
     boolean httpFound = false;
     boolean hermesFound = false;
 
@@ -117,6 +119,7 @@ public class NamelessRegistrationTest extends NamelessTestBase {
         return entries.size() == 1 ? entries : null;
       }
     });
+    nameless.close();
 
     assertTrue(entries.size() == 1);
     final RegistryEntry entry = entries.get(0);

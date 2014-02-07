@@ -9,9 +9,11 @@ import com.google.common.collect.Iterables;
 
 import com.bealetech.metrics.reporting.StatsdReporter;
 import com.spotify.helios.common.AbstractClient;
-import com.spotify.helios.servicescommon.StatsdSupport;
 import com.spotify.helios.master.http.HttpServiceRequest;
 import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
+import com.spotify.helios.servicescommon.RiemannFacade;
+import com.spotify.helios.servicescommon.RiemannSupport;
+import com.spotify.helios.servicescommon.StatsdSupport;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.statistics.Metrics;
@@ -27,6 +29,7 @@ import com.spotify.hermes.service.Server;
 import com.spotify.nameless.client.Nameless;
 import com.spotify.nameless.client.NamelessRegistrar;
 import com.spotify.nameless.client.RegistrationHandle;
+import com.yammer.metrics.reporting.RiemannReporter;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -36,6 +39,7 @@ import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -60,6 +64,8 @@ public class MasterService {
   private final NamelessRegistrar registrar;
   private final Metrics metrics;
   private final StatsdReporter statsdReporter;
+  private final RiemannFacade riemannFacade;
+  private final RiemannReporter riemannReporter;
 
   private RegistrationHandle namelessHermesHandle;
   private RegistrationHandle namelessHttpHandle;
@@ -69,20 +75,25 @@ public class MasterService {
    * Create a new service instance. Initializes the control interface and the worker.
    *
    * @param config The service configuration.
+   * @throws IOException
    */
-  public MasterService(final MasterConfig config) {
-
+  public MasterService(final MasterConfig config) throws IOException {
     this.hermesEndpoint = config.getHermesEndpoint();
+
+    RiemannSupport riemannSupport = new RiemannSupport(config.getRiemannHostPort(), "helios-master");
+    riemannFacade = riemannSupport.getFacade();
 
     // Configure metrics
     log.info("Starting metrics");
     if (config.isInhibitMetrics()) {
       metrics = new NoopMetrics();
       statsdReporter = null;
+      riemannReporter = null;
     } else {
       metrics = new MetricsImpl();
       metrics.start(); //must be started here for statsd to be happy
       statsdReporter = StatsdSupport.getStatsdReporter(config.getStatsdHostPort(), "helios-master");
+      riemannReporter = riemannSupport.getReporter();
     }
 
     // Set up clients
@@ -91,7 +102,8 @@ public class MasterService {
     // Set up the master interface
     final DefaultZooKeeperClient curator = new DefaultZooKeeperClient(zooKeeperClient);
     final MasterModel model = new ZooKeeperMasterModel(curator);
-    final MasterHandler handler = new MasterHandler(model, metrics.getMasterMetrics());
+    final MasterHandler handler = new MasterHandler(model, metrics.getMasterMetrics(),
+        riemannFacade);
 
     // master server
     this.hermesServer = Hermes.newServer(handler);
@@ -177,6 +189,9 @@ public class MasterService {
     if (statsdReporter != null) {
       statsdReporter.start(15, TimeUnit.SECONDS);
     }
+    if (riemannReporter != null) {
+      riemannReporter.start(15, TimeUnit.SECONDS);
+    }
   }
 
   /**
@@ -201,6 +216,9 @@ public class MasterService {
 
     if (statsdReporter != null) {
       statsdReporter.shutdown();
+    }
+    if (riemannReporter != null) {
+      riemannReporter.shutdown();
     }
   }
 

@@ -38,6 +38,7 @@ import com.spotify.helios.common.protocol.JobUndeployResponse.Status;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvent;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
+import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.spotify.helios.servicescommon.statistics.MetricsContext;
 import com.spotify.helios.servicescommon.statistics.RequestType;
@@ -48,6 +49,10 @@ import com.spotify.hermes.service.ServiceRequest;
 import com.spotify.hermes.service.handlers.MatchingHandler;
 import com.spotify.hermes.util.Match;
 
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.ConnectionLossException;
+import org.apache.zookeeper.KeeperException.OperationTimeoutException;
+import org.apache.zookeeper.KeeperException.RuntimeInconsistencyException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,10 +80,13 @@ public class MasterHandler extends MatchingHandler {
   private final MasterModel model;
 
   private final MasterMetrics metrics;
+  private final RiemannFacade riemannFacade;
 
-  public MasterHandler(final MasterModel model, MasterMetrics metrics) {
+  public MasterHandler(final MasterModel model, MasterMetrics metrics,
+                       RiemannFacade riemannFacade) {
     this.model = model;
     this.metrics = metrics;
+    this.riemannFacade = riemannFacade;
   }
 
   public String safeURLDecode(String s) {
@@ -86,6 +94,32 @@ public class MasterHandler extends MatchingHandler {
       return URLDecoder.decode(s, "UTF-8");
     } catch (UnsupportedEncodingException e) {
       throw new RuntimeException("URL Decoding failed for " + s, e);
+    }
+  }
+
+  private void checkForZKTransientExceptions(Exception e, String tag) {
+    if (e.getCause().getClass() != KeeperException.class) {
+      return;
+    }
+    KeeperException c = (KeeperException) e;
+    if (c instanceof OperationTimeoutException) {
+      riemannFacade.event()
+          .service("helios-master")
+          .tags("zookeeper", "error", "timeout", tag)
+          .send();
+      metrics.zookeeperTransientError();
+    } else if (c instanceof ConnectionLossException) {
+      riemannFacade.event()
+          .service("helios-master")
+          .tags("zookeeper", "error", "connectionloss", tag)
+          .send();
+      metrics.zookeeperTransientError();
+    } else if (c instanceof RuntimeInconsistencyException) {
+      riemannFacade.event()
+          .service("helios-master")
+          .tags("zookeeper", "error", "inconsistency", tag)
+          .send();
+      metrics.zookeeperTransientError();
     }
   }
 
@@ -145,6 +179,7 @@ public class MasterHandler extends MatchingHandler {
               new CreateJobResponse(CreateJobResponse.Status.JOB_ALREADY_EXISTS));
       return;
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "job_put");
       context.failure();
       log.error("failed to add job: {}:{}", id, job, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -165,6 +200,7 @@ public class MasterHandler extends MatchingHandler {
       context.success();
       ok(request, job);
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "single_job_get");
       context.failure();
       log.error("failed to get job: {}", id, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -203,6 +239,7 @@ public class MasterHandler extends MatchingHandler {
       log.error("failed to parse job id query, e");
       throw new RequestHandlerException(BAD_REQUEST);
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "jobs_get");
       context.failure();
       log.error("failed to get jobs", e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -221,6 +258,7 @@ public class MasterHandler extends MatchingHandler {
       context.userError();
       respond(request, FORBIDDEN, new JobDeleteResponse(JobDeleteResponse.Status.STILL_IN_USE));
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "job_delete");
       context.failure();
       log.error("failed to remove job: {}", id, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -237,6 +275,7 @@ public class MasterHandler extends MatchingHandler {
       context.success();
       ok(request, jobStatus);
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "job_status");
       context.failure();
       log.error("failed to get job status for job: {}", id, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -254,6 +293,7 @@ public class MasterHandler extends MatchingHandler {
 
       ok(request);
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "agent_put");
       context.failure();
       log.error("failed to add agent {}", agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -310,6 +350,7 @@ public class MasterHandler extends MatchingHandler {
       code = StatusCode.METHOD_NOT_ALLOWED;
       detailStatus = JobDeployResponse.Status.JOB_ALREADY_DEPLOYED;
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "agent_job_put");
       context.failure();
       log.error("failed to add job {} to agent {}", deployment, agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -362,6 +403,7 @@ public class MasterHandler extends MatchingHandler {
       code = NOT_FOUND;
       detailStatus = SetGoalResponse.Status.JOB_NOT_DEPLOYED;
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "agent_job_patch");
       context.failure();
       log.error("failed to add job {} to agent {}", deployment, agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -399,6 +441,7 @@ public class MasterHandler extends MatchingHandler {
     try {
       deployment = model.getDeployment(agent, parseJobId(jobId));
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "agent_job_get");
       context.failure();
       log.error("failed to get job {} for agent {}", jobId, agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -429,6 +472,7 @@ public class MasterHandler extends MatchingHandler {
               new AgentDeleteResponse(AgentDeleteResponse.Status.NOT_FOUND, agent));
       return;
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "agent_delete");
       context.failure();
       log.error("failed to remove agent {}", agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -456,6 +500,7 @@ public class MasterHandler extends MatchingHandler {
       code = NOT_FOUND;
       detail = JobUndeployResponse.Status.JOB_NOT_FOUND;
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "agent_job_delete");
       context.failure();
       log.error("failed to remove job {} from agent {}", jobId, agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -474,6 +519,7 @@ public class MasterHandler extends MatchingHandler {
       agentStatus = model.getAgentStatus(agent);
       context.success();
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "agent_status_get");
       context.failure();
       log.error("failed to get status for agent {}", agent, e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -495,6 +541,7 @@ public class MasterHandler extends MatchingHandler {
       ok(request, model.getAgents());
       context.success();
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "agents_get");
       context.failure();
       log.error("getting agents failed", e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -510,6 +557,7 @@ public class MasterHandler extends MatchingHandler {
       ok(request, model.getRunningMasters());
       context.success();
     } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "masters_get");
       context.failure();
       log.error("getting masters failed", e);
       throw new RequestHandlerException(SERVER_ERROR);
@@ -531,6 +579,11 @@ public class MasterHandler extends MatchingHandler {
       context.failure();
       respond(request, NOT_FOUND, new TaskStatusEvents(ImmutableList.<TaskStatusEvent>of(),
           TaskStatusEvents.Status.JOB_ID_NOT_FOUND));
+    } catch (HeliosException e) {
+      checkForZKTransientExceptions(e, "job_history_get");
+      context.failure();
+      log.error("getting job history failed", e);
+      throw new RequestHandlerException(SERVER_ERROR);
     }
   }
 
