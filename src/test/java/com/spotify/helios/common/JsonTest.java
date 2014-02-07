@@ -4,6 +4,8 @@
 
 package com.spotify.helios.common;
 
+import com.spotify.helios.TestBase;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -14,7 +16,7 @@ import java.util.Map;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
-public class JsonTest {
+public class JsonTest extends TestBase {
 
   static final String EXPECTED_JSON =
       "{\"c\":\"bar\",\"foo\":{\"a\":\"hello\",\"b\":17,\"c\":{\"1\":1,\"2\":\"two\"}}}";

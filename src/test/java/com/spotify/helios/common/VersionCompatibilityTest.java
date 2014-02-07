@@ -1,5 +1,6 @@
 package com.spotify.helios.common;
 
+import com.spotify.helios.TestBase;
 import com.spotify.helios.master.PomVersion;
 
 import org.junit.Test;
@@ -7,7 +8,7 @@ import org.junit.Test;
 import static org.junit.Assert.*;
 import static com.spotify.helios.common.VersionCompatibility.Status;
 
-public class VersionCompatibilityTest {
+public class VersionCompatibilityTest extends TestBase {
 
   @Test
   public void test() {

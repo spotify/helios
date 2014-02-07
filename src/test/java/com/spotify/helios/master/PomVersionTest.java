@@ -1,10 +1,12 @@
 package com.spotify.helios.master;
 
+import com.spotify.helios.TestBase;
+
 import org.junit.Test;
 
 import static org.junit.Assert.*;
 
-public class PomVersionTest {
+public class PomVersionTest extends TestBase {
 
   @Test
   public void testNormal() {

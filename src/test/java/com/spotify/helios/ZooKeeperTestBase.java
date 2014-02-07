@@ -18,7 +18,7 @@ import java.net.InetSocketAddress;
 
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 
-public class ZooKeeperTestBase {
+public class ZooKeeperTestBase extends TestBase {
 
   protected final int zookeeperPort = PortAllocator.allocatePort("zookeeper");
   protected final String zookeeperEndpoint = "localhost:" + zookeeperPort;

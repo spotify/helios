@@ -15,6 +15,7 @@ import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.ImageInspectResponse;
 import com.kpelykh.docker.client.model.ListImage;
+import com.spotify.helios.TestBase;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -55,7 +56,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class SupervisorTest {
+public class SupervisorTest extends TestBase {
 
   final ExecutorService executor = Executors.newCachedThreadPool();
 

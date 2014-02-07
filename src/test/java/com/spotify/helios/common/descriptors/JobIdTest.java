@@ -4,6 +4,7 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.spotify.helios.TestBase;
 import com.spotify.helios.common.Json;
 
 import org.junit.Test;
@@ -12,7 +13,7 @@ import java.io.IOException;
 
 import static org.junit.Assert.assertEquals;
 
-public class JobIdTest {
+public class JobIdTest extends TestBase {
 
   public void testFullToString() {
     final JobId id = JobId.newBuilder().setName("foo").setVersion("bar").setHash("baz").build();

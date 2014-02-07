@@ -5,6 +5,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import com.spotify.helios.TestBase;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 
@@ -27,7 +28,7 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class FlapControllerTest {
+public class FlapControllerTest extends TestBase {
   private static final int LOCK_WAIT_TIME = 10000;
 
   // Have to get all fancy with this, so we don't have arbitrary Thread.sleep()s
