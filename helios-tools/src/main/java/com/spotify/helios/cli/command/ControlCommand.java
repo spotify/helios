@@ -38,22 +38,23 @@ public abstract class ControlCommand {
     parser.setDefault("command", this).defaultHelp(true);
   }
 
-  public int run(final Namespace options, final List<Target> targets,
-                 final PrintStream out, final String username, final boolean json)
+  public int run(final Namespace options, final List<Target> targets, final PrintStream out,
+                 final PrintStream err, final String username, final boolean json)
       throws IOException {
     boolean successful = true;
 
     // Execute the control command over each target cluster
     for (final Target target : targets) {
       if (targets.size() > 1) {
-        final String header = format("%s (%s)", target.getName(), target.getEndpoint());
+        final String header = target.getName() == null ? target.getEndpoint() :
+                              format("%s (%s)", target.getName(), target.getEndpoint());
         out.println(header);
         out.println(repeat("-", header.length()));
         out.flush();
       }
 
       try {
-        successful &= run(options, target, out, username, json);
+        successful &= run(options, target, out, err, username, json);
       } catch (InterruptedException e) {
         log.error("Error running control command", e);
       }
@@ -71,7 +72,7 @@ public abstract class ControlCommand {
    * Execute against a cluster at a specific endpoint
    */
   private boolean run(final Namespace options, final Target target, final PrintStream out,
-                      final String username, final boolean json)
+                      final PrintStream err, final String username, final boolean json)
       throws InterruptedException, IOException {
 
     final com.spotify.hermes.service.Client hermesClient = Hermes.newClient(target.getEndpoint());
@@ -89,10 +90,16 @@ public abstract class ControlCommand {
       return result == 0;
     } catch (ExecutionException e) {
       final Throwable cause = e.getCause();
+      // if target is a site, print message like
+      // "Request timed out to master in ash.spotify.net (srv://helios.services.ash.spotify.net)",
+      // otherwise "Request timed out to master tcp://master.ash.spotify.net:5800"
+      final String msg = target.getEndpoint().startsWith("srv")
+                         ? format("in %s (%s)", target.getName(), target.getEndpoint())
+                         : target.getEndpoint();
       if (cause instanceof SendFailureException) {
-        out.println("ERROR: unreachable");
+        err.println("Failure sending message to master " + msg);
       } else if (cause instanceof RequestTimeoutException) {
-        out.println("ERROR: timed out");
+        err.println("Request timed out to master " + msg);
       } else {
         throw Throwables.propagate(cause);
       }

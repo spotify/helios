@@ -9,6 +9,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
 
@@ -41,13 +42,14 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.transform;
+import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
+import static com.google.common.util.concurrent.Futures.withFallback;
 import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
 import static com.spotify.hermes.message.StatusCode.FORBIDDEN;
 import static com.spotify.hermes.message.StatusCode.METHOD_NOT_ALLOWED;
@@ -108,46 +110,63 @@ public class Client {
   }
 
   private ListenableFuture<Message> request(final MessageBuilder messageBuilder) {
-    doVersionCheck();
-    final Message message = messageBuilder.setTtlMillis(TimeUnit.SECONDS.toMillis(30)).build();
-    log.debug("request: {}", message);
-    return hermesClient.send(message);
+    return transform(
+        doVersionCheck(),
+        new AsyncFunction<Void, Message>() {
+          @Override
+          public ListenableFuture<Message> apply(Void input) {
+            final Message message = messageBuilder.setTtlMillis(TimeUnit.SECONDS.toMillis(30)).build();
+            log.debug("request: {}", message);
+            return hermesClient.send(message);
+          }
+        });
   }
 
-  private void doVersionCheck() {
+  private ListenableFuture<Void> doVersionCheck() {
     if (hasCheckedVersion) {
-      return;
+      return immediateFuture(null);
     }
 
-    try {
-      hasCheckedVersion = true; // so as to avoid endless recursion while actually checking the version
-      final VersionCheckResponse response = transform(
-          request(uri("/version_check/%s", Version.POM_VERSION), "GET"),
-          ConvertResponseToPojo.create(VersionCheckResponse.class, ImmutableSet.of(OK)))
-          .get();
-      Status status = response.getStatus();
-      if (status == Status.INCOMPATIBLE) {
-        throw new HeliosRuntimeException(format(
-            "Server protocol version (%s) is incompatible with the client's (%s).  Upgrade your "
-            + "Helios client to the recommended version (%s)",
-            response.getServerVersion(), Version.POM_VERSION, response.getRecommendedVersion()));
-      } else if (status == Status.MAYBE) {
-        log.warn(format(
-            "Server protocol version (%s) might not include features potentially used in your "
-            + "Helios client (%s).  The current recommended client version is (%s)",
-            response.getServerVersion(), Version.POM_VERSION, response.getRecommendedVersion()));
-      } else if (status == Status.WARN) {
-        log.warn(format("A newer Helios client version you want to use is available, please "
-            + "upgrade to the recommended Helios client version (%s)",
-            response.getRecommendedVersion()));
-      }
-    } catch (RuntimeException e) {
-      hasCheckedVersion = false;
-      throw e;
-    } catch (InterruptedException | ExecutionException e) {
-      hasCheckedVersion = false;
-      throw new HeliosRuntimeException("Error checking client/server version compatibility", e);
-    }
+    // so as to avoid endless recursion while actually checking the version
+    hasCheckedVersion = true;
+
+    final ListenableFuture<VersionCheckResponse> future = transform(
+        request(uri("/version_check/%s", Version.POM_VERSION), "GET"),
+        ConvertResponseToPojo.create(VersionCheckResponse.class, ImmutableSet.of(OK)));
+
+    final ListenableFuture<VersionCheckResponse> futureWithFallback =
+        withFallback(future, new FutureFallback<VersionCheckResponse>() {
+          @Override
+          public ListenableFuture<VersionCheckResponse> create(Throwable t) throws Exception {
+            hasCheckedVersion = false;
+            return immediateFailedFuture(t);
+          }
+        });
+
+    return transform(
+        futureWithFallback,
+        new Function<VersionCheckResponse, Void>() {
+          @Override
+          public Void apply(VersionCheckResponse response) {
+            Status status = response.getStatus();
+            if (status == Status.INCOMPATIBLE) {
+              throw new HeliosRuntimeException(format(
+                  "Server protocol version (%s) is incompatible with the client's (%s).  Upgrade your "
+                  + "Helios client to the recommended version (%s)",
+                  response.getServerVersion(), Version.POM_VERSION, response.getRecommendedVersion()));
+            } else if (status == Status.MAYBE) {
+              log.warn(format(
+                  "Server protocol version (%s) might not include features potentially used in your "
+                  + "Helios client (%s).  The current recommended client version is (%s)",
+                  response.getServerVersion(), Version.POM_VERSION, response.getRecommendedVersion()));
+            } else if (status == Status.WARN) {
+              log.warn(format("A newer Helios client version you want to use is available, please "
+                              + "upgrade to the recommended Helios client version (%s)",
+                              response.getRecommendedVersion()));
+            }
+            return null;
+          }
+        });
   }
 
   private ListenableFuture<Message> request(final URI uri, final String method) {

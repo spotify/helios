@@ -4,18 +4,16 @@
 
 package com.spotify.helios.cli;
 
-import com.google.common.base.Joiner;
-
 import com.spotify.helios.common.LoggingConfig;
-import com.spotify.hermes.service.RequestTimeoutException;
 import com.spotify.logging.LoggingConfigurator;
+
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.PrintStream;
-import java.util.List;
 
 import static com.google.common.collect.Iterables.get;
 import static com.spotify.logging.LoggingConfigurator.Level.ALL;
@@ -34,12 +32,16 @@ public class CliMain {
   private final PrintStream out;
   private final PrintStream err;
 
+  @SuppressWarnings("UseOfSystemOutOrSystemErr")
   public static void main(final String... args) {
     try {
-      int exitCode = new CliMain(args).run();
+      int exitCode = new CliMain(System.out, System.err, args).run();
       System.exit(exitCode);
     } catch (Throwable e) {
-      log.error("Uncaught exception", e);
+      // don't print error message for arg parser exception, because parser will do that
+      if (!(e instanceof ArgumentParserException)) {
+        System.err.println(e.getMessage());
+      }
       System.exit(1);
     }
   }
@@ -52,28 +54,16 @@ public class CliMain {
     setupLogging();
   }
 
-  @SuppressWarnings("UseOfSystemOutOrSystemErr")
-  public CliMain(final String... args) throws Exception {
-    this(System.out, System.err, args);
-  }
-
   public int run() {
-    List<Target> targets = parser.getTargets();
     try {
-      return parser.getCommand().run(parser.getNamespace(), targets, out,
+      return parser.getCommand().run(parser.getNamespace(), parser.getTargets(), out, err,
                                      parser.getUsername(), parser.getJson());
     } catch (Exception e) {
-      log.error("command failed", e);
-      Throwable t = e;
-      while (t.getCause() != null) {
-        if (t.getCause() instanceof RequestTimeoutException) {
-          err.println("---------------------------------");
-          err.println(
-              "Command Failed due to timeout.  Endpoint(s) we tried to connect to were: "
-              + Joiner.on(", ").join(targets));
-          return 1;
-        }
-        t = t.getCause();
+      // print entire stack trace in verbose mode, otherwise just the exception message
+      if (parser.getNamespace().getInt("verbose") > 0) {
+        e.printStackTrace(err);
+      } else {
+        err.println(e.getMessage());
       }
       return 1;
     }

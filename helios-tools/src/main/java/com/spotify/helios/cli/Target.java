@@ -18,12 +18,10 @@ public class Target {
 
   private final String name;
   private final String endpoint;
-  private final String displayString;
 
-  Target(final String name, final String endpoint, final String displayString) {
+  Target(final String name, final String endpoint) {
     this.name = name;
     this.endpoint = endpoint;
-    this.displayString = displayString;
   }
 
   public String getName() {
@@ -34,18 +32,13 @@ public class Target {
     return endpoint;
   }
 
-  @Override
-  public String toString() {
-    return displayString;
-  }
-
   /**
    * Create targets from a list of explicit endpoints
    */
   public static List<Target> targetsFrom(final Iterable<String> endpoints) {
     final ImmutableList.Builder<Target> builder = ImmutableList.builder();
     for (final String endpoint : endpoints) {
-      builder.add(new Target(endpoint, endpoint, "{" + endpoint + "}"));
+      builder.add(new Target(null, endpoint));
     }
     return builder.build();
   }
@@ -66,8 +59,7 @@ public class Target {
    */
   private static Target targetFrom(final String srvName, final String site) {
     String point = endpoint(srvName, "services." + site);
-    return new Target(site, point,
-        "{Site: " + site + " srvname: " + srvName + " (" + point + ")}");
+    return new Target(site, point);
   }
 
   /**

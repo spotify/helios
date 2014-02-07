@@ -50,7 +50,6 @@ import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.addAll;
 import static com.google.common.collect.Iterables.filter;
 import static com.spotify.helios.cli.Target.targetsFrom;
-import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
@@ -109,10 +108,9 @@ public class CliParser {
 
     // Order of target precedence:
     // 1. endpoints from command line
-    // 3. sites from command line
-    // 2. endpoints from config file
+    // 2. sites from command line
+    // 3. endpoints from config file
     // 4. sites from config file
-    // 3. default (localhost)
 
     // TODO (dano): this is kind of complex, make sure it matches the defaults in the help and maybe factor out and unit test it
     List<Target> toBeTargets = computeTargets(parser, explicitEndpoints, sitesArguments, srvName);
@@ -236,7 +234,7 @@ public class CliParser {
 
       sitesArg = addArgument("-s", "--sites")
           .action(append())
-          .help(format("sites"));
+          .help("sites");
 
       srvNameArg = addArgument("--srv-name")
           .setDefault(cliConfig.getSrvName())
