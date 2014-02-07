@@ -660,7 +660,7 @@ public class SystemTest extends ZooKeeperTestBase {
     final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
     new CliMain(new PrintStream(stdout), new PrintStream(stderr), commands).run();
     String string = stderr.toString();
-    assertContains("we tried to connect to", string);
+    assertContains("Request timed out to master", string);
     assertContains("bogussite", string);
   }
 
