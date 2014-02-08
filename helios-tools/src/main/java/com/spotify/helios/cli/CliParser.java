@@ -86,6 +86,11 @@ public class CliParser {
 
     setupCommands();
 
+    if (args.length == 0) {
+      parser.printHelp();
+      throw new ArgumentParserException(parser);
+    }
+
     try {
       this.options = parser.parseArgs(args);
     } catch (ArgumentParserException e) {
