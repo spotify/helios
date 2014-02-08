@@ -4,6 +4,8 @@
 
 package com.spotify.helios.system;
 
+import com.spotify.nameless.Service;
+
 import org.junit.After;
 import org.junit.Before;
 
@@ -15,7 +17,7 @@ public class NamelessTestBase extends SystemTestBase {
   @Before
   public void setUp() throws Exception {
     super.setUp();
-    nameless = new com.spotify.nameless.Service();
+    nameless = new Service();
     nameless.start();
   }
 
