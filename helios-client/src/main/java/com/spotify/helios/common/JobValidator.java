@@ -160,18 +160,6 @@ public class JobValidator {
     return valid;
   }
 
-//  func ParseRepositoryTag(repos string) (string, string) {
-//    n := strings.LastIndex(repos, ":")
-//    if n < 0 {
-//      return repos, ""
-//    }
-//    if tag := repos[n+1:]; !strings.Contains(tag, "/") {
-//      return repos[:n], tag
-//    }
-//    return repos, ""
-//  }
-
-
   private boolean validateEndpoint(final String endpoint, final Collection<String> errors) {
     final String[] parts = endpoint.split(":", 2);
     if (!validateAddress(parts[0], errors)) {
