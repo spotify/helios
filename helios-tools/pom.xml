@@ -8,7 +8,7 @@
     <artifactId>helios-parent</artifactId>
     <version>0.0.5-SNAPSHOT</version>
   </parent>
-    
+
   <name>Spotify Helios Tools</name>
   <artifactId>helios-tools</artifactId>
   <packaging>jar</packaging>
@@ -203,7 +203,17 @@
         <configuration>
           <createDependencyReducedPom>false</createDependencyReducedPom>
           <minimizeJar>true</minimizeJar>
+          <shadedArtifactAttached>true</shadedArtifactAttached>
+          <shadedClassifierName>shaded</shadedClassifierName>
           <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>META-INF/*.SF</exclude>
+                <exclude>META-INF/*.DSA</exclude>
+                <exclude>META-INF/*.RSA</exclude>
+              </excludes>
+            </filter>
             <filter>
               <artifact>net.java.dev.jna</artifact>
               <includes>
@@ -212,7 +222,7 @@
             </filter>
           </filters>
           <transformers>
-            <!--The ServicesResourceTransformer is needed to make jersey (docker-java) happy-->
+            <!--The ServicesResourceTransformer is needed to make jersey happy-->
             <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
           </transformers>
         </configuration>
@@ -316,15 +326,15 @@
               <deb>${project.build.directory}/spotify-helios_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
               <controlDir>src/deb/spotify-helios</controlDir>
               <dataSet>
-		<data>
-                  <src>${project.build.directory}/${project.build.finalName}.jar</src>
+                <data>
+                  <src>${project.build.directory}/${project.build.finalName}-shaded.jar</src>
                   <type>file</type>
                   <mapper>
                     <type>perm</type>
                     <prefix>/usr/share/spotify-helios/lib</prefix>
                   </mapper>
                 </data>
-		<data>
+                <data>
                   <src>${basedir}/../bin/helios</src>
                   <type>file</type>
                   <mapper>

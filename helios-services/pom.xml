@@ -272,8 +272,20 @@
         <version>2.2</version>
         <configuration>
           <createDependencyReducedPom>false</createDependencyReducedPom>
+          <shadedArtifactAttached>true</shadedArtifactAttached>
+          <shadedClassifierName>shaded</shadedClassifierName>
+          <filters>
+            <filter>
+              <artifact>*:*</artifact>
+              <excludes>
+                <exclude>META-INF/*.SF</exclude>
+                <exclude>META-INF/*.DSA</exclude>
+                <exclude>META-INF/*.RSA</exclude>
+              </excludes>
+            </filter>
+          </filters>
           <transformers>
-            <!--The ServicesResourceTransformer is needed to make jersey (docker-java) happy-->
+            <!--The ServicesResourceTransformer is needed to make jersey happy-->
             <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
           </transformers>
         </configuration>
@@ -426,8 +438,8 @@
               <deb>${project.build.directory}/spotify-helios-services_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
               <controlDir>src/deb/spotify-helios-services</controlDir>
               <dataSet>
-		<data>
-                  <src>${project.build.directory}/${project.build.finalName}.jar</src>
+                <data>
+                  <src>${project.build.directory}/${project.build.finalName}-shaded.jar</src>
                   <type>file</type>
                   <mapper>
                     <type>perm</type>
