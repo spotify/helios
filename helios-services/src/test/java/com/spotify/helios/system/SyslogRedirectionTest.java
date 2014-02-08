@@ -18,7 +18,7 @@ import java.util.List;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 
 public class SyslogRedirectionTest extends SystemTestBase {
@@ -30,7 +30,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
     // docker, and that the redirector executable exists and doesn't do anything terribly stupid.
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT, "--syslog-redirect", "10.0.3.1:6514");
-    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 

@@ -62,8 +62,8 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     // Wait for agent to come up
-    awaitAgentRegistered(client, TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
-    awaitAgentStatus(client, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentRegistered(client, TEST_AGENT, LONG_WAIT_MINUTES, MINUTES);
+    awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Deploy the job on the agent
     final Deployment deployment = Deployment.of(jobId, START);
@@ -132,10 +132,10 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     startZookeeper();
 
     // Verify that the agent is listed as up
-    awaitAgentStatus(client, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the new container id to be reflected in the task status
-    await(WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<TaskStatus>() {
+    await(LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final JobStatus jobStatus = client.jobStatus(jobId).get();

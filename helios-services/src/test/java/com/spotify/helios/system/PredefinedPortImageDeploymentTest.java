@@ -18,7 +18,6 @@ import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class PredefinedPortImageDeploymentTest extends SystemTestBase {
 
@@ -53,8 +52,8 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
     client.createJob(job2).get();
 
     // Wait for agent to come up
-    awaitAgentRegistered(client, agentName, WAIT_TIMEOUT_SECONDS, SECONDS);
-    awaitAgentStatus(client, agentName, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentRegistered(client, agentName, LONG_WAIT_MINUTES, MINUTES);
+    awaitAgentStatus(client, agentName, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Deploy the jobs on the agent
     client.deploy(Deployment.of(jobId1, START), agentName).get();

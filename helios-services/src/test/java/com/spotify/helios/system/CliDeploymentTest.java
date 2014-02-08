@@ -19,7 +19,7 @@ import org.junit.Test;
 import java.util.Map;
 
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -46,8 +46,8 @@ public class CliDeploymentTest extends SystemTestBase {
     final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
 
     // Wait for agent to come up
-    awaitAgentRegistered(TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
-    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentRegistered(TEST_AGENT, LONG_WAIT_MINUTES, MINUTES);
+    awaitAgentStatus(TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, image, DO_NOTHING_COMMAND, env, ports,

@@ -17,7 +17,7 @@ import org.junit.Test;
 
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 
 public class PortCollisionJobTest extends SystemTestBase {
@@ -29,7 +29,7 @@ public class PortCollisionJobTest extends SystemTestBase {
 
     final Client client = defaultClient();
 
-    awaitAgentStatus(client, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     final Job job1 = Job.newBuilder()
         .setName(PREFIX + "foo")

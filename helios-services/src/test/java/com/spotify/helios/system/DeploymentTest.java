@@ -28,7 +28,6 @@ import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
@@ -78,8 +77,8 @@ public class DeploymentTest extends SystemTestBase {
     assertEquals(ImmutableMap.of(jobId, job), matchJobs3);
 
     // Wait for agent to come up
-    awaitAgentRegistered(client, TEST_AGENT, WAIT_TIMEOUT_SECONDS, SECONDS);
-    awaitAgentStatus(client, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentRegistered(client, TEST_AGENT, LONG_WAIT_MINUTES, MINUTES);
+    awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Deploy the job on the agent
     final Deployment deployment = Deployment.of(jobId, START);
@@ -129,14 +128,14 @@ public class DeploymentTest extends SystemTestBase {
     assertNull(undeployedJob);
 
     // Wait for the task to disappear
-    awaitTaskGone(client, TEST_AGENT, jobId, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitTaskGone(client, TEST_AGENT, jobId, LONG_WAIT_MINUTES, MINUTES);
 
     // Verify that the job can be deleted
     assertEquals(JobDeleteResponse.Status.OK, client.deleteJob(jobId).get().getStatus());
 
     // Stop agent and verify that the agent status changes to DOWN
     agent.stopAsync().awaitTerminated();
-    awaitAgentStatus(client, TEST_AGENT, DOWN, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(client, TEST_AGENT, DOWN, LONG_WAIT_MINUTES, MINUTES);
   }
 
 }

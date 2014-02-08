@@ -16,7 +16,7 @@ import java.util.List;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class ContainerHostNameTest extends SystemTestBase {
 
@@ -24,7 +24,7 @@ public class ContainerHostNameTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
-    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 

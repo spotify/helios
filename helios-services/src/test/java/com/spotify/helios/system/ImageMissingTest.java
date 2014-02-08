@@ -15,7 +15,7 @@ import org.junit.Test;
 
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.ThrottleState.IMAGE_MISSING;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 
 public class ImageMissingTest extends SystemTestBase {
@@ -27,13 +27,13 @@ public class ImageMissingTest extends SystemTestBase {
 
     final Client client = defaultClient();
 
-    awaitAgentStatus(client, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     JobId jobId = createJob(JOB_NAME, JOB_VERSION, "this_sould_not_exist",
                             ImmutableList.of("/bin/true"));
 
     deployJob(jobId, TEST_AGENT);
-    awaitJobThrottle(client, TEST_AGENT, jobId, IMAGE_MISSING, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitJobThrottle(client, TEST_AGENT, jobId, IMAGE_MISSING, LONG_WAIT_MINUTES, MINUTES);
 
     final AgentStatus agentStatus = client.agentStatus(TEST_AGENT).get();
     final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);

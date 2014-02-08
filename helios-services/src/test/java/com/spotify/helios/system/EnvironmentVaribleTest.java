@@ -23,7 +23,7 @@ import java.util.concurrent.Callable;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 
 public class EnvironmentVaribleTest extends SystemTestBase {
@@ -36,10 +36,10 @@ public class EnvironmentVaribleTest extends SystemTestBase {
                       "SPOTIFY_POD=PODNAME",
                       "SPOTIFY_ROLE=ROLENAME",
                       "BAR=badfood");
-    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the agent to report environment vars
-    await(WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<Object>() {
+    await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         Map<String, AgentStatus> status = Json.read(

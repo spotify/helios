@@ -23,7 +23,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertTrue;
 
 public class JobWatchExactTest extends SystemTestBase {
@@ -32,7 +32,7 @@ public class JobWatchExactTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
-    awaitAgentStatus(TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,

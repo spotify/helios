@@ -18,7 +18,7 @@ public class JobHistoryTest {
 //    startDefaultAgent(TEST_AGENT);
 //    JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", ImmutableList.of("/bin/true"));
 //    deployJob(jobId, TEST_AGENT);
-//    awaitJobState(client, TEST_AGENT, jobId, EXITED, WAIT_TIMEOUT_SECONDS, SECONDS);
+//    awaitJobState(client, TEST_AGENT, jobId, EXITED, LONG_WAIT_MINUTES, MINUTES);
 //    undeployJob(jobId, TEST_AGENT);
 //    TaskStatusEvents events = client.jobHistory(jobId).get();
 //    List<TaskStatusEvent> eventsList = events.getEvents();

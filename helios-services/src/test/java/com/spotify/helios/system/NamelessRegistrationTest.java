@@ -23,6 +23,7 @@ import java.util.concurrent.Callable;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.nameless.proto.Messages.RegistryEntry;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -86,7 +87,7 @@ public class NamelessRegistrationTest extends NamelessTestBase {
     final Client client = defaultClient();
 
     startDefaultAgent(TEST_AGENT, "--site=localhost");
-    awaitAgentStatus(client, TEST_AGENT, UP, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
         "PORT_NAME", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
@@ -101,7 +102,7 @@ public class NamelessRegistrationTest extends NamelessTestBase {
                                   EMPTY_ENV, portMapping, registration);
 
     deployJob(jobId, TEST_AGENT);
-    awaitJobState(client, TEST_AGENT, jobId, RUNNING, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitJobState(client, TEST_AGENT, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
     final NamelessClient nameless = new NamelessClient(hermesClient("tcp://localhost:4999"));
     final EndpointFilter filter = EndpointFilter.newBuilder()

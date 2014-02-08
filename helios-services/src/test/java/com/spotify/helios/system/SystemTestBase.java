@@ -73,6 +73,7 @@ import static java.lang.System.nanoTime;
 import static java.lang.System.out;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -485,8 +486,8 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
 
   TaskStatus awaitTaskState(final JobId jobId, final String agent,
                             final TaskStatus.State state) throws Exception {
-    long timeout = WAIT_TIMEOUT_SECONDS;
-    TimeUnit timeUnit = TimeUnit.SECONDS;
+    long timeout = LONG_WAIT_MINUTES;
+    TimeUnit timeUnit = MINUTES;
     return await(timeout, timeUnit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
