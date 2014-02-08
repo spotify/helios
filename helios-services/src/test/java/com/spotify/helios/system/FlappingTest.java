@@ -13,6 +13,7 @@ import org.junit.Test;
 
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class FlappingTest extends SystemTestBase {
@@ -28,6 +29,6 @@ public class FlappingTest extends SystemTestBase {
 
     JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", ImmutableList.of("/bin/true"));
     deployJob(jobId, TEST_AGENT);
-    awaitJobThrottle(client, TEST_AGENT, jobId, FLAPPING, WAIT_TIMEOUT_SECONDS, SECONDS);
+    awaitJobThrottle(client, TEST_AGENT, jobId, FLAPPING, LONG_WAIT_MINUTES, MINUTES);
   }
 }
