@@ -85,14 +85,14 @@ public class JobWatchCommand extends ControlCommand {
 
       Instant now = new Instant();
       out.printf("-------------------- ------------------------------ -------- "
-          + "---------- [%s UTC]\n", now.toString(formatter));
+          + "---------- [%s UTC]%n", now.toString(formatter));
       for (final JobId jobId : jobIds) {
         final JobStatus jobStatus = statuses.get(jobId);
         final Map<String, TaskStatus> taskStatuses = jobStatus.getTaskStatuses();
         if (exact) {
           for (final String host : prefixes) {
             final TaskStatus ts = taskStatuses.get(host);
-            out.printf("%-20s %-30s %-8s %s\n",
+            out.printf("%-20s %-30s %-8s %s%n",
                 chop(jobId.toShortString(), 20),
                 chop(host, 30),
                 ts != null ? ts.getState() : "UNKNOWN",
@@ -104,7 +104,7 @@ public class JobWatchCommand extends ControlCommand {
               continue;
             }
             final TaskStatus ts = taskStatuses.get(host);
-            out.printf("%-20s %-30s %-8s %s\n",
+            out.printf("%-20s %-30s %-8s %s%n",
               chop(jobId.toShortString(), 20),
               chop(host, 30), ts.getState(), ts.getThrottled());
           }
