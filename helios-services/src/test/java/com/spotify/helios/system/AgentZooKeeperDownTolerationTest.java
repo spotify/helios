@@ -98,11 +98,14 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     assertEquals(0, listContainers(dockerClient, PREFIX).size());
 
     // Wait for a while and make sure that a new container was spawned
-    Thread.sleep(5000);
+    final String firstRestartedContainerId = await(30, SECONDS, new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        final List<Container> containers = listContainers(dockerClient, PREFIX);
+        return containers.size() == 1 ? containers.get(0).id : null;
+      }
+    });
     assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
-    final List<Container> containers1 = listContainers(dockerClient, PREFIX);
-    assertEquals(1, containers1.size());
-    final String firstRestartedContainerId = containers1.get(0).id;
 
     // Stop the agent
     agent2.stopAsync().awaitTerminated();
@@ -116,10 +119,14 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for a while and make sure that a new container was spawned
     Thread.sleep(5000);
+    final String secondRestartedContainerId = await(30, SECONDS, new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        final List<Container> containers = listContainers(dockerClient, PREFIX);
+        return containers.size() == 1 ? containers.get(0).id : null;
+      }
+    });
     assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
-    final List<Container> containers2 = listContainers(dockerClient, PREFIX);
-    assertEquals(1, containers2.size());
-    final String secondRestartedContainerId = containers2.get(0).id;
 
     // Start zookeeper
     startZookeeper();
