@@ -5,11 +5,12 @@
 package com.spotify.helios.common;
 
 import com.google.common.base.Function;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.protobuf.ByteString;
 
@@ -42,14 +43,11 @@ import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Iterables.transform;
-import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
-import static com.google.common.util.concurrent.Futures.withFallback;
 import static com.spotify.hermes.message.StatusCode.BAD_REQUEST;
 import static com.spotify.hermes.message.StatusCode.FORBIDDEN;
 import static com.spotify.hermes.message.StatusCode.METHOD_NOT_ALLOWED;
@@ -57,6 +55,7 @@ import static com.spotify.hermes.message.StatusCode.NOT_FOUND;
 import static com.spotify.hermes.message.StatusCode.OK;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class Client {
 
@@ -65,11 +64,12 @@ public class Client {
   private final String user;
   private final com.spotify.hermes.service.Client hermesClient;
 
-  private boolean hasCheckedVersion;
+  private Supplier<ListenableFuture<Void>> versionCheck;
 
   public Client(final String user, final com.spotify.hermes.service.Client hermesClient) {
     this.user = user;
     this.hermesClient = hermesClient;
+    this.versionCheck = Suppliers.memoize(new VersionCheck());
   }
 
   public Client(final String user, final Iterable<String> endpoints) {
@@ -105,66 +105,13 @@ public class Client {
     return URI.create(uri + q + "user=" + user);
   }
 
-  private ListenableFuture<Message> request(final URI uri) {
-    return request(Hermes.newRequestBuilder(uri.toString()));
-  }
-
   private ListenableFuture<Message> request(final MessageBuilder messageBuilder) {
     return transform(
-        doVersionCheck(),
+        versionCheck.get(),
         new AsyncFunction<Void, Message>() {
           @Override
           public ListenableFuture<Message> apply(Void input) {
-            final Message message = messageBuilder.setTtlMillis(TimeUnit.SECONDS.toMillis(30)).build();
-            log.debug("request: {}", message);
-            return hermesClient.send(message);
-          }
-        });
-  }
-
-  private ListenableFuture<Void> doVersionCheck() {
-    if (hasCheckedVersion) {
-      return immediateFuture(null);
-    }
-
-    // so as to avoid endless recursion while actually checking the version
-    hasCheckedVersion = true;
-
-    final ListenableFuture<VersionCheckResponse> future = transform(
-        request(uri("/version_check/%s", Version.POM_VERSION), "GET"),
-        ConvertResponseToPojo.create(VersionCheckResponse.class, ImmutableSet.of(OK)));
-
-    final ListenableFuture<VersionCheckResponse> futureWithFallback =
-        withFallback(future, new FutureFallback<VersionCheckResponse>() {
-          @Override
-          public ListenableFuture<VersionCheckResponse> create(Throwable t) throws Exception {
-            hasCheckedVersion = false;
-            return immediateFailedFuture(t);
-          }
-        });
-
-    return transform(
-        futureWithFallback,
-        new Function<VersionCheckResponse, Void>() {
-          @Override
-          public Void apply(VersionCheckResponse response) {
-            Status status = response.getStatus();
-            if (status == Status.INCOMPATIBLE) {
-              throw new HeliosRuntimeException(format(
-                  "Server protocol version (%s) is incompatible with the client's (%s).  Upgrade your "
-                  + "Helios client to the recommended version (%s)",
-                  response.getServerVersion(), Version.POM_VERSION, response.getRecommendedVersion()));
-            } else if (status == Status.MAYBE) {
-              log.warn(format(
-                  "Server protocol version (%s) might not include features potentially used in your "
-                  + "Helios client (%s).  The current recommended client version is (%s)",
-                  response.getServerVersion(), Version.POM_VERSION, response.getRecommendedVersion()));
-            } else if (status == Status.WARN) {
-              log.warn(format("A newer Helios client version you want to use is available, please "
-                              + "upgrade to the recommended Helios client version (%s)",
-                              response.getRecommendedVersion()));
-            }
-            return null;
+            return rawRequest(messageBuilder);
           }
         });
   }
@@ -175,13 +122,22 @@ public class Client {
 
   private ListenableFuture<Message> request(final URI uri, final String method,
                                             final Descriptor... descriptors) {
-    doVersionCheck();
     final List<ByteString> payloadsJson = Lists.newArrayList();
     for (final Descriptor descriptor : descriptors) {
       payloadsJson.add(descriptor.toJsonByteString());
     }
     return request(Hermes.newRequestBuilder(uri.toString(), method)
                        .setPayloads(payloadsJson));
+  }
+
+  private ListenableFuture<Message> rawRequest(final MessageBuilder messageBuilder) {
+    final Message message = messageBuilder.setTtlMillis(SECONDS.toMillis(30)).build();
+    log.debug("request: {}", message);
+    return hermesClient.send(message);
+  }
+
+  private ListenableFuture<Message> rawRequest(final URI uri, final String method) {
+    return rawRequest(Hermes.newRequestBuilder(uri.toString(), method));
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final TypeReference<T> typeReference) {
@@ -193,9 +149,7 @@ public class Client {
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final JavaType javaType) {
-    return transform(
-        request(uri),
-        new ConvertResponseToPojo<T>(javaType));
+    return transform(request(uri, "GET"), new ConvertResponseToPojo<T>(javaType));
   }
 
   private ListenableFuture<StatusCode> put(final URI uri) {
@@ -233,7 +187,6 @@ public class Client {
   public ListenableFuture<AgentStatus> agentStatus(final String agent) {
     return get(uri("/agents/%s/status", agent), AgentStatus.class);
   }
-
 
   public ListenableFuture<StatusCode> registerAgent(final String agent) {
     return put(uri("/agents/%s", agent));
@@ -283,11 +236,7 @@ public class Client {
     return transform(
         request(uri("/history/jobs/%s", jobId.toString()), "GET"),
         ConvertResponseToPojo.create(TaskStatusEvents.class,
-            ImmutableSet.of(OK, NOT_FOUND)));
-  }
-
-  public static Builder newBuilder() {
-    return new Builder();
+                                     ImmutableSet.of(OK, NOT_FOUND)));
   }
 
   public ListenableFuture<JobStatus> jobStatus(final JobId jobId) {
@@ -340,6 +289,47 @@ public class Client {
 
       return immediateFuture(result);
     }
+  }
+
+  private class VersionCheck implements Supplier<ListenableFuture<Void>> {
+
+    @Override
+    public ListenableFuture<Void> get() {
+      final ListenableFuture<VersionCheckResponse> future = transform(
+          rawRequest(uri("/version_check/%s", Version.POM_VERSION), "GET"),
+          ConvertResponseToPojo.create(VersionCheckResponse.class, ImmutableSet.of(OK)));
+
+      return transform(
+          future,
+          new Function<VersionCheckResponse, Void>() {
+            @Override
+            public Void apply(VersionCheckResponse response) {
+              final Status status = response.getStatus();
+              if (status == Status.INCOMPATIBLE) {
+                throw new HeliosRuntimeException(format(
+                    "Server protocol version (%s) is incompatible with the client's (%s). " +
+                    "Upgrade your Helios client to the recommended version (%s)",
+                    response.getServerVersion(), Version.POM_VERSION,
+                    response.getRecommendedVersion()));
+              } else if (status == Status.MAYBE) {
+                log.warn("Server protocol version ({}) might not include features potentially " +
+                         "used in your Helios client ({}).  The current recommended client " +
+                         "version is ({})",
+                         response.getServerVersion(), Version.POM_VERSION,
+                         response.getRecommendedVersion());
+              } else if (status == Status.WARN) {
+                log.warn("A newer Helios client version you want to use is available, please " +
+                         "upgrade to the recommended Helios client version ({})",
+                         response.getRecommendedVersion());
+              }
+              return null;
+            }
+          });
+    }
+  }
+
+  public static Builder newBuilder() {
+    return new Builder();
   }
 
   public static class Builder {
