@@ -37,6 +37,7 @@ public class ZooKeeperTestBase extends TestBase {
     startZookeeper();
 
     curator = CuratorFrameworkFactory.newClient(zookeeperEndpoint,
+                                                500, 500,
                                                 new ExponentialBackoffRetry(1000, 3));
   }
 
