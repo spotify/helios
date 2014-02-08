@@ -6,7 +6,7 @@ if [[ -e "$dir/../../helios" ]]; then
     CLASSPATH="$(cd $(dirname $jar) && pwd -P)/$(basename $jar)"
     echo "running in helios project, using $CLASSPATH" 1>&2
 else
-    CLASSPATH="/usr/share/spotify-helios/lib/*"
+    CLASSPATH="/usr/share/spotify-helios/lib/tools/*"
 fi
 
 exec java \

@@ -443,7 +443,7 @@
                   <type>file</type>
                   <mapper>
                     <type>perm</type>
-                    <prefix>/usr/share/spotify-helios/lib</prefix>
+                    <prefix>/usr/share/spotify-helios/lib/services</prefix>
                   </mapper>
                 </data>
               </dataSet>

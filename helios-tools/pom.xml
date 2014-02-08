@@ -331,7 +331,7 @@
                   <type>file</type>
                   <mapper>
                     <type>perm</type>
-                    <prefix>/usr/share/spotify-helios/lib</prefix>
+                    <prefix>/usr/share/spotify-helios/lib/tools</prefix>
                   </mapper>
                 </data>
                 <data>
