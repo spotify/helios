@@ -4,7 +4,6 @@
 
 package com.spotify.helios.cli;
 
-import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Sets;
 
@@ -50,6 +49,7 @@ import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.addAll;
 import static com.google.common.collect.Iterables.filter;
 import static com.spotify.helios.cli.Target.targetsFrom;
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
@@ -76,7 +76,7 @@ public class CliParser {
 
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("helios")
         .defaultHelp(true)
-        .description(Joiner.on("\n").join("Spotify Helios CLI", HELP_JIRA, HELP_WIKI));
+        .description(format("%s%n%n%s%n%s", "Spotify Helios CLI", HELP_JIRA, HELP_WIKI));
 
     cliConfig = CliConfig.fromUserConfig();
 
