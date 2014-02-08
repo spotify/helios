@@ -44,7 +44,8 @@
         <artifactId>maven-surefire-plugin</artifactId>
         <version>2.16</version>
         <configuration>
-          <parallel>classes</parallel>
+          <forkCount>2C</forkCount>
+          <reuseForks>true</reuseForks>
           <argLine>-XX:-UseSplitVerifier</argLine>
         </configuration>
       </plugin>
