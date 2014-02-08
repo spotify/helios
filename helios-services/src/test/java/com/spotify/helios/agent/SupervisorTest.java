@@ -184,9 +184,9 @@ public class SupervisorTest extends TestBase {
     sut.start();
 
     // Verify that the container is created
-    verify(docker, timeout(1000)).createContainer(containerConfigCaptor.capture(),
+    verify(docker, timeout(30000)).createContainer(containerConfigCaptor.capture(),
                                                   containerNameCaptor.capture());
-    verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
                                                eq(TaskStatus.newBuilder()
                                                       .setJob(DESCRIPTOR)
                                                       .setState(CREATING)
@@ -203,8 +203,8 @@ public class SupervisorTest extends TestBase {
     assertEquals(DESCRIPTOR.getId().toShortString(), shortJobIdFromContainerName(containerName));
 
     // Verify that the container is started
-    verify(docker, timeout(1000)).startContainer(eq(containerId), any(HostConfig.class));
-    verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
+    verify(docker, timeout(30000)).startContainer(eq(containerId), any(HostConfig.class));
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
                                                eq(TaskStatus.newBuilder()
                                                       .setJob(DESCRIPTOR)
                                                       .setState(STARTING)
@@ -215,8 +215,8 @@ public class SupervisorTest extends TestBase {
     when(docker.inspectContainer(eq(containerId))).thenReturn(immediateFuture(runningResponse));
     startFuture.set(null);
 
-    verify(docker, timeout(1000)).waitContainer(containerId);
-    verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
+    verify(docker, timeout(30000)).waitContainer(containerId);
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
                                                eq(TaskStatus.newBuilder()
                                                       .setJob(DESCRIPTOR)
                                                       .setState(RUNNING)
@@ -236,14 +236,14 @@ public class SupervisorTest extends TestBase {
         return null;
       }
     });
-    verify(docker, timeout(1000)).kill(eq(containerId));
+    verify(docker, timeout(30000)).kill(eq(containerId));
 
     // Change docker container state to stopped when it's killed
     when(docker.inspectContainer(eq(containerId))).thenReturn(immediateFuture(stoppedResponse));
     killFuture.set(null);
 
     // Verify that the stopped state is signalled
-    verify(model, timeout(1000)).setTaskStatus(eq(JOB_ID),
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
                                                eq(TaskStatus.newBuilder()
                                                       .setJob(DESCRIPTOR)
                                                       .setState(STOPPED)
@@ -298,9 +298,9 @@ public class SupervisorTest extends TestBase {
 
     // Start the job
     sut.start();
-    verify(docker, timeout(1000)).createContainer(any(ContainerConfig.class), any(String.class));
-    verify(docker, timeout(1000)).startContainer(eq(containerId1), any(HostConfig.class));
-    verify(docker, timeout(1000)).waitContainer(containerId1);
+    verify(docker, timeout(30000)).createContainer(any(ContainerConfig.class), any(String.class));
+    verify(docker, timeout(30000)).startContainer(eq(containerId1), any(HostConfig.class));
+    verify(docker, timeout(30000)).waitContainer(containerId1);
 
     // Indicate that the container exited
     final ContainerInspectResponse stoppedResponse = new ContainerInspectResponse() {{
@@ -317,8 +317,8 @@ public class SupervisorTest extends TestBase {
     waitFuture1.set(1);
 
     // Verify that the container was restarted
-    verify(docker, timeout(1000)).createContainer(any(ContainerConfig.class), any(String.class));
-    verify(docker, timeout(1000)).startContainer(eq(containerId2), any(HostConfig.class));
-    verify(docker, timeout(1000)).waitContainer(containerId2);
+    verify(docker, timeout(30000)).createContainer(any(ContainerConfig.class), any(String.class));
+    verify(docker, timeout(30000)).startContainer(eq(containerId2), any(HostConfig.class));
+    verify(docker, timeout(30000)).waitContainer(containerId2);
   }
 }
