@@ -3,7 +3,6 @@ package com.spotify.helios.common.descriptors;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
-import com.spotify.helios.TestBase;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 
@@ -13,7 +12,7 @@ import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 
-public class TaskStatusTest extends TestBase {
+public class TaskStatusTest {
   private static final Job JOB = Job.newBuilder()
       .setCommand(ImmutableList.of("BOGUS"))
       .setImage("IMAGE")

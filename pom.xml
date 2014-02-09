@@ -31,7 +31,6 @@
   </properties>
 
   <modules>
-    <module>helios-testing</module>
     <module>helios-client</module>
     <module>helios-tools</module>
     <module>helios-services</module>

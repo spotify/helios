@@ -12,7 +12,6 @@ import com.google.common.io.BaseEncoding;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.spotify.helios.TestBase;
 import com.spotify.helios.common.Hash;
 import com.spotify.helios.common.Json;
 
@@ -29,7 +28,7 @@ import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
-public class JobTest extends TestBase {
+public class JobTest {
 
   private Map<String, Object> map(final Object... objects) {
     final ImmutableMap.Builder<String, Object> builder = ImmutableMap.builder();

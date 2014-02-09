@@ -7,7 +7,6 @@ package com.spotify.helios.agent;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Service;
 
-import com.spotify.helios.TestBase;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -43,7 +42,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class AgentTest extends TestBase {
+public class AgentTest {
 
   @Mock private AgentModel model;
   @Mock private SupervisorFactory supervisorFactory;

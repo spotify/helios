@@ -39,6 +39,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TestRule;
+import org.junit.rules.TestWatcher;
+import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
@@ -124,6 +127,29 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
+
+  @Rule
+  public TestRule watcher = new TestWatcher() {
+    protected void starting(Description description) {
+      log.info(Strings.repeat("=", 80));
+      log.info("STARTING: {}: {}", description.getClassName(), description.getMethodName());
+      log.info(Strings.repeat("=", 80));
+    }
+
+    @Override
+    protected void succeeded(final Description description) {
+      log.info(Strings.repeat("=", 80));
+      log.info("FINISHED: {}: {}", description.getClassName(), description.getMethodName());
+      log.info(Strings.repeat("=", 80));
+    }
+
+    @Override
+    protected void failed(final Throwable e, final Description description) {
+      log.info(Strings.repeat("=", 80));
+      log.info("FAILED  : {} {}", description.getClassName(), description.getMethodName());
+      log.info(Strings.repeat("=", 80));
+    }
+  };
 
   static final String JOB_NAME = PREFIX + "foo";
   static final String JOB_VERSION = "17";

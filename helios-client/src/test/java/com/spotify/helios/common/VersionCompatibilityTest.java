@@ -1,13 +1,11 @@
 package com.spotify.helios.common;
 
-import com.spotify.helios.TestBase;
-
 import org.junit.Test;
 
-import static org.junit.Assert.*;
 import static com.spotify.helios.common.VersionCompatibility.Status;
+import static org.junit.Assert.assertEquals;
 
-public class VersionCompatibilityTest extends TestBase {
+public class VersionCompatibilityTest {
 
   @Test
   public void test() {
