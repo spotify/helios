@@ -29,7 +29,7 @@ import static org.junit.Assert.assertEquals;
 public class EnvironmentVaribleTest extends SystemTestBase {
 
   @Test
-  public void testEnvVariables() throws Exception {
+  public void test() throws Exception {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT,
                       "--env",

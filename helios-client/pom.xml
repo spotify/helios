@@ -16,51 +16,6 @@
     <version.file>src/main/java/com/spotify/helios/common/Version.java</version.file>
   </properties>
 
-  <profiles>
-    <profile>
-      <id>default</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <version_suffix>.LOCAL</version_suffix>
-      </properties>
-    </profile>
-    <profile>
-      <id>teamcity</id>
-      <activation>
-        <property>
-          <name>teamcity.version</name>
-        </property>
-      </activation>
-      <properties>
-        <version_suffix>.${build.number}</version_suffix>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.soebes.maven.plugins</groupId>
-            <artifactId>maven-echo-plugin</artifactId>
-            <version>0.1</version>
-            <executions>
-              <execution>
-                <phase>generate-sources</phase>
-                <goals>
-                  <goal>echo</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <echos>
-                <echo>##teamcity[buildNumber '${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}']</echo>
-              </echos>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-
   <dependencies>
     <!--compile deps-->
     <dependency>
@@ -81,7 +36,7 @@
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>hermes-java</artifactId>
-      <version>2.3.0</version>
+      <version>2.3.1</version>
     </dependency>
     <dependency>
       <groupId>com.spotify</groupId>
@@ -90,6 +45,11 @@
     </dependency>
 
     <!-- test deps -->
+    <dependency>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
+      <version>1.0.13</version>
+    </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -113,49 +73,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-site-plugin</artifactId>
-        <version>3.0</version>
-        <configuration>
-          <reportPlugins>
-            <plugin>
-              <groupId>org.codehaus.mojo</groupId>
-              <artifactId>cobertura-maven-plugin</artifactId>
-              <version>2.5.1</version>
-              <configuration>
-                <formats>
-                  <format>html</format>
-                  <format>xml</format>
-                </formats>
-              </configuration>
-            </plugin>
-          </reportPlugins>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>pl.project13.maven</groupId>
-        <artifactId>git-commit-id-plugin</artifactId>
-        <version>2.1.7</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>revision</goal>
-            </goals>
-            <phase>initialize</phase>
-          </execution>
-        </executions>
-        <configuration>
-          <dotGitDirectory>../.git</dotGitDirectory>
-          <gitDescribe>
-            <abbrev>7</abbrev>
-            <always>true</always>
-            <forceLongFormat>true</forceLongFormat>
-            <dirty>-DIRTY</dirty>
-          </gitDescribe>
-        </configuration>
-      </plugin>
-
-      <plugin>
         <groupId>ru.concerteza.buildnumber</groupId>
         <artifactId>maven-jgit-buildnumber-plugin</artifactId>
         <version>1.2.7</version>
@@ -166,24 +83,6 @@
               <goal>extract-buildnumber</goal>
             </goals>
             <phase>initialize</phase>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.6</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <configuration>
-              <tasks>
-                <echoproperties/>
-              </tasks>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
           </execution>
         </executions>
       </plugin>

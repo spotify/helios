@@ -13,51 +13,6 @@
   <artifactId>helios-tools</artifactId>
   <packaging>jar</packaging>
 
-  <profiles>
-    <profile>
-      <id>default</id>
-      <activation>
-        <activeByDefault>true</activeByDefault>
-      </activation>
-      <properties>
-        <version_suffix>.LOCAL</version_suffix>
-      </properties>
-    </profile>
-    <profile>
-      <id>teamcity</id>
-      <activation>
-        <property>
-          <name>teamcity.version</name>
-        </property>
-      </activation>
-      <properties>
-        <version_suffix>.${build.number}</version_suffix>
-      </properties>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>com.soebes.maven.plugins</groupId>
-            <artifactId>maven-echo-plugin</artifactId>
-            <version>0.1</version>
-            <executions>
-              <execution>
-                <phase>generate-sources</phase>
-                <goals>
-                  <goal>echo</goal>
-                </goals>
-              </execution>
-            </executions>
-            <configuration>
-              <echos>
-                <echo>##teamcity[buildNumber '${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}']</echo>
-              </echos>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
-    </profile>
-  </profiles>
-
   <dependencies>
     <!--compile deps-->
     <dependency>
@@ -98,12 +53,12 @@
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>hermes-java</artifactId>
-      <version>2.3.0</version>
+      <version>2.3.1</version>
     </dependency>
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>logging</artifactId>
-      <version>2.0.12</version>
+      <version>2.0.13</version>
     </dependency>
     <dependency>
       <groupId>com.yammer.metrics</groupId>
@@ -143,12 +98,6 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
       <version>1.9.5</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.spotify</groupId>
-      <artifactId>nameless-registry</artifactId>
-      <version>0.2.6</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -201,26 +150,6 @@
         </executions>
       </plugin>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-site-plugin</artifactId>
-        <version>3.0</version>
-        <configuration>
-          <reportPlugins>
-            <plugin>
-              <groupId>org.codehaus.mojo</groupId>
-              <artifactId>cobertura-maven-plugin</artifactId>
-              <version>2.5.1</version>
-              <configuration>
-                <formats>
-                  <format>html</format>
-                  <format>xml</format>
-                </formats>
-              </configuration>
-            </plugin>
-          </reportPlugins>
-        </configuration>
-      </plugin>
-      <plugin>
         <groupId>pl.project13.maven</groupId>
         <artifactId>git-commit-id-plugin</artifactId>
         <version>2.1.7</version>
@@ -258,23 +187,6 @@
         </executions>
       </plugin>
 
-      <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <version>1.6</version>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <configuration>
-              <tasks>
-                <echoproperties/>
-              </tasks>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <artifactId>jdeb</artifactId>
         <groupId>org.vafer</groupId>

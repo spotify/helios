@@ -31,7 +31,6 @@ import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.JobStatus;
 import com.spotify.helios.master.MasterMain;
 import com.spotify.hermes.Hermes;
-import com.spotify.logging.LoggingConfigurator;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.commons.io.FileUtils;
@@ -42,9 +41,10 @@ import org.junit.Rule;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
@@ -70,7 +70,6 @@ import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
 import static java.lang.System.getenv;
 import static java.lang.System.nanoTime;
-import static java.lang.System.out;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -82,12 +81,15 @@ import static org.hamcrest.Matchers.not;
 @RunWith(MockitoJUnitRunner.class)
 public abstract class SystemTestBase extends ZooKeeperTestBase {
 
+  static final Logger log = LoggerFactory.getLogger(SystemTestBase.class);
+
   static final String PREFIX = Long.toHexString(new SecureRandom().nextLong());
 
   static final int WAIT_TIMEOUT_SECONDS = 40;
   static final int LONG_WAIT_MINUTES = 2;
 
   static final int INTERNAL_PORT = 4444;
+  // TODO (dano): use ephemeral port range when nameless is fixed
   static final int EXTERNAL_PORT = new SecureRandom().nextInt(10000) + 30000;
 
   static final Map<String, String> EMPTY_ENV = emptyMap();
@@ -133,7 +135,6 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
   @Before
   public void setUp() throws Exception {
     listThreads();
-    LoggingConfigurator.configure(new File(getClass().getResource("/logback-test.xml").getFile()));
     super.setUp();
     ensure("/config");
     ensure("/status");
@@ -157,14 +158,14 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
       try {
         service.stopAsync();
       } catch (Exception e) {
-        e.printStackTrace();
+        log.error("Uncaught exception", e);
       }
     }
     for (Service service : services) {
       try {
         service.awaitTerminated();
       } catch (Exception e) {
-        e.printStackTrace();
+        log.error("Service failed", e);
       }
     }
     services.clear();
@@ -173,7 +174,7 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
       executorService.shutdownNow();
       executorService.awaitTermination(30, SECONDS);
     } catch (InterruptedException e) {
-      e.printStackTrace();
+      log.error("Interrupted", e);
     }
 
     // Clean up docker
@@ -193,13 +194,13 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
         }
       }
     } catch (Exception e) {
-      e.printStackTrace();
+      log.error("Docker client exception", e);
     }
 
     try {
       FileUtils.deleteDirectory(agentStateDir.toFile());
     } catch (IOException e) {
-      e.printStackTrace();
+      log.error("Failed to remove agent state dir", e);
     }
 
     super.teardown();
@@ -207,7 +208,6 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     listThreads();
   }
 
-  @SuppressWarnings("UseOfSystemOutOrSystemErr")
   void listThreads() {
     final Set<Thread> threads = Thread.getAllStackTraces().keySet();
     final Map<String, Thread> sorted = Maps.newTreeMap();
@@ -217,14 +217,14 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
         sorted.put(t.getName(), t);
       }
     }
-    out.println("= THREADS " + Strings.repeat("=", 70));
+    log.info("= THREADS " + Strings.repeat("=", 70));
     for (final Thread t : sorted.values()) {
       final ThreadGroup tg = t.getThreadGroup();
-      out.printf("%4d: \"%s\" (%s%s)%n", t.getId(), t.getName(),
-                 (tg == null ? "" : tg.getName() + " "),
-                 (t.isDaemon() ? "daemon" : ""));
+      log.info("{}: \"{}\" ({}{})", t.getId(), t.getName(),
+               (tg == null ? "" : tg.getName() + " "),
+               (t.isDaemon() ? "daemon" : ""));
     }
-    out.println(Strings.repeat("=", 80));
+    log.info(Strings.repeat("=", 80));
   }
 
   void startDefaultMaster() throws Exception {

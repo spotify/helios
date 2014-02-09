@@ -18,7 +18,7 @@ public class NamelessTestBase extends SystemTestBase {
   public void setUp() throws Exception {
     super.setUp();
     nameless = new Service();
-    nameless.start();
+    nameless.start("--no-log-configuration");
   }
 
   @Override

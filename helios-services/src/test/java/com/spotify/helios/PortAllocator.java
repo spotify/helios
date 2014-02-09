@@ -23,7 +23,8 @@ public class PortAllocator {
   @SuppressWarnings("ThrowFromFinallyBlock")
   public static int allocatePort(final String name) {
     while (true) {
-      final int port = ThreadLocalRandom.current().nextInt(49152, 65536);
+      // TODO (dano): use ephemeral port range when nameless is fixed
+      final int port = ThreadLocalRandom.current().nextInt(20000, 49151);
       Socket s = null;
       try {
         s = new Socket();

@@ -24,7 +24,6 @@ import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.nameless.proto.Messages.RegistryEntry;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -46,7 +45,7 @@ public class NamelessRegistrationTest extends NamelessTestBase {
     final NamelessClient client = new NamelessClient(hermesClient("tcp://localhost:4999"));
 
     // Wait for the master to get registered with nameless
-    List<RegistryEntry> entries = await(10, SECONDS, new Callable<List<RegistryEntry>>() {
+    List<RegistryEntry> entries = await(LONG_WAIT_MINUTES, MINUTES, new Callable<List<RegistryEntry>>() {
       @Override
       public List<RegistryEntry> call() throws Exception {
         List<RegistryEntry> entries = client.queryEndpoints(EndpointFilter.everything()).get();
@@ -112,7 +111,7 @@ public class NamelessRegistrationTest extends NamelessTestBase {
         .build();
 
     // Wait for the container to get registered with nameless
-    final List<RegistryEntry> entries = await(10, SECONDS, new Callable<List<RegistryEntry>>() {
+    final List<RegistryEntry> entries = await(LONG_WAIT_MINUTES, MINUTES, new Callable<List<RegistryEntry>>() {
       @Override
       public List<RegistryEntry> call() throws Exception {
         List<RegistryEntry> entries = nameless.queryEndpoints(filter).get();

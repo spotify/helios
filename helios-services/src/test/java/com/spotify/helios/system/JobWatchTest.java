@@ -29,7 +29,7 @@ import static org.junit.Assert.assertTrue;
 public class JobWatchTest extends SystemTestBase {
 
   @Test
-  public void testJobWatch() throws Exception {
+  public void test() throws Exception {
     startDefaultMaster();
     startDefaultAgent(TEST_AGENT);
     awaitAgentStatus(TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
@@ -54,7 +54,7 @@ public class JobWatchTest extends SystemTestBase {
 
       @Override
       public void write(int b) throws IOException {
-        if (System.currentTimeMillis() - now > 10000) {
+        if (System.currentTimeMillis() - now > MINUTES.toMillis(LONG_WAIT_MINUTES)) {
           throw new IOException("timed out trying to succeed");
         }
         lineBuffer[counter] = (byte) b;
