@@ -257,7 +257,6 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
   void startDefaultMaster() throws Exception {
     startMaster("-vvvv",
                 "--no-log-setup",
-                "--munin-port", "0",
                 "--hm", masterEndpoint,
                 "--name", TEST_MASTER,
                 "--zk", zookeeperEndpoint);
@@ -267,7 +266,6 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
       throws Exception {
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",
-                                                     "--munin-port", "0",
                                                      "--name", agentName,
                                                      "--docker", DOCKER_ENDPOINT,
                                                      "--zk", zookeeperEndpoint,

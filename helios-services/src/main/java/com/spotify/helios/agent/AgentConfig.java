@@ -12,7 +12,6 @@ public class AgentConfig {
   private String site;
   private String name;
   private String zooKeeperConnectionString;
-  private int muninReporterPort;
   private String dockerEndpoint;
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
@@ -40,10 +39,6 @@ public class AgentConfig {
     return this;
   }
 
-  public int getMuninReporterPort() {
-    return muninReporterPort;
-  }
-
   public AgentConfig setRedirectToSyslog(final String redirect) {
     this.redirectToSyslog = redirect;
     return this;
@@ -51,11 +46,6 @@ public class AgentConfig {
 
   public String getRedirectToSyslog() {
     return redirectToSyslog;
-  }
-
-  public AgentConfig setMuninReporterPort(final int port) {
-    this.muninReporterPort = port;
-    return this;
   }
 
   public String getSite() {

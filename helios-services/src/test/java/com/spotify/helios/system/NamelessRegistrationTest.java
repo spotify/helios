@@ -36,7 +36,6 @@ public class NamelessRegistrationTest extends NamelessTestBase {
   public void masterTest() throws Exception {
     startMaster("-vvvv",
                 "--no-log-setup",
-                "--munin-port", "0",
                 "--site", "localhost",
                 "--http", "0.0.0.0:" + EXTERNAL_PORT,
                 "--hm", masterEndpoint,

@@ -80,7 +80,7 @@ public class MasterService {
       metrics = new NoopMetrics();
       statsdReporter = null;
     } else {
-      metrics = new MetricsImpl(config.getMuninReporterPort());
+      metrics = new MetricsImpl();
       metrics.start(); //must be started here for statsd to be happy
       statsdReporter = StatsdSupport.getStatsdReporter(config.getStatsdHostPort(), "helios-master");
     }

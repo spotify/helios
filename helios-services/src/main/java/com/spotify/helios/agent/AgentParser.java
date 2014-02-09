@@ -61,7 +61,6 @@ public class AgentParser extends ServiceParser {
         .setZooKeeperSessionTimeoutMillis(options.getInt("zk_session_timeout"))
         .setZooKeeperConnectionTimeoutMillis(options.getInt("zk_connection_timeout"))
         .setSite(options.getString("site"))
-        .setMuninReporterPort(options.getInt("munin_port"))
         .setEnvVars(envVars)
         .setDockerEndpoint(options.getString("docker"))
         .setInhibitMetrics(Objects.equal(options.getBoolean("no_metrics"), true))
@@ -79,11 +78,6 @@ public class AgentParser extends ServiceParser {
     parser.addArgument("--state-dir")
         .setDefault(".")
         .help("Directory for persisting agent state locally.");
-
-    parser.addArgument("--munin-port")
-        .type(Integer.class)
-        .setDefault(4952)
-        .help("munin port (0 = disabled)");
 
     parser.addArgument("--docker")
         .setDefault("http://localhost:4160")

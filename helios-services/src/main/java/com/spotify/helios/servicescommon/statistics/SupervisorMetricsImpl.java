@@ -1,16 +1,11 @@
 package com.spotify.helios.servicescommon.statistics;
 
-import com.spotify.statistics.MuninGraphCategoryConfig;
-import com.spotify.statistics.MuninReporterConfig;
 import com.yammer.metrics.core.Counter;
 import com.yammer.metrics.core.MetricName;
 import com.yammer.metrics.core.MetricsRegistry;
 
-import static com.spotify.helios.servicescommon.statistics.MetricsImpl.getGraphName;
-import static com.spotify.helios.servicescommon.statistics.MetricsImpl.getMuninName;
-
 public class SupervisorMetricsImpl implements SupervisorMetrics {
-  private static final String TYPE = "AgentSupervisor";
+  private static final String TYPE = "agent_supervisor";
 
   private final RequestMetrics imagePull;
 
@@ -34,9 +29,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
 
 
   public SupervisorMetricsImpl(final String group,
-                               final MuninReporterConfig reporterConfig,
                                final MetricsRegistry registry) {
-    final MuninGraphCategoryConfig category = reporterConfig.category("supervisor");
 
     containerStarted = new MetricName(group, TYPE, "container_started");
     containersExited = new MetricName(group, TYPE, "containers_exited");
@@ -56,28 +49,8 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     supervisorStartedCounter = registry.newCounter(supervisorStarted);
     supervisorStoppedCounter = registry.newCounter(supervisorStopped);
 
-    imagePull = new RequestMetrics(category, group, TYPE, "image_pull");
-
-    String muninName = "total_actions";
-    category.graph(getGraphName(muninName))
-        .muninName(getMuninName(group, TYPE, muninName))
-        .vlabel("Requests")
-        .dataSource(containerStarted, "Containers Started")
-        .dataSource(containersExited, "Containers Exited")
-        .dataSource(containersRunning, "Containers Running")
-        .dataSource(containersThrewException, "Containers Threw Exception")
-        .dataSource(imageCacheHit, "Image Cache Hits")
-        .dataSource(supervisorClosed, "Supervisors Closed")
-        .dataSource(supervisorStarted, "Supervisors Started")
-        .dataSource(supervisorStopped, "Supervisors Stopped");
-
-    String muninName2 = "image_pulls";
-    category.graph(getGraphName(muninName2))
-        .muninName(getMuninName(group, TYPE, muninName2))
-        .vlabel("Image Pull Times")
-        .dataSource(imagePull.getFailureName(), "Image Pull Failure")
-        .dataSource(imagePull.getSuccessName(), "Image Pull Success");
-    }
+    imagePull = new RequestMetrics(group, TYPE, "image_pull");
+  }
 
   @Override
   public void supervisorStarted() {

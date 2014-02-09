@@ -41,7 +41,6 @@ public class MasterParser extends ServiceParser {
         .setSite(options.getString("site"))
         .setName(options.getString("name"))
         .setInhibitMetrics(Objects.equal(options.getBoolean("no_metrics"), true))
-        .setMuninReporterPort(options.getInt("munin_port"))
         .setStatsdHostPort(options.getString("statsd_host_port"));
   }
 
@@ -54,11 +53,6 @@ public class MasterParser extends ServiceParser {
     parser.addArgument("--http")
         .setDefault(Defaults.MASTER_HTTP_BIND)
         .help("http endpoint");
-
-    parser.addArgument("--munin-port")
-        .type(Integer.class)
-        .setDefault(4951)
-        .help("munin port (0 = disabled)");
 
     parser.addArgument("--name")
         .setDefault(getHostName())

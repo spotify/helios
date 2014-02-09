@@ -12,19 +12,9 @@ public class MasterConfig {
   private String endpoint;
   private String zooKeeperConnectString;
   private String name;
-  private int muninReporterPort;
   private InetSocketAddress httpEndpoint;
   private boolean inhibitMetrics;
   private String statsdHostPort;
-
-  public int getMuninReporterPort() {
-    return muninReporterPort;
-  }
-
-  public MasterConfig setMuninReporterPort(int muninReporterPort) {
-    this.muninReporterPort = muninReporterPort;
-    return this;
-  }
 
   public String getHermesEndpoint() {
     return endpoint;
