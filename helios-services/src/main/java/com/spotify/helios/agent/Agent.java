@@ -91,6 +91,7 @@ public class Agent extends AbstractIdleService {
       final Supervisor supervisor = createSupervisor(id, taskStatus.getJob());
       if (task == null) {
         supervisor.stop();
+        // TODO (dano): this is racy, removing the task status must be done after the container has been stopped
         model.removeTaskStatus(id);
       } else {
         delegate(supervisor, task, true);
