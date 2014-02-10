@@ -131,7 +131,7 @@ public class Client {
   }
 
   private ListenableFuture<Message> rawRequest(final MessageBuilder messageBuilder) {
-    final Message message = messageBuilder.setTtlMillis(SECONDS.toMillis(30)).build();
+    final Message message = messageBuilder.setTtlMillis(SECONDS.toMillis(10)).build();
     log.debug("request: {}", message);
     return hermesClient.send(message);
   }
