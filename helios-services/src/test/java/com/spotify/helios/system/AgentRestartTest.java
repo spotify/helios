@@ -20,7 +20,6 @@ import com.spotify.helios.common.protocol.SetGoalResponse;
 
 import org.junit.Test;
 
-import java.util.List;
 import java.util.concurrent.Callable;
 
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
@@ -29,9 +28,9 @@ import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
 public class AgentRestartTest extends SystemTestBase {
@@ -46,21 +45,12 @@ public class AgentRestartTest extends SystemTestBase {
 
     final AgentMain agent1 = startDefaultAgent(TEST_AGENT);
 
-    // A simple netcat echo server
-    final List<String> command =
-        asList("bash", "-c",
-               "DEBIAN_FRONTEND=noninteractive " +
-               "apt-get install -q -y --force-yes nmap && " +
-               "ncat -l -p 4711 -c \"while true; do read i && echo $i; done\"");
-
-    // TODO (dano): connect to the server during the test and verify that the connection is never broken
-
     // Create a job
     final Job job = Job.newBuilder()
         .setName(JOB_NAME)
         .setVersion(JOB_VERSION)
-        .setImage("ubuntu:12.04")
-        .setCommand(command)
+        .setImage("busybox")
+        .setCommand(DO_NOTHING_COMMAND)
         .build();
     final JobId jobId = job.getId();
     final CreateJobResponse created = client.createJob(job).get();
@@ -79,7 +69,9 @@ public class AgentRestartTest extends SystemTestBase {
     final TaskStatus firstTaskStatus = awaitJobState(client, TEST_AGENT, jobId, RUNNING,
                                                      LONG_WAIT_MINUTES, MINUTES);
     assertEquals(job, firstTaskStatus.getJob());
+    final String containerId = firstTaskStatus.getContainerId();
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
+    assertNotNull(dockerClient.inspectContainer(containerId));
 
     // Stop the agent
     agent1.stopAsync().awaitTerminated();
@@ -94,7 +86,9 @@ public class AgentRestartTest extends SystemTestBase {
     final AgentStatus agentStatus = client.agentStatus(TEST_AGENT).get();
     final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
     assertEquals(RUNNING, taskStatus.getState());
-    assertEquals(firstTaskStatus.getContainerId(), taskStatus.getContainerId());
+    assertEquals(containerId, taskStatus.getContainerId());
+    assertEquals(1, listContainers(dockerClient, PREFIX).size());
+    assertNotNull(dockerClient.inspectContainer(containerId));
 
     // Stop the agent
     agent2.stopAsync().awaitTerminated();
@@ -124,6 +118,7 @@ public class AgentRestartTest extends SystemTestBase {
           }
         });
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
+    assertNotNull(dockerClient.inspectContainer(containerId));
 
     // Stop the agent
     agent3.stopAsync().awaitTerminated();
@@ -156,6 +151,7 @@ public class AgentRestartTest extends SystemTestBase {
       }
     });
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
+    assertNotNull(dockerClient.inspectContainer(containerId));
 
     // Stop the agent
     agent4.stopAsync().awaitTerminated();
@@ -188,6 +184,7 @@ public class AgentRestartTest extends SystemTestBase {
     // Verify that the task is started
     awaitJobState(client, TEST_AGENT, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
+    assertNotNull(dockerClient.inspectContainer(containerId));
 
     // Stop the agent
     agent6.stopAsync().awaitTerminated();

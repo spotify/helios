@@ -25,9 +25,7 @@ import java.util.concurrent.Callable;
 import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -44,18 +42,12 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     final AgentMain agent1 = startDefaultAgent(TEST_AGENT);
 
     // A simple netcat echo server
-    final List<String> command =
-        asList("bash", "-c",
-               "DEBIAN_FRONTEND=noninteractive " +
-               "apt-get install -q -y --force-yes nmap && " +
-               "ncat -l -p 4711 -c \"while true; do read i && echo $i; done\"");
-
     // Create a job
     final Job job = Job.newBuilder()
         .setName(JOB_NAME)
         .setVersion(JOB_VERSION)
-        .setImage("ubuntu:12.04")
-        .setCommand(command)
+        .setImage("busybox")
+        .setCommand(DO_NOTHING_COMMAND)
         .build();
     final JobId jobId = job.getId();
     final CreateJobResponse created = client.createJob(job).get();
@@ -98,13 +90,14 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     assertEquals(0, listContainers(dockerClient, PREFIX).size());
 
     // Wait for a while and make sure that a new container was spawned
-    final String firstRestartedContainerId = await(30, SECONDS, new Callable<String>() {
-      @Override
-      public String call() throws Exception {
-        final List<Container> containers = listContainers(dockerClient, PREFIX);
-        return containers.size() == 1 ? containers.get(0).id : null;
-      }
-    });
+    final String firstRestartedContainerId =
+        await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+          @Override
+          public String call() throws Exception {
+            final List<Container> containers = listContainers(dockerClient, PREFIX);
+            return containers.size() == 1 ? containers.get(0).id : null;
+          }
+        });
     assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
 
     // Stop the agent
@@ -119,13 +112,14 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for a while and make sure that a new container was spawned
     Thread.sleep(5000);
-    final String secondRestartedContainerId = await(30, SECONDS, new Callable<String>() {
-      @Override
-      public String call() throws Exception {
-        final List<Container> containers = listContainers(dockerClient, PREFIX);
-        return containers.size() == 1 ? containers.get(0).id : null;
-      }
-    });
+    final String secondRestartedContainerId =
+        await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+          @Override
+          public String call() throws Exception {
+            final List<Container> containers = listContainers(dockerClient, PREFIX);
+            return containers.size() == 1 ? containers.get(0).id : null;
+          }
+        });
     assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
 
     // Start zookeeper
