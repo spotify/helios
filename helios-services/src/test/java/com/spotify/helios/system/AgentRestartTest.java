@@ -30,7 +30,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class AgentRestartTest extends SystemTestBase {
@@ -69,9 +69,8 @@ public class AgentRestartTest extends SystemTestBase {
     final TaskStatus firstTaskStatus = awaitJobState(client, TEST_AGENT, jobId, RUNNING,
                                                      LONG_WAIT_MINUTES, MINUTES);
     assertEquals(job, firstTaskStatus.getJob());
-    final String containerId = firstTaskStatus.getContainerId();
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
-    assertNotNull(dockerClient.inspectContainer(containerId));
+    assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state.running);
 
     // Stop the agent
     agent1.stopAsync().awaitTerminated();
@@ -86,9 +85,9 @@ public class AgentRestartTest extends SystemTestBase {
     final AgentStatus agentStatus = client.agentStatus(TEST_AGENT).get();
     final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
     assertEquals(RUNNING, taskStatus.getState());
-    assertEquals(containerId, taskStatus.getContainerId());
+    assertEquals(firstTaskStatus.getContainerId(), taskStatus.getContainerId());
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
-    assertNotNull(dockerClient.inspectContainer(containerId));
+    assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state.running);
 
     // Stop the agent
     agent2.stopAsync().awaitTerminated();
@@ -118,7 +117,7 @@ public class AgentRestartTest extends SystemTestBase {
           }
         });
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
-    assertNotNull(dockerClient.inspectContainer(containerId));
+    assertTrue(dockerClient.inspectContainer(secondTaskStatus.getContainerId()).state.running);
 
     // Stop the agent
     agent3.stopAsync().awaitTerminated();
@@ -139,7 +138,7 @@ public class AgentRestartTest extends SystemTestBase {
     awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the task to be restarted in a new container
-    await(LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
+    final TaskStatus thirdTaskStatus = await(LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final AgentStatus agentStatus = client.agentStatus(TEST_AGENT).get();
@@ -151,7 +150,7 @@ public class AgentRestartTest extends SystemTestBase {
       }
     });
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
-    assertNotNull(dockerClient.inspectContainer(containerId));
+    assertTrue(dockerClient.inspectContainer(thirdTaskStatus.getContainerId()).state.running);
 
     // Stop the agent
     agent4.stopAsync().awaitTerminated();
@@ -184,7 +183,6 @@ public class AgentRestartTest extends SystemTestBase {
     // Verify that the task is started
     awaitJobState(client, TEST_AGENT, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
-    assertNotNull(dockerClient.inspectContainer(containerId));
 
     // Stop the agent
     agent6.stopAsync().awaitTerminated();

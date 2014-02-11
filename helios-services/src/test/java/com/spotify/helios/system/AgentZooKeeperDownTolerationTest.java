@@ -28,6 +28,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
@@ -73,7 +74,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for a while and make sure that the container is still running
     Thread.sleep(5000);
-    assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
+    assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state.running);
 
     // Stop the agent
     agent1.stopAsync().awaitTerminated();
@@ -83,7 +84,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for a while and make sure that the same container is still running
     Thread.sleep(5000);
-    assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
+    assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state.running);
 
     // Kill the container
     dockerClient.kill(firstTaskStatus.getContainerId());
@@ -98,7 +99,6 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
             return containers.size() == 1 ? containers.get(0).id : null;
           }
         });
-    assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
 
     // Stop the agent
     agent2.stopAsync().awaitTerminated();
@@ -120,7 +120,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
             return containers.size() == 1 ? containers.get(0).id : null;
           }
         });
-    assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
+    assertTrue(dockerClient.inspectContainer(secondRestartedContainerId).state.running);
 
     // Start zookeeper
     startZookeeper();
