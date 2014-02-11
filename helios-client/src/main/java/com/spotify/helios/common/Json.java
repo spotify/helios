@@ -119,7 +119,6 @@ public class Json {
     return OBJECT_MAPPER.readValue(content, javaType);
   }
 
-
   public static <T> T read(final byte[] bytes, final Class<T> clazz) throws IOException {
     return OBJECT_MAPPER.readValue(bytes, clazz);
   }
@@ -132,6 +131,50 @@ public class Json {
   public static <T> T read(final byte[] bytes, final JavaType javaType)
       throws IOException {
     return OBJECT_MAPPER.readValue(bytes, javaType);
+  }
+
+  public static <T> T readUnchecked(final String content, final Class<T> clazz) throws IOException {
+    return OBJECT_MAPPER.readValue(content, clazz);
+  }
+
+  public static <T> T readUnchecked(final String content, final TypeReference<?> typeReference) {
+    try {
+      return OBJECT_MAPPER.readValue(content, typeReference);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  public static <T> T readUnchecked(final String content, final JavaType javaType) {
+    try {
+      return OBJECT_MAPPER.readValue(content, javaType);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  public static <T> T readUnchecked(final byte[] bytes, final Class<T> clazz) {
+    try {
+      return OBJECT_MAPPER.readValue(bytes, clazz);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  public static <T> T readUnchecked(final byte[] bytes, final TypeReference<?> typeReference) {
+    try {
+      return OBJECT_MAPPER.readValue(bytes, typeReference);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  public static <T> T readUnchecked(final byte[] bytes, final JavaType javaType) {
+    try {
+      return OBJECT_MAPPER.readValue(bytes, javaType);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
   }
 
   public static MappingIterator<Map<String, Object>> readValues(
