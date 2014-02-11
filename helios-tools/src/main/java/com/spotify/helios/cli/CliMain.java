@@ -5,28 +5,28 @@
 package com.spotify.helios.cli;
 
 import com.spotify.helios.common.LoggingConfig;
-import com.spotify.logging.LoggingConfigurator;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.PrintStream;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+
+import static ch.qos.logback.classic.Level.ALL;
+import static ch.qos.logback.classic.Level.DEBUG;
+import static ch.qos.logback.classic.Level.INFO;
+import static ch.qos.logback.classic.Level.WARN;
 import static com.google.common.collect.Iterables.get;
-import static com.spotify.logging.LoggingConfigurator.Level.ALL;
-import static com.spotify.logging.LoggingConfigurator.Level.DEBUG;
-import static com.spotify.logging.LoggingConfigurator.Level.INFO;
 import static java.util.Arrays.asList;
+import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
 /**
  * Instantiates and runs helios CLI.
  */
 public class CliMain {
-
-  private static final Logger log = LoggerFactory.getLogger(CliMain.class);
 
   private final CliParser parser;
   private final PrintStream out;
@@ -71,24 +71,12 @@ public class CliMain {
 
   private void setupLogging() {
     final LoggingConfig config = parser.getLoggingConfig();
-
     if (config.getNoLogSetup()) {
       return;
     }
-
     final int verbose = config.getVerbosity();
-    final LoggingConfigurator.Level level = get(asList(INFO, DEBUG, ALL), verbose, ALL);
-    final File logconfig = config.getConfigFile();
-
-    if (logconfig != null) {
-      LoggingConfigurator.configure(logconfig);
-    } else {
-      if (config.isSyslog()) {
-        LoggingConfigurator.configureSyslogDefaults("helios", level);
-      } else {
-        LoggingConfigurator.configureDefaults("helios", level);
-      }
-    }
+    final Level level = get(asList(WARN, INFO, DEBUG, ALL), verbose, ALL);
+    final Logger rootLogger = (Logger) LoggerFactory.getLogger(ROOT_LOGGER_NAME);
+    rootLogger.setLevel(level);
   }
-
 }
