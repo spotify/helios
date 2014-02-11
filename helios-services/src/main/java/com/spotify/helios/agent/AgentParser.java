@@ -2,7 +2,6 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
-import com.google.common.io.CharStreams;
 
 import com.spotify.helios.servicescommon.ServiceParser;
 
@@ -10,8 +9,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -19,7 +16,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.google.common.base.Throwables.propagate;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
@@ -39,8 +35,6 @@ public class AgentParser extends ServiceParser {
       throw new IllegalArgumentException("Bad docker endpoint: " + uriString, e);
     }
 
-    final String name = options.getString("name");
-
     final List<List<String>> env = options.getList("env");
     final Map<String, String> envVars = Maps.newHashMap();
     if (env != null) {
@@ -55,8 +49,8 @@ public class AgentParser extends ServiceParser {
       }
     }
 
-    agentConfig = new AgentConfig()
-        .setName(name)
+    this.agentConfig = new AgentConfig()
+        .setName(options.getString("name"))
         .setZooKeeperConnectionString(options.getString("zk"))
         .setZooKeeperSessionTimeoutMillis(options.getInt("zk_session_timeout"))
         .setZooKeeperConnectionTimeoutMillis(options.getInt("zk_connection_timeout"))
@@ -67,16 +61,11 @@ public class AgentParser extends ServiceParser {
         .setRedirectToSyslog(options.getString("syslog_redirect_to"))
         .setStateDirectory(Paths.get(options.getString("state_dir")))
         .setStatsdHostPort(options.getString("statsd_host_port"))
-        .setRiemannHostPort(options.getString("riemann_host_port"))
-        ;
+        .setRiemannHostPort(options.getString("riemann_host_port"));
   }
 
   @Override
   protected void addArgs(final ArgumentParser parser) {
-    parser.addArgument("--name")
-        .setDefault(getHostName())
-        .help("agent name");
-
     parser.addArgument("--state-dir")
         .setDefault(".")
         .help("Directory for persisting agent state locally.");
@@ -109,19 +98,6 @@ public class AgentParser extends ServiceParser {
         .help("host:port of where to send riemann events and metrics "
             + "(to be useful, --no-metrics must *NOT* be specified)");
 
-  }
-
-  private static String getHostName() {
-    return exec("uname -n").trim();
-  }
-
-  private static String exec(final String command) {
-    try {
-      final Process process = Runtime.getRuntime().exec(command);
-      return CharStreams.toString(new InputStreamReader(process.getInputStream()));
-    } catch (IOException e) {
-      throw propagate(e);
-    }
   }
 
   public AgentConfig getAgentConfig() {

@@ -11,14 +11,11 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.UnknownHostException;
 
 import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Throwables.propagate;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -59,10 +56,6 @@ public class MasterParser extends ServiceParser {
         .setDefault(5802)
         .help("admin http port");
 
-    parser.addArgument("--name")
-        .setDefault(getHostName())
-        .help("master name");
-
     parser.addArgument("--no-metrics")
         .setDefault(SUPPRESS)
         .action(storeTrue())
@@ -77,14 +70,6 @@ public class MasterParser extends ServiceParser {
         .setDefault((String) null)
         .help("host:port of where to send riemann events and metrics "
             + "(to be useful, --no-metrics must *NOT* be specified)");
-  }
-
-  private static String getHostName() {
-    try {
-      return InetAddress.getLocalHost().getHostName();
-    } catch (UnknownHostException e) {
-      throw propagate(e);
-    }
   }
 
   private InetSocketAddress parseSocketAddress(final String addressString) {

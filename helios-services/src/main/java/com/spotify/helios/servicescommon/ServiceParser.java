@@ -1,5 +1,7 @@
 package com.spotify.helios.servicescommon;
 
+import com.google.common.io.CharStreams;
+
 import com.spotify.helios.common.LoggingConfig;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -9,7 +11,10 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStreamReader;
 
+import static com.google.common.base.Throwables.propagate;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.fileType;
@@ -26,6 +31,10 @@ public class ServiceParser {
     final ArgumentParser parser = ArgumentParsers.newArgumentParser(programName)
         .defaultHelp(true)
         .description(description);
+
+    parser.addArgument("--name")
+        .setDefault(getHostName())
+        .help("hostname to register as");
 
     parser.addArgument("-s", "--site")
         .help("backend site");
@@ -85,4 +94,16 @@ public class ServiceParser {
     return loggingConfig;
   }
 
+  private static String getHostName() {
+    return exec("uname -n").trim();
+  }
+
+  private static String exec(final String command) {
+    try {
+      final Process process = Runtime.getRuntime().exec(command);
+      return CharStreams.toString(new InputStreamReader(process.getInputStream()));
+    } catch (IOException e) {
+      throw propagate(e);
+    }
+  }
 }
