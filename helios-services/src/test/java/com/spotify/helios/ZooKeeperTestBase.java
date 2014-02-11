@@ -62,6 +62,8 @@ public class ZooKeeperTestBase {
   private void startZookeeper(final File tempDir) throws Exception {
     zkServer = new ZooKeeperServer();
     zkServer.setTxnLogFactory(new FileTxnSnapLog(tempDir, tempDir));
+    zkServer.setTickTime(50);
+    zkServer.setMinSessionTimeout(100);
     cnxnFactory = ServerCnxnFactory.createFactory();
     cnxnFactory.configure(new InetSocketAddress(zookeeperPort), 0);
     cnxnFactory.startup(zkServer);
