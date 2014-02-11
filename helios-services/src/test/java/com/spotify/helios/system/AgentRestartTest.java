@@ -95,7 +95,7 @@ public class AgentRestartTest extends SystemTestBase {
     awaitAgentStatus(client, TEST_AGENT, DOWN, LONG_WAIT_MINUTES, MINUTES);
 
     // Kill the container
-    dockerClient.stopContainer(firstTaskStatus.getContainerId());
+    dockerClient.kill(firstTaskStatus.getContainerId());
     assertEquals(0, listContainers(dockerClient, PREFIX).size());
 
     // Start the agent again
@@ -125,7 +125,7 @@ public class AgentRestartTest extends SystemTestBase {
     awaitAgentStatus(client, TEST_AGENT, DOWN, LONG_WAIT_MINUTES, MINUTES);
 
     // Kill and destroy the container
-    dockerClient.stopContainer(secondTaskStatus.getContainerId());
+    dockerClient.kill(secondTaskStatus.getContainerId());
     dockerClient.removeContainer(secondTaskStatus.getContainerId());
     try {
       // This should fail with an exception if the container still exists

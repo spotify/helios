@@ -86,7 +86,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
 
     // Kill the container
-    dockerClient.stopContainer(firstTaskStatus.getContainerId());
+    dockerClient.kill(firstTaskStatus.getContainerId());
     assertEquals(0, listContainers(dockerClient, PREFIX).size());
 
     // Wait for a while and make sure that a new container was spawned
@@ -104,7 +104,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     agent2.stopAsync().awaitTerminated();
 
     // Kill the container
-    dockerClient.stopContainer(firstRestartedContainerId);
+    dockerClient.kill(firstRestartedContainerId);
     assertEquals(0, listContainers(dockerClient, PREFIX).size());
 
     // Start the agent again
