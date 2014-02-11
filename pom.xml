@@ -54,7 +54,7 @@
               <forkCount>2C</forkCount>
               <reuseForks>true</reuseForks>
               <!--needed by cobertura-->
-              <argLine>-XX:-UseSplitVerifier</argLine>
+              <argLine>-XX:-UseSplitVerifier -Xmx128m</argLine>
               <systemPropertyVariables>
                 <loggingLevel>OFF</loggingLevel>
               </systemPropertyVariables>
