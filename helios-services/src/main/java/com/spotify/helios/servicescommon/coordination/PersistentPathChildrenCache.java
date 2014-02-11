@@ -85,6 +85,7 @@ public class PersistentPathChildrenCache extends AbstractIdleService {
     } catch (IOException e) {
       log.error("Failed to close cache", e);
     }
+    executorService.shutdownNow();
     executorService.awaitTermination(5, SECONDS);
   }
 
