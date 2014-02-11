@@ -6,7 +6,6 @@ package com.spotify.helios.system;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.cli.CliMain;
@@ -35,9 +34,7 @@ public class JobWatchExactTest extends SystemTestBase {
     awaitAgentStatus(TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
-                                  ImmutableMap.of("FOO", "4711",
-                                                  "BAR", "deadbeef"));
+    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND);
 
     // deploy
     deployJob(jobId, TEST_AGENT);
@@ -46,19 +43,20 @@ public class JobWatchExactTest extends SystemTestBase {
                                            "--no-log-setup", jobId.toString(), TEST_AGENT,
                                            "FAKE_TEST_AGENT"};
 
-    final long now = System.currentTimeMillis();
     final AtomicBoolean success = new AtomicBoolean(false);
     final List<String> outputLines = Lists.newArrayList();
 
+    final long deadline = System.currentTimeMillis() + MINUTES.toMillis(LONG_WAIT_MINUTES);
+
     final OutputStream out = new OutputStream() {
-      boolean seenKnownState = false;
-      boolean seenUnknownAgent = false;
-      int counter = 0;
+      boolean seenKnownState;
+      boolean seenUnknownAgent;
+      int counter;
       final byte[] lineBuffer = new byte[8192];
 
       @Override
       public void write(int b) throws IOException {
-        if (System.currentTimeMillis() - now > 10000) {
+        if (System.currentTimeMillis() > deadline) {
           throw new IOException("timed out trying to succeed");
         }
         lineBuffer[counter] = (byte) b;

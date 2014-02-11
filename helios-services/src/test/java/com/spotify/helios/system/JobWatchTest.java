@@ -45,16 +45,18 @@ public class JobWatchTest extends SystemTestBase {
     final String[] commands = new String[]{"job", "watch", "-z", masterEndpoint,
                                            "--no-log-setup", jobId.toString()};
 
-    final long now = System.currentTimeMillis();
     final AtomicBoolean success = new AtomicBoolean(false);
     final List<String> outputLines = Lists.newArrayList();
+
+    final long deadline = System.currentTimeMillis() + MINUTES.toMillis(LONG_WAIT_MINUTES);
+
     final OutputStream out = new OutputStream() {
       int counter = 0;
       final byte[] lineBuffer = new byte[8192];
 
       @Override
       public void write(int b) throws IOException {
-        if (System.currentTimeMillis() - now > MINUTES.toMillis(LONG_WAIT_MINUTES)) {
+        if (System.currentTimeMillis() > deadline) {
           throw new IOException("timed out trying to succeed");
         }
         lineBuffer[counter] = (byte) b;
