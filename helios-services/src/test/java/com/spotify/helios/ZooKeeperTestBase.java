@@ -21,7 +21,7 @@ import static org.apache.commons.io.FileUtils.deleteDirectory;
 public class ZooKeeperTestBase {
 
   protected final int zookeeperPort = PortAllocator.allocatePort("zookeeper");
-  protected final String zookeeperEndpoint = "localhost:" + zookeeperPort;
+  protected final String zookeeperEndpoint = "127.0.0.1:" + zookeeperPort;
 
   private File tempDir;
   private ZooKeeperServer zkServer;
