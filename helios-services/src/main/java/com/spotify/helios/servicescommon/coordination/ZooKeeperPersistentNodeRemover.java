@@ -39,7 +39,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
 
   private static final long RETRY_INTERVAL_MILLIS = 5000;
 
-  private final ZooKeeperClient client;
+  private final ZooKeeperClientProvider provider;
   private final Reactor reactor;
 
   private final PersistentAtomicReference<List<String>> front;
@@ -48,10 +48,10 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
 
   private final Object lock = new Object() {};
 
-  public ZooKeeperPersistentNodeRemover(final String name, final ZooKeeperClient client,
+  public ZooKeeperPersistentNodeRemover(final String name, final ZooKeeperClientProvider provider,
                                         final Path stateFile, final Predicate<Node> predicate)
       throws IOException {
-    this.client = client;
+    this.provider = provider;
     this.predicate = predicate;
     this.front = PersistentAtomicReference.create(stateFile.toString() + ".front", PATHS_TYPE,
                                                   Suppliers.ofInstance(EMPTY_PATHS));
@@ -82,11 +82,11 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
   }
 
   public static ZooKeeperPersistentNodeRemover create(final String name,
-                                                      final ZooKeeperClient client,
+                                                      final ZooKeeperClientProvider provider,
                                                       final Path stateFile,
                                                       final Predicate<Node> predicate)
       throws IOException {
-    return new ZooKeeperPersistentNodeRemover(name, client, stateFile, predicate);
+    return new ZooKeeperPersistentNodeRemover(name, provider, stateFile, predicate);
   }
 
   @Override
@@ -121,6 +121,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
 
       // Remove all nodes in the backlog
       final Set<String> newBackPaths = Sets.newHashSet(backPaths);
+      final ZooKeeperClient client = provider.get("persistent_remover");
       for (final String path : backPaths) {
         Node node = null;
         try {

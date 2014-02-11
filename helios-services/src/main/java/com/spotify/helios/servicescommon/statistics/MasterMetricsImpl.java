@@ -3,7 +3,6 @@ package com.spotify.helios.servicescommon.statistics;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.servicescommon.MasterRequestMetrics;
-import com.yammer.metrics.core.Counter;
 import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.MetricName;
 import com.yammer.metrics.core.MetricsRegistry;
@@ -17,11 +16,9 @@ public class MasterMetricsImpl implements MasterMetrics {
 
   private final MetricName jobsInJobList;
   private final MetricName eventsInJobHistory;
-  private final MetricName zookeeperTransientError;
 
   private final Histogram jobsInJobListHist;
   private final Histogram eventsInJobHistoryHist;
-  private final Counter zookeeperTransientErrorCounter;
   private final String group;
   private final MetricsRegistry registry;
 
@@ -32,11 +29,9 @@ public class MasterMetricsImpl implements MasterMetrics {
 
     eventsInJobHistory = new MetricName(group, TYPE, "events_in_job_history");
     jobsInJobList = new MetricName(group, TYPE, "jobs_in_job_list");
-    zookeeperTransientError = new MetricName(group, TYPE, "zookeeper_transient_error");
 
     eventsInJobHistoryHist = registry.newHistogram(eventsInJobHistory, true);
     jobsInJobListHist = registry.newHistogram(jobsInJobList, true);
-    zookeeperTransientErrorCounter = registry.newCounter(zookeeperTransientError);
   }
 
   @Override
@@ -71,10 +66,5 @@ public class MasterMetricsImpl implements MasterMetrics {
   @Override
   public void jobsHistoryEventSize(final int count) {
     eventsInJobHistoryHist.update(count);
-  }
-
-  @Override
-  public void zookeeperTransientError() {
-    zookeeperTransientErrorCounter.inc();
   }
 }

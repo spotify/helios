@@ -45,17 +45,17 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractIdleService {
   private static final TypeReference<Map<String, byte[]>> ENTRIES_TYPE =
       new TypeReference<Map<String, byte[]>>() {};
 
-  private final ZooKeeperClient client;
+  private final ZooKeeperClientProvider provider;
   private final Reactor reactor;
   private final PersistentAtomicReference<Map<String, byte[]>> entries;
   private final PersistentAtomicReference<Map<String, byte[]>> written;
 
   private final Object lock = new Object() {};
 
-  private ZooKeeperUpdatingPersistentMap(final String name, final ZooKeeperClient client,
+  private ZooKeeperUpdatingPersistentMap(final String name, final ZooKeeperClientProvider provider,
                                          final Path stateFile)
   throws IOException {
-    this.client = client;
+    this.provider = provider;
     this.entries = PersistentAtomicReference.create(stateFile, ENTRIES_TYPE,
                                                     Suppliers.ofInstance(EMPTY_ENTRIES));
     this.written = PersistentAtomicReference.create(stateFile.toString() + ".written", ENTRIES_TYPE,
@@ -68,7 +68,7 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractIdleService {
   }
 
   public static ZooKeeperUpdatingPersistentMap create(final String name,
-                                                      final ZooKeeperClient client,
+                                                      final ZooKeeperClientProvider client,
                                                       final Path stateFile) throws IOException {
     return new ZooKeeperUpdatingPersistentMap(name, client, stateFile);
   }
@@ -127,6 +127,7 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractIdleService {
     }
 
     private void delete(final String path) {
+      final ZooKeeperClient client = provider.get("persistent_updater_delete");
       try {
         if (client.stat(path) != null) {
           client.delete(path);
@@ -142,6 +143,7 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractIdleService {
     }
 
     private void write(final String path, final byte[] data) {
+      final ZooKeeperClient client = provider.get("persistent_updater_write");
       try {
         if (client.stat(path) != null) {
           client.setData(path, data);

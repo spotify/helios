@@ -9,11 +9,13 @@ public class MetricsImpl implements Metrics {
 
   private final SupervisorMetrics supervisorMetrics;
   private final MasterMetrics masterMetrics;
+  private final ZooKeeperMetrics zooKeeperMetrics;
   private final JmxReporter jmxReporter;
 
   public MetricsImpl(final MetricsRegistry registry) {
     this.masterMetrics = new MasterMetricsImpl(GROUP, registry);
     this.supervisorMetrics = new SupervisorMetricsImpl(GROUP, registry);
+    this.zooKeeperMetrics = new ZooKeeperMetricsImpl(GROUP, registry);
     this.jmxReporter = new JmxReporter(registry);
   }
 
@@ -35,5 +37,10 @@ public class MetricsImpl implements Metrics {
   @Override
   public SupervisorMetrics getSupervisorMetrics() {
     return supervisorMetrics;
+  }
+
+  @Override
+  public ZooKeeperMetrics getZooKeeperMetrics() {
+    return zooKeeperMetrics;
   }
 }

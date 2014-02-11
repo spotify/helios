@@ -15,13 +15,16 @@ public class RiemannSupport {
   private final String host;
   private final int port;
   private final MetricsRegistry metricsRegistry;
-  private final String name;
+  private final String serviceName;
+  private final String hostName;
+
   private RiemannClient client = null;
 
   public RiemannSupport(final MetricsRegistry metricsRegistry, final String hostPort,
-                        final String name) {
+                        final String hostName, final String serviceName) {
     this.metricsRegistry = metricsRegistry;
-    this.name = name;
+    this.serviceName = serviceName;
+    this.hostName = hostName;
     if (Strings.isNullOrEmpty(hostPort)) {
       host = null;
       port = 0;
@@ -41,7 +44,7 @@ public class RiemannSupport {
     if (cli == null) {
       return NoOpRiemannClient.facade();
     }
-    return new RiemannFacade(cli);
+    return new RiemannFacade(cli, hostName, serviceName);
   }
 
   private RiemannClient getClient() {
@@ -66,7 +69,7 @@ public class RiemannSupport {
     }
     Config c = Config.newBuilder()
         .metricsRegistry(metricsRegistry)
-        .name(name)
+        .name(serviceName)
         .host(host)
         .port(port)
         .build();

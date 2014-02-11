@@ -16,7 +16,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.PersistentPathChildrenCache;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperPersistentNodeRemover;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentMap;
 
@@ -48,17 +48,18 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private final String agent;
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
 
-  public ZooKeeperAgentModel(final ZooKeeperClient client, final String agent,
+  public ZooKeeperAgentModel(final ZooKeeperClientProvider provider, final String agent,
                              final Path stateDirectory) throws IOException {
     this.agent = checkNotNull(agent);
     final Path taskConfigFile = stateDirectory.resolve(TASK_CONFIG_FILENAME);
-    this.tasks = client.pathChildrenCache(Paths.configAgentJobs(agent), taskConfigFile);
+    this.tasks = provider.get("ZooKeeperAgentModel_ctor")
+        .pathChildrenCache(Paths.configAgentJobs(agent), taskConfigFile);
     tasks.addListener(new JobsListener());
     final Path taskStatusFile = stateDirectory.resolve(TASK_STATUS_FILENAME);
-    this.taskStatuses = ZooKeeperUpdatingPersistentMap.create("agent-model-task-statuses", client,
+    this.taskStatuses = ZooKeeperUpdatingPersistentMap.create("agent-model-task-statuses", provider,
                                                               taskStatusFile);
     final Path removerFile = stateDirectory.resolve(TASK_REMOVER_FILENAME);
-    this.taskRemover = ZooKeeperPersistentNodeRemover.create("agent-model-task-remover", client,
+    this.taskRemover = ZooKeeperPersistentNodeRemover.create("agent-model-task-remover", provider,
                                                              removerFile, TASK_GOAL_IS_UNDEPLOY);
   }
 

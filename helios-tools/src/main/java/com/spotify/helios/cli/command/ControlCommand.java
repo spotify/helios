@@ -12,9 +12,6 @@ import com.spotify.helios.common.HeliosClient;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
@@ -29,8 +26,6 @@ public abstract class ControlCommand {
 
   public static final int BATCH_SIZE = 10;
   public static final int QUEUE_SIZE = 1000;
-
-  private final Logger log = LoggerFactory.getLogger(this.getClass());
 
   ControlCommand(final Subparser parser) {
 

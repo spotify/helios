@@ -11,9 +11,6 @@ import com.google.common.collect.ImmutableList;
 
 import com.spotify.helios.common.Resolver;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.net.URI;
 import java.util.List;
 
@@ -22,9 +19,6 @@ import java.util.List;
  * com.spotify.helios.common.HeliosClient}.
  */
 public abstract class Target {
-
-  private static final Logger log = LoggerFactory.getLogger(Target.class);
-
   private final String name;
 
   Target(final String name) {

@@ -40,6 +40,7 @@ import com.spotify.helios.common.protocol.TaskStatusEvent;
 import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import org.apache.zookeeper.KeeperException;
@@ -91,16 +92,16 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   public static final Map<JobId, TaskStatus> EMPTY_STATUSES = emptyMap();
 
-  private final ZooKeeperClient client;
+  private final ZooKeeperClientProvider provider;
 
-  public ZooKeeperMasterModel(final ZooKeeperClient client) {
-    this.client = client;
+  public ZooKeeperMasterModel(final ZooKeeperClientProvider provider) {
+    this.provider = provider;
   }
 
   @Override
   public void addAgent(final String agent) throws HeliosException {
     log.debug("adding agent: {}", agent);
-
+    final ZooKeeperClient client = provider.get("addAgent");
     try {
       // TODO (dano): this code is replicated in AgentRegistrar
 
@@ -124,7 +125,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public List<String> getAgents() throws HeliosException {
     try {
-      return client.getChildren(Paths.configAgents());
+      return provider.get("getAgents").getChildren(Paths.configAgents());
     } catch (KeeperException.NoNodeException e) {
       return emptyList();
     } catch (KeeperException e) {
@@ -136,7 +137,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public ImmutableList<String> getRunningMasters() throws HeliosException {
     try {
       return ImmutableList.copyOf(
-          Iterables.filter(client.getChildren(Paths.statusMaster()),
+          Iterables.filter(provider.get("getRunningMasters").getChildren(Paths.statusMaster()),
                            new Predicate<String>() {
                              @Override
                              public boolean apply(String masterName) {
@@ -152,7 +153,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private boolean loadMasterUp(String master) {
     try {
-      client.getData(Paths.statusMasterUp(master));
+      provider.get("loadMasterUp").getData(Paths.statusMasterUp(master));
       return true;
     } catch (KeeperException e) {
       return false;
@@ -163,6 +164,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public void removeAgent(final String agent) throws HeliosException {
     try {
       // TODO (dano): This might fail in a race with someone concurrently deploying jobs to this agent. Do we care?
+      final ZooKeeperClient client = provider.get("removeAgent");
       final List<String> nodes = reverse(client.listRecursive(Paths.configAgent(agent)));
       client.transaction(delete(nodes));
     } catch (NoNodeException e) {
@@ -177,6 +179,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     log.debug("adding job: {}", job);
     final JobId id = job.getId();
     try {
+      final ZooKeeperClient client = provider.get("addJob");
       client.ensurePath(Paths.historyJob(id));
       client.transaction(create(Paths.configJob(id), job),
                          create(Paths.configJobRefShort(id), id),
@@ -194,7 +197,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     if (descriptor == null) {
       throw new JobDoesNotExistException(jobId);
     }
-
+    final ZooKeeperClient client = provider.get("getJobHistory");
     final List<String> agents;
     try {
       agents = client.getChildren(Paths.historyJobAgents(jobId));
@@ -233,6 +236,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public Job getJob(final JobId id) throws HeliosException {
     log.debug("getting job: {}", id);
     final String path = Paths.configJob(id);
+    final ZooKeeperClient client = provider.get("getJob");
     try {
       final byte[] data = client.getData(path);
       return Descriptor.parse(data, Job.class);
@@ -248,6 +252,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public Map<JobId, Job> getJobs() throws HeliosException {
     log.debug("getting jobs");
     final String folder = Paths.configJobs();
+    final ZooKeeperClient client = provider.get("getJobs");
     try {
       final List<String> ids;
       try {
@@ -302,6 +307,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   private List<String> listJobAgents(final JobId jobId) throws HeliosException {
     final List<String> agents;
     final String agentsPath = Paths.configJobAgents(jobId);
+    final ZooKeeperClient client = provider.get("listJobAgents");
     try {
       agents = client.getChildren(agentsPath);
     } catch (NoNodeException e) {
@@ -316,6 +322,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public Job removeJob(final JobId id) throws HeliosException {
     log.debug("removing job: id={}", id);
     final Job old = getJob(id);
+    final ZooKeeperClient client = provider.get("removeJob");
     try {
       client.transaction(delete(Paths.configJobAgents(id)),
                          delete(Paths.configJobRefShort(id)),
@@ -368,7 +375,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     List<ZooKeeperOperation> operations = Lists.newArrayList(
         check(jobPath), create(portNodes), create(Paths.configJobAgent(id, agent)));
 
-    // Attempt to read a task here.  If it's goal is UNDEPLOY, it's as good as not existing
+    final ZooKeeperClient client = provider.get("deployJob");
+   // Attempt to read a task here.  If it's goal is UNDEPLOY, it's as good as not existing
     try {
       Node existing = client.getNode(taskPath);
       byte[] bytes = existing.getBytes();
@@ -428,13 +436,14 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private void assertJobExists(final JobId id) throws HeliosException {
+    final ZooKeeperClient client = provider.get("assertJobExists");
     try {
       final String path = Paths.configJob(id);
       if (client.stat(path) == null) {
         throw new JobDoesNotExistException(id);
       }
-    } catch (KeeperException ex) {
-      throw new HeliosException("checking job existence failed", ex);
+    } catch (KeeperException e) {
+      throw new HeliosException("checking job existence failed", e);
     }
   }
 
@@ -465,6 +474,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final String path = Paths.configAgentJob(agent, jobId);
     final Task task = new Task(descriptor, deployment.getGoal());
+    final ZooKeeperClient client = provider.get("updateDeployment");
     try {
       client.setData(path, task.toJsonBytes());
     } catch (Exception e) {
@@ -473,6 +483,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private void assertAgentExists(String agent) throws HeliosException {
+    final ZooKeeperClient client = provider.get("assertAgentExists");
     try {
       client.getData(Paths.configAgent(agent));
     } catch (NoNodeException e) {
@@ -483,6 +494,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private void assertTaskExists(String agent, JobId jobId) throws HeliosException {
+    final ZooKeeperClient client = provider.get("assertTaskExists");
     try {
       client.getData(Paths.configAgentJob(agent, jobId));
     } catch (NoNodeException e) {
@@ -496,6 +508,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public Deployment getDeployment(final String agent, final JobId jobId)
       throws HeliosException {
     final String path = Paths.configAgentJob(agent, jobId);
+    final ZooKeeperClient client = provider.get("getDeployment");
     try {
       final byte[] data = client.getData(path);
       final Task task = parse(data, Task.class);
@@ -514,6 +527,8 @@ public class ZooKeeperMasterModel implements MasterModel {
   public AgentStatus getAgentStatus(final String agent)
       throws HeliosException {
     final Stat stat;
+    final ZooKeeperClient client = provider.get("getAgentStatus");
+
     try {
       stat = client.exists(Paths.configAgentId(agent));
     } catch (KeeperException e) {
@@ -550,6 +565,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private <T> T getAgentStatusData(String path, TypeReference<T> type, String thing)
       throws HeliosException {
+    final ZooKeeperClient client = provider.get("getAgentStatusData_" + thing);
     try {
       final byte[] data = client.getData(path);
       return Json.read(data, type);
@@ -579,6 +595,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private boolean checkAgentUp(final String agent) throws HeliosException {
+    final ZooKeeperClient client = provider.get("checkAgentUp");
     try {
       final Stat stat = client.stat(Paths.statusAgentUp(agent));
       return stat != null;
@@ -591,6 +608,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
     final List<String> jobIdStrings;
     final String folder = Paths.statusAgentJobs(agent);
+    final ZooKeeperClient client = provider.get("getTaskStatuses");
     try {
       jobIdStrings = client.getChildren(folder);
     } catch (KeeperException.NoNodeException e) {
@@ -617,6 +635,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   private TaskStatus getTaskStatus(final String agent, final JobId jobId)
       throws HeliosException {
     final String containerPath = Paths.statusAgentJob(agent, jobId);
+    final ZooKeeperClient client = provider.get("getTaskStatus");
     try {
       final byte[] data = client.getData(containerPath);
       return parse(data, TaskStatus.class);
@@ -629,6 +648,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private Map<JobId, Deployment> getTasks(final String agent) throws HeliosException {
     final Map<JobId, Deployment> jobs = Maps.newHashMap();
+    final ZooKeeperClient client = provider.get("getTasks");
     try {
       final String folder = Paths.configAgentJobs(agent);
       final List<String> jobIds;
@@ -684,6 +704,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     for (int port : staticPorts) {
         operations.add(delete(Paths.configAgentPort(agent, port)));
     }
+    final ZooKeeperClient client = provider.get("undeployJob");
     try {
       client.transaction(operations);
     } catch (KeeperException e) {

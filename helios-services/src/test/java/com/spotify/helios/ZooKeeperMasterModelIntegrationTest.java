@@ -15,6 +15,8 @@ import com.spotify.helios.master.ZooKeeperMasterModel;
 import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -74,7 +76,8 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
     client.ensurePath(Paths.statusMasters());
     client.ensurePath(Paths.historyJobs());
 
-    model = new ZooKeeperMasterModel(client);
+    model = new ZooKeeperMasterModel(
+        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()));
   }
 
   @Test

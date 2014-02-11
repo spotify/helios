@@ -72,7 +72,7 @@ public class NoOpRiemannClient extends AbstractRiemannClient {
   }
 
   public static RiemannFacade facade() {
-    return new RiemannFacade(new NoOpRiemannClient());
+    return new RiemannFacade(new NoOpRiemannClient(), "fakehost", "fakeservice");
   }
 }
 

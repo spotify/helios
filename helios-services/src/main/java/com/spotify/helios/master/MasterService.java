@@ -19,6 +19,8 @@ import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
@@ -47,7 +49,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 import ch.qos.logback.access.jetty.RequestLogImpl;
-
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.util.concurrent.Futures.getUnchecked;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -85,7 +86,7 @@ public class MasterService extends AbstractIdleService {
     // TODO (dano): do something with the riemann facade
     metricsRegistry = new MetricsRegistry();
     RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(),
-                                                       "helios-master");
+        config.getName(), "helios-master");
     riemannFacade = riemannSupport.getFacade();
     log.info("Starting metrics");
     final Metrics metrics;
@@ -101,7 +102,9 @@ public class MasterService extends AbstractIdleService {
 
     // Set up the master model
     this.zooKeeperClient = setupZookeeperClient(config);
-    final MasterModel model = new ZooKeeperMasterModel(zooKeeperClient);
+    final MasterModel model = new ZooKeeperMasterModel(
+        new ZooKeeperClientProvider(zooKeeperClient,
+            new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics())));
 
     if (config.getSite() != null) {
       this.registrar = config.getSite().equals("localhost")

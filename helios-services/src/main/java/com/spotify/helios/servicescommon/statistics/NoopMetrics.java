@@ -18,4 +18,9 @@ public class NoopMetrics implements Metrics {
     return new NoopSupervisorMetrics();
   }
 
+  @Override
+  public ZooKeeperMetrics getZooKeeperMetrics() {
+    return new NoopZooKeeperMetrics();
+  }
+
 }

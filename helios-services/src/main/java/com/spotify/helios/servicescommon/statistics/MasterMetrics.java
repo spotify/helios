@@ -11,6 +11,4 @@ public interface MasterMetrics {
   void jobsInJobList(int count);
 
   void jobsHistoryEventSize(int count);
-
-  void zookeeperTransientError();
 }

@@ -2,12 +2,14 @@ package com.spotify.helios.servicescommon.statistics;
 
 public interface Metrics {
 
-  public void start();
+  void start();
 
-  public void stop();
+  void stop();
 
-  public MasterMetrics getMasterMetrics();
+  MasterMetrics getMasterMetrics();
 
-  public SupervisorMetrics getSupervisorMetrics();
+  SupervisorMetrics getSupervisorMetrics();
+
+  ZooKeeperMetrics getZooKeeperMetrics();
 
 }

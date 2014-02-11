@@ -17,6 +17,8 @@ import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
@@ -127,7 +129,8 @@ public class AgentService extends AbstractIdleService {
     log.info("Starting metrics");
 
     metricsRegistry = new MetricsRegistry();
-    RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(), "helios-agent");
+    RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(),
+      config.getName(), "helios-agent");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();
     if (config.isInhibitMetrics()) {
       log.info("Not starting metrics");
@@ -143,7 +146,10 @@ public class AgentService extends AbstractIdleService {
 
     this.zooKeeperClient = setupZookeeperClient(config, id);
 
-    this.model = setupModel(config, zooKeeperClient, stateDirectory);
+    this.model = setupModel(config, new ZooKeeperClientProvider(
+        zooKeeperClient,
+        new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics())),
+        stateDirectory);
 
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
@@ -235,15 +241,13 @@ public class AgentService extends AbstractIdleService {
    * @return An agent state.
    */
   private static AgentModel setupModel(final AgentConfig config,
-                                       final ZooKeeperClient zooKeeperClient,
+                                       final ZooKeeperClientProvider zooKeeperClientProvider,
                                        final Path stateDirectory) {
-    final ZooKeeperAgentModel model;
     try {
-      model = new ZooKeeperAgentModel(zooKeeperClient, config.getName(), stateDirectory);
+      return new ZooKeeperAgentModel(zooKeeperClientProvider, config.getName(), stateDirectory);
     } catch (Exception e) {
       throw new RuntimeException("state initialization failed", e);
     }
-    return model;
   }
 
   @Override
