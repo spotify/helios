@@ -29,7 +29,7 @@ public class ZooKeeperModelReporter {
   public ZooKeeperModelReporter(final RiemannFacade riemannFacade,
                                 final ZooKeeperMetrics metrics) {
     this.metrics = checkNotNull(metrics);
-    this.riemannFacade = checkNotNull(riemannFacade);
+    this.riemannFacade = checkNotNull(riemannFacade).stack("zookeeper");
   }
 
   public void checkException(Exception e, String... tags) {
@@ -48,7 +48,6 @@ public class ZooKeeperModelReporter {
     final List<String> tagList = Lists.newArrayList("zookeeper", "error", message);
     tagList.addAll(Lists.newArrayList(tags));
     riemannFacade.event()
-
         .tags(tagList)
         .send();
     metrics.zookeeperTransientError();

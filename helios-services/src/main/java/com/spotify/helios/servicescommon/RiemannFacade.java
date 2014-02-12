@@ -4,7 +4,7 @@ import com.aphyr.riemann.client.AbstractRiemannClient;
 import com.aphyr.riemann.client.EventDSL;
 
 public class RiemannFacade {
-  private static final Integer EVENT_TIME_TO_LIVE = 30;
+  private static final Integer EVENT_TIME_TO_LIVE = 600;
 
   private final AbstractRiemannClient client;
   private final String hostName;
@@ -22,5 +22,9 @@ public class RiemannFacade {
         .ttl(EVENT_TIME_TO_LIVE)
         .host(hostName)
         .service(service);
+  }
+
+  public RiemannFacade stack(String subService) {
+    return new RiemannFacade(client, hostName, service + "/" + subService);
   }
 }

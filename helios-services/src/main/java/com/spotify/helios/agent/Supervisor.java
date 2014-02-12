@@ -325,7 +325,7 @@ class Supervisor {
     if (e.getCause().getClass() == TimeoutException.class) {
       metrics.dockerTimeout();
       riemannFacade.event()
-         .service("helios-agent-docker")
+         .service("helios-agent/docker")
          .tags("docker", "timeout", tag)
          .send();
     }
