@@ -334,14 +334,16 @@ class Supervisor {
     return ports;
   }
 
-  private void checkForDockerTimeout(DockerException e, String tag) {
+  private boolean checkForDockerTimeout(DockerException e, String tag) {
     if (e.getCause().getClass() == TimeoutException.class) {
       metrics.dockerTimeout();
       riemannFacade.event()
          .service("helios-agent/docker")
          .tags("docker", "timeout", tag)
          .send();
+      return true;
     }
+    return false;
   }
 
   /**
@@ -512,7 +514,9 @@ class Supervisor {
         metrics.containersExited();
         resultFuture.set(exitCode);
       } catch (DockerException e) {
-        checkForDockerTimeout(e, "unspecific");
+        if (!checkForDockerTimeout(e, "unspecific")) {
+          metrics.containersThrewException();
+        }
         resultFuture.setException(e);
       } catch (InterruptedException e) {
         metrics.containersThrewException();
