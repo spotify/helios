@@ -9,7 +9,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
@@ -100,7 +99,8 @@ class Supervisor {
   private final RiemannFacade riemannFacade;
 
   private volatile Runner runner;
-  private volatile boolean run;
+  private volatile Command currentCommand;
+  private volatile Command performedCommand;
   private volatile ThrottleState throttle = ThrottleState.NO;
 
   /**
@@ -144,7 +144,7 @@ class Supervisor {
    * Start the job.
    */
   public void start() {
-    run = true;
+    currentCommand = new Start();
     reactor.update();
     metrics.supervisorStarted();
   }
@@ -153,13 +153,9 @@ class Supervisor {
    * Stop the job.
    */
   public void stop() throws InterruptedException {
-    run = false;
+    currentCommand = new Stop();
     reactor.update();
     metrics.supervisorStopped();
-  }
-
-  public void awaitStopped() {
-    runner.awaitTerminated();
   }
 
   /**
@@ -173,8 +169,25 @@ class Supervisor {
     metrics.supervisorClosed();
   }
 
-  public boolean isRunning() {
-    return run;
+  /**
+   * Check if the current command is start.
+   */
+  public boolean isStarting() {
+    return currentCommand instanceof Start;
+  }
+
+  /**
+   * Check if the current command is stop.
+   */
+  public boolean isStopping() {
+    return currentCommand instanceof Stop;
+  }
+
+  /**
+   * Check whether the last start/stop command is done.
+   */
+  public boolean isDone() {
+    return currentCommand == performedCommand;
   }
 
   /**
@@ -497,17 +510,17 @@ class Supervisor {
         throttle = flapController.isFlapping() ? ThrottleState.FLAPPING : ThrottleState.NO;
         setStatus(EXITED, containerId, ports);
         metrics.containersExited();
-
         resultFuture.set(exitCode);
       } catch (DockerException e) {
         checkForDockerTimeout(e, "unspecific");
-      } catch (InterruptedException e) {
         resultFuture.setException(e);
+      } catch (InterruptedException e) {
         metrics.containersThrewException();
+        resultFuture.setException(e);
       } catch (Exception e) {
         // Keep separate catch clauses to simplify setting breakpoints on actual errors
-        resultFuture.setException(e);
         metrics.containersThrewException();
+        resultFuture.setException(e);
       }
     }
 
@@ -741,108 +754,9 @@ class Supervisor {
 
     @Override
     public void run() throws InterruptedException {
-      // Stop job if run == false
-      if (!run) {
-        stopJob();
-        return;
-      }
-
-      // Start job if run == true
-      if (runner == null) {
-        startJob(0);
-        return;
-      }
-      if (!runner.isRunning()) {
-        if (!runner.result().isDone()) {
-          log.warn("runner not running but result future not done!");
-          startJob(restartPolicy.restartThrottle(throttle));
-          return;
-        }
-        Futures.addCallback(runner.result(), new FutureCallback<Integer>() {
-          @Override
-          public void onSuccess(final Integer result) {
-            startJob(restartPolicy.restartThrottle(throttle));
-          }
-
-          @Override
-          public void onFailure(final Throwable t) {
-            if (t instanceof InterruptedException || t instanceof InterruptedIOException) {
-              log.debug("task runner interrupted");
-            } else {
-              log.error("task runner threw exception", t);
-            }
-            long restartDelay = restartPolicy.getRetryIntervalMillis();
-            long throttleDelay = restartPolicy.restartThrottle(throttle);
-            startJob(Math.max(restartDelay, throttleDelay));
-          }
-        });
-      }
-    }
-
-    private void startJob(final long delayMillis) {
-      log.debug("starting job: id={}: job={}", jobId, job);
-      runner = new Runner(delayMillis);
-      runner.startAsync();
-      runner.result().addListener(reactor.updateRunnable(), sameThreadExecutor());
-    }
-
-    private void stopJob() throws InterruptedException {
-      log.debug("stopping job: id={}: job={}", jobId, job);
-
-      // Stop the runner
-      if (runner != null) {
-        runner.stopAsync();
-      }
-
-      final TaskStatus taskStatus = model.getTaskStatus(jobId);
-      final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
-
-      if (containerId == null) {
-        setStatus(STOPPED, null);
-        return;
-      }
-
-      // Wait for the runner and container to die
-      boolean containerStopped = false;
-      while ((runner != null && runner.isRunning()) || !containerStopped) {
-        if (!containerStopped) {
-          // See if the container is running
-          ContainerInspectResponse containerInfo = null;
-          try {
-            containerInfo = inspectContainer(containerId);
-            if (containerInfo == null || containerInfo.state.running == false) {
-              containerStopped = true;
-            }
-          } catch (DockerException e) {
-            log.error("failed to query container {}", containerId, e);
-            sleepUninterruptibly(1, SECONDS);
-          }
-
-          // Kill the container if it's running
-          if (containerInfo != null && containerInfo.state != null &&
-              containerInfo.state.running) {
-            try {
-              Futures.get(docker.kill(containerId), DockerException.class);
-              break;
-            } catch (DockerException e) {
-              checkForDockerTimeout(e, "kill_container");
-              log.error("failed to kill container {}", containerId, e);
-              sleepUninterruptibly(1, SECONDS);
-            }
-          }
-        }
-
-        // Disrupt work in progress to speed the runner to it's demise
-        if (runner != null) {
-          runner.disrupt();
-        }
-
-        sleepUninterruptibly(1, SECONDS);
-      }
-
-      runner = null;
-
-      setStatus(STOPPED, containerId);
+      final boolean done = performedCommand == currentCommand;
+      currentCommand.perform(done);
+      performedCommand = currentCommand;
     }
   }
 
@@ -939,6 +853,117 @@ class Supervisor {
     public Builder setRiemannFacade(RiemannFacade riemannFacade) {
       this.riemannFacade = riemannFacade;
       return this;
+    }
+  }
+
+  private interface Command {
+
+    void perform(final boolean done);
+  }
+
+  private class Start implements Command {
+
+    @Override
+    public void perform(final boolean done) {
+      if (runner == null) {
+        startAfter(0);
+        return;
+      }
+      if (!runner.isRunning()) {
+        if (!runner.result().isDone()) {
+          log.warn("runner not running but result future not done!");
+          startAfter(restartPolicy.restartThrottle(throttle));
+          return;
+        }
+        final Result<Integer> result = Result.of(runner.result());
+        if (result.isSuccess()) {
+          startAfter(restartPolicy.restartThrottle(throttle));
+        } else {
+          final Throwable t = result.getException();
+          if (t instanceof InterruptedException || t instanceof InterruptedIOException) {
+            log.debug("task runner interrupted");
+          } else {
+            log.error("task runner threw exception", t);
+          }
+          long restartDelay = restartPolicy.getRetryIntervalMillis();
+          long throttleDelay = restartPolicy.restartThrottle(throttle);
+          startAfter(Math.max(restartDelay, throttleDelay));
+        }
+      }
+    }
+
+    private void startAfter(final long delay) {
+      log.debug("starting job: {} (delay={}): {}", jobId, delay, job);
+      runner = new Runner(delay);
+      runner.startAsync();
+      runner.result().addListener(reactor.updateRunnable(), sameThreadExecutor());
+    }
+  }
+
+  private class Stop implements Command {
+
+    @Override
+    public void perform(final boolean done) {
+      if (done) {
+        return;
+      }
+
+      log.debug("stopping job: id={}: job={}", jobId, job);
+
+      // Stop the runner
+      if (runner != null) {
+        runner.stopAsync();
+      }
+
+      final TaskStatus taskStatus = model.getTaskStatus(jobId);
+      final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
+
+      if (containerId == null) {
+        setStatus(STOPPED, null);
+        return;
+      }
+
+      // Wait for the runner and container to die
+      boolean containerStopped = false;
+      while ((runner != null && runner.isRunning()) || !containerStopped) {
+        if (!containerStopped) {
+          // See if the container is running
+          ContainerInspectResponse containerInfo = null;
+          try {
+            containerInfo = inspectContainer(containerId);
+            if (containerInfo == null || !containerInfo.state.running) {
+              containerStopped = true;
+            }
+          } catch (DockerException e) {
+            log.error("failed to query container {}", containerId, e);
+            sleepUninterruptibly(1, SECONDS);
+          }
+
+          // Kill the container if it's running
+          if (containerInfo != null && containerInfo.state != null &&
+              containerInfo.state.running) {
+            try {
+              Futures.get(docker.kill(containerId), DockerException.class);
+              break;
+            } catch (DockerException e) {
+              checkForDockerTimeout(e, "kill_container");
+              log.error("failed to kill container {}", containerId, e);
+              sleepUninterruptibly(1, SECONDS);
+            }
+          }
+        }
+
+        // Disrupt work in progress to speed the runner to it's demise
+        if (runner != null) {
+          runner.disrupt();
+        }
+
+        sleepUninterruptibly(1, SECONDS);
+      }
+
+      runner = null;
+
+      setStatus(STOPPED, containerId);
     }
   }
 }

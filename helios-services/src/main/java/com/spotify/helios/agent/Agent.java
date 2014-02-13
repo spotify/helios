@@ -5,7 +5,6 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Predicate;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
@@ -24,13 +23,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import static com.spotify.helios.servicescommon.Reactor.Callback;
-
+import static com.google.common.base.Predicates.in;
+import static com.google.common.collect.Maps.filterKeys;
 import static com.google.common.collect.Sets.difference;
-import static com.google.common.collect.Sets.intersection;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static com.spotify.helios.servicescommon.Reactor.Callback;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -64,10 +63,10 @@ public class Agent extends AbstractIdleService {
   private final ModelListener modelListener = new ModelListener();
   private final Map<JobId, Supervisor> supervisors = Maps.newHashMap();
 
-  private Reactor reactor;
+  private final Reactor reactor;
 
   /**
-   * Create a new worker.
+   * Create a new agent.
    *
    * @param model             The model.
    * @param supervisorFactory The factory to use for creating supervisors.
@@ -82,23 +81,15 @@ public class Agent extends AbstractIdleService {
 
   @Override
   protected void startUp() throws Exception {
-    final Map<JobId, Task> tasks = model.getTasks();
     final Map<JobId, TaskStatus> tasksStatuses = model.getTaskStatuses();
     for (final Entry<JobId, TaskStatus> entry : tasksStatuses.entrySet()) {
       final JobId id = entry.getKey();
       final TaskStatus taskStatus = entry.getValue();
-      final Task task = tasks.get(id);
-      final Supervisor supervisor = createSupervisor(id, taskStatus.getJob());
-      if (task == null) {
-        supervisor.stop();
-        // TODO (dano): this is racy, removing the task status must be done after the container has been stopped
-        model.removeTaskStatus(id);
-      } else {
-        delegate(supervisor, task, true);
-      }
+      createSupervisor(id, taskStatus.getJob());
     }
     model.addListener(modelListener);
     reactor.startAsync().awaitRunning();
+    reactor.update();
   }
 
   @Override
@@ -124,27 +115,30 @@ public class Agent extends AbstractIdleService {
   }
 
   /**
-   * Instructor supervisor to start or stop job depending on configuration.
+   * Instruct supervisor to start or stop job depending on configuration.
    */
-  private void delegate(final Supervisor supervisor, final Task task, final boolean boot)
+  private void delegate(final Supervisor supervisor, final Task task)
       throws InterruptedException {
+    // TODO (dano): we should persist last intact set of instructions
+    // In the absence of instructions, we run jobs until told otherwise.
+    if (task == null) {
+      if (!supervisor.isStarting()) {
+        supervisor.start();
+      }
+      return;
+    }
+
     switch (task.getGoal()) {
       case START:
-        if (boot || !supervisor.isRunning()) {
+        if (!supervisor.isStarting()) {
           supervisor.start();
         }
         break;
       case STOP:
-        if (boot || supervisor.isRunning()) {
-          supervisor.stop();
-        }
-        break;
       case UNDEPLOY:
-        if (boot || supervisor.isRunning()) {
+        if (!supervisor.isStopping()) {
           supervisor.stop();
         }
-        model.removeUndeployTombstone(task.getJob().getId());
-        model.removeTaskStatus(task.getJob().getId());
         break;
     }
   }
@@ -192,10 +186,13 @@ public class Agent extends AbstractIdleService {
       log.debug("start: {}", startJobIds);
       log.debug("current: {}", supervisors.keySet());
 
-      // Remove stopped supervisors
-      for (final JobId jobId : ImmutableSet.copyOf(supervisors.keySet())) {
-        final Supervisor supervisor = supervisors.get(jobId);
-        if (supervisor.getStatus() == STOPPED && !startJobIds.contains(jobId)) {
+      // Remove stopped supervisors.
+      // Note: We do not touch supervisors that we do not have instructions for.
+      final Map<JobId, Supervisor> stopSupervisors = filterKeys(supervisors, in(undeployedJobIds));
+      for (Entry<JobId, Supervisor> entry : stopSupervisors.entrySet()) {
+        final JobId jobId = entry.getKey();
+        final Supervisor supervisor = entry.getValue();
+        if (supervisor.isDone() && supervisor.getStatus() == STOPPED) {
           log.debug("releasing stopped supervisor: {}", jobId);
           supervisor.close();
           supervisors.remove(jobId);
@@ -205,12 +202,7 @@ public class Agent extends AbstractIdleService {
       // Get a snapshot of the current state
       final Set<JobId> currentJobIds = Sets.newHashSet(supervisors.keySet());
 
-      // Stop tombstoned supervisors and remove tombstoned tasks if the supervisor is gone
-      for (final JobId jobId : intersection(undeployedJobIds, currentJobIds)) {
-        final Supervisor supervisor = supervisors.get(jobId);
-        log.debug("Stopping tombstoned supervisor: {}", jobId);
-        supervisor.stop();
-      }
+      // Remove tombstoned tasks if the supervisor is gone
       for (final JobId jobId : undeployedJobIds) {
         final Supervisor supervisor = supervisors.get(jobId);
         if (supervisor == null) {
@@ -228,12 +220,11 @@ public class Agent extends AbstractIdleService {
       }
 
       // Update job goals
-      for (final Map.Entry<JobId, Task> entry : deployedTasks.entrySet()) {
+      for (final Map.Entry<JobId, Supervisor> entry : supervisors.entrySet()) {
         final JobId jobId = entry.getKey();
-        final Supervisor supervisor = supervisors.get(jobId);
-        if (supervisor != null) {
-          delegate(supervisor, entry.getValue(), false);
-        }
+        final Supervisor supervisor = entry.getValue();
+        final Task task = tasks.get(jobId);
+        delegate(supervisor, task);
       }
     }
   }

@@ -100,12 +100,14 @@ public class AgentTest {
     when(service.startAsync()).thenReturn(service);
   }
 
-  private void startAgent() {
+  private void startAgent() throws Exception {
     sut.startAsync().awaitRunning();
     verify(reactorFactory).create(anyString(), any(Reactor.Callback.class), anyLong());
     callback = callbackCaptor.getValue();
     verify(model).addListener(listenerCaptor.capture());
     listener = listenerCaptor.getValue();
+    verify(reactor).update();
+    callback.run();
   }
 
   private void configure(final Job job, final Goal goal) {
@@ -124,19 +126,19 @@ public class AgentTest {
   }
 
   private void stop(Job descriptor) throws InterruptedException {
-    jobs.put(descriptor.getId(), new Task(descriptor, UNDEPLOY));
+    configure(descriptor, UNDEPLOY);
     callback.run();
   }
 
   @Test
-  public void verifyReactorIsUpdatedWhenListenerIsCalled() {
+  public void verifyReactorIsUpdatedWhenListenerIsCalled() throws Exception {
     startAgent();
     listener.tasksChanged(model);
-    verify(reactor).update();
+    verify(reactor, times(2)).update();
   }
 
   @Test
-  public void verifyAgentRecoversState() throws InterruptedException {
+  public void verifyAgentRecoversState() throws Exception {
     configure(FOO_DESCRIPTOR, START);
     configure(BAR_DESCRIPTOR, STOP);
 
@@ -153,27 +155,36 @@ public class AgentTest {
                         .setContainerId("bar-container-1")
                         .build());
 
-    when(fooSupervisor.isRunning()).thenReturn(false);
-    when(barSupervisor.isRunning()).thenReturn(true);
+    when(fooSupervisor.isStarting()).thenReturn(false);
+    when(fooSupervisor.isStopping()).thenReturn(false);
+    when(fooSupervisor.isDone()).thenReturn(true);
+
+    when(barSupervisor.isStarting()).thenReturn(true);
+    when(barSupervisor.isStopping()).thenReturn(false);
+    when(barSupervisor.isDone()).thenReturn(true);
 
     startAgent();
 
     verify(supervisorFactory).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR);
     verify(fooSupervisor).start();
-    when(fooSupervisor.isRunning()).thenReturn(true);
 
     verify(supervisorFactory).create(BAR_DESCRIPTOR.getId(), BAR_DESCRIPTOR);
     verify(barSupervisor).stop();
-    when(barSupervisor.isRunning()).thenReturn(false);
 
-    callback.run();
+    when(fooSupervisor.isStarting()).thenReturn(true);
+    when(fooSupervisor.isStopping()).thenReturn(false);
+    when(fooSupervisor.isDone()).thenReturn(true);
+
+    when(barSupervisor.isStarting()).thenReturn(false);
+    when(barSupervisor.isStopping()).thenReturn(true);
+    when(barSupervisor.isDone()).thenReturn(true);
 
     verify(fooSupervisor, times(1)).start();
     verify(barSupervisor, times(1)).stop();
   }
 
   @Test
-  public void verifyAgentRecoversStateAndStopsUndesiredSupervisors() throws InterruptedException {
+  public void verifyAgentRecoversStateAndStartsSupervisorsWithNoInstructions() throws Exception {
     jobStatuses.put(FOO_DESCRIPTOR.getId(),
                     TaskStatus.newBuilder()
                         .setJob(FOO_DESCRIPTOR)
@@ -183,24 +194,54 @@ public class AgentTest {
 
     startAgent();
 
-    // Verify that the undesired supervisor was created and then stopped
+    // Verify that the undesired supervisor was created and started
     verify(supervisorFactory).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR);
-    verify(fooSupervisor).stop();
+
+    // ... and then started
+    verify(fooSupervisor).start();
+
+    // And not stopped
+    callback.run();
+    verify(fooSupervisor, never()).stop();
   }
 
   @Test
-  public void verifyAgentStartsSupervisors() throws InterruptedException {
+  public void verifyAgentRecoversStateAndStopsUndesiredSupervisors() throws Exception {
+    jobStatuses.put(FOO_DESCRIPTOR.getId(),
+                    TaskStatus.newBuilder()
+                        .setJob(FOO_DESCRIPTOR)
+                        .setState(CREATING)
+                        .setContainerId("foo-container-1")
+                        .build());
+
+    configure(FOO_DESCRIPTOR, UNDEPLOY);
+
+    startAgent();
+
+    // Verify that the undesired supervisor was created
+    verify(supervisorFactory).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR);
+
+    // ... and then stopped
+    verify(fooSupervisor).stop();
+
+    // And not started again
+    callback.run();
+    verify(fooSupervisor, never()).start();
+  }
+
+  @Test
+  public void verifyAgentStartsSupervisors() throws Exception {
     startAgent();
 
     start(FOO_DESCRIPTOR);
     verify(supervisorFactory).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR);
     verify(fooSupervisor).start();
-    when(fooSupervisor.isRunning()).thenReturn(true);
+    when(fooSupervisor.isStarting()).thenReturn(true);
 
     start(BAR_DESCRIPTOR);
     verify(supervisorFactory).create(BAR_DESCRIPTOR.getId(), BAR_DESCRIPTOR);
     verify(barSupervisor).start();
-    when(barSupervisor.isRunning()).thenReturn(true);
+    when(barSupervisor.isStarting()).thenReturn(true);
 
     callback.run();
 
@@ -209,12 +250,15 @@ public class AgentTest {
   }
 
   @Test
-  public void verifyAgentStopsAndRecreatesSupervisors() throws InterruptedException {
+  public void verifyAgentStopsAndRecreatesSupervisors() throws Exception {
     startAgent();
 
-    // Verify that supervisor is stopped
+    // Verify that supervisor is started
     start(BAR_DESCRIPTOR);
     verify(barSupervisor).start();
+    when(barSupervisor.isDone()).thenReturn(true);
+    when(barSupervisor.isStopping()).thenReturn(false);
+    when(barSupervisor.isStarting()).thenReturn(true);
 
     // Verify that removal of the job *doesn't* stop the supervisor
     badStop(BAR_DESCRIPTOR);
@@ -225,6 +269,9 @@ public class AgentTest {
     stop(BAR_DESCRIPTOR);
     verify(barSupervisor).stop();
     when(barSupervisor.getStatus()).thenReturn(STOPPED);
+    when(barSupervisor.isDone()).thenReturn(true);
+    when(barSupervisor.isStopping()).thenReturn(true);
+    when(barSupervisor.isStarting()).thenReturn(false);
 
     // Verify that a new supervisor is created after the previous one is discarded
     callback.run();
