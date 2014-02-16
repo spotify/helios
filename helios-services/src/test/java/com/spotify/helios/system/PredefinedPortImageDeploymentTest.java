@@ -23,44 +23,42 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
 
   @Test
   public void test() throws Exception {
-    final String agentName = "foobar";
     startDefaultMaster();
+    startDefaultAgent(TEST_AGENT);
 
     final HeliosClient client = defaultClient();
 
-    startDefaultAgent(agentName);
-
-    // Create a job using an image exposing port 80 but without mapping it
+    // Create a job using an image exposing port 11211 but without mapping it
     final Job job1 = Job.newBuilder()
-        .setName(PREFIX + "wordpress")
+        .setName(PREFIX + "memcached")
         .setVersion("v1")
-        .setImage("jbfink/wordpress")
+        .setImage("skxskx/memcached")
         .setCommand(DO_NOTHING_COMMAND)
         .build();
     final JobId jobId1 = job1.getId();
     client.createJob(job1).get();
 
-    // Create a job using an image exposing port 80 and map it to a specific external port
+    // Create a job using an image exposing port 11211 and map it to a specific external port
     final Job job2 = Job.newBuilder()
-        .setName(PREFIX + "wordpress")
+        .setName(PREFIX + "memcached")
         .setVersion("v2")
-        .setImage("jbfink/wordpress")
+        .setImage("skxskx/memcached")
         .setCommand(DO_NOTHING_COMMAND)
-        .setPorts(ImmutableMap.of("tcp", PortMapping.of(80, EXTERNAL_PORT)))
+        .setPorts(ImmutableMap.of("tcp", PortMapping.of(11211, EXTERNAL_PORT)))
         .build();
     final JobId jobId2 = job2.getId();
     client.createJob(job2).get();
 
     // Wait for agent to come up
-    awaitAgentRegistered(client, agentName, LONG_WAIT_MINUTES, MINUTES);
-    awaitAgentStatus(client, agentName, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitAgentRegistered(client, TEST_AGENT, LONG_WAIT_MINUTES, MINUTES);
+    awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Deploy the jobs on the agent
-    client.deploy(Deployment.of(jobId1, START), agentName).get();
-    client.deploy(Deployment.of(jobId2, START), agentName).get();
+    client.deploy(Deployment.of(jobId1, START), TEST_AGENT).get();
+    client.deploy(Deployment.of(jobId2, START), TEST_AGENT).get();
 
     // Wait for the jobs to run
-    awaitJobState(client, agentName, jobId1, RUNNING, LONG_WAIT_MINUTES, MINUTES);
-    awaitJobState(client, agentName, jobId2, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, TEST_AGENT, jobId1, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, TEST_AGENT, jobId2, RUNNING, LONG_WAIT_MINUTES, MINUTES);
   }
 }
