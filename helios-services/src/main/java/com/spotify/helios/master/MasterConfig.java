@@ -15,6 +15,7 @@ public class MasterConfig extends Configuration {
   private boolean inhibitMetrics;
   private String statsdHostPort;
   private String riemannHostPort;
+  private String namelessEndpoint;
 
   public String getHermesEndpoint() {
     return endpoint;
@@ -77,5 +78,14 @@ public class MasterConfig extends Configuration {
 
   public String getRiemannHostPort() {
     return riemannHostPort;
+  }
+
+  public MasterConfig setNamelessEndpoint(final String namelessEndpoint) {
+    this.namelessEndpoint = namelessEndpoint;
+    return this;
+  }
+
+  public String getNamelessEndpoint() {
+    return namelessEndpoint;
   }
 }

@@ -21,6 +21,7 @@ public class AgentConfig {
   private Path stateDirectory;
   private String statsdHostPort;
   private String riemannHostPort;
+  private String namelessEndpoint;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -127,5 +128,14 @@ public class AgentConfig {
 
   public String getRiemannHostPort() {
     return riemannHostPort;
+  }
+
+  public AgentConfig setNamelessEndpoint(final String namelessEndpoint) {
+    this.namelessEndpoint = namelessEndpoint;
+    return this;
+  }
+
+  public String getNamelessEndpoint() {
+    return namelessEndpoint;
   }
 }

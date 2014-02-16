@@ -35,7 +35,8 @@ public class MasterParser extends ServiceParser {
         .setName(options.getString("name"))
         .setStatsdHostPort(options.getString("statsd_host_port"))
         .setRiemannHostPort(options.getString("riemann_host_port"))
-        .setInhibitMetrics(fromNullable(options.getBoolean("no_metrics")).or(false));
+        .setInhibitMetrics(fromNullable(options.getBoolean("no_metrics")).or(false))
+        .setNamelessEndpoint(options.getString("nameless"));
 
     final HttpConfiguration http = config.getHttpConfiguration();
     http.setPort(httpAddress.getPort());

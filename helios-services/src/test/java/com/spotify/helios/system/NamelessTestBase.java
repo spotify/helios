@@ -4,47 +4,53 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.base.Throwables;
-
+import com.spotify.config.SpotifyConfigNode;
+import com.spotify.helios.PortAllocator;
 import com.spotify.nameless.Service;
+import com.spotify.nameless.api.NamelessClient;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 
-import java.io.IOException;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.channels.OverlappingFileLockException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.WRITE;
+import static java.nio.charset.StandardCharsets.UTF_8;
 
 public abstract class NamelessTestBase extends SystemTestBase {
 
-  com.spotify.nameless.Service nameless;
-  private FileChannel lockFile;
-  private FileLock lock;
+  private static final Path CONFIG_TEMPLATE =
+      Paths.get(NamelessTestBase.class.getResource("/nameless-registry.conf").getFile());
+
+  private com.spotify.nameless.Service nameless;
+  private Path configFile;
+
+  protected int namelessPort;
+  protected String namelessHost = "127.0.0.1";
+  protected String namelessEndpoint;
+
+  protected NamelessClient namelessClient;
+
 
   @Override
   @Before
   public void setUp() throws Exception {
     super.setUp();
 
-    // TODO (dano): remove this when nameless can be configured with a unique port
-    final Path lockPath = Paths.get("/tmp/helios-test-nameless-lock");
-    try {
-      log.debug("Taking nameless lock: {}", lockPath);
-      lockFile = FileChannel.open(lockPath, CREATE, WRITE);
-      lock = lockFile.lock();
-    } catch (OverlappingFileLockException | IOException e) {
-      log.error("Failed to take nameless lock: {}", lockPath, e);
-      throw Throwables.propagate(e);
-    }
+    final String template = new String(Files.readAllBytes(CONFIG_TEMPLATE), UTF_8);
+    final SpotifyConfigNode config = SpotifyConfigNode.fromJSONString(template);
+    namelessPort = PortAllocator.allocatePort("nameless");
+    namelessEndpoint = "tcp://" + namelessHost + ":" + namelessPort;
+    config.set("hermes/address", "tcp://*:" + namelessPort);
+    configFile = Files.createTempFile("helios-nameless", ".conf");
+    Files.write(configFile, config.toString().getBytes(UTF_8));
+
+    namelessClient = new NamelessClient(hermesClient(namelessEndpoint));
 
     nameless = new Service();
-    nameless.start("--no-log-configuration");
+    nameless.start("--no-log-configuration", "--config=" + configFile);
   }
 
   @Override
@@ -55,11 +61,11 @@ public abstract class NamelessTestBase extends SystemTestBase {
     } catch (Exception e) {
       e.printStackTrace();
     }
-    if (lock != null)  {
-      lock.release();
+    if (configFile != null) {
+      FileUtils.deleteQuietly(configFile.toFile());
     }
-    if (lockFile != null) {
-      lockFile.close();
+    if (namelessClient != null) {
+      namelessClient.close();
     }
     super.teardown();
   }

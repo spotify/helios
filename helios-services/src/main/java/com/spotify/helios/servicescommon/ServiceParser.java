@@ -39,6 +39,10 @@ public class ServiceParser {
     parser.addArgument("-s", "--site")
         .help("backend site");
 
+    parser.addArgument("--nameless")
+        .type(String.class)
+        .help("nameless registry endpoint");
+
     parser.addArgument("--zk")
         .setDefault("localhost:2181")
         .help("zookeeper connection string");

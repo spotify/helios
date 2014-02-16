@@ -105,8 +105,9 @@ public class MasterService extends AbstractIdleService {
     final MasterModel model = new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(zooKeeperClient,
             new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics())));
-
-    if (config.getSite() != null) {
+    if (config.getNamelessEndpoint() != null) {
+      this.registrar = Nameless.newRegistrar(config.getNamelessEndpoint());
+    } else if (config.getSite() != null) {
       this.registrar = config.getSite().equals("localhost")
                        ? Nameless.newRegistrar("tcp://localhost:4999")
                        : Nameless.newRegistrarForDomain(config.getSite());

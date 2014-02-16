@@ -12,12 +12,10 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.nameless.api.EndpointFilter;
-import com.spotify.nameless.api.NamelessClient;
 import com.spotify.nameless.proto.Messages;
 
 import org.junit.Test;
 
-import java.net.URI;
 import java.util.List;
 import java.util.concurrent.Callable;
 
@@ -27,72 +25,25 @@ import static com.spotify.nameless.proto.Messages.RegistryEntry;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
-public class NamelessRegistrationTest extends NamelessTestBase {
-
-  // TODO (dano): there's two tests in here to keep them from running concurrently
+public class NamelessContainerRegistrationTest extends NamelessTestBase {
 
   @Test
-  public void masterTest() throws Exception {
-    startMaster("-vvvv",
-                "--no-log-setup",
-                "--site", "localhost",
-                "--http", masterEndpoint,
-                "--admin=" + masterAdminPort,
-                "--zk", zookeeperEndpoint);
-    final int masterPort = URI.create(masterEndpoint).getPort();
-
-    final NamelessClient client = new NamelessClient(hermesClient("tcp://localhost:4999"));
-
-    // Wait for the master to get registered with nameless
-    final List<RegistryEntry> entries = await(
-        LONG_WAIT_MINUTES, MINUTES, new Callable<List<RegistryEntry>>() {
-      @Override
-      public List<RegistryEntry> call() throws Exception {
-        List<RegistryEntry> entries = client.queryEndpoints(EndpointFilter.everything()).get();
-        return entries.size() == 1 ? entries : null;
-      }
-    });
-
-    client.close();
-
-    boolean httpFound = false;
-
-    for (RegistryEntry entry : entries) {
-      final Messages.Endpoint endpoint = entry.getEndpoint();
-      assertEquals("wrong service", "helios", endpoint.getService());
-      final String protocol = endpoint.getProtocol();
-
-      switch (protocol) {
-        case "http":
-          httpFound = true;
-          assertEquals("wrong port", endpoint.getPort(), masterPort);
-          break;
-        default:
-          fail("unknown protocol " + protocol);
-      }
-    }
-
-    assertTrue("missing http nameless entry", httpFound);
-  }
-
-  @Test
-  public void containerTest() throws Exception {
+  public void test() throws Exception {
     startDefaultMaster();
 
     final HeliosClient client = defaultClient();
 
-    startDefaultAgent(TEST_AGENT, "--site=localhost");
+    startDefaultAgent(TEST_AGENT, "--nameless=" + namelessEndpoint);
     awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
 
-    ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
+    final ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
         "PORT_NAME", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
 
     final String serviceName = "SERVICE";
     final String serviceProto = "PROTO";
 
-    ImmutableMap<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
+    final ImmutableMap<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
         ServiceEndpoint.of(serviceName, serviceProto), ServicePorts.of("PORT_NAME"));
 
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
@@ -101,7 +52,6 @@ public class NamelessRegistrationTest extends NamelessTestBase {
     deployJob(jobId, TEST_AGENT);
     awaitJobState(client, TEST_AGENT, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
-    final NamelessClient nameless = new NamelessClient(hermesClient("tcp://localhost:4999"));
     final EndpointFilter filter = EndpointFilter.newBuilder()
         .port(EXTERNAL_PORT)
         .protocol(serviceProto)
@@ -109,14 +59,14 @@ public class NamelessRegistrationTest extends NamelessTestBase {
         .build();
 
     // Wait for the container to get registered with nameless
-    final List<RegistryEntry> entries = await(LONG_WAIT_MINUTES, MINUTES, new Callable<List<RegistryEntry>>() {
+    final List<RegistryEntry> entries = await(
+        LONG_WAIT_MINUTES, MINUTES, new Callable<List<RegistryEntry>>() {
       @Override
       public List<RegistryEntry> call() throws Exception {
-        List<RegistryEntry> entries = nameless.queryEndpoints(filter).get();
+        List<RegistryEntry> entries = namelessClient.queryEndpoints(filter).get();
         return entries.size() == 1 ? entries : null;
       }
     });
-    nameless.close();
 
     assertTrue(entries.size() == 1);
     final RegistryEntry entry = entries.get(0);

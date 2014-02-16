@@ -213,7 +213,7 @@
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>nameless-registry</artifactId>
-      <version>0.2.7</version>
+      <version>0.2.8-20140214.080512-1</version>
       <scope>test</scope>
     </dependency>
     <dependency>

@@ -154,12 +154,14 @@ public class AgentService extends AbstractIdleService {
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
 
-    if (config.getSite() != null) {
-      namelessRegistrar = config.getSite().equals("localhost")
-                          ? Nameless.newRegistrar("tcp://localhost:4999")
-                  : Nameless.newRegistrarForDomain(config.getSite());
+    if (config.getNamelessEndpoint() != null) {
+      this.namelessRegistrar = Nameless.newRegistrar(config.getNamelessEndpoint());
+    } else if (config.getSite() != null) {
+      this.namelessRegistrar = config.getSite().equals("localhost")
+                               ? Nameless.newRegistrar("tcp://localhost:4999")
+                               : Nameless.newRegistrarForDomain(config.getSite());
     } else {
-      namelessRegistrar = null;
+      this.namelessRegistrar = null;
     }
 
     final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =

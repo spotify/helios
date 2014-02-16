@@ -61,7 +61,8 @@ public class AgentParser extends ServiceParser {
         .setRedirectToSyslog(options.getString("syslog_redirect_to"))
         .setStateDirectory(Paths.get(options.getString("state_dir")))
         .setStatsdHostPort(options.getString("statsd_host_port"))
-        .setRiemannHostPort(options.getString("riemann_host_port"));
+        .setRiemannHostPort(options.getString("riemann_host_port"))
+        .setNamelessEndpoint(options.getString("nameless"));
   }
 
   @Override
