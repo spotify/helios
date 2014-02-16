@@ -86,6 +86,11 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>com.soebes.maven.plugins</groupId>
+        <artifactId>maven-echo-plugin</artifactId>
+        <version>0.1</version>
+      </plugin>
+      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
         <version>2.2</version>
@@ -121,43 +126,6 @@
             <goals>
               <goal>shade</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>pl.project13.maven</groupId>
-        <artifactId>git-commit-id-plugin</artifactId>
-        <version>2.1.7</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>revision</goal>
-            </goals>
-            <phase>initialize</phase>
-          </execution>
-        </executions>
-        <configuration>
-          <dotGitDirectory>../.git</dotGitDirectory>
-          <gitDescribe>
-            <abbrev>7</abbrev>
-            <always>true</always>
-            <forceLongFormat>true</forceLongFormat>
-            <dirty>-DIRTY</dirty>
-          </gitDescribe>
-        </configuration>
-      </plugin>
-
-      <plugin>
-        <groupId>ru.concerteza.buildnumber</groupId>
-        <artifactId>maven-jgit-buildnumber-plugin</artifactId>
-        <version>1.2.7</version>
-        <executions>
-          <execution>
-            <id>git-buildnumber</id>
-            <goals>
-              <goal>extract-buildnumber</goal>
-            </goals>
-            <phase>initialize</phase>
           </execution>
         </executions>
       </plugin>
