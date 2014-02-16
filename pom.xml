@@ -132,8 +132,7 @@
             </executions>
             <configuration>
               <echos>
-                <echo>##teamcity[buildNumber
-                  '${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}']
+                <echo>##teamcity[buildNumber '${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}']
                 </echo>
               </echos>
             </configuration>
