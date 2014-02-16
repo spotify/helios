@@ -144,7 +144,7 @@
             </goals>
             <configuration>
               <deb>${project.build.directory}/spotify-helios_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
-              <controlDir>src/deb/spotify-helios</controlDir>
+              <controlDir>${project.parent.basedir}/src/deb/spotify-helios</controlDir>
               <dataSet>
                 <data>
                   <src>${project.build.directory}/${project.build.finalName}-shaded.jar</src>
