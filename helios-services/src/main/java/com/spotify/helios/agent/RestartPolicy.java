@@ -7,8 +7,7 @@ public class RestartPolicy {
   private static final long DEFAULT_FLAPPING_RESTART_THROTTLE_MILLIS = 30 * 1000;  // 30 seconds
   private static final long DEFAULT_RESTART_INTERVAL_MILLIS = 100;
   private static final long DEFAULT_RETRY_INTERVAL_MILLIS = 1000;
-  // This is infinity for practical purposes
-  private static final long IMAGE_NAME_INVALID_THROTTLE_MILLIS = 60 * 60 * 1000; // one hour
+  private static final long IMAGE_PULL_FAILED_THROTTLE_MILLIS = 30 * 1000; // 30 seconds
 
   private final long restartIntervalMillis;
   private final long flappingThrottleMillis;
@@ -36,7 +35,7 @@ public class RestartPolicy {
       case FLAPPING:
         return flappingThrottleMillis;
       case IMAGE_PULL_FAILED:
-        return IMAGE_NAME_INVALID_THROTTLE_MILLIS;
+        return IMAGE_PULL_FAILED_THROTTLE_MILLIS;
       default:
         break;
     }

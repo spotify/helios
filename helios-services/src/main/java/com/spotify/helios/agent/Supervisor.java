@@ -465,16 +465,14 @@ class Supervisor {
         final String image = job.getImage();
         try {
           maybePullImage(image);
+        } catch (ImagePullFailedException e) {
+          throttle = ThrottleState.IMAGE_PULL_FAILED;
+          setStatus(TaskStatus.State.FAILED, null);
+          throw e;
         } catch (ImageMissingException e) {
           throttle = ThrottleState.IMAGE_MISSING;
           setStatus(TaskStatus.State.FAILED, null);
-          resultFuture.setException(e);
-          return;
-        } catch (RuntimeException e) {
-          throttle = ThrottleState.IMAGE_PULL_FAILED;
-          setStatus(TaskStatus.State.FAILED, null);
-          resultFuture.setException(e);
-          return;
+          throw e;
         }
 
         // Create and start container if necessary
@@ -585,27 +583,28 @@ class Supervisor {
     }
 
     private void maybePullImage(final String image)
-        throws DockerException, InterruptedException, Exception {
+        throws DockerException, InterruptedException, ImagePullFailedException,
+               ImageMissingException {
       if (imageExists(image)) {
         metrics.imageCacheHit();
         return;
       }
-      MetricsContext context = metrics.containerPull();
-      PullClientResponse pull = null;
+      final MetricsContext context = metrics.containerPull();
+      final PullClientResponse response;
       try {
-        pull = docker.pull(image).get();
-        // Wait until image is completely pulled
-        pullStream = pull.getResponse().getEntityInputStream();
-        jsonTail("pull " + image, pullStream);
+        response = docker.pull(image).get();
         context.success();
       } catch (InterruptedException | ExecutionException e) {
         // may be overclassifying user errors as failures here
         context.failure();
-        throw e;
+        throw new ImagePullFailedException(e);
+      }
+      try {
+        // Wait until image is completely pulled
+        pullStream = response.getResponse().getEntityInputStream();
+        tailPull(image, pullStream);
       } finally {
-        if (pull != null) {
-          pull.close();
-        }
+        response.close();
       }
     }
 
@@ -724,11 +723,8 @@ class Supervisor {
     return null;
   }
 
-  /**
-   * Tail a json stream until it finishes.
-   */
-  private static void jsonTail(final String operation, final InputStream stream)
-      throws ImageMissingException {
+  private static void tailPull(final String image, final InputStream stream)
+      throws ImagePullFailedException, ImageMissingException {
 
     final MappingIterator<Map<String, Object>> messages;
     try {
@@ -740,16 +736,31 @@ class Supervisor {
     while (messages.hasNext()) {
       Map<String, Object> message = messages.next();
       final Object error = message.get("error");
-      if (error != null && error instanceof String && ((String) error).contains("404")) {
-        throw new ImageMissingException(message.toString());
+      if (error != null) {
+        if (error.toString().contains("404")) {
+          throw new ImageMissingException(message.toString());
+        } else {
+          throw new ImagePullFailedException(message.toString());
+        }
       }
-      log.info("{}: {}", operation, message);
+      log.info("pull {}: {}", image, message);
     }
   }
 
   private static class ImageMissingException extends Exception {
 
     private ImageMissingException(final String message) {
+      super(message);
+    }
+  }
+
+  private static class ImagePullFailedException extends Exception {
+
+    private ImagePullFailedException(final Throwable cause) {
+      super(cause);
+    }
+
+    private ImagePullFailedException(final String message) {
       super(message);
     }
   }
