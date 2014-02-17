@@ -695,6 +695,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new JobNotDeployedException(host, jobId);
     }
 
+    // TODO (dano): is this safe? can e.g. the ports of an undeployed job collide with a new deployment?
+
     updateDeployment(host, Deployment.of(jobId, Goal.UNDEPLOY));
     final List<ZooKeeperOperation> operations = Lists.newArrayList(
         delete(Paths.configJobHost(jobId, host)));
