@@ -19,7 +19,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.nameless.proto.Messages.RegistryEntry;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -34,8 +34,8 @@ public class NamelessContainerRegistrationTest extends NamelessTestBase {
 
     final HeliosClient client = defaultClient();
 
-    startDefaultAgent(TEST_AGENT, "--nameless=" + namelessEndpoint);
-    awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(TEST_HOST, "--nameless=" + namelessEndpoint);
+    awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     final ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
         "PORT_NAME", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
@@ -49,8 +49,8 @@ public class NamelessContainerRegistrationTest extends NamelessTestBase {
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
                                   EMPTY_ENV, portMapping, registration);
 
-    deployJob(jobId, TEST_AGENT);
-    awaitJobState(client, TEST_AGENT, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    deployJob(jobId, TEST_HOST);
+    awaitJobState(client, TEST_HOST, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
     final EndpointFilter filter = EndpointFilter.newBuilder()
         .port(EXTERNAL_PORT)

@@ -12,17 +12,17 @@ public class JobPortAllocationConflictException extends HeliosException {
 
   private final JobId id;
   private final JobId conflictingId;
-  private final String agent;
+  private final String host;
   private final int port;
 
   public JobPortAllocationConflictException(final JobId id, final JobId conflictingId,
-                                            final String agent, final int port) {
+                                            final String host, final int port) {
 
     super(format("Allocation of port %d for job %s collides with job %s on host %s",
-                 port, id, conflictingId, agent));
+                 port, id, conflictingId, host));
     this.id = id;
     this.conflictingId = conflictingId;
-    this.agent = agent;
+    this.host = host;
     this.port = port;
   }
 
@@ -34,8 +34,8 @@ public class JobPortAllocationConflictException extends HeliosException {
     return conflictingId;
   }
 
-  public String getAgent() {
-    return agent;
+  public String getHost() {
+    return host;
   }
 
   public int getPort() {

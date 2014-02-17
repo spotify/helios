@@ -24,7 +24,7 @@ public class SupervisorFactory {
   private final Map<String, String> envVars;
   private final NamelessRegistrar registrar;
   private final CommandWrapper commandWrapper;
-  private final String agentName;
+  private final String host;
   private final SupervisorMetrics metrics;
   private final RiemannFacade riemannFacade;
 
@@ -32,7 +32,7 @@ public class SupervisorFactory {
                            final Map<String, String> envVars,
                            final @Nullable NamelessRegistrar registrar,
                            final CommandWrapper commandWrapper,
-                           final String agentName,
+                           final String host,
                            final SupervisorMetrics supervisorMetrics,
                            final RiemannFacade riemannFacade) {
     this.dockerClientFactory = dockerClientFactory;
@@ -40,7 +40,7 @@ public class SupervisorFactory {
     this.envVars = checkNotNull(envVars);
     this.registrar = registrar;
     this.commandWrapper = commandWrapper;
-    this.agentName = agentName;
+    this.host = host;
     this.metrics = supervisorMetrics;
     this.riemannFacade = riemannFacade;
   }
@@ -63,7 +63,7 @@ public class SupervisorFactory {
         .build();
     final AsyncDockerClient dockerClient = new AsyncDockerClient(dockerClientFactory);
     return Supervisor.newBuilder()
-        .setAgentName(agentName)
+        .setAgentName(host)
         .setJobId(jobId)
         .setDescriptor(descriptor)
         .setModel(model)

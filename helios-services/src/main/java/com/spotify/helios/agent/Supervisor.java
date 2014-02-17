@@ -93,7 +93,7 @@ class Supervisor {
   private final TaskStatusManager stateManager;
   private final NamelessRegistrar registrar;
   private final CommandWrapper commandWrapper;
-  private final String agentName;
+  private final String host;
   private final SupervisorMetrics metrics;
   private final Reactor reactor;
   private final RiemannFacade riemannFacade;
@@ -111,7 +111,7 @@ class Supervisor {
    * @param model     The model to use.
    * @param envVars   Environment variables to expose to child containers.
    * @param registrar The Nameless registrar to register ports with.
-   * @param agentName
+   * @param host
    * @param metrics
    * @param riemannFacade
    */
@@ -120,7 +120,7 @@ class Supervisor {
                      final RestartPolicy restartPolicy, final Map<String, String> envVars,
                      final FlapController flapController, final TaskStatusManager stateManager,
                      final @Nullable NamelessRegistrar registrar,
-                     final CommandWrapper commandWrapper, final String agentName,
+                     final CommandWrapper commandWrapper, final String host,
                      final SupervisorMetrics metrics,
                      final RiemannFacade riemannFacade) {
     this.jobId = checkNotNull(jobId);
@@ -133,7 +133,7 @@ class Supervisor {
     this.stateManager = checkNotNull(stateManager);
     this.registrar = registrar;
     this.commandWrapper = checkNotNull(commandWrapper);
-    this.agentName = checkNotNull(agentName);
+    this.host = checkNotNull(host);
     this.metrics = checkNotNull(metrics);
     this.reactor = new DefaultReactor("supervisor-" + jobId, new Update(), SECONDS.toMillis(30));
     this.reactor.startAsync();
@@ -270,7 +270,7 @@ class Supervisor {
     containerConfig.setExposedPorts(containerExposedPorts(descriptor));
     containerConfig.setHostName(
         safeHostNameify(descriptor.getId().getName() + "_" + descriptor.getId().getVersion())
-        + "." + agentName);
+        + "." + host);
     return containerConfig;
   }
 

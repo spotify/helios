@@ -6,7 +6,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.util.concurrent.AbstractScheduledService;
 
-import com.spotify.helios.common.descriptors.RuntimeInfo;
+import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.servicescommon.NodeUpdaterFactory;
 import com.spotify.helios.servicescommon.ZooKeeperNodeUpdater;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class RuntimeInfoReporter extends AbstractScheduledService {
+public class AgentInfoReporter extends AbstractScheduledService {
 
   public static final int DEFAULT_INTERVAL = 1;
   public static final TimeUnit DEFAUL_TIMEUNIT = MINUTES;
@@ -27,17 +27,16 @@ public class RuntimeInfoReporter extends AbstractScheduledService {
   private final int interval;
   private final TimeUnit timeUnit;
 
-  RuntimeInfoReporter(final Builder builder) {
+  AgentInfoReporter(final Builder builder) {
     this.runtimeMXBean = checkNotNull(builder.runtimeMXBean);
-    this.nodeUpdater = builder.nodeUpdaterFactory.create(
-        Paths.statusAgentRuntimeInfo(builder.agent));
+    this.nodeUpdater = builder.nodeUpdaterFactory.create(Paths.statusHostAgentInfo(builder.host));
     this.interval = builder.interval;
     this.timeUnit = checkNotNull(builder.timeUnit);
   }
 
   @Override
   protected void runOneIteration() throws Exception {
-    final RuntimeInfo runtimeInfo = RuntimeInfo.newBuilder()
+    final AgentInfo agentInfo = AgentInfo.newBuilder()
         .setName(runtimeMXBean.getName())
         .setVmName(runtimeMXBean.getVmName())
         .setVmVendor(runtimeMXBean.getVmVendor())
@@ -50,7 +49,7 @@ public class RuntimeInfoReporter extends AbstractScheduledService {
         .setStartTime(runtimeMXBean.getStartTime())
         .build();
 
-    nodeUpdater.update(runtimeInfo.toJsonBytes());
+    nodeUpdater.update(agentInfo.toJsonBytes());
   }
 
   @Override
@@ -69,7 +68,7 @@ public class RuntimeInfoReporter extends AbstractScheduledService {
 
     private NodeUpdaterFactory nodeUpdaterFactory;
     private RuntimeMXBean runtimeMXBean;
-    private String agent;
+    private String host;
     private int interval = DEFAULT_INTERVAL;
     private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
 
@@ -84,8 +83,8 @@ public class RuntimeInfoReporter extends AbstractScheduledService {
       return this;
     }
 
-    public Builder setAgent(final String agent) {
-      this.agent = agent;
+    public Builder setHost(final String host) {
+      this.host = host;
       return this;
     }
 
@@ -99,8 +98,8 @@ public class RuntimeInfoReporter extends AbstractScheduledService {
       return this;
     }
 
-    public RuntimeInfoReporter build() {
-      return new RuntimeInfoReporter(this);
+    public AgentInfoReporter build() {
+      return new AgentInfoReporter(this);
     }
   }
 }

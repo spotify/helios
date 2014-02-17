@@ -21,7 +21,7 @@ import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
@@ -104,10 +104,10 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
   static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
 
   static final JobId BOGUS_JOB = new JobId("bogus", "job", Strings.repeat("0", 40));
-  static final String BOGUS_AGENT = "BOGUS_AGENT";
+  static final String BOGUS_HOST = "BOGUS_HOST";
 
   static final String TEST_USER = "test-user";
-  static final String TEST_AGENT = "test-agent";
+  static final String TEST_HOST = "test-host";
   static final String TEST_MASTER = "test-master";
 
   static final List<String> DO_NOTHING_COMMAND = asList("sh", "-c", "while :; do sleep 1; done");
@@ -371,23 +371,16 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     return JobId.fromString(jobId);
   }
 
-  void deployJob(final JobId jobId, final String agent)
+  void deployJob(final JobId jobId, final String host)
       throws Exception {
-    final String deployOutput = cli("job", "deploy", jobId.toString(), agent);
-    assertContains(agent + ": done", deployOutput);
+    final String deployOutput = cli("job", "deploy", jobId.toString(), host);
+    assertContains(host + ": done", deployOutput);
 
-    final String listOutput = cli("host", "jobs", "-q", agent);
+    final String listOutput = cli("host", "jobs", "-q", host);
     assertContains(jobId.toString(), listOutput);
   }
 
   void undeployJob(final JobId jobId, final String host) throws Exception {
-    final String bogusUndeployAgentWrong =
-        cli("job", "undeploy", jobId.toString(), BOGUS_AGENT);
-    assertContains("AGENT_NOT_FOUND", bogusUndeployAgentWrong);
-
-    final String bogusUndeployJobWrong = cli("job", "undeploy", BOGUS_JOB.toString(), host);
-    assertContains("Unknown job", bogusUndeployJobWrong);
-
     final String undeployOutput = cli("job", "undeploy", jobId.toString(), host);
     assertContains(host + ": done", undeployOutput);
 
@@ -395,16 +388,16 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     assertNotContains(jobId.toString(), listOutput);
   }
 
-  String startJob(final JobId jobId, final String agent) throws Exception {
-    return cli("job", "start", jobId.toString(), agent);
+  String startJob(final JobId jobId, final String host) throws Exception {
+    return cli("job", "start", jobId.toString(), host);
   }
 
-  String stopJob(final JobId jobId, final String agent) throws Exception {
-    return cli("job", "stop", jobId.toString(), agent);
+  String stopJob(final JobId jobId, final String host) throws Exception {
+    return cli("job", "stop", jobId.toString(), host);
   }
 
-  String deleteAgent(final String testAgent) throws Exception {
-    return cli("host", "deregister", testAgent, "--force");
+  String deregisterHost(final String host) throws Exception {
+    return cli("host", "deregister", host, "--force");
   }
 
   String cli(final String command, final String sub, final Object... args)
@@ -436,7 +429,7 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     return main(args.toArray(new String[args.size()]));
   }
 
-  void awaitAgentRegistered(final String name, final long timeout, final TimeUnit timeUnit)
+  void awaitHostRegistered(final String name, final long timeout, final TimeUnit timeUnit)
       throws Exception {
     await(timeout, timeUnit, new Callable<Object>() {
       @Override
@@ -447,80 +440,80 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     });
   }
 
-  AgentStatus awaitAgentStatus(final String name, final AgentStatus.Status status,
-                               final int timeout, final TimeUnit timeUnit) throws Exception {
-    return await(timeout, timeUnit, new Callable<AgentStatus>() {
+  HostStatus awaitHostStatus(final String name, final HostStatus.Status status,
+                             final int timeout, final TimeUnit timeUnit) throws Exception {
+    return await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
-      public AgentStatus call() throws Exception {
+      public HostStatus call() throws Exception {
         final String output = cli("host", "status", name, "--json");
-        final Map<String, AgentStatus> statuses = Json.read(
-            output, new TypeReference<Map<String, AgentStatus>>() {});
-        final AgentStatus agentStatus = statuses.get(name);
-        if (agentStatus == null) {
+        final Map<String, HostStatus> statuses = Json.read(
+            output, new TypeReference<Map<String, HostStatus>>() {});
+        final HostStatus hostStatus = statuses.get(name);
+        if (hostStatus == null) {
           return null;
         }
-        return (agentStatus.getStatus() == status) ? agentStatus : null;
+        return (hostStatus.getStatus() == status) ? hostStatus : null;
       }
     });
   }
 
-  TaskStatus awaitJobState(final HeliosClient client, final String slave,
+  TaskStatus awaitJobState(final HeliosClient client, final String host,
                            final JobId jobId,
                            final TaskStatus.State state, final int timeout,
                            final TimeUnit timeunit) throws Exception {
     return await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
-        final AgentStatus agentStatus = client.agentStatus(slave).get();
-        final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
+        final HostStatus hostStatus = client.hostStatus(host).get();
+        final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
         return (taskStatus != null && taskStatus.getState() == state) ? taskStatus
                                                                       : null;
       }
     });
   }
 
-  TaskStatus awaitJobThrottle(final HeliosClient client, final String slave,
+  TaskStatus awaitJobThrottle(final HeliosClient client, final String host,
                               final JobId jobId,
                               final ThrottleState throttled, final int timeout,
                               final TimeUnit timeunit) throws Exception {
     return await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
-        final AgentStatus agentStatus = client.agentStatus(slave).get();
-        final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
+        final HostStatus hostStatus = client.hostStatus(host).get();
+        final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
         return (taskStatus != null && taskStatus.getThrottled() == throttled) ? taskStatus : null;
       }
     });
   }
 
-  void awaitAgentRegistered(final HeliosClient client, final String slave,
-                            final int timeout,
-                            final TimeUnit timeUnit) throws Exception {
-    await(timeout, timeUnit, new Callable<AgentStatus>() {
+  void awaitHostRegistered(final HeliosClient client, final String host,
+                           final int timeout,
+                           final TimeUnit timeUnit) throws Exception {
+    await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
-      public AgentStatus call() throws Exception {
-        return client.agentStatus(slave).get();
+      public HostStatus call() throws Exception {
+        return client.hostStatus(host).get();
       }
     });
   }
 
-  AgentStatus awaitAgentStatus(final HeliosClient client, final String slave,
-                               final AgentStatus.Status status,
-                               final int timeout,
-                               final TimeUnit timeUnit) throws Exception {
-    return await(timeout, timeUnit, new Callable<AgentStatus>() {
+  HostStatus awaitHostStatus(final HeliosClient client, final String host,
+                             final HostStatus.Status status,
+                             final int timeout,
+                             final TimeUnit timeUnit) throws Exception {
+    return await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
-      public AgentStatus call() throws Exception {
-        final AgentStatus agentStatus = client.agentStatus(slave).get();
-        if (agentStatus == null) {
+      public HostStatus call() throws Exception {
+        final HostStatus hostStatus = client.hostStatus(host).get();
+        if (hostStatus == null) {
           return null;
         }
-        return (agentStatus.getStatus() == status) ? agentStatus : null;
+        return (hostStatus.getStatus() == status) ? hostStatus : null;
       }
     });
   }
 
-  TaskStatus awaitTaskState(final JobId jobId, final String agent,
+  TaskStatus awaitTaskState(final JobId jobId, final String host,
                             final TaskStatus.State state) throws Exception {
     long timeout = LONG_WAIT_MINUTES;
     TimeUnit timeUnit = MINUTES;
@@ -538,7 +531,7 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
         if (status == null) {
           return null;
         }
-        final TaskStatus taskStatus = status.getTaskStatuses().get(agent);
+        final TaskStatus taskStatus = status.getTaskStatuses().get(host);
         if (taskStatus == null) {
           return null;
         }
@@ -555,8 +548,8 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     await(timeout, timeunit, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
-        final AgentStatus agentStatus = client.agentStatus(host).get();
-        final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
+        final HostStatus hostStatus = client.hostStatus(host).get();
+        final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
         return taskStatus == null ? true : null;
       }
     });

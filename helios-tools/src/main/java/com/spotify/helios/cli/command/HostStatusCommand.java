@@ -9,7 +9,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.HostStatus;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -43,15 +43,15 @@ public class HostStatusCommand extends ControlCommand {
     List<String> hosts = options.getList(hostsArg.getDest());
 
     if (hosts.isEmpty()) {
-      hosts = client.listAgents().get();
+      hosts = client.listHosts().get();
     }
 
-    final Map<String, ListenableFuture<AgentStatus>> futures = Maps.newHashMap();
+    final Map<String, ListenableFuture<HostStatus>> futures = Maps.newHashMap();
     for (final String host : hosts) {
-      futures.put(host, client.agentStatus(host));
+      futures.put(host, client.hostStatus(host));
     }
 
-    final Map<String, AgentStatus> statuses = allAsMap(futures);
+    final Map<String, HostStatus> statuses = allAsMap(futures);
 
     out.println(Json.asPrettyStringUnchecked(statuses));
 

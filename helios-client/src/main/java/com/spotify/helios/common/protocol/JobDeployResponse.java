@@ -11,7 +11,7 @@ public class JobDeployResponse {
     OK,
     JOB_NOT_FOUND,
     PORT_CONFLICT,
-    AGENT_NOT_FOUND,
+    HOST_NOT_FOUND,
     JOB_ALREADY_DEPLOYED,
     ID_MISMATCH,
     INVALID_ID
@@ -19,14 +19,14 @@ public class JobDeployResponse {
 
   private final Status status;
   private final JobId job;
-  private final String agent;
+  private final String host;
 
   public JobDeployResponse(@JsonProperty("status") Status status,
-                           @JsonProperty("agent") String agent,
+                           @JsonProperty("host") String host,
                            @JsonProperty("job") JobId job) {
     this.status = status;
     this.job = job;
-    this.agent = agent;
+    this.host = host;
   }
 
   public Status getStatus() {
@@ -37,15 +37,15 @@ public class JobDeployResponse {
     return job;
   }
 
-  public String getAgent() {
-    return agent;
+  public String getHost() {
+    return host;
   }
 
   @Override
   public String toString() {
     return Objects.toStringHelper("JobDeployResponse")
         .add("status", status)
-        .add("agent", agent)
+        .add("host", host)
         .add("job", job)
         .toString();
   }

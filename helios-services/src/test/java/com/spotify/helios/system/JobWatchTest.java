@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertTrue;
 
@@ -31,8 +31,8 @@ public class JobWatchTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(TEST_AGENT);
-    awaitAgentStatus(TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(TEST_HOST);
+    awaitHostStatus(TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
@@ -40,7 +40,7 @@ public class JobWatchTest extends SystemTestBase {
                                                   "BAR", "deadbeef"));
 
     // deploy
-    deployJob(jobId, TEST_AGENT);
+    deployJob(jobId, TEST_HOST);
 
     final String[] commands = new String[]{"job", "watch", "-z", masterEndpoint,
                                            "--no-log-setup", jobId.toString()};
@@ -71,7 +71,7 @@ public class JobWatchTest extends SystemTestBase {
         outputLines.add(line);
         counter = 0;
 
-        if (line.contains(TEST_AGENT) && !line.contains("UNKNOWN")) {
+        if (line.contains(TEST_HOST) && !line.contains("UNKNOWN")) {
           success.set(true);
           throw new IOException("output closed");
         }

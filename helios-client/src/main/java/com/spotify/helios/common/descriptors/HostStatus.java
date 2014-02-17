@@ -17,7 +17,7 @@ import java.util.Map.Entry;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
-public class AgentStatus extends Descriptor {
+public class HostStatus extends Descriptor {
 
   public static enum Status {
     UP,
@@ -26,24 +26,24 @@ public class AgentStatus extends Descriptor {
 
   private final Status status;
   private final HostInfo hostInfo;
-  private final RuntimeInfo runtimeInfo;
+  private final AgentInfo agentInfo;
   private final Map<JobId, Deployment> jobs;
   private final Map<JobId, TaskStatus> statuses;
   private final Map<String, String> environment;
 
-  public AgentStatus(@JsonProperty("jobs") final Map<JobId, Deployment> jobs,
-                     @JsonProperty("statuses") final Map<JobId, TaskStatus> statuses,
-                     @JsonProperty("status") final Status status,
-                     @JsonProperty("hostInfo") final HostInfo hostInfo,
-                     @JsonProperty("runtimeInfo") final RuntimeInfo runtimeInfo,
-                     @JsonProperty("environment") final Map<String, String> environment) {
+  public HostStatus(@JsonProperty("jobs") final Map<JobId, Deployment> jobs,
+                    @JsonProperty("statuses") final Map<JobId, TaskStatus> statuses,
+                    @JsonProperty("status") final Status status,
+                    @JsonProperty("hostInfo") final HostInfo hostInfo,
+                    @JsonProperty("agentInfo") final AgentInfo agentInfo,
+                    @JsonProperty("environment") final Map<String, String> environment) {
     this.status = checkNotNull(status, "status");
     this.jobs = checkNotNull(jobs, "jobs");
     this.statuses = checkNotNull(statuses, "statuses");
 
     // Host, runtime info and environment might not be available
     this.hostInfo = hostInfo;
-    this.runtimeInfo = runtimeInfo;
+    this.agentInfo = agentInfo;
     this.environment = environment;
   }
 
@@ -61,8 +61,8 @@ public class AgentStatus extends Descriptor {
   }
 
   @Nullable
-  public RuntimeInfo getRuntimeInfo() {
-    return runtimeInfo;
+  public AgentInfo getAgentInfo() {
+    return agentInfo;
   }
 
   public Map<JobId, Deployment> getJobs() {
@@ -83,7 +83,7 @@ public class AgentStatus extends Descriptor {
     private Map<JobId, TaskStatus> statuses;
     private Status status;
     private HostInfo hostInfo;
-    private RuntimeInfo runtimeInfo;
+    private AgentInfo agentInfo;
     private Map<String, String> environment;
 
     public Builder setJobs(final Map<JobId, Deployment> jobs) {
@@ -106,8 +106,8 @@ public class AgentStatus extends Descriptor {
       return this;
     }
 
-    public Builder setRuntimeInfo(final RuntimeInfo runtimeInfo) {
-      this.runtimeInfo = runtimeInfo;
+    public Builder setAgentInfo(final AgentInfo agentInfo) {
+      this.agentInfo = agentInfo;
       return this;
     }
 
@@ -116,8 +116,8 @@ public class AgentStatus extends Descriptor {
       return this;
     }
 
-    public AgentStatus build() {
-      return new AgentStatus(jobs, statuses, status, hostInfo, runtimeInfo, environment);
+    public HostStatus build() {
+      return new HostStatus(jobs, statuses, status, hostInfo, agentInfo, environment);
     }
   }
 
@@ -130,7 +130,7 @@ public class AgentStatus extends Descriptor {
       return false;
     }
 
-    final AgentStatus that = (AgentStatus) o;
+    final HostStatus that = (HostStatus) o;
 
     if (hostInfo != null ? !hostInfo.equals(that.hostInfo) : that.hostInfo != null) {
       return false;
@@ -138,7 +138,7 @@ public class AgentStatus extends Descriptor {
     if (jobs != null ? !jobs.equals(that.jobs) : that.jobs != null) {
       return false;
     }
-    if (runtimeInfo != null ? !runtimeInfo.equals(that.runtimeInfo) : that.runtimeInfo != null) {
+    if (agentInfo != null ? !agentInfo.equals(that.agentInfo) : that.agentInfo != null) {
       return false;
     }
     if (status != that.status) {
@@ -158,7 +158,7 @@ public class AgentStatus extends Descriptor {
   public int hashCode() {
     int result = status != null ? status.hashCode() : 0;
     result = 31 * result + (hostInfo != null ? hostInfo.hashCode() : 0);
-    result = 31 * result + (runtimeInfo != null ? runtimeInfo.hashCode() : 0);
+    result = 31 * result + (agentInfo != null ? agentInfo.hashCode() : 0);
     result = 31 * result + (jobs != null ? jobs.hashCode() : 0);
     result = 31 * result + (statuses != null ? statuses.hashCode() : 0);
     result = 31 * result + (environment != null ? environment.hashCode() : 0);
@@ -174,10 +174,10 @@ public class AgentStatus extends Descriptor {
             return entry.getKey() + "=" + entry.getValue();
           }
         }));
-    return "AgentStatus{" +
+    return "HostStatus{" +
            "status=" + status +
            ", hostInfo=" + hostInfo +
-           ", runtimeInfo=" + runtimeInfo +
+           ", agentInfo=" + agentInfo +
            ", jobs=" + jobs +
            ", statuses=" + statuses +
            ", environment={" + strEnv + "}" +

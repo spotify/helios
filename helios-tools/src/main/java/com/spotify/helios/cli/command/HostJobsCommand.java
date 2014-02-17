@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -65,16 +65,16 @@ public class HostJobsCommand extends ControlCommand {
     final boolean full = options.getBoolean(fullArg.getDest());
     final boolean quiet = options.getBoolean(quietArg.getDest());
 
-    final Map<String, ListenableFuture<AgentStatus>> futures = Maps.newHashMap();
+    final Map<String, ListenableFuture<HostStatus>> futures = Maps.newHashMap();
     for (final String host : hosts) {
-      futures.put(host, client.agentStatus(host));
+      futures.put(host, client.hostStatus(host));
     }
-    final Map<String, AgentStatus> statuses = allAsMap(futures);
+    final Map<String, HostStatus> statuses = allAsMap(futures);
 
     if (quiet) {
       final Set<JobId> sortedUnion = Sets.newTreeSet();
-      for (final AgentStatus agentStatus : statuses.values()) {
-        sortedUnion.addAll(agentStatus.getJobs().keySet());
+      for (final HostStatus hostStatus : statuses.values()) {
+        sortedUnion.addAll(hostStatus.getJobs().keySet());
       }
       if (json) {
         out.println(Json.asPrettyStringUnchecked(sortedUnion));
@@ -90,15 +90,15 @@ public class HostJobsCommand extends ControlCommand {
         final Table table = table(out);
         table.row("HOST", "JOB ID", "NAME", "VERSION", "GOAL", "STATE");
         for (final String host : statuses.keySet()) {
-          final AgentStatus agentStatus = statuses.get(host);
-          if (agentStatus == null) {
+          final HostStatus hostStatus = statuses.get(host);
+          if (hostStatus == null) {
             continue;
           }
-          final Set<JobId> jobIds = agentStatus.getJobs().keySet();
+          final Set<JobId> jobIds = hostStatus.getJobs().keySet();
           final List<JobId> sortedJobIds = natural().sortedCopy(jobIds);
           for (final JobId jobId : sortedJobIds) {
-            final Goal goal = agentStatus.getJobs().get(jobId).getGoal();
-            final Map<JobId, TaskStatus> taskStatuses = agentStatus.getStatuses();
+            final Goal goal = hostStatus.getJobs().get(jobId).getGoal();
+            final Map<JobId, TaskStatus> taskStatuses = hostStatus.getStatuses();
             final TaskStatus taskStatus = taskStatuses.get(jobId);
             final TaskStatus.State state = taskStatus == null ? UNKNOWN : taskStatus.getState();
             table.row(host, full ? jobId : jobId.toShortString(), jobId.getName(),

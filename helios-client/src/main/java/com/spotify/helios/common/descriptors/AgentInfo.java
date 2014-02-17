@@ -8,7 +8,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
-public class RuntimeInfo extends Descriptor {
+public class AgentInfo extends Descriptor {
 
   private final String name;
   private final String vmName;
@@ -21,16 +21,16 @@ public class RuntimeInfo extends Descriptor {
   private final long uptime;
   private final long startTime;
 
-  public RuntimeInfo(@JsonProperty("name") final String name,
-                     @JsonProperty("vmName") final String vmName,
-                     @JsonProperty("vmVendor") final String vmVendor,
-                     @JsonProperty("vmVersion") final String vmVersion,
-                     @JsonProperty("specName") final String specName,
-                     @JsonProperty("specVendor") final String specVendor,
-                     @JsonProperty("specVersion") final String specVersion,
-                     @JsonProperty("inputArguments") final List<String> inputArguments,
-                     @JsonProperty("uptime") final long uptime,
-                     @JsonProperty("startTime") final long startTime) {
+  public AgentInfo(@JsonProperty("name") final String name,
+                   @JsonProperty("vmName") final String vmName,
+                   @JsonProperty("vmVendor") final String vmVendor,
+                   @JsonProperty("vmVersion") final String vmVersion,
+                   @JsonProperty("specName") final String specName,
+                   @JsonProperty("specVendor") final String specVendor,
+                   @JsonProperty("specVersion") final String specVersion,
+                   @JsonProperty("inputArguments") final List<String> inputArguments,
+                   @JsonProperty("uptime") final long uptime,
+                   @JsonProperty("startTime") final long startTime) {
     this.name = name;
     this.vmName = vmName;
     this.vmVendor = vmVendor;
@@ -43,7 +43,7 @@ public class RuntimeInfo extends Descriptor {
     this.startTime = startTime;
   }
 
-  public RuntimeInfo(final Builder builder) {
+  public AgentInfo(final Builder builder) {
     this.name = builder.name;
     this.vmName = builder.vmName;
     this.vmVendor = builder.vmVendor;
@@ -105,7 +105,7 @@ public class RuntimeInfo extends Descriptor {
       return false;
     }
 
-    final RuntimeInfo that = (RuntimeInfo) o;
+    final AgentInfo that = (AgentInfo) o;
 
     if (startTime != that.startTime) {
       return false;
@@ -159,7 +159,7 @@ public class RuntimeInfo extends Descriptor {
 
   @Override
   public String toString() {
-    return "RuntimeInfo{" +
+    return "AgentInfo{" +
            "name='" + name + '\'' +
            ", vmName='" + vmName + '\'' +
            ", vmVendor='" + vmVendor + '\'' +
@@ -240,8 +240,8 @@ public class RuntimeInfo extends Descriptor {
       return this;
     }
 
-    public RuntimeInfo build() {
-      return new RuntimeInfo(this);
+    public AgentInfo build() {
+      return new AgentInfo(this);
     }
   }
 }

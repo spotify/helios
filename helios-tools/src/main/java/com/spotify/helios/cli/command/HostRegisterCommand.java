@@ -37,7 +37,7 @@ public class HostRegisterCommand extends ControlCommand {
     int code = 0;
     for (final String host : hosts) {
       out.printf("%s: ", host);
-      final int result = client.registerAgent(host).get();
+      final int result = client.registerHost(host).get();
       if (result == 200) {
         out.printf("done%n");
       } else {

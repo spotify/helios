@@ -6,7 +6,7 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
-import com.spotify.helios.common.JobStillInUseException;
+import com.spotify.helios.common.JobStillDeployedException;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -140,7 +140,7 @@ public class JobsResource {
       return new JobDeleteResponse(JobDeleteResponse.Status.OK);
     } catch (JobDoesNotExistException e) {
       throw notFound();
-    } catch (JobStillInUseException e) {
+    } catch (JobStillDeployedException e) {
       throw badRequest(new JobDeleteResponse(JobDeleteResponse.Status.STILL_IN_USE));
     }
   }

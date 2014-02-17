@@ -8,18 +8,18 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 public class TaskStatusEvent {
   private final TaskStatus status;
   private final long timestamp;
-  private final String agent;
+  private final String host;
 
   public TaskStatusEvent(@JsonProperty("status") final TaskStatus status,
                          @JsonProperty("timestamp") final long timestamp,
-                         @JsonProperty("agent") final String agent) {
+                         @JsonProperty("host") final String host) {
     this.status = status;
     this.timestamp = timestamp;
-    this.agent = agent;
+    this.host = host;
   }
 
-  public String getAgent() {
-    return agent;
+  public String getHost() {
+    return host;
   }
 
   public TaskStatus getStatus() {
@@ -34,7 +34,7 @@ public class TaskStatusEvent {
   public String toString() {
     return Objects.toStringHelper(TaskStatusEvent.class)
         .add("timestamp", timestamp)
-        .add("agent", agent)
+        .add("host", host)
         .add("status", status)
         .toString();
   }

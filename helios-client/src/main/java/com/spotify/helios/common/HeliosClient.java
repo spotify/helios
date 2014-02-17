@@ -20,11 +20,11 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
-import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.protocol.AgentDeleteResponse;
+import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
@@ -312,16 +312,16 @@ public class HeliosClient {
                      });
   }
 
-  public ListenableFuture<Deployment> stat(final String agent, final JobId job) {
-    return get(uri(path("/hosts/%s/jobs/%s", agent, job)), Deployment.class);
+  public ListenableFuture<Deployment> deployment(final String host, final JobId job) {
+    return get(uri(path("/hosts/%s/jobs/%s", host, job)), Deployment.class);
   }
 
-  public ListenableFuture<AgentStatus> agentStatus(final String agent) {
-    return get(uri(path("/hosts/%s/status", agent)), AgentStatus.class);
+  public ListenableFuture<HostStatus> hostStatus(final String host) {
+    return get(uri(path("/hosts/%s/status", host)), HostStatus.class);
   }
 
-  public ListenableFuture<Integer> registerAgent(final String agent) {
-    return put(uri(path("/hosts/%s", agent)));
+  public ListenableFuture<Integer> registerHost(final String host) {
+    return put(uri(path("/hosts/%s", host)));
   }
 
   public ListenableFuture<JobDeleteResponse> deleteJob(final JobId id) {
@@ -336,13 +336,13 @@ public class HeliosClient {
                                                   ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
   }
 
-  public ListenableFuture<AgentDeleteResponse> deleteAgent(final String host) {
+  public ListenableFuture<HostDeregisterResponse> deregisterHost(final String host) {
     return transform(request(uri(path("/hosts/%s", host)), "DELETE"),
-                     ConvertResponseToPojo.create(AgentDeleteResponse.class,
+                     ConvertResponseToPojo.create(HostDeregisterResponse.class,
                                                   ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
   }
 
-  public ListenableFuture<List<String>> listAgents() {
+  public ListenableFuture<List<String>> listHosts() {
     return get(uri("/hosts/"), new TypeReference<List<String>>() {});
   }
 

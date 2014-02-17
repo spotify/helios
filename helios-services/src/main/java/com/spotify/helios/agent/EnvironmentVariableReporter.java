@@ -15,15 +15,15 @@ public class EnvironmentVariableReporter extends AbstractScheduledService {
 
   private static final int RETRY_INTERVAL_MILLIS = 1000;
 
-  final String agent;
+  final String host;
   private final Map<String, String> envVars;
   private final ZooKeeperNodeUpdater nodeUpdater;
 
-  public EnvironmentVariableReporter(final String agent, final Map<String, String> envVars,
+  public EnvironmentVariableReporter(final String host, final Map<String, String> envVars,
                                      final NodeUpdaterFactory nodeUpdaterFactory) {
     this.envVars = envVars;
-    this.agent = agent;
-    this.nodeUpdater = nodeUpdaterFactory.create(Paths.statusAgentEnvVars(agent));
+    this.host = host;
+    this.nodeUpdater = nodeUpdaterFactory.create(Paths.statusHostEnvVars(host));
   }
 
 

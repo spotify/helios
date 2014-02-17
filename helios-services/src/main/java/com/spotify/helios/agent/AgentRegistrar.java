@@ -60,19 +60,19 @@ public class AgentRegistrar extends AbstractIdleService {
     @Override
     public void run() {
       try {
-        final String idPath = Paths.configAgentId(name);
+        final String idPath = Paths.configHostId(name);
 
         final Stat stat = client.exists(idPath);
         if (stat == null) {
           // This would've been nice to do in a transaction but PathChildrenCache ensures paths
           // so we can't know what paths already exist so assembling a suitable transaction is too
           // painful.
-          client.ensurePath(Paths.configAgent(name));
-          client.ensurePath(Paths.configAgent(name));
-          client.ensurePath(Paths.configAgentJobs(name));
-          client.ensurePath(Paths.configAgentPorts(name));
-          client.ensurePath(Paths.statusAgent(name));
-          client.ensurePath(Paths.statusAgentJobs(name));
+          client.ensurePath(Paths.configHost(name));
+          client.ensurePath(Paths.configHost(name));
+          client.ensurePath(Paths.configHostJobs(name));
+          client.ensurePath(Paths.configHostPorts(name));
+          client.ensurePath(Paths.statusHost(name));
+          client.ensurePath(Paths.statusHostJobs(name));
 
           // Finish registration by creating the id node last
           client.createAndSetData(idPath, id.getBytes(UTF_8));

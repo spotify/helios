@@ -10,20 +10,20 @@ public class JobUndeployResponse {
   public enum Status {
     OK,
     JOB_NOT_FOUND,
-    AGENT_NOT_FOUND,
+    HOST_NOT_FOUND,
     INVALID_ID
   }
 
   private final Status status;
   private final JobId job;
-  private final String agent;
+  private final String host;
 
   public JobUndeployResponse(@JsonProperty("status") Status status,
-                             @JsonProperty("agent") String agent,
+                             @JsonProperty("host") String host,
                              @JsonProperty("job") JobId job) {
     this.status = status;
     this.job = job;
-    this.agent = agent;
+    this.host = host;
   }
 
   public Status getStatus() {
@@ -34,15 +34,15 @@ public class JobUndeployResponse {
     return job;
   }
 
-  public String getAgent() {
-    return agent;
+  public String getHost() {
+    return host;
   }
 
   @Override
   public String toString() {
     return Objects.toStringHelper("JobDeployResponse")
         .add("status", status)
-        .add("agent", agent)
+        .add("host", host)
         .add("job", job)
         .toString();
   }

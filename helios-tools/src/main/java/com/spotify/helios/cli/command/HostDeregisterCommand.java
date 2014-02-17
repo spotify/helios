@@ -1,7 +1,7 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.common.HeliosClient;
-import com.spotify.helios.common.protocol.AgentDeleteResponse;
+import com.spotify.helios.common.protocol.HostDeregisterResponse;
 
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Argument;
@@ -52,9 +52,9 @@ public class HostDeregisterCommand extends ControlCommand {
 
     int code = 0;
 
-    final AgentDeleteResponse response = client.deleteAgent(host).get();
+    final HostDeregisterResponse response = client.deregisterHost(host).get();
     out.printf("%s: ", host);
-    if (response.getStatus() == AgentDeleteResponse.Status.OK) {
+    if (response.getStatus() == HostDeregisterResponse.Status.OK) {
       out.printf("done%n");
     } else {
       out.printf("failed: %s%n", response);

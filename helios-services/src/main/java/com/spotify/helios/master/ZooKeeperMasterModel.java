@@ -9,31 +9,28 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.helios.common.AgentDoesNotExistException;
-import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.HeliosRuntimeException;
+import com.spotify.helios.common.HostNotFoundException;
 import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.JobPortAllocationConflictException;
-import com.spotify.helios.common.JobStillInUseException;
+import com.spotify.helios.common.JobStillDeployedException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.Descriptor;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostInfo;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.common.descriptors.RuntimeInfo;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobStatus;
@@ -53,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -60,16 +58,17 @@ import java.util.Map.Entry;
 
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.collect.Lists.reverse;
-import static com.spotify.helios.common.descriptors.AgentStatus.Status.DOWN;
-import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.check;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static org.apache.zookeeper.KeeperException.NotEmptyException;
 
 public class ZooKeeperMasterModel implements MasterModel {
 
@@ -100,76 +99,72 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public void addAgent(final String agent) {
-    log.debug("adding agent: {}", agent);
-    final ZooKeeperClient client = provider.get("addAgent");
+  public void registerHost(final String host) {
+    log.debug("registering host: {}", host);
+    final ZooKeeperClient client = provider.get("registerHost");
     try {
       // TODO (dano): this code is replicated in AgentRegistrar
 
       // This would've been nice to do in a transaction but PathChildrenCache ensures paths
       // so we can't know what paths already exist so assembling a suitable transaction is too
       // painful.
-      client.ensurePath(Paths.configAgent(agent));
-      client.ensurePath(Paths.configAgent(agent));
-      client.ensurePath(Paths.configAgentJobs(agent));
-      client.ensurePath(Paths.configAgentPorts(agent));
-      client.ensurePath(Paths.statusAgent(agent));
-      client.ensurePath(Paths.statusAgentJobs(agent));
+      client.ensurePath(Paths.configHost(host));
+      client.ensurePath(Paths.configHost(host));
+      client.ensurePath(Paths.configHostJobs(host));
+      client.ensurePath(Paths.configHostPorts(host));
+      client.ensurePath(Paths.statusHost(host));
+      client.ensurePath(Paths.statusHostJobs(host));
 
       // Finish registration by creating the id node last
-      client.ensurePath(Paths.configAgentId(agent));
+      client.ensurePath(Paths.configHostId(host));
     } catch (Exception e) {
-      throw new HeliosRuntimeException("adding agent " + agent + " failed", e);
+      throw new HeliosRuntimeException("registering host " + host + " failed", e);
     }
   }
 
   @Override
-  public List<String> getAgents() {
+  public List<String> listHosts() {
     try {
-      return provider.get("getAgents").getChildren(Paths.configAgents());
+      return provider.get("listHosts").getChildren(Paths.configHosts());
     } catch (KeeperException.NoNodeException e) {
       return emptyList();
     } catch (KeeperException e) {
-      throw new HeliosRuntimeException("listing agents failed", e);
+      throw new HeliosRuntimeException("listing hosts failed", e);
     }
   }
 
   @Override
-  public ImmutableList<String> getRunningMasters() {
+  public List<String> getRunningMasters() {
+    final ZooKeeperClient client = provider.get("getRunningMasters");
     try {
-      return ImmutableList.copyOf(
-          Iterables.filter(provider.get("getRunningMasters").getChildren(Paths.statusMaster()),
-                           new Predicate<String>() {
-                             @Override
-                             public boolean apply(String masterName) {
-                               return loadMasterUp(masterName);
-                             }
-                           }));
-    } catch (KeeperException.NoNodeException e) {
-      return ImmutableList.of();
+      final List<String> masters = client.getChildren(Paths.statusMaster());
+      final ImmutableList.Builder<String> upMasters = ImmutableList.builder();
+      for (final String master : masters) {
+        if (client.exists(Paths.statusMasterUp(master)) != null) {
+          upMasters.add(master);
+        }
+      }
+      return upMasters.build();
     } catch (KeeperException e) {
       throw new HeliosRuntimeException("listing masters failed", e);
     }
   }
 
-  private boolean loadMasterUp(String master) {
-    try {
-      provider.get("loadMasterUp").getData(Paths.statusMasterUp(master));
-      return true;
-    } catch (KeeperException e) {
-      return false;
-    }
-  }
-
   @Override
-  public void removeAgent(final String agent) throws AgentDoesNotExistException {
+  public void deregisterHost(final String host)
+      throws HostNotFoundException, HostStillInUseException {
     try {
-      // TODO (dano): This might fail in a race with someone concurrently deploying jobs to this agent. Do we care?
-      final ZooKeeperClient client = provider.get("removeAgent");
-      final List<String> nodes = reverse(client.listRecursive(Paths.configAgent(agent)));
+      final ZooKeeperClient client = provider.get("deregisterHost");
+      final List<String> nodes = reverse(client.listRecursive(Paths.configHost(host)));
       client.transaction(delete(nodes));
+    } catch (NotEmptyException e) {
+      final HostStatus hostStatus = getHostStatus(host);
+      final List<JobId> jobs = hostStatus != null
+                               ? ImmutableList.copyOf(hostStatus.getJobs().keySet())
+                               : Collections.<JobId>emptyList();
+      throw new HostStillInUseException(host, jobs);
     } catch (NoNodeException e) {
-      throw new AgentDoesNotExistException(agent);
+      throw new HostNotFoundException(host);
     } catch (KeeperException e) {
       throw new HeliosRuntimeException(e);
     }
@@ -184,7 +179,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       client.ensurePath(Paths.historyJob(id));
       client.transaction(create(Paths.configJob(id), job),
                          create(Paths.configJobRefShort(id), id),
-                         create(Paths.configJobAgents(id)));
+                         create(Paths.configJobHosts(id)));
     } catch (final NodeExistsException e) {
       throw new JobExistsException(id.toString());
     } catch (final KeeperException e) {
@@ -199,31 +194,31 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new JobDoesNotExistException(jobId);
     }
     final ZooKeeperClient client = provider.get("getJobHistory");
-    final List<String> agents;
+    final List<String> hosts;
     try {
-      agents = client.getChildren(Paths.historyJobAgents(jobId));
+      hosts = client.getChildren(Paths.historyJobHosts(jobId));
     } catch (NoNodeException e) {
-      return ImmutableList.<TaskStatusEvent>of();
+      return emptyList();
     } catch (KeeperException e) {
       throw Throwables.propagate(e);
     }
 
     final List<TaskStatusEvent> jsEvents = Lists.newArrayList();
 
-    for (String agent : agents) {
+    for (String host : hosts) {
       final List<String> events;
       try {
-        events = client.getChildren(Paths.historyJobAgentEvents(jobId, agent));
+        events = client.getChildren(Paths.historyJobHostEvents(jobId, host));
       } catch (KeeperException e) {
         throw Throwables.propagate(e);
       }
 
       for (String event : events) {
         try {
-          byte[] data = client.getData(Paths.historyJobAgentEventsTimestamp(
-              jobId, agent, Long.valueOf(event)));
+          byte[] data = client.getData(Paths.historyJobHostEventsTimestamp(
+              jobId, host, Long.valueOf(event)));
           final TaskStatus status = Json.read(data, TaskStatus.class);
-          jsEvents.add(new TaskStatusEvent(status, Long.valueOf(event), agent));
+          jsEvents.add(new TaskStatusEvent(status, Long.valueOf(event), host));
         } catch (KeeperException | IOException e) {
           throw Throwables.propagate(e);
         }
@@ -236,11 +231,15 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public Job getJob(final JobId id) {
     log.debug("getting job: {}", id);
-    final String path = Paths.configJob(id);
     final ZooKeeperClient client = provider.get("getJob");
+    return getJob(client, id);
+  }
+
+  private Job getJob(final ZooKeeperClient client, final JobId id) {
+    final String path = Paths.configJob(id);
     try {
       final byte[] data = client.getData(path);
-      return Descriptor.parse(data, Job.class);
+      return Json.read(data, Job.class);
     } catch (NoNodeException e) {
       // Return null to indicate that the job does not exist
       return null;
@@ -277,62 +276,62 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   @Override
   public JobStatus getJobStatus(final JobId jobId) {
-    final Job job = getJob(jobId);
+    final ZooKeeperClient client = provider.get("getJobStatus");
+
+    final Job job = getJob(client, jobId);
     if (job == null) {
       return null;
     }
 
-    final List<String> agents;
+    final List<String> hosts;
     try {
-      // TODO (dano): this will list all agents that the job is deployed to, maybe we should list all agents that are reporting that they are running this job
-      agents = listJobAgents(jobId);
+      // TODO (dano): this will list all hosts that the job is deployed to, maybe we should list all hosts that are reporting that they are running this job
+      hosts = listJobHosts(client, jobId);
     } catch (JobDoesNotExistException e) {
       return null;
     }
 
     final ImmutableMap.Builder<String, TaskStatus> taskStatuses = ImmutableMap.builder();
-    for (final String agent : agents) {
-      final TaskStatus taskStatus = getTaskStatus(agent, jobId);
+    for (final String host : hosts) {
+      final TaskStatus taskStatus = getTaskStatus(client, host, jobId);
       if (taskStatus != null) {
-        taskStatuses.put(agent, taskStatus);
+        taskStatuses.put(host, taskStatus);
       }
     }
 
     return JobStatus.newBuilder()
         .setJob(job)
-        .setDeployedHosts(ImmutableSet.copyOf(agents))
+        .setDeployedHosts(ImmutableSet.copyOf(hosts))
         .setTaskStatuses(taskStatuses.build())
         .build();
   }
 
-  private List<String> listJobAgents(final JobId jobId) throws JobDoesNotExistException {
-    final List<String> agents;
-    final String agentsPath = Paths.configJobAgents(jobId);
-    final ZooKeeperClient client = provider.get("listJobAgents");
+  private List<String> listJobHosts(final ZooKeeperClient client, final JobId jobId)
+      throws JobDoesNotExistException {
+    final List<String> hosts;
     try {
-      agents = client.getChildren(agentsPath);
+      hosts = client.getChildren(Paths.configJobHosts(jobId));
     } catch (NoNodeException e) {
       throw new JobDoesNotExistException(jobId);
     } catch (KeeperException e) {
-      throw new HeliosRuntimeException("failed listing agents for job: " + jobId, e);
+      throw new HeliosRuntimeException("failed to list hosts for job: " + jobId, e);
     }
-    return agents;
+    return hosts;
   }
 
   @Override
-  public Job removeJob(final JobId id) throws JobDoesNotExistException, JobStillInUseException {
+  public Job removeJob(final JobId id) throws JobDoesNotExistException, JobStillDeployedException {
     log.debug("removing job: id={}", id);
     final Job old = getJob(id);
     final ZooKeeperClient client = provider.get("removeJob");
     try {
-      client.transaction(delete(Paths.configJobAgents(id)),
+      client.transaction(delete(Paths.configJobHosts(id)),
                          delete(Paths.configJobRefShort(id)),
                          delete(Paths.configJob(id)));
     } catch (final NoNodeException e) {
       throw new JobDoesNotExistException(id);
-    } catch (final KeeperException.NotEmptyException e) {
-      final List<String> agents = listJobAgents(id);
-      throw new JobStillInUseException(id, agents);
+    } catch (final NotEmptyException e) {
+      throw new JobStillDeployedException(id, listJobHosts(client, id));
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException("removing job " + id + " failed", e);
     }
@@ -341,20 +340,22 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public void deployJob(final String agent, final Deployment deployment)
-      throws JobDoesNotExistException, JobAlreadyDeployedException, AgentDoesNotExistException,
+  public void deployJob(final String host, final Deployment deployment)
+      throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
              JobPortAllocationConflictException {
-    deployJobRetry(agent, deployment, 0);
+    final ZooKeeperClient client = provider.get("deployJob");
+    deployJobRetry(client, host, deployment, 0);
   }
 
-  private void deployJobRetry(final String agent, final Deployment deployment, int count)
-      throws JobDoesNotExistException, JobAlreadyDeployedException, AgentDoesNotExistException,
+  private void deployJobRetry(final ZooKeeperClient client, final String host,
+                              final Deployment deployment, int count)
+  throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
              JobPortAllocationConflictException {
     if (count == 3) {
       throw new HeliosRuntimeException("3 failures (possibly concurrent modifications) while " +
                                        "deploying. Giving up.");
     }
-    log.debug("adding deployment: agent={}, job={}", agent, deployment);
+    log.debug("deploying {}: {}", deployment, host);
 
     final JobId id = deployment.getJobId();
     final Job job = getJob(id);
@@ -364,28 +365,27 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     final String jobPath = Paths.configJob(id);
-    final String taskPath = Paths.configAgentJob(agent, id);
+    final String taskPath = Paths.configHostJob(host, id);
 
     final List<Integer> staticPorts = staticPorts(job);
     final Map<String, byte[]> portNodes = Maps.newHashMap();
     final byte[] idJson = id.toJsonBytes();
     for (final int port : staticPorts) {
-      final String path = Paths.configAgentPort(agent, port);
+      final String path = Paths.configHostPort(host, port);
       portNodes.put(path, idJson);
     }
 
     final Task task = new Task(job, deployment.getGoal());
     List<ZooKeeperOperation> operations = Lists.newArrayList(
-        check(jobPath), create(portNodes), create(Paths.configJobAgent(id, agent)));
+        check(jobPath), create(portNodes), create(Paths.configJobHost(id, host)));
 
-    final ZooKeeperClient client = provider.get("deployJob");
    // Attempt to read a task here.  If it's goal is UNDEPLOY, it's as good as not existing
     try {
       Node existing = client.getNode(taskPath);
       byte[] bytes = existing.getBytes();
       Task readTask = Json.read(bytes, Task.class);
       if (readTask.getGoal() != Goal.UNDEPLOY) {
-        throw new JobAlreadyDeployedException(agent, id);
+        throw new JobAlreadyDeployedException(host, id);
       }
       operations.add(check(taskPath, existing.getStat().getVersion()));
       operations.add(set(taskPath, task));
@@ -399,16 +399,16 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       client.transaction(operations);
     } catch (NoNodeException e) {
-      // Either the job or the agent went away
-      assertJobExists(id);
-      assertAgentExists(agent);
+      // Either the job or the host went away
+      assertJobExists(client, id);
+      assertHostExists(client, host);
       // Retry
-      deployJobRetry(agent, deployment, count + 1);
+      deployJobRetry(client, host, deployment, count + 1);
     } catch (NodeExistsException e) {
       try {
         // Check if the job was already deployed
         if (client.stat(taskPath) != null) {
-          throw new JobAlreadyDeployedException(agent, id);
+          throw new JobAlreadyDeployedException(host, id);
         }
       } catch (KeeperException ex) {
         throw new HeliosRuntimeException("checking job deployment failed", e);
@@ -416,14 +416,14 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       // Check for static port collisions
       for (final int port : staticPorts) {
-        final String path = Paths.configAgentPort(agent, port);
+        final String path = Paths.configHostPort(host, port);
         try {
           if (client.stat(path) == null) {
             continue;
           }
           final byte[] b = client.getData(path);
           final JobId existingJobId = parse(b, JobId.class);
-          throw new JobPortAllocationConflictException(id, existingJobId, agent, port);
+          throw new JobPortAllocationConflictException(id, existingJobId, host, port);
         } catch (KeeperException | IOException ex) {
           throw new HeliosRuntimeException("checking port allocations failed", e);
         }
@@ -436,8 +436,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  private void assertJobExists(final JobId id) throws JobDoesNotExistException {
-    final ZooKeeperClient client = provider.get("assertJobExists");
+  private void assertJobExists(final ZooKeeperClient client, final JobId id)
+      throws JobDoesNotExistException {
     try {
       final String path = Paths.configJob(id);
       if (client.stat(path) == null) {
@@ -459,55 +459,57 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public void updateDeployment(final String agent, final Deployment deployment)
-      throws AgentDoesNotExistException, JobNotDeployedException {
-    log.debug("updating deployment: agent={}, job={}", agent, deployment);
+  public void updateDeployment(final String host, final Deployment deployment)
+      throws HostNotFoundException, JobNotDeployedException {
+    log.debug("updating deployment {}: {}", deployment, host);
+
+    final ZooKeeperClient client = provider.get("updateDeployment");
 
     final JobId jobId = deployment.getJobId();
-    final Job descriptor = getJob(jobId);
+    final Job descriptor = getJob(client, jobId);
 
     if (descriptor == null) {
-      throw new JobNotDeployedException(agent, jobId);
+      throw new JobNotDeployedException(host, jobId);
     }
 
-    assertAgentExists(agent);
-    assertTaskExists(agent, deployment.getJobId());
+    assertHostExists(client, host);
+    assertTaskExists(client, host, deployment.getJobId());
 
-    final String path = Paths.configAgentJob(agent, jobId);
+    final String path = Paths.configHostJob(host, jobId);
     final Task task = new Task(descriptor, deployment.getGoal());
-    final ZooKeeperClient client = provider.get("updateDeployment");
     try {
       client.setData(path, task.toJsonBytes());
     } catch (Exception e) {
-      throw new HeliosRuntimeException("updating job on agent failed", e);
+      throw new HeliosRuntimeException("updating deployment " + deployment +
+                                       " on host " + host + " failed", e);
     }
   }
 
-  private void assertAgentExists(String agent) throws AgentDoesNotExistException {
-    final ZooKeeperClient client = provider.get("assertAgentExists");
+  private void assertHostExists(final ZooKeeperClient client, final String host)
+  throws HostNotFoundException {
     try {
-      client.getData(Paths.configAgent(agent));
+      client.getData(Paths.configHost(host));
     } catch (NoNodeException e) {
-      throw new AgentDoesNotExistException(agent, e);
+      throw new HostNotFoundException(host, e);
     } catch (KeeperException e) {
       throw new HeliosRuntimeException(e);
     }
   }
 
-  private void assertTaskExists(String agent, JobId jobId) throws JobNotDeployedException {
-    final ZooKeeperClient client = provider.get("assertTaskExists");
+  private void assertTaskExists(final ZooKeeperClient client, final String host, final JobId jobId)
+  throws JobNotDeployedException {
     try {
-      client.getData(Paths.configAgentJob(agent, jobId));
+      client.getData(Paths.configHostJob(host, jobId));
     } catch (NoNodeException e) {
-      throw new JobNotDeployedException(agent, jobId);
+      throw new JobNotDeployedException(host, jobId);
     } catch (KeeperException e) {
       throw new HeliosRuntimeException(e);
     }
   }
 
   @Override
-  public Deployment getDeployment(final String agent, final JobId jobId) {
-    final String path = Paths.configAgentJob(agent, jobId);
+  public Deployment getDeployment(final String host, final JobId jobId) {
+    final String path = Paths.configHostJob(host, jobId);
     final ZooKeeperClient client = provider.get("getDeployment");
     try {
       final byte[] data = client.getData(path);
@@ -519,29 +521,29 @@ public class ZooKeeperMasterModel implements MasterModel {
     } catch (KeeperException.NoNodeException e) {
       return null;
     } catch (KeeperException | IOException e) {
-      throw new HeliosRuntimeException("getting slave container failed", e);
+      throw new HeliosRuntimeException("getting deployment failed", e);
     }
   }
 
   @Override
-  public AgentStatus getAgentStatus(final String agent) {
+  public HostStatus getHostStatus(final String host) {
     final Stat stat;
-    final ZooKeeperClient client = provider.get("getAgentStatus");
+    final ZooKeeperClient client = provider.get("getHostStatus");
 
     try {
-      stat = client.exists(Paths.configAgentId(agent));
+      stat = client.exists(Paths.configHostId(host));
     } catch (KeeperException e) {
-      throw new HeliosRuntimeException("Failed to check agent status", e);
+      throw new HeliosRuntimeException("Failed to check host status", e);
     }
 
     if (stat == null) {
       return null;
     }
 
-    final boolean up = checkAgentUp(agent);
-    final HostInfo hostInfo = getAgentHostInfo(agent);
-    final RuntimeInfo runtimeInfo = getAgentRuntimeInfo(agent);
-    final Map<JobId, Deployment> tasks = getTasks(agent);
+    final boolean up = checkHostUp(client, host);
+    final HostInfo hostInfo = getHostInfo(client, host);
+    final AgentInfo agentInfo = getAgentInfo(client, host);
+    final Map<JobId, Deployment> tasks = getTasks(client, host);
 
     final Map<JobId, Deployment> jobs = Maps.filterEntries(tasks,
         new Predicate<Entry<JobId, Deployment>>() {
@@ -549,107 +551,109 @@ public class ZooKeeperMasterModel implements MasterModel {
             return entry.getValue().getGoal() != UNDEPLOY;
           }
         });
-    final Map<JobId, TaskStatus> statuses = getTaskStatuses(agent);
-    final Map<String, String> environment = getEnvironment(agent);
+    final Map<JobId, TaskStatus> statuses = getTaskStatuses(client, host);
+    final Map<String, String> environment = getEnvironment(client, host);
 
-    return AgentStatus.newBuilder()
+    return HostStatus.newBuilder()
         .setJobs(jobs)
         .setStatuses(fromNullable(statuses).or(EMPTY_STATUSES))
         .setHostInfo(hostInfo)
-        .setRuntimeInfo(runtimeInfo)
+        .setAgentInfo(agentInfo)
         .setStatus(up ? UP : DOWN)
         .setEnvironment(environment)
         .build();
   }
 
-  private <T> T getAgentStatusData(String path, TypeReference<T> type, String thing)
-      {
-    final ZooKeeperClient client = provider.get("getAgentStatusData_" + thing);
+  private <T> T tryGetEntity(final ZooKeeperClient client, String path, TypeReference<T> type,
+                             String name) {
     try {
       final byte[] data = client.getData(path);
       return Json.read(data, type);
     } catch (NoNodeException e) {
       return null;
     } catch (KeeperException | IOException e) {
-      throw new HeliosRuntimeException("getting agent " + thing + " info failed", e);
+      throw new HeliosRuntimeException("reading " + name + " info failed", e);
     }
   }
 
-  private Map<String, String> getEnvironment(final String agent) {
-    return getAgentStatusData(Paths.statusAgentEnvVars(agent),
-                              new TypeReference<Map<String,String>>(){},
-                              "environment");
+  private Map<String, String> getEnvironment(final ZooKeeperClient client, final String host) {
+    return tryGetEntity(client, Paths.statusHostEnvVars(host),
+                        new TypeReference<Map<String, String>>() {},
+                        "environment");
   }
 
-  private RuntimeInfo getAgentRuntimeInfo(final String agent) {
-    return getAgentStatusData(Paths.statusAgentRuntimeInfo(agent),
-                              new TypeReference<RuntimeInfo>(){},
-                              "runtime info");
+  private AgentInfo getAgentInfo(final ZooKeeperClient client, final String host) {
+    return tryGetEntity(client, Paths.statusHostAgentInfo(host),
+                        new TypeReference<AgentInfo>() {},
+                        "agent info");
   }
 
-  private HostInfo getAgentHostInfo(final String agent) {
-    return getAgentStatusData(Paths.statusAgentHostInfo(agent),
-                              new TypeReference<HostInfo>(){},
-                              "host info");
+  private HostInfo getHostInfo(final ZooKeeperClient client, final String host) {
+    return tryGetEntity(client, Paths.statusHostInfo(host),
+                        new TypeReference<HostInfo>() {},
+                        "host info");
   }
 
-  private boolean checkAgentUp(final String agent) {
-    final ZooKeeperClient client = provider.get("checkAgentUp");
+  private boolean checkHostUp(final ZooKeeperClient client, final String host) {
     try {
-      final Stat stat = client.stat(Paths.statusAgentUp(agent));
+      final Stat stat = client.exists(Paths.statusHostUp(host));
       return stat != null;
     } catch (KeeperException e) {
-      throw new HeliosRuntimeException("getting agent up status failed", e);
+      throw new HeliosRuntimeException("getting host " + host + " up status failed", e);
     }
   }
 
-  private Map<JobId, TaskStatus> getTaskStatuses(final String agent) {
+  private Map<JobId, TaskStatus> getTaskStatuses(final ZooKeeperClient client, final String host) {
     final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
-    final List<String> jobIdStrings;
-    final String folder = Paths.statusAgentJobs(agent);
-    final ZooKeeperClient client = provider.get("getTaskStatuses");
-    try {
-      jobIdStrings = client.getChildren(folder);
-    } catch (KeeperException.NoNodeException e) {
-      return null;
-    } catch (KeeperException e) {
-      throw new HeliosRuntimeException("List tasks for agent failed: " + agent, e);
-    }
-
-    for (final String jobIdString : jobIdStrings) {
-      final JobId jobId = JobId.fromString(jobIdString);
-      final TaskStatus status = getTaskStatus(agent, jobId);
-
+    final List<JobId> jobIds = listHostJobs(client, host);
+    for (final JobId jobId : jobIds) {
+      final TaskStatus status = getTaskStatus(client, host, jobId);
       if (status != null) {
         statuses.put(jobId, status);
       } else {
-        log.debug("Task {} status missing for agent {}", jobId, agent);
+        log.debug("Task {} status missing for host {}", jobId, host);
       }
     }
 
     return statuses;
   }
 
+  private List<JobId> listHostJobs(final ZooKeeperClient client, final String host) {
+    final List<String> jobIdStrings;
+    final String folder = Paths.statusHostJobs(host);
+    try {
+      jobIdStrings = client.getChildren(folder);
+    } catch (KeeperException.NoNodeException e) {
+      return null;
+    } catch (KeeperException e) {
+      throw new HeliosRuntimeException("List tasks for host failed: " + host, e);
+    }
+    final ImmutableList.Builder<JobId> jobIds = ImmutableList.builder();
+    for (String jobIdString : jobIdStrings) {
+      jobIds.add(JobId.fromString(jobIdString));
+    }
+    return jobIds.build();
+  }
+
   @Nullable
-  private TaskStatus getTaskStatus(final String agent, final JobId jobId) {
-    final String containerPath = Paths.statusAgentJob(agent, jobId);
-    final ZooKeeperClient client = provider.get("getTaskStatus");
+  private TaskStatus getTaskStatus(final ZooKeeperClient client, final String host,
+                                   final JobId jobId) {
+    final String containerPath = Paths.statusHostJob(host, jobId);
     try {
       final byte[] data = client.getData(containerPath);
       return parse(data, TaskStatus.class);
     } catch (NoNodeException ignored) {
       return null;
     } catch (KeeperException | IOException e) {
-      throw new HeliosRuntimeException("Getting task " + jobId +
-                                       "for agent " + agent + " failed", e);
+      throw new HeliosRuntimeException("Getting task " + jobId + " status " +
+                                       "for host " + host + " failed", e);
     }
   }
 
-  private Map<JobId, Deployment> getTasks(final String agent) {
+  private Map<JobId, Deployment> getTasks(final ZooKeeperClient client, final String host) {
     final Map<JobId, Deployment> jobs = Maps.newHashMap();
-    final ZooKeeperClient client = provider.get("getTasks");
     try {
-      final String folder = Paths.configAgentJobs(agent);
+      final String folder = Paths.configHostJobs(host);
       final List<String> jobIds;
       try {
         jobIds = client.getChildren(folder);
@@ -659,7 +663,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       for (final String jobIdString : jobIds) {
         final JobId jobId = JobId.fromString(jobIdString);
-        final String containerPath = Paths.configAgentJob(agent, jobId);
+        final String containerPath = Paths.configHostJob(host, jobId);
         try {
           final byte[] data = client.getData(containerPath);
           final Task task = parse(data, Task.class);
@@ -668,7 +672,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           }
           jobs.put(jobId, Deployment.of(jobId, task.getGoal()));
         } catch (KeeperException.NoNodeException ignored) {
-          log.debug("deploymenty config node disappeared: {}", jobIdString);
+          log.debug("deployment config node disappeared: {}", jobIdString);
         }
       }
     } catch (KeeperException | IOException e) {
@@ -679,30 +683,27 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public Deployment undeployJob(final String agent, final JobId jobId)
-      throws AgentDoesNotExistException, JobNotDeployedException {
-    log.debug("removing deployment: agent={}, job={}", agent, jobId);
+  public Deployment undeployJob(final String host, final JobId jobId)
+      throws HostNotFoundException, JobNotDeployedException {
+    log.debug("undeploying {}: {}", jobId, host);
+    final ZooKeeperClient client = provider.get("undeployJob");
 
-    assertAgentExists(agent);
+    assertHostExists(client, host);
 
-    final Deployment deployment = getDeployment(agent, jobId);
+    final Deployment deployment = getDeployment(host, jobId);
     if (deployment == null) {
-      throw new JobNotDeployedException(agent, jobId);
+      throw new JobNotDeployedException(host, jobId);
     }
 
-    updateDeployment(agent, Deployment.of(jobId, Goal.UNDEPLOY));
-    List<ZooKeeperOperation> operations = Lists.newArrayList(
-        delete(Paths.configJobAgent(jobId, agent)));
-    // This could be deleted by the agent when it undeploys, though they could stick around
-    // fairly indefinitely as we ignore/filter them as appropriate.
-    //        delete(Paths.configAgentJob(agent, jobId)),
+    updateDeployment(host, Deployment.of(jobId, Goal.UNDEPLOY));
+    final List<ZooKeeperOperation> operations = Lists.newArrayList(
+        delete(Paths.configJobHost(jobId, host)));
 
     final Job job = getJob(jobId);
     final List<Integer> staticPorts = staticPorts(job);
     for (int port : staticPorts) {
-        operations.add(delete(Paths.configAgentPort(agent, port)));
+        operations.add(delete(Paths.configHostPort(host, port)));
     }
-    final ZooKeeperClient client = provider.get("undeployJob");
     try {
       client.transaction(operations);
     } catch (KeeperException e) {

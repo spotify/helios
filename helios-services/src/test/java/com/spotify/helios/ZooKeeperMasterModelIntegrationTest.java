@@ -2,11 +2,11 @@ package com.spotify.helios;
 
 import com.google.common.collect.ImmutableList;
 
-import com.spotify.helios.common.AgentDoesNotExistException;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.HostNotFoundException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobNotDeployedException;
-import com.spotify.helios.common.JobStillInUseException;
+import com.spotify.helios.common.JobStillDeployedException;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
@@ -23,9 +23,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -48,7 +46,7 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
   private static final String IMAGE = "IMAGE";
   private static final String COMMAND = "COMMAND";
   private static final String JOB_NAME = "JOB_NAME";
-  private static final String AGENT = "AGENT";
+  private static final String HOST = "HOST";
   private static final Job JOB = Job.newBuilder()
       .setCommand(ImmutableList.of(COMMAND))
       .setImage(IMAGE)
@@ -71,10 +69,10 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
     client = new DefaultZooKeeperClient(curator);
 
     // TODO (dano): this bootstrapping is essentially duplicated from MasterService, should be moved into ZooKeeperMasterModel?
-    client.ensurePath(Paths.configAgents());
+    client.ensurePath(Paths.configHosts());
     client.ensurePath(Paths.configJobs());
     client.ensurePath(Paths.configJobRefs());
-    client.ensurePath(Paths.statusAgents());
+    client.ensurePath(Paths.statusHosts());
     client.ensurePath(Paths.statusMasters());
     client.ensurePath(Paths.historyJobs());
 
@@ -83,23 +81,23 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
   }
 
   @Test
-  public void testAgentAddRemoveList() throws Exception {
-    final String secondAgent = "SECOND";
+  public void testHostListing() throws Exception {
+    final String secondHost = "SECOND";
 
-    assertThat(model.getAgents(), empty());
+    assertThat(model.listHosts(), empty());
 
-    model.addAgent(AGENT);
-    assertThat(model.getAgents(), contains(AGENT));
+    model.registerHost(HOST);
+    assertThat(model.listHosts(), contains(HOST));
 
-    model.addAgent(secondAgent);
-    assertThat(model.getAgents(), contains(AGENT, secondAgent));
+    model.registerHost(secondHost);
+    assertThat(model.listHosts(), contains(HOST, secondHost));
 
-    model.removeAgent(AGENT);
-    assertThat(model.getAgents(), contains(secondAgent));
+    model.deregisterHost(HOST);
+    assertThat(model.listHosts(), contains(secondHost));
   }
 
   @Test
-  public void testJobAddGet() throws Exception {
+  public void testJobCreation() throws Exception {
     assertThat(model.getJobs().entrySet(), empty());
     model.addJob(JOB);
 
@@ -122,18 +120,18 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
   @Test
   public void testJobRemove() throws Exception {
     model.addJob(JOB);
-    model.addAgent(AGENT);
+    model.registerHost(HOST);
 
-    model.deployJob(AGENT,
+    model.deployJob(HOST,
                     Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
     try {
       model.removeJob(JOB_ID);
       fail("should have thrown an exception");
-    } catch (JobStillInUseException e) {
+    } catch (JobStillDeployedException e) {
       assertTrue(true);
     }
 
-    model.undeployJob(AGENT, JOB_ID);
+    model.undeployJob(HOST, JOB_ID);
     assertNotNull(model.getJobs().get(JOB_ID));
     model.removeJob(JOB_ID); // should succeed
     assertNull(model.getJobs().get(JOB_ID));
@@ -142,35 +140,35 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
   @Test
   public void testDeploy() throws Exception {
     try {
-      model.deployJob(AGENT,
+      model.deployJob(HOST,
                       Deployment.newBuilder()
                           .setGoal(Goal.START)
                           .setJobId(JOB_ID)
                           .build());
       fail("should throw");
-    } catch (JobDoesNotExistException | AgentDoesNotExistException e) {
+    } catch (JobDoesNotExistException | HostNotFoundException e) {
       assertTrue(true);
     }
 
     model.addJob(JOB);
     try {
-      model.deployJob(AGENT,
+      model.deployJob(HOST,
                       Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
       fail("should throw");
-    } catch (AgentDoesNotExistException e) {
+    } catch (HostNotFoundException e) {
       assertTrue(true);
     }
 
-    model.addAgent(AGENT);
+    model.registerHost(HOST);
 
-    model.deployJob(AGENT,
+    model.deployJob(HOST,
                     Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
 
-    model.undeployJob(AGENT, JOB_ID);
+    model.undeployJob(HOST, JOB_ID);
     model.removeJob(JOB_ID);
 
     try {
-      model.deployJob(AGENT,
+      model.deployJob(HOST,
                       Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
       fail("should throw");
     } catch (JobDoesNotExistException e) {
@@ -179,14 +177,14 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
   }
 
   @Test
-  public void testAgentRemove() throws Exception {
-    model.addAgent(AGENT);
-    List<String> agents1 = model.getAgents();
-    assertThat(agents1, hasItem(AGENT));
+  public void testHostRegistration() throws Exception {
+    model.registerHost(HOST);
+    List<String> hosts1 = model.listHosts();
+    assertThat(hosts1, hasItem(HOST));
 
-    model.removeAgent(AGENT);
-    List<String> agents2 = model.getAgents();
-    assertEquals(0, agents2.size());
+    model.deregisterHost(HOST);
+    List<String> hosts2 = model.listHosts();
+    assertEquals(0, hosts2.size());
   }
 
   @Test
@@ -204,15 +202,15 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
     try {
       stopJob(model, JOB);
       fail("should have thrown exception");
-    } catch (AgentDoesNotExistException e) {
+    } catch (HostNotFoundException e) {
       assertTrue(true);
     } catch (Exception e) {
-      fail("Should have thrown an AgentDoesNotExistException");
+      fail("Should have thrown an HostNotFoundException");
     }
 
-    model.addAgent(AGENT);
-    List<String> agents = model.getAgents();
-    assertThat(agents, hasItem(AGENT));
+    model.registerHost(HOST);
+    List<String> hosts = model.listHosts();
+    assertThat(hosts, hasItem(HOST));
 
     try {
       stopJob(model, JOB);
@@ -223,22 +221,22 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
       fail("Should have thrown an JobNotDeployedException");
     }
 
-    model.deployJob(AGENT, Deployment.newBuilder()
+    model.deployJob(HOST, Deployment.newBuilder()
         .setGoal(Goal.START)
         .setJobId(JOB.getId())
         .build());
-    Map<JobId, Job> jobsOnAgent = model.getJobs();
-    assertEquals(1, jobsOnAgent.size());
-    Job descriptor = jobsOnAgent.get(JOB.getId());
+    Map<JobId, Job> jobsOnHost = model.getJobs();
+    assertEquals(1, jobsOnHost.size());
+    Job descriptor = jobsOnHost.get(JOB.getId());
     assertEquals(JOB, descriptor);
 
     stopJob(model, JOB); // should succeed this time!
-    Deployment jobCfg = model.getDeployment(AGENT, JOB.getId());
+    Deployment jobCfg = model.getDeployment(HOST, JOB.getId());
     assertEquals(Goal.STOP, jobCfg.getGoal());
   }
 
   private void stopJob(ZooKeeperMasterModel model, Job job) throws HeliosException {
-    model.updateDeployment(AGENT, Deployment.newBuilder()
+    model.updateDeployment(HOST, Deployment.newBuilder()
         .setGoal(Goal.STOP)
         .setJobId(job.getId())
         .build());

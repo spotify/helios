@@ -9,7 +9,7 @@ import com.google.common.collect.ImmutableMap;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.sun.jersey.api.client.ClientResponse;
@@ -20,7 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -31,21 +31,21 @@ public class EnvironmentVaribleTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(TEST_AGENT,
+    startDefaultAgent(TEST_HOST,
                       "--env",
                       "SPOTIFY_POD=PODNAME",
                       "SPOTIFY_ROLE=ROLENAME",
                       "BAR=badfood");
-    awaitAgentStatus(TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the agent to report environment vars
     await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
-        Map<String, AgentStatus> status = Json.read(
-            cli("host", "status", TEST_AGENT, "--json"),
-            new TypeReference<Map<String, AgentStatus>>() {});
-        return status.get(TEST_AGENT).getEnvironment();
+        Map<String, HostStatus> status = Json.read(
+            cli("host", "status", TEST_HOST, "--json"),
+            new TypeReference<Map<String, HostStatus>>() {});
+        return status.get(TEST_HOST).getEnvironment();
       }
     });
 
@@ -63,9 +63,9 @@ public class EnvironmentVaribleTest extends SystemTestBase {
                                                   "BAR", "deadbeef"));
 
     // deploy
-    deployJob(jobId, TEST_AGENT);
+    deployJob(jobId, TEST_HOST);
 
-    final TaskStatus taskStatus = awaitTaskState(jobId, TEST_AGENT, EXITED);
+    final TaskStatus taskStatus = awaitTaskState(jobId, TEST_HOST, EXITED);
 
     final ClientResponse response = dockerClient.logContainer(taskStatus.getContainerId());
     final String logMessage = readLogFully(response);
@@ -77,18 +77,18 @@ public class EnvironmentVaribleTest extends SystemTestBase {
     // Verify that the the BAR environment variable in the job overrode the agent config
     assertContains("bar: deadbeef", logMessage);
 
-    Map<String, AgentStatus> status = Json.read(cli("host", "status", TEST_AGENT, "--json"),
-                                                new TypeReference<Map<String, AgentStatus>>() {});
+    Map<String, HostStatus> status = Json.read(cli("host", "status", TEST_HOST, "--json"),
+                                                new TypeReference<Map<String, HostStatus>>() {});
 
     assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
                                  "SPOTIFY_ROLE", "ROLENAME",
                                  "BAR", "badfood"),
-                 status.get(TEST_AGENT).getEnvironment());
+                 status.get(TEST_HOST).getEnvironment());
 
     assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
                                  "SPOTIFY_ROLE", "ROLENAME",
                                  "BAR", "deadbeef",
                                  "FOO", "4711"),
-                 status.get(TEST_AGENT).getStatuses().get(jobId).getEnv());
+                 status.get(TEST_HOST).getStatuses().get(jobId).getEnv());
   }
 }

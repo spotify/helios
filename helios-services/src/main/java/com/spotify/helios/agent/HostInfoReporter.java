@@ -33,7 +33,7 @@ public class HostInfoReporter extends AbstractScheduledService {
 
   HostInfoReporter(final Builder builder) {
     this.operatingSystemMXBean = checkNotNull(builder.operatingSystemMXBean);
-    this.nodeUpdater = builder.nodeUpdaterFactory.create(Paths.statusAgentHostInfo(builder.agent));
+    this.nodeUpdater = builder.nodeUpdaterFactory.create(Paths.statusHostInfo(builder.host));
     this.interval = builder.interval;
     this.timeUnit = checkNotNull(builder.timeUnit);
   }
@@ -85,7 +85,7 @@ public class HostInfoReporter extends AbstractScheduledService {
 
     private NodeUpdaterFactory nodeUpdaterFactory;
     private OperatingSystemMXBean operatingSystemMXBean;
-    private String agent;
+    private String host;
     private int interval = DEFAULT_INTERVAL;
     private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
 
@@ -100,8 +100,8 @@ public class HostInfoReporter extends AbstractScheduledService {
       return this;
     }
 
-    public Builder setAgent(final String agent) {
-      this.agent = agent;
+    public Builder setHost(final String host) {
+      this.host = host;
       return this;
     }
 

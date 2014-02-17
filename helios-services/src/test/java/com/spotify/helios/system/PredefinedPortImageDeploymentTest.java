@@ -14,7 +14,7 @@ import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.junit.Test;
 
-import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -24,7 +24,7 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(TEST_AGENT);
+    startDefaultAgent(TEST_HOST);
 
     final HeliosClient client = defaultClient();
 
@@ -50,15 +50,15 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
     client.createJob(job2).get();
 
     // Wait for agent to come up
-    awaitAgentRegistered(client, TEST_AGENT, LONG_WAIT_MINUTES, MINUTES);
-    awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, TEST_HOST, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Deploy the jobs on the agent
-    client.deploy(Deployment.of(jobId1, START), TEST_AGENT).get();
-    client.deploy(Deployment.of(jobId2, START), TEST_AGENT).get();
+    client.deploy(Deployment.of(jobId1, START), TEST_HOST).get();
+    client.deploy(Deployment.of(jobId2, START), TEST_HOST).get();
 
     // Wait for the jobs to run
-    awaitJobState(client, TEST_AGENT, jobId1, RUNNING, LONG_WAIT_MINUTES, MINUTES);
-    awaitJobState(client, TEST_AGENT, jobId2, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, TEST_HOST, jobId1, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, TEST_HOST, jobId2, RUNNING, LONG_WAIT_MINUTES, MINUTES);
   }
 }

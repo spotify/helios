@@ -40,10 +40,7 @@ public class Deployment extends Descriptor {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
-        .add("jobId", jobId)
-        .add("goal", goal)
-        .toString();
+    return jobId + "|" + goal;
   }
 
   @Override

@@ -82,7 +82,7 @@ public class JobStatusCommand extends ControlCommand {
     if (json) {
       out.println(Json.asPrettyStringUnchecked(statuses));
     } else {
-      // TODO (dano): this explodes the job into one row per agent, is that sane/expected?
+      // TODO (dano): this explodes the job into one row per host, is that sane/expected?
       final Table table = table(out);
       table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND",
                 "THROTTLED?", "PORTS", "ENVIRONMENT");

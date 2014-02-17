@@ -10,7 +10,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.HeliosClient;
-import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -28,7 +28,7 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.collect.Ordering.natural;
 import static com.spotify.helios.cli.Output.humanDuration;
 import static com.spotify.helios.cli.Output.table;
-import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.lang.String.format;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -50,29 +50,29 @@ public class HostListCommand extends ControlCommand {
   @Override
   int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
-    final List<String> hosts = client.listAgents().get();
+    final List<String> hosts = client.listHosts().get();
     final List<String> sortedHosts = natural().sortedCopy(hosts);
 
     final boolean quiet = options.getBoolean(quietArg.getDest());
 
     if (quiet) {
-      for (final String agent : sortedHosts) {
-        out.println(agent);
+      for (final String host : sortedHosts) {
+        out.println(host);
       }
     } else {
       final Table table = table(out);
       table.row("HOST", "STATUS", "DEPLOYED", "RUNNING",
                 "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS", "VERSION");
 
-      final Map<String, ListenableFuture<AgentStatus>> statuses = Maps.newTreeMap();
+      final Map<String, ListenableFuture<HostStatus>> statuses = Maps.newTreeMap();
       for (final String host : hosts) {
-        statuses.put(host, client.agentStatus(host));
+        statuses.put(host, client.hostStatus(host));
       }
 
-      for (final Map.Entry<String, ListenableFuture<AgentStatus>> e : statuses.entrySet()) {
+      for (final Map.Entry<String, ListenableFuture<HostStatus>> e : statuses.entrySet()) {
 
         final String host = e.getKey();
-        final AgentStatus s = e.getValue().get();
+        final HostStatus s = e.getValue().get();
 
         if (s == null) {
           continue;
@@ -111,9 +111,9 @@ public class HostListCommand extends ControlCommand {
 
         final String status;
         if (s.getStatus() == UP) {
-          final String uptime = s.getRuntimeInfo() == null ? "" :
+          final String uptime = s.getAgentInfo() == null ? "" :
                                 humanDuration(System.currentTimeMillis() -
-                                              s.getRuntimeInfo().getStartTime());
+                                              s.getAgentInfo().getStartTime());
           status = "Up " + uptime;
         } else {
           status = "Down";

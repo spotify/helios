@@ -12,8 +12,8 @@ public class AgentStateDirConflictTest extends SystemTestBase {
 
   @Test
   public void test() throws Exception {
-    startDefaultAgent(TEST_AGENT).awaitRunning();
+    startDefaultAgent(TEST_HOST).awaitRunning();
     exception.expect(IllegalStateException.class);
-    startDefaultAgent(TEST_AGENT).awaitRunning();
+    startDefaultAgent(TEST_HOST).awaitRunning();
   }
 }

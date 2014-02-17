@@ -2,18 +2,19 @@ package com.spotify.helios.master.resources;
 
 import com.google.common.base.Optional;
 
-import com.spotify.helios.common.AgentDoesNotExistException;
+import com.spotify.helios.common.HostNotFoundException;
 import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.JobPortAllocationConflictException;
-import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.protocol.AgentDeleteResponse;
+import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
+import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.master.http.PATCH;
 import com.yammer.metrics.annotation.ExceptionMetered;
@@ -33,7 +34,7 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.Response;
 
-import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.AGENT_NOT_FOUND;
+import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST_NOT_FOUND;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.INVALID_ID;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.JOB_NOT_FOUND;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.OK;
@@ -57,16 +58,16 @@ public class HostsResource {
   @Timed
   @ExceptionMetered
   public List<String> list() {
-    return model.getAgents();
+    return model.listHosts();
   }
 
   @PUT
   @Path("{id}")
   @Timed
   @ExceptionMetered
-  public Response.Status put(@PathParam("id") final String agent) {
-    model.addAgent(agent);
-    log.info("added host {}", agent);
+  public Response.Status put(@PathParam("id") final String host) {
+    model.registerHost(host);
+    log.info("added host {}", host);
     return Response.Status.OK;
   }
 
@@ -76,12 +77,15 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public AgentDeleteResponse delete(@PathParam("id") final String agent) {
+  public HostDeregisterResponse delete(@PathParam("id") final String host) {
     try {
-      model.removeAgent(agent);
-      return new AgentDeleteResponse(AgentDeleteResponse.Status.OK, agent);
-    } catch (AgentDoesNotExistException e) {
-      throw notFound(new AgentDeleteResponse(AgentDeleteResponse.Status.NOT_FOUND, agent));
+      model.deregisterHost(host);
+      return new HostDeregisterResponse(HostDeregisterResponse.Status.OK, host);
+    } catch (HostNotFoundException e) {
+      throw notFound(new HostDeregisterResponse(HostDeregisterResponse.Status.NOT_FOUND, host));
+    } catch (HostStillInUseException e) {
+      throw badRequest(new HostDeregisterResponse(HostDeregisterResponse.Status.JOBS_STILL_DEPLOYED,
+                                                  host));
     }
   }
 
@@ -90,8 +94,8 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Optional<AgentStatus> hostStatus(@PathParam("id") final String agent) {
-    return Optional.fromNullable(model.getAgentStatus(agent));
+  public Optional<HostStatus> hostStatus(@PathParam("id") final String host) {
+    return Optional.fromNullable(model.getHostStatus(host));
   }
 
   @PUT
@@ -112,9 +116,8 @@ public class HostsResource {
     } catch (JobAlreadyDeployedException e) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.JOB_ALREADY_DEPLOYED, host,
                                              jobId));
-    } catch (AgentDoesNotExistException e) {
-      throw badRequest(new JobDeployResponse(JobDeployResponse.Status.AGENT_NOT_FOUND, host,
-                                             jobId));
+    } catch (HostNotFoundException e) {
+      throw badRequest(new JobDeployResponse(JobDeployResponse.Status.HOST_NOT_FOUND, host, jobId));
     } catch (JobDoesNotExistException e) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.JOB_NOT_FOUND, host, jobId));
     } catch (JobPortAllocationConflictException e) {
@@ -135,8 +138,8 @@ public class HostsResource {
     try {
       model.undeployJob(host, jobId);
       return new JobUndeployResponse(OK, host, jobId);
-    } catch (AgentDoesNotExistException e) {
-      throw notFound(new JobUndeployResponse(AGENT_NOT_FOUND, host, jobId));
+    } catch (HostNotFoundException e) {
+      throw notFound(new JobUndeployResponse(HOST_NOT_FOUND, host, jobId));
     } catch (JobNotDeployedException e) {
       throw notFound(new JobUndeployResponse(JOB_NOT_FOUND, host, jobId));
     }
@@ -155,8 +158,8 @@ public class HostsResource {
     }
     try {
       model.updateDeployment(host, deployment);
-    } catch (AgentDoesNotExistException e) {
-      throw notFound(new SetGoalResponse(SetGoalResponse.Status.AGENT_NOT_FOUND, host, jobId));
+    } catch (HostNotFoundException e) {
+      throw notFound(new SetGoalResponse(SetGoalResponse.Status.HOST_NOT_FOUND, host, jobId));
     } catch (JobNotDeployedException e) {
       throw notFound(new SetGoalResponse(SetGoalResponse.Status.JOB_NOT_DEPLOYED, host, jobId));
     }

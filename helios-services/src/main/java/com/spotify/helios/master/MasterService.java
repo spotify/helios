@@ -203,10 +203,10 @@ public class MasterService extends AbstractIdleService {
 
     // TODO (dano): move directory initialization elsewhere
     try {
-      client.ensurePath(Paths.configAgents());
+      client.ensurePath(Paths.configHosts());
       client.ensurePath(Paths.configJobs());
       client.ensurePath(Paths.configJobRefs());
-      client.ensurePath(Paths.statusAgents());
+      client.ensurePath(Paths.statusHosts());
       client.ensurePath(Paths.statusMasters());
       client.ensurePath(Paths.historyJobs());
 

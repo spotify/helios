@@ -15,11 +15,11 @@ public class JobHistoryTest {
 //        .setEndpoints(masterEndpoint)
 //        .build();
 //
-//    startDefaultAgent(TEST_AGENT);
+//    startDefaultAgent(TEST_HOST);
 //    JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", ImmutableList.of("/bin/true"));
-//    deployJob(jobId, TEST_AGENT);
-//    awaitJobState(client, TEST_AGENT, jobId, EXITED, LONG_WAIT_MINUTES, MINUTES);
-//    undeployJob(jobId, TEST_AGENT);
+//    deployJob(jobId, TEST_HOST);
+//    awaitJobState(client, TEST_HOST, jobId, EXITED, LONG_WAIT_MINUTES, MINUTES);
+//    undeployJob(jobId, TEST_HOST);
 //    TaskStatusEvents events = client.jobHistory(jobId).get();
 //    List<TaskStatusEvent> eventsList = events.getEvents();
 //    assertFalse(eventsList.isEmpty());

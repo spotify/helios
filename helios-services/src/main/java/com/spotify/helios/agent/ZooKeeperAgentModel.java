@@ -53,7 +53,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     this.agent = checkNotNull(agent);
     final Path taskConfigFile = stateDirectory.resolve(TASK_CONFIG_FILENAME);
     this.tasks = provider.get("ZooKeeperAgentModel_ctor")
-        .pathChildrenCache(Paths.configAgentJobs(agent), taskConfigFile);
+        .pathChildrenCache(Paths.configHostJobs(agent), taskConfigFile);
     tasks.addListener(new JobsListener());
     final Path taskStatusFile = stateDirectory.resolve(TASK_STATUS_FILENAME);
     this.taskStatuses = ZooKeeperUpdatingPersistentMap.create("agent-model-task-statuses", provider,
@@ -78,12 +78,12 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   }
 
   private JobId jobIdFromTaskPath(final String path) {
-    final String prefix = Paths.configAgentJobs(agent) + "/";
+    final String prefix = Paths.configHostJobs(agent) + "/";
     return JobId.fromString(path.replaceFirst(prefix, ""));
   }
 
   private JobId jobIdFromTaskStatusPath(final String path) {
-    final String prefix = Paths.statusAgentJobs(agent) + "/";
+    final String prefix = Paths.statusHostJobs(agent) + "/";
     return JobId.fromString(path.replaceFirst(prefix, ""));
   }
 
@@ -120,17 +120,17 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   @Override
   public void setTaskStatus(final JobId jobId, final TaskStatus status) {
     log.debug("setting task status: {}", status);
-    taskStatuses.map().put(Paths.statusAgentJob(agent, jobId), status.toJsonBytes());
+    taskStatuses.map().put(Paths.statusHostJob(agent, jobId), status.toJsonBytes());
 
     // TODO (dano): restore task status history and make sure that it's bounded as well
-//    final String historyPath = Paths.historyJobAgentEventsTimestamp(
+//    final String historyPath = Paths.historyJobHostEventsTimestamp(
 //        jobId, agent, System.currentTimeMillis());
 //    client.createAndSetData(historyPath, status.toJsonBytes());
   }
 
   @Override
   public TaskStatus getTaskStatus(final JobId jobId) {
-    final String path = Paths.statusAgentJob(agent, jobId);
+    final String path = Paths.statusHostJob(agent, jobId);
     final byte[] data = taskStatuses.map().get(path);
     if (data == null) {
       return null;
@@ -144,13 +144,13 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
 
   @Override
   public void removeTaskStatus(final JobId jobId) {
-    final String path = Paths.statusAgentJob(agent, jobId);
+    final String path = Paths.statusHostJob(agent, jobId);
     taskStatuses.map().remove(path);
   }
 
   @Override
   public void removeUndeployTombstone(final JobId jobId) {
-    String path = Paths.configAgentJob(agent, jobId);
+    String path = Paths.configHostJob(agent, jobId);
     taskRemover.remove(path);
   }
 

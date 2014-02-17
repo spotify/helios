@@ -64,7 +64,7 @@ public class AgentService extends AbstractIdleService {
 
   private final ZooKeeperClient zooKeeperClient;
   private final HostInfoReporter hostInfoReporter;
-  private final RuntimeInfoReporter runtimeInfoReporter;
+  private final AgentInfoReporter agentInfoReporter;
   private final EnvironmentVariableReporter environmentVariableReporter;
   private final FileChannel stateLockFile;
   private final FileLock stateLock;
@@ -170,13 +170,13 @@ public class AgentService extends AbstractIdleService {
     this.hostInfoReporter = HostInfoReporter.newBuilder()
         .setNodeUpdaterFactory(nodeUpdaterFactory)
         .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
-        .setAgent(config.getName())
+        .setHost(config.getName())
         .build();
 
-    this.runtimeInfoReporter = RuntimeInfoReporter.newBuilder()
+    this.agentInfoReporter = AgentInfoReporter.newBuilder()
         .setNodeUpdaterFactory(nodeUpdaterFactory)
         .setRuntimeMXBean(getRuntimeMXBean())
-        .setAgent(config.getName())
+        .setHost(config.getName())
         .build();
 
     this.environmentVariableReporter = new EnvironmentVariableReporter(config.getName(),
@@ -218,7 +218,7 @@ public class AgentService extends AbstractIdleService {
 
     // Register the agent
     this.registrar = new AgentRegistrar(client, config.getName(), id);
-    final String upPath = Paths.statusAgentUp(config.getName());
+    final String upPath = Paths.statusHostUp(config.getName());
 
     // Create the ephemeral up node after agent registration completes
     this.registrar.getCompletionFuture().addListener(new Runnable() {
@@ -259,7 +259,7 @@ public class AgentService extends AbstractIdleService {
     registrar.startAsync().awaitRunning();
     agent.startAsync().awaitRunning();
     hostInfoReporter.startAsync();
-    runtimeInfoReporter.startAsync();
+    agentInfoReporter.startAsync();
     environmentVariableReporter.startAsync();
     metrics.start();
     statsdReporter.start();
@@ -274,7 +274,7 @@ public class AgentService extends AbstractIdleService {
   @Override
   protected void shutDown() throws Exception {
     hostInfoReporter.stopAsync().awaitTerminated();
-    runtimeInfoReporter.stopAsync().awaitTerminated();
+    agentInfoReporter.stopAsync().awaitTerminated();
     environmentVariableReporter.stopAsync().awaitTerminated();
     agent.stopAsync().awaitTerminated();
     if (namelessRegistrar != null) {

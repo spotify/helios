@@ -7,13 +7,13 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableList;
 
 import com.spotify.helios.common.HeliosClient;
-import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.junit.Test;
 
-import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.ThrottleState.IMAGE_MISSING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
@@ -23,20 +23,20 @@ public class ImageMissingTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(TEST_AGENT);
+    startDefaultAgent(TEST_HOST);
 
     final HeliosClient client = defaultClient();
 
-    awaitAgentStatus(client, TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     JobId jobId = createJob(JOB_NAME, JOB_VERSION, "this_sould_not_exist",
                             ImmutableList.of("/bin/true"));
 
-    deployJob(jobId, TEST_AGENT);
-    awaitJobThrottle(client, TEST_AGENT, jobId, IMAGE_MISSING, LONG_WAIT_MINUTES, MINUTES);
+    deployJob(jobId, TEST_HOST);
+    awaitJobThrottle(client, TEST_HOST, jobId, IMAGE_MISSING, LONG_WAIT_MINUTES, MINUTES);
 
-    final AgentStatus agentStatus = client.agentStatus(TEST_AGENT).get();
-    final TaskStatus taskStatus = agentStatus.getStatuses().get(jobId);
+    final HostStatus hostStatus = client.hostStatus(TEST_HOST).get();
+    final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
     assertEquals(TaskStatus.State.FAILED, taskStatus.getState());
   }
 

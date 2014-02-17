@@ -4,34 +4,32 @@
 
 package com.spotify.helios.master;
 
-import com.google.common.collect.ImmutableList;
-
-import com.spotify.helios.common.AgentDoesNotExistException;
+import com.spotify.helios.common.HostNotFoundException;
 import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobExistsException;
 import com.spotify.helios.common.JobNotDeployedException;
 import com.spotify.helios.common.JobPortAllocationConflictException;
-import com.spotify.helios.common.JobStillInUseException;
-import com.spotify.helios.common.descriptors.AgentStatus;
+import com.spotify.helios.common.JobStillDeployedException;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobStatus;
 import com.spotify.helios.common.protocol.TaskStatusEvent;
-
-import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;
 
 public interface MasterModel {
 
-  void addAgent(String agent);
+  void registerHost(String host);
 
-  List<String> getAgents();
+  void deregisterHost(String host) throws HostNotFoundException, HostStillInUseException;
 
-  void removeAgent(String agent) throws AgentDoesNotExistException;
+  List<String> listHosts();
+
+  HostStatus getHostStatus(String host);
 
   void addJob(Job job) throws JobExistsException;
 
@@ -42,24 +40,22 @@ public interface MasterModel {
   JobStatus getJobStatus(JobId jobId);
 
   Job removeJob(JobId job) throws JobDoesNotExistException,
-                                  JobStillInUseException;
+                                  JobStillDeployedException;
 
-  void deployJob(String agent, Deployment job) throws AgentDoesNotExistException,
-                                                      JobAlreadyDeployedException,
-                                                      JobDoesNotExistException,
-                                                      JobPortAllocationConflictException;
+  void deployJob(String host, Deployment job) throws HostNotFoundException,
+                                                     JobAlreadyDeployedException,
+                                                     JobDoesNotExistException,
+                                                     JobPortAllocationConflictException;
 
-  Deployment getDeployment(String agent, JobId job);
+  Deployment getDeployment(String host, JobId job);
 
-  Deployment undeployJob(String agent, JobId job) throws AgentDoesNotExistException,
-                                                         JobNotDeployedException;
+  Deployment undeployJob(String host, JobId job) throws HostNotFoundException,
+                                                        JobNotDeployedException;
 
-  AgentStatus getAgentStatus(String agent);
+  void updateDeployment(String host, Deployment deployment) throws HostNotFoundException,
+                                                                   JobNotDeployedException;
 
-  void updateDeployment(String agent, Deployment deployment) throws AgentDoesNotExistException,
-                                                                    JobNotDeployedException;
-
-  ImmutableList<String> getRunningMasters();
+  List<String> getRunningMasters();
 
   List<TaskStatusEvent> getJobHistory(JobId jobId) throws JobDoesNotExistException;
 }

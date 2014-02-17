@@ -15,7 +15,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static com.spotify.helios.common.descriptors.AgentStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -29,8 +29,8 @@ public class SyslogRedirectionTest extends SystemTestBase {
     // just about every other part of it, and specifically, that the output doesn't get to
     // docker, and that the redirector executable exists and doesn't do anything terribly stupid.
     startDefaultMaster();
-    startDefaultAgent(TEST_AGENT, "--syslog-redirect", "10.0.3.1:6514");
-    awaitAgentStatus(TEST_AGENT, UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(TEST_HOST, "--syslog-redirect", "10.0.3.1:6514");
+    awaitHostStatus(TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
@@ -42,9 +42,9 @@ public class SyslogRedirectionTest extends SystemTestBase {
                                                   "BAR", "deadbeef"));
 
     // deploy
-    deployJob(jobId, TEST_AGENT);
+    deployJob(jobId, TEST_HOST);
 
-    final TaskStatus taskStatus = awaitTaskState(jobId, TEST_AGENT, EXITED);
+    final TaskStatus taskStatus = awaitTaskState(jobId, TEST_HOST, EXITED);
 
     final ClientResponse response = dockerClient.logContainer(taskStatus.getContainerId());
     final String logMessage = readLogFully(response);
