@@ -6,7 +6,13 @@ package com.spotify.helios.master;
 
 import com.google.common.collect.ImmutableList;
 
-import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.AgentDoesNotExistException;
+import com.spotify.helios.common.JobAlreadyDeployedException;
+import com.spotify.helios.common.JobDoesNotExistException;
+import com.spotify.helios.common.JobExistsException;
+import com.spotify.helios.common.JobNotDeployedException;
+import com.spotify.helios.common.JobPortAllocationConflictException;
+import com.spotify.helios.common.JobStillInUseException;
 import com.spotify.helios.common.descriptors.AgentStatus;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
@@ -21,40 +27,39 @@ import java.util.Map;
 
 public interface MasterModel {
 
-  // TODO (dano): instead of having all coordinator methods throwing checked HeliosExceptions on
-  // internal failures we should throw runtime exceptions for situations like ZooKeeper being borked
-  // and the caller cannot actually be expected to remedy the situation. Methods like getJobStatus
-  // should probably declare and throw a JobDoesNotExistException when a pre-condition like the
-  // existence of a job fails.
+  void addAgent(String agent);
 
-  void addAgent(String agent) throws HeliosException;
+  List<String> getAgents();
 
-  List<String> getAgents() throws HeliosException;
+  void removeAgent(String agent) throws AgentDoesNotExistException;
 
-  void removeAgent(String agent) throws HeliosException;
+  void addJob(Job job) throws JobExistsException;
 
-  void addJob(Job job) throws HeliosException;
+  Job getJob(JobId job);
 
-  @Nullable
-  Job getJob(JobId job) throws HeliosException;
+  Map<JobId, Job> getJobs();
 
-  Map<JobId, Job> getJobs() throws HeliosException;
+  JobStatus getJobStatus(JobId jobId);
 
-  JobStatus getJobStatus(JobId jobId) throws HeliosException;
+  Job removeJob(JobId job) throws JobDoesNotExistException,
+                                  JobStillInUseException;
 
-  Job removeJob(JobId job) throws HeliosException;
+  void deployJob(String agent, Deployment job) throws AgentDoesNotExistException,
+                                                      JobAlreadyDeployedException,
+                                                      JobDoesNotExistException,
+                                                      JobPortAllocationConflictException;
 
-  void deployJob(String agent, Deployment job) throws HeliosException;
+  Deployment getDeployment(String agent, JobId job);
 
-  Deployment getDeployment(String agent, JobId job) throws HeliosException;
+  Deployment undeployJob(String agent, JobId job) throws AgentDoesNotExistException,
+                                                         JobNotDeployedException;
 
-  Deployment undeployJob(String agent, JobId job) throws HeliosException;
+  AgentStatus getAgentStatus(String agent);
 
-  AgentStatus getAgentStatus(String agent) throws HeliosException;
+  void updateDeployment(String agent, Deployment deployment) throws AgentDoesNotExistException,
+                                                                    JobNotDeployedException;
 
-  void updateDeployment(String agent, Deployment deployment) throws HeliosException;
+  ImmutableList<String> getRunningMasters();
 
-  ImmutableList<String> getRunningMasters() throws HeliosException;
-
-  List<TaskStatusEvent> getJobHistory(JobId jobId) throws HeliosException;
+  List<TaskStatusEvent> getJobHistory(JobId jobId) throws JobDoesNotExistException;
 }

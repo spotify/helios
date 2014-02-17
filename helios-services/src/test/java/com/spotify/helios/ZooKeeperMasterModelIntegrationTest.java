@@ -23,7 +23,9 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -191,11 +193,11 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
   public void testUpdateDeploy() throws Exception {
     try {
       stopJob(model, JOB);
-      fail("should have thrown JobDoesNotExistException");
-    } catch (JobDoesNotExistException e) {
+      fail("should have thrown JobNotDeployedException");
+    } catch (JobNotDeployedException e) {
       assertTrue(true);
     } catch (Exception e) {
-      fail("Should have thrown an JobDoesNotExistException, got " + e.getClass());
+      fail("Should have thrown an JobNotDeployedException, got " + e.getClass());
     }
 
     model.addJob(JOB);

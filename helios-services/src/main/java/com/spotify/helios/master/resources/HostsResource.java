@@ -3,7 +3,6 @@ package com.spotify.helios.master.resources;
 import com.google.common.base.Optional;
 
 import com.spotify.helios.common.AgentDoesNotExistException;
-import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobAlreadyDeployedException;
 import com.spotify.helios.common.JobDoesNotExistException;
 import com.spotify.helios.common.JobNotDeployedException;
@@ -57,7 +56,7 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public List<String> list() throws HeliosException {
+  public List<String> list() {
     return model.getAgents();
   }
 
@@ -65,7 +64,7 @@ public class HostsResource {
   @Path("{id}")
   @Timed
   @ExceptionMetered
-  public Response.Status put(@PathParam("id") final String agent) throws HeliosException {
+  public Response.Status put(@PathParam("id") final String agent) {
     model.addAgent(agent);
     log.info("added host {}", agent);
     return Response.Status.OK;
@@ -77,7 +76,7 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public AgentDeleteResponse delete(@PathParam("id") final String agent) throws HeliosException {
+  public AgentDeleteResponse delete(@PathParam("id") final String agent) {
     try {
       model.removeAgent(agent);
       return new AgentDeleteResponse(AgentDeleteResponse.Status.OK, agent);
@@ -91,8 +90,7 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Optional<AgentStatus> hostStatus(@PathParam("id") final String agent)
-      throws HeliosException {
+  public Optional<AgentStatus> hostStatus(@PathParam("id") final String agent) {
     return Optional.fromNullable(model.getAgentStatus(agent));
   }
 
@@ -103,8 +101,7 @@ public class HostsResource {
   @ExceptionMetered
   public JobDeployResponse jobPut(@PathParam("host") final String host,
                                   @PathParam("job") final JobId jobId,
-                                  @Valid final Deployment deployment)
-      throws HeliosException {
+                                  @Valid final Deployment deployment) {
     if (!jobId.isFullyQualified()) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.INVALID_ID, host,
                                              jobId));
@@ -131,8 +128,7 @@ public class HostsResource {
   @Timed
   @ExceptionMetered
   public JobUndeployResponse jobDelete(@PathParam("host") final String host,
-                                       @PathParam("job") final JobId jobId)
-      throws HeliosException {
+                                       @PathParam("job") final JobId jobId) {
     if (!jobId.isFullyQualified()) {
       throw badRequest(new JobUndeployResponse(INVALID_ID, host, jobId));
     }
@@ -141,7 +137,7 @@ public class HostsResource {
       return new JobUndeployResponse(OK, host, jobId);
     } catch (AgentDoesNotExistException e) {
       throw notFound(new JobUndeployResponse(AGENT_NOT_FOUND, host, jobId));
-    } catch (JobDoesNotExistException e) {
+    } catch (JobNotDeployedException e) {
       throw notFound(new JobUndeployResponse(JOB_NOT_FOUND, host, jobId));
     }
   }
@@ -153,14 +149,12 @@ public class HostsResource {
   @ExceptionMetered
   public SetGoalResponse jobPatch(@PathParam("host") final String host,
                                   @PathParam("job") final JobId jobId,
-                                  @Valid final Deployment deployment) throws HeliosException {
+                                  @Valid final Deployment deployment) {
     if (!deployment.getJobId().equals(jobId)) {
       throw badRequest(new SetGoalResponse(SetGoalResponse.Status.ID_MISMATCH, host, jobId));
     }
     try {
       model.updateDeployment(host, deployment);
-    } catch (JobDoesNotExistException e) {
-      throw notFound(new SetGoalResponse(SetGoalResponse.Status.JOB_NOT_FOUND, host, jobId));
     } catch (AgentDoesNotExistException e) {
       throw notFound(new SetGoalResponse(SetGoalResponse.Status.AGENT_NOT_FOUND, host, jobId));
     } catch (JobNotDeployedException e) {
@@ -176,7 +170,7 @@ public class HostsResource {
   @Timed
   @ExceptionMetered
   public Optional<Deployment> jobGet(@PathParam("host") final String host,
-                                     @PathParam("job") final JobId jobId) throws HeliosException {
+                                     @PathParam("job") final JobId jobId) {
     if (!jobId.isFullyQualified()) {
       throw badRequest();
     }
