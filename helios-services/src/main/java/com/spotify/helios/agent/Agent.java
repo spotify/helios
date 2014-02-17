@@ -95,7 +95,6 @@ public class Agent extends AbstractIdleService {
   @Override
   protected void shutDown() throws Exception {
     reactor.stopAsync().awaitTerminated();
-    model.stopAsync().awaitTerminated();
     for (final Map.Entry<JobId, Supervisor> entry : supervisors.entrySet()) {
       entry.getValue().close();
     }

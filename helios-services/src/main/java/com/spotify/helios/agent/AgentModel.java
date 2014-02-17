@@ -16,7 +16,7 @@ import java.util.Map;
  * Models the desired state of a host as provided by mastera and provides a way for an agent to
  * indicate its current state.
  */
-public interface AgentModel extends Service {
+public interface AgentModel {
 
   /**
    * Get a map of tasks.

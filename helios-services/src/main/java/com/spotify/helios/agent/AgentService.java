@@ -68,7 +68,7 @@ public class AgentService extends AbstractIdleService {
   private final EnvironmentVariableReporter environmentVariableReporter;
   private final FileChannel stateLockFile;
   private final FileLock stateLock;
-  private final AgentModel model;
+  private final ZooKeeperAgentModel model;
   private final Metrics metrics;
   private final NamelessRegistrar namelessRegistrar;
   private final RiemannReporter riemannReporter;
@@ -146,10 +146,16 @@ public class AgentService extends AbstractIdleService {
 
     this.zooKeeperClient = setupZookeeperClient(config, id);
 
-    this.model = setupModel(config, new ZooKeeperClientProvider(
-        zooKeeperClient,
-        new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics())),
-        stateDirectory);
+    // Set up model
+    final ZooKeeperModelReporter modelReporter =
+        new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics());
+    final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(zooKeeperClient,
+                                                                                 modelReporter);
+    try {
+      this.model = new ZooKeeperAgentModel(zkClientProvider, config.getName(), stateDirectory);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
 
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
@@ -201,7 +207,6 @@ public class AgentService extends AbstractIdleService {
   /**
    * Create a Zookeeper client and create the control and state nodes if needed.
    *
-   *
    * @param config The service configuration.
    * @param id
    * @return A zookeeper client.
@@ -230,26 +235,6 @@ public class AgentService extends AbstractIdleService {
     }, MoreExecutors.sameThreadExecutor());
 
     return new DefaultZooKeeperClient(curator);
-  }
-
-  /**
-   * Set up an agent state using zookeeper.
-   *
-   *
-   *
-   * @param config          The service configuration.
-   * @param zooKeeperClient The ZooKeeper client to use.
-   * @param stateDirectory  The state directory to use.
-   * @return An agent state.
-   */
-  private static AgentModel setupModel(final AgentConfig config,
-                                       final ZooKeeperClientProvider zooKeeperClientProvider,
-                                       final Path stateDirectory) {
-    try {
-      return new ZooKeeperAgentModel(zooKeeperClientProvider, config.getName(), stateDirectory);
-    } catch (Exception e) {
-      throw new RuntimeException("state initialization failed", e);
-    }
   }
 
   @Override

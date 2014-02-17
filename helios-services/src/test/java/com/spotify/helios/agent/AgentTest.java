@@ -87,7 +87,6 @@ public class AgentTest {
     when(supervisorFactory.create(BAR_DESCRIPTOR.getId(), BAR_DESCRIPTOR))
         .thenReturn(barSupervisor);
     mockService(reactor);
-    mockService(model);
     when(reactorFactory.create(anyString(), callbackCaptor.capture(), timeoutCaptor.capture()))
         .thenReturn(reactor);
     when(model.getTasks()).thenReturn(unmodifiableJobs);

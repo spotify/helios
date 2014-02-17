@@ -16,6 +16,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.PersistentPathChildrenCache;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperPersistentNodeRemover;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentMap;
@@ -50,10 +51,10 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
 
   public ZooKeeperAgentModel(final ZooKeeperClientProvider provider, final String agent,
                              final Path stateDirectory) throws IOException {
+    final ZooKeeperClient client = provider.get("ZooKeeperAgentModel_ctor");
     this.agent = checkNotNull(agent);
     final Path taskConfigFile = stateDirectory.resolve(TASK_CONFIG_FILENAME);
-    this.tasks = provider.get("ZooKeeperAgentModel_ctor")
-        .pathChildrenCache(Paths.configHostJobs(agent), taskConfigFile);
+    this.tasks = client.pathChildrenCache(Paths.configHostJobs(agent), taskConfigFile);
     tasks.addListener(new JobsListener());
     final Path taskStatusFile = stateDirectory.resolve(TASK_STATUS_FILENAME);
     this.taskStatuses = ZooKeeperUpdatingPersistentMap.create("agent-model-task-statuses", provider,
