@@ -6,6 +6,7 @@ import com.google.common.base.Throwables;
 
 import com.bealetech.metrics.reporting.StatsdReporter;
 import com.yammer.dropwizard.lifecycle.Managed;
+import com.yammer.metrics.core.MetricsRegistry;
 
 import java.io.IOException;
 import java.util.List;
@@ -20,7 +21,8 @@ public class ManagedStatsdReporter implements Managed {
 
   private final StatsdReporter statsdReporter;
 
-  public ManagedStatsdReporter(final String endpoint, final String name) {
+  public ManagedStatsdReporter(final String endpoint, final String name,
+                               final MetricsRegistry registry) {
     if (Strings.isNullOrEmpty(endpoint)) {
       statsdReporter = null;
       return;
@@ -31,7 +33,7 @@ public class ManagedStatsdReporter implements Managed {
     final String host = parts.get(0);
     final int port = Integer.valueOf(parts.get(1));
     try {
-      statsdReporter = new StatsdReporter(host, port, name);
+      statsdReporter = new StatsdReporter(registry, host, port, name);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }

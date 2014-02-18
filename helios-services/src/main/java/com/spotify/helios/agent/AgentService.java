@@ -28,8 +28,9 @@ import com.spotify.nameless.client.NamelessRegistrar;
 import com.sun.management.OperatingSystemMXBean;
 import com.yammer.dropwizard.config.ConfigurationException;
 import com.yammer.dropwizard.config.Environment;
+import com.yammer.dropwizard.config.ServerFactory;
+import com.yammer.dropwizard.lifecycle.ServerLifecycleListener;
 import com.yammer.metrics.core.MetricsRegistry;
-import com.yammer.metrics.reporting.RiemannReporter;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -54,11 +55,7 @@ import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
-
-import com.yammer.dropwizard.config.ServerFactory;
-import com.yammer.dropwizard.lifecycle.ServerLifecycleListener;
 
 /**
  * The Helios agent.
@@ -80,10 +77,7 @@ public class AgentService extends AbstractIdleService {
   private final ZooKeeperAgentModel model;
   private final Metrics metrics;
   private final NamelessRegistrar namelessRegistrar;
-  private final RiemannReporter riemannReporter;
-  private final ManagedStatsdReporter statsdReporter;
   private final MetricsRegistry metricsRegistry;
-  private final DockerHealthChecker healthChecker;
   private final Environment environment;
 
   private PersistentEphemeralNode upNode;
@@ -147,18 +141,18 @@ public class AgentService extends AbstractIdleService {
     if (config.isInhibitMetrics()) {
       log.info("Not starting metrics");
       metrics = new NoopMetrics();
-      statsdReporter = null;
-      riemannReporter = null;
     } else {
       log.info("Starting metrics");
       metrics = new MetricsImpl(metricsRegistry);
-      statsdReporter = new ManagedStatsdReporter(config.getStatsdHostPort(), "helios-agent");
-      riemannReporter = riemannSupport.getReporter();
+      environment.manage(new ManagedStatsdReporter(config.getStatsdHostPort(), "helios-agent",
+          metricsRegistry));
+      environment.manage(riemannSupport);
     }
 
     this.zooKeeperClient = setupZookeeperClient(config, id);
-    this.healthChecker = new DockerHealthChecker(metrics.getSupervisorMetrics(),
-        TimeUnit.SECONDS, 30);
+    final DockerHealthChecker healthChecker = new DockerHealthChecker(
+        metrics.getSupervisorMetrics(), TimeUnit.SECONDS, 30);
+    environment.manage(healthChecker);
 
     // Set up model
     final ZooKeeperModelReporter modelReporter =
@@ -267,14 +261,6 @@ public class AgentService extends AbstractIdleService {
     agentInfoReporter.startAsync();
     environmentVariableReporter.startAsync();
     metrics.start();
-    statsdReporter.start();
-    healthChecker.start();
-    if (statsdReporter != null) {
-      statsdReporter.start();
-    }
-    if (riemannReporter != null) {
-      riemannReporter.start(15, SECONDS);
-    }
     logBanner();
     try {
       server.start();
@@ -299,7 +285,6 @@ public class AgentService extends AbstractIdleService {
   protected void shutDown() throws Exception {
     server.stop();
     server.join();
-    healthChecker.stop();
     hostInfoReporter.stopAsync().awaitTerminated();
     agentInfoReporter.stopAsync().awaitTerminated();
     environmentVariableReporter.stopAsync().awaitTerminated();
@@ -328,12 +313,6 @@ public class AgentService extends AbstractIdleService {
       stateLockFile.close();
     } catch (IOException e) {
       log.error("Failed to close state lock file", e);
-    }
-    if (statsdReporter != null) {
-      statsdReporter.stop();
-    }
-    if (riemannReporter != null) {
-      riemannReporter.shutdown();
     }
   }
 }

@@ -5,13 +5,16 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
 import com.aphyr.riemann.client.RiemannClient;
+import com.yammer.dropwizard.lifecycle.Managed;
 import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.reporting.RiemannReporter;
 import com.yammer.metrics.reporting.RiemannReporter.Config;
 
 import java.io.IOException;
 
-public class RiemannSupport {
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+public class RiemannSupport implements Managed {
   private final String host;
   private final int port;
   private final MetricsRegistry metricsRegistry;
@@ -19,6 +22,7 @@ public class RiemannSupport {
   private final String hostName;
 
   private RiemannClient client = null;
+  private RiemannReporter riemannReporter;
 
   public RiemannSupport(final MetricsRegistry metricsRegistry, final String hostPort,
                         final String hostName, final String serviceName) {
@@ -55,6 +59,7 @@ public class RiemannSupport {
     if (client == null) {
       try {
         client = RiemannClient.udp(host, port);
+        client.connect();
       } catch (IOException e) {
         throw new RuntimeException(e);
       }
@@ -70,9 +75,25 @@ public class RiemannSupport {
     Config c = Config.newBuilder()
         .metricsRegistry(metricsRegistry)
         .name(serviceName)
+        .localHost(hostName)
         .host(host)
         .port(port)
         .build();
     return new RiemannReporter(c, getClient());
+  }
+
+  @Override
+  public void start() throws Exception {
+    riemannReporter = getReporter();
+    if (riemannReporter != null) {
+      riemannReporter.start(15, SECONDS);
+    }
+  }
+
+  @Override
+  public void stop() throws Exception {
+    if (riemannReporter != null) {
+      riemannReporter.shutdown();
+    }
   }
 }

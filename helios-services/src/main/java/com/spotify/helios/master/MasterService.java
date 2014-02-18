@@ -4,6 +4,8 @@
 
 package com.spotify.helios.master;
 
+import ch.qos.logback.access.jetty.RequestLogImpl;
+
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -33,7 +35,6 @@ import com.yammer.dropwizard.config.RequestLogConfiguration;
 import com.yammer.dropwizard.config.ServerFactory;
 import com.yammer.dropwizard.lifecycle.ServerLifecycleListener;
 import com.yammer.metrics.core.MetricsRegistry;
-import com.yammer.metrics.reporting.RiemannReporter;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -48,10 +49,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.util.concurrent.Futures.getUnchecked;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.zookeeper.CreateMode.EPHEMERAL;
 
 /**
@@ -66,7 +65,6 @@ public class MasterService extends AbstractIdleService {
   private final Environment environment;
   private final NamelessRegistrar registrar;
   private final RiemannFacade riemannFacade;
-  private final RiemannReporter riemannReporter;
   private final ZooKeeperClient zooKeeperClient;
   private final MetricsRegistry metricsRegistry;
 
@@ -92,12 +90,12 @@ public class MasterService extends AbstractIdleService {
     final Metrics metrics;
     if (config.isInhibitMetrics()) {
       metrics = new NoopMetrics();
-      riemannReporter = null;
     } else {
       metrics = new MetricsImpl(metricsRegistry);
       metrics.start();
-      riemannReporter = riemannSupport.getReporter();
-      environment.manage(new ManagedStatsdReporter(config.getStatsdHostPort(), "helios-master"));
+      environment.manage(riemannSupport);
+      environment.manage(new ManagedStatsdReporter(config.getStatsdHostPort(), "helios-master",
+          metricsRegistry));
     }
 
     // Set up the master model
@@ -158,9 +156,7 @@ public class MasterService extends AbstractIdleService {
       namelessHandle = registrar.register("helios", "http",
                                           config.getHttpConfiguration().getPort());
     }
-    if (riemannReporter != null) {
-      riemannReporter.start(15, SECONDS);
-    }
+
   }
 
   @Override
@@ -175,9 +171,6 @@ public class MasterService extends AbstractIdleService {
     }
     zooKeeperClient.close();
     metricsRegistry.shutdown();
-    if (riemannReporter != null) {
-      riemannReporter.shutdown();
-    }
   }
 
   private void logBanner() {
