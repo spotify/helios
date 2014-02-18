@@ -175,6 +175,9 @@ public class MasterService extends AbstractIdleService {
     }
     zooKeeperClient.close();
     metricsRegistry.shutdown();
+    if (riemannReporter != null) {
+      riemannReporter.shutdown();
+    }
   }
 
   private void logBanner() {
@@ -182,9 +185,6 @@ public class MasterService extends AbstractIdleService {
       final String banner = Resources.toString(Resources.getResource("banner.txt"), UTF_8);
       log.info("\n{}", banner);
     } catch (IllegalArgumentException | IOException ignored) {
-    }
-    if (riemannReporter != null) {
-      riemannReporter.shutdown();
     }
   }
 

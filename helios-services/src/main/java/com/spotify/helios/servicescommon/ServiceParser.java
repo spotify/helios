@@ -13,6 +13,9 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import static com.google.common.base.Throwables.propagate;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -109,5 +112,16 @@ public class ServiceParser {
     } catch (IOException e) {
       throw propagate(e);
     }
+  }
+
+  protected InetSocketAddress parseSocketAddress(final String addressString) {
+    final InetSocketAddress address;
+    try {
+      final URI u = new URI(addressString);
+      address = new InetSocketAddress(u.getHost(), u.getPort());
+    } catch (URISyntaxException e) {
+      throw new IllegalArgumentException("Bad address: " + addressString, e);
+    }
+    return address;
   }
 }

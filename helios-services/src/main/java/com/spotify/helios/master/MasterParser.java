@@ -12,8 +12,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
 
 import static com.google.common.base.Optional.fromNullable;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
@@ -71,17 +69,6 @@ public class MasterParser extends ServiceParser {
         .setDefault((String) null)
         .help("host:port of where to send riemann events and metrics "
             + "(to be useful, --no-metrics must *NOT* be specified)");
-  }
-
-  private InetSocketAddress parseSocketAddress(final String addressString) {
-    final InetSocketAddress address;
-    try {
-      final URI u = new URI(addressString);
-      address = new InetSocketAddress(u.getHost(), u.getPort());
-    } catch (URISyntaxException e) {
-      throw new IllegalArgumentException("Bad address: " + addressString, e);
-    }
-    return address;
   }
 
   public MasterConfig getMasterConfig() {

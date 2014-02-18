@@ -2,24 +2,25 @@ package com.spotify.helios.servicescommon.statistics;
 
 public interface SupervisorMetrics {
 
-  public void supervisorStarted();
+  void supervisorStarted();
 
-  public void supervisorStopped();
+  void supervisorStopped();
 
-  public void supervisorClosed();
+  void supervisorClosed();
 
-  public void containersRunning();
+  void containersRunning();
 
-  public void containersExited();
+  void containersExited();
 
-  public void containersThrewException();
+  void containersThrewException();
 
-  public void containerStarted();
+  void containerStarted();
 
-  public MetricsContext containerPull();
+  MetricsContext containerPull();
 
-  public void imageCacheHit();
+  void imageCacheHit();
 
-  public void dockerTimeout();
+  void dockerTimeout();
 
+  MeterRates getDockerTimeoutRates();
 }

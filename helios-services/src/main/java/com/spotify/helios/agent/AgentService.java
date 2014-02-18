@@ -6,6 +6,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Throwables;
 import com.google.common.io.BaseEncoding;
+import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -25,6 +26,8 @@ import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 import com.spotify.nameless.client.Nameless;
 import com.spotify.nameless.client.NamelessRegistrar;
 import com.sun.management.OperatingSystemMXBean;
+import com.yammer.dropwizard.config.ConfigurationException;
+import com.yammer.dropwizard.config.Environment;
 import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.reporting.RiemannReporter;
 
@@ -33,6 +36,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,6 +47,7 @@ import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
@@ -51,6 +56,9 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
+
+import com.yammer.dropwizard.config.ServerFactory;
+import com.yammer.dropwizard.lifecycle.ServerLifecycleListener;
 
 /**
  * The Helios agent.
@@ -62,6 +70,7 @@ public class AgentService extends AbstractIdleService {
 
   private final Agent agent;
 
+  private final Server server;
   private final ZooKeeperClient zooKeeperClient;
   private final HostInfoReporter hostInfoReporter;
   private final AgentInfoReporter agentInfoReporter;
@@ -74,6 +83,8 @@ public class AgentService extends AbstractIdleService {
   private final RiemannReporter riemannReporter;
   private final ManagedStatsdReporter statsdReporter;
   private final MetricsRegistry metricsRegistry;
+  private final DockerHealthChecker healthChecker;
+  private final Environment environment;
 
   private PersistentEphemeralNode upNode;
   private AgentRegistrar registrar;
@@ -83,8 +94,9 @@ public class AgentService extends AbstractIdleService {
    *
    * @param config The service configuration.
    */
-  public AgentService(final AgentConfig config) {
-
+  public AgentService(final AgentConfig config, final Environment environment)
+      throws ConfigurationException {
+    this.environment = environment;
     // Create state directory, if necessary
     final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
     if (!Files.exists(stateDirectory)) {
@@ -145,6 +157,8 @@ public class AgentService extends AbstractIdleService {
     }
 
     this.zooKeeperClient = setupZookeeperClient(config, id);
+    this.healthChecker = new DockerHealthChecker(metrics.getSupervisorMetrics(),
+        TimeUnit.SECONDS, 30);
 
     // Set up model
     final ZooKeeperModelReporter modelReporter =
@@ -202,6 +216,12 @@ public class AgentService extends AbstractIdleService {
     final ReactorFactory reactorFactory = new ReactorFactory();
 
     this.agent = new Agent(model, supervisorFactory, reactorFactory);
+
+    environment.addHealthCheck(healthChecker);
+    environment.addResource(new AgentModelTaskResource(model));
+    environment.addResource(new AgentModelTaskStatusResource(model));
+    this.server = new ServerFactory(config.getHttpConfiguration(), environment.getName())
+        .buildServer(environment);
   }
 
   /**
@@ -248,16 +268,38 @@ public class AgentService extends AbstractIdleService {
     environmentVariableReporter.startAsync();
     metrics.start();
     statsdReporter.start();
+    healthChecker.start();
     if (statsdReporter != null) {
       statsdReporter.start();
     }
     if (riemannReporter != null) {
       riemannReporter.start(15, SECONDS);
     }
+    logBanner();
+    try {
+      server.start();
+      for (ServerLifecycleListener listener : environment.getServerListeners()) {
+        listener.serverStarted(server);
+      }
+    } catch (Exception e) {
+      log.error("Unable to start server, shutting down", e);
+      server.stop();
+    }
+  }
+
+  private void logBanner() {
+    try {
+      final String banner = Resources.toString(Resources.getResource("host-banner.txt"), UTF_8);
+      log.info("\n{}", banner);
+    } catch (IllegalArgumentException | IOException ignored) {
+    }
   }
 
   @Override
   protected void shutDown() throws Exception {
+    server.stop();
+    server.join();
+    healthChecker.stop();
     hostInfoReporter.stopAsync().awaitTerminated();
     agentInfoReporter.stopAsync().awaitTerminated();
     environmentVariableReporter.stopAsync().awaitTerminated();

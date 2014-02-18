@@ -163,4 +163,9 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     dockerTimeoutCounter.inc();
     dockerTimeoutMeter.mark();
   }
+
+  @Override
+  public MeterRates getDockerTimeoutRates() {
+    return new MeterRates(dockerTimeoutMeter);
+  }
 }

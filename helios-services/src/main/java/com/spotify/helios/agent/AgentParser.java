@@ -4,11 +4,13 @@ import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.servicescommon.ServiceParser;
+import com.yammer.dropwizard.config.HttpConfiguration;
 
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
@@ -48,6 +50,7 @@ public class AgentParser extends ServiceParser {
         }
       }
     }
+    final InetSocketAddress httpAddress = parseSocketAddress(options.getString("http"));
 
     this.agentConfig = new AgentConfig()
         .setName(options.getString("name"))
@@ -63,10 +66,24 @@ public class AgentParser extends ServiceParser {
         .setStatsdHostPort(options.getString("statsd_host_port"))
         .setRiemannHostPort(options.getString("riemann_host_port"))
         .setNamelessEndpoint(options.getString("nameless"));
+
+    final HttpConfiguration http = agentConfig.getHttpConfiguration();
+        http.setPort(httpAddress.getPort());
+        http.setBindHost(httpAddress.getHostString());
+        http.setAdminPort(options.getInt("admin"));
   }
 
   @Override
   protected void addArgs(final ArgumentParser parser) {
+    parser.addArgument("--http")
+        .setDefault("http://0.0.0.0:5803")
+        .help("http endpoint");
+
+    parser.addArgument("--admin")
+        .type(Integer.class)
+        .setDefault(5804)
+        .help("admin http port");
+
     parser.addArgument("--state-dir")
         .setDefault(".")
         .help("Directory for persisting agent state locally.");

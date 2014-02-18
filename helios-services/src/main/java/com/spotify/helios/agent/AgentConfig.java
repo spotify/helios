@@ -4,10 +4,12 @@
 
 package com.spotify.helios.agent;
 
+import com.yammer.dropwizard.config.Configuration;
+
 import java.nio.file.Path;
 import java.util.Map;
 
-public class AgentConfig {
+public class AgentConfig extends Configuration {
 
   private String site;
   private String name;

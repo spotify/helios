@@ -6,6 +6,9 @@ package com.spotify.helios.agent;
 
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.servicescommon.ServiceMain;
+import com.yammer.dropwizard.config.Environment;
+import com.yammer.dropwizard.json.ObjectMapperFactory;
+import com.yammer.dropwizard.validation.Validator;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
@@ -32,7 +35,9 @@ public class AgentMain extends ServiceMain {
 
   @Override
   protected void startUp() throws Exception {
-    service = new AgentService(agentConfig);
+    final Environment environment = new Environment("helios-agent", agentConfig,
+        new ObjectMapperFactory(), new Validator());
+    service = new AgentService(agentConfig, environment);
     service.startAsync().awaitRunning();
   }
 
@@ -49,6 +54,7 @@ public class AgentMain extends ServiceMain {
       main.startAsync();
       main.awaitTerminated();
     } catch (Throwable e) {
+      e.printStackTrace();
       System.exit(1);
     }
     // Ensure we exit even if there's lingering non-daemon threads
