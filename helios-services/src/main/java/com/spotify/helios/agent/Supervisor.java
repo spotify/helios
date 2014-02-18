@@ -435,6 +435,7 @@ class Supervisor {
     @Override
     public void run() {
       try {
+        metrics.supervisorRun();
         // Delay
         Thread.sleep(delayMillis);
 

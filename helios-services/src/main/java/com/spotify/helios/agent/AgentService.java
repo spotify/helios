@@ -157,7 +157,7 @@ public class AgentService extends AbstractIdleService {
 
     this.zooKeeperClient = setupZookeeperClient(config, id);
     final DockerHealthChecker healthChecker = new DockerHealthChecker(
-        metrics.getSupervisorMetrics(), TimeUnit.SECONDS, 30);
+        metrics.getSupervisorMetrics(), TimeUnit.SECONDS, 30, riemannFacade);
     environment.manage(healthChecker);
 
     // Set up model

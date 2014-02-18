@@ -22,5 +22,9 @@ public interface SupervisorMetrics {
 
   void dockerTimeout();
 
+  void supervisorRun();
+
   MeterRates getDockerTimeoutRates();
+  MeterRates getContainersThrewExceptionRates();
+  MeterRates getSupervisorRunRates();
 }

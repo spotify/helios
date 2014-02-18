@@ -36,7 +36,20 @@ public class NoopSupervisorMetrics implements SupervisorMetrics {
   public void dockerTimeout() {}
 
   @Override
+  public void supervisorRun() {}
+
+  @Override
   public MeterRates getDockerTimeoutRates() {
+    return new MeterRates(0,0,0);
+  }
+
+  @Override
+  public MeterRates getContainersThrewExceptionRates() {
+    return new MeterRates(0,0,0);
+  }
+
+  @Override
+  public MeterRates getSupervisorRunRates() {
     return new MeterRates(0,0,0);
   }
 }

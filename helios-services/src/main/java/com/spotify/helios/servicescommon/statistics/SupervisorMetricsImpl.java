@@ -20,6 +20,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
   private final Counter supervisorClosedCounter;
   private final Counter supervisorStartedCounter;
   private final Counter supervisorStoppedCounter;
+  private final Counter supervisorRunCounter;
   private final Counter dockerTimeoutCounter;
 
   private final Meter containerStartedMeter;
@@ -31,6 +32,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
   private final Meter supervisorClosedMeter;
   private final Meter supervisorStartedMeter;
   private final Meter supervisorStoppedMeter;
+  private final Meter supervisorRunMeter;
 
   private final MetricName containerStartedCounterName;
   private final MetricName containersExitedCounterName;
@@ -41,6 +43,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
   private final MetricName supervisorClosedCounterName;
   private final MetricName supervisorStartedCounterName;
   private final MetricName supervisorStoppedCounterName;
+  private final MetricName supervisorRunCounterName;
 
   private final MetricName containerStartedMeterName;
   private final MetricName containersExitedMeterName;
@@ -51,6 +54,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
   private final MetricName supervisorClosedMeterName;
   private final MetricName supervisorStartedMeterName;
   private final MetricName supervisorStoppedMeterName;
+  private final MetricName supervisorRunMeterName;
 
   public SupervisorMetricsImpl(final String group,
                                final MetricsRegistry registry) {
@@ -63,6 +67,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     supervisorClosedCounterName = new MetricName(group, TYPE, "supervisor_closed_counter");
     supervisorStartedCounterName = new MetricName(group, TYPE, "supervisors_created_counter");
     supervisorStoppedCounterName = new MetricName(group, TYPE, "supervisor_stopped_counter");
+    supervisorRunCounterName = new MetricName(group, TYPE, "supervisor_run_counter");
     dockerTimeoutCounterName = new MetricName(group, TYPE, "docker_timeout_counter");
 
     containerStartedMeterName = new MetricName(group, TYPE, "container_started_meter");
@@ -73,6 +78,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     supervisorClosedMeterName = new MetricName(group, TYPE, "supervisor_closed_meter");
     supervisorStartedMeterName = new MetricName(group, TYPE, "supervisors_created_meter");
     supervisorStoppedMeterName = new MetricName(group, TYPE, "supervisor_stopped_meter");
+    supervisorRunMeterName = new MetricName(group, TYPE, "supervisor_run_meter");
     dockerTimeoutMeterName = new MetricName(group, TYPE, "docker_timeout_meter");
 
     containerStartedCounter = registry.newCounter(containerStartedCounterName);
@@ -83,6 +89,7 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     supervisorClosedCounter = registry.newCounter(supervisorClosedCounterName);
     supervisorStartedCounter = registry.newCounter(supervisorStartedCounterName);
     supervisorStoppedCounter = registry.newCounter(supervisorStoppedCounterName);
+    supervisorRunCounter = registry.newCounter(supervisorRunCounterName);
     dockerTimeoutCounter = registry.newCounter(dockerTimeoutCounterName);
 
     containerStartedMeter = registry.newMeter(containerStartedMeterName, "container_starts",
@@ -99,6 +106,8 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     supervisorStartedMeter = registry.newMeter(supervisorStartedMeterName, "supervisor_starts",
         MINUTES);
     supervisorStoppedMeter = registry.newMeter(supervisorStoppedMeterName, "supervisor_stops",
+        MINUTES);
+    supervisorRunMeter = registry.newMeter(supervisorRunMeterName, "supervisor_runs",
         MINUTES);
     dockerTimeoutMeter = registry.newMeter(dockerTimeoutMeterName, "docker_timeouts", MINUTES);
 
@@ -167,5 +176,21 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
   @Override
   public MeterRates getDockerTimeoutRates() {
     return new MeterRates(dockerTimeoutMeter);
+  }
+
+  @Override
+  public void supervisorRun() {
+    supervisorRunCounter.inc();
+    supervisorRunMeter.mark();
+  }
+
+  @Override
+  public MeterRates getContainersThrewExceptionRates() {
+    return new MeterRates(containersThrewExceptionMeter);
+  }
+
+  @Override
+  public MeterRates getSupervisorRunRates() {
+    return new MeterRates(supervisorRunMeter);
   }
 }
