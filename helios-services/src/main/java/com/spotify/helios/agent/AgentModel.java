@@ -4,8 +4,6 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.util.concurrent.Service;
-
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;

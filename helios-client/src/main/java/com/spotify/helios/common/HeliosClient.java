@@ -463,10 +463,6 @@ public class HeliosClient {
       this.payload = payload;
     }
 
-    public Response(final String method, final URI uri, final int status) {
-      this(method, uri, status, null);
-    }
-
     @Override
     public String toString() {
       return "Response{" +
