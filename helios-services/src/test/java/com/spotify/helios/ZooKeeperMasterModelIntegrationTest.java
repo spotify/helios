@@ -41,7 +41,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
+public class ZooKeeperMasterModelIntegrationTest {
 
   private static final String IMAGE = "IMAGE";
   private static final String COMMAND = "COMMAND";
@@ -58,13 +58,13 @@ public class ZooKeeperMasterModelIntegrationTest extends ZooKeeperTestBase {
   private ZooKeeperClient client;
   private ZooKeeperMasterModel model;
 
+  private ZooKeeperStandaloneServerManager zk = new ZooKeeperStandaloneServerManager();
+
   @Before
   public void setup() throws Exception {
-    final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
-
-    final CuratorFramework curator = CuratorFrameworkFactory.newClient(
-        zookeeperEndpoint, zooKeeperRetryPolicy);
-
+    final RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+    final CuratorFramework curator = CuratorFrameworkFactory.newClient(zk.connectString(),
+                                                                       retryPolicy);
     curator.start();
     client = new DefaultZooKeeperClient(curator);
 

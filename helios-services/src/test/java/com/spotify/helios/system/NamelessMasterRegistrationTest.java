@@ -28,7 +28,7 @@ public class NamelessMasterRegistrationTest extends NamelessTestBase {
                 "--site", "localhost",
                 "--http", masterEndpoint,
                 "--admin=" + masterAdminPort,
-                "--zk", zookeeperEndpoint,
+                "--zk", zk.connectString(),
                 "--nameless=" + namelessEndpoint);
     final int masterPort = URI.create(masterEndpoint).getPort();
 

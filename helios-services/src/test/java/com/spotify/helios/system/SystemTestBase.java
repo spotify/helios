@@ -16,7 +16,8 @@ import com.kpelykh.docker.client.DockerException;
 import com.kpelykh.docker.client.model.Container;
 import com.kpelykh.docker.client.utils.LogReader;
 import com.spotify.helios.PortAllocator;
-import com.spotify.helios.ZooKeeperTestBase;
+import com.spotify.helios.ZooKeeperStandaloneServerManager;
+import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.HeliosClient;
@@ -85,7 +86,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
 @RunWith(MockitoJUnitRunner.class)
-public abstract class SystemTestBase extends ZooKeeperTestBase {
+public abstract class SystemTestBase {
 
   static final Logger log = LoggerFactory.getLogger(SystemTestBase.class);
 
@@ -131,6 +132,8 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
 
   Path agentStateDir;
 
+  protected ZooKeeperTestManager zk;
+
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
@@ -169,17 +172,19 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
     SLF4JBridgeHandler.install();
   }
 
-  @Override
   @Before
   public void setUp() throws Exception {
+    zk = zooKeeperTestManager();
     listThreads();
-    super.setUp();
-    ensure("/config");
-    ensure("/status");
+    zk.ensure("/config");
+    zk.ensure("/status");
     agentStateDir = Files.createTempDirectory("helios-agent");
   }
 
-  @Override
+  protected ZooKeeperTestManager zooKeeperTestManager() {
+    return new ZooKeeperStandaloneServerManager();
+  }
+
   @After
   public void teardown() throws Exception {
     for (final HeliosClient client : clients) {
@@ -235,13 +240,9 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
       log.error("Docker client exception", e);
     }
 
-    try {
-      FileUtils.deleteDirectory(agentStateDir.toFile());
-    } catch (IOException e) {
-      log.error("Failed to remove agent state dir", e);
-    }
+    FileUtils.deleteQuietly(agentStateDir.toFile());
 
-    super.teardown();
+    zk.close();
 
     listThreads();
   }
@@ -271,16 +272,16 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
                 "--http", masterEndpoint,
                 "--admin=" + masterAdminPort,
                 "--name", TEST_MASTER,
-                "--zk", zookeeperEndpoint);
+                "--zk", zk.connectString());
   }
 
-  AgentMain startDefaultAgent(final String agentName, final String... args)
+  AgentMain startDefaultAgent(final String host, final String... args)
       throws Exception {
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",
-                                                     "--name", agentName,
+                                                     "--name", host,
                                                      "--docker", DOCKER_ENDPOINT,
-                                                     "--zk", zookeeperEndpoint,
+                                                     "--zk", zk.connectString(),
                                                      "--zk-session-timeout", "100",
                                                      "--zk-connection-timeout", "100",
                                                      "--state-dir", agentStateDir.toString());

@@ -69,7 +69,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
 
     // Stop zookeeper
-    stopZookeeper();
+    zk.stop();
 
     // Wait for a while and make sure that the container is still running
     Thread.sleep(5000);
@@ -122,7 +122,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     assertTrue(dockerClient.inspectContainer(secondRestartedContainerId).state.running);
 
     // Start zookeeper
-    startZookeeper();
+    zk.start();
 
     // Verify that the agent is listed as up
     awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
