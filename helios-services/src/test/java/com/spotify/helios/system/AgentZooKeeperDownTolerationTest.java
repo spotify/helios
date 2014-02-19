@@ -42,7 +42,6 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     final AgentMain agent1 = startDefaultAgent(TEST_HOST);
 
-    // A simple netcat echo server
     // Create a job
     final Job job = Job.newBuilder()
         .setName(JOB_NAME)
