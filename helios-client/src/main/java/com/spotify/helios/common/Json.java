@@ -133,8 +133,12 @@ public class Json {
     return OBJECT_MAPPER.readValue(bytes, javaType);
   }
 
-  public static <T> T readUnchecked(final String content, final Class<T> clazz) throws IOException {
-    return OBJECT_MAPPER.readValue(content, clazz);
+  public static <T> T readUnchecked(final String content, final Class<T> clazz) {
+    try {
+      return OBJECT_MAPPER.readValue(content, clazz);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
   }
 
   public static <T> T readUnchecked(final String content, final TypeReference<?> typeReference) {

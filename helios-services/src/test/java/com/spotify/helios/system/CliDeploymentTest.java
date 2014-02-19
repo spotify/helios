@@ -39,7 +39,7 @@ public class CliDeploymentTest extends SystemTestBase {
     final String image = "busybox";
     final Map<String, PortMapping> ports = ImmutableMap.of(
         "foo", PortMapping.of(4711),
-        "bar", PortMapping.of(5000, EXTERNAL_PORT));
+        "bar", PortMapping.of(5000, EXTERNAL_PORT1));
     final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
         ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
         ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
@@ -67,7 +67,7 @@ public class CliDeploymentTest extends SystemTestBase {
     assertEquals(ServicePorts.of("bar"),
                  job.getRegistration().get(ServiceEndpoint.of("bar-service", "http")));
     assertEquals(4711, job.getPorts().get("foo").getInternalPort());
-    assertEquals(PortMapping.of(5000, EXTERNAL_PORT), job.getPorts().get("bar"));
+    assertEquals(PortMapping.of(5000, EXTERNAL_PORT1), job.getPorts().get("bar"));
     assertEquals("f00d", job.getEnv().get("BAD"));
 
     final String duplicateJob = cli(

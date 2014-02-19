@@ -50,7 +50,8 @@ public class SupervisorFactory {
    *
    * @return A new container.
    */
-  public Supervisor create(final JobId jobId, final Job descriptor) {
+  public Supervisor create(final JobId jobId, final Job descriptor,
+                           final Map<String, Integer> ports) {
     final RestartPolicy policy = RestartPolicy.newBuilder().build();
     final TaskStatusManagerImpl manager = TaskStatusManagerImpl.newBuilder()
         .setJobId(jobId)
@@ -63,9 +64,9 @@ public class SupervisorFactory {
         .build();
     final AsyncDockerClient dockerClient = new AsyncDockerClient(dockerClientFactory);
     return Supervisor.newBuilder()
-        .setAgentName(host)
+        .setHost(host)
         .setJobId(jobId)
-        .setDescriptor(descriptor)
+        .setJob(descriptor)
         .setModel(model)
         .setDockerClient(dockerClient)
         .setEnvVars(envVars)
@@ -76,6 +77,7 @@ public class SupervisorFactory {
         .setCommandWrapper(commandWrapper)
         .setMetrics(metrics)
         .setRiemannFacade(riemannFacade)
+        .setPorts(ports)
         .build();
   }
 }

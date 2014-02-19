@@ -38,7 +38,7 @@ public class NamelessContainerRegistrationTest extends NamelessTestBase {
     awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     final ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
-        "PORT_NAME", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
+        "PORT_NAME", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT1));
 
     final String serviceName = "SERVICE";
     final String serviceProto = "PROTO";
@@ -53,7 +53,7 @@ public class NamelessContainerRegistrationTest extends NamelessTestBase {
     awaitJobState(client, TEST_HOST, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
     final EndpointFilter filter = EndpointFilter.newBuilder()
-        .port(EXTERNAL_PORT)
+        .port(EXTERNAL_PORT1)
         .protocol(serviceProto)
         .service(serviceName)
         .build();
@@ -73,6 +73,6 @@ public class NamelessContainerRegistrationTest extends NamelessTestBase {
     final Messages.Endpoint endpoint = entry.getEndpoint();
     assertEquals("wrong service", serviceName, endpoint.getService());
     assertEquals("wrong protocol", serviceProto, endpoint.getProtocol());
-    assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT);
+    assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT1);
   }
 }

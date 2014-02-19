@@ -37,7 +37,7 @@ public class DeploymentTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     final Map<String, PortMapping> ports = ImmutableMap.of(
-        "foos", PortMapping.of(17, EXTERNAL_PORT));
+        "foos", PortMapping.of(17, EXTERNAL_PORT1));
 
     startDefaultMaster();
 

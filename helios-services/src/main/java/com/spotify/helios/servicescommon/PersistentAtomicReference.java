@@ -6,6 +6,7 @@ package com.spotify.helios.servicescommon;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
+import com.google.common.base.Throwables;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.Json;
@@ -40,7 +41,11 @@ public class PersistentAtomicReference<T> {
     this.tempfilename = filename.getFileSystem().getPath(this.filename.toString() + ".tmp");
     if (Files.exists(filename)) {
       final byte[] bytes = Files.readAllBytes(filename);
-      value = Json.read(bytes, typeReference);
+      if (bytes.length > 0) {
+        value = Json.read(bytes, typeReference);
+      } else {
+        value = initialValue.get();
+      }
     } else {
       value = initialValue.get();
     }
@@ -53,6 +58,14 @@ public class PersistentAtomicReference<T> {
       Files.write(tempfilename, json.getBytes(UTF_8));
       Files.move(tempfilename, filename, ATOMIC_MOVE, REPLACE_EXISTING);
       this.value = newValue;
+    }
+  }
+
+  public void setUnchecked(T newValue) {
+    try {
+      set(newValue);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
     }
   }
 

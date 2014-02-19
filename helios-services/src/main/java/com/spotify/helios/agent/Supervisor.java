@@ -4,6 +4,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
@@ -97,47 +98,30 @@ class Supervisor {
   private final SupervisorMetrics metrics;
   private final Reactor reactor;
   private final RiemannFacade riemannFacade;
+  private final Map<String, Integer> ports;
 
   private volatile Runner runner;
   private volatile Command currentCommand;
   private volatile Command performedCommand;
   private volatile ThrottleState throttle = ThrottleState.NO;
 
-  /**
-   * Create a new job supervisor.
-   *
-   * @param jobId     The job id.
-   * @param job       The job.
-   * @param model     The model to use.
-   * @param envVars   Environment variables to expose to child containers.
-   * @param registrar The Nameless registrar to register ports with.
-   * @param host
-   * @param metrics
-   * @param riemannFacade
-   */
-  private Supervisor(final JobId jobId, final Job job,
-                     final AgentModel model, final AsyncDockerClient dockerClient,
-                     final RestartPolicy restartPolicy, final Map<String, String> envVars,
-                     final FlapController flapController, final TaskStatusManager stateManager,
-                     final @Nullable NamelessRegistrar registrar,
-                     final CommandWrapper commandWrapper, final String host,
-                     final SupervisorMetrics metrics,
-                     final RiemannFacade riemannFacade) {
-    this.jobId = checkNotNull(jobId);
-    this.job = checkNotNull(job);
-    this.model = checkNotNull(model);
-    this.docker = checkNotNull(dockerClient);
-    this.restartPolicy = checkNotNull(restartPolicy);
-    this.envVars = checkNotNull(envVars);
-    this.flapController = checkNotNull(flapController);
-    this.stateManager = checkNotNull(stateManager);
-    this.registrar = registrar;
-    this.commandWrapper = checkNotNull(commandWrapper);
-    this.host = checkNotNull(host);
-    this.metrics = checkNotNull(metrics);
+  public Supervisor(final Builder builder) {
+    this.ports = builder.ports;
+    this.jobId = checkNotNull(builder.jobId);
+    this.job = checkNotNull(builder.job);
+    this.model = checkNotNull(builder.model);
+    this.docker = checkNotNull(builder.dockerClient);
+    this.restartPolicy = checkNotNull(builder.restartPolicy);
+    this.envVars = checkNotNull(builder.envVars);
+    this.flapController = checkNotNull(builder.flapController);
+    this.stateManager = checkNotNull(builder.stateManager);
+    this.registrar = builder.registrar;
+    this.commandWrapper = checkNotNull(builder.commandWrapper);
+    this.host = checkNotNull(builder.host);
+    this.metrics = checkNotNull(builder.metrics);
+    this.riemannFacade = checkNotNull(builder.riemannFacade);
     this.reactor = new DefaultReactor("supervisor-" + jobId, new Update(), SECONDS.toMillis(30));
     this.reactor.startAsync();
-    this.riemannFacade = checkNotNull(riemannFacade);
   }
 
   /**
@@ -309,29 +293,31 @@ class Supervisor {
   }
 
   /**
-   * Create a container host configuration for a job.
+   * Create a container host configuration for the job.
    */
-  private HostConfig hostConfig(final Job job) {
+  private HostConfig hostConfig() {
     final HostConfig hostConfig = new HostConfig();
-    hostConfig.portBindings = portBindings(job);
+    hostConfig.portBindings = portBindings();
     return hostConfig;
   }
 
   /**
-   * Create a port binding configuration for a job.
+   * Create a port binding configuration for the job.
    */
-  private Map<String, List<PortBinding>> portBindings(final Job job) {
-    final Map<String, List<PortBinding>> ports = Maps.newHashMap();
+  private Map<String, List<PortBinding>> portBindings() {
+    final Map<String, List<PortBinding>> bindings = Maps.newHashMap();
     for (final Map.Entry<String, PortMapping> e : job.getPorts().entrySet()) {
       final PortMapping mapping = e.getValue();
       final PortBinding binding = new PortBinding();
-      if (mapping.getExternalPort() != null) {
+      if (mapping.getExternalPort() == null) {
+        binding.hostPort = ports.get(e.getKey()).toString();
+      } else {
         binding.hostPort = mapping.getExternalPort().toString();
       }
       final String entry = containerPort(mapping.getInternalPort(), mapping.getProtocol());
-      ports.put(entry, asList(binding));
+      bindings.put(entry, asList(binding));
     }
-    return ports;
+    return bindings;
   }
 
   private boolean checkForDockerTimeout(DockerException e, String tag) {
@@ -519,10 +505,15 @@ class Supervisor {
       } catch (InterruptedException e) {
         metrics.containersThrewException();
         resultFuture.setException(e);
-      } catch (Exception e) {
+      } catch (Throwable e) {
         // Keep separate catch clauses to simplify setting breakpoints on actual errors
         metrics.containersThrewException();
         resultFuture.setException(e);
+      } finally {
+        if (!resultFuture.isDone()) {
+          log.error("result future not set!");
+          resultFuture.setException(new Exception("result future not set!"));
+        }
       }
     }
 
@@ -545,7 +536,7 @@ class Supervisor {
       final String containerId = container.id;
       log.info("created container: {}: {}", job, container);
 
-      final HostConfig hostConfig = hostConfig(job);
+      final HostConfig hostConfig = hostConfig();
       commandWrapper.modifyStartConfig(hostConfig);
 
       setStatus(STARTING, containerId, null);
@@ -599,9 +590,10 @@ class Supervisor {
         context.failure();
         throw new ImagePullFailedException(e);
       }
+      pullStream = response.getResponse().getEntityInputStream();
+
       try {
         // Wait until image is completely pulled
-        pullStream = response.getResponse().getEntityInputStream();
         tailPull(image, pullStream);
       } finally {
         response.close();
@@ -675,7 +667,7 @@ class Supervisor {
   }
 
   /**
-   * Assumes port binding matches output of {@link #portBindings(Job)}
+   * Assumes port binding matches output of {@link #portBindings}
    */
   private PortMapping parsePortBinding(final String entry, final List<PortBinding> bindings) {
     final List<String> parts = Splitter.on('/').splitToList(entry);
@@ -733,6 +725,7 @@ class Supervisor {
       throw new RuntimeException(e);
     }
 
+    // TODO (dano): this can block forever and seems to be impossible to abort by closing the client
     while (messages.hasNext()) {
       Map<String, Object> message = messages.next();
       final Object error = message.get("error");
@@ -781,11 +774,13 @@ class Supervisor {
 
   public static class Builder {
 
+    private Map<String, Integer> ports;
+
     private Builder() {
     }
 
     private JobId jobId;
-    private Job descriptor;
+    private Job job;
     private AgentModel model;
     private AsyncDockerClient dockerClient;
     private Map<String, String> envVars = emptyMap();
@@ -794,7 +789,7 @@ class Supervisor {
     private TaskStatusManager stateManager;
     private NamelessRegistrar registrar;
     private CommandWrapper commandWrapper;
-    private String agentName;
+    private String host;
     private SupervisorMetrics metrics;
     private RiemannFacade riemannFacade;
 
@@ -808,8 +803,8 @@ class Supervisor {
       return this;
     }
 
-    public Builder setDescriptor(final Job descriptor) {
-      this.descriptor = descriptor;
+    public Builder setJob(final Job job) {
+      this.job = job;
       return this;
     }
 
@@ -850,13 +845,11 @@ class Supervisor {
     }
 
     public Supervisor build() {
-      return new Supervisor(jobId, descriptor, model, dockerClient, restartPolicy,
-                            envVars, flapController, stateManager, registrar,
-                            commandWrapper, agentName, metrics, riemannFacade);
+      return new Supervisor(this);
     }
 
-    public Builder setAgentName(String agentName) {
-      this.agentName = agentName;
+    public Builder setHost(String host) {
+      this.host = host;
       return this;
     }
 
@@ -868,6 +861,15 @@ class Supervisor {
     public Builder setRiemannFacade(RiemannFacade riemannFacade) {
       this.riemannFacade = riemannFacade;
       return this;
+    }
+
+    public Builder setPorts(final Map<String, Integer> ports) {
+      this.ports = ports;
+      return this;
+    }
+
+    public Map<String, Integer> getPorts() {
+      return ports;
     }
   }
 
@@ -980,5 +982,18 @@ class Supervisor {
 
       setStatus(STOPPED, containerId);
     }
+  }
+
+  @Override
+  public String toString() {
+    return Objects.toStringHelper(this)
+        .add("jobId", jobId)
+        .add("job", job)
+        .add("envVars", envVars)
+        .add("host", host)
+        .add("ports", ports)
+        .add("currentCommand", currentCommand)
+        .add("performedCommand", performedCommand)
+        .toString();
   }
 }

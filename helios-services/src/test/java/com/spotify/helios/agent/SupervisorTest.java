@@ -100,9 +100,9 @@ public class SupervisorTest {
         .setModel(model)
         .build();
     sut = Supervisor.newBuilder()
-        .setAgentName("AGENT_NAME")
+        .setHost("AGENT_NAME")
         .setJobId(JOB_ID)
-        .setDescriptor(DESCRIPTOR)
+        .setJob(DESCRIPTOR)
         .setModel(model)
         .setDockerClient(docker)
         .setRestartPolicy(policy)

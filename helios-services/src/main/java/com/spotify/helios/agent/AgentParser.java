@@ -1,6 +1,7 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.servicescommon.ServiceParser;
@@ -52,6 +53,23 @@ public class AgentParser extends ServiceParser {
     }
     final InetSocketAddress httpAddress = parseSocketAddress(options.getString("http"));
 
+    final String portRangeString = options.getString("port_range");
+    final List<String> parts = Splitter.on(':').splitToList(portRangeString);
+    if (parts.size() != 2) {
+      throw new IllegalArgumentException("Bad port range: " + portRangeString);
+    }
+    final int start;
+    final int end;
+    try {
+      start = Integer.valueOf(parts.get(0));
+      end = Integer.valueOf(parts.get(1));
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException("Bad port range: " + portRangeString);
+    }
+    if (end <= start) {
+      throw new IllegalArgumentException("Bad port range: " + portRangeString);
+    }
+
     this.agentConfig = new AgentConfig()
         .setName(options.getString("name"))
         .setZooKeeperConnectionString(options.getString("zk"))
@@ -65,7 +83,8 @@ public class AgentParser extends ServiceParser {
         .setStateDirectory(Paths.get(options.getString("state_dir")))
         .setStatsdHostPort(options.getString("statsd_host_port"))
         .setRiemannHostPort(options.getString("riemann_host_port"))
-        .setNamelessEndpoint(options.getString("nameless"));
+        .setNamelessEndpoint(options.getString("nameless"))
+        .setPortRange(start, end);
 
     final HttpConfiguration http = agentConfig.getHttpConfiguration();
         http.setPort(httpAddress.getPort());
@@ -115,6 +134,10 @@ public class AgentParser extends ServiceParser {
         .setDefault((String) null)
         .help("host:port of where to send riemann events and metrics "
             + "(to be useful, --no-metrics must *NOT* be specified)");
+
+    parser.addArgument("--port-range")
+        .setDefault("40000:49152")
+        .help("Port allocation range, start:end (end exclusive).");
 
   }
 

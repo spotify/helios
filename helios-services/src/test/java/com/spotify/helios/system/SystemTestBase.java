@@ -97,7 +97,8 @@ public abstract class SystemTestBase extends ZooKeeperTestBase {
   static final int INTERNAL_PORT = 4444;
 
   // TODO (dano): use ephemeral port range when nameless is fixed
-  final int EXTERNAL_PORT = new SecureRandom().nextInt(10000) + 30000;
+  final int EXTERNAL_PORT1 = new SecureRandom().nextInt(10000) + 30000;
+  final int EXTERNAL_PORT2 = new SecureRandom().nextInt(10000) + 30000;
 
   static final Map<String, String> EMPTY_ENV = emptyMap();
   static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();

@@ -4,14 +4,18 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
+import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannSupport;
@@ -48,9 +52,11 @@ import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -209,7 +215,18 @@ public class AgentService extends AbstractIdleService {
 
     final ReactorFactory reactorFactory = new ReactorFactory();
 
-    this.agent = new Agent(model, supervisorFactory, reactorFactory);
+    final PortAllocator portAllocator = new PortAllocator(config.getPortRangeStart(),
+                                                          config.getPortRangeEnd());
+    final PersistentAtomicReference<Map<JobId, Execution>> executions;
+    try {
+      executions = PersistentAtomicReference.create(stateDirectory.resolve("executions.json"),
+                                                    new TypeReference<Map<JobId, Execution>>() {},
+                                                    Suppliers.ofInstance(EMPTY_EXECUTIONS));
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+
+    this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator);
 
     environment.addHealthCheck(healthChecker);
     environment.addResource(new AgentModelTaskResource(model));

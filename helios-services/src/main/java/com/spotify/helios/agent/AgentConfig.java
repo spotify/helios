@@ -24,6 +24,8 @@ public class AgentConfig extends Configuration {
   private String statsdHostPort;
   private String riemannHostPort;
   private String namelessEndpoint;
+  private int portRangeStart;
+  private int portRangeEnd;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -139,5 +141,19 @@ public class AgentConfig extends Configuration {
 
   public String getNamelessEndpoint() {
     return namelessEndpoint;
+  }
+
+  public AgentConfig setPortRange(final int start, final int end) {
+    this.portRangeStart = start;
+    this.portRangeEnd = end;
+    return this;
+  }
+
+  public int getPortRangeStart() {
+    return portRangeStart;
+  }
+
+  public int getPortRangeEnd() {
+    return portRangeEnd;
   }
 }
