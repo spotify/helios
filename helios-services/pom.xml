@@ -167,7 +167,7 @@
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>nameless-common</artifactId>
-      <version>1.6</version>
+      <version>1.7</version>
       <exclusions>
         <exclusion>
           <groupId>com.netflix.astyanax</groupId>
@@ -213,7 +213,7 @@
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>nameless-registry</artifactId>
-      <version>0.2.8-20140214.080512-1</version>
+      <version>0.2.8</version>
       <scope>test</scope>
     </dependency>
     <dependency>
