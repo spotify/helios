@@ -69,6 +69,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -956,6 +957,11 @@ class Supervisor {
         return;
       }
 
+      final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
+          .setMinIntervalMillis(SECONDS.toMillis(5))
+          .setMaxIntervalMillis(SECONDS.toMillis(30))
+          .build().newScheduler();
+
       // Wait for the runner and container to die
       boolean containerStopped = false;
       while ((runner != null && runner.isRunning()) || !containerStopped) {
@@ -969,7 +975,7 @@ class Supervisor {
             }
           } catch (DockerException e) {
             log.error("failed to query container {}", containerId, e);
-            sleepUninterruptibly(1, SECONDS);
+            sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
           }
 
           // Kill the container if it's running
@@ -981,7 +987,7 @@ class Supervisor {
             } catch (DockerException e) {
               checkForDockerTimeout(e, "kill_container");
               log.error("failed to kill container {}", containerId, e);
-              sleepUninterruptibly(1, SECONDS);
+              sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
             }
           }
         }
