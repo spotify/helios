@@ -126,6 +126,7 @@ class Supervisor {
     this.metrics = checkNotNull(builder.metrics);
     this.riemannFacade = checkNotNull(builder.riemannFacade);
     this.listener = builder.listener;
+    this.currentCommand = new Nop();
     this.reactor = new DefaultReactor("supervisor-" + jobId, new Update(), SECONDS.toMillis(30));
     this.reactor.startAsync();
   }
@@ -996,6 +997,13 @@ class Supervisor {
       runner = null;
 
       setStatus(STOPPED, containerId);
+    }
+  }
+
+  private class Nop implements Command {
+
+    @Override
+    public void perform(final boolean done) {
     }
   }
 
