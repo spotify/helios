@@ -66,7 +66,6 @@ public class MasterService extends AbstractIdleService {
   private final NamelessRegistrar registrar;
   private final RiemannFacade riemannFacade;
   private final ZooKeeperClient zooKeeperClient;
-  private final MetricsRegistry metricsRegistry;
 
   private ListenableFuture<RegistrationHandle> namelessHandle;
 
@@ -82,7 +81,7 @@ public class MasterService extends AbstractIdleService {
 
     // Configure metrics
     // TODO (dano): do something with the riemann facade
-    metricsRegistry = new MetricsRegistry();
+    final MetricsRegistry metricsRegistry = com.yammer.metrics.Metrics.defaultRegistry();
     RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(),
         config.getName(), "helios-master");
     riemannFacade = riemannSupport.getFacade();
@@ -170,7 +169,6 @@ public class MasterService extends AbstractIdleService {
       registrar.shutdown();
     }
     zooKeeperClient.close();
-    metricsRegistry.shutdown();
   }
 
   private void logBanner() {

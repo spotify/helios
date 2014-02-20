@@ -83,7 +83,6 @@ public class AgentService extends AbstractIdleService {
   private final ZooKeeperAgentModel model;
   private final Metrics metrics;
   private final NamelessRegistrar namelessRegistrar;
-  private final MetricsRegistry metricsRegistry;
   private final Environment environment;
 
   private PersistentEphemeralNode upNode;
@@ -138,7 +137,7 @@ public class AgentService extends AbstractIdleService {
     }
 
     // Configure metrics
-    metricsRegistry = new MetricsRegistry();
+    final MetricsRegistry metricsRegistry = com.yammer.metrics.Metrics.defaultRegistry();
     RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(),
       config.getName(), "helios-agent");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();
@@ -149,7 +148,7 @@ public class AgentService extends AbstractIdleService {
       log.info("Starting metrics");
       metrics = new MetricsImpl(metricsRegistry);
       environment.manage(new ManagedStatsdReporter(config.getStatsdHostPort(), "helios-agent",
-          metricsRegistry));
+                                                   metricsRegistry));
       environment.manage(riemannSupport);
     }
 
@@ -317,7 +316,6 @@ public class AgentService extends AbstractIdleService {
       }
     }
     metrics.stop();
-    metricsRegistry.shutdown();
     zooKeeperClient.close();
     try {
       stateLock.release();
