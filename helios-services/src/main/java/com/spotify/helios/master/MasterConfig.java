@@ -16,6 +16,7 @@ public class MasterConfig extends Configuration {
   private String statsdHostPort;
   private String riemannHostPort;
   private String namelessEndpoint;
+  private String sentryDsn;
 
   public String getHermesEndpoint() {
     return endpoint;
@@ -87,5 +88,14 @@ public class MasterConfig extends Configuration {
 
   public String getNamelessEndpoint() {
     return namelessEndpoint;
+  }
+
+  public String getSentryDsn() {
+    return sentryDsn;
+  }
+
+  public MasterConfig setSentryDsn(String sentryDsn) {
+    this.sentryDsn = sentryDsn;
+    return this;
   }
 }

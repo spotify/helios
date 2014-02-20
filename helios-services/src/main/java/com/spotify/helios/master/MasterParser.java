@@ -34,7 +34,8 @@ public class MasterParser extends ServiceParser {
         .setStatsdHostPort(options.getString("statsd_host_port"))
         .setRiemannHostPort(options.getString("riemann_host_port"))
         .setInhibitMetrics(fromNullable(options.getBoolean("no_metrics")).or(false))
-        .setNamelessEndpoint(options.getString("nameless"));
+        .setNamelessEndpoint(options.getString("nameless"))
+        .setSentryDsn(options.getString("sentry_dsn"));
 
     final HttpConfiguration http = config.getHttpConfiguration();
     http.setPort(httpAddress.getPort());
@@ -69,6 +70,10 @@ public class MasterParser extends ServiceParser {
         .setDefault((String) null)
         .help("host:port of where to send riemann events and metrics "
             + "(to be useful, --no-metrics must *NOT* be specified)");
+
+    parser.addArgument("--sentry-dsn")
+        .setDefault((String) null)
+        .help("The sentry data source name");
   }
 
   public MasterConfig getMasterConfig() {

@@ -1,5 +1,6 @@
 package com.spotify.helios.servicescommon;
 
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.LoggingConfig;
@@ -21,11 +22,11 @@ public abstract class ServiceMain extends AbstractIdleService {
 
   protected final Logger log = LoggerFactory.getLogger(this.getClass());
 
-  protected ServiceMain(LoggingConfig loggingConfig) {
-    setupLogging(loggingConfig);
+  protected ServiceMain(LoggingConfig loggingConfig, String sentryDsn) {
+    setupLogging(loggingConfig, sentryDsn);
   }
 
-  protected void setupLogging(LoggingConfig config) {
+  protected static void setupLogging(LoggingConfig config, String sentryDsn) {
     if (config.getNoLogSetup()) {
       return;
     }
@@ -46,8 +47,8 @@ public abstract class ServiceMain extends AbstractIdleService {
       } else {
         LoggingConfigurator.configureDefaults("helios", level);
       }
-      String sentryDsn = System.getenv("SENTRY_DSN");
-      if (sentryDsn != null) {
+
+      if (!Strings.isNullOrEmpty(sentryDsn)) {
         LoggingConfigurator.addSentryAppender(sentryDsn);
       }
     }

@@ -26,6 +26,7 @@ public class AgentConfig extends Configuration {
   private String namelessEndpoint;
   private int portRangeStart;
   private int portRangeEnd;
+  private String sentryDsn;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -155,5 +156,14 @@ public class AgentConfig extends Configuration {
 
   public int getPortRangeEnd() {
     return portRangeEnd;
+  }
+
+  public String getSentryDsn() {
+    return sentryDsn;
+  }
+
+  public AgentConfig setSentryDsn(String sentryDsn) {
+    this.sentryDsn = sentryDsn;
+    return this;
   }
 }
