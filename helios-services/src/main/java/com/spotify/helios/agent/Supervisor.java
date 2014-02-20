@@ -76,6 +76,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 class Supervisor {
 
+  public interface Listener {
+    void stateChanged(Supervisor supervisor);
+  }
+
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
@@ -99,6 +103,7 @@ class Supervisor {
   private final Reactor reactor;
   private final RiemannFacade riemannFacade;
   private final Map<String, Integer> ports;
+  private final Listener listener;
 
   private volatile Runner runner;
   private volatile Command currentCommand;
@@ -120,6 +125,7 @@ class Supervisor {
     this.host = checkNotNull(builder.host);
     this.metrics = checkNotNull(builder.metrics);
     this.riemannFacade = checkNotNull(builder.riemannFacade);
+    this.listener = builder.listener;
     this.reactor = new DefaultReactor("supervisor-" + jobId, new Update(), SECONDS.toMillis(30));
     this.reactor.startAsync();
   }
@@ -129,7 +135,7 @@ class Supervisor {
    */
   public void start() {
     currentCommand = new Start();
-    reactor.update();
+    reactor.signal();
     metrics.supervisorStarted();
   }
 
@@ -138,7 +144,7 @@ class Supervisor {
    */
   public void stop() throws InterruptedException {
     currentCommand = new Stop();
-    reactor.update();
+    reactor.signal();
     metrics.supervisorStopped();
   }
 
@@ -765,7 +771,14 @@ class Supervisor {
     public void run() throws InterruptedException {
       final boolean done = performedCommand == currentCommand;
       currentCommand.perform(done);
-      performedCommand = currentCommand;
+      if (!done) {
+        performedCommand = currentCommand;
+        try {
+          listener.stateChanged(Supervisor.this);
+        } catch (Exception e) {
+          log.error("Listener threw exception", e);
+        }
+      }
     }
   }
 
@@ -793,6 +806,7 @@ class Supervisor {
     private String host;
     private SupervisorMetrics metrics;
     private RiemannFacade riemannFacade;
+    private Listener listener;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -819,7 +833,6 @@ class Supervisor {
       return this;
     }
 
-
     public Builder setEnvVars(Map<String, String> envVars) {
       this.envVars = envVars;
       return this;
@@ -845,10 +858,6 @@ class Supervisor {
       return this;
     }
 
-    public Supervisor build() {
-      return new Supervisor(this);
-    }
-
     public Builder setHost(String host) {
       this.host = host;
       return this;
@@ -869,8 +878,13 @@ class Supervisor {
       return this;
     }
 
-    public Map<String, Integer> getPorts() {
-      return ports;
+    public Builder setListener(final Listener listener) {
+      this.listener = listener;
+      return this;
+    }
+
+    public Supervisor build() {
+      return new Supervisor(this);
     }
   }
 
@@ -914,7 +928,7 @@ class Supervisor {
       log.debug("starting job: {} (delay={}): {}", jobId, delay, job);
       runner = new Runner(delay);
       runner.startAsync();
-      runner.result().addListener(reactor.updateRunnable(), sameThreadExecutor());
+      runner.result().addListener(reactor.signalRunnable(), sameThreadExecutor());
     }
   }
 

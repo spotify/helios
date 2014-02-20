@@ -12,7 +12,13 @@ public interface Reactor extends Service {
     void run() throws InterruptedException;
   }
 
-  void update();
+  /**
+   * Send a signal to trigger the reactor. Must never block.
+   */
+  void signal();
 
-  Runnable updateRunnable();
+  /**
+   * Returns a runnable that calls {@link #signal()}
+   */
+  Runnable signalRunnable();
 }

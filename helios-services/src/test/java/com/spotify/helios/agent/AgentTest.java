@@ -120,10 +120,12 @@ public class AgentTest {
     when(portAllocator.allocate(eq(BAR_DESCRIPTOR.getPorts()), anySet()))
         .thenReturn(BAR_PORT_ALLOCATION);
     when(supervisorFactory.create(eq(FOO_DESCRIPTOR.getId()), eq(FOO_DESCRIPTOR),
-                                  anyMapOf(String.class, Integer.class)))
+                                  anyMapOf(String.class, Integer.class),
+                                  any(Supervisor.Listener.class)))
         .thenReturn(fooSupervisor);
     when(supervisorFactory.create(eq(BAR_DESCRIPTOR.getId()), eq(BAR_DESCRIPTOR),
-                                  anyMapOf(String.class, Integer.class)))
+                                  anyMapOf(String.class, Integer.class),
+                                  any(Supervisor.Listener.class)))
         .thenReturn(barSupervisor);
     mockService(reactor);
     when(reactorFactory.create(anyString(), callbackCaptor.capture(), timeoutCaptor.capture()))
@@ -144,7 +146,7 @@ public class AgentTest {
     callback = callbackCaptor.getValue();
     verify(model).addListener(listenerCaptor.capture());
     listener = listenerCaptor.getValue();
-    verify(reactor).update();
+    verify(reactor).signal();
   }
 
   private void configure(final Job job, final Goal goal) {
@@ -171,7 +173,7 @@ public class AgentTest {
   public void verifyReactorIsUpdatedWhenListenerIsCalled() throws Exception {
     startAgent();
     listener.tasksChanged(model);
-    verify(reactor, times(2)).update();
+    verify(reactor, times(2)).signal();
   }
 
   @SuppressWarnings("unchecked")
@@ -196,8 +198,12 @@ public class AgentTest {
 
     verify(portAllocator, never()).allocate(anyMap(), anySet());
 
-    verify(supervisorFactory).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR, EMPTY_PORT_ALLOCATION);
-    verify(supervisorFactory).create(BAR_DESCRIPTOR.getId(), BAR_DESCRIPTOR, EMPTY_PORT_ALLOCATION);
+    verify(supervisorFactory).create(eq(FOO_DESCRIPTOR.getId()), eq(FOO_DESCRIPTOR),
+                                     eq(EMPTY_PORT_ALLOCATION),
+                                     any(Supervisor.Listener.class));
+    verify(supervisorFactory).create(eq(BAR_DESCRIPTOR.getId()), eq(BAR_DESCRIPTOR),
+                                     eq(EMPTY_PORT_ALLOCATION),
+                                     any(Supervisor.Listener.class));
 
     callback.run();
 
@@ -234,8 +240,8 @@ public class AgentTest {
 
     // Verify that the undesired supervisor was created and started
     verify(portAllocator, never()).allocate(anyMap(), anySet());
-    verify(supervisorFactory).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR,
-                                     EMPTY_PORT_ALLOCATION);
+    verify(supervisorFactory).create(eq(FOO_DESCRIPTOR.getId()), eq(FOO_DESCRIPTOR),
+                                     eq(EMPTY_PORT_ALLOCATION), any(Supervisor.Listener.class));
 
     // ... and then started
     callback.run();
@@ -268,8 +274,8 @@ public class AgentTest {
 
     // Verify that the undesired supervisor was created
     verify(portAllocator, never()).allocate(anyMap(), anySet());
-    verify(supervisorFactory).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR,
-                                     EMPTY_PORT_ALLOCATION);
+    verify(supervisorFactory).create(eq(FOO_DESCRIPTOR.getId()), eq(FOO_DESCRIPTOR),
+                                     eq(EMPTY_PORT_ALLOCATION), any(Supervisor.Listener.class));
 
     // ... and then stopped
     callback.run();
@@ -291,14 +297,18 @@ public class AgentTest {
 
     start(FOO_DESCRIPTOR);
     verify(portAllocator).allocate(FOO_DESCRIPTOR.getPorts(), EMPTY_PORT_SET);
-    verify(supervisorFactory).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR, FOO_PORT_ALLOCATION);
+    verify(supervisorFactory).create(eq(FOO_DESCRIPTOR.getId()), eq(FOO_DESCRIPTOR),
+                                     eq(FOO_PORT_ALLOCATION),
+                                     any(Supervisor.Listener.class));
 
     verify(fooSupervisor).start();
     when(fooSupervisor.isStarting()).thenReturn(true);
 
     start(BAR_DESCRIPTOR);
     verify(portAllocator).allocate(BAR_DESCRIPTOR.getPorts(), FOO_PORT_SET);
-    verify(supervisorFactory).create(BAR_DESCRIPTOR.getId(), BAR_DESCRIPTOR, EMPTY_PORT_ALLOCATION);
+    verify(supervisorFactory).create(eq(BAR_DESCRIPTOR.getId()), eq(BAR_DESCRIPTOR),
+                                     eq(EMPTY_PORT_ALLOCATION),
+                                     any(Supervisor.Listener.class));
     verify(barSupervisor).start();
     when(barSupervisor.isStarting()).thenReturn(true);
 
@@ -337,8 +347,9 @@ public class AgentTest {
     // Verify that a new supervisor is created after the previous one is discarded
     start(FOO_DESCRIPTOR);
     verify(portAllocator, times(2)).allocate(FOO_DESCRIPTOR.getPorts(), EMPTY_PORT_SET);
-    verify(supervisorFactory, times(2)).create(FOO_DESCRIPTOR.getId(), FOO_DESCRIPTOR,
-                                               FOO_PORT_ALLOCATION);
+    verify(supervisorFactory, times(2)).create(eq(FOO_DESCRIPTOR.getId()), eq(FOO_DESCRIPTOR),
+                                               eq(FOO_PORT_ALLOCATION),
+                                               any(Supervisor.Listener.class));
     verify(fooSupervisor, times(2)).start();
   }
 

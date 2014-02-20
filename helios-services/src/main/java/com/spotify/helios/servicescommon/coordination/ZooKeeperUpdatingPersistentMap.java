@@ -176,7 +176,7 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractIdleService {
           throw Throwables.propagate(e);
         }
       }
-      reactor.update();
+      reactor.signal();
       return prev;
     }
 
@@ -195,7 +195,7 @@ public class ZooKeeperUpdatingPersistentMap extends AbstractIdleService {
           throw Throwables.propagate(e);
         }
       }
-      reactor.update();
+      reactor.signal();
       return value;
     }
 

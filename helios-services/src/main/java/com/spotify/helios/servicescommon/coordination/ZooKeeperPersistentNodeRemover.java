@@ -78,7 +78,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
         }
       }
     }
-    reactor.update();
+    reactor.signal();
   }
 
   public static ZooKeeperPersistentNodeRemover create(final String name,

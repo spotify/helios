@@ -55,12 +55,10 @@ public class Agent extends AbstractIdleService {
 
   private final AgentModel model;
   private final SupervisorFactory supervisorFactory;
-
   private final ModelListener modelListener = new ModelListener();
+  private final Supervisor.Listener supervisorListener = new SupervisorListener();
   private final Map<JobId, Supervisor> supervisors = Maps.newHashMap();
-
   private final Reactor reactor;
-
   private final PersistentAtomicReference<Map<JobId, Execution>> executions;
   private final PortAllocator portAllocator;
 
@@ -96,7 +94,7 @@ public class Agent extends AbstractIdleService {
     }
     model.addListener(modelListener);
     reactor.startAsync().awaitRunning();
-    reactor.update();
+    reactor.signal();
   }
 
   @Override
@@ -116,7 +114,8 @@ public class Agent extends AbstractIdleService {
   private Supervisor createSupervisor(final JobId jobId, final Job descriptor,
                                       final Map<String, Integer> portAllocation) {
     log.debug("creating job supervisor: name={}, descriptor={}", jobId, descriptor);
-    final Supervisor supervisor = supervisorFactory.create(jobId, descriptor, portAllocation);
+    final Supervisor supervisor = supervisorFactory.create(jobId, descriptor, portAllocation,
+                                                           supervisorListener);
     supervisors.put(jobId, supervisor);
     return supervisor;
   }
@@ -142,13 +141,24 @@ public class Agent extends AbstractIdleService {
   }
 
   /**
-   * Listens to desired state updates.
+   * Listens to model state updates and signals the reactor.
    */
   private class ModelListener implements AgentModel.Listener {
 
     @Override
     public void tasksChanged(final AgentModel model) {
-      reactor.update();
+      reactor.signal();
+    }
+  }
+
+  /**
+   * Listens to supervisor state updates and signals the reactor.
+   */
+  private class SupervisorListener implements Supervisor.Listener {
+
+    @Override
+    public void stateChanged(final Supervisor supervisor) {
+      reactor.signal();
     }
   }
 
@@ -229,7 +239,7 @@ public class Agent extends AbstractIdleService {
           log.debug("releasing stopped supervisor: {}", jobId);
           supervisors.remove(jobId);
           supervisor.close();
-          reactor.update();
+          reactor.signal();
         }
       }
 

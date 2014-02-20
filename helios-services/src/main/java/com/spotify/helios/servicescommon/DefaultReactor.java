@@ -44,20 +44,17 @@ public class DefaultReactor extends InterruptingExecutionThreadService implement
     return "Reactor(" + name + ")";
   }
 
-  /**
-   * Signal an update. The callback will be called at least once after this method is called.
-   */
   @Override
-  public void update() {
+  public void signal() {
     semaphore.release();
   }
 
   @Override
-  public Runnable updateRunnable() {
+  public Runnable signalRunnable() {
     return new Runnable() {
       @Override
       public void run() {
-        update();
+        signal();
       }
     };
   }

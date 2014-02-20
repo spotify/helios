@@ -47,7 +47,7 @@ public class RetryingZooKeeperNodeWriter extends AbstractIdleService {
     synchronized (lock) {
       prev = front.put(path, write);
     }
-    reactor.update();
+    reactor.signal();
     if (prev != null) {
       prev.cancel(false);
     }

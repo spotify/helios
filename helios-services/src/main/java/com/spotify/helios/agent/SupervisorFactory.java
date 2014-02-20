@@ -51,7 +51,7 @@ public class SupervisorFactory {
    * @return A new container.
    */
   public Supervisor create(final JobId jobId, final Job descriptor,
-                           final Map<String, Integer> ports) {
+                           final Map<String, Integer> ports, final Supervisor.Listener listener) {
     final RestartPolicy policy = RestartPolicy.newBuilder().build();
     final TaskStatusManagerImpl manager = TaskStatusManagerImpl.newBuilder()
         .setJobId(jobId)
@@ -78,6 +78,7 @@ public class SupervisorFactory {
         .setMetrics(metrics)
         .setRiemannFacade(riemannFacade)
         .setPorts(ports)
+        .setListener(listener)
         .build();
   }
 }
