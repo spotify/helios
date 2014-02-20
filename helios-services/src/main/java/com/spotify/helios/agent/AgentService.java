@@ -138,8 +138,6 @@ public class AgentService extends AbstractIdleService {
     }
 
     // Configure metrics
-    log.info("Starting metrics");
-
     metricsRegistry = new MetricsRegistry();
     RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(),
       config.getName(), "helios-agent");
