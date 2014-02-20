@@ -114,7 +114,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
     Files.createDirectories(dir);
 
     final int clientPort = zkAddresses.get(id).getPort();
-    ServerCnxnFactory cnxnFactory = ServerCnxnFactory.createFactory(clientPort, 60);
+    ServerCnxnFactory cnxnFactory = ServerCnxnFactory.createFactory(clientPort, Integer.MAX_VALUE);
 
     QuorumPeer quorumPeer = new QuorumPeer();
     quorumPeer.setTxnFactory(new FileTxnSnapLog(dir.toFile(), dir.toFile()));
