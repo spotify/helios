@@ -51,7 +51,6 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
 
   @Before
   public void setup() throws Exception {
-    assert false : "this test cannot be run with assertions enabled";
     startDefaultMaster();
     startDefaultAgent(TEST_HOST);
     client = defaultClient();

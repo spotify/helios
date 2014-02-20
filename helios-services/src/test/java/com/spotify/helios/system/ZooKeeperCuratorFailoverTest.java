@@ -29,7 +29,6 @@ public class ZooKeeperCuratorFailoverTest {
 
   @Before
   public void setup() {
-    assert false : "These tests cannot run with assertions enabled.";
     zk = new ZooKeeperClusterTestManager();
   }
 

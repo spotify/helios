@@ -40,6 +40,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
   protected CuratorFramework curator;
 
   public ZooKeeperClusterTestManager() {
+    assert false : "Cannot set up multi-node ZooKeeper clusters with assertions enabled";
     try {
       tempDir = Files.createTempDirectory("helios-zk");
       start();
