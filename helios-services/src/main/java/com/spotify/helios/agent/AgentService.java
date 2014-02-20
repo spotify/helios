@@ -290,7 +290,7 @@ public class AgentService extends AbstractIdleService {
 
   private void logBanner() {
     try {
-      final String banner = Resources.toString(Resources.getResource("host-banner.txt"), UTF_8);
+      final String banner = Resources.toString(Resources.getResource("agent-banner.txt"), UTF_8);
       log.info("\n{}", banner);
     } catch (IllegalArgumentException | IOException ignored) {
     }
