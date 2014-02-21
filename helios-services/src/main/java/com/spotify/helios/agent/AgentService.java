@@ -115,7 +115,9 @@ public class AgentService extends AbstractIdleService {
       if (stateLock == null) {
         throw new IllegalStateException("State lock file already locked: " + lockPath);
       }
-    } catch (OverlappingFileLockException | IOException e) {
+    } catch (OverlappingFileLockException e) {
+      throw new IllegalStateException("State lock file already locked: " + lockPath);
+    } catch (IOException e) {
       log.error("Failed to take state lock: {}", lockPath, e);
       throw Throwables.propagate(e);
     }
