@@ -279,6 +279,7 @@ public abstract class SystemTestBase {
       throws Exception {
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",
+                                                     "--no-http",
                                                      "--name", host,
                                                      "--docker", DOCKER_ENDPOINT,
                                                      "--zk", zk.connectString(),
