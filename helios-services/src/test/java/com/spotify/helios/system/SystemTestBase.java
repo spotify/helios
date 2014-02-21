@@ -68,6 +68,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
@@ -130,7 +131,8 @@ public abstract class SystemTestBase {
   static final TypeReference<Map<String, Object>> OBJECT_TYPE =
       new TypeReference<Map<String, Object>>() {};
 
-  Path agentStateDir;
+  final AtomicInteger agentCounter = new AtomicInteger();
+  Path agentStateDirs;
 
   protected ZooKeeperTestManager zk;
 
@@ -178,7 +180,7 @@ public abstract class SystemTestBase {
     listThreads();
     zk.ensure("/config");
     zk.ensure("/status");
-    agentStateDir = Files.createTempDirectory("helios-agent");
+    agentStateDirs = Files.createTempDirectory("helios-agents");
   }
 
   protected ZooKeeperTestManager zooKeeperTestManager() {
@@ -240,7 +242,7 @@ public abstract class SystemTestBase {
       log.error("Docker client exception", e);
     }
 
-    FileUtils.deleteQuietly(agentStateDir.toFile());
+    FileUtils.deleteQuietly(agentStateDirs.toFile());
 
     zk.close();
 
@@ -277,6 +279,8 @@ public abstract class SystemTestBase {
 
   AgentMain startDefaultAgent(final String host, final String... args)
       throws Exception {
+    final int agent = agentCounter.incrementAndGet();
+    final String stateDir = agentStateDirs.resolve(Integer.toString(agent)).toString();
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",
                                                      "--no-http",
@@ -285,7 +289,7 @@ public abstract class SystemTestBase {
                                                      "--zk", zk.connectString(),
                                                      "--zk-session-timeout", "100",
                                                      "--zk-connection-timeout", "100",
-                                                     "--state-dir", agentStateDir.toString());
+                                                     "--state-dir", stateDir);
     argsList.addAll(asList(args));
     return startAgent(argsList.toArray(new String[argsList.size()]));
   }
