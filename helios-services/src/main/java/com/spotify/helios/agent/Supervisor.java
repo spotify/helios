@@ -153,12 +153,22 @@ class Supervisor {
   /**
    * Close this job. The actual container is left as-is.
    */
-  public void close() throws InterruptedException {
-    reactor.stopAsync().awaitTerminated();
+  public void close() {
+    reactor.stopAsync();
     if (runner != null) {
-      runner.stopAsync().awaitTerminated();
+      runner.stopAsync();
     }
     metrics.supervisorClosed();
+  }
+
+  /**
+   * Wait for supervisor to stop after closing it.
+   */
+  public void join() {
+    reactor.awaitTerminated();
+    if (runner != null) {
+      runner.awaitTerminated();
+    }
   }
 
   /**

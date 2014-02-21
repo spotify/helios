@@ -360,6 +360,7 @@ public class AgentTest {
     start(FOO_DESCRIPTOR);
     sut.stopAsync().awaitTerminated();
     verify(fooSupervisor).close();
+    verify(fooSupervisor).join();
     verify(fooSupervisor, never()).stop();
   }
 }

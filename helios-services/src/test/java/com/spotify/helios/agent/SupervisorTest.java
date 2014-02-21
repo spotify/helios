@@ -142,6 +142,7 @@ public class SupervisorTest {
   public void teardown() throws Exception {
     if (sut != null) {
       sut.close();
+      sut.join();
     }
   }
 
