@@ -279,8 +279,7 @@ public abstract class SystemTestBase {
 
   AgentMain startDefaultAgent(final String host, final String... args)
       throws Exception {
-    final int agent = agentCounter.incrementAndGet();
-    final String stateDir = agentStateDirs.resolve(Integer.toString(agent)).toString();
+    final String stateDir = agentStateDirs.resolve(host).toString();
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",
                                                      "--no-http",

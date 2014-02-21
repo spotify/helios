@@ -20,7 +20,7 @@ public class AgentMain extends ServiceMain {
   private final AgentConfig agentConfig;
   private AgentService service;
 
-  public AgentMain(final String[] args) throws ArgumentParserException {
+  public AgentMain(final String... args) throws ArgumentParserException {
     this(new AgentParser(args));
   }
 
