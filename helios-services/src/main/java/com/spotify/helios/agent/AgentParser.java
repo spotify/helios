@@ -84,7 +84,8 @@ public class AgentParser extends ServiceParser {
         .setStatsdHostPort(options.getString("statsd_host_port"))
         .setRiemannHostPort(options.getString("riemann_host_port"))
         .setNamelessEndpoint(options.getString("nameless"))
-        .setPortRange(start, end);
+        .setPortRange(start, end)
+        .setSentryDsn(options.getString("sentry_dsn"));
 
     final HttpConfiguration http = agentConfig.getHttpConfiguration();
         http.setPort(httpAddress.getPort());
@@ -138,6 +139,10 @@ public class AgentParser extends ServiceParser {
     parser.addArgument("--port-range")
         .setDefault("40000:49152")
         .help("Port allocation range, start:end (end exclusive).");
+
+    parser.addArgument("--sentry-dsn")
+        .setDefault((String) null)
+        .help("The sentry data source name");
 
   }
 

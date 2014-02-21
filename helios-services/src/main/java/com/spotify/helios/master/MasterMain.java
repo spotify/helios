@@ -35,7 +35,7 @@ public class MasterMain extends ServiceMain {
   }
 
   public MasterMain(final MasterConfig masterConfig, final LoggingConfig loggingConfig) {
-    super(loggingConfig);
+    super(loggingConfig, masterConfig.getSentryDsn());
     this.masterConfig = masterConfig;
   }
 

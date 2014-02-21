@@ -29,7 +29,7 @@ public class AgentMain extends ServiceMain {
   }
 
   public AgentMain(final AgentConfig agentConfig, final LoggingConfig loggingConfig) {
-    super(loggingConfig);
+    super(loggingConfig, agentConfig.getSentryDsn());
     this.agentConfig = agentConfig;
   }
 
