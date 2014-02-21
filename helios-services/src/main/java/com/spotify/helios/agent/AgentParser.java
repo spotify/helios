@@ -87,14 +87,25 @@ public class AgentParser extends ServiceParser {
         .setPortRange(start, end)
         .setSentryDsn(options.getString("sentry_dsn"));
 
-    final HttpConfiguration http = agentConfig.getHttpConfiguration();
-        http.setPort(httpAddress.getPort());
-        http.setBindHost(httpAddress.getHostString());
-        http.setAdminPort(options.getInt("admin"));
+    final boolean noHttp = options.getBoolean("no_http");
+
+    if (noHttp) {
+      agentConfig.setHttpConfiguration(null);
+    } else {
+      final HttpConfiguration http = agentConfig.getHttpConfiguration();
+      http.setPort(httpAddress.getPort());
+      http.setBindHost(httpAddress.getHostString());
+      http.setAdminPort(options.getInt("admin"));
+    }
   }
 
   @Override
   protected void addArgs(final ArgumentParser parser) {
+    parser.addArgument("--no-http")
+        .action(storeTrue())
+        .setDefault(false)
+        .help("disable http server");
+
     parser.addArgument("--http")
         .setDefault("http://0.0.0.0:5803")
         .help("http endpoint");

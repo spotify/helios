@@ -225,11 +225,15 @@ public class AgentService extends AbstractIdleService {
 
     this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator);
 
-    environment.addHealthCheck(healthChecker);
-    environment.addResource(new AgentModelTaskResource(model));
-    environment.addResource(new AgentModelTaskStatusResource(model));
-    this.server = new ServerFactory(config.getHttpConfiguration(), environment.getName())
-        .buildServer(environment);
+    if (config.getHttpConfiguration() != null) {
+      environment.addHealthCheck(healthChecker);
+      environment.addResource(new AgentModelTaskResource(model));
+      environment.addResource(new AgentModelTaskStatusResource(model));
+      this.server = new ServerFactory(config.getHttpConfiguration(), environment.getName())
+          .buildServer(environment);
+    } else {
+      this.server = null;
+    }
   }
 
   /**
@@ -276,14 +280,16 @@ public class AgentService extends AbstractIdleService {
     environmentVariableReporter.startAsync();
     metrics.start();
     logBanner();
-    try {
-      server.start();
-      for (ServerLifecycleListener listener : environment.getServerListeners()) {
-        listener.serverStarted(server);
+    if (server != null) {
+      try {
+        server.start();
+        for (ServerLifecycleListener listener : environment.getServerListeners()) {
+          listener.serverStarted(server);
+        }
+      } catch (Exception e) {
+        log.error("Unable to start server, shutting down", e);
+        server.stop();
       }
-    } catch (Exception e) {
-      log.error("Unable to start server, shutting down", e);
-      server.stop();
     }
   }
 
@@ -297,8 +303,10 @@ public class AgentService extends AbstractIdleService {
 
   @Override
   protected void shutDown() throws Exception {
-    server.stop();
-    server.join();
+    if (server != null) {
+      server.stop();
+      server.join();
+    }
     hostInfoReporter.stopAsync().awaitTerminated();
     agentInfoReporter.stopAsync().awaitTerminated();
     environmentVariableReporter.stopAsync().awaitTerminated();
