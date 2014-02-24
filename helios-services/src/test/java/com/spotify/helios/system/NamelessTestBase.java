@@ -33,12 +33,8 @@ public abstract class NamelessTestBase extends SystemTestBase {
 
   protected NamelessClient namelessClient;
 
-
-  @Override
   @Before
-  public void setUp() throws Exception {
-    super.setUp();
-
+  public void namelessSetUp() throws Exception {
     final String template = new String(Files.readAllBytes(CONFIG_TEMPLATE), UTF_8);
     final SpotifyConfigNode config = SpotifyConfigNode.fromJSONString(template);
     namelessPort = PortAllocator.allocatePort("nameless");
@@ -53,9 +49,8 @@ public abstract class NamelessTestBase extends SystemTestBase {
     nameless.start("--no-log-configuration", "--config=" + configFile);
   }
 
-  @Override
   @After
-  public void teardown() throws Exception {
+  public void namelessTeardown() throws Exception {
     try {
       nameless.stop();
     } catch (Exception e) {
@@ -67,6 +62,5 @@ public abstract class NamelessTestBase extends SystemTestBase {
     if (namelessClient != null) {
       namelessClient.close();
     }
-    super.teardown();
   }
 }

@@ -27,14 +27,14 @@ import static org.junit.Assert.assertEquals;
 public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
 
   private static final Job FOO = Job.newBuilder()
-      .setName("foo")
+      .setName(PREFIX + "foo")
       .setVersion(JOB_VERSION)
       .setImage("busybox")
       .setCommand(DO_NOTHING_COMMAND)
       .build();
 
   private static final Job BAR = Job.newBuilder()
-      .setName("bar")
+      .setName(PREFIX + "bar")
       .setVersion(JOB_VERSION)
       .setImage("busybox")
       .setCommand(DO_NOTHING_COMMAND)

@@ -6,6 +6,7 @@ package com.spotify.helios.system;
 
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.model.Container;
+import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -91,7 +92,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for a while and make sure that a new container was spawned
     final String firstRestartedContainerId =
-        await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+        Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
           @Override
           public String call() throws Exception {
             final List<Container> containers = listContainers(dockerClient, PREFIX);
@@ -112,7 +113,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     // Wait for a while and make sure that a new container was spawned
     Thread.sleep(5000);
     final String secondRestartedContainerId =
-        await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+        Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
           @Override
           public String call() throws Exception {
             final List<Container> containers = listContainers(dockerClient, PREFIX);
@@ -128,7 +129,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the new container id to be reflected in the task status
-    await(LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final JobStatus jobStatus = client.jobStatus(jobId).get();

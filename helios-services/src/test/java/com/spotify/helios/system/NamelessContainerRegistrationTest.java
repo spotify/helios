@@ -6,6 +6,7 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
 
+import com.spotify.helios.Polling;
 import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -59,7 +60,7 @@ public class NamelessContainerRegistrationTest extends NamelessTestBase {
         .build();
 
     // Wait for the container to get registered with nameless
-    final List<RegistryEntry> entries = await(
+    final List<RegistryEntry> entries = Polling.await(
         LONG_WAIT_MINUTES, MINUTES, new Callable<List<RegistryEntry>>() {
       @Override
       public List<RegistryEntry> call() throws Exception {

@@ -8,10 +8,13 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZKUtil;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -98,6 +101,21 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   public void close() {
     client.close();
+  }
+
+  @Override
+  public Listenable<ConnectionStateListener> getConnectionStateListenable() {
+    return client.getConnectionStateListenable();
+  }
+
+  @Override
+  public ZooKeeper.States getState() throws KeeperException {
+    try {
+      return client.getZookeeperClient().getZooKeeper().getState();
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
   }
 
   @Override

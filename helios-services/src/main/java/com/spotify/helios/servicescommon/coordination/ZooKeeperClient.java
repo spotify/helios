@@ -1,8 +1,11 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.IOException;
@@ -51,6 +54,10 @@ public interface ZooKeeperClient {
   Node getNode(String path) throws KeeperException;
 
   Stat exists(String path) throws KeeperException;
+
+  Listenable<ConnectionStateListener> getConnectionStateListenable();
+
+  ZooKeeper.States getState() throws KeeperException;
 
   void start();
 

@@ -15,6 +15,7 @@ import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
 import com.kpelykh.docker.client.model.Container;
 import com.kpelykh.docker.client.utils.LogReader;
+import com.spotify.helios.Polling;
 import com.spotify.helios.PortAllocator;
 import com.spotify.helios.ZooKeeperStandaloneServerManager;
 import com.spotify.helios.ZooKeeperTestManager;
@@ -44,8 +45,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TestRule;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -67,7 +66,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -77,7 +75,6 @@ import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
 import static java.lang.String.format;
 import static java.lang.System.getenv;
-import static java.lang.System.nanoTime;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -86,7 +83,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 
-@RunWith(MockitoJUnitRunner.class)
 public abstract class SystemTestBase {
 
   static final Logger log = LoggerFactory.getLogger(SystemTestBase.class);
@@ -175,7 +171,7 @@ public abstract class SystemTestBase {
   }
 
   @Before
-  public void setUp() throws Exception {
+  public void baseSetup() throws Exception {
     zk = zooKeeperTestManager();
     listThreads();
     zk.ensure("/config");
@@ -188,7 +184,7 @@ public abstract class SystemTestBase {
   }
 
   @After
-  public void teardown() throws Exception {
+  public void baseTeardown() throws Exception {
     for (final HeliosClient client : clients) {
       client.close();
     }
@@ -437,7 +433,7 @@ public abstract class SystemTestBase {
 
   void awaitHostRegistered(final String name, final long timeout, final TimeUnit timeUnit)
       throws Exception {
-    await(timeout, timeUnit, new Callable<Object>() {
+    Polling.await(timeout, timeUnit, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         final String output = cli("host", "list", "-q");
@@ -448,7 +444,7 @@ public abstract class SystemTestBase {
 
   HostStatus awaitHostStatus(final String name, final HostStatus.Status status,
                              final int timeout, final TimeUnit timeUnit) throws Exception {
-    return await(timeout, timeUnit, new Callable<HostStatus>() {
+    return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
       public HostStatus call() throws Exception {
         final String output = cli("host", "status", name, "--json");
@@ -467,10 +463,13 @@ public abstract class SystemTestBase {
                            final JobId jobId,
                            final TaskStatus.State state, final int timeout,
                            final TimeUnit timeunit) throws Exception {
-    return await(timeout, timeunit, new Callable<TaskStatus>() {
+    return Polling.await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final HostStatus hostStatus = client.hostStatus(host).get();
+        if (hostStatus == null) {
+          return null;
+        }
         final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
         return (taskStatus != null && taskStatus.getState() == state) ? taskStatus
                                                                       : null;
@@ -482,7 +481,7 @@ public abstract class SystemTestBase {
                               final JobId jobId,
                               final ThrottleState throttled, final int timeout,
                               final TimeUnit timeunit) throws Exception {
-    return await(timeout, timeunit, new Callable<TaskStatus>() {
+    return Polling.await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final HostStatus hostStatus = client.hostStatus(host).get();
@@ -495,7 +494,7 @@ public abstract class SystemTestBase {
   void awaitHostRegistered(final HeliosClient client, final String host,
                            final int timeout,
                            final TimeUnit timeUnit) throws Exception {
-    await(timeout, timeUnit, new Callable<HostStatus>() {
+    Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
       public HostStatus call() throws Exception {
         return client.hostStatus(host).get();
@@ -507,7 +506,7 @@ public abstract class SystemTestBase {
                              final HostStatus.Status status,
                              final int timeout,
                              final TimeUnit timeUnit) throws Exception {
-    return await(timeout, timeUnit, new Callable<HostStatus>() {
+    return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
       public HostStatus call() throws Exception {
         final HostStatus hostStatus = client.hostStatus(host).get();
@@ -523,7 +522,7 @@ public abstract class SystemTestBase {
                             final TaskStatus.State state) throws Exception {
     long timeout = LONG_WAIT_MINUTES;
     TimeUnit timeUnit = MINUTES;
-    return await(timeout, timeUnit, new Callable<TaskStatus>() {
+    return Polling.await(timeout, timeUnit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final String output = cli("job", "status", "--json", jobId.toString());
@@ -551,7 +550,7 @@ public abstract class SystemTestBase {
 
   void awaitTaskGone(final HeliosClient client, final String host, final JobId jobId,
                      final long timeout, final TimeUnit timeunit) throws Exception {
-    await(timeout, timeunit, new Callable<Boolean>() {
+    Polling.await(timeout, timeunit, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
         final HostStatus hostStatus = client.hostStatus(host).get();
@@ -559,19 +558,6 @@ public abstract class SystemTestBase {
         return taskStatus == null ? true : null;
       }
     });
-  }
-
-  <T> T await(final long timeout, final TimeUnit timeUnit, final Callable<T> callable)
-      throws Exception {
-    final long deadline = nanoTime() + timeUnit.toNanos(timeout);
-    while (nanoTime() < deadline) {
-      final T value = callable.call();
-      if (value != null) {
-        return value;
-      }
-      Thread.sleep(500);
-    }
-    throw new TimeoutException();
   }
 
   String readLogFully(final ClientResponse logs) throws IOException {

@@ -6,6 +6,7 @@ package com.spotify.helios.system;
 
 import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.DockerException;
+import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus;
@@ -102,7 +103,7 @@ public class AgentRestartTest extends SystemTestBase {
     awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the job to be restarted in a new container
-    final TaskStatus secondTaskStatus = await(
+    final TaskStatus secondTaskStatus = Polling.await(
         LONG_WAIT_MINUTES, MINUTES,
         new Callable<TaskStatus>() {
           @Override
@@ -138,17 +139,19 @@ public class AgentRestartTest extends SystemTestBase {
     awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the task to be restarted in a new container
-    final TaskStatus thirdTaskStatus = await(LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
-      @Override
-      public TaskStatus call() throws Exception {
-        final HostStatus hostStatus = client.hostStatus(TEST_HOST).get();
-        final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
-        return (taskStatus != null && taskStatus.getContainerId() != null &&
-                taskStatus.getState() == RUNNING &&
-                !taskStatus.getContainerId().equals(secondTaskStatus.getContainerId())) ? taskStatus
-                                                                                        : null;
-      }
-    });
+    final TaskStatus thirdTaskStatus = Polling
+        .await(LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
+          @Override
+          public TaskStatus call() throws Exception {
+            final HostStatus hostStatus = client.hostStatus(TEST_HOST).get();
+            final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
+            return (taskStatus != null && taskStatus.getContainerId() != null &&
+                    taskStatus.getState() == RUNNING &&
+                    !taskStatus.getContainerId().equals(secondTaskStatus.getContainerId()))
+                   ? taskStatus
+                   : null;
+          }
+        });
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
     assertTrue(dockerClient.inspectContainer(thirdTaskStatus.getContainerId()).state.running);
 

@@ -7,6 +7,7 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableMap;
 
 import com.kpelykh.docker.client.DockerClient;
+import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus;
@@ -81,7 +82,7 @@ public class MultiplePortJobTest extends SystemTestBase {
 
     // Verify that port allocation is kept across container restarts
     dockerClient.kill(firstTaskStatus1.getContainerId());
-    final TaskStatus restartedTaskStatus1 = await(
+    final TaskStatus restartedTaskStatus1 = Polling.await(
         LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
@@ -98,7 +99,7 @@ public class MultiplePortJobTest extends SystemTestBase {
     agent1.stopAsync().awaitTerminated();
     dockerClient.kill(firstTaskStatus2.getContainerId());
     startDefaultAgent(TEST_HOST);
-    final TaskStatus restartedTaskStatus2 = await(
+    final TaskStatus restartedTaskStatus2 = Polling.await(
         LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {

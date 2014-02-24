@@ -4,6 +4,7 @@
 
 package com.spotify.helios.system;
 
+import com.spotify.helios.Polling;
 import com.spotify.nameless.api.EndpointFilter;
 import com.spotify.nameless.proto.Messages;
 
@@ -33,7 +34,7 @@ public class NamelessMasterRegistrationTest extends NamelessTestBase {
     final int masterPort = URI.create(masterEndpoint).getPort();
 
     // Wait for the master to get registered with nameless
-    final List<RegistryEntry> entries = await(
+    final List<RegistryEntry> entries = Polling.await(
         LONG_WAIT_MINUTES, MINUTES, new Callable<List<RegistryEntry>>() {
       @Override
       public List<RegistryEntry> call() throws Exception {

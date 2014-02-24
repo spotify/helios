@@ -55,7 +55,9 @@ public class PersistentAtomicReference<T> {
     log.debug("set: ({}) {}", filename, newValue);
     synchronized (sync) {
       final String json = Json.asPrettyStringUnchecked(newValue);
+      log.debug("write: ({}) {}", tempfilename, json);
       Files.write(tempfilename, json.getBytes(UTF_8));
+      log.debug("move: {} -> {}", tempfilename, filename);
       Files.move(tempfilename, filename, ATOMIC_MOVE, REPLACE_EXISTING);
       this.value = newValue;
     }

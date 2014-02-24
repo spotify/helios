@@ -19,7 +19,7 @@ import com.spotify.helios.servicescommon.coordination.PersistentPathChildrenCach
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperPersistentNodeRemover;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentMap;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,22 +43,24 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private static final Predicate<Node> TASK_GOAL_IS_UNDEPLOY = new TaskGoalIsUndeployPredicate();
 
   private final PersistentPathChildrenCache tasks;
-  private final ZooKeeperUpdatingPersistentMap taskStatuses;
+  private final ZooKeeperUpdatingPersistentDirectory taskStatuses;
   private final ZooKeeperPersistentNodeRemover taskRemover;
 
   private final String agent;
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
 
-  public ZooKeeperAgentModel(final ZooKeeperClientProvider provider, final String agent,
+  public ZooKeeperAgentModel(final ZooKeeperClientProvider provider, final String host,
                              final Path stateDirectory) throws IOException {
     final ZooKeeperClient client = provider.get("ZooKeeperAgentModel_ctor");
-    this.agent = checkNotNull(agent);
+    this.agent = checkNotNull(host);
     final Path taskConfigFile = stateDirectory.resolve(TASK_CONFIG_FILENAME);
-    this.tasks = client.pathChildrenCache(Paths.configHostJobs(agent), taskConfigFile);
+    this.tasks = client.pathChildrenCache(Paths.configHostJobs(host), taskConfigFile);
     tasks.addListener(new JobsListener());
     final Path taskStatusFile = stateDirectory.resolve(TASK_STATUS_FILENAME);
-    this.taskStatuses = ZooKeeperUpdatingPersistentMap.create("agent-model-task-statuses", provider,
-                                                              taskStatusFile);
+    this.taskStatuses = ZooKeeperUpdatingPersistentDirectory.create("agent-model-task-statuses",
+                                                                    provider,
+                                                                    taskStatusFile,
+                                                                    Paths.statusHostJobs(host));
     final Path removerFile = stateDirectory.resolve(TASK_REMOVER_FILENAME);
     this.taskRemover = ZooKeeperPersistentNodeRemover.create("agent-model-task-remover", provider,
                                                              removerFile, TASK_GOAL_IS_UNDEPLOY);
@@ -83,11 +85,6 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     return JobId.fromString(path.replaceFirst(prefix, ""));
   }
 
-  private JobId jobIdFromTaskStatusPath(final String path) {
-    final String prefix = Paths.statusHostJobs(agent) + "/";
-    return JobId.fromString(path.replaceFirst(prefix, ""));
-  }
-
   @Override
   public Map<JobId, Task> getTasks() {
     final Map<JobId, Task> tasks = Maps.newHashMap();
@@ -108,7 +105,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
     for (Map.Entry<String, byte[]> entry : this.taskStatuses.map().entrySet()) {
       try {
-        final JobId id = jobIdFromTaskStatusPath(entry.getKey());
+        final JobId id = JobId.fromString(entry.getKey());
         final TaskStatus status = Json.read(entry.getValue(), TaskStatus.class);
         statuses.put(id, status);
       } catch (IOException e) {
@@ -121,7 +118,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   @Override
   public void setTaskStatus(final JobId jobId, final TaskStatus status) {
     log.debug("setting task status: {}", status);
-    taskStatuses.map().put(Paths.statusHostJob(agent, jobId), status.toJsonBytes());
+    taskStatuses.map().put(jobId.toString(), status.toJsonBytes());
 
     // TODO (dano): restore task status history and make sure that it's bounded as well
 //    final String historyPath = Paths.historyJobHostEventsTimestamp(
@@ -131,8 +128,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
 
   @Override
   public TaskStatus getTaskStatus(final JobId jobId) {
-    final String path = Paths.statusHostJob(agent, jobId);
-    final byte[] data = taskStatuses.map().get(path);
+    final byte[] data = taskStatuses.map().get(jobId.toString());
     if (data == null) {
       return null;
     }
@@ -145,8 +141,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
 
   @Override
   public void removeTaskStatus(final JobId jobId) {
-    final String path = Paths.statusHostJob(agent, jobId);
-    taskStatuses.map().remove(path);
+    taskStatuses.map().remove(jobId.toString());
   }
 
   @Override

@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.kpelykh.docker.client.DockerClient;
+import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -39,7 +40,7 @@ public class EnvironmentVaribleTest extends SystemTestBase {
     awaitHostStatus(TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the agent to report environment vars
-    await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         Map<String, HostStatus> status = Json.read(
