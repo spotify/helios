@@ -785,12 +785,19 @@ class Supervisor {
       currentCommand.perform(done);
       if (!done) {
         performedCommand = currentCommand;
-        try {
-          listener.stateChanged(Supervisor.this);
-        } catch (Exception e) {
-          log.error("Listener threw exception", e);
-        }
+        fireStateChanged();
       }
+    }
+  }
+
+  private void fireStateChanged() {
+    if (listener == null) {
+      return;
+    }
+    try {
+      listener.stateChanged(this);
+    } catch (Exception e) {
+      log.error("Listener threw exception", e);
     }
   }
 
