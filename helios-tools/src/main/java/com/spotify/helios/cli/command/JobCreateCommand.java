@@ -90,7 +90,6 @@ public class JobCreateCommand extends ControlCommand {
     portArg = parser.addArgument("-p", "--port")
         .action(append())
         .setDefault(new ArrayList<String>())
-        .nargs("+")
         .help("Port mapping. Specify an endpoint name and a single port (e.g. \"http=8080\") for " +
               "dynamic port mapping and a name=private:public tuple (e.g. \"http=8080:80\") for " +
               "static port mapping. E.g., foo=4711 will map the internal port 4711 of the " +
@@ -188,27 +187,25 @@ public class JobCreateCommand extends ControlCommand {
     }
 
     // Parse port mappings
-    final List<List<String>> portSpecLists = options.getList(portArg.getDest());
+    final List<String> portSpecs = options.getList(portArg.getDest());
     final Map<String, PortMapping> explicitPorts = Maps.newHashMap();
     final Pattern portPattern = compile("(?<n>[_\\-\\w]+)=(?<i>\\d+)(:(?<e>\\d+))?(/(?<p>\\w+))?");
-    for (final List<String> specs : portSpecLists) {
-      for (final String spec : specs) {
-        final Matcher matcher = portPattern.matcher(spec);
-        if (!matcher.matches()) {
-          throw new IllegalArgumentException("Bad port mapping: " + spec);
-        }
-
-        final String portName = matcher.group("n");
-        final int internal = Integer.parseInt(matcher.group("i"));
-        final Integer external = nullOrInteger(matcher.group("e"));
-        final String protocol = fromNullable(matcher.group("p")).or(TCP);
-
-        if (explicitPorts.containsKey(portName)) {
-          throw new IllegalArgumentException("Duplicate port mapping: " + portName);
-        }
-
-        explicitPorts.put(portName, PortMapping.of(internal, external, protocol));
+    for (final String spec : portSpecs) {
+      final Matcher matcher = portPattern.matcher(spec);
+      if (!matcher.matches()) {
+        throw new IllegalArgumentException("Bad port mapping: " + spec);
       }
+
+      final String portName = matcher.group("n");
+      final int internal = Integer.parseInt(matcher.group("i"));
+      final Integer external = nullOrInteger(matcher.group("e"));
+      final String protocol = fromNullable(matcher.group("p")).or(TCP);
+
+      if (explicitPorts.containsKey(portName)) {
+        throw new IllegalArgumentException("Duplicate port mapping: " + portName);
+      }
+
+      explicitPorts.put(portName, PortMapping.of(internal, external, protocol));
     }
 
     // Merge port mappings

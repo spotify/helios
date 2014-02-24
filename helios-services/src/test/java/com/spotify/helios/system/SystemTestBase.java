@@ -360,18 +360,16 @@ public abstract class SystemTestBase {
       }
     }
 
-    if (!ports.isEmpty()) {
+    for (final Map.Entry<String, PortMapping> entry : ports.entrySet()) {
       args.add("--port");
-      for (final Map.Entry<String, PortMapping> entry : ports.entrySet()) {
-        String value = "" + entry.getValue().getInternalPort();
-        if (entry.getValue().getExternalPort() != null) {
-          value += ":" + entry.getValue().getExternalPort();
-        }
-        if (entry.getValue().getProtocol() != null) {
-          value += "/" + entry.getValue().getProtocol();
-        }
-        args.add(entry.getKey() + "=" + value);
+      String value = "" + entry.getValue().getInternalPort();
+      if (entry.getValue().getExternalPort() != null) {
+        value += ":" + entry.getValue().getExternalPort();
       }
+      if (entry.getValue().getProtocol() != null) {
+        value += "/" + entry.getValue().getProtocol();
+      }
+      args.add(entry.getKey() + "=" + value);
     }
 
     if (registration != null) {
