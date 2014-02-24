@@ -1,5 +1,6 @@
 package com.spotify.helios.servicescommon.coordination;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
@@ -237,4 +238,10 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   public void close() {
     client.close();
   }
+
+  @Override
+  public CuratorFramework getCuratorFramework() {
+    return client.getCuratorFramework();
+  }
 }
+

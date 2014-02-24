@@ -1,6 +1,8 @@
 package com.spotify.helios.agent;
 
-import com.spotify.helios.servicescommon.NoOpRiemannClient;
+import com.aphyr.riemann.Proto.Event;
+import com.spotify.helios.servicescommon.CapturingRiemannClient;
+import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.MeterRates;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
@@ -8,10 +10,12 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.agent.DockerHealthChecker.FAILURE_HIGH_WATERMARK;
 import static com.spotify.helios.agent.DockerHealthChecker.FAILURE_LOW_WATERMARK;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.when;
@@ -25,6 +29,7 @@ public class DockerHealthCheckerTest {
 
   private SupervisorMetrics metrics;
   private DockerHealthChecker checker;
+  private CapturingRiemannClient riemannClient;
 
   private static MeterRates makeMeter(double percentage) {
     int value = (int) (percentage * 100);
@@ -33,9 +38,10 @@ public class DockerHealthCheckerTest {
 
   @Before
   public void setUp() throws Exception {
+    riemannClient = new CapturingRiemannClient();
+    final RiemannFacade facade = new RiemannFacade(riemannClient, "HOSTNAME", "SERVICE");
     metrics = Mockito.mock(SupervisorMetrics.class);
-    checker = new DockerHealthChecker(metrics, TimeUnit.SECONDS, 1,
-        NoOpRiemannClient.facade());
+    checker = new DockerHealthChecker(metrics, TimeUnit.SECONDS, 1, facade);
   }
 
   @Test
@@ -45,15 +51,18 @@ public class DockerHealthCheckerTest {
     when(metrics.getSupervisorRunRates()).thenReturn(RUN_RATE);
 
     checker.start();
-
     assertFalse(checker.check().isHealthy());
+    checkForState("critical");
 
     when(metrics.getDockerTimeoutRates()).thenReturn(BETWEEN_RATE);
     Thread.sleep(2);
     assertFalse(checker.check().isHealthy());
+    checkForNoEmission();
 
     when(metrics.getDockerTimeoutRates()).thenReturn(OK_RATE);
     assertTrue(checker.check().isHealthy());
+
+    checkForState("ok");
   }
 
   @Test
@@ -65,12 +74,15 @@ public class DockerHealthCheckerTest {
     checker.start();
 
     assertFalse(checker.check().isHealthy());
+    checkForState("critical");
 
     when(metrics.getContainersThrewExceptionRates()).thenReturn(BETWEEN_RATE);
     assertFalse(checker.check().isHealthy());
+    checkForNoEmission();
 
     when(metrics.getContainersThrewExceptionRates()).thenReturn(OK_RATE);
     assertTrue(checker.check().isHealthy());
+    checkForState("ok");
   }
 
   @Test
@@ -82,15 +94,34 @@ public class DockerHealthCheckerTest {
     checker.start();
 
     assertFalse(checker.check().isHealthy());
+    checkForState("critical");
 
     when(metrics.getContainersThrewExceptionRates()).thenReturn(BETWEEN_RATE);
     assertFalse(checker.check().isHealthy());
+    checkForNoEmission();
 
     when(metrics.getContainersThrewExceptionRates()).thenReturn(OK_RATE);
     when(metrics.getDockerTimeoutRates()).thenReturn(BETWEEN_RATE); // between maintains unhealthy
     assertFalse(checker.check().isHealthy());
+    checkForNoEmission();
 
     when(metrics.getDockerTimeoutRates()).thenReturn(OK_RATE);
     assertTrue(checker.check().isHealthy());
+    checkForState("ok");
+  }
+
+  private void checkForState(String expectedState) {
+    final List<Event> events = riemannClient.getEvents();
+    assertFalse(events.isEmpty());
+    final Event event = events.get(0);
+    try {
+      assertEquals(expectedState, event.getState());
+    } finally {
+      riemannClient.clearEvents();
+    }
+  }
+
+  private void checkForNoEmission() {
+    assertTrue(riemannClient.getEvents().isEmpty());
   }
 }

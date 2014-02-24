@@ -19,11 +19,13 @@ import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
+import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperHealthChecker;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
@@ -155,15 +157,16 @@ public class AgentService extends AbstractIdleService {
     }
 
     this.zooKeeperClient = setupZookeeperClient(config, id);
-    final DockerHealthChecker healthChecker = new DockerHealthChecker(
+    final DockerHealthChecker dockerHealthChecker = new DockerHealthChecker(
         metrics.getSupervisorMetrics(), TimeUnit.SECONDS, 30, riemannFacade);
-    environment.manage(healthChecker);
+    environment.manage(dockerHealthChecker);
+    environment.manage(new RiemannHeartBeat(TimeUnit.MINUTES, 2, riemannFacade));
 
     // Set up model
     final ZooKeeperModelReporter modelReporter =
         new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics());
-    final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(zooKeeperClient,
-                                                                                 modelReporter);
+    final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
+        zooKeeperClient, modelReporter);
     try {
       this.model = new ZooKeeperAgentModel(zkClientProvider, config.getName(), stateDirectory);
     } catch (IOException e) {
@@ -227,10 +230,15 @@ public class AgentService extends AbstractIdleService {
 
     this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator);
 
+    final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
+        Paths.statusHosts(), riemannFacade, TimeUnit.MINUTES, 2);
+    environment.manage(zkHealthChecker);
+
     if (config.getHttpConfiguration() != null) {
-      environment.addHealthCheck(healthChecker);
+      environment.addHealthCheck(dockerHealthChecker);
       environment.addResource(new AgentModelTaskResource(model));
       environment.addResource(new AgentModelTaskStatusResource(model));
+      environment.addHealthCheck(zkHealthChecker);
       this.server = new ServerFactory(config.getHttpConfiguration(), environment.getName())
           .buildServer(environment);
     } else {
@@ -257,7 +265,6 @@ public class AgentService extends AbstractIdleService {
 
     // Register the agent
     this.registrar = new AgentRegistrar(client, config.getName(), id);
-    final String upPath = Paths.statusHostUp(config.getName());
 
     // Create the ephemeral up node after agent registration completes
     Futures.addCallback(registrar.getCompletionFuture(), new FutureCallback<Void>() {
