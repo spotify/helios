@@ -5,12 +5,11 @@
 package com.spotify.helios.system;
 
 import com.kpelykh.docker.client.DockerClient;
-import com.kpelykh.docker.client.DockerException;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.common.HeliosClient;
-import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -23,16 +22,15 @@ import org.junit.Test;
 
 import java.util.concurrent.Callable;
 
-import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class AgentRestartTest extends SystemTestBase {
 
@@ -126,32 +124,26 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Kill and destroy the container
     dockerClient.kill(secondTaskStatus.getContainerId());
-    dockerClient.removeContainer(secondTaskStatus.getContainerId());
-    try {
-      // This should fail with an exception if the container still exists
-      dockerClient.inspectContainer(secondTaskStatus.getContainerId());
-      fail();
-    } catch (DockerException ignore) {
-    }
+    removeContainer(dockerClient, secondTaskStatus.getContainerId());
 
     // Start the agent again
     final AgentMain agent4 = startDefaultAgent(TEST_HOST);
     awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the task to be restarted in a new container
-    final TaskStatus thirdTaskStatus = Polling
-        .await(LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
-          @Override
-          public TaskStatus call() throws Exception {
-            final HostStatus hostStatus = client.hostStatus(TEST_HOST).get();
-            final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
-            return (taskStatus != null && taskStatus.getContainerId() != null &&
-                    taskStatus.getState() == RUNNING &&
-                    !taskStatus.getContainerId().equals(secondTaskStatus.getContainerId()))
-                   ? taskStatus
-                   : null;
-          }
-        });
+    final TaskStatus thirdTaskStatus = Polling.await(
+        LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
+      @Override
+      public TaskStatus call() throws Exception {
+        final HostStatus hostStatus = client.hostStatus(TEST_HOST).get();
+        final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
+        return (taskStatus != null && taskStatus.getContainerId() != null &&
+                taskStatus.getState() == RUNNING &&
+                !taskStatus.getContainerId().equals(secondTaskStatus.getContainerId()))
+               ? taskStatus
+               : null;
+      }
+    });
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
     assertTrue(dockerClient.inspectContainer(thirdTaskStatus.getContainerId()).state.running);
 
@@ -203,5 +195,4 @@ public class AgentRestartTest extends SystemTestBase {
     awaitTaskGone(client, TEST_HOST, jobId, LONG_WAIT_MINUTES, MINUTES);
     assertEquals(0, listContainers(dockerClient, PREFIX).size());
   }
-
 }

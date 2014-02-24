@@ -82,6 +82,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.fail;
 
 public abstract class SystemTestBase {
 
@@ -168,6 +169,28 @@ public abstract class SystemTestBase {
   public static void staticSetup() {
     SLF4JBridgeHandler.removeHandlersForRootLogger();
     SLF4JBridgeHandler.install();
+  }
+
+  static void removeContainer(final DockerClient dockerClient, final String containerId)
+      throws Exception {
+    // Work around docker sometimes failing to remove a container directly after killing it
+    Polling.await(10, SECONDS, new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        try {
+          dockerClient.removeContainer(containerId);
+          return true;
+        } catch (DockerException e) {
+          return null;
+        }
+      }
+    });
+    try {
+      // This should fail with an exception if the container still exists
+      dockerClient.inspectContainer(containerId);
+      fail();
+    } catch (DockerException ignore) {
+    }
   }
 
   @Before
