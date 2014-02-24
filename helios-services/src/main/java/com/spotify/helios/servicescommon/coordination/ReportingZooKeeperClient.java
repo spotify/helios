@@ -2,6 +2,7 @@ package com.spotify.helios.servicescommon.coordination;
 
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
@@ -218,6 +219,13 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
       reporter.checkException(e, tag, "getState");
       throw e;
     }
+  }
+
+  @Override
+  public PersistentEphemeralNode persistentEphemeralNode(final String path,
+                                                         final PersistentEphemeralNode.Mode mode,
+                                                         final byte[] data) {
+    return client.persistentEphemeralNode(path, mode, data);
   }
 
   @Override

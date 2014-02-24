@@ -9,6 +9,7 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.CreateMode;
@@ -101,6 +102,13 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   public void close() {
     client.close();
+  }
+
+  @Override
+  public PersistentEphemeralNode persistentEphemeralNode(final String path,
+                                                         final PersistentEphemeralNode.Mode mode,
+                                                         final byte[] data) {
+    return new PersistentEphemeralNode(client, mode, path, data);
   }
 
   @Override

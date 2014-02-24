@@ -17,7 +17,6 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import java.nio.file.Files;
@@ -28,7 +27,6 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class ZooKeeperRestoreTest extends SystemTestBase {
 
@@ -65,10 +63,23 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     FileUtils.deleteQuietly(backupDir.toFile());
   }
 
-  @Ignore
   @Test
   public void verifyAgentReRegistersAfterRestore() throws Exception {
-    fail("implement me!");
+    // Back up zk
+    zkc.backup(backupDir);
+
+    // Start agent
+    startDefaultAgent(TEST_HOST);
+    awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
+
+    // Restore zk, erasing task state
+    zkc.stop();
+    zkc.restore(backupDir);
+    zkc.start();
+
+    // Wait for agent to reregister
+    awaitHostRegistered(client, TEST_HOST, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
   }
 
   @Test

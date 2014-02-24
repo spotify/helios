@@ -4,6 +4,8 @@
 
 package com.spotify.helios.agent;
 
+import java.util.concurrent.TimeUnit;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.collect.Range.closed;
 import static java.lang.Math.max;
@@ -92,6 +94,14 @@ public class BoundedRandomExponentialBackoff implements RetryIntervalPolicy {
     private long minIntervalMillis = DEFAULT_MIN_INTERVAL_MILLIS;
     private long maxIntervalMillis = DEFAULT_MAX_INTERVAL_MILLIS;
     private float randomizationFactor = DEFAULT_RANDOMIZATION_FACTOR;
+
+    public Builder setMinInterval(final long minInterval, final TimeUnit timeUnit) {
+      return setMinIntervalMillis(timeUnit.toMillis(minInterval));
+    }
+
+    public Builder setMaxInterval(final long maxInterval, final TimeUnit timeUnit) {
+      return setMinIntervalMillis(timeUnit.toMillis(maxInterval));
+    }
 
     public Builder setMinIntervalMillis(final long minIntervalMillis) {
       this.minIntervalMillis = minIntervalMillis;

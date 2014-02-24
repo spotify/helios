@@ -9,7 +9,8 @@ import com.google.common.base.Throwables;
 import com.google.common.io.BaseEncoding;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
-import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.descriptors.JobId;
@@ -39,7 +40,6 @@ import com.yammer.metrics.core.MetricsRegistry;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
@@ -55,13 +55,14 @@ import java.security.SecureRandom;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import javax.annotation.Nullable;
+
 import static com.google.common.base.Charsets.UTF_8;
 import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
 /**
  * The Helios agent.
@@ -85,7 +86,6 @@ public class AgentService extends AbstractIdleService {
   private final NamelessRegistrar namelessRegistrar;
   private final Environment environment;
 
-  private PersistentEphemeralNode upNode;
   private AgentRegistrar registrar;
 
   /**
@@ -260,13 +260,19 @@ public class AgentService extends AbstractIdleService {
     final String upPath = Paths.statusHostUp(config.getName());
 
     // Create the ephemeral up node after agent registration completes
-    this.registrar.getCompletionFuture().addListener(new Runnable() {
+    Futures.addCallback(registrar.getCompletionFuture(), new FutureCallback<Void>() {
       @Override
-      public void run() {
-        upNode = new PersistentEphemeralNode(curator, EPHEMERAL, upPath, EMPTY_BYTES);
-        upNode.start();
+      public void onSuccess(@Nullable final Void result) {
+        log.debug("Registration completed");
       }
-    }, MoreExecutors.sameThreadExecutor());
+
+      @Override
+      public void onFailure(final Throwable t) {
+        // Stop the agent on registration collision
+        log.error("Registration failed", t);
+        stopAsync();
+      }
+    });
 
     return new DefaultZooKeeperClient(curator);
   }
@@ -318,13 +324,6 @@ public class AgentService extends AbstractIdleService {
     }
     registrar.stopAsync().awaitTerminated();
     model.stopAsync().awaitTerminated();
-    if (upNode != null) {
-      try {
-        upNode.close();
-      } catch (IOException e) {
-        log.warn("Exception on closing up node", e.getMessage());
-      }
-    }
     metrics.stop();
     zooKeeperClient.close();
     try {
