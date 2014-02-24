@@ -63,6 +63,7 @@ public class HostsResource {
 
   @PUT
   @Path("{id}")
+  @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
   public Response.Status put(@PathParam("id") final String host) {
