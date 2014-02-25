@@ -279,6 +279,7 @@ public class AgentService extends AbstractIdleService {
 
   @Override
   protected void startUp() throws Exception {
+    logBanner();
     zooKeeperClient.start();
     model.startAsync().awaitRunning();
     registrar.startAsync().awaitRunning();
@@ -287,7 +288,6 @@ public class AgentService extends AbstractIdleService {
     agentInfoReporter.startAsync();
     environmentVariableReporter.startAsync();
     metrics.start();
-    logBanner();
     if (server != null) {
       try {
         server.start();
