@@ -42,6 +42,11 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
+  public CuratorFramework getCuratorFramework() {
+    return client;
+  }
+
+  @Override
   /** {@inheritDoc} */
   public void ensurePath(final String path) throws KeeperException {
     ensurePath(path, false);

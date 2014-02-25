@@ -77,7 +77,7 @@ public class DockerHealthChecker extends HealthCheck implements Managed {
             .tags("docker", "health")
             .metric(1)
             .send();
-      } else if (origReason != null && reason == null) {
+      } else if (reason != null && origReason == null) {
         facade.event()
             .state("critical")
             .tags("docker", "health")

@@ -18,10 +18,12 @@ import com.spotify.helios.master.resources.VersionResource;
 import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.RiemannFacade;
+import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperHealthChecker;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
@@ -48,6 +50,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.util.concurrent.Futures.getUnchecked;
@@ -102,6 +105,12 @@ public class MasterService extends AbstractIdleService {
     final MasterModel model = new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(zooKeeperClient,
             new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics())));
+    ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
+        Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);
+    environment.manage(zooKeeperHealthChecker);
+    environment.addHealthCheck(zooKeeperHealthChecker);
+    environment.manage(new RiemannHeartBeat(TimeUnit.MINUTES, 2, riemannFacade));
+
     if (config.getNamelessEndpoint() != null) {
       this.registrar = Nameless.newRegistrar(config.getNamelessEndpoint());
     } else if (config.getSite() != null) {
