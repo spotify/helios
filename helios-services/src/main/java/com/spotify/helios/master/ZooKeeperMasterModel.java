@@ -125,6 +125,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public List<String> listHosts() {
     try {
+      // TODO (dano): only return hosts whose agents completed registration (i.e. has agent id nodes)
       return provider.get("listHosts").getChildren(Paths.configHosts());
     } catch (KeeperException.NoNodeException e) {
       return emptyList();
