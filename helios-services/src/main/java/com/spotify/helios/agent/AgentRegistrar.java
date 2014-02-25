@@ -24,6 +24,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.util.concurrent.Service.State.STOPPING;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
@@ -89,6 +90,8 @@ public class AgentRegistrar extends AbstractIdleService {
 
     final Stat stat = client.exists(idPath);
     if (stat == null) {
+      log.debug("Agent id node not present, registering agent {}: {}", id, name);
+
       // This would've been nice to do in a transaction but PathChildrenCache ensures paths
       // so we can't know what paths already exist so assembling a suitable transaction is too
       // painful.
@@ -107,14 +110,18 @@ public class AgentRegistrar extends AbstractIdleService {
       if (!id.equals(existingId)) {
         final String message = format("Another agent already registered as '%s' " +
                                       "(local=%s remote=%s).", name, id, existingId);
+        log.debug(message);
         complete.setException(new IllegalStateException(message));
         return;
+      } else {
+        log.debug("Matching agent id node already present, not registering agent {}: {}", id, name);
       }
     }
 
     // Start the up node
     if (upNode == null) {
       final String upPath = Paths.statusHostUp(name);
+      log.debug("Creating up node: {}", upPath);
       upNode = client.persistentEphemeralNode(upPath, EPHEMERAL, EMPTY_BYTES);
       upNode.start();
     }
@@ -131,7 +138,7 @@ public class AgentRegistrar extends AbstractIdleService {
 
     public void run() throws InterruptedException {
       final RetryScheduler retryScheduler = RETRY_INTERVAL_POLICY.newScheduler();
-      while (isRunning()) {
+      while (isAlive()) {
         try {
           register();
           return;
@@ -142,5 +149,9 @@ public class AgentRegistrar extends AbstractIdleService {
         }
       }
     }
+  }
+
+  private boolean isAlive() {
+    return state().ordinal() < STOPPING.ordinal();
   }
 }
