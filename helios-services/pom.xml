@@ -18,8 +18,13 @@
   </properties>
 
   <dependencies>
-    <!--compile deps-->
-    <dependency>
+	<!--compile deps -->
+	<dependency>
+      <groupId>org.clojure</groupId>
+	  <artifactId>clojure</artifactId>
+	  <version>1.4.0</version>
+	</dependency>
+	<dependency>
       <groupId>com.yammer.dropwizard</groupId>
       <artifactId>dropwizard-core</artifactId>
       <version>0.6.2</version>

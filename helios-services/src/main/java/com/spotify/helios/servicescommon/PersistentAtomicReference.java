@@ -29,7 +29,7 @@ public class PersistentAtomicReference<T> {
 
   private final Path filename;
   private final Path tempfilename;
-  private final Object sync = new Object() {};
+  private final Object sync = new Object();
 
   private volatile T value;
 

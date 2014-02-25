@@ -2,7 +2,6 @@ package com.spotify.helios.agent;
 
 import com.aphyr.riemann.Proto.Event;
 import com.spotify.helios.servicescommon.CapturingRiemannClient;
-import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.MeterRates;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 

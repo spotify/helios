@@ -38,6 +38,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperAgentModel.class);
 
   private static final String TASK_CONFIG_FILENAME = "task-config.json";
+  private static final String TASK_HISTORY_FILENAME = "task-history.json";
   private static final String TASK_STATUS_FILENAME = "task-status.json";
   private static final String TASK_REMOVER_FILENAME = "remove.json";
   private static final Predicate<Node> TASK_GOAL_IS_UNDEPLOY = new TaskGoalIsUndeployPredicate();
@@ -45,18 +46,22 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private final PersistentPathChildrenCache tasks;
   private final ZooKeeperUpdatingPersistentDirectory taskStatuses;
   private final ZooKeeperPersistentNodeRemover taskRemover;
+  private final QueueingHistoryWriter historyWriter;
 
   private final String agent;
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
 
   public ZooKeeperAgentModel(final ZooKeeperClientProvider provider, final String host,
                              final Path stateDirectory) throws IOException {
+    // TODO(dcsillag): we're constructing too many heavyweight things in the ctor, these kinds of
+    // things should be passed in/provider'd/etc.
     final ZooKeeperClient client = provider.get("ZooKeeperAgentModel_ctor");
     this.agent = checkNotNull(host);
     final Path taskConfigFile = stateDirectory.resolve(TASK_CONFIG_FILENAME);
     this.tasks = client.pathChildrenCache(Paths.configHostJobs(host), taskConfigFile);
     tasks.addListener(new JobsListener());
     final Path taskStatusFile = stateDirectory.resolve(TASK_STATUS_FILENAME);
+
     this.taskStatuses = ZooKeeperUpdatingPersistentDirectory.create("agent-model-task-statuses",
                                                                     provider,
                                                                     taskStatusFile,
@@ -64,6 +69,8 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     final Path removerFile = stateDirectory.resolve(TASK_REMOVER_FILENAME);
     this.taskRemover = ZooKeeperPersistentNodeRemover.create("agent-model-task-remover", provider,
                                                              removerFile, TASK_GOAL_IS_UNDEPLOY);
+    this.historyWriter = new QueueingHistoryWriter(host, client,
+        stateDirectory.resolve(TASK_HISTORY_FILENAME));
   }
 
   @Override
@@ -119,11 +126,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   public void setTaskStatus(final JobId jobId, final TaskStatus status) {
     log.debug("setting task status: {}", status);
     taskStatuses.map().put(jobId.toString(), status.toJsonBytes());
-
-    // TODO (dano): restore task status history and make sure that it's bounded as well
-//    final String historyPath = Paths.historyJobHostEventsTimestamp(
-//        jobId, agent, System.currentTimeMillis());
-//    client.createAndSetData(historyPath, status.toJsonBytes());
+    historyWriter.saveHistoryItem(jobId, status);
   }
 
   @Override

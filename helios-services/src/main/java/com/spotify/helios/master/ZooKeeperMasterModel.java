@@ -220,6 +220,7 @@ public class ZooKeeperMasterModel implements MasterModel {
               jobId, host, Long.valueOf(event)));
           final TaskStatus status = Json.read(data, TaskStatus.class);
           jsEvents.add(new TaskStatusEvent(status, Long.valueOf(event), host));
+        } catch (NoNodeException e) { // ignore, it went away before we read it
         } catch (KeeperException | IOException e) {
           throw Throwables.propagate(e);
         }
