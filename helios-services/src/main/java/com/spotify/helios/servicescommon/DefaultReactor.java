@@ -40,12 +40,10 @@ public class DefaultReactor extends InterruptingExecutionThreadService implement
   }
 
   /**
-   * Create a reactor that calls the provided callback with the specified timeout interval.
+   * Create a reactor that calls the provided callback.
    *
    * @param name          The reactor name.
    * @param callback      The callback to call.
-   * @param timeoutMillis The timeout in millis after which the callback should be called even if
-   *                      there has been no updates.
    */
   public DefaultReactor(final String name, final Callback callback) {
     this(name, callback, 0);
