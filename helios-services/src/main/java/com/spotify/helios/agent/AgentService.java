@@ -72,7 +72,6 @@ import static java.nio.file.StandardOpenOption.WRITE;
 public class AgentService extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(AgentService.class);
-  public static final byte[] EMPTY_BYTES = new byte[]{};
 
   private final Agent agent;
 
