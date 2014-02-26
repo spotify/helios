@@ -87,14 +87,14 @@ public class DefaultReactor extends InterruptingExecutionThreadService implement
       try {
         callback.run();
       } catch (InterruptedException e) {
-        log.debug("reactor interrupted");
+        log.debug("reactor interrupted: {}", name);
       } catch (Exception e) {
         if (e.getCause() instanceof ClosedByInterruptException ||
             e.getCause() instanceof InterruptedIOException ||
             e.getCause() instanceof InterruptedException) {
-          log.debug("reactor interrupted");
+          log.debug("reactor interrupted: {}", name);
         } else {
-          log.error("reactor runner threw exception", e);
+          log.error("reactor runner threw exception: {}", name, e);
         }
       }
     }
