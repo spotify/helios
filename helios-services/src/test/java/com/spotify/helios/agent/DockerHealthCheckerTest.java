@@ -39,9 +39,8 @@ public class DockerHealthCheckerTest {
   @Before
   public void setUp() throws Exception {
     riemannClient = new CapturingRiemannClient();
-    final RiemannFacade facade = new RiemannFacade(riemannClient, "HOSTNAME", "SERVICE");
     metrics = Mockito.mock(SupervisorMetrics.class);
-    checker = new DockerHealthChecker(metrics, TimeUnit.SECONDS, 1, facade);
+    checker = new DockerHealthChecker(metrics, TimeUnit.SECONDS, 1, riemannClient.facade());
   }
 
   @Test

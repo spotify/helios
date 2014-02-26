@@ -9,15 +9,18 @@ import java.util.concurrent.atomic.AtomicReference;
 
 public class CapturingRiemannClient extends NoOpRiemannClient {
   private static final ImmutableList<Event> EMPTY_LIST = ImmutableList.<Event>of();
-  private AtomicReference<List<Event>> events = new AtomicReference<List<Event>>(EMPTY_LIST);
+
+  private final AtomicReference<List<Event>> events;
 
   public CapturingRiemannClient() {
     super();
-    clearEvents();
+    this.events = new AtomicReference<List<Event>>(EMPTY_LIST);
   }
 
-  public List<Event> getEvents() {
-    return events.get();
+  public synchronized List<Event> getEvents() {
+    final List<Event> returnVal = events.get();
+    clearEvents();
+    return returnVal;
   }
 
   public void clearEvents() {

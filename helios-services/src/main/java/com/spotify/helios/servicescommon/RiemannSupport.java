@@ -46,7 +46,7 @@ public class RiemannSupport implements Managed {
   public RiemannFacade getFacade() {
     RiemannClient cli = getClient();
     if (cli == null) {
-      return NoOpRiemannClient.facade();
+      return new NoOpRiemannClient().facade();
     }
     return new RiemannFacade(cli, hostName, serviceName);
   }

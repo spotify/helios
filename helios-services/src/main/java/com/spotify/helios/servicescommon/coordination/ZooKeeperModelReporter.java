@@ -54,6 +54,6 @@ public class ZooKeeperModelReporter {
   }
 
   public static ZooKeeperModelReporter noop() {
-    return new ZooKeeperModelReporter(NoOpRiemannClient.facade(), new NoopZooKeeperMetrics());
+    return new ZooKeeperModelReporter(new NoOpRiemannClient().facade(), new NoopZooKeeperMetrics());
   }
 }

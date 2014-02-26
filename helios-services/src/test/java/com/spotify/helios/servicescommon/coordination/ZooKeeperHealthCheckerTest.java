@@ -5,7 +5,6 @@ import com.spotify.helios.Polling;
 import com.spotify.helios.ZooKeeperStandaloneServerManager;
 import com.spotify.helios.servicescommon.CapturingRiemannClient;
 import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
-import com.spotify.helios.servicescommon.RiemannFacade;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -27,11 +26,11 @@ public class ZooKeeperHealthCheckerTest {
 
   @Test
   public void test() throws Exception {
-    final RiemannFacade facade = new RiemannFacade(riemannClient, "HOSTNAME", "SERVICE");
     final ZooKeeperStandaloneServerManager zk = new ZooKeeperStandaloneServerManager();
     final DefaultZooKeeperClient client = new DefaultZooKeeperClient(zk.curator());
 
-    ZooKeeperHealthChecker hc = new ZooKeeperHealthChecker(client, "/", facade, MILLISECONDS, 1);
+    ZooKeeperHealthChecker hc = new ZooKeeperHealthChecker(client, "/", riemannClient.facade(),
+        MILLISECONDS, 1);
     hc.start();
 
     // Start in our garden of eden where everything travaileth together in harmony....

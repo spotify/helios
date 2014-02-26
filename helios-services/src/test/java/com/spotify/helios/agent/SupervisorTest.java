@@ -114,7 +114,7 @@ public class SupervisorTest {
         .setTaskStatusManager(manager)
         .setCommandWrapper(new NoOpCommandWrapper())
         .setMetrics(new NoopSupervisorMetrics())
-        .setRiemannFacade(NoOpRiemannClient.facade())
+        .setRiemannFacade(new NoOpRiemannClient().facade())
         .build();
     when(docker.getImages(IMAGE)).thenReturn(immediateFuture(DOCKER_IMAGES));
 
