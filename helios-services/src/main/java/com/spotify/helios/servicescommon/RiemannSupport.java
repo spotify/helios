@@ -1,5 +1,6 @@
 package com.spotify.helios.servicescommon;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
@@ -12,6 +13,8 @@ import com.yammer.metrics.reporting.RiemannReporter.Config;
 
 import java.io.IOException;
 
+import static com.google.common.base.Preconditions.checkState;
+
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RiemannSupport implements Managed {
@@ -23,6 +26,7 @@ public class RiemannSupport implements Managed {
 
   private RiemannClient client = null;
   private RiemannReporter riemannReporter;
+  private final String proto;
 
   public RiemannSupport(final MetricsRegistry metricsRegistry, final String hostPort,
                         final String hostName, final String serviceName) {
@@ -32,15 +36,24 @@ public class RiemannSupport implements Managed {
     if (Strings.isNullOrEmpty(hostPort)) {
       host = null;
       port = 0;
+      proto = null;
       return;
     }
     Iterable<String> parts = Splitter.on(":").split(hostPort);
-    if (Iterables.size(parts) != 2) {
+    final int size = Iterables.size(parts);
+    if (size > 3 || size < 2) {
       throw new RuntimeException(
-          "specification of riemann host port has wrong number of parts.  Should be host:port");
+          "specification of riemann host port has wrong number of parts.  Should be"
+          + " [proto:]host:port, where proto is udp or tcp");
     }
-    host = Iterables.get(parts, 0);
-    port = Integer.valueOf(Iterables.get(parts, 1));
+    if (size == 3) {
+      this.proto = Iterables.get(parts, 0);
+    } else {
+      this.proto = "tcp";
+    }
+    checkState("udp".equals(this.proto) || "tcp".equals(this.proto));
+    host = Iterables.get(parts, size - 2);
+    port = Integer.valueOf(Iterables.get(parts, size - 1));
   }
 
   public RiemannFacade getFacade() {
@@ -58,7 +71,11 @@ public class RiemannSupport implements Managed {
 
     if (client == null) {
       try {
-        client = RiemannClient.udp(host, port);
+        if ("udp".equals(proto)) {
+          client = RiemannClient.udp(host, port);
+        } else if ("tcp".equals(proto)) {
+          client = RiemannClient.tcp(host, port);
+        }
         client.connect();
       } catch (IOException e) {
         throw new RuntimeException(e);
