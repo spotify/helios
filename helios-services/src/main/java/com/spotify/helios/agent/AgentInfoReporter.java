@@ -4,20 +4,20 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.util.concurrent.AbstractScheduledService;
-
 import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.servicescommon.NodeUpdaterFactory;
 import com.spotify.helios.servicescommon.ZooKeeperNodeUpdater;
 import com.spotify.helios.servicescommon.coordination.Paths;
 
 import java.lang.management.RuntimeMXBean;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class AgentInfoReporter extends AbstractScheduledService {
+public class AgentInfoReporter extends InterruptingScheduledService {
 
   public static final int DEFAULT_INTERVAL = 1;
   public static final TimeUnit DEFAUL_TIMEUNIT = MINUTES;
@@ -35,7 +35,7 @@ public class AgentInfoReporter extends AbstractScheduledService {
   }
 
   @Override
-  protected void runOneIteration() throws Exception {
+  protected void runOneIteration() {
     final AgentInfo agentInfo = AgentInfo.newBuilder()
         .setName(runtimeMXBean.getName())
         .setVmName(runtimeMXBean.getVmName())
@@ -53,8 +53,8 @@ public class AgentInfoReporter extends AbstractScheduledService {
   }
 
   @Override
-  protected Scheduler scheduler() {
-    return Scheduler.newFixedDelaySchedule(0, interval, timeUnit);
+  protected ScheduledFuture<?> schedule(Runnable runnable, ScheduledExecutorService executorService) {
+    return executorService.scheduleWithFixedDelay(runnable, 0, interval, timeUnit);
   }
 
   public static Builder newBuilder() {

@@ -5,7 +5,6 @@
 package com.spotify.helios.agent;
 
 import com.google.common.io.CharStreams;
-import com.google.common.util.concurrent.AbstractScheduledService;
 
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.servicescommon.NodeUpdaterFactory;
@@ -15,13 +14,15 @@ import com.sun.management.OperatingSystemMXBean;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
-public class HostInfoReporter extends AbstractScheduledService {
+public class HostInfoReporter extends InterruptingScheduledService {
 
   public static final int DEFAULT_INTERVAL = 1;
   public static final TimeUnit DEFAUL_TIMEUNIT = MINUTES;
@@ -39,30 +40,30 @@ public class HostInfoReporter extends AbstractScheduledService {
   }
 
   @Override
-  protected void runOneIteration() throws Exception {
-      final String hostname = exec("uname -n").trim();
-      final String uname = exec("uname -a").trim();
+  protected void runOneIteration() {
+    final String hostname = exec("uname -n").trim();
+    final String uname = exec("uname -a").trim();
 
-      final HostInfo hostInfo = HostInfo.newBuilder()
-          .setArchitecture(operatingSystemMXBean.getArch())
-          .setCpus(Runtime.getRuntime().availableProcessors())
-          .setHostname(hostname)
-          .setLoadAvg(operatingSystemMXBean.getSystemLoadAverage())
-          .setOsName(operatingSystemMXBean.getName())
-          .setOsVersion(operatingSystemMXBean.getVersion())
-          .setMemoryFreeBytes(operatingSystemMXBean.getFreePhysicalMemorySize())
-          .setMemoryTotalBytes(operatingSystemMXBean.getTotalPhysicalMemorySize())
-          .setSwapFreeBytes(operatingSystemMXBean.getFreeSwapSpaceSize())
-          .setSwapTotalBytes(operatingSystemMXBean.getTotalSwapSpaceSize())
-          .setUname(uname)
-          .build();
+    final HostInfo hostInfo = HostInfo.newBuilder()
+        .setArchitecture(operatingSystemMXBean.getArch())
+        .setCpus(Runtime.getRuntime().availableProcessors())
+        .setHostname(hostname)
+        .setLoadAvg(operatingSystemMXBean.getSystemLoadAverage())
+        .setOsName(operatingSystemMXBean.getName())
+        .setOsVersion(operatingSystemMXBean.getVersion())
+        .setMemoryFreeBytes(operatingSystemMXBean.getFreePhysicalMemorySize())
+        .setMemoryTotalBytes(operatingSystemMXBean.getTotalPhysicalMemorySize())
+        .setSwapFreeBytes(operatingSystemMXBean.getFreeSwapSpaceSize())
+        .setSwapTotalBytes(operatingSystemMXBean.getTotalSwapSpaceSize())
+        .setUname(uname)
+        .build();
 
-      nodeUpdater.update(hostInfo.toJsonBytes());
+    nodeUpdater.update(hostInfo.toJsonBytes());
   }
 
   @Override
-  protected Scheduler scheduler() {
-    return Scheduler.newFixedDelaySchedule(0, interval, timeUnit);
+  protected ScheduledFuture<?> schedule(Runnable runnable, ScheduledExecutorService executorService) {
+    return executorService.scheduleWithFixedDelay(runnable, 0, interval, timeUnit);
   }
 
   private String exec(final String command) {

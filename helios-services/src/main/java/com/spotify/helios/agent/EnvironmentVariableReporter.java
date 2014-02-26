@@ -1,17 +1,17 @@
 package com.spotify.helios.agent;
 
-import com.google.common.util.concurrent.AbstractScheduledService;
-
 import com.spotify.helios.common.Json;
 import com.spotify.helios.servicescommon.NodeUpdaterFactory;
 import com.spotify.helios.servicescommon.ZooKeeperNodeUpdater;
 import com.spotify.helios.servicescommon.coordination.Paths;
 
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class EnvironmentVariableReporter extends AbstractScheduledService {
+public class EnvironmentVariableReporter extends InterruptingScheduledService {
 
   private static final int RETRY_INTERVAL_MILLIS = 1000;
 
@@ -28,15 +28,15 @@ public class EnvironmentVariableReporter extends AbstractScheduledService {
 
 
   @Override
-  protected void runOneIteration() throws Exception {
-    final boolean succesful = nodeUpdater.update(Json.asBytes(envVars));
+  protected void runOneIteration() {
+    final boolean succesful = nodeUpdater.update(Json.asBytesUnchecked(envVars));
     if (succesful) {
       stopAsync();
     }
   }
 
   @Override
-  protected Scheduler scheduler() {
-    return Scheduler.newFixedDelaySchedule(0, RETRY_INTERVAL_MILLIS, MILLISECONDS);
+  protected ScheduledFuture<?> schedule(Runnable runnable, ScheduledExecutorService executorService) {
+    return executorService.scheduleWithFixedDelay(runnable, 0, RETRY_INTERVAL_MILLIS, MILLISECONDS);
   }
 }
