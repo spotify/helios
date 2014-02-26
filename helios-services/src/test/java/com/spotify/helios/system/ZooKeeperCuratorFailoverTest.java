@@ -58,7 +58,6 @@ public class ZooKeeperCuratorFailoverTest {
     expectedException.expect(KeeperException.ConnectionLossException.class);
 
     zk.curator().create().forPath(FOO, FOO_DATA);
-    assertArrayEquals(FOO_DATA, zk.curator().getData().forPath(FOO));
   }
 
 
