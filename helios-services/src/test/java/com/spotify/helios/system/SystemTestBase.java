@@ -174,7 +174,7 @@ public abstract class SystemTestBase {
   static void removeContainer(final DockerClient dockerClient, final String containerId)
       throws Exception {
     // Work around docker sometimes failing to remove a container directly after killing it
-    Polling.await(10, SECONDS, new Callable<Object>() {
+    Polling.await(1, MINUTES, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         try {
