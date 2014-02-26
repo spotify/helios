@@ -44,7 +44,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
   public void setUp() throws Exception {
     backupDir = Files.createTempDirectory("helios-zk-updating-persistent-dir-test-backup-");
     stateFile = Files.createTempFile("helios-zk-updating-persistent-dir-test-", "");
-    zk.curator().create().forPath(PARENT_PATH);
+    zk.curator().newNamespaceAwareEnsurePath(PARENT_PATH).ensure(zk.curator().getZookeeperClient());
     setupDirectory();
   }
 
