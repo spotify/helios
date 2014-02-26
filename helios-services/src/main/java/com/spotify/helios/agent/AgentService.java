@@ -178,9 +178,7 @@ public class AgentService extends AbstractIdleService {
     if (config.getNamelessEndpoint() != null) {
       this.namelessRegistrar = Nameless.newRegistrar(config.getNamelessEndpoint());
     } else if (config.getSite() != null) {
-      this.namelessRegistrar = config.getSite().equals("localhost")
-                               ? Nameless.newRegistrar("tcp://localhost:4999")
-                               : Nameless.newRegistrarForDomain(config.getSite());
+      this.namelessRegistrar = Nameless.newRegistrarForDomain(config.getSite());
     } else {
       this.namelessRegistrar = null;
     }
@@ -229,6 +227,10 @@ public class AgentService extends AbstractIdleService {
 
     this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator);
 
+    final NamelessHealthChecker namelessHealthChecker =
+        new NamelessHealthChecker(TimeUnit.MINUTES, 5, riemannFacade);
+    environment.manage(namelessHealthChecker);
+
     final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
         Paths.statusHosts(), riemannFacade, TimeUnit.MINUTES, 2);
     environment.manage(zkHealthChecker);
@@ -238,6 +240,7 @@ public class AgentService extends AbstractIdleService {
       environment.addResource(new AgentModelTaskResource(model));
       environment.addResource(new AgentModelTaskStatusResource(model));
       environment.addHealthCheck(zkHealthChecker);
+      environment.addHealthCheck(namelessHealthChecker);
       this.server = new ServerFactory(config.getHttpConfiguration(), environment.getName())
           .buildServer(environment);
     } else {
