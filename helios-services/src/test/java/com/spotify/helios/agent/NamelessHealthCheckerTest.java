@@ -14,10 +14,13 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import static com.spotify.helios.Polling.await;
 import static com.spotify.helios.agent.NamelessHealthChecker.FAILURE_HIGH_WATERMARK;
 import static com.spotify.helios.agent.NamelessHealthChecker.FAILURE_LOW_WATERMARK;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -126,11 +129,21 @@ public class NamelessHealthCheckerTest extends NamelessTestBase {
     final Timer timer = NamelessHealthChecker.getHeartbeatTimer();
     final Meter meter = NamelessHealthChecker.getHeartbeatErrorMeter();
 
-    // The above call to register(...).get() blocks until the register call has been made, not
-    // until it returns. Therefore we must sleep so nameless has time to update the error metric.
-    Thread.sleep(500);
-    assertEquals("error timer was not incremented", 1, timer.count());
-    assertEquals("error meter was not incremented", 1, meter.count());
+    await(10L, SECONDS, new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        // error timer
+        return timer.count() > 0;
+      }
+    });
+
+    await(10L, SECONDS, new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        // error meter
+        return meter.count() > 0;
+      }
+    });
   }
 
   private void checkForState(String expectedState) {

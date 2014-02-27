@@ -20,12 +20,13 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
-import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.VersionCompatibility.Status;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
+import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobStatus;
@@ -57,6 +58,8 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.MoreExecutors.getExitingExecutorService;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
@@ -155,6 +158,7 @@ public class HeliosClient {
     if (entity != null) {
       headers.put("Content-Type", asList("application/json"));
       headers.put("Charset", asList("utf-8"));
+      headers.put("X-Helios-Version", asList(Version.POM_VERSION));
       entityBytes = Json.asBytesUnchecked(entity);
     } else {
       entityBytes = new byte[]{};
@@ -191,9 +195,36 @@ public class HeliosClient {
         } else {
           log.debug("rep: {} {} {} {}", method, uri, status, payload.size());
         }
+        checkprotocolVersionStatus(connection);
         return new Response(method, uri, status, payload.toByteArray());
       }
     });
+  }
+
+  private void checkprotocolVersionStatus(final HttpURLConnection connection) {
+    final Status versionStatus = getVersionStatus(connection);
+    if (versionStatus == null) {
+      return; // shouldn't happen really
+    }
+
+    final String serverVersion = connection.getHeaderField(HELIOS_SERVER_VERSION_HEADER);
+    if (versionStatus == VersionCompatibility.Status.MAYBE) {
+      log.warn("Your Helios client version [{}] is ahead of the server [{}].  This will"
+          + " probably work ok but there is the potential for weird things.  If in doubt,"
+          + " contact the Helios team if you think the cluster you're connecting to is out of"
+          + " date and should be upgraded.", Version.POM_VERSION, serverVersion);
+    } else if (versionStatus == VersionCompatibility.Status.UPGRADE_SOON) {
+      log.warn("Your Helios client is nearly out of date.  Please upgrade to [{}]",
+          serverVersion);
+    }
+  }
+
+  private Status getVersionStatus(final HttpURLConnection connection) {
+    final String status = connection.getHeaderField(HELIOS_VERSION_STATUS_HEADER);
+    if (status != null) {
+      return VersionCompatibility.Status.valueOf(status);
+    }
+    return null;
   }
 
   private String decode(final ByteArrayOutputStream payload) {

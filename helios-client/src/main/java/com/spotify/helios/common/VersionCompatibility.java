@@ -2,12 +2,18 @@ package com.spotify.helios.common;
 
 //* Using the meanings from http://semver.org
 public class VersionCompatibility {
+  public static final String HELIOS_VERSION_HEADER = "X-Helios-Version";
+  public static final String HELIOS_SERVER_VERSION_HEADER = "X-Helios-Server-Version";
+  public static final String HELIOS_VERSION_STATUS_HEADER = "X-Helios-Version-Status";
+
   public enum Status {
     EQUAL,
     COMPATIBLE,
     MAYBE,
     INCOMPATIBLE,
-    WARN
+    UPGRADE_SOON,
+    INVALID,
+    MISSING
   }
 
   public static Status getStatus(final PomVersion serverVersion, final PomVersion clientVersion) {
@@ -20,6 +26,14 @@ public class VersionCompatibility {
 
     if (serverVersion.getMajor() != clientVersion.getMajor()) {
       return Status.INCOMPATIBLE;
+    }
+
+    // since pre-1.0.0, if its a patch level behind, warn -- cheesyish for now
+    // this rule will change over time....
+    if ((serverVersion.getMajor() == clientVersion.getMajor())
+        && (serverVersion.getMinor() == clientVersion.getMinor())
+        && ((serverVersion.getPatch() - 1) >= clientVersion.getPatch())) {
+      return Status.UPGRADE_SOON;
     }
 
     // older clients, newer server within major version

@@ -10,6 +10,7 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.HostsResource;
 import com.spotify.helios.master.resources.JobsResource;
@@ -122,6 +123,7 @@ public class MasterService extends AbstractIdleService {
     }
 
     // Set up http server
+    environment.addFilter(VersionResponseFilter.class, "/*");
     environment.addProvider(new ReportingResourceMethodDispatchAdapter(metrics.getMasterMetrics()));
     environment.addResource(new JobsResource(model, metrics.getMasterMetrics()));
     environment.addResource(new HostsResource(model));

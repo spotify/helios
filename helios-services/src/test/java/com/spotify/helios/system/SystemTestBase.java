@@ -117,7 +117,7 @@ public abstract class SystemTestBase {
 
   final int masterPort = PortAllocator.allocatePort("helios master");
   final int masterAdminPort = PortAllocator.allocatePort("helios master admin");
-  final String masterEndpoint = "http://localhost:" + masterPort;
+  protected final String masterEndpoint = "http://localhost:" + masterPort;
 
   static final String DOCKER_ENDPOINT =
       fromNullable(getenv("DOCKER_ENDPOINT")).or("http://localhost:4160");
@@ -138,6 +138,7 @@ public abstract class SystemTestBase {
 
   @Rule
   public TestRule watcher = new TestWatcher() {
+    @Override
     protected void starting(Description description) {
       log.info(Strings.repeat("=", 80));
       log.info("STARTING: {}: {}", description.getClassName(), description.getMethodName());
@@ -287,7 +288,7 @@ public abstract class SystemTestBase {
     log.info(Strings.repeat("=", 80));
   }
 
-  void startDefaultMaster() throws Exception {
+  protected void startDefaultMaster() throws Exception {
     startMaster("-vvvv",
                 "--no-log-setup",
                 "--http", masterEndpoint,

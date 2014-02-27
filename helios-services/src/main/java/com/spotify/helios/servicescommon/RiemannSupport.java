@@ -1,6 +1,5 @@
 package com.spotify.helios.servicescommon;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
@@ -14,7 +13,6 @@ import com.yammer.metrics.reporting.RiemannReporter.Config;
 import java.io.IOException;
 
 import static com.google.common.base.Preconditions.checkState;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RiemannSupport implements Managed {

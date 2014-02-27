@@ -67,9 +67,6 @@ public class ClusterDeploymentTest extends SystemTestBase {
 
     final List<AgentMain> agents = Lists.newArrayList();
 
-    final int httpStartPort = 50000;
-    final int adminStartPort = 55000;
-
     for (int i = 0; i < HOSTS; i++) {
       final AgentMain agent =
           startDefaultAgent(host(i), "--no-http", "--no-metrics");
