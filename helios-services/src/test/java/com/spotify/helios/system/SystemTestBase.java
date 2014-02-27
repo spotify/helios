@@ -120,7 +120,10 @@ public abstract class SystemTestBase {
   protected final String masterEndpoint = "http://localhost:" + masterPort;
 
   static final String DOCKER_ENDPOINT =
-      fromNullable(getenv("DOCKER_ENDPOINT")).or("http://localhost:4160");
+      fromNullable(getenv("DOCKER_ENDPOINT"))
+          .or(fromNullable(getenv("DOCKER_HOST")))
+          .or("http://localhost:4160")
+          .replace("tcp://", "http://");
 
   final List<Service> services = newArrayList();
   final ExecutorService executorService = Executors.newCachedThreadPool();
