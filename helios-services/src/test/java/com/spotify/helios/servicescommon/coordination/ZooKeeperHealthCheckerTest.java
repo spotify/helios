@@ -6,6 +6,7 @@ import com.spotify.helios.ZooKeeperStandaloneServerManager;
 import com.spotify.helios.servicescommon.CapturingRiemannClient;
 import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -18,15 +19,23 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class ZooKeeperHealthCheckerTest {
   private CapturingRiemannClient riemannClient;
+  private ZooKeeperStandaloneServerManager zk;
 
   @Before
   public void setUp() throws Exception {
     riemannClient = new CapturingRiemannClient();
+    zk = new ZooKeeperStandaloneServerManager();
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    if (zk != null) {
+      zk.stop();
+    }
   }
 
   @Test
   public void test() throws Exception {
-    final ZooKeeperStandaloneServerManager zk = new ZooKeeperStandaloneServerManager();
     final DefaultZooKeeperClient client = new DefaultZooKeeperClient(zk.curator());
 
     ZooKeeperHealthChecker hc = new ZooKeeperHealthChecker(client, "/", riemannClient.facade(),

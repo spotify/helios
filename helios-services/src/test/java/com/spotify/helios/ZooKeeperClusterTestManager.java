@@ -39,6 +39,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
 
   private Path tempDir;
   protected CuratorFramework curator;
+  private boolean firstStart = true;
 
   public ZooKeeperClusterTestManager() {
     assert false : "Cannot set up multi-node ZooKeeper clusters with assertions enabled";
@@ -82,9 +83,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
 
   @Override
   public void start() {
-    boolean keepTrying = true;
-    while (keepTrying) {
-      keepTrying = false;
+    while (firstStart) {
       zkPeers = createPeers(3);
       zkAddresses = allocateAddresses(zkPeers);
       try {
@@ -92,8 +91,8 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
           final Long id = entry.getKey();
           startPeer(id);
         }
+        firstStart = false;
       } catch (BindException e) {
-        keepTrying = true;
         System.err.println(
             "---------------------------------------------"
             + "\nGot bind exception, trying again, stopping first\n"

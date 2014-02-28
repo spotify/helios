@@ -6,12 +6,13 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Splitter;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Service;
 import com.google.common.util.concurrent.SettableFuture;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -23,7 +24,6 @@ import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
-import com.kpelykh.docker.client.model.ImageInspectResponse;
 import com.kpelykh.docker.client.model.PortBinding;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
@@ -52,10 +52,11 @@ import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
@@ -81,6 +82,8 @@ class Supervisor {
     void stateChanged(Supervisor supervisor);
   }
 
+  private static class PullingException extends Exception {}
+
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
@@ -88,8 +91,9 @@ class Supervisor {
 
   private static final int DOCKER_REQUEST_TIMEOUT_SECONDS = 5;
   private static final int DOCKER_LONG_REQUEST_TIMEOUT_SECONDS = 30;
+  private static final long PULL_POLL_TIMEOUT_SECONDS = 30;
 
-  private final AsyncDockerClient docker;
+  private final MonitoredDockerClient docker;
   private final JobId jobId;
   private final Job job;
   private final AgentModel model;
@@ -102,9 +106,9 @@ class Supervisor {
   private final String host;
   private final SupervisorMetrics metrics;
   private final Reactor reactor;
-  private final RiemannFacade riemannFacade;
   private final Map<String, Integer> ports;
   private final Listener listener;
+  private final ListeningExecutorService pullStreamExecutor;
 
   private volatile Runner runner;
   private volatile Command currentCommand;
@@ -116,7 +120,9 @@ class Supervisor {
     this.jobId = checkNotNull(builder.jobId);
     this.job = checkNotNull(builder.job);
     this.model = checkNotNull(builder.model);
-    this.docker = checkNotNull(builder.dockerClient);
+    this.docker = new MonitoredDockerClient(checkNotNull(builder.dockerClient),
+        builder.metrics, builder.riemannFacade, DOCKER_REQUEST_TIMEOUT_SECONDS,
+        DOCKER_LONG_REQUEST_TIMEOUT_SECONDS, 120);
     this.restartPolicy = checkNotNull(builder.restartPolicy);
     this.envVars = checkNotNull(builder.envVars);
     this.flapController = checkNotNull(builder.flapController);
@@ -125,11 +131,11 @@ class Supervisor {
     this.commandWrapper = checkNotNull(builder.commandWrapper);
     this.host = checkNotNull(builder.host);
     this.metrics = checkNotNull(builder.metrics);
-    this.riemannFacade = checkNotNull(builder.riemannFacade);
     this.listener = builder.listener;
     this.currentCommand = new Nop();
     this.reactor = new DefaultReactor("supervisor-" + jobId, new Update(), SECONDS.toMillis(30));
     this.reactor.startAsync();
+    this.pullStreamExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
   }
 
   /**
@@ -190,52 +196,6 @@ class Supervisor {
    */
   public boolean isDone() {
     return currentCommand == performedCommand;
-  }
-
-  /**
-   * A wrapper around {@link AsyncDockerClient#inspectContainer(String)} that returns null instead
-   * of throwing an exception if the container is missing.
-   */
-  private ContainerInspectResponse inspectContainer(final String containerId)
-      throws DockerException {
-    // TODO (dano): this or something like it should probably go into the docker client itself
-    try {
-      return Futures.get(docker.inspectContainer(containerId), DOCKER_REQUEST_TIMEOUT_SECONDS,
-          SECONDS, DockerException.class);
-    } catch (DockerException e) {
-      checkForDockerTimeout(e, "inspecting_container");
-      if (e.getCause().getClass() == InterruptedException.class) {
-        Thread.interrupted(); // or else we get a cool endless loop of IE's
-      }
-      // XXX (dano): checking for string in exception message is a kludge
-      if (!e.getMessage().contains("No such container")) {
-        throw e;
-      }
-      return null;
-    }
-  }
-
-  /**
-   * A wrapper around {@link AsyncDockerClient#inspectImage(String)} that returns null instead
-   * of throwing an exception if the image is missing.
-   */
-  private ImageInspectResponse inspectImage(final String image)
-      throws DockerException {
-    // TODO (dano): this or something like it should probably go into the docker client itself
-    try {
-      return Futures.get(docker.inspectImage(image), DOCKER_REQUEST_TIMEOUT_SECONDS,
-          SECONDS, DockerException.class);
-    } catch (DockerException e) {
-      if (e.getCause().getClass() == InterruptedException.class) {
-        Thread.interrupted(); // or else we get a cool endless loop of IE's
-      }
-      checkForDockerTimeout(e, "inspecting_image");
-      // XXX (dano): checking for string in exception message is a kludge
-      if (!e.getMessage().contains("No such image")) {
-        throw e;
-      }
-      return null;
-    }
   }
 
   /**
@@ -338,17 +298,7 @@ class Supervisor {
     return bindings;
   }
 
-  private boolean checkForDockerTimeout(DockerException e, String tag) {
-    if (e.getCause().getClass() == TimeoutException.class) {
-      metrics.dockerTimeout();
-      riemannFacade.event()
-         .service("helios-agent/docker")
-         .tags("docker", "timeout", tag)
-         .send();
-      return true;
-    }
-    return false;
-  }
+
 
   /**
    * Compute docker container environment variables.
@@ -490,12 +440,7 @@ class Supervisor {
 
         // Expose ports
         final ContainerInspectResponse runningContainerInfo;
-        try {
-          runningContainerInfo = Futures.get(docker.inspectContainer(containerId),
-              DOCKER_REQUEST_TIMEOUT_SECONDS, SECONDS, DockerException.class);
-        } catch (DockerException e) {
-          throw propagateDockerTimeoutException(e, "inspecting_container");
-        }
+        runningContainerInfo = docker.safeInspectContainer(containerId);
 
         final Map<String, PortMapping> ports = parsePortBindings(runningContainerInfo);
         setStatus(RUNNING, containerId, ports);
@@ -506,7 +451,7 @@ class Supervisor {
         final List<RegistrationHandle> registrationHandles = namelessRegister(ports);
         final int exitCode;
         try {
-          exitCode = flapController.waitFuture(docker.waitContainer(containerId));
+          exitCode = docker.waitContainer(containerId);
         } finally {
           namelessDeregister(registrationHandles);
         }
@@ -517,7 +462,7 @@ class Supervisor {
         metrics.containersExited();
         resultFuture.set(exitCode);
       } catch (DockerException e) {
-        if (!checkForDockerTimeout(e, "unspecific")) {
+        if (!docker.checkForDockerTimeout(e, "unspecific")) {
           metrics.containersThrewException();
         }
         resultFuture.setException(e);
@@ -537,20 +482,15 @@ class Supervisor {
     }
 
     private String startContainer(final String image)
-        throws InterruptedException, ExecutionException, DockerException {
+        throws InterruptedException, DockerException {
       setStatus(CREATING, null);
       final ContainerConfig containerConfig = containerConfig(job);
 
-      commandWrapper.modifyCreateConfig(image, job, inspectImage(image), containerConfig);
+      commandWrapper.modifyCreateConfig(image, job, docker.safeInspectImage(image), containerConfig);
 
       final String name = containerName(job.getId());
       final ContainerCreateResponse container;
-      try {
-        container = Futures.get(docker.createContainer(containerConfig, name),
-            DOCKER_LONG_REQUEST_TIMEOUT_SECONDS, SECONDS, DockerException.class);
-      } catch (DockerException e) {
-        throw propagateDockerTimeoutException(e, "creating_container");
-      }
+      container = docker.createContainer(containerConfig, name);
 
       final String containerId = container.id;
       log.info("created container: {}: {}", job, container);
@@ -560,24 +500,10 @@ class Supervisor {
 
       setStatus(STARTING, containerId, null);
       log.info("starting container: {}: {}", job, containerId);
-      startFuture = docker.startContainer(containerId, hostConfig);
-      try {
-        Futures.get(startFuture, DOCKER_LONG_REQUEST_TIMEOUT_SECONDS, SECONDS,
-            DockerException.class);
-      } catch (DockerException e) {
-        throw propagateDockerTimeoutException(e, "starting_container");
-      }
+      docker.startContainer(containerId, hostConfig);
       log.info("started container: {}: {}", job, containerId);
       metrics.containerStarted();
       return containerId;
-    }
-
-    private DockerException propagateDockerTimeoutException(DockerException e, String tag)
-        throws ExecutionException, InterruptedException, DockerException {
-      Throwables.propagateIfInstanceOf(e.getCause(), ExecutionException.class);
-      Throwables.propagateIfInstanceOf(e.getCause(), InterruptedException.class);
-      checkForDockerTimeout(e, tag);
-      return e;
     }
 
     private ContainerInspectResponse getRunningContainerInfo(final String registeredContainerId)
@@ -585,7 +511,7 @@ class Supervisor {
       final ContainerInspectResponse containerInfo;
       if (registeredContainerId != null) {
         log.info("inspecting container: {}: {}", job, registeredContainerId);
-        containerInfo = inspectContainer(registeredContainerId);
+        containerInfo = docker.safeInspectContainer(registeredContainerId);
       } else {
         containerInfo = null;
       }
@@ -602,9 +528,9 @@ class Supervisor {
       final MetricsContext context = metrics.containerPull();
       final PullClientResponse response;
       try {
-        response = docker.pull(image).get();
+        response = docker.pull(image);
         context.success();
-      } catch (InterruptedException | ExecutionException e) {
+      } catch (InterruptedException e) {
         // may be overclassifying user errors as failures here
         context.failure();
         throw new ImagePullFailedException(e);
@@ -614,19 +540,18 @@ class Supervisor {
       try {
         // Wait until image is completely pulled
         tailPull(image, pullStream);
+      } catch (PullingException e) {
+        context.failure();
+        throw new ImagePullFailedException(e);
       } finally {
         response.close();
       }
     }
 
-    private boolean imageExists(final String image)
-        throws DockerException, InterruptedException {
+    private boolean imageExists(final String image) throws DockerException, InterruptedException {
       try {
-        ImageInspectResponse v = Futures.get(docker.inspectImage(image),
-            DOCKER_REQUEST_TIMEOUT_SECONDS, SECONDS, DockerException.class);
-        return v != null;
+        return docker.safeInspectImage(image) != null;
       } catch (DockerException e) {
-        checkForDockerTimeout(e, "image_exist_check");
         if (e.getMessage().contains("No such image")) {
           return false;
         } else {
@@ -734,8 +659,8 @@ class Supervisor {
     return null;
   }
 
-  private static void tailPull(final String image, final InputStream stream)
-      throws ImagePullFailedException, ImageMissingException {
+  private void tailPull(final String image, final InputStream stream)
+      throws ImagePullFailedException, ImageMissingException, PullingException {
 
     final MappingIterator<Map<String, Object>> messages;
     try {
@@ -745,8 +670,11 @@ class Supervisor {
     }
 
     // TODO (dano): this can block forever and seems to be impossible to abort by closing the client
-    while (messages.hasNext()) {
-      Map<String, Object> message = messages.next();
+    while (true) {
+      if (!hasNext(messages)) {
+        break;
+      }
+      Map<String, Object> message = getNext(messages);
       final Object error = message.get("error");
       if (error != null) {
         if (error.toString().contains("404")) {
@@ -756,6 +684,39 @@ class Supervisor {
         }
       }
       log.info("pull {}: {}", image, message);
+    }
+  }
+
+  private Map<String, Object> getNext(final MappingIterator<Map<String, Object>> messages)
+      throws PullingException {
+    final ListenableFuture<Map<String, Object>> future = pullStreamExecutor.submit(
+      new Callable<Map<String, Object>>() {
+        @Override
+        public Map<String, Object> call() throws Exception {
+          return messages.next();
+        }
+      });
+    try {
+      return Futures.get(future, PULL_POLL_TIMEOUT_SECONDS, SECONDS, PullingException.class);
+    } catch (PullingException e) {
+      future.cancel(true);
+      throw e;
+    }
+  }
+
+  private boolean hasNext(final MappingIterator<Map<String, Object>> messages)
+      throws PullingException {
+    final ListenableFuture<Boolean> future = pullStreamExecutor.submit(new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        return messages.hasNext();
+      }
+    });
+    try {
+      return Futures.get(future, PULL_POLL_TIMEOUT_SECONDS, SECONDS, PullingException.class);
+    } catch (PullingException e) {
+      future.cancel(true);
+      throw e;
     }
   }
 
@@ -986,7 +947,7 @@ class Supervisor {
           // See if the container is running
           ContainerInspectResponse containerInfo = null;
           try {
-            containerInfo = inspectContainer(containerId);
+            containerInfo = docker.safeInspectContainer(containerId);
             if (containerInfo == null || !containerInfo.state.running) {
               containerStopped = true;
             }
@@ -999,10 +960,9 @@ class Supervisor {
           if (containerInfo != null && containerInfo.state != null &&
               containerInfo.state.running) {
             try {
-              Futures.get(docker.kill(containerId), DockerException.class);
+              docker.kill(containerId);
               break;
-            } catch (DockerException e) {
-              checkForDockerTimeout(e, "kill_container");
+            } catch (DockerException | InterruptedException e) {
               log.error("failed to kill container {}", containerId, e);
               sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
             }
