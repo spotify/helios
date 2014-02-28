@@ -18,6 +18,7 @@ import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -31,8 +32,8 @@ import static org.apache.zookeeper.server.quorum.QuorumPeer.QuorumServer;
 
 public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
 
-  protected final Map<Long, QuorumServer> zkPeers = createPeers(3);
-  protected final Map<Long, InetSocketAddress> zkAddresses = allocateAddresses(zkPeers);
+  protected Map<Long, QuorumServer> zkPeers;
+  protected Map<Long, InetSocketAddress> zkAddresses;
 
   protected final Map<Long, QuorumPeer> zkServers = Maps.newHashMap();
 
@@ -81,13 +82,30 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
 
   @Override
   public void start() {
-    try {
-      for (final Map.Entry<Long, QuorumServer> entry : zkPeers.entrySet()) {
-        final Long id = entry.getKey();
-        startPeer(id);
+    boolean keepTrying = true;
+    while (keepTrying) {
+      keepTrying = false;
+      zkPeers = createPeers(3);
+      zkAddresses = allocateAddresses(zkPeers);
+      try {
+        for (final Map.Entry<Long, QuorumServer> entry : zkPeers.entrySet()) {
+          final Long id = entry.getKey();
+          startPeer(id);
+        }
+      } catch (BindException e) {
+        keepTrying = true;
+        System.err.println(
+            "---------------------------------------------"
+            + "\nGot bind exception, trying again, stopping first\n"
+            + "---------------------------------------------");
+        stop();
+        System.err.println(
+            "---------------------------------------------"
+            + "\nGot bind exception, stopped\n"
+            + "---------------------------------------------");
+      } catch (Exception e) {
+        throw Throwables.propagate(e);
       }
-    } catch (Exception e) {
-      throw Throwables.propagate(e);
     }
   }
 
