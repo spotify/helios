@@ -10,17 +10,25 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
+import org.junit.Rule;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 
 public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
 
-  private final int port = PortAllocator.allocatePort("zookeeper");
+  @Rule
+  public TemporaryPorts temporaryPorts = new TemporaryPorts();
+
+  private final int port = temporaryPorts.localPort("zookeeper");
   private final String endpoint = "127.0.0.1:" + port;
   private final File dataDir;
 
@@ -31,10 +39,10 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
 
   public ZooKeeperStandaloneServerManager() {
     this.dataDir = Files.createTempDir();
-    start();
     final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
     curator = CuratorFrameworkFactory.newClient(endpoint, 500, 500, retryPolicy);
     curator.start();
+    start();
   }
 
   @Override
@@ -60,6 +68,20 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   }
 
   @Override
+  public void awaitUp(long timeout, TimeUnit timeunit) throws TimeoutException {
+    Polling.awaitUnchecked(timeout, timeunit, new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        try {
+          return curator().getChildren().forPath("/");
+        } catch (Exception e) {
+          return null;
+        }
+      }
+    });
+  }
+
+  @Override
   public void start() {
     try {
       zkServer = new ZooKeeperServer();
@@ -69,6 +91,7 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
       cnxnFactory = ServerCnxnFactory.createFactory();
       cnxnFactory.configure(new InetSocketAddress(port), 0);
       cnxnFactory.startup(zkServer);
+      awaitUp(5, MINUTES);
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }

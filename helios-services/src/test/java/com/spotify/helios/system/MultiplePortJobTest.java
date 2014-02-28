@@ -5,6 +5,7 @@
 package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Range;
 
 import com.kpelykh.docker.client.DockerClient;
 import com.spotify.helios.Polling;
@@ -33,9 +34,10 @@ public class MultiplePortJobTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
 
-    final int start = EXTERNAL_PORT1 + 1;
-    final int end = start + 2;
-    final AgentMain agent1 = startDefaultAgent(TEST_HOST, "--port-range=" + start + ":" + end);
+    final Range<Integer> portRange = temporaryPorts.localPortRange("agent1", 2);
+    final AgentMain agent1 = startDefaultAgent(TEST_HOST, "--port-range=" +
+                                                          portRange.lowerEndpoint() + ":" +
+                                                          portRange.upperEndpoint());
 
     final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
@@ -48,7 +50,7 @@ public class MultiplePortJobTest extends SystemTestBase {
                         "bar", PortMapping.of(4712, EXTERNAL_PORT1));
 
     final ImmutableMap<String, PortMapping> expectedMapping1 =
-        ImmutableMap.of("foo", PortMapping.of(4711, start),
+        ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint()),
                         "bar", PortMapping.of(4712, EXTERNAL_PORT1));
 
     final Map<String, PortMapping> ports2 =
@@ -56,7 +58,7 @@ public class MultiplePortJobTest extends SystemTestBase {
                         "bar", PortMapping.of(4712, EXTERNAL_PORT2));
 
     final ImmutableMap<String, PortMapping> expectedMapping2 =
-        ImmutableMap.of("foo", PortMapping.of(4711, start + 1),
+        ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint() + 1),
                         "bar", PortMapping.of(4712, EXTERNAL_PORT2));
 
     final JobId jobId1 = createJob(JOB_NAME + 1, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,

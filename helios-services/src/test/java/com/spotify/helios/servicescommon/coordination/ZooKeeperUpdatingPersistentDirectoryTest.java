@@ -82,6 +82,8 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
   @Test
   public void verifyRemovesUndesiredNode() throws Exception {
     zk.curator().create().forPath(FOO_PATH, BAR1_DATA);
+    zk.stop();
+    zk.start();
     awaitNoNode(FOO_PATH);
   }
 

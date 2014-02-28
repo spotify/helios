@@ -6,6 +6,9 @@ package com.spotify.helios;
 
 import org.apache.curator.framework.CuratorFramework;
 
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+
 public interface ZooKeeperTestManager {
 
   /**
@@ -37,4 +40,9 @@ public interface ZooKeeperTestManager {
    * Get a curator client connected to this cluster.
    */
   CuratorFramework curator();
+
+  /**
+   * Await zookeeper successfully serving requests.
+   */
+  void awaitUp(long timeout, TimeUnit timeunit) throws TimeoutException;
 }

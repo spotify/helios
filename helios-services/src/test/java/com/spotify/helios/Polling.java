@@ -6,6 +6,8 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.google.common.base.Throwables.propagate;
+import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static java.lang.System.nanoTime;
 
 @Ignore
@@ -22,5 +24,15 @@ public class Polling {
       Thread.sleep(500);
     }
     throw new TimeoutException();
+  }
+
+  public static <T> T awaitUnchecked(final long timeout, final TimeUnit timeUnit,
+                                     final Callable<T> callable) throws TimeoutException {
+    try {
+      return await(timeout, timeUnit, callable);
+    } catch (Throwable e) {
+      propagateIfInstanceOf(e, TimeoutException.class);
+      throw propagate(e);
+    }
   }
 }

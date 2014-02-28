@@ -16,7 +16,7 @@ import com.kpelykh.docker.client.DockerException;
 import com.kpelykh.docker.client.model.Container;
 import com.kpelykh.docker.client.utils.LogReader;
 import com.spotify.helios.Polling;
-import com.spotify.helios.PortAllocator;
+import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.ZooKeeperStandaloneServerManager;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.agent.AgentMain;
@@ -95,9 +95,12 @@ public abstract class SystemTestBase {
 
   static final int INTERNAL_PORT = 4444;
 
-  // TODO (dano): use ephemeral port range when nameless is fixed
-  final int EXTERNAL_PORT1 = new SecureRandom().nextInt(10000) + 30000;
-  final int EXTERNAL_PORT2 = new SecureRandom().nextInt(10000) + 30000;
+  @Rule
+  public TemporaryPorts temporaryPorts = new TemporaryPorts();
+
+  // TODO (dano): Use temporaryPorts directly everywhere instead of these constants
+  final int EXTERNAL_PORT1 = temporaryPorts.localPort("external-1");
+  final int EXTERNAL_PORT2 = temporaryPorts.localPort("external-2");
 
   static final Map<String, String> EMPTY_ENV = emptyMap();
   static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
@@ -115,8 +118,9 @@ public abstract class SystemTestBase {
   static final TypeReference<Map<JobId, JobStatus>> STATUSES_TYPE =
       new TypeReference<Map<JobId, JobStatus>>() {};
 
-  final int masterPort = PortAllocator.allocatePort("helios master");
-  final int masterAdminPort = PortAllocator.allocatePort("helios master admin");
+
+  final int masterPort = temporaryPorts.localPort("helios master");
+  final int masterAdminPort = temporaryPorts.localPort("helios master admin");
   protected final String masterEndpoint = "http://localhost:" + masterPort;
 
   static final String DOCKER_ENDPOINT =

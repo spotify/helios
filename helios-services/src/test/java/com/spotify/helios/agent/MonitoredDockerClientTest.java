@@ -3,6 +3,7 @@ package com.spotify.helios.agent;
 import com.kpelykh.docker.client.DockerException;
 import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.HostConfig;
+import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.servicescommon.NoOpRiemannClient;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
@@ -11,6 +12,7 @@ import com.spotify.helios.system.BadDockerServer;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeoutException;
@@ -19,7 +21,10 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 public class MonitoredDockerClientTest {
-  private int badDockerPort = com.spotify.helios.PortAllocator.allocatePort("bad-docker");
+  @Rule
+  public TemporaryPorts temporaryPorts = new TemporaryPorts();
+
+  private int badDockerPort = temporaryPorts.localPort("bad-docker");
 
   private BadDockerServer badDocker;
 
