@@ -22,6 +22,7 @@ public class TaskStatus extends Descriptor {
   private static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
 
   public enum State {
+    PULLING_IMAGE,
     CREATING,
     STARTING,
     RUNNING,

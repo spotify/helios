@@ -65,6 +65,8 @@ import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
@@ -419,14 +421,15 @@ class Supervisor {
         // Ensure we have the image
         final String image = job.getImage();
         try {
+          setStatus(PULLING_IMAGE, null);
           maybePullImage(image);
         } catch (ImagePullFailedException e) {
           throttle = ThrottleState.IMAGE_PULL_FAILED;
-          setStatus(TaskStatus.State.FAILED, null);
+          setStatus(FAILED, null);
           throw e;
         } catch (ImageMissingException e) {
           throttle = ThrottleState.IMAGE_MISSING;
-          setStatus(TaskStatus.State.FAILED, null);
+          setStatus(FAILED, null);
           throw e;
         }
 
