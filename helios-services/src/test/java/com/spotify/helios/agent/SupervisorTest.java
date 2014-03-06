@@ -44,6 +44,7 @@ import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -243,6 +244,14 @@ public class SupervisorTest {
     // Change docker container state to stopped when it's killed
     when(docker.inspectContainer(eq(containerId))).thenReturn(immediateFuture(stoppedResponse));
     killFuture.set(null);
+
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
+      eq(TaskStatus.newBuilder()
+             .setJob(DESCRIPTOR)
+             .setState(PULLING_IMAGE)
+             .setContainerId(null)
+             .setEnv(ENV)
+             .build()));
 
     // Verify that the stopped state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
