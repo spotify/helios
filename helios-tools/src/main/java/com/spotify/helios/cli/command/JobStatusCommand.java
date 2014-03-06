@@ -79,6 +79,13 @@ public class JobStatusCommand extends ControlCommand {
     final Map<JobId, JobStatus> statuses = Maps.newTreeMap();
     statuses.putAll(allAsMap(futures));
 
+    displayStatuses(out, json, full, jobIds, statuses);
+
+    return 0;
+  }
+
+  public static void displayStatuses(PrintStream out, final boolean json, final boolean full,
+      final List<JobId> jobIds, final Map<JobId, JobStatus> statuses) {
     // TODO (dano): list hosts that have not yet reported a task status
     if (json) {
       out.println(Json.asPrettyStringUnchecked(statuses));
@@ -110,7 +117,5 @@ public class JobStatusCommand extends ControlCommand {
       }
       table.print();
     }
-
-    return 0;
   }
 }

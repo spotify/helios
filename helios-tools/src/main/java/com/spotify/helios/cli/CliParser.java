@@ -10,6 +10,7 @@ import com.google.common.collect.Sets;
 
 import com.spotify.helios.cli.command.ControlCommand;
 import com.spotify.helios.cli.command.HostDeregisterCommand;
+import com.spotify.helios.cli.command.HostJobStatusCommand;
 import com.spotify.helios.cli.command.HostJobsCommand;
 import com.spotify.helios.cli.command.HostListCommand;
 import com.spotify.helios.cli.command.HostRegisterCommand;
@@ -178,6 +179,7 @@ public class CliParser {
         .addSubparsers().title("host commands").metavar("COMMAND").help("additional help");
     new HostDeregisterCommand(p(host, "deregister"));
     new HostJobsCommand(p(host, "jobs"));
+    new HostJobStatusCommand(p(host, "jobstatus"));
     new HostListCommand(p(host, "list"));
     new HostRegisterCommand(p(host, "register"));
     new HostStatusCommand(p(host, "status"));
