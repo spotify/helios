@@ -4,14 +4,17 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Predicate;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.common.HeliosClient;
-import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.HostInfo;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
@@ -35,11 +38,16 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 public class HostListCommand extends ControlCommand {
 
   private final Argument quietArg;
+  private final Argument patternArg;
 
   public HostListCommand(final Subparser parser) {
     super(parser);
 
     parser.help("list hosts");
+
+    patternArg = parser.addArgument("pattern")
+        .nargs("?")
+        .help("Host pattern to match hosts on");
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
@@ -50,8 +58,20 @@ public class HostListCommand extends ControlCommand {
   @Override
   int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
-    final List<String> hosts = client.listHosts().get();
+    final String pattern = options.getString(patternArg.getDest());
+    final List<String> hosts = ImmutableList.copyOf(Iterables.filter(client.listHosts().get(),
+      new Predicate<String>() {
+        @Override
+        public boolean apply(String host) {
+          if (pattern == null) {
+            return true;
+          }
+          return host.contains(pattern);
+        }
+    }));
+
     final List<String> sortedHosts = natural().sortedCopy(hosts);
+
 
     final boolean quiet = options.getBoolean(quietArg.getDest());
 
