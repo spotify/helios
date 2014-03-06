@@ -1,6 +1,7 @@
 package com.spotify.helios.master.resources;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.common.HeliosException;
@@ -114,16 +115,20 @@ public class JobsResource {
   @ExceptionMetered
   public CreateJobResponse post(@Valid final Job job) throws HeliosException {
     final Collection<String> errors = JOB_VALIDATOR.validate(job);
+    final String jobIdString = job.toBuilder().build().getId().toString();
     if (!errors.isEmpty()) {
-      throw badRequest(new CreateJobResponse(INVALID_JOB_DEFINITION));
+      throw badRequest(new CreateJobResponse(INVALID_JOB_DEFINITION, ImmutableList.copyOf(errors),
+          jobIdString));
     }
     try {
-      model.addJob(job);
+      model.addJob(job.toBuilder().build());
     } catch (JobExistsException e) {
-      throw badRequest(new CreateJobResponse(JOB_ALREADY_EXISTS));
+      throw badRequest(new CreateJobResponse(JOB_ALREADY_EXISTS, ImmutableList.<String>of(),
+          jobIdString));
     }
     log.info("created job: {}", job);
-    return new CreateJobResponse(CreateJobResponse.Status.OK);
+    return new CreateJobResponse(CreateJobResponse.Status.OK, ImmutableList.<String>of(),
+        jobIdString);
   }
 
   @Path("{id}")

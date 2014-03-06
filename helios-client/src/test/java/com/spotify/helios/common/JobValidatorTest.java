@@ -94,8 +94,8 @@ public class JobValidatorTest {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
                             "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_PORTS, EMPTY_REGISTRATION);
     final JobId recomputedId = job.toBuilder().build().getId();
-    assertEquals(ImmutableSet.of("Id mismatch: " + job.getId() + " != " + recomputedId),
-                 validator.validate(job));
+    assertEquals(ImmutableSet.of("Id hash mismatch: " + job.getId().getHash()
+        + " != " + recomputedId.getHash()), validator.validate(job));
   }
 
   @Test

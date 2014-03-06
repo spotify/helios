@@ -53,9 +53,20 @@ public class JobValidator {
     validateImageReference(job.getImage(), errors);
 
     // Check that the job id is correct
+    final JobId jobId = job.getId();
     final JobId recomputedId = job.toBuilder().build().getId();
-    if (!recomputedId.equals(job.getId())) {
-      errors.add(format("Id mismatch: %s != %s", job.getId(), recomputedId));
+    if (!recomputedId.getName().equals(jobId.getName())) {
+      errors.add(format("Id name mismatch: %s != %s", jobId.getName(), recomputedId.getName()));
+    }
+
+    if (!recomputedId.getVersion().equals(jobId.getVersion())) {
+      errors.add(format("Id version mismatch: %s != %s", jobId.getVersion(),
+          recomputedId.getVersion()));
+    }
+
+    if (jobId.getHash() != null &&
+        (!recomputedId.getHash().equals(jobId.getHash()))) {
+      errors.add(format("Id hash mismatch: %s != %s", jobId.getHash(), recomputedId.getHash()));
     }
 
     // Check that there's not external port collission

@@ -4,6 +4,8 @@ import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 public class CreateJobResponse {
 
   public enum Status {
@@ -14,13 +16,27 @@ public class CreateJobResponse {
   }
 
   private final Status status;
+  private final List<String> errors;
+  private final String id;
 
-  public CreateJobResponse(@JsonProperty("status") Status status) {
+  public CreateJobResponse(@JsonProperty("status") final Status status,
+                           @JsonProperty("errors") final List<String> errors,
+                           @JsonProperty("id") final String id) {
     this.status = status;
+    this.errors = errors;
+    this.id = id;
   }
 
   public Status getStatus() {
     return status;
+  }
+
+  public List<String> getErrors() {
+    return errors;
+  }
+
+  public String getId() {
+    return id;
   }
 
   @Override

@@ -353,49 +353,6 @@
         </executions>
       </plugin>
 
-      <plugin>
-        <groupId>com.spotify</groupId>
-        <artifactId>docker-maven-plugin</artifactId>
-        <version>0.0.1</version>
-        <executions>
-          <execution>
-            <id>build</id>
-            <goals>
-              <goal>build</goal>
-            </goals>
-            <configuration>
-              <imageName>${imageName}:latest</imageName>
-              <resources>
-                <resource>
-                  <targetPath>tmp/jar</targetPath>
-                  <directory>${project.build.directory}</directory>
-                  <include>${project.artifactId}*.jar</include>
-                </resource>
-                <resource>
-                  <targetPath>tmp/bin</targetPath>
-                  <directory>${basedir}/bin</directory>
-                </resource>
-                <resource>
-                  <targetPath>tmp/conf</targetPath>
-                  <directory>${basedir}</directory>
-                  <include>${project.artifactId}.conf</include>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-          <execution>
-            <id>tag</id>
-            <goals>
-              <goal>tag</goal>
-            </goals>
-            <configuration>
-              <image>${imageName}:latest</image>
-              <newName>${imageName}</newName>
-              <useGitCommitId>true</useGitCommitId>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 </project>
