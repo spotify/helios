@@ -9,13 +9,16 @@ is what you're looking for.
 # Building and Testing Helios
 
 You'll want Docker installed somewhere.  If you have Vagrant
-installed, it should be a simple matter of running:
+installed, it should be a simple matter of checking out the 
+[helios-vagrant](https://ghe.spotify.net/helios/helios-vagrant)
+repo, and following the instructions there to bring it up.  If you want to run it 
+hosted on your actual machine, contact the NYCSI squad first, but you'll need our
+custom fork of Docker, an installation of ZooKeeper > 3.4.0 and probably some other
+handholding.
 
-    vagrant up
-
-If not, there's also
-[boot2docker](https://github.com/boot2docker/boot2docker) which should
-work for most things, but you may run into problems that we've fixed
+There's also
+[boot2docker](https://github.com/boot2docker/boot2docker) which can work
+to some degree, but you may run into problems that we've fixed
 by patching Docker, but the unit tests **will** pass with boot2docker.
 If you insist, you can also install docker yourself on your machine,
 but Vagrant is really the best choice as we've patched Docker in a few
