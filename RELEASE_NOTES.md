@@ -11,7 +11,7 @@ the week of 2014-03-03 (specifically commit id dd8359b)
 * CLI: 'job history' command should now work again.
 * CLI: Added optional matcher for 'host list' command so you can filter to
   get hosts which contain the substring
-* CLI: Added 'host jobstatus' command to give the status of all jobs on the
+* CLI: Experimental: Added 'host jobstatus' command to give the status of all jobs on the
   particular machine.  This is distinct from 'host jobs' which reports
   more of the intended state of things.
 * Added PULLING_IMAGE state, to fix the percieved problem when you first
