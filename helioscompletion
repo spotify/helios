@@ -1,0 +1,64 @@
+_helios_complete_s_flag() {
+    echo lon3 
+    echo ash2
+    echo shared.cloud
+}
+
+_helios_listjobs() {
+    ${COMP_WORDS[@]:0:3} job list 2>/dev/null | cut -d' ' -f 1 | tail -n +2
+}
+
+_helios_listhosts() {
+    ${COMP_WORDS[@]:0:3} host list 2>/dev/null | cut -d' ' -f 1 | tail -n +2
+}
+
+_helios_complete() {
+    cur="${COMP_WORDS[COMP_CWORD]}"
+    prev="${COMP_WORDS[COMP_CWORD-1]}"
+    pprev="${COMP_WORDS[COMP_CWORD-2]}"
+    
+    #echo "comp_words = " "$cur" "$prev"
+    if [ "-s" == "$prev" ]
+    then
+	opts="lon3 ash2 shared.cloud"
+	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+    if [ "job" == "$prev" ]
+    then
+	opts="create deploy history list remove start status stop undeploy watch" 
+	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+    if [ "job" == "$prev" ]
+    then
+	opts="create deploy history list remove start status stop undeploy watch" 
+	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+    if [ "host" == "$prev" ]
+    then
+	opts="deregister jobs jobstatus list register status"
+	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+    if [ "master" == "$prev" ]
+    then
+	opts="list"
+	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+
+    if [[ "job" == "$pprev" && 
+	    ( ("deploy" == "$prev") || ("status" == "$prev") || ("history" == "$prev")
+	    || ("undeploy" == "$prev") || ("remove" == "$prev") || ("start" == "$prev")
+	    || ("stop" == "$prev") || ("watch" == "$prev") ) ]]
+    then
+	opts=$(_helios_listjobs)
+	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+
+    if [[ "host" == "$pprev" &&
+		("jobstatus" == "$prev") ]]
+    then
+	opts=$(_helios_listhosts)
+	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
+    fi
+}
+
+complete -F _helios_complete helios	    
