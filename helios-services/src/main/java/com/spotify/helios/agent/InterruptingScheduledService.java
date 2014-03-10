@@ -25,7 +25,7 @@ public abstract class InterruptingScheduledService extends AbstractIdleService {
 
   private final ScheduledExecutorService executorService =
       MoreExecutors.getExitingScheduledExecutorService(
-          (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(0, threadFactory),
+          (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1, threadFactory),
           0, SECONDS);
 
   private final Runnable runnable = new Runnable() {
