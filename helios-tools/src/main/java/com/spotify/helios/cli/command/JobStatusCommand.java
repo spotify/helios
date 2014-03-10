@@ -84,38 +84,39 @@ public class JobStatusCommand extends ControlCommand {
     return 0;
   }
 
-  public static void displayStatuses(PrintStream out, final boolean json, final boolean full,
+  private static void displayStatuses(PrintStream out, final boolean json, final boolean full,
       final List<JobId> jobIds, final Map<JobId, JobStatus> statuses) {
     // TODO (dano): list hosts that have not yet reported a task status
     if (json) {
       out.println(Json.asPrettyStringUnchecked(statuses));
-    } else {
-      // TODO (dano): this explodes the job into one row per host, is that sane/expected?
-      final Table table = table(out);
-      table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND",
-                "THROTTLED?", "PORTS", "ENVIRONMENT");
-      for (final JobId jobId : jobIds) {
-        final JobStatus jobStatus = statuses.get(jobId);
-        final Map<String, TaskStatus> taskStatuses = jobStatus.getTaskStatuses();
-        for (final String host : taskStatuses.keySet()) {
-          final TaskStatus ts = taskStatuses.get(host);
-          final String command = on(' ').join(ts.getJob().getCommand());
-          final List<String> portMappings = new ArrayList<>();
-          for (Map.Entry<String, PortMapping> entry : ts.getPorts().entrySet()) {
-            final PortMapping portMapping = entry.getValue();
-            portMappings.add(String.format("%s=%d:%d", entry.getKey(),
-                                           portMapping.getInternalPort(),
-                                           portMapping.getExternalPort()));
-          }
-          final String ports = Joiner.on(" ").join(portMappings);
-          final String env = Joiner.on(" ").withKeyValueSeparator("=").join(ts.getEnv());
-          final String containerId = Optional.fromNullable(ts.getContainerId()).or("null");
-          table.row(full ? jobId : jobId.toShortString(), host, ts.getState(),
-                    full ? containerId : truncate(containerId, 7), command, ts.getThrottled(),
-                    ports, env);
-        }
-      }
-      table.print();
+      return;
     }
+
+    // TODO (dano): this explodes the job into one row per host, is that sane/expected?
+    final Table table = table(out);
+    table.row("JOB ID", "HOST", "STATE", "CONTAINER ID", "COMMAND",
+        "THROTTLED?", "PORTS", "ENVIRONMENT");
+    for (final JobId jobId : jobIds) {
+      final JobStatus jobStatus = statuses.get(jobId);
+      final Map<String, TaskStatus> taskStatuses = jobStatus.getTaskStatuses();
+      for (final String host : taskStatuses.keySet()) {
+        final TaskStatus ts = taskStatuses.get(host);
+        final String command = on(' ').join(ts.getJob().getCommand());
+        final List<String> portMappings = new ArrayList<>();
+        for (Map.Entry<String, PortMapping> entry : ts.getPorts().entrySet()) {
+          final PortMapping portMapping = entry.getValue();
+          portMappings.add(String.format("%s=%d:%d", entry.getKey(),
+              portMapping.getInternalPort(),
+              portMapping.getExternalPort()));
+        }
+        final String ports = Joiner.on(" ").join(portMappings);
+        final String env = Joiner.on(" ").withKeyValueSeparator("=").join(ts.getEnv());
+        final String containerId = Optional.fromNullable(ts.getContainerId()).or("null");
+        table.row(full ? jobId : jobId.toShortString(), host, ts.getState(),
+            full ? containerId : truncate(containerId, 7), command, ts.getThrottled(),
+                ports, env);
+      }
+    }
+    table.print();
   }
 }

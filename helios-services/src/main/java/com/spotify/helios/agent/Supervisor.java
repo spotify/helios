@@ -496,13 +496,13 @@ class Supervisor {
       container = docker.createContainer(containerConfig, name);
 
       final String containerId = container.id;
-      log.info("created container: {}: {}", job, container);
+      log.info("created container: {}: {}, {}", job, container, containerConfig);
 
       final HostConfig hostConfig = hostConfig();
       commandWrapper.modifyStartConfig(hostConfig);
 
       setStatus(STARTING, containerId, null);
-      log.info("starting container: {}: {}", job, containerId);
+      log.info("starting container: {}: {} {}", job, containerId, hostConfig);
       docker.startContainer(containerId, hostConfig);
       log.info("started container: {}: {}", job, containerId);
       metrics.containerStarted();
