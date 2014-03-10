@@ -1,5 +1,5 @@
 _helios_complete_s_flag() {
-    echo lon3 
+    echo lon3
     echo ash2
     echo shared.cloud
 }
@@ -16,7 +16,7 @@ _helios_complete() {
     cur="${COMP_WORDS[COMP_CWORD]}"
     prev="${COMP_WORDS[COMP_CWORD-1]}"
     pprev="${COMP_WORDS[COMP_CWORD-2]}"
-    
+
     #echo "comp_words = " "$cur" "$prev"
     if [ "-s" == "$prev" ]
     then
@@ -25,12 +25,12 @@ _helios_complete() {
     fi
     if [ "job" == "$prev" ]
     then
-	opts="create deploy history list remove start status stop undeploy watch" 
+	opts="create deploy history list remove start status stop undeploy watch"
 	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
     fi
     if [ "job" == "$prev" ]
     then
-	opts="create deploy history list remove start status stop undeploy watch" 
+	opts="create deploy history list remove start status stop undeploy watch"
 	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
     fi
     if [ "host" == "$prev" ]
@@ -44,7 +44,7 @@ _helios_complete() {
 	COMPREPLY=( $(compgen -W "${opts}" -- ${cur}) )
     fi
 
-    if [[ "job" == "$pprev" && 
+    if [[ "job" == "$pprev" &&
 	    ( ("deploy" == "$prev") || ("status" == "$prev") || ("history" == "$prev")
 	    || ("undeploy" == "$prev") || ("remove" == "$prev") || ("start" == "$prev")
 	    || ("stop" == "$prev") || ("watch" == "$prev") ) ]]
@@ -61,4 +61,4 @@ _helios_complete() {
     fi
 }
 
-complete -F _helios_complete helios	    
+complete -F _helios_complete helios
