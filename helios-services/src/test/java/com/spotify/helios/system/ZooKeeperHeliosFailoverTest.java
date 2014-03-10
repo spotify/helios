@@ -71,7 +71,7 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
     zkc.stopPeer(0);
     zkc.resetPeer(0);
     zkc.startPeer(0);
-    Thread.sleep(5000);
+    zkc.awaitUp(LONG_WAIT_MINUTES, MINUTES);
     zkc.stopPeer(1);
     undeploy(FOO.getId());
     deploy(BAR);

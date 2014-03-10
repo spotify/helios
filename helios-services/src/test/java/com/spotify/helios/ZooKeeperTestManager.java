@@ -45,4 +45,9 @@ public interface ZooKeeperTestManager {
    * Await zookeeper successfully serving requests.
    */
   void awaitUp(long timeout, TimeUnit timeunit) throws TimeoutException;
+
+  /**
+   * Await zookeeper not able to serve requests.
+   */
+  void awaitDown(int timeout, TimeUnit timeunit) throws TimeoutException;
 }

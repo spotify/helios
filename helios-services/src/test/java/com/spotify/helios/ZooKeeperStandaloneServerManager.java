@@ -7,6 +7,7 @@ import org.apache.commons.io.FileUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
@@ -74,6 +75,23 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
       public Object call() throws Exception {
         try {
           return curator().getChildren().forPath("/");
+        } catch (Exception e) {
+          return null;
+        }
+      }
+    });
+  }
+
+  @Override
+  public void awaitDown(int timeout, TimeUnit timeunit) throws TimeoutException {
+    Polling.awaitUnchecked(timeout, timeunit, new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        try {
+          curator().getChildren().forPath("/");
+          return null;
+        } catch (KeeperException.ConnectionLossException e) {
+          return true;
         } catch (Exception e) {
           return null;
         }

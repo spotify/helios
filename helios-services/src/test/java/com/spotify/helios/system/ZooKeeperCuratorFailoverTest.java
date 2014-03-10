@@ -15,6 +15,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertArrayEquals;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -39,8 +40,12 @@ public class ZooKeeperCuratorFailoverTest {
 
   @Test
   public void verifyCanCreateNodesWithOnePeerDead() throws Exception {
+    // Kill two peers and bring one up to ensure that only two out of three peers are alive
     zk.stopPeer(0);
-    Thread.sleep(1000);
+    zk.stopPeer(1);
+    zk.awaitDown(5, MINUTES);
+    zk.startPeer(1);
+    zk.awaitUp(5, MINUTES);
 
     try {
       zk.curator().create().forPath(FOO, FOO_DATA);
@@ -53,7 +58,7 @@ public class ZooKeeperCuratorFailoverTest {
   public void verifyCanNotCreateNodesWithTwoPeersDead() throws Exception {
     zk.stopPeer(0);
     zk.stopPeer(1);
-    Thread.sleep(1000);
+    zk.awaitDown(5, MINUTES);
 
     expectedException.expect(KeeperException.ConnectionLossException.class);
 
@@ -65,9 +70,10 @@ public class ZooKeeperCuratorFailoverTest {
   public void verifyZooKeeperRecoversWithTwoPeersAlive() throws Exception {
     zk.stopPeer(0);
     zk.stopPeer(1);
-    Thread.sleep(1000);
+    zk.awaitDown(5, MINUTES);
 
     zk.startPeer(0);
+    zk.awaitUp(5, MINUTES);
 
     try {
       zk.curator().create().forPath(FOO, FOO_DATA);
@@ -84,14 +90,11 @@ public class ZooKeeperCuratorFailoverTest {
     } catch (KeeperException.NodeExistsException ignore) {
     }
 
-    Thread.sleep(1000);
-
     zk.stopPeer(0);
     zk.resetPeer(0);
     zk.startPeer(0);
 
     zk.stopPeer(1);
-    Thread.sleep(1000);
 
     assertArrayEquals(FOO_DATA, zk.curator().getData().forPath(FOO));
   }
