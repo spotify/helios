@@ -52,7 +52,7 @@
             <version>2.16</version>
             <configuration>
               <enableAssertions>false</enableAssertions>
-              <forkCount>4</forkCount>
+              <forkCount>2C</forkCount>
               <reuseForks>true</reuseForks>
               <!--needed by cobertura-->
               <argLine>-XX:-UseSplitVerifier -Xmx128m</argLine>
