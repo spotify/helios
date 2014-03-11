@@ -1,0 +1,15 @@
+#!/bin/bash
+initctl stop docker
+cd /var/lib/docker
+DIRNAME=crud-$(date +%s)
+mkdir $DIRNAME
+mv aufs containers graph $DIRNAME
+
+for i in PREROUTING INPUT OUTPUT DOCKER POSTROUTING
+do
+  iptables -tnat -F $i
+done
+
+
+initctl start docker
+rm -rf $DIRNAME # may fail
