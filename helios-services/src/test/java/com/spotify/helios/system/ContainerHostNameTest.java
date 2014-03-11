@@ -28,7 +28,7 @@ public class ContainerHostNameTest extends SystemTestBase {
 
     final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
 
-    final List<String> command = asList("hostname");
+    final List<String> command = asList("hostname", "-f");
 
     // Create job
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", command);

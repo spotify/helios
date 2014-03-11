@@ -65,8 +65,8 @@ import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
@@ -79,6 +79,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * Supervises docker containers for a single job.
  */
 class Supervisor {
+
+  public static final int HOST_NAME_MAX = 64;
 
   public interface Listener {
     void stateChanged(Supervisor supervisor);
@@ -232,9 +234,9 @@ class Supervisor {
     containerConfig.setCmd(command.toArray(new String[command.size()]));
     containerConfig.setEnv(containerEnv(descriptor));
     containerConfig.setExposedPorts(containerExposedPorts(descriptor));
-    containerConfig.setHostName(
-        safeHostNameify(descriptor.getId().getName() + "_" + descriptor.getId().getVersion())
-        + "." + host);
+    containerConfig.setHostName(safeHostNameify(descriptor.getId().getName() + "_" +
+                                                descriptor.getId().getVersion()));
+    containerConfig.setDomainName(host);
     return containerConfig;
   }
 
@@ -250,7 +252,11 @@ class Supervisor {
         sb.append('_');
       }
     }
-    return sb.toString();
+    return truncate(sb.toString(), HOST_NAME_MAX);
+  }
+
+  private static String truncate(final String s, final int len) {
+    return s.substring(0, Math.min(len, s.length()));
   }
 
   /**
