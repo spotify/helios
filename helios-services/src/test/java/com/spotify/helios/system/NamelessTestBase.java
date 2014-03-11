@@ -56,7 +56,9 @@ public abstract class NamelessTestBase extends SystemTestBase {
   @After
   public void namelessTeardown() throws Exception {
     try {
-      nameless.stop();
+      if (nameless != null) {
+        nameless.stop();
+      }
     } catch (Exception e) {
       e.printStackTrace();
     }
