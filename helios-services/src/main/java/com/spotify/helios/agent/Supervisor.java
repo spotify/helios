@@ -26,6 +26,7 @@ import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.PortBinding;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -114,6 +115,7 @@ class Supervisor {
   private final Listener listener;
   private final ListeningExecutorService pullStreamExecutor;
 
+  private volatile Goal goal;
   private volatile Runner runner;
   private volatile Command currentCommand;
   private volatile Command performedCommand;
@@ -142,22 +144,24 @@ class Supervisor {
     this.pullStreamExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
   }
 
-  /**
-   * Start the job.
-   */
-  public void start() {
-    currentCommand = new Start();
-    reactor.signal();
-    metrics.supervisorStarted();
-  }
-
-  /**
-   * Stop the job.
-   */
-  public void stop() throws InterruptedException {
-    currentCommand = new Stop();
-    reactor.signal();
-    metrics.supervisorStopped();
+  public void setGoal(final Goal goal) {
+    if (this.goal == goal) {
+      return;
+    }
+    this.goal = goal;
+    switch (goal) {
+      case START:
+        currentCommand = new Start();
+        reactor.signal();
+        metrics.supervisorStarted();
+        break;
+      case STOP:
+      case UNDEPLOY:
+        currentCommand = new Stop();
+        reactor.signal();
+        metrics.supervisorStopped();
+        break;
+    }
   }
 
   /**
@@ -214,7 +218,7 @@ class Supervisor {
    */
   private void setStatus(final TaskStatus.State status, final String containerId,
                          final Map<String, PortMapping> ports) {
-    stateManager.setStatus(status, throttle, containerId, ports, getContainerEnvMap(job));
+    stateManager.setStatus(goal, status, throttle, containerId, ports, getContainerEnvMap(job));
   }
 
   /**

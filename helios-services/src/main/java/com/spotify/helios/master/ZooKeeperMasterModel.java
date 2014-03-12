@@ -8,7 +8,6 @@ import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
@@ -287,23 +286,29 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final List<String> hosts;
     try {
-      // TODO (dano): this will list all hosts that the job is deployed to, maybe we should list all hosts that are reporting that they are running this job
       hosts = listJobHosts(client, jobId);
     } catch (JobDoesNotExistException e) {
       return null;
     }
 
+    final ImmutableMap.Builder<String, Deployment> deployments = ImmutableMap.builder();
     final ImmutableMap.Builder<String, TaskStatus> taskStatuses = ImmutableMap.builder();
     for (final String host : hosts) {
       final TaskStatus taskStatus = getTaskStatus(client, host, jobId);
       if (taskStatus != null) {
         taskStatuses.put(host, taskStatus);
       }
+      final Deployment deployment = getDeployment(host, jobId);
+      if (deployment != null) {
+        deployments.put(host, deployment);
+      }
     }
 
+    final Map<String, Deployment> deploymentsMap = deployments.build();
     return JobStatus.newBuilder()
         .setJob(job)
-        .setDeployedHosts(ImmutableSet.copyOf(hosts))
+        .setDeployedHosts(deploymentsMap.keySet())
+        .setDeployments(deploymentsMap)
         .setTaskStatuses(taskStatuses.build())
         .build();
   }

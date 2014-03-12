@@ -33,6 +33,7 @@ public class TaskStatus extends Descriptor {
   }
 
   private final Job job;
+  private final Goal goal;
   private final State state;
   private final String containerId;
   private final ThrottleState throttled;
@@ -40,12 +41,14 @@ public class TaskStatus extends Descriptor {
   private final Map<String, String> env;
 
   public TaskStatus(@JsonProperty("job") final Job job,
+                    @Nullable @JsonProperty("goal") final Goal goal,
                     @JsonProperty("state") final State state,
                     @Nullable @JsonProperty("containerId") final String containerId,
                     @JsonProperty("throttled") final ThrottleState throttled,
                     @JsonProperty("ports") final Map<String, PortMapping> ports,
                     @Nullable @JsonProperty("env") final Map<String, String> env) {
     this.job = checkNotNull(job, "job");
+    this.goal = goal; // TODO (dano): add null check when all masters are upgraded
     this.state = checkNotNull(state, "state");
 
     // Optional
@@ -58,6 +61,7 @@ public class TaskStatus extends Descriptor {
   public Builder asBuilder() {
     return newBuilder()
         .setJob(job)
+        .setGoal(goal)
         .setState(state)
         .setContainerId(containerId)
         .setThrottled(throttled)
@@ -66,8 +70,15 @@ public class TaskStatus extends Descriptor {
   }
 
   private TaskStatus(final Builder builder) {
-    this(builder.job, builder.state, builder.containerId, builder.throttled, builder.ports,
-        builder.env);
+    this.job = checkNotNull(builder.job, "job");
+    this.goal = checkNotNull(builder.goal, "goal");
+    this.state = checkNotNull(builder.state, "state");
+
+    // Optional
+    this.containerId = builder.containerId;
+    this.throttled = Optional.fromNullable(builder.throttled).or(ThrottleState.NO);
+    this.ports = Optional.fromNullable(builder.ports).or(EMPTY_PORTS);
+    this.env = Optional.fromNullable(builder.env).or(Maps.<String, String>newHashMap());
   }
 
   public ThrottleState getThrottled() {
@@ -99,6 +110,7 @@ public class TaskStatus extends Descriptor {
   public String toString() {
     return Objects.toStringHelper(this)
         .add("job", job)
+        .add("goal", goal)
         .add("state", state)
         .add("containerId", containerId)
         .add("throttled", throttled)
@@ -108,7 +120,7 @@ public class TaskStatus extends Descriptor {
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -116,9 +128,15 @@ public class TaskStatus extends Descriptor {
       return false;
     }
 
-    final TaskStatus that = (TaskStatus) o;
+    TaskStatus that = (TaskStatus) o;
 
     if (containerId != null ? !containerId.equals(that.containerId) : that.containerId != null) {
+      return false;
+    }
+    if (env != null ? !env.equals(that.env) : that.env != null) {
+      return false;
+    }
+    if (goal != that.goal) {
       return false;
     }
     if (job != null ? !job.equals(that.job) : that.job != null) {
@@ -133,15 +151,14 @@ public class TaskStatus extends Descriptor {
     if (throttled != that.throttled) {
       return false;
     }
-    if (!env.equals(that.env)) {
-      return false;
-    }
+
     return true;
   }
 
   @Override
   public int hashCode() {
     int result = job != null ? job.hashCode() : 0;
+    result = 31 * result + (goal != null ? goal.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (containerId != null ? containerId.hashCode() : 0);
     result = 31 * result + (throttled != null ? throttled.hashCode() : 0);
@@ -156,22 +173,24 @@ public class TaskStatus extends Descriptor {
 
   public static class Builder {
 
+
     Builder() {}
 
     private Job job;
+    private Goal goal;
     private State state;
     private String containerId;
     private Map<String, PortMapping> ports;
     private ThrottleState throttled;
     private Map<String, String> env;
 
-    public Builder setEnv(final Map<String, String> env) {
-      this.env = env;
+    public Builder setJob(final Job job) {
+      this.job = job;
       return this;
     }
 
-    public Builder setJob(final Job job) {
-      this.job = job;
+    public Builder setGoal(Goal goal) {
+      this.goal = goal;
       return this;
     }
 
@@ -192,6 +211,11 @@ public class TaskStatus extends Descriptor {
 
     public Builder setThrottled(final ThrottleState throttled) {
       this.throttled = throttled;
+      return this;
+    }
+
+    public Builder setEnv(final Map<String, String> env) {
+      this.env = env;
       return this;
     }
 

@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import java.util.Map;
 
+import static com.spotify.helios.common.descriptors.Goal.START;
 import static org.junit.Assert.assertEquals;
 
 public class TaskStatusTest {
@@ -24,6 +25,7 @@ public class TaskStatusTest {
       .build();
   private static final TaskStatus STATUS = TaskStatus.newBuilder()
       .setContainerId("CONTAINER_ID")
+      .setGoal(START)
       .setJob(JOB)
       .setState(State.RUNNING)
       .setEnv(ENV)

@@ -41,10 +41,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
@@ -184,7 +186,7 @@ public class SupervisorTest {
     when(docker.waitContainer(containerId)).thenReturn(waitFuture);
 
     // Start the job
-    sut.start();
+    sut.setGoal(START);
 
     // Verify that the container is created
     verify(docker, timeout(30000)).createContainer(containerConfigCaptor.capture(),
@@ -192,6 +194,7 @@ public class SupervisorTest {
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
                                                eq(TaskStatus.newBuilder()
                                                       .setJob(DESCRIPTOR)
+                                                      .setGoal(START)
                                                       .setState(CREATING)
                                                       .setContainerId(null)
                                                       .setEnv(ENV)
@@ -210,6 +213,7 @@ public class SupervisorTest {
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
                                                eq(TaskStatus.newBuilder()
                                                       .setJob(DESCRIPTOR)
+                                                      .setGoal(START)
                                                       .setState(STARTING)
                                                       .setContainerId(containerId)
                                                       .setEnv(ENV)
@@ -222,6 +226,7 @@ public class SupervisorTest {
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
                                                eq(TaskStatus.newBuilder()
                                                       .setJob(DESCRIPTOR)
+                                                      .setGoal(START)
                                                       .setState(RUNNING)
                                                       .setContainerId(containerId)
                                                       .setEnv(ENV)
@@ -235,7 +240,7 @@ public class SupervisorTest {
       @Override
       public Void call() throws Exception {
         // TODO (dano): Make Supervisor.stop() asynchronous
-        sut.stop();
+        sut.setGoal(STOP);
         return null;
       }
     });
@@ -248,6 +253,7 @@ public class SupervisorTest {
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
       eq(TaskStatus.newBuilder()
              .setJob(DESCRIPTOR)
+             .setGoal(START)
              .setState(PULLING_IMAGE)
              .setContainerId(null)
              .setEnv(ENV)
@@ -257,6 +263,7 @@ public class SupervisorTest {
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
                                                eq(TaskStatus.newBuilder()
                                                       .setJob(DESCRIPTOR)
+                                                      .setGoal(STOP)
                                                       .setState(STOPPED)
                                                       .setContainerId(containerId)
                                                       .setEnv(ENV)
@@ -308,7 +315,7 @@ public class SupervisorTest {
     when(docker.waitContainer(containerId2)).thenReturn(waitFuture2);
 
     // Start the job
-    sut.start();
+    sut.setGoal(START);
     verify(docker, timeout(30000)).createContainer(any(ContainerConfig.class), any(String.class));
     verify(docker, timeout(30000)).startContainer(eq(containerId1), any(HostConfig.class));
     verify(docker, timeout(30000)).waitContainer(containerId1);

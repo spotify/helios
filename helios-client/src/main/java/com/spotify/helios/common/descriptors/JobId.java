@@ -5,6 +5,8 @@
 package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Function;
+import com.google.common.collect.ComparisonChain;
+import com.google.common.collect.Ordering;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
@@ -184,7 +186,11 @@ public class JobId extends Descriptor implements Comparable<JobId> {
 
   @Override
   public int compareTo(final JobId o) {
-    return toString().compareTo(o.toString());
+    return ComparisonChain.start()
+        .compare(name, o.name)
+        .compare(version, o.version)
+        .compare(hash, o.hash, Ordering.natural().nullsFirst())
+        .result();
   }
 
   public static Builder newBuilder() {

@@ -1,5 +1,6 @@
 package com.spotify.helios.agent;
 
+import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -47,7 +48,7 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
   }
 
   @Override
-  public void setStatus(State status, ThrottleState throttle, String containerId,
+  public void setStatus(Goal goal, State status, ThrottleState throttle, String containerId,
                         Map<String, PortMapping> ports, Map<String, String> env) {
 
     this.throttle = throttle;
@@ -55,6 +56,7 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
 
     TaskStatus.Builder builder = TaskStatus.newBuilder()
         .setJob(job)
+        .setGoal(goal)
         .setState(status)
         .setContainerId(containerId)
         .setPorts(ports)

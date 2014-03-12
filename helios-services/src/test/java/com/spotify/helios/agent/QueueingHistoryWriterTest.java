@@ -32,8 +32,9 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
-import static com.spotify.helios.agent.QueueingHistoryWriter.MAX_NUMBER_STATUS_EVENTS_TO_RETAIN;
 import static com.spotify.helios.Polling.await;
+import static com.spotify.helios.agent.QueueingHistoryWriter.MAX_NUMBER_STATUS_EVENTS_TO_RETAIN;
+import static com.spotify.helios.common.descriptors.Goal.START;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -55,6 +56,7 @@ public class QueueingHistoryWriterTest {
   private static final TaskStatus TASK_STATUS =  TaskStatus.newBuilder()
       .setState(State.CREATING)
       .setJob(JOB)
+      .setGoal(START)
       .setContainerId("containerId")
       .build();
 

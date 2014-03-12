@@ -49,6 +49,8 @@ import static org.mockito.Matchers.anyMapOf;
 import static org.mockito.Matchers.anySet;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -207,8 +209,8 @@ public class AgentTest {
 
     callback.run();
 
-    verify(fooSupervisor).start();
-    verify(barSupervisor).stop();
+    verify(fooSupervisor).setGoal(START);
+    verify(barSupervisor).setGoal(STOP);
 
     when(fooSupervisor.isStarting()).thenReturn(true);
     when(fooSupervisor.isStopping()).thenReturn(false);
@@ -220,8 +222,8 @@ public class AgentTest {
 
     callback.run();
 
-    verify(fooSupervisor, times(1)).start();
-    verify(barSupervisor, times(1)).stop();
+    verify(fooSupervisor, atLeastOnce()).setGoal(START);
+    verify(barSupervisor, atLeastOnce()).setGoal(STOP);
   }
 
   @SuppressWarnings("unchecked")
@@ -245,7 +247,7 @@ public class AgentTest {
 
     // ... and then started
     callback.run();
-    verify(fooSupervisor).start();
+    verify(fooSupervisor).setGoal(START);
 
     when(fooSupervisor.isStarting()).thenReturn(true);
     when(fooSupervisor.isStopping()).thenReturn(false);
@@ -253,7 +255,7 @@ public class AgentTest {
 
     // And not stopped
     callback.run();
-    verify(fooSupervisor, never()).stop();
+    verify(fooSupervisor, never()).setGoal(STOP);
   }
 
   @SuppressWarnings("unchecked")
@@ -279,7 +281,7 @@ public class AgentTest {
 
     // ... and then stopped
     callback.run();
-    verify(fooSupervisor).stop();
+    verify(fooSupervisor).setGoal(UNDEPLOY);
 
     when(fooSupervisor.isStopping()).thenReturn(true);
     when(fooSupervisor.isStarting()).thenReturn(false);
@@ -288,7 +290,7 @@ public class AgentTest {
 
     // And not started again
     callback.run();
-    verify(fooSupervisor, never()).start();
+    verify(fooSupervisor, never()).setGoal(START);
   }
 
   @Test
@@ -301,7 +303,7 @@ public class AgentTest {
                                      eq(FOO_PORT_ALLOCATION),
                                      any(Supervisor.Listener.class));
 
-    verify(fooSupervisor).start();
+    verify(fooSupervisor).setGoal(START);
     when(fooSupervisor.isStarting()).thenReturn(true);
 
     start(BAR_DESCRIPTOR);
@@ -309,13 +311,13 @@ public class AgentTest {
     verify(supervisorFactory).create(eq(BAR_DESCRIPTOR.getId()), eq(BAR_DESCRIPTOR),
                                      eq(EMPTY_PORT_ALLOCATION),
                                      any(Supervisor.Listener.class));
-    verify(barSupervisor).start();
+    verify(barSupervisor).setGoal(START);
     when(barSupervisor.isStarting()).thenReturn(true);
 
     callback.run();
 
-    verify(fooSupervisor, times(1)).start();
-    verify(barSupervisor, times(1)).start();
+    verify(fooSupervisor, atLeastOnce()).setGoal(START);
+    verify(barSupervisor, atLeastOnce()).setGoal(START);
   }
 
   @Test
@@ -325,7 +327,7 @@ public class AgentTest {
     // Verify that supervisor is started
     start(FOO_DESCRIPTOR);
     verify(portAllocator).allocate(FOO_DESCRIPTOR.getPorts(), EMPTY_PORT_SET);
-    verify(fooSupervisor).start();
+    verify(fooSupervisor).setGoal(START);
     when(fooSupervisor.isDone()).thenReturn(true);
     when(fooSupervisor.isStopping()).thenReturn(false);
     when(fooSupervisor.isStarting()).thenReturn(true);
@@ -333,11 +335,11 @@ public class AgentTest {
     // Verify that removal of the job *doesn't* stop the supervisor
     badStop(FOO_DESCRIPTOR);
     // Stop should *not* have been called.
-    verify(fooSupervisor, never()).stop();
+    verify(fooSupervisor, never()).setGoal(STOP);
 
     // Stop it the correct way
     stop(FOO_DESCRIPTOR);
-    verify(fooSupervisor).stop();
+    verify(fooSupervisor, atLeastOnce()).setGoal(UNDEPLOY);
     when(fooSupervisor.getStatus()).thenReturn(STOPPED);
     when(fooSupervisor.isDone()).thenReturn(true);
     when(fooSupervisor.isStopping()).thenReturn(true);
@@ -350,7 +352,7 @@ public class AgentTest {
     verify(supervisorFactory, times(2)).create(eq(FOO_DESCRIPTOR.getId()), eq(FOO_DESCRIPTOR),
                                                eq(FOO_PORT_ALLOCATION),
                                                any(Supervisor.Listener.class));
-    verify(fooSupervisor, times(2)).start();
+    verify(fooSupervisor, atLeast(2)).setGoal(START);
   }
 
   @Test
@@ -361,6 +363,6 @@ public class AgentTest {
     sut.stopAsync().awaitTerminated();
     verify(fooSupervisor).close();
     verify(fooSupervisor).join();
-    verify(fooSupervisor, never()).stop();
+    verify(fooSupervisor, never()).setGoal(STOP);
   }
 }

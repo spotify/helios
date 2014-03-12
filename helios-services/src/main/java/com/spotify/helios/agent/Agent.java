@@ -11,7 +11,6 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
 
-import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
@@ -119,26 +118,6 @@ public class Agent extends AbstractIdleService {
                                                            supervisorListener);
     supervisors.put(jobId, supervisor);
     return supervisor;
-  }
-
-  /**
-   * Instruct supervisor to start or stop job depending on the goal.
-   */
-  private void delegate(final Supervisor supervisor, final Goal goal)
-  throws InterruptedException {
-    switch (goal) {
-      case START:
-        if (!supervisor.isStarting()) {
-          supervisor.start();
-        }
-        break;
-      case STOP:
-      case UNDEPLOY:
-        if (!supervisor.isStopping()) {
-          supervisor.stop();
-        }
-        break;
-    }
   }
 
   /**
@@ -261,7 +240,7 @@ public class Agent extends AbstractIdleService {
         final JobId jobId = entry.getKey();
         final Supervisor supervisor = entry.getValue();
         final Execution execution = executions.get().get(jobId);
-        delegate(supervisor, execution.getGoal());
+        supervisor.setGoal(execution.getGoal());
       }
 
       // Reap dead executions

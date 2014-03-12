@@ -5,6 +5,7 @@
 package com.spotify.helios.common.protocol;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
@@ -16,21 +17,28 @@ import static com.google.common.collect.ImmutableSet.copyOf;
 
 public class JobStatus {
 
-  final Job job;
-  final Map<String, TaskStatus> taskStatuses;
-  final Set<String> deployedHosts;
+  private final Job job;
+  private final Map<String, TaskStatus> taskStatuses;
+  private final Map<String, Deployment> deployments;
+
+  // TODO (dano): remove this field when all masters are upgraded
+  @Deprecated
+  private final Set<String> deployedHosts;
 
   public JobStatus(@JsonProperty("job") final Job job,
                    @JsonProperty("taskStatuses") final Map<String, TaskStatus> taskStatuses,
+                   @JsonProperty("deployments") final Map<String, Deployment> deployments,
                    @JsonProperty("deployedHosts") final Set<String> deployedHosts) {
     this.job = job;
     this.taskStatuses = taskStatuses;
+    this.deployments = deployments;
     this.deployedHosts = deployedHosts;
   }
 
   public JobStatus(final Builder builder) {
     this.job = builder.job;
     this.taskStatuses = builder.taskStatuses;
+    this.deployments = builder.deployments;
     this.deployedHosts = builder.deployedHosts;
   }
 
@@ -42,12 +50,17 @@ public class JobStatus {
     return taskStatuses;
   }
 
+  public Map<String, Deployment> getDeployments() {
+    return deployments;
+  }
+
+  @Deprecated
   public Set<String> getDeployedHosts() {
     return deployedHosts;
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -55,10 +68,14 @@ public class JobStatus {
       return false;
     }
 
-    final JobStatus jobStatus = (JobStatus) o;
+    JobStatus jobStatus = (JobStatus) o;
 
     if (deployedHosts != null ? !deployedHosts.equals(jobStatus.deployedHosts)
                               : jobStatus.deployedHosts != null) {
+      return false;
+    }
+    if (deployments != null ? !deployments.equals(jobStatus.deployments)
+                            : jobStatus.deployments != null) {
       return false;
     }
     if (job != null ? !job.equals(jobStatus.job) : jobStatus.job != null) {
@@ -76,6 +93,7 @@ public class JobStatus {
   public int hashCode() {
     int result = job != null ? job.hashCode() : 0;
     result = 31 * result + (taskStatuses != null ? taskStatuses.hashCode() : 0);
+    result = 31 * result + (deployments != null ? deployments.hashCode() : 0);
     result = 31 * result + (deployedHosts != null ? deployedHosts.hashCode() : 0);
     return result;
   }
@@ -85,6 +103,7 @@ public class JobStatus {
     return "JobStatus{" +
            "job=" + job +
            ", taskStatuses=" + taskStatuses +
+           ", deployments=" + deployments +
            ", deployedHosts=" + deployedHosts +
            '}';
   }
@@ -98,6 +117,7 @@ public class JobStatus {
     private Job job;
     private Map<String, TaskStatus> taskStatuses;
     private Set<String> deployedHosts;
+    public Map<String, Deployment> deployments;
 
     public Builder setJob(final Job job) {
       this.job = job;
@@ -109,8 +129,14 @@ public class JobStatus {
       return this;
     }
 
+    @Deprecated
     public Builder setDeployedHosts(final Set<String> deployedHosts) {
       this.deployedHosts = copyOf(deployedHosts);
+      return this;
+    }
+
+    public Builder setDeployments(final Map<String, Deployment> deployments) {
+      this.deployments = copyOf(deployments);
       return this;
     }
 
