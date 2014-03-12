@@ -18,13 +18,8 @@
   </properties>
 
   <dependencies>
-	<!--compile deps -->
-	<dependency>
-      <groupId>org.clojure</groupId>
-	  <artifactId>clojure</artifactId>
-	  <version>1.4.0</version>
-	</dependency>
-	<dependency>
+    <!--compile deps -->
+    <dependency>
       <groupId>com.yammer.dropwizard</groupId>
       <artifactId>dropwizard-core</artifactId>
       <version>0.6.2</version>
@@ -317,6 +312,15 @@
               <dataSet>
                 <data>
                   <src>${basedir}/../bin/helios-agent</src>
+                  <type>file</type>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/bin/</prefix>
+                    <filemode>755</filemode>
+                  </mapper>
+                </data>
+                <data>
+                  <src>${basedir}/../utils/repair-docker</src>
                   <type>file</type>
                   <mapper>
                     <type>perm</type>
