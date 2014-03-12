@@ -34,4 +34,8 @@ public class Output {
   public static Table table(final PrintStream out) {
     return new Table(out);
   }
+
+  public static JobStatusTable jobStatusTable(final PrintStream out, final boolean full) {
+    return new JobStatusTable(out, full);
+  }
 }
