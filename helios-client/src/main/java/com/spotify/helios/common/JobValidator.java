@@ -49,6 +49,10 @@ public class JobValidator {
       errors.add(format("Job version may only contain [0-9a-zA-Z-_.]."));
     }
 
+    if (job.getImage().endsWith(":latest")) {
+      errors.add("Cannot use images that are tagged with :latest, use the hex id instead");
+    }
+
     // Validate image name
     validateImageReference(job.getImage(), errors);
 

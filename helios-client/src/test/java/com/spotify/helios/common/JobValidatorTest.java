@@ -24,20 +24,20 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class JobValidatorTest {
+  private final Job VALID_JOB = Job.newBuilder()
+      .setName("foo")
+      .setVersion("1")
+      .setImage("bar")
+      .setEnv(ImmutableMap.of("FOO", "BAR"))
+      .setPorts(ImmutableMap.of("1", PortMapping.of(1, 1),
+                                "2", PortMapping.of(2, 2)))
+      .build();
 
   final JobValidator validator = new JobValidator();
 
   @Test
   public void testValidJobPasses() {
-    final Job job = Job.newBuilder()
-        .setName("foo")
-        .setVersion("1")
-        .setImage("bar")
-        .setEnv(ImmutableMap.of("FOO", "BAR"))
-        .setPorts(ImmutableMap.of("1", PortMapping.of(1, 1),
-                                  "2", PortMapping.of(2, 2)))
-        .build();
-    assertThat(validator.validate(job), is(empty()));
+    assertThat(validator.validate(VALID_JOB), is(empty()));
   }
 
   @Test
@@ -87,6 +87,14 @@ public class JobValidatorTest {
         .build();
 
     assertEquals(ImmutableSet.of("Duplicate external port mapping: 1"), validator.validate(job));
+  }
+
+  @Test
+  public void testLatestTagIsBanned() {
+    final Job job = VALID_JOB.toBuilder().setImage("registry:80/myimage:latest").build();
+    assertEquals(ImmutableSet.of(
+        "Cannot use images that are tagged with :latest, use the hex id instead"),
+        validator.validate(job));
   }
 
   @Test
