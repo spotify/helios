@@ -263,16 +263,20 @@ public class JobCreateCommand extends ControlCommand {
       throw new IllegalArgumentException("Bad job definition: " + errors);
     }
 
-    if (!quiet) {
+    if (!quiet && !json) {
       out.println("Creating job: " + job.toJsonString());
     }
 
     final CreateJobResponse status = client.createJob(job).get();
     if (status.getStatus() == CreateJobResponse.Status.OK) {
-      if (!quiet) {
+      if (!quiet && !json) {
         out.println("Done.");
       }
-      out.println(job.getId());
+      if (json) {
+        out.println("\"" + job.getId() + "\"");
+      } else {
+        out.println(job.getId());
+      }
       return 0;
     } else {
       if (!quiet) {
