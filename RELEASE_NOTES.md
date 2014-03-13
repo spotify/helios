@@ -1,6 +1,18 @@
 **Please join our mailing list:**
 https://groups.google.com/a/spotify.com/forum/#!forum/helios
 
+0.0.7
+=====
+* `host jobstatus` command removed now that `host status` emits something useful
+* `job create` command when passed `--json` now outputs a valid JSON string
+* use of images with `:latest` tag now banned in `job create`
+
+0.0.6
+=====
+* Helios Agent now uses less CPU
+* Less flaky tests
+* Fix hostname too long which made containers fail to start
+
 0.0.5
 =====
 Changes since the deployment in shared.cloud the Magneto team has used
@@ -8,11 +20,11 @@ the week of 2014-03-03 (specifically commit id dd8359b)
 
 * RELATED: Many updates to the docker-maven-plugin -- please make sure
   you are using version 0.0.7 or later of the plugin.
-* CLI: 'job history' command should now work again.
-* CLI: Added optional matcher for 'host list' command so you can filter to
+* CLI: `job history` command should now work again.
+* CLI: Added optional matcher for `host list` command so you can filter to
   get hosts which contain the substring
-* CLI: Experimental: Added 'host jobstatus' command to give the status of all jobs on the
-  particular machine.  This is distinct from 'host jobs' which reports
+* CLI: Experimental: Added `host jobstatus` command to give the status of all jobs on the
+  particular machine.  This is distinct from `host jobs` which reports
   more of the intended state of things.
 * Added PULLING_IMAGE state, to fix the percieved problem when you first
   deploy a job and it looks like nothing is happening, but it's just
