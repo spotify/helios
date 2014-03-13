@@ -13,6 +13,7 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
@@ -21,6 +22,8 @@ import com.spotify.helios.common.protocol.SetGoalResponse;
 import org.junit.Test;
 
 import java.util.concurrent.Callable;
+
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
@@ -83,7 +86,12 @@ public class AgentRestartTest extends SystemTestBase {
     Thread.sleep(5000);
     final HostStatus hostStatus = client.hostStatus(TEST_HOST).get();
     final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
-    assertEquals(RUNNING, taskStatus.getState());
+    if (firstTaskStatus.getState() == PULLING_IMAGE) {
+      final State state = taskStatus.getState();
+      assertTrue(state == RUNNING || state == PULLING_IMAGE);
+    } else {
+      assertEquals(RUNNING, taskStatus.getState());
+    }
     assertEquals(firstTaskStatus.getContainerId(), taskStatus.getContainerId());
     assertEquals(1, listContainers(dockerClient, PREFIX).size());
     assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state.running);
