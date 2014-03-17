@@ -1,0 +1,15 @@
+@Grab(group='com.spotify', module ='pipeline-conventions', version='0.0.3',changing=true)
+
+import com.spotify.pipeline.*
+
+use(misc.Shell) {
+    pipeline {
+        stage('SPCloud Test') {
+            task('Create cluster') {
+                steps {
+                    shell('./.spotify/jenkins_create_cluster')
+                }
+            }
+        }
+    }
+}
