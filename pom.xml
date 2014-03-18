@@ -34,6 +34,7 @@
     <module>helios-client</module>
     <module>helios-tools</module>
     <module>helios-services</module>
+    <module>integration-tests</module>
   </modules>
 
   <profiles>
@@ -142,6 +143,19 @@
             </plugin>
           </plugins>
         </pluginManagement>
+      </build>
+    </profile>
+    <profile>
+      <id>integration-only</id>
+      <build>
+        <plugins>
+	  <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+	      <skip>true</skip>
+            </configuration>
+	  </plugin>
+        </plugins>
       </build>
     </profile>
   </profiles>
