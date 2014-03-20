@@ -1,33 +1,57 @@
 /**
- * Copyright (C) 2014 Spotify AB
- */
+* Copyright (C) 2014 Spotify AB
+*/
 
 package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
 
-import com.spotify.helios.Polling;
+import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
-import com.spotify.nameless.api.EndpointFilter;
-import com.spotify.nameless.proto.Messages;
+import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.serviceregistration.ServiceRegistration;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.List;
-import java.util.concurrent.Callable;
-
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static com.spotify.nameless.proto.Messages.RegistryEntry;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
-public class NamelessContainerRegistrationTest extends NamelessTestBase {
+@RunWith(MockitoJUnitRunner.class)
+public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
+
+  @Mock
+  public ServiceRegistrar registrar;
+
+  @Captor
+  public ArgumentCaptor<ServiceRegistration> registrationCaptor;
+
+  final String registryAddress = uniqueRegistryAddress();
+
+  @Before
+  public void setup() {
+    MockServiceRegistrarRegistry.set(registryAddress, registrar);
+  }
+
+  @After
+  public void teardown() {
+    MockServiceRegistrarRegistry.remove(registryAddress);
+  }
 
   @Test
   public void test() throws Exception {
@@ -35,7 +59,7 @@ public class NamelessContainerRegistrationTest extends NamelessTestBase {
 
     final HeliosClient client = defaultClient();
 
-    startDefaultAgent(TEST_HOST, "--nameless=" + namelessEndpoint);
+    startDefaultAgent(TEST_HOST, "--service-registry=" + registryAddress);
     awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     final ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
@@ -53,26 +77,12 @@ public class NamelessContainerRegistrationTest extends NamelessTestBase {
     deployJob(jobId, TEST_HOST);
     awaitJobState(client, TEST_HOST, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
-    final EndpointFilter filter = EndpointFilter.newBuilder()
-        .port(EXTERNAL_PORT1)
-        .protocol(serviceProto)
-        .service(serviceName)
-        .build();
+    verify(registrar, timeout((int) MINUTES.toMillis(LONG_WAIT_MINUTES))).register(registrationCaptor.capture());
+    final ServiceRegistration serviceRegistration = registrationCaptor.getValue();
 
-    // Wait for the container to get registered with nameless
-    final List<RegistryEntry> entries = Polling.await(
-        LONG_WAIT_MINUTES, MINUTES, new Callable<List<RegistryEntry>>() {
-      @Override
-      public List<RegistryEntry> call() throws Exception {
-        List<RegistryEntry> entries = namelessClient.queryEndpoints(filter).get();
-        return entries.size() == 1 ? entries : null;
-      }
-    });
+    final ServiceRegistration.Endpoint endpoint = getOnlyElement(serviceRegistration.getEndpoints());
 
-    assertTrue(entries.size() == 1);
-    final RegistryEntry entry = entries.get(0);
-    final Messages.Endpoint endpoint = entry.getEndpoint();
-    assertEquals("wrong service", serviceName, endpoint.getService());
+    assertEquals("wrong service", serviceName, endpoint.getName());
     assertEquals("wrong protocol", serviceProto, endpoint.getProtocol());
     assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT1);
   }

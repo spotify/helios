@@ -109,13 +109,12 @@ public class JobCreateCommand extends ControlCommand {
         .action(append())
         .setDefault(new ArrayList<String>())
         .nargs("+")
-        .help("Nameless service registration. Specify a service name, the port name and a " +
+        .help("Service discovery registration. Specify a service name, the port name and a " +
               "protocol on the format service/protocol=port. E.g. -r website/tcp=http will " +
-              "register the port named http with Nameless with the protocol tcp, essentially " +
-              "exposing it in DNS as a _spotify-website._tcp SRV record. Protocol is optional and " +
+              "register the port named http with the protocol tcp. Protocol is optional and " +
               "default is hm so e.g. -r wiggum=hermes will expose the port named hermes as " +
               "_spotify-wiggum._hm. If there is only one port mapping this will be used by" +
-              "default and it will be enough to specify only the nameless service name, e.g." +
+              "default and it will be enough to specify only the service name, e.g." +
               "-r wiggum.");
 
     argsArg = parser.addArgument("args")

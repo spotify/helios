@@ -6,7 +6,6 @@ package com.spotify.helios.master;
 
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
@@ -14,11 +13,13 @@ import com.spotify.helios.master.resources.HostsResource;
 import com.spotify.helios.master.resources.JobsResource;
 import com.spotify.helios.master.resources.MastersResource;
 import com.spotify.helios.master.resources.VersionResource;
-import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
+import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
+import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
@@ -27,9 +28,6 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
-import com.spotify.nameless.client.Nameless;
-import com.spotify.nameless.client.NamelessRegistrar;
-import com.spotify.nameless.client.RegistrationHandle;
 import com.yammer.dropwizard.config.ConfigurationException;
 import com.yammer.dropwizard.config.Environment;
 import com.yammer.dropwizard.config.RequestLogConfiguration;
@@ -55,8 +53,7 @@ import java.util.concurrent.TimeUnit;
 import ch.qos.logback.access.jetty.RequestLogImpl;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.util.concurrent.Futures.getUnchecked;
-import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
+import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
 
 /**
  * The Helios master service.
@@ -68,11 +65,10 @@ public class MasterService extends AbstractIdleService {
   private final Server server;
   private final MasterConfig config;
   private final Environment environment;
-  private final NamelessRegistrar registrar;
+  private final ServiceRegistrar registrar;
   private final RiemannFacade riemannFacade;
   private final ZooKeeperClient zooKeeperClient;
 
-  private ListenableFuture<RegistrationHandle> namelessHandle;
   private PersistentEphemeralNode upNode;
 
   /**
@@ -114,15 +110,10 @@ public class MasterService extends AbstractIdleService {
     environment.addHealthCheck(zooKeeperHealthChecker);
     environment.manage(new RiemannHeartBeat(TimeUnit.MINUTES, 2, riemannFacade));
 
-    if (config.getNamelessEndpoint() != null) {
-      this.registrar = Nameless.newRegistrar(config.getNamelessEndpoint());
-    } else if (config.getSite() != null) {
-      this.registrar = config.getSite().equals("localhost")
-                       ? Nameless.newRegistrar("tcp://localhost:4999")
-                       : Nameless.newRegistrarForDomain(config.getSite());
-    } else {
-      this.registrar = null;
-    }
+    // Set up service registrar
+    this.registrar = createServiceRegistrar(config.getServiceRegistrarPlugin(),
+                                            config.getServiceRegistryAddress(),
+                                            config.getSite());
 
     // Set up http server
     environment.addFilter(VersionResponseFilter.class, "/*");
@@ -163,24 +154,17 @@ public class MasterService extends AbstractIdleService {
       server.stop();
     }
 
-    if (registrar != null) {
-      log.info("registering with nameless");
-      namelessHandle = registrar.register("helios", "http",
-                                          config.getHttpConfiguration().getPort());
-    }
-
+    final ServiceRegistration serviceRegistration = ServiceRegistration.newBuilder()
+        .endpoint("helios", "http", config.getHttpConfiguration().getPort())
+        .build();
+    registrar.register(serviceRegistration);
   }
 
   @Override
   protected void shutDown() throws Exception {
     server.stop();
     server.join();
-    if (registrar != null) {
-      if (namelessHandle.isDone()) {
-        registrar.unregister(getUnchecked(namelessHandle));
-      }
-      registrar.shutdown();
-    }
+    registrar.close();
     if (upNode != null) {
       try {
         upNode.close();
@@ -222,7 +206,7 @@ public class MasterService extends AbstractIdleService {
       client.ensurePath(Paths.historyJobs());
 
       final String upPath = Paths.statusMasterUp(config.getName());
-      upNode = client.persistentEphemeralNode(upPath, EPHEMERAL, new byte[]{});
+      upNode = client.persistentEphemeralNode(upPath, PersistentEphemeralNode.Mode.EPHEMERAL, new byte[]{});
       upNode.start();
     } catch (KeeperException e) {
       throw new RuntimeException("zookeeper initialization failed", e);

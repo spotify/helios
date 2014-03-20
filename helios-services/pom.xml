@@ -43,6 +43,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>helios-service-registration</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
       <version>1.8</version>
@@ -137,26 +142,6 @@
       <version>0.4.1</version>
     </dependency>
     <dependency>
-      <groupId>com.spotify</groupId>
-      <artifactId>nameless-client</artifactId>
-      <version>0.2.3</version>
-    </dependency>
-    <dependency>
-      <groupId>com.spotify</groupId>
-      <artifactId>nameless-common</artifactId>
-      <version>1.7</version>
-      <exclusions>
-        <exclusion>
-          <groupId>com.netflix.astyanax</groupId>
-          <artifactId>astyanax-thrift</artifactId>
-        </exclusion>
-        <exclusion>
-          <groupId>com.spotify</groupId>
-          <artifactId>logging</artifactId>
-        </exclusion>
-      </exclusions>
-    </dependency>
-    <dependency>
       <groupId>com.bealetech</groupId>
       <artifactId>metrics-statsd</artifactId>
       <version>2.3.0</version>
@@ -185,12 +170,6 @@
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
       <version>1.9.5</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>com.spotify</groupId>
-      <artifactId>nameless-registry</artifactId>
-      <version>0.2.8</version>
       <scope>test</scope>
     </dependency>
     <dependency>

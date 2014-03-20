@@ -3,8 +3,8 @@ package com.spotify.helios.agent;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.servicescommon.RiemannFacade;
+import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
-import com.spotify.nameless.client.NamelessRegistrar;
 
 import java.util.Map;
 
@@ -22,7 +22,7 @@ public class SupervisorFactory {
   private final AgentModel model;
   private final DockerClientFactory dockerClientFactory;
   private final Map<String, String> envVars;
-  private final NamelessRegistrar registrar;
+  private final ServiceRegistrar registrar;
   private final CommandWrapper commandWrapper;
   private final String host;
   private final SupervisorMetrics metrics;
@@ -30,7 +30,7 @@ public class SupervisorFactory {
 
   public SupervisorFactory(final AgentModel model, final DockerClientFactory dockerClientFactory,
                            final Map<String, String> envVars,
-                           final @Nullable NamelessRegistrar registrar,
+                           final @Nullable ServiceRegistrar registrar,
                            final CommandWrapper commandWrapper,
                            final String host,
                            final SupervisorMetrics supervisorMetrics,
@@ -73,7 +73,7 @@ public class SupervisorFactory {
         .setFlapController(flapController)
         .setRestartPolicy(policy)
         .setTaskStatusManager(manager)
-        .setNamelessRegistrar(registrar)
+        .setServiceRegistrar(registrar)
         .setCommandWrapper(commandWrapper)
         .setMetrics(metrics)
         .setRiemannFacade(riemannFacade)

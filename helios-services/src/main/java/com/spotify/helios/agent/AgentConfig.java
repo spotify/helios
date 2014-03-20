@@ -23,10 +23,11 @@ public class AgentConfig extends Configuration {
   private Path stateDirectory;
   private String statsdHostPort;
   private String riemannHostPort;
-  private String namelessEndpoint;
+  private String serviceRegistryAddress;
   private int portRangeStart;
   private int portRangeEnd;
   private String sentryDsn;
+  private Path serviceRegistrarPlugin;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -135,13 +136,13 @@ public class AgentConfig extends Configuration {
     return riemannHostPort;
   }
 
-  public AgentConfig setNamelessEndpoint(final String namelessEndpoint) {
-    this.namelessEndpoint = namelessEndpoint;
+  public AgentConfig setServiceRegistryAddress(final String address) {
+    this.serviceRegistryAddress = address;
     return this;
   }
 
-  public String getNamelessEndpoint() {
-    return namelessEndpoint;
+  public String getServiceRegistryAddress() {
+    return serviceRegistryAddress;
   }
 
   public AgentConfig setPortRange(final int start, final int end) {
@@ -164,6 +165,15 @@ public class AgentConfig extends Configuration {
 
   public AgentConfig setSentryDsn(String sentryDsn) {
     this.sentryDsn = sentryDsn;
+    return this;
+  }
+
+  public Path getServiceRegistrarPlugin() {
+    return serviceRegistrarPlugin;
+  }
+
+  public AgentConfig setServiceRegistrarPlugin(final Path serviceRegistrarPlugin) {
+    this.serviceRegistrarPlugin = serviceRegistrarPlugin;
     return this;
   }
 }

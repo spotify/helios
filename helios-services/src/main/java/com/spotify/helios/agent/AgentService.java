@@ -14,24 +14,23 @@ import com.google.common.util.concurrent.Futures;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
+import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdaterFactory;
+import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperHealthChecker;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
-import com.spotify.nameless.client.Nameless;
-import com.spotify.nameless.client.NamelessRegistrar;
 import com.sun.management.OperatingSystemMXBean;
 import com.yammer.dropwizard.config.ConfigurationException;
 import com.yammer.dropwizard.config.Environment;
@@ -61,6 +60,7 @@ import javax.annotation.Nullable;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
+import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -84,7 +84,7 @@ public class AgentService extends AbstractIdleService {
   private final FileLock stateLock;
   private final ZooKeeperAgentModel model;
   private final Metrics metrics;
-  private final NamelessRegistrar namelessRegistrar;
+  private final ServiceRegistrar serviceRegistrar;
   private final Environment environment;
 
   private AgentRegistrar registrar;
@@ -175,13 +175,10 @@ public class AgentService extends AbstractIdleService {
     final DockerClientFactory dockerClientFactory =
         new DockerClientFactory(config.getDockerEndpoint());
 
-    if (config.getNamelessEndpoint() != null) {
-      this.namelessRegistrar = Nameless.newRegistrar(config.getNamelessEndpoint());
-    } else if (config.getSite() != null) {
-      this.namelessRegistrar = Nameless.newRegistrarForDomain(config.getSite());
-    } else {
-      this.namelessRegistrar = null;
-    }
+    // Set up service registrar
+    this.serviceRegistrar = createServiceRegistrar(config.getServiceRegistrarPlugin(),
+                                                   config.getServiceRegistryAddress(),
+                                                   config.getSite());
 
     final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =
         new ZooKeeperNodeUpdaterFactory(zooKeeperClient);
@@ -204,7 +201,7 @@ public class AgentService extends AbstractIdleService {
 
     final SupervisorFactory supervisorFactory = new SupervisorFactory(
         model, dockerClientFactory,
-        config.getEnvVars(), namelessRegistrar,
+        config.getEnvVars(), serviceRegistrar,
         config.getRedirectToSyslog() != null
         ? new SyslogRedirectingCommandWrapper(config.getRedirectToSyslog())
         : new NoOpCommandWrapper(),
@@ -227,10 +224,6 @@ public class AgentService extends AbstractIdleService {
 
     this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator);
 
-    final NamelessHealthChecker namelessHealthChecker =
-        new NamelessHealthChecker(TimeUnit.MINUTES, 5, riemannFacade);
-    environment.manage(namelessHealthChecker);
-
     final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
         Paths.statusHosts(), riemannFacade, TimeUnit.MINUTES, 2);
     environment.manage(zkHealthChecker);
@@ -240,7 +233,6 @@ public class AgentService extends AbstractIdleService {
       environment.addResource(new AgentModelTaskResource(model));
       environment.addResource(new AgentModelTaskStatusResource(model));
       environment.addHealthCheck(zkHealthChecker);
-      environment.addHealthCheck(namelessHealthChecker);
       this.server = new ServerFactory(config.getHttpConfiguration(), environment.getName())
           .buildServer(environment);
     } else {
@@ -327,8 +319,8 @@ public class AgentService extends AbstractIdleService {
     agentInfoReporter.stopAsync().awaitTerminated();
     environmentVariableReporter.stopAsync().awaitTerminated();
     agent.stopAsync().awaitTerminated();
-    if (namelessRegistrar != null) {
-      namelessRegistrar.shutdown().get();
+    if (serviceRegistrar != null) {
+      serviceRegistrar.close();
     }
     registrar.stopAsync().awaitTerminated();
     model.stopAsync().awaitTerminated();

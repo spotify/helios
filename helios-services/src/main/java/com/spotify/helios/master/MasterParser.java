@@ -34,8 +34,9 @@ public class MasterParser extends ServiceParser {
         .setStatsdHostPort(options.getString("statsd_host_port"))
         .setRiemannHostPort(options.getString("riemann_host_port"))
         .setInhibitMetrics(fromNullable(options.getBoolean("no_metrics")).or(false))
-        .setNamelessEndpoint(options.getString("nameless"))
-        .setSentryDsn(options.getString("sentry_dsn"));
+        .setSentryDsn(options.getString("sentry_dsn"))
+        .setServiceRegistryAddress(getServiceRegistryAddress())
+        .setServiceRegistrarPlugin(getServiceRegistrarPlugin());
 
     final HttpConfiguration http = config.getHttpConfiguration();
     http.setPort(httpAddress.getPort());

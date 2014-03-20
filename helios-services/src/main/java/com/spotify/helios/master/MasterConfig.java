@@ -6,6 +6,8 @@ package com.spotify.helios.master;
 
 import com.yammer.dropwizard.config.Configuration;
 
+import java.nio.file.Path;
+
 public class MasterConfig extends Configuration {
 
   private String site;
@@ -14,8 +16,9 @@ public class MasterConfig extends Configuration {
   private boolean inhibitMetrics;
   private String statsdHostPort;
   private String riemannHostPort;
-  private String namelessEndpoint;
+  private String serviceRegistryAddress;
   private String sentryDsn;
+  private Path serviceRegistrarPlugin;
 
   public String getSite() {
     return site;
@@ -71,13 +74,13 @@ public class MasterConfig extends Configuration {
     return riemannHostPort;
   }
 
-  public MasterConfig setNamelessEndpoint(final String namelessEndpoint) {
-    this.namelessEndpoint = namelessEndpoint;
+  public MasterConfig setServiceRegistryAddress(final String address) {
+    this.serviceRegistryAddress = address;
     return this;
   }
 
-  public String getNamelessEndpoint() {
-    return namelessEndpoint;
+  public String getServiceRegistryAddress() {
+    return serviceRegistryAddress ;
   }
 
   public String getSentryDsn() {
@@ -86,6 +89,15 @@ public class MasterConfig extends Configuration {
 
   public MasterConfig setSentryDsn(String sentryDsn) {
     this.sentryDsn = sentryDsn;
+    return this;
+  }
+
+  public Path getServiceRegistrarPlugin() {
+    return serviceRegistrarPlugin;
+  }
+
+  public MasterConfig setServiceRegistrarPlugin(final Path serviceRegistrarPlugin) {
+    this.serviceRegistrarPlugin = serviceRegistrarPlugin;
     return this;
   }
 }

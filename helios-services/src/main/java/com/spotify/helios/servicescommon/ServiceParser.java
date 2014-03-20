@@ -16,6 +16,7 @@ import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
 
 import static com.google.common.base.Throwables.propagate;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -27,6 +28,8 @@ public class ServiceParser {
 
   private final Namespace options;
   private final LoggingConfig loggingConfig;
+  private final File serviceRegistrarPlugin;
+  private final String getServiceRegistryAddress;
 
   public ServiceParser(final String programName, final String description, String... args)
       throws ArgumentParserException {
@@ -42,9 +45,13 @@ public class ServiceParser {
     parser.addArgument("-s", "--site")
         .help("backend site");
 
-    parser.addArgument("--nameless")
+    parser.addArgument("--service-registry")
         .type(String.class)
-        .help("nameless registry endpoint");
+        .help("Service registry address.");
+
+    parser.addArgument("--service-registrar-plugin")
+        .type(fileType().verifyExists().verifyCanRead())
+        .help("Service registration plugin.");
 
     parser.addArgument("--zk")
         .setDefault("localhost:2181")
@@ -88,6 +95,10 @@ public class ServiceParser {
                                            options.getBoolean("syslog"),
                                            (File) options.get("logconfig"),
                                            options.getBoolean("no_log_setup"));
+
+    this.serviceRegistrarPlugin = (File) options.get("service_registrar_plugin");
+
+    this.getServiceRegistryAddress = options.getString("service_registry");
   }
 
   protected void addArgs(final ArgumentParser parser) {
@@ -99,6 +110,14 @@ public class ServiceParser {
 
   public LoggingConfig getLoggingConfig() {
     return loggingConfig;
+  }
+
+  public String getServiceRegistryAddress() {
+    return getServiceRegistryAddress;
+  }
+
+  public Path getServiceRegistrarPlugin() {
+    return serviceRegistrarPlugin != null ? serviceRegistrarPlugin.toPath() : null;
   }
 
   private static String getHostName() {

@@ -38,10 +38,11 @@ import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.InterruptingExecutionThreadService;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.RiemannFacade;
+import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.serviceregistration.ServiceRegistrationHandle;
 import com.spotify.helios.servicescommon.statistics.MetricsContext;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
-import com.spotify.nameless.client.NamelessRegistrar;
-import com.spotify.nameless.client.RegistrationHandle;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -109,7 +110,7 @@ class Supervisor {
   private final FlapController flapController;
   private final RestartPolicy restartPolicy;
   private final TaskStatusManager stateManager;
-  private final NamelessRegistrar registrar;
+  private final ServiceRegistrar registrar;
   private final CommandWrapper commandWrapper;
   private final String host;
   private final SupervisorMetrics metrics;
@@ -361,13 +362,14 @@ class Supervisor {
       return resultFuture;
     }
 
-    private List<RegistrationHandle> namelessRegister(Map<String, PortMapping> ports)
+    private ServiceRegistrationHandle serviceRegister(Map<String, PortMapping> ports)
         throws InterruptedException {
       if (registrar == null) {
         return null;
       }
 
-      final List<ListenableFuture<RegistrationHandle>> futures = Lists.newArrayList();
+      final ServiceRegistration.Builder builder = ServiceRegistration.newBuilder();
+
       for (final Entry<ServiceEndpoint, ServicePorts> entry :
           job.getRegistration().entrySet()) {
         final ServiceEndpoint registration = entry.getKey();
@@ -382,37 +384,22 @@ class Supervisor {
             log.error("no external '{}' port for registration: '{}'", portName, registration);
             continue;
           }
-          futures.add(registrar.register(registration.getName(), registration.getProtocol(),
-                                         mapping.getExternalPort()));
+          builder.endpoint(registration.getName(), registration.getProtocol(),
+                           mapping.getExternalPort());
         }
       }
 
-      try {
-        return Futures.allAsList(futures).get();
-      } catch (ExecutionException e) {
-        log.error("Error registering with nameless", e);
-      }
-      return null;
+      final ServiceRegistration registration = builder.build();
+
+      return registrar.register(registration);
     }
 
-    private void namelessDeregister(final List<RegistrationHandle> handles) {
+    private void serviceDeregister(final ServiceRegistrationHandle handle) {
       if (registrar == null) {
         return;
       }
 
-      final List<ListenableFuture<Void>> futures = Lists.newArrayList();
-      for (RegistrationHandle handle : handles) {
-        futures.add(registrar.unregister(handle));
-      }
-
-      try {
-        Futures.allAsList(futures).get();
-      } catch (InterruptedException | ExecutionException e) {
-        log.error("Error unregistering with nameless", e);
-        if (e instanceof InterruptedException) {
-          Thread.interrupted();
-        }
-      }
+      registrar.unregister(handle);
     }
 
     @SuppressWarnings("TryWithIdenticalCatches")
@@ -466,12 +453,12 @@ class Supervisor {
 
         // Wait for container to die
         flapController.jobStarted();
-        final List<RegistrationHandle> registrationHandles = namelessRegister(ports);
+        final ServiceRegistrationHandle registrationHandle = serviceRegister(ports);
         final int exitCode;
         try {
           exitCode = docker.waitContainer(containerId);
         } finally {
-          namelessDeregister(registrationHandles);
+          serviceDeregister(registrationHandle);
         }
         log.info("container exited: {}: {}: {}", job, containerId, exitCode);
         flapController.jobDied();
@@ -802,7 +789,7 @@ class Supervisor {
     private FlapController flapController;
     private RestartPolicy restartPolicy;
     private TaskStatusManager stateManager;
-    private NamelessRegistrar registrar;
+    private ServiceRegistrar registrar;
     private CommandWrapper commandWrapper;
     private String host;
     private SupervisorMetrics metrics;
@@ -849,7 +836,7 @@ class Supervisor {
       return this;
     }
 
-    public Builder setNamelessRegistrar(final @Nullable NamelessRegistrar registrar) {
+    public Builder setServiceRegistrar(final @Nullable ServiceRegistrar registrar) {
       this.registrar = registrar;
       return this;
     }

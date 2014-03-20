@@ -83,9 +83,10 @@ public class AgentParser extends ServiceParser {
         .setStateDirectory(Paths.get(options.getString("state_dir")))
         .setStatsdHostPort(options.getString("statsd_host_port"))
         .setRiemannHostPort(options.getString("riemann_host_port"))
-        .setNamelessEndpoint(options.getString("nameless"))
         .setPortRange(start, end)
-        .setSentryDsn(options.getString("sentry_dsn"));
+        .setSentryDsn(options.getString("sentry_dsn"))
+        .setServiceRegistryAddress(getServiceRegistryAddress())
+        .setServiceRegistrarPlugin(getServiceRegistrarPlugin());
 
     final boolean noHttp = options.getBoolean("no_http");
 

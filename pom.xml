@@ -35,6 +35,7 @@
 
   <modules>
     <module>helios-client</module>
+    <module>helios-service-registration</module>
     <module>helios-tools</module>
     <module>helios-services</module>
     <module>helios-integration-tests</module>
