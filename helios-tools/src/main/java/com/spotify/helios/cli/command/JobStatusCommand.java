@@ -6,6 +6,7 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -67,7 +68,7 @@ public class JobStatusCommand extends ControlCommand {
         jobIdFutures.add(client.jobs(jobIdString));
       }
 
-      jobIds = Sets.newTreeSet();
+      jobIds = Sets.newHashSet();
       for (ListenableFuture<Map<JobId, Job>> future : jobIdFutures) {
         jobIds.addAll(future.get().keySet());
       }
@@ -89,7 +90,7 @@ public class JobStatusCommand extends ControlCommand {
 
     final JobStatusTable table = jobStatusTable(out, full);
 
-    for (final JobId jobId : jobIds) {
+    for (final JobId jobId : Ordering.natural().sortedCopy(jobIds)) {
       final JobStatus jobStatus = statuses.get(jobId);
 
       // Merge hosts without any status into the set of hosts with a reported task status
