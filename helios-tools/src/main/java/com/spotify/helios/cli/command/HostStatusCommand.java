@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.base.Predicates.isNull;
+import static com.google.common.base.Predicates.not;
 import static com.spotify.helios.cli.Output.jobStatusTable;
 import static com.spotify.helios.cli.Utils.allAsMap;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
@@ -66,7 +68,7 @@ public class HostStatusCommand extends ControlCommand {
     }
 
     final Map<String, HostStatus> hostStatuses = Maps.newTreeMap();
-    hostStatuses.putAll(allAsMap(futures));
+    hostStatuses.putAll(Maps.filterValues(allAsMap(futures), not(isNull())));
 
     if (json) {
       out.println(Json.asPrettyStringUnchecked(hostStatuses));
