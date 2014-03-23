@@ -36,7 +36,6 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.master.MasterMain;
-import com.spotify.hermes.Hermes;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.commons.io.FileUtils;
@@ -231,7 +230,6 @@ public abstract class SystemTestBase {
   static final String JOB_VERSION = "17";
 
   final List<HeliosClient> clients = Lists.newArrayList();
-  final List<com.spotify.hermes.service.Client> hermesClients = Lists.newArrayList();
 
   @BeforeClass
   public static void staticSetup() {
@@ -280,11 +278,6 @@ public abstract class SystemTestBase {
       client.close();
     }
     clients.clear();
-
-    for (com.spotify.hermes.service.Client client : hermesClients) {
-      client.close();
-    }
-    hermesClients.clear();
 
     for (Service service : services) {
       try {
@@ -721,12 +714,6 @@ public abstract class SystemTestBase {
       }
     }
     return list;
-  }
-
-  com.spotify.hermes.service.Client hermesClient(final String... endpoints) {
-    final com.spotify.hermes.service.Client client = Hermes.newClient(endpoints);
-    hermesClients.add(client);
-    return client;
   }
 
   HeliosClient defaultClient() {

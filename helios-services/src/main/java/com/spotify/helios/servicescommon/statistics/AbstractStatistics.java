@@ -4,7 +4,6 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.spotify.hermes.service.statistics.HistogramUpdateSampler;
 import com.yammer.metrics.core.Counter;
 import com.yammer.metrics.core.Histogram;
 import com.yammer.metrics.core.Meter;
@@ -26,14 +25,6 @@ public class AbstractStatistics<N extends AbstractMetricNames> {
     this.registry = registry;
   }
 
-  protected HistogramUpdateSampler samplingHist(final MetricName name, final boolean biased) {
-    return new HistogramUpdateSampler(registry.newHistogram(name, biased));
-  }
-
-  protected HistogramUpdateSampler samplingHist(final MetricName name) {
-    return samplingHist(name, true);
-  }
-
   protected Histogram hist(final MetricName name) {
     return hist(name, true);
   }
@@ -50,15 +41,7 @@ public class AbstractStatistics<N extends AbstractMetricNames> {
     return meter(name, eventType, SECONDS);
   }
 
-  protected ParamMeter paramMeter(final ParamMetricName replyStatusCodes, final String eventType) {
-    return new ParamMeter(registry, replyStatusCodes, eventType, SECONDS);
-  }
-
   protected Counter counter(final MetricName name) {
     return registry.newCounter(name);
-  }
-
-  protected ParamCounter paramCounter(final ParamMetricName runTime) {
-    return new ParamCounter(registry, runTime);
   }
 }

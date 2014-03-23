@@ -24,8 +24,4 @@ public class AbstractMetricNames {
   protected MetricName n(final String name) {
     return new MetricName(group, type, name, scope);
   }
-
-  protected ParamMetricName pn(final String prefix) {
-    return new ParamMetricName(group, type, prefix, scope);
-  }
 }
