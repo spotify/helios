@@ -41,6 +41,7 @@ waitforhealth() {
 
 ID=$1
 PROJECT=helios-ci-$ID
+echo $PROJECT > .project_name
 
 whoami
 
