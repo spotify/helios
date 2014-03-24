@@ -5,6 +5,7 @@
 package com.spotify.helios.system;
 
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -55,12 +56,16 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.management.ManagementFactory;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +76,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.FileAppender;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
@@ -87,6 +98,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.fail;
+import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
 public abstract class SystemTestBase {
 
@@ -95,7 +107,7 @@ public abstract class SystemTestBase {
   static final String PREFIX = Long.toHexString(new SecureRandom().nextLong());
 
   static final int WAIT_TIMEOUT_SECONDS = 40;
-  static final int LONG_WAIT_MINUTES = 2;
+  static final int LONG_WAIT_MINUTES = 10;
 
   static final int INTERNAL_PORT = 4444;
 
@@ -151,6 +163,10 @@ public abstract class SystemTestBase {
   public TestRule watcher = new TestWatcher() {
     @Override
     protected void starting(Description description) {
+      if (Boolean.getBoolean("logToFile")) {
+        final String name = description.getClassName() + "_" + description.getMethodName();
+        setupFileLogging(name);
+      }
       log.info(Strings.repeat("=", 80));
       log.info("STARTING: {}: {}", description.getClassName(), description.getMethodName());
       log.info(Strings.repeat("=", 80));
@@ -170,6 +186,46 @@ public abstract class SystemTestBase {
       log.info(Strings.repeat("=", 80));
     }
   };
+
+  private void setupFileLogging(final String name) {
+    final ch.qos.logback.classic.Logger rootLogger =
+        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ROOT_LOGGER_NAME);
+    final LoggerContext context = rootLogger.getLoggerContext();
+    context.reset();
+    final FileAppender<ILoggingEvent> fileAppender = new FileAppender<>();
+    final String ts = new SimpleDateFormat("yyyyMMdd'T'HHmmss.SSS").format(new Date());
+    final String pid = ManagementFactory.getRuntimeMXBean().getName().split("@", 2)[0];
+    final Path directory = Paths.get(System.getProperty("logDir", "/tmp/helios-test/log/"));
+    final String filename = String.format("%s-%s-%s.log", ts, name, pid);
+    final Path file = directory.resolve(filename);
+    final PatternLayoutEncoder ple = new PatternLayoutEncoder();
+    ple.setContext(context);
+    ple.setPattern("%d{HH:mm:ss.SSS} %-5level %logger{1} %F:%L - %msg%n");
+    ple.start();
+    fileAppender.setEncoder(ple);
+    fileAppender.setFile(file.toString());
+    fileAppender.setContext(context);
+    fileAppender.start();
+    rootLogger.setLevel(Level.DEBUG);
+    rootLogger.addAppender(fileAppender);
+    try {
+      Files.createDirectories(directory);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+
+    configureLogger("org.eclipse.jetty", Level.ERROR, false);
+    configureLogger("org.apache.curator", Level.ERROR, false);
+    configureLogger("org.apache.zookeeper", Level.ERROR, false);
+    configureLogger("com.spotify.helios", Level.DEBUG, true);
+  }
+
+  private void configureLogger(final String name, final Level level, final boolean additive) {
+    final ch.qos.logback.classic.Logger logger =
+        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(name);
+    logger.setLevel(level);
+    logger.setAdditive(additive);
+  }
 
   static final String JOB_NAME = PREFIX + "foo";
   static final String JOB_VERSION = "17";

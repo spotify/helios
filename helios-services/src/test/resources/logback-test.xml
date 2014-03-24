@@ -1,5 +1,7 @@
 <configuration>
 
+  <!-- Note: This logging configuration is ignored by system tests when -DlogToFile=true -->
+
   <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%d{HH:mm:ss.SSS} %-5level %logger{1} %F:%L - %msg%n</pattern>
@@ -20,6 +22,7 @@
   <logger name="org.apache.zookeeper" level="${externalLoggingLevel:-ERROR}" additivity="false">
     <appender-ref ref="STDERR_NOPEX"/>
   </logger>
+  <logger name="org.eclipse.jetty" level="${externalLoggingLevel:-ERROR}"/>
   <logger name="com.spotify.hermes" level="${externalLoggingLevel:-ERROR}"/>
   <logger name="com.spotify.helios" level="${heliosLoggingLevel:-DEBUG}"/>
 

@@ -57,6 +57,7 @@
               <reuseForks>true</reuseForks>
               <argLine>-Xmx128m</argLine>
               <systemPropertyVariables>
+                <logToFile>true</logToFile>
                 <heliosLoggingLevel>OFF</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
                 <rootLoggingLevel>OFF</rootLoggingLevel>
@@ -83,6 +84,7 @@
             <configuration>
               <enableAssertions>false</enableAssertions>
               <systemPropertyVariables>
+                <logToFile>false</logToFile>
                 <heliosLoggingLevel>DEBUG</heliosLoggingLevel>
                 <externalLoggingLevel>ERROR</externalLoggingLevel>
                 <rootLoggingLevel>ERROR</rootLoggingLevel>
