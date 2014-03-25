@@ -420,35 +420,35 @@ class Supervisor {
         // Delay
         Thread.sleep(delayMillis);
 
-        // Get centrally registered status
+        // Get persisted status
         final TaskStatus taskStatus = model.getTaskStatus(jobId);
-        final String registeredContainerId =
-            (taskStatus == null) ? null : taskStatus.getContainerId();
+        final String registeredContainerId = (taskStatus == null)
+                                             ? null
+                                             : taskStatus.getContainerId();
 
         // Find out if the container is already running
         final ContainerInspectResponse containerInfo =
             getRunningContainerInfo(registeredContainerId);
-
-        // Ensure we have the image
-        final String image = job.getImage();
-        try {
-          setStatus(PULLING_IMAGE, null);
-          maybePullImage(image);
-        } catch (ImagePullFailedException e) {
-          throttle = ThrottleState.IMAGE_PULL_FAILED;
-          setStatus(FAILED, null);
-          throw e;
-        } catch (ImageMissingException e) {
-          throttle = ThrottleState.IMAGE_MISSING;
-          setStatus(FAILED, null);
-          throw e;
-        }
 
         // Create and start container if necessary
         final String containerId;
         if (containerInfo != null && containerInfo.state.running) {
           containerId = registeredContainerId;
         } else {
+          // Ensure we have the image
+          final String image = job.getImage();
+          try {
+            setStatus(PULLING_IMAGE, null);
+            maybePullImage(image);
+          } catch (ImagePullFailedException e) {
+            throttle = ThrottleState.IMAGE_PULL_FAILED;
+            setStatus(FAILED, null);
+            throw e;
+          } catch (ImageMissingException e) {
+            throttle = ThrottleState.IMAGE_MISSING;
+            setStatus(FAILED, null);
+            throw e;
+          }
           containerId = startContainer(image);
         }
 
