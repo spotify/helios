@@ -47,4 +47,13 @@ public class Execution {
   public static Execution of(final Job job) {
     return new Execution(job, null, null);
   }
+
+  @Override
+  public String toString() {
+    return "Execution{" +
+           "job=" + job +
+           ", ports=" + ports +
+           ", goal=" + goal +
+           '}';
+  }
 }

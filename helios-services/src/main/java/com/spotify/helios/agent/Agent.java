@@ -159,7 +159,7 @@ public class Agent extends AbstractIdleService {
 
       final Map<JobId, Task> tasks = model.getTasks();
 
-      log.debug("tasks: {}", tasks.keySet());
+      log.debug("tasks: {}", tasks);
       log.debug("executions: {}", executions.get());
       log.debug("supervisors: {}", supervisors);
 
