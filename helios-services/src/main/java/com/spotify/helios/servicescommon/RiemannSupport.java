@@ -47,7 +47,7 @@ public class RiemannSupport implements Managed {
     if (size == 3) {
       this.proto = Iterables.get(parts, 0);
     } else {
-      this.proto = "tcp";
+      this.proto = "udp";
     }
     checkState("udp".equals(this.proto) || "tcp".equals(this.proto));
     host = Iterables.get(parts, size - 2);
