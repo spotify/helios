@@ -456,6 +456,7 @@ class Supervisor {
         final ContainerInspectResponse runningContainerInfo;
         runningContainerInfo = docker.safeInspectContainer(containerId);
 
+        // TODO (dano): Now that we perform the port allocation in Helios instead of relying on docker, report the ports we allocated instead of parsing the docker output.
         final Map<String, PortMapping> ports = parsePortBindings(runningContainerInfo);
         setStatus(RUNNING, containerId, ports);
         metrics.containersRunning();
