@@ -142,7 +142,8 @@ public class JobValidator {
     }
 
     final String[] nameParts = repo.split("/", 2);
-    if (!nameParts[0].contains(".") && !nameParts[0].contains(".") && !nameParts[0].contains(":") &&
+    if (!nameParts[0].contains(".") &&
+        !nameParts[0].contains(":") &&
         !nameParts[0].equals("localhost")) {
       // This is a Docker Index repos (ex: samalba/hipache or ubuntu)
       return validateRepositoryName(repo, errors);
