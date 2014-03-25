@@ -164,7 +164,7 @@ public class HostsResource {
     } catch (JobNotDeployedException e) {
       throw notFound(new SetGoalResponse(SetGoalResponse.Status.JOB_NOT_DEPLOYED, host, jobId));
     }
-    log.info("deployed job {} to host {}", deployment, host);
+    log.info("patched job {} on host {}", deployment, host);
     return new SetGoalResponse(SetGoalResponse.Status.OK, host, jobId);
   }
 
