@@ -4,6 +4,7 @@ import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -40,8 +41,8 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
 
   public ZooKeeperStandaloneServerManager() {
     this.dataDir = Files.createTempDir();
-    final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
-    curator = CuratorFrameworkFactory.newClient(endpoint, 500, 500, retryPolicy);
+    final RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+    curator = CuratorFrameworkFactory.newClient(endpoint, 5000, 1000, retryPolicy);
     curator.start();
     start();
   }

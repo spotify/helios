@@ -1,6 +1,8 @@
 package com.spotify.helios.servicescommon.coordination;
 
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.zookeeper.Op;
+
+import java.util.Collection;
 
 public class CheckWithVersion implements ZooKeeperOperation {
 
@@ -13,8 +15,8 @@ public class CheckWithVersion implements ZooKeeperOperation {
   }
 
   @Override
-  public void register(final CuratorTransaction transaction) throws Exception {
-    transaction.check().withVersion(version).forPath(path);
+  public void register(final Collection<Op> operations) throws Exception {
+    operations.add(Op.check(path, version));
   }
 
   @Override

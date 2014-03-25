@@ -1,7 +1,9 @@
 package com.spotify.helios.servicescommon.coordination;
 
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.zookeeper.Op;
+
+import java.util.Collection;
 
 public interface ZooKeeperOperation {
-  void register(CuratorTransaction transaction) throws Exception;
+  void register(Collection<Op> operations) throws Exception;
 }

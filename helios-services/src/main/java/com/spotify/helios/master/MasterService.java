@@ -4,8 +4,6 @@
 
 package com.spotify.helios.master;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -52,6 +50,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+
+import ch.qos.logback.access.jetty.RequestLogImpl;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.util.concurrent.Futures.getUnchecked;

@@ -1,9 +1,15 @@
 package com.spotify.helios.servicescommon.coordination;
 
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import org.apache.zookeeper.Op;
+
+import java.util.Collection;
+
+import static org.apache.zookeeper.CreateMode.PERSISTENT;
+import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 class CreateEmpty implements ZooKeeperOperation {
 
+  private static final byte[] EMPTY = new byte[0];
   private final String path;
 
   CreateEmpty(final String path) {
@@ -11,8 +17,8 @@ class CreateEmpty implements ZooKeeperOperation {
   }
 
   @Override
-  public void register(final CuratorTransaction transaction) throws Exception {
-    transaction.create().forPath(path);
+  public void register(final Collection<Op> operations) throws Exception {
+    operations.add(Op.create(path, EMPTY, OPEN_ACL_UNSAFE, PERSISTENT));
   }
 
   @Override
