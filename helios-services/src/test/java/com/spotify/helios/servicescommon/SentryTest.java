@@ -1,10 +1,13 @@
 package com.spotify.helios.servicescommon;
 
+import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.agent.AgentParser;
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.master.MasterParser;
 import com.spotify.logging.LoggingConfigurator;
 
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -20,29 +23,40 @@ import static org.junit.Assert.assertTrue;
 public class SentryTest {
 
   private static final Logger log = LoggerFactory.getLogger(SentryTest.class);
-  private static final int SENTRY_PORT = 9876;
+
+  @Rule
+  public TemporaryPorts temporaryPorts = new TemporaryPorts();
+
   private static final int UDP_SERVER_TIMEOUT = 5000;
-  private static final String TEST_DSN = String.format("udp://1:1@localhost:%d/1", SENTRY_PORT);
+
+  private int sentryPort;
+  private String testDsn;
+
+  @Before
+  public void setup() {
+    sentryPort = temporaryPorts.localPort("sentry");
+    testDsn = String.format("udp://1:1@localhost:%d/1", sentryPort);
+  }
 
   @Test
   public void testMasterParserAndConfig() throws Exception {
-    final String dsn = new MasterParser("--sentry-dsn", TEST_DSN).getMasterConfig().getSentryDsn();
-    assertEquals("wrong sentry DSN", TEST_DSN, dsn);
+    final String dsn = new MasterParser("--sentry-dsn", testDsn).getMasterConfig().getSentryDsn();
+    assertEquals("wrong sentry DSN", testDsn, dsn);
   }
 
   @Test
   public void testAgentParserAndConfig() throws Exception {
-    final String dsn = new AgentParser("--sentry-dsn", TEST_DSN).getAgentConfig().getSentryDsn();
-    assertEquals("wrong sentry DSN", TEST_DSN, dsn);
+    final String dsn = new AgentParser("--sentry-dsn", testDsn).getAgentConfig().getSentryDsn();
+    assertEquals("wrong sentry DSN", testDsn, dsn);
   }
 
   @Test
   public void testSentryAppender() throws Exception {
     // start our UDP server which will receive sentry messages
-    final UdpServer udpServer = new UdpServer(SENTRY_PORT);
+    final UdpServer udpServer = new UdpServer(sentryPort);
     // turn on logging which enables the sentry appender
     final LoggingConfig config = new LoggingConfig(0, true, null, false);
-    ServiceMain.setupLogging(config, TEST_DSN);
+    ServiceMain.setupLogging(config, testDsn);
     // log a message at error level so sentry appender sends it to UDP server
     log.error("Ignore test message printed by Helios SentryTest");
     // be nice and turn logging back off
