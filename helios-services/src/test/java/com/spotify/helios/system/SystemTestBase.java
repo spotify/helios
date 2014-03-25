@@ -8,6 +8,9 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -63,6 +66,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -477,8 +481,13 @@ public abstract class SystemTestBase {
       @Override
       public HostStatus call() throws Exception {
         final String output = cli("host", "status", name, "--json");
-        final Map<String, HostStatus> statuses = Json.read(
-            output, new TypeReference<Map<String, HostStatus>>() {});
+        final Map<String, HostStatus> statuses;
+        try {
+          statuses = Json.read(output, new TypeReference<Map<String, HostStatus>>() {
+          });
+        } catch (IOException e) {
+          return null;
+        }
         final HostStatus hostStatus = statuses.get(name);
         if (hostStatus == null) {
           return null;
@@ -495,7 +504,7 @@ public abstract class SystemTestBase {
     return Polling.await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
-        final HostStatus hostStatus = client.hostStatus(host).get();
+        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
         if (hostStatus == null) {
           return null;
         }
@@ -513,7 +522,10 @@ public abstract class SystemTestBase {
     return Polling.await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
-        final HostStatus hostStatus = client.hostStatus(host).get();
+        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
+        if (hostStatus == null) {
+          return null;
+        }
         final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
         return (taskStatus != null && taskStatus.getThrottled() == throttled) ? taskStatus : null;
       }
@@ -526,7 +538,7 @@ public abstract class SystemTestBase {
     Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
       public HostStatus call() throws Exception {
-        return client.hostStatus(host).get();
+        return getOrNull(client.hostStatus(host));
       }
     });
   }
@@ -538,7 +550,7 @@ public abstract class SystemTestBase {
     return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
       public HostStatus call() throws Exception {
-        final HostStatus hostStatus = client.hostStatus(host).get();
+        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
         if (hostStatus == null) {
           return null;
         }
@@ -582,11 +594,21 @@ public abstract class SystemTestBase {
     Polling.await(timeout, timeunit, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
-        final HostStatus hostStatus = client.hostStatus(host).get();
+        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
         final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
         return taskStatus == null ? true : null;
       }
     });
+  }
+
+  private <T> T getOrNull(final ListenableFuture<T> future)
+      throws ExecutionException, InterruptedException {
+    return Futures.withFallback(future, new FutureFallback<T>() {
+      @Override
+      public ListenableFuture<T> create(final Throwable t) throws Exception {
+        return Futures.immediateFuture(null);
+      }
+    }).get();
   }
 
   String readLogFully(final ClientResponse logs) throws IOException {
