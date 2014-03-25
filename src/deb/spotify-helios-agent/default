@@ -1,0 +1,4 @@
+# by default don't start daemon from init script
+ENABLED=false
+
+HELIOS_AGENT_OPTS=

@@ -1,0 +1,20 @@
+# helios-agent - controls setup and teardown of docker containers
+
+description "helios agent"
+author "Rohan Singh <rohan@spotify.com>"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+respawn
+
+pre-start script
+  [ -f /etc/default/helios-agent ] && . /etc/default/helios-agent
+
+  # don't start unless explicitly enabled in config
+  [ -z "$ENABLED" ] && { stop; exit 0; }
+end script
+
+script
+  /usr/bin/helios-agent $HELIOS_AGENT_OPTS
+end script
