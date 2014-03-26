@@ -58,9 +58,11 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
+import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
@@ -940,64 +942,82 @@ class Supervisor {
 
       log.debug("stopping job: id={}: job={}", jobId, job);
 
-      // Stop the runner
-      if (runner != null) {
-        runner.stopAsync();
-      }
-
-      final TaskStatus taskStatus = model.getTaskStatus(jobId);
-      final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
-
-      if (containerId == null) {
-        setStatus(STOPPED, null);
-        return;
-      }
-
       final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
           .setMinIntervalMillis(SECONDS.toMillis(5))
           .setMaxIntervalMillis(SECONDS.toMillis(30))
           .build().newScheduler();
 
-      // Wait for the runner and container to die
-      boolean containerStopped = false;
-      while ((runner != null && runner.isRunning()) || !containerStopped) {
-        if (!containerStopped) {
-          // See if the container is running
-          ContainerInspectResponse containerInfo = null;
-          try {
-            containerInfo = docker.safeInspectContainer(containerId);
-            if (containerInfo == null || !containerInfo.state.running) {
-              containerStopped = true;
-            }
-          } catch (DockerException e) {
-            log.error("failed to query container {}", containerId, e);
-            sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
-          }
+      String containerId = getContainerId();
 
-          // Kill the container if it's running
-          if (containerInfo != null && containerInfo.state != null &&
-              containerInfo.state.running) {
-            try {
-              docker.kill(containerId);
-              break;
-            } catch (DockerException | InterruptedException e) {
-              log.error("failed to kill container {}", containerId, e);
-              sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
-            }
+      // Stop the runner
+      if (runner != null) {
+        // Gently tell the runner to stop
+        runner.stopAsync();
+        // Wait for runner to stop
+        while (!awaitTerminated(runner, retryScheduler.nextMillis())) {
+          // Kill the container to make the runner stop waiting for on it
+          containerId = fromNullable(getContainerId()).or(containerId);
+          killContainer(containerId, retryScheduler);
+          // Disrupt work in progress to speed the runner to it's demise
+          if (runner != null) {
+            runner.disrupt();
           }
         }
-
-        // Disrupt work in progress to speed the runner to it's demise
-        if (runner != null) {
-          runner.disrupt();
-        }
-
-        sleepUninterruptibly(1, SECONDS);
+        runner = null;
       }
 
-      runner = null;
+      // Kill the container after stopping the runner
+      containerId = fromNullable(getContainerId()).or(containerId);
+      while (!killContainer(containerId, retryScheduler)) {
+        sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
+      }
 
       setStatus(STOPPED, containerId);
+    }
+
+    private boolean awaitTerminated(final Runner runner, final long timeoutMillis) {
+      try {
+        runner.awaitTerminated(timeoutMillis, MILLISECONDS);
+        return true;
+      } catch (TimeoutException ignore) {
+        return false;
+      }
+    }
+
+    private boolean killContainer(final String containerId, final RetryScheduler retryScheduler) {
+      if (containerId == null) {
+        return true;
+      }
+
+      // Check if the container is running
+      final ContainerInspectResponse containerInfo;
+      try {
+        containerInfo = docker.safeInspectContainer(containerId);
+      } catch (DockerException e) {
+        log.error("failed to query container {}", containerId, e);
+        sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
+        return false;
+      }
+      if (containerInfo == null || !containerInfo.state.running) {
+        return true;
+      }
+
+      // Kill the container
+      try {
+        docker.kill(containerId);
+      } catch (DockerException | InterruptedException e) {
+        log.error("failed to kill container {}", containerId, e);
+        sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
+      }
+
+      return false;
+    }
+
+    private String getContainerId() {
+      final String containerId;
+      final TaskStatus taskStatus = model.getTaskStatus(jobId);
+      containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
+      return containerId;
     }
   }
 
