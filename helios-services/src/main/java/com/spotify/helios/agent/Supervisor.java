@@ -513,7 +513,7 @@ class Supervisor {
       final HostConfig hostConfig = hostConfig();
       commandWrapper.modifyStartConfig(hostConfig);
 
-      setStatus(STARTING, containerId, null);
+      setStatus(STARTING, containerId);
       log.info("starting container: {}: {} {}", job, containerId, hostConfig);
       docker.startContainer(containerId, hostConfig);
       log.info("started container: {}: {}", job, containerId);
