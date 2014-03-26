@@ -47,7 +47,8 @@ whoami
 
 spcloud create \
       --project=$PROJECT \
-      --name=awseu3-heliosmaster-a1
+      --name=awseu3-heliosmaster-a1 \
+      --dist=trusty
 
 spcloud create \
       --project=$PROJECT \
