@@ -148,6 +148,7 @@ class Supervisor {
     if (this.goal == goal) {
       return;
     }
+    log.debug("Supervisor {}: setting goal: {}", jobId, goal);
     this.goal = goal;
     switch (goal) {
       case START:
@@ -755,16 +756,19 @@ class Supervisor {
 
     @Override
     public void run() throws InterruptedException {
-      final boolean done = performedCommand == currentCommand;
-      currentCommand.perform(done);
+      final Command command = currentCommand;
+      final boolean done = performedCommand == command;
+      log.debug("Supervisor {}: update: performedCommand={}, command={}, done={}", jobId, performedCommand, command, done);
+      command.perform(done);
       if (!done) {
-        performedCommand = currentCommand;
+        performedCommand = command;
         fireStateChanged();
       }
     }
   }
 
   private void fireStateChanged() {
+    log.debug("Supervisor {}: state changed", jobId);
     if (listener == null) {
       return;
     }

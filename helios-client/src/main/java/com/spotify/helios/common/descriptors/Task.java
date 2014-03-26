@@ -54,4 +54,12 @@ public class Task extends Descriptor {
     result = 31 * result + (job != null ? job.hashCode() : 0);
     return result;
   }
+
+  @Override
+  public String toString() {
+    return "Task{" +
+           "job=" + job +
+           ", goal=" + goal +
+           '}';
+  }
 }
