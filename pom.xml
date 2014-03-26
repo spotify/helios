@@ -7,7 +7,7 @@
   <name>Spotify Helios Parent</name>
   <groupId>com.spotify</groupId>
   <artifactId>helios-parent</artifactId>
-  <version>0.0.7-SNAPSHOT</version>
+  <version>0.0.7</version>
   <packaging>pom</packaging>
 
   <dependencies>
