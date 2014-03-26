@@ -272,7 +272,7 @@
       <plugin>
         <artifactId>jdeb</artifactId>
         <groupId>org.vafer</groupId>
-        <version>1.1</version>
+        <version>1.1.1</version>
         <executions>
 
           <!--spotify-helios-master-->
