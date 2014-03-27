@@ -8,13 +8,18 @@ stop on runlevel [!2345]
 
 respawn
 
+env DEFAULTFILE=/etc/default/helios-master
+
 pre-start script
-  [ -f /etc/default/helios-master ] && . /etc/default/helios-master
+  [ -f $DEFAULTFILE ] && . $DEFAULTFILE
 
   # don't start unless explicitly enabled in config
-  [ -z "$ENABLED" ] && { stop; exit 0; }
+  if [ -z "$ENABLED" ] ; then
+    stop; exit 0;
+  fi
 end script
 
 script
+  [ -f $DEFAULTFILE ] && . $DEFAULTFILE
   /usr/bin/helios-master $HELIOS_MASTER_OPTS
 end script

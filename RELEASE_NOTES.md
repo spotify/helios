@@ -1,6 +1,10 @@
 **Please join our mailing list:**
 https://groups.google.com/a/spotify.com/forum/#!forum/helios
 
+0.0.8
+=====
+* Include a working Upstart job with the Debian package
+
 0.0.7
 =====
 * `host jobstatus` command removed now that `host status` emits something useful
