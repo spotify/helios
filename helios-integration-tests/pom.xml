@@ -4,7 +4,7 @@
 
   <groupId>com.spotify</groupId>
   <artifactId>helios-integration-tests</artifactId>
-  <version>0.0.8-SNAPSHOT</version>
+  <version>0.0.8</version>
   <packaging>jar</packaging>
 
   <name>Spotify Helios Integration Tests</name>
