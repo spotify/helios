@@ -13,12 +13,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertArrayEquals;
 
-@RunWith(MockitoJUnitRunner.class)
+@RunWith(Parallelized.class)
 public class ZooKeeperCuratorFailoverTest {
 
   @Rule public ExpectedException expectedException = ExpectedException.none();
