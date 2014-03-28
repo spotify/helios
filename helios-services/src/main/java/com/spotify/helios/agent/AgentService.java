@@ -268,7 +268,7 @@ public class AgentService extends AbstractIdleService {
     // Register the agent
     this.registrar = new AgentRegistrar(client, config.getName(), id);
 
-    // Create the ephemeral up node after agent registration completes
+    // Shut down the agent if there is a registration collision
     Futures.addCallback(registrar.getCompletionFuture(), new FutureCallback<Void>() {
       @Override
       public void onSuccess(@Nullable final Void result) {
@@ -277,7 +277,6 @@ public class AgentService extends AbstractIdleService {
 
       @Override
       public void onFailure(final Throwable t) {
-        // Stop the agent on registration collision
         log.error("Registration failed", t);
         stopAsync();
       }
