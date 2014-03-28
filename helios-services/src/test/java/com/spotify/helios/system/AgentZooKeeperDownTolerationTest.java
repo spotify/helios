@@ -23,11 +23,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -88,7 +89,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Kill the container
     dockerClient.kill(firstTaskStatus.getContainerId());
-    assertEquals(0, listContainers(dockerClient, PREFIX).size());
+    assertFalse(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state.running);
 
     // Wait for a while and make sure that a new container was spawned
     final String firstRestartedContainerId =
@@ -105,13 +106,12 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Kill the container
     dockerClient.kill(firstRestartedContainerId);
-    assertEquals(0, listContainers(dockerClient, PREFIX).size());
+    assertFalse(dockerClient.inspectContainer(firstRestartedContainerId).state.running);
 
     // Start the agent again
     startDefaultAgent(TEST_HOST);
 
     // Wait for a while and make sure that a new container was spawned
-    Thread.sleep(5000);
     final String secondRestartedContainerId =
         Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
           @Override
