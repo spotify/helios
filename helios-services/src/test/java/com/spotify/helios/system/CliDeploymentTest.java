@@ -6,6 +6,7 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
 
+import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -17,6 +18,7 @@ import com.spotify.helios.common.protocol.JobStatus;
 import org.junit.Test;
 
 import java.util.Map;
+import java.util.concurrent.Callable;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -29,8 +31,14 @@ public class CliDeploymentTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
 
-    String output = cli("master", "list");
-    assertContains(TEST_MASTER, output);
+    // Wait for master to come up
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        final String output = cli("master", "list");
+        return output.contains(TEST_MASTER) ? output : null;
+      }
+    });
 
     assertContains("NOT_FOUND", deregisterHost(TEST_HOST));
 
