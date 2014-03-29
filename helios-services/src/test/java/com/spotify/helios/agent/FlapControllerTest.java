@@ -28,7 +28,7 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class FlapControllerTest {
-  private static final int LOCK_WAIT_TIME = 10000;
+  private static final long LOCK_WAIT_TIME_MILLIS = TimeUnit.MINUTES.toMillis(1);
 
   // Have to get all fancy with this, so we don't have arbitrary Thread.sleep()s
   // in the test code, and so they can run as fast as possible. This way, we also
@@ -113,7 +113,7 @@ public class FlapControllerTest {
     ListenableFuture<Integer> waitContainer = executor.submit(new Callable<Integer>() {
       @Override public Integer call() throws Exception {
         // runs until we tell it not to
-        barrier.await(10, TimeUnit.SECONDS);
+        barrier.await(LOCK_WAIT_TIME_MILLIS, TimeUnit.MILLISECONDS);
         return 3;
       }
     });
@@ -129,17 +129,17 @@ public class FlapControllerTest {
           // wait for the manager's state to change
           synchronized(manager) {
             start = System.currentTimeMillis();
-            manager.wait(LOCK_WAIT_TIME);
+            manager.wait(LOCK_WAIT_TIME_MILLIS);
             assertTrue("manager wait shouldn't take that long",
-                System.currentTimeMillis() - start < LOCK_WAIT_TIME);
+                System.currentTimeMillis() - start < LOCK_WAIT_TIME_MILLIS);
           }
           assertFalse(controller.isFlapping());
 
           // tell waitContainer to finish
           start = System.currentTimeMillis();
-          barrier.await(10, TimeUnit.SECONDS);
+          barrier.await(LOCK_WAIT_TIME_MILLIS, TimeUnit.MILLISECONDS);
           assertTrue("barrier wait shouldn't take that long",
-              System.currentTimeMillis() - start < LOCK_WAIT_TIME);
+              System.currentTimeMillis() - start < LOCK_WAIT_TIME_MILLIS);
         } catch (RuntimeException | InterruptedException | BrokenBarrierException
                  | TimeoutException e) {
           e.printStackTrace();
