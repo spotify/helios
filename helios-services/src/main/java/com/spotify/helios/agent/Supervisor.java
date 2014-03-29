@@ -96,8 +96,9 @@ class Supervisor {
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
       new ThreadFactoryBuilder().setNameFormat("helios-supervisor-runner-%d").build();
 
-  private static final int DOCKER_REQUEST_TIMEOUT_SECONDS = 5;
-  private static final int DOCKER_LONG_REQUEST_TIMEOUT_SECONDS = 30;
+  // TODO (dano): make these timeouts configurable
+  private static final int DOCKER_REQUEST_TIMEOUT_SECONDS = 30;
+  private static final int DOCKER_LONG_REQUEST_TIMEOUT_SECONDS = 60;
   private static final long PULL_POLL_TIMEOUT_SECONDS = 30;
 
   private final MonitoredDockerClient docker;
