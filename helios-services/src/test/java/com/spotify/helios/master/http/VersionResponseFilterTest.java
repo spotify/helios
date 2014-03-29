@@ -2,25 +2,30 @@ package com.spotify.helios.master.http;
 
 import com.google.common.collect.Maps;
 
+import com.spotify.helios.Polling;
 import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCompatibility;
+import com.spotify.helios.system.Parallelized;
 import com.spotify.helios.system.SystemTestBase;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.common.Version.POM_VERSION;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
+@RunWith(Parallelized.class)
 public class VersionResponseFilterTest extends SystemTestBase {
 
   private PomVersion current;
@@ -29,6 +34,18 @@ public class VersionResponseFilterTest extends SystemTestBase {
   public void setUp() throws Exception {
     startDefaultMaster();
     current = PomVersion.parse(Version.POM_VERSION);
+
+    // Wait for master to come up
+    Polling.await(1, TimeUnit.MINUTES, new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        try {
+          return doVersionRequest(current.toString());
+        } catch (IOException e) {
+          return null;
+        }
+      }
+    });
   }
 
   @Test
@@ -96,14 +113,14 @@ public class VersionResponseFilterTest extends SystemTestBase {
     assertEquals(POM_VERSION, connection.getHeaderField(VersionCompatibility.HELIOS_SERVER_VERSION_HEADER));
   }
 
-  private HttpURLConnection doVersionRequest(String version) throws URISyntaxException, IOException {
+  private HttpURLConnection doVersionRequest(String version) throws IOException {
     final Map<String, List<String>> headers = Maps.newHashMap();
     headers.put("Content-Type", asList("application/json"));
     headers.put("Charset", asList("utf-8"));
     if (version != null) {
       headers.put("X-Helios-Version", asList(version));
     }
-    final URI uri = new URI(masterEndpoint + "/jobs");
+    final URI uri = URI.create(masterEndpoint + "/version");
     final HttpURLConnection connection = connect(uri,  headers);
     return connection;
   }
