@@ -41,7 +41,7 @@ public class AgentRestartTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
 
-    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
+    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT, false);
 
     final HeliosClient client = defaultClient();
 

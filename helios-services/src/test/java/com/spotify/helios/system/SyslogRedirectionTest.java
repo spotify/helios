@@ -32,7 +32,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
     startDefaultAgent(TEST_HOST, "--syslog-redirect", "10.0.3.1:6514");
     awaitHostStatus(TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
-    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
+    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT, false);
 
     final List<String> command = asList("sh", "-c", "echo should-be-redirected");
 

@@ -311,7 +311,7 @@ public abstract class SystemTestBase {
 
     // Clean up docker
     try {
-      final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
+      final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT, false);
       final List<Container> containers = dockerClient.listContainers(false);
       for (final Container container : containers) {
         for (final String name : container.names) {

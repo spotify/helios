@@ -50,7 +50,7 @@ public class EnvironmentVaribleTest extends SystemTestBase {
       }
     });
 
-    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
+    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT, false);
 
     final List<String> command = asList("sh", "-c",
                                         "echo pod: $SPOTIFY_POD; " +

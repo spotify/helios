@@ -15,6 +15,6 @@ public class DockerClientFactory {
   }
 
   public DockerClient create() {
-    return new DockerClient(endpoint);
+    return new DockerClient(endpoint, false);
   }
 }

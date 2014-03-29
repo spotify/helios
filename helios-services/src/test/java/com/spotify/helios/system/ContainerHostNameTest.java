@@ -26,7 +26,7 @@ public class ContainerHostNameTest extends SystemTestBase {
     startDefaultAgent(TEST_HOST);
     awaitHostStatus(TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
-    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT);
+    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT, false);
 
     final List<String> command = asList("hostname", "-f");
 
