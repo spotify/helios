@@ -170,7 +170,7 @@ public class QueueingHistoryWriterTest {
       Thread.sleep(50);  // just to allow other stuff a chance to run in the background
     }
     // Should converge to 30 items
-    List<TaskStatusEvent> events = Polling.await(10L, TimeUnit.SECONDS,
+    List<TaskStatusEvent> events = Polling.await(1, TimeUnit.MINUTES,
       new Callable<List<TaskStatusEvent>>() {
       @Override
       public List<TaskStatusEvent> call() throws Exception {
