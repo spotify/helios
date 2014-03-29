@@ -4,7 +4,6 @@ import com.aphyr.riemann.Proto.Event;
 import com.spotify.helios.Polling;
 import com.spotify.helios.ZooKeeperStandaloneServerManager;
 import com.spotify.helios.servicescommon.CapturingRiemannClient;
-import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
 
 import org.junit.After;
 import org.junit.Before;

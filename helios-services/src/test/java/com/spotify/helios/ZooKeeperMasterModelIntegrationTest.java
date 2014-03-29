@@ -12,7 +12,7 @@ import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.master.ZooKeeperMasterModel;
-import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;

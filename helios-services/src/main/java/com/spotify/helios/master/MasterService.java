@@ -14,7 +14,7 @@ import com.spotify.helios.master.resources.HostsResource;
 import com.spotify.helios.master.resources.JobsResource;
 import com.spotify.helios.master.resources.MastersResource;
 import com.spotify.helios.master.resources.VersionResource;
-import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;

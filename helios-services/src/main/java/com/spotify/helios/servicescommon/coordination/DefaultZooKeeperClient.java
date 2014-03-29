@@ -1,11 +1,6 @@
-package com.spotify.helios.servicescommon;
+package com.spotify.helios.servicescommon.coordination;
 
 import com.google.common.collect.Lists;
-
-import com.spotify.helios.servicescommon.coordination.Node;
-import com.spotify.helios.servicescommon.coordination.PersistentPathChildrenCache;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.listen.Listenable;

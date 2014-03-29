@@ -2,10 +2,8 @@
  * Copyright (C) 2013 Spotify AB
  */
 
-package com.spotify.helios.servicescommon;
+package com.spotify.helios.servicescommon.coordination;
 
-
-import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 public class ZooKeeperNodeUpdaterFactory implements NodeUpdaterFactory {
 

@@ -11,7 +11,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.protocol.TaskStatusEvent;
 import com.spotify.helios.master.ZooKeeperMasterModel;
-import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;

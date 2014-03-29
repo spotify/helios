@@ -2,9 +2,7 @@
  * Copyright (C) 2013 Spotify AB
  */
 
-package com.spotify.helios.servicescommon;
-
-import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+package com.spotify.helios.servicescommon.coordination;
 
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;

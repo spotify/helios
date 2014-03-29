@@ -14,14 +14,14 @@ import com.google.common.util.concurrent.Futures;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
-import com.spotify.helios.servicescommon.ZooKeeperNodeUpdaterFactory;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdaterFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;

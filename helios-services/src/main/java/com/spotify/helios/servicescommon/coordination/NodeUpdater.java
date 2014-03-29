@@ -2,7 +2,7 @@
  * Copyright (C) 2013 Spotify AB
  */
 
-package com.spotify.helios.servicescommon;
+package com.spotify.helios.servicescommon.coordination;
 
 import java.io.IOException;
 

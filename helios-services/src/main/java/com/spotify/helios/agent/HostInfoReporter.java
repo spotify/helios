@@ -7,8 +7,8 @@ package com.spotify.helios.agent;
 import com.google.common.io.CharStreams;
 
 import com.spotify.helios.common.descriptors.HostInfo;
-import com.spotify.helios.servicescommon.NodeUpdaterFactory;
-import com.spotify.helios.servicescommon.ZooKeeperNodeUpdater;
+import com.spotify.helios.servicescommon.coordination.NodeUpdaterFactory;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.management.OperatingSystemMXBean;
 

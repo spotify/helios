@@ -1,7 +1,6 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import com.spotify.helios.ZooKeeperStandaloneServerManager;
-import com.spotify.helios.servicescommon.DefaultZooKeeperClient;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.utils.ZKPaths;

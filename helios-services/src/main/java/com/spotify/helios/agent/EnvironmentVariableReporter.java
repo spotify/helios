@@ -1,8 +1,8 @@
 package com.spotify.helios.agent;
 
 import com.spotify.helios.common.Json;
-import com.spotify.helios.servicescommon.NodeUpdaterFactory;
-import com.spotify.helios.servicescommon.ZooKeeperNodeUpdater;
+import com.spotify.helios.servicescommon.coordination.NodeUpdaterFactory;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 import com.spotify.helios.servicescommon.coordination.Paths;
 
 import java.util.Map;
