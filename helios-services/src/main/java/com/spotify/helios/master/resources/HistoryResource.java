@@ -4,10 +4,10 @@ import com.google.common.collect.ImmutableList;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.spotify.helios.common.HeliosException;
-import com.spotify.helios.common.JobDoesNotExistException;
+import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobIdParseException;
-import com.spotify.helios.common.protocol.TaskStatusEvent;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;

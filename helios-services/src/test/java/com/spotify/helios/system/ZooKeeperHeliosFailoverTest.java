@@ -6,13 +6,13 @@ package com.spotify.helios.system;
 
 import com.spotify.helios.ZooKeeperClusterTestManager;
 import com.spotify.helios.ZooKeeperTestManager;
-import com.spotify.helios.common.HeliosClient;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-import com.spotify.helios.common.protocol.JobStatus;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import org.junit.Before;

@@ -8,14 +8,14 @@ import com.kpelykh.docker.client.DockerClient;
 import com.kpelykh.docker.client.model.Container;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
-import com.spotify.helios.common.HeliosClient;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-import com.spotify.helios.common.protocol.JobStatus;
+import com.spotify.helios.common.descriptors.JobStatus;
 
 import org.junit.Test;
 

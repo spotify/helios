@@ -16,7 +16,7 @@ import java.util.List;
 
 /**
  * A target cluster identified by an endpoint string that can be used with a {@link
- * com.spotify.helios.common.HeliosClient}.
+ * com.spotify.helios.client.HeliosClient}.
  */
 public abstract class Target {
   private final String name;

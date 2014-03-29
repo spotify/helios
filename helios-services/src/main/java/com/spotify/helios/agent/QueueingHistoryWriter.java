@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.protocol.TaskStatusEvent;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;

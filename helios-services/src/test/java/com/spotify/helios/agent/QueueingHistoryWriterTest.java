@@ -9,7 +9,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
-import com.spotify.helios.common.protocol.TaskStatusEvent;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.ZooKeeperMasterModel;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;

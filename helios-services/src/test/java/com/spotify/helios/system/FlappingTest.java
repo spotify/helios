@@ -6,7 +6,7 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableList;
 
-import com.spotify.helios.common.HeliosClient;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 
 import org.junit.Test;

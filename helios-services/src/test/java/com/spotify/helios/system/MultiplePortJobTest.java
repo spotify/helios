@@ -10,7 +10,7 @@ import com.google.common.collect.Range;
 import com.kpelykh.docker.client.DockerClient;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
-import com.spotify.helios.common.HeliosClient;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;

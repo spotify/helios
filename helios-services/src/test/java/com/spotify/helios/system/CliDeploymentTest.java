@@ -13,7 +13,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
-import com.spotify.helios.common.protocol.JobStatus;
+import com.spotify.helios.common.descriptors.JobStatus;
 
 import org.junit.Test;
 

@@ -11,7 +11,7 @@ import com.google.common.util.concurrent.Futures;
 import com.spotify.helios.ZooKeeperClusterTestManager;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.agent.AgentMain;
-import com.spotify.helios.common.HeliosClient;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;

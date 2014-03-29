@@ -2,7 +2,7 @@
  * Copyright (C) 2012 Spotify AB
  */
 
-package com.spotify.helios.common;
+package com.spotify.helios.client;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
@@ -20,6 +20,10 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
+import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.Version;
+import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.VersionCompatibility.Status;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
@@ -29,7 +33,7 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-import com.spotify.helios.common.protocol.JobStatus;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;

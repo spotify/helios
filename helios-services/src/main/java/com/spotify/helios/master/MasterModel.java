@@ -4,19 +4,12 @@
 
 package com.spotify.helios.master;
 
-import com.spotify.helios.common.HostNotFoundException;
-import com.spotify.helios.common.JobAlreadyDeployedException;
-import com.spotify.helios.common.JobDoesNotExistException;
-import com.spotify.helios.common.JobExistsException;
-import com.spotify.helios.common.JobNotDeployedException;
-import com.spotify.helios.common.JobPortAllocationConflictException;
-import com.spotify.helios.common.JobStillDeployedException;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.protocol.JobStatus;
-import com.spotify.helios.common.protocol.TaskStatusEvent;
+import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
 
 import java.util.List;
 import java.util.Map;

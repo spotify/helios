@@ -2,11 +2,11 @@ package com.spotify.helios.master.resources;
 
 import com.google.common.base.Optional;
 
-import com.spotify.helios.common.HostNotFoundException;
-import com.spotify.helios.common.JobAlreadyDeployedException;
-import com.spotify.helios.common.JobDoesNotExistException;
-import com.spotify.helios.common.JobNotDeployedException;
-import com.spotify.helios.common.JobPortAllocationConflictException;
+import com.spotify.helios.master.HostNotFoundException;
+import com.spotify.helios.master.JobAlreadyDeployedException;
+import com.spotify.helios.master.JobDoesNotExistException;
+import com.spotify.helios.master.JobNotDeployedException;
+import com.spotify.helios.master.JobPortAllocationConflictException;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;

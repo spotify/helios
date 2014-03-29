@@ -2,12 +2,9 @@
  * Copyright (C) 2013 Spotify AB
  */
 
-package com.spotify.helios.common.protocol;
+package com.spotify.helios.common.descriptors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.TaskStatus;
 
 import java.util.Map;
 import java.util.Set;

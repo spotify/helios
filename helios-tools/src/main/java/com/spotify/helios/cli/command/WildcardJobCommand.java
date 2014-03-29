@@ -6,7 +6,7 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.collect.Iterables;
 
-import com.spotify.helios.common.HeliosClient;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 

@@ -3,7 +3,7 @@ package com.spotify.helios;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
-import com.spotify.helios.common.HeliosClient;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
@@ -11,7 +11,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-import com.spotify.helios.common.protocol.JobStatus;
+import com.spotify.helios.common.descriptors.JobStatus;
 
 import org.junit.After;
 import org.junit.Before;

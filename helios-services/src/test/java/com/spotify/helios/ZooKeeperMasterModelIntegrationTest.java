@@ -3,10 +3,10 @@ package com.spotify.helios;
 import com.google.common.collect.ImmutableList;
 
 import com.spotify.helios.common.HeliosException;
-import com.spotify.helios.common.HostNotFoundException;
-import com.spotify.helios.common.JobDoesNotExistException;
-import com.spotify.helios.common.JobNotDeployedException;
-import com.spotify.helios.common.JobStillDeployedException;
+import com.spotify.helios.master.HostNotFoundException;
+import com.spotify.helios.master.JobDoesNotExistException;
+import com.spotify.helios.master.JobNotDeployedException;
+import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;

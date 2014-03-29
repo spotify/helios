@@ -2,9 +2,10 @@
  * Copyright (C) 2013 Spotify AB
  */
 
-package com.spotify.helios.common;
+package com.spotify.helios.master;
 
 
+import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.descriptors.JobId;
 
 import static java.lang.String.format;

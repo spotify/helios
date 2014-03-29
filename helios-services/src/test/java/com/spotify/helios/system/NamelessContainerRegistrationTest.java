@@ -7,7 +7,7 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.Polling;
-import com.spotify.helios.common.HeliosClient;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;

@@ -1,6 +1,6 @@
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.common.HeliosClient;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
 
 import net.sourceforge.argparse4j.impl.Arguments;

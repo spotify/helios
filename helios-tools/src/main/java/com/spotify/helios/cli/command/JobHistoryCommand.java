@@ -1,13 +1,13 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.cli.Table;
-import com.spotify.helios.common.HeliosClient;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
-import com.spotify.helios.common.protocol.TaskStatusEvent;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 
 import net.sourceforge.argparse4j.inf.Argument;

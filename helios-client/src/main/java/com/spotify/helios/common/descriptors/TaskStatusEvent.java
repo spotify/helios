@@ -1,9 +1,8 @@
-package com.spotify.helios.common.protocol;
+package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.helios.common.descriptors.TaskStatus;
 
 public class TaskStatusEvent {
   private final TaskStatus status;

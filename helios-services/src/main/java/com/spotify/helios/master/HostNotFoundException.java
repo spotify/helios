@@ -1,4 +1,6 @@
-package com.spotify.helios.common;
+package com.spotify.helios.master;
+
+import com.spotify.helios.common.HeliosException;
 
 public class HostNotFoundException extends HeliosException {
 
