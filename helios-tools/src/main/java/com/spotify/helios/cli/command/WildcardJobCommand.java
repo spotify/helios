@@ -4,6 +4,8 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.collect.Iterables;
+
 import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -16,8 +18,6 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
-
-import static com.google.common.collect.Iterables.getLast;
 
 abstract class WildcardJobCommand extends ControlCommand {
 
@@ -45,7 +45,7 @@ abstract class WildcardJobCommand extends ControlCommand {
       return 1;
     }
 
-    final JobId jobId = getLast(jobs.keySet());
+    final JobId jobId = Iterables.getOnlyElement(jobs.keySet());
 
     return runWithJobId(options, client, out, json, jobId);
   }
