@@ -957,7 +957,7 @@ class Supervisor {
         // Wait for runner to stop
         while (!awaitTerminated(runner, retryScheduler.nextMillis())) {
           // Kill the container to make the runner stop waiting for on it
-          containerId = fromNullable(getContainerId()).or(containerId);
+          containerId = fromNullable(getContainerId()).or(fromNullable(containerId)).orNull();
           killContainer(containerId, retryScheduler);
           // Disrupt work in progress to speed the runner to it's demise
           if (runner != null) {
@@ -968,7 +968,7 @@ class Supervisor {
       }
 
       // Kill the container after stopping the runner
-      containerId = fromNullable(getContainerId()).or(containerId);
+      containerId = fromNullable(getContainerId()).or(fromNullable(containerId)).orNull();
       while (!killContainer(containerId, retryScheduler)) {
         sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
       }
