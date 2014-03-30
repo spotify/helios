@@ -91,12 +91,13 @@ public class JobListCommand extends ControlCommand {
 
         for (final Map.Entry<JobId, ListenableFuture<JobStatus>> e : statuses.entrySet()) {
           final JobId jobId = e.getKey();
-          final JobStatus status = e.getValue().get();
           final Job job = jobs.get(jobId);
           final String command = on(' ').join(job.getCommand());
           final String env = Joiner.on(" ").withKeyValueSeparator("=").join(job.getEnv());
+          final JobStatus status = e.getValue().get();
           table.row(full ? jobId : jobId.toShortString(), jobId.getName(), jobId.getVersion(),
-                    status.getDeployedHosts().size(), command, env);
+                    status != null ? status.getDeployedHosts().size() : 0,
+                    command, env);
         }
         table.print();
       }
