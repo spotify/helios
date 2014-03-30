@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.commons.lang.StringUtils.strip;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -71,12 +72,23 @@ public class CliDeploymentTest extends SystemTestBase {
         .setPorts(ports)
         .setRegistration(registration)
         .build();
-    final String output = cli("job", "inspect", "--json", expected.getId().toString());
-    final Job parsed = Json.read(output, Job.class);
+    final String inspectOutput = cli("job", "inspect", "--json", expected.getId().toString());
+    final Job parsed = Json.read(inspectOutput, Job.class);
     assertEquals(expected, parsed);
     assertContains(jobId.toString(), cli("job", "list", JOB_NAME, "-q"));
     assertContains(jobId.toString(), cli("job", "list", JOB_NAME + ":" + JOB_VERSION, "-q"));
     assertTrue(cli("job", "list", "foozbarz", "-q").trim().isEmpty());
+
+    // Create a new job using the first job as a template
+    final Job expectedCloned = expected.toBuilder()
+        .setVersion(expected.getId().getVersion() + "-cloned")
+        .build();
+    final JobId clonedJobId = JobId.parse(strip(cli("job", "create", "-q", "-t",
+                                                    JOB_NAME + ":" + JOB_VERSION,
+                                                    JOB_NAME, JOB_VERSION + "-cloned")));
+    final String clonedInspectOutput = cli("job", "inspect", "--json", clonedJobId.toString());
+    final Job clonedParsed = Json.read(clonedInspectOutput, Job.class);
+    assertEquals(expectedCloned, clonedParsed);
 
     // Verify that port mapping and environment variables are correct
     final String statusString = cli("job", "status", jobId.toString(), "--json");

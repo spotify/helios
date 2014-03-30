@@ -12,6 +12,7 @@ import com.spotify.helios.common.HeliosClient;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
@@ -54,6 +55,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument portArg;
   private final Argument registrationArg;
   private final Argument fileArg;
+  private final Argument templateArg;
 
   public JobCreateCommand(final Subparser parser) {
     super(parser);
@@ -63,7 +65,11 @@ public class JobCreateCommand extends ControlCommand {
     fileArg = parser.addArgument("-f", "--file")
         .type(fileType().acceptSystemIn())
         .help("Job configuration file. Options specified on the command line will be merged with" +
-              "the contents of this file.");
+              "the contents of this file. Cannot be used together with -t/--template.");
+
+    templateArg = parser.addArgument("-t", "--template")
+        .help("Template job id. The new job will be based on this job. Cannot be used together " +
+              "with -f/--file.");
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
@@ -133,7 +139,13 @@ public class JobCreateCommand extends ControlCommand {
 
     // TODO (dano): look for e.g. Heliosfile in cwd by default?
 
+    final String templateJobId = options.getString(templateArg.getDest());
     final File file = (File) options.get(fileArg.getDest());
+
+    if (file != null && templateJobId != null) {
+      throw new IllegalArgumentException("Please use only one of -t/--template and -f/--file");
+    }
+
     if (file != null && file.exists()) {
       if (!file.isFile() || !file.canRead()) {
         throw new IllegalArgumentException("Cannot read file " + file);
@@ -142,13 +154,28 @@ public class JobCreateCommand extends ControlCommand {
       final String config = new String(bytes, UTF_8);
       final Job job = Json.read(config, Job.class);
       builder = job.toBuilder();
+     } else if (templateJobId != null) {
+      final Map<JobId, Job> jobs = client.jobs(templateJobId).get();
+      if (jobs.size() == 0) {
+        out.printf("Unknown job: %s%n", templateJobId);
+        return 1;
+      } else if (jobs.size() > 1) {
+        out.printf("Ambiguous job reference: %s%n", templateJobId);
+        return 1;
+      }
+      final Job template = Iterables.getOnlyElement(jobs.values());
+      builder = template.toBuilder();
+      if (name == null && version == null) {
+        throw new IllegalArgumentException("Please specify either a new job name or version");
+      }
     } else {
       if (name == null || version == null || imageIdentifier == null) {
         throw new IllegalArgumentException(
-            "Please specify either a file or a job name, version and container image");
+            "Please specify a file, or a template, or a job name, version and container image");
       }
       builder = Job.newBuilder();
     }
+
 
     // Merge job configuration options from command line arguments
 
@@ -164,9 +191,8 @@ public class JobCreateCommand extends ControlCommand {
       builder.setImage(imageIdentifier);
     }
 
-    // TODO (dano): make optional
     final List<String> command = options.getList(argsArg.getDest());
-    if (command != null) {
+    if (command != null && !command.isEmpty()) {
       builder.setCommand(command);
     }
 
