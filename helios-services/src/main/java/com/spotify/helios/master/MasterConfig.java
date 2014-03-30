@@ -9,7 +9,6 @@ import com.yammer.dropwizard.config.Configuration;
 public class MasterConfig extends Configuration {
 
   private String site;
-  private String endpoint;
   private String zooKeeperConnectString;
   private String name;
   private boolean inhibitMetrics;
@@ -17,15 +16,6 @@ public class MasterConfig extends Configuration {
   private String riemannHostPort;
   private String namelessEndpoint;
   private String sentryDsn;
-
-  public String getHermesEndpoint() {
-    return endpoint;
-  }
-
-  public MasterConfig setHermesEndpoint(final String endpoint) {
-    this.endpoint = endpoint;
-    return this;
-  }
 
   public String getSite() {
     return site;
