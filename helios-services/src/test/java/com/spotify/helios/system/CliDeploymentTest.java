@@ -62,6 +62,18 @@ public class CliDeploymentTest extends SystemTestBase {
                                   registration);
 
     // Query for job
+    final Job expected = Job.newBuilder()
+        .setName(JOB_NAME)
+        .setVersion(JOB_VERSION)
+        .setImage(image)
+        .setCommand(DO_NOTHING_COMMAND)
+        .setEnv(env)
+        .setPorts(ports)
+        .setRegistration(registration)
+        .build();
+    final String output = cli("job", "inspect", "--json", expected.getId().toString());
+    final Job parsed = Json.read(output, Job.class);
+    assertEquals(expected, parsed);
     assertContains(jobId.toString(), cli("job", "list", JOB_NAME, "-q"));
     assertContains(jobId.toString(), cli("job", "list", JOB_NAME + ":" + JOB_VERSION, "-q"));
     assertTrue(cli("job", "list", "foozbarz", "-q").trim().isEmpty());
