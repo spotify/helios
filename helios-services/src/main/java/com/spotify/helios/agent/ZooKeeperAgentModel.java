@@ -85,6 +85,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     tasks.stopAsync().awaitTerminated();
     taskStatuses.stopAsync().awaitTerminated();
     taskRemover.stopAsync().awaitTerminated();
+    historyWriter.stopAsync().awaitTerminated();
   }
 
   private JobId jobIdFromTaskPath(final String path) {

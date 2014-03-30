@@ -84,7 +84,7 @@ public class QueueingHistoryWriterTest {
 
   @After
   public void tearDown() throws Exception {
-    writer.shutdown();
+    writer.stopAsync().awaitTerminated();
     zk.stop();
   }
 
@@ -153,7 +153,7 @@ public class QueueingHistoryWriterTest {
     zk.stop();
     writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP);
     // simulate a crash by recreating the writer
-    writer.shutdown();
+    writer.stopAsync().awaitTerminated();
     makeWriter(client);
     zk.start();
     final TaskStatusEvent historyItem = Iterables.getOnlyElement(awaitHistoryItems());

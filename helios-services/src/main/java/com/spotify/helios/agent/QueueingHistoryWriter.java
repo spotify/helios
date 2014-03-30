@@ -5,6 +5,8 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.AbstractIdleService;
+import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.descriptors.JobId;
@@ -29,12 +31,13 @@ import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Preconditions.checkState;
 
-public class QueueingHistoryWriter implements Runnable {
+public class QueueingHistoryWriter extends AbstractIdleService implements Runnable {
   private static final Logger log = LoggerFactory.getLogger(QueueingHistoryWriter.class);
 
   public static final int MAX_NUMBER_STATUS_EVENTS_TO_RETAIN = 30;
@@ -42,7 +45,9 @@ public class QueueingHistoryWriter implements Runnable {
   private static final int MAX_TOTAL_SIZE = 600;
 
   private final ConcurrentMap<JobId, Deque<TaskStatusEvent>> items;
-  private final ScheduledExecutorService zkWriterExecutor;
+  private final ScheduledExecutorService zkWriterExecutor =
+      MoreExecutors.getExitingScheduledExecutorService(
+          (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1), 0, TimeUnit.SECONDS);
   private final String hostname;
   private final AtomicInteger count;
   private final ZooKeeperClient client;
@@ -55,8 +60,6 @@ public class QueueingHistoryWriter implements Runnable {
 
   public QueueingHistoryWriter(final String hostname, final ZooKeeperClient client,
                                final Path backingFile) throws IOException {
-
-    this.zkWriterExecutor = Executors.newScheduledThreadPool(1);
     this.hostname = hostname;
     this.client = client;
     this.backingStore = PersistentAtomicReference.create(backingFile,
@@ -75,12 +78,15 @@ public class QueueingHistoryWriter implements Runnable {
     this.count = new AtomicInteger(itemCount);
   }
 
-  public void start() {
+  @Override
+  protected void startUp() throws Exception {
     zkWriterExecutor.scheduleAtFixedRate(this, 1, 1, TimeUnit.SECONDS);
- }
+  }
 
-  public void shutdown() {
+  @Override
+  protected void shutDown() throws Exception {
     zkWriterExecutor.shutdownNow();
+    zkWriterExecutor.awaitTermination(1, TimeUnit.MINUTES);
   }
 
   private void add(TaskStatusEvent item) {
