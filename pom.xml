@@ -148,12 +148,12 @@
       <id>integration-only</id>
       <build>
         <plugins>
-	  <plugin>
+          <plugin>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-	      <skip>true</skip>
+              <skip>true</skip>
             </configuration>
-	  </plugin>
+          </plugin>
         </plugins>
       </build>
     </profile>
