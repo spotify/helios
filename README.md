@@ -9,9 +9,9 @@ is what you're looking for.
 # Building and Testing Helios
 
 You'll want Docker installed somewhere.  If you have Vagrant
-installed, it should be a simple matter of checking out the 
+installed, it should be a simple matter of checking out the
 [helios-vagrant](https://ghe.spotify.net/helios/helios-vagrant)
-repo, and following the instructions there to bring it up.  If you want to run it 
+repo, and following the instructions there to bring it up.  If you want to run it
 hosted on your actual machine, contact the NYCSI squad first, but you'll need our
 custom fork of Docker, an installation of ZooKeeper > 3.4.0 and probably some other
 handholding.
@@ -25,7 +25,7 @@ but Vagrant is really the best choice as we've patched Docker in a few
 ways that are important, as well as that there are subsidiary
 executables and configuration bits that are already dealt with in the
 Vagrant image, that you'd have to replicate, and IMHO, it's just not
-worth the hassle.  Additionally with Vagrant, if things go sideways, you 
+worth the hassle.  Additionally with Vagrant, if things go sideways, you
 can just nuke the image and start over.
 
 Actually building Helios and running it's tests should be a simple matter
@@ -57,6 +57,4 @@ other Java libraries.
     ./release.sh
 
     # Push it
-    git push origin master
-    git push origin release
-    git push origin --tags
+    git push origin master && git push origin release && git push origin --tags
