@@ -3,5 +3,5 @@
 set -e
 
 if [ -e "/etc/init/helios-agent.conf" ]; then
-	invoke-rc.d helios-agent start || exit $?
+	initctl start helios-agent || exit $?
 fi
