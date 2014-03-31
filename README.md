@@ -50,3 +50,13 @@ with ZooKeeper are mainly in `ZooKeeperMasterModel.java` and
 The Helios services use [Dropwizard](http://dropwizard.io) which is a
 bundle of Jetty, Jersey, Jackson, Yammer Metrics, Guava, Logback and
 other Java libraries.
+
+# Releasing
+
+    # Run tests and create a tagged release commit
+    ./release.sh
+
+    # Push it
+    git push origin master
+    git push origin release
+    git push origin --tags
