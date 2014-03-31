@@ -10,6 +10,11 @@
   <version>0.0.9-SNAPSHOT</version>
   <packaging>pom</packaging>
 
+  <scm>
+    <developerConnection>scm:git:git@ghe.spotify.net:helios/helios.git</developerConnection>
+    <tag>HEAD</tag>
+  </scm>
+
   <dependencies>
     <dependency>
       <groupId>com.intellij</groupId>
@@ -161,6 +166,23 @@
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-release-plugin</artifactId>
+        <version>2.5</version>
+        <configuration>
+          <arguments>-DskipITs</arguments>
+          <pushChanges>false</pushChanges>
+          <tagNameFormat>@{project.version}</tagNameFormat>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.apache.maven.scm</groupId>
+            <artifactId>maven-scm-provider-gitexe</artifactId>
+            <version>1.9</version>
+          </dependency>
+        </dependencies>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
