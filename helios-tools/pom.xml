@@ -133,23 +133,23 @@
         <groupId>org.vafer</groupId>
         <version>1.1.1</version>
         <executions>
-          <!--spotify-helios-->
+          <!--helios-->
           <execution>
-            <id>spotify-helios</id>
+            <id>helios</id>
             <phase>package</phase>
             <goals>
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/spotify-helios_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
-              <controlDir>${project.parent.basedir}/src/deb/spotify-helios</controlDir>
+              <deb>${project.build.directory}/helios_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
+              <controlDir>${project.parent.basedir}/src/deb/helios</controlDir>
               <dataSet>
                 <data>
                   <src>${project.build.directory}/${project.build.finalName}-shaded.jar</src>
                   <type>file</type>
                   <mapper>
                     <type>perm</type>
-                    <prefix>/usr/share/spotify-helios/lib/tools</prefix>
+                    <prefix>/usr/share/helios/lib/tools</prefix>
                   </mapper>
                 </data>
                 <data>

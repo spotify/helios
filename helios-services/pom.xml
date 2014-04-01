@@ -252,16 +252,16 @@
         <version>1.1.1</version>
         <executions>
 
-          <!--spotify-helios-master-->
+          <!--helios-master-->
           <execution>
-            <id>spotify-helios-master</id>
+            <id>helios-master</id>
             <phase>package</phase>
             <goals>
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/spotify-helios-master_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
-              <controlDir>${project.parent.basedir}/src/deb/spotify-helios-master</controlDir>
+              <deb>${project.build.directory}/helios-master_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
+              <controlDir>${project.parent.basedir}/src/deb/helios-master</controlDir>
               <dataSet>
                 <data>
                   <src>${basedir}/../bin/helios-master</src>
@@ -288,16 +288,16 @@
             </configuration>
           </execution>
 
-          <!--spotify-helios-agent-->
+          <!--helios-agent-->
           <execution>
-            <id>spotify-helios-agent</id>
+            <id>helios-agent</id>
             <phase>package</phase>
             <goals>
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/spotify-helios-agent_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
-              <controlDir>${project.parent.basedir}/src/deb/spotify-helios-agent</controlDir>
+              <deb>${project.build.directory}/helios-agent_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
+              <controlDir>${project.parent.basedir}/src/deb/helios-agent</controlDir>
               <dataSet>
                 <data>
                   <src>${basedir}/../bin/helios-agent</src>
@@ -324,16 +324,16 @@
             </configuration>
           </execution>
 
-          <!--spotify-helios-services-->
+          <!--helios-services-->
           <execution>
-            <id>spotify-helios-services</id>
+            <id>helios-services</id>
             <phase>package</phase>
             <goals>
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/spotify-helios-services_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
-              <controlDir>${project.parent.basedir}/src/deb/spotify-helios-services</controlDir>
+              <deb>${project.build.directory}/helios-services_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
+              <controlDir>${project.parent.basedir}/src/deb/helios-services</controlDir>
               <dataSet>
                 <data>
                   <src>${project.build.directory}/${project.build.finalName}-shaded.jar</src>

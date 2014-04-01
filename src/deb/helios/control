@@ -1,9 +1,9 @@
-Package: spotify-helios-services
+Package: helios
 Version: [[project.version]]~[[git.commitsCount]].[[timestamp]].[[git.commit.id.describe]][[version_suffix]]
 Section: non-free/net
 Priority: optional
 Architecture: all
-Depends: default-jdk
+Depends: java7-runtime
 Maintainer: Daniel Norberg <dano@spotify.com>
-Description: Spotify Helios services common files
+Description: Helios Command Line Tools
 Distribution: development
