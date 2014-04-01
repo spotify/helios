@@ -109,14 +109,8 @@ public class FlapControllerTest {
     // Made all thready because API requires it but done in such a way so that it normally will
     // run really fast.
     manager.clearIsUpdatedIsFlapping();
-    final CyclicBarrier barrier = new CyclicBarrier(2);
-    ListenableFuture<Integer> waitContainer = executor.submit(new Callable<Integer>() {
-      @Override public Integer call() throws Exception {
-        // runs until we tell it not to
-        barrier.await(LOCK_WAIT_TIME_MILLIS, TimeUnit.MILLISECONDS);
-        return 3;
-      }
-    });
+    final CyclicBarrier entryBarrier = new CyclicBarrier(2);
+    final CyclicBarrier exitBarrier = new CyclicBarrier(2);
 
     controller.jobStarted();
     when(clock.now()).thenReturn(new Instant(3));
@@ -124,11 +118,11 @@ public class FlapControllerTest {
     new Thread(new Runnable() {
       @Override public void run() {
         try {
-          long start;
 
           // wait for the manager's state to change
           synchronized(manager) {
-            start = System.currentTimeMillis();
+            waitBarrier(entryBarrier, "manager locked and loaded");
+            final long start = System.currentTimeMillis();
             manager.wait(LOCK_WAIT_TIME_MILLIS);
             assertTrue("manager wait shouldn't take that long",
                 System.currentTimeMillis() - start < LOCK_WAIT_TIME_MILLIS);
@@ -136,10 +130,7 @@ public class FlapControllerTest {
           assertFalse(controller.isFlapping());
 
           // tell waitContainer to finish
-          start = System.currentTimeMillis();
-          barrier.await(LOCK_WAIT_TIME_MILLIS, TimeUnit.MILLISECONDS);
-          assertTrue("barrier wait shouldn't take that long",
-              System.currentTimeMillis() - start < LOCK_WAIT_TIME_MILLIS);
+          waitBarrier(exitBarrier, "manager telling `container' to exit");
         } catch (RuntimeException | InterruptedException | BrokenBarrierException
                  | TimeoutException e) {
           e.printStackTrace();
@@ -147,11 +138,27 @@ public class FlapControllerTest {
       }
     }).start();
 
-    assertEquals((Integer)3, controller.waitFuture(waitContainer));
+    waitBarrier(entryBarrier, "main entry");
+
+    final Integer sentinel = 8675309;
+    assertEquals(sentinel, controller.waitFuture(executor.submit(new Callable<Integer>() {
+      @Override public Integer call() throws Exception {
+        waitBarrier(exitBarrier, "container exit");
+        return sentinel;
+      }
+    })));
 
     when(clock.now()).thenReturn(new Instant(23));
     controller.jobDied();
     assertFalse(controller.isFlapping());
+  }
+
+  private void waitBarrier(final CyclicBarrier barrier, final String msg)
+      throws InterruptedException, BrokenBarrierException, TimeoutException {
+    final long start = System.currentTimeMillis();
+    barrier.await(LOCK_WAIT_TIME_MILLIS, TimeUnit.MILLISECONDS);
+    assertTrue(msg + "barrier wait shouldn't take that long",
+        System.currentTimeMillis() - start < LOCK_WAIT_TIME_MILLIS);
   }
 
   @Test
