@@ -30,6 +30,7 @@ public class ServiceParser {
   private final LoggingConfig loggingConfig;
   private final File serviceRegistrarPlugin;
   private final String getServiceRegistryAddress;
+  private final String domain;
 
   public ServiceParser(final String programName, final String description, String... args)
       throws ArgumentParserException {
@@ -42,12 +43,11 @@ public class ServiceParser {
         .setDefault(getHostName())
         .help("hostname to register as");
 
-    parser.addArgument("-s", "--site")
-        .help("backend site");
+    parser.addArgument("--domain")
+        .help("Service registration domain.");
 
     parser.addArgument("--service-registry")
-        .type(String.class)
-        .help("Service registry address.");
+        .help("Service registry address. Overrides domain.");
 
     parser.addArgument("--service-registrar-plugin")
         .type(fileType().verifyExists().verifyCanRead())
@@ -96,6 +96,8 @@ public class ServiceParser {
                                            (File) options.get("logconfig"),
                                            options.getBoolean("no_log_setup"));
 
+    this.domain = options.getString("domain");
+
     this.serviceRegistrarPlugin = (File) options.get("service_registrar_plugin");
 
     this.getServiceRegistryAddress = options.getString("service_registry");
@@ -110,6 +112,10 @@ public class ServiceParser {
 
   public LoggingConfig getLoggingConfig() {
     return loggingConfig;
+  }
+
+  public String getDomain() {
+    return domain;
   }
 
   public String getServiceRegistryAddress() {

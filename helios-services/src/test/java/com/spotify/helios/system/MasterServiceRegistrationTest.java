@@ -48,7 +48,6 @@ public class MasterServiceRegistrationTest extends ServiceRegistrationTestBase {
   public void test() throws Exception {
     startMaster("-vvvv",
                 "--no-log-setup",
-                "--site", "localhost",
                 "--http", masterEndpoint,
                 "--admin=" + masterAdminPort,
                 "--zk", zk.connectString(),

@@ -11,7 +11,7 @@ import java.util.Map;
 
 public class AgentConfig extends Configuration {
 
-  private String site;
+  private String domain;
   private String name;
   private String zooKeeperConnectionString;
   private String dockerEndpoint;
@@ -56,12 +56,12 @@ public class AgentConfig extends Configuration {
     return redirectToSyslog;
   }
 
-  public String getSite() {
-    return site;
+  public String getDomain() {
+    return domain;
   }
 
-  public AgentConfig setSite(final String site) {
-    this.site = site;
+  public AgentConfig setDomain(final String domain) {
+    this.domain = domain;
     return this;
   }
 

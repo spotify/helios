@@ -10,7 +10,7 @@ import java.nio.file.Path;
 
 public class MasterConfig extends Configuration {
 
-  private String site;
+  private String domain;
   private String zooKeeperConnectString;
   private String name;
   private boolean inhibitMetrics;
@@ -20,12 +20,12 @@ public class MasterConfig extends Configuration {
   private String sentryDsn;
   private Path serviceRegistrarPlugin;
 
-  public String getSite() {
-    return site;
+  public String getDomain() {
+    return domain;
   }
 
-  public MasterConfig setSite(final String site) {
-    this.site = site;
+  public MasterConfig setDomain(final String domain) {
+    this.domain = domain;
     return this;
   }
 

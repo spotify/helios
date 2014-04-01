@@ -113,7 +113,7 @@ public class MasterService extends AbstractIdleService {
     // Set up service registrar
     this.registrar = createServiceRegistrar(config.getServiceRegistrarPlugin(),
                                             config.getServiceRegistryAddress(),
-                                            config.getSite());
+                                            config.getDomain());
 
     // Set up http server
     environment.addFilter(VersionResponseFilter.class, "/*");

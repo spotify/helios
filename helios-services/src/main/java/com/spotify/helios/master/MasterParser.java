@@ -29,7 +29,7 @@ public class MasterParser extends ServiceParser {
 
     final MasterConfig config = new MasterConfig()
         .setZooKeeperConnectString(options.getString("zk"))
-        .setSite(options.getString("site"))
+        .setDomain(getDomain())
         .setName(options.getString("name"))
         .setStatsdHostPort(options.getString("statsd_host_port"))
         .setRiemannHostPort(options.getString("riemann_host_port"))

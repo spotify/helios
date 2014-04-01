@@ -41,6 +41,7 @@ import net.sourceforge.argparse4j.inf.Subparsers;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
@@ -48,6 +49,7 @@ import static com.google.common.base.Objects.equal;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.addAll;
+import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -109,6 +111,7 @@ public class CliParser {
     // Merge sites and explicit endpoints into master endpoints
     final List<String> explicitEndpoints = options.getList(globalArgs.masterArg.getDest());
     final List<String> sitesArguments = options.getList(globalArgs.sitesArg.getDest());
+    final List<String> domainsArguments = options.getList(globalArgs.domainsArg.getDest());
     final String srvName = options.getString(globalArgs.srvNameArg.getDest());
 
     // Order of target precedence:
@@ -118,12 +121,13 @@ public class CliParser {
     // 4. sites from config file
 
     // TODO (dano): this is kind of complex, make sure it matches the defaults in the help and maybe factor out and unit test it
-    this.targets = computeTargets(parser, explicitEndpoints, sitesArguments, srvName);
+    final List<String> domains = ImmutableList.copyOf(concat(domainsArguments, sitesArguments));
+    this.targets = computeTargets(parser, explicitEndpoints, domains, srvName);
   }
 
   private List<Target> computeTargets(final ArgumentParser parser,
                                       final List<String> explicitEndpoints,
-                                      final List<String> sitesArguments, final String srvName) {
+                                      final List<String> domainsArguments, final String srvName) {
 
     if (explicitEndpoints != null && !explicitEndpoints.isEmpty()) {
       final List<URI> explicitEndpointURIs = Lists.newArrayList();
@@ -131,32 +135,32 @@ public class CliParser {
         explicitEndpointURIs.add(URI.create(endpoint));
       }
       return asList(Target.from(explicitEndpointURIs));
-    } else if (sitesArguments != null && !sitesArguments.isEmpty()) {
-      final Iterable<String> sites = parseSitesStrings(sitesArguments);
+    } else if (domainsArguments != null && !domainsArguments.isEmpty()) {
+      final Iterable<String> sites = parseDomains(domainsArguments);
       return Target.from(srvName, sites);
     } else if (!cliConfig.getMasterEndpoints().isEmpty()) {
       return asList(Target.from(cliConfig.getMasterEndpoints()));
     } else if (!cliConfig.getSitesString().isEmpty()) {
-      final Iterable<String> sites = parseSitesString(cliConfig.getSitesString());
+      final Iterable<String> sites = parseDomainsString(cliConfig.getSitesString());
       return Target.from(srvName, sites);
     }
 
     handleError(parser, new ArgumentParserException(
-        "no masters specified.  Use the -z or -s option to specify which helios "
+        "no masters specified.  Use the -z or -d option to specify which helios "
         + "cluster/master to connect to", parser));
     return ImmutableList.of();
   }
 
-  private Iterable<String> parseSitesStrings(final List<String> sitesStrings) {
+  private Iterable<String> parseDomains(final List<String> domainStrings) {
     final Set<String> sites = Sets.newLinkedHashSet();
-    for (final String s : sitesStrings) {
-      addAll(sites, parseSitesString(s));
+    for (final String s : domainStrings) {
+      addAll(sites, parseDomainsString(s));
     }
     return sites;
   }
 
-  private Iterable<String> parseSitesString(final String sitesString) {
-    return filter(asList(sitesString.split(",")), not(equalTo("")));
+  private Iterable<String> parseDomainsString(final String domainsString) {
+    return filter(asList(domainsString.split(",")), not(equalTo("")));
   }
 
   private void setupCommands() {
@@ -220,6 +224,7 @@ public class CliParser {
 
     private final Argument masterArg;
     private final Argument sitesArg;
+    private final Argument domainsArg;
     private final Argument srvNameArg;
     private final Argument usernameArg;
     private final Argument verbose;
@@ -243,8 +248,14 @@ public class CliParser {
           .help("master endpoints");
 
       sitesArg = addArgument("-s", "--sites")
+          .setDefault(new ArrayList<>())
           .action(append())
-          .help("sites");
+          .help("sites. Deprecated, please use -d/--domains instead.");
+
+      domainsArg = addArgument("-d", "--domains")
+          .setDefault(new ArrayList<>())
+          .action(append())
+          .help("domains");
 
       srvNameArg = addArgument("--srv-name")
           .setDefault(cliConfig.getSrvName())

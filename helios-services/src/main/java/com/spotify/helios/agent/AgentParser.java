@@ -75,7 +75,7 @@ public class AgentParser extends ServiceParser {
         .setZooKeeperConnectionString(options.getString("zk"))
         .setZooKeeperSessionTimeoutMillis(options.getInt("zk_session_timeout"))
         .setZooKeeperConnectionTimeoutMillis(options.getInt("zk_connection_timeout"))
-        .setSite(options.getString("site"))
+        .setDomain(getDomain())
         .setEnvVars(envVars)
         .setDockerEndpoint(options.getString("docker"))
         .setInhibitMetrics(Objects.equal(options.getBoolean("no_metrics"), true))
