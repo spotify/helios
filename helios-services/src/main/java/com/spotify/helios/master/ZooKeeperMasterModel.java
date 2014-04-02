@@ -92,7 +92,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   @Override
   public void registerHost(final String host) {
-    log.debug("registering host: {}", host);
+    log.info("registering host: {}", host);
     final ZooKeeperClient client = provider.get("registerHost");
     try {
       // TODO (dano): this code is replicated in AgentRegistrar
@@ -146,6 +146,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public void deregisterHost(final String host)
       throws HostNotFoundException, HostStillInUseException {
+    log.info("deregistering host: {}", host);
     try {
       final ZooKeeperClient client = provider.get("deregisterHost");
       final List<String> nodes = reverse(client.listRecursive(Paths.configHost(host)));
@@ -165,7 +166,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   @Override
   public void addJob(final Job job) throws JobExistsException {
-    log.debug("adding job: {}", job);
+    log.info("adding job: {}", job);
     final JobId id = job.getId();
     try {
       final ZooKeeperClient client = provider.get("addJob");
@@ -321,7 +322,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   @Override
   public Job removeJob(final JobId id) throws JobDoesNotExistException, JobStillDeployedException {
-    log.debug("removing job: id={}", id);
+    log.info("removing job: id={}", id);
     final Job old = getJob(id);
     final ZooKeeperClient client = provider.get("removeJob");
     try {
@@ -355,7 +356,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new HeliosRuntimeException("3 failures (possibly concurrent modifications) while " +
                                        "deploying. Giving up.");
     }
-    log.debug("deploying {}: {}", deployment, host);
+    log.info("deploying {}: {} (retry={})", deployment, host, count);
 
     final JobId id = deployment.getJobId();
     final Job job = getJob(id);
@@ -398,7 +399,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     // TODO (dano): Failure handling is racy wrt agent and job modifications. Probably rare, but still.
     try {
       client.transaction(operations);
-      log.debug("deployed {}: {}", deployment, host);
+      log.info("deployed {}: {} (retry={})", deployment, host, count);
     } catch (NoNodeException e) {
       // Either the job or the host went away
       assertJobExists(client, id);
@@ -462,7 +463,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public void updateDeployment(final String host, final Deployment deployment)
       throws HostNotFoundException, JobNotDeployedException {
-    log.debug("updating deployment {}: {}", deployment, host);
+    log.info("updating deployment {}: {}", deployment, host);
 
     final ZooKeeperClient client = provider.get("updateDeployment");
 
@@ -686,7 +687,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public Deployment undeployJob(final String host, final JobId jobId)
       throws HostNotFoundException, JobNotDeployedException {
-    log.debug("undeploying {}: {}", jobId, host);
+    log.info("undeploying {}: {}", jobId, host);
     final ZooKeeperClient client = provider.get("undeployJob");
 
     assertHostExists(client, host);
