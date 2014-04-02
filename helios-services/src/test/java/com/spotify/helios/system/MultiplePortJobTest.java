@@ -29,13 +29,15 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class MultiplePortJobTest extends SystemTestBase {
+  private final int EXTERNAL_PORT1 = temporaryPorts.localPort("external-1");
+  private final int EXTERNAL_PORT2 = temporaryPorts.localPort("external-2");
 
   @Test
   public void test() throws Exception {
     startDefaultMaster();
 
     final Range<Integer> portRange = temporaryPorts.localPortRange("agent1", 2);
-    final AgentMain agent1 = startDefaultAgent(TEST_HOST, "--port-range=" +
+    final AgentMain agent1 = startDefaultAgent(getTestHost(), "--port-range=" +
                                                           portRange.lowerEndpoint() + ":" +
                                                           portRange.upperEndpoint());
 
@@ -43,38 +45,38 @@ public class MultiplePortJobTest extends SystemTestBase {
 
     final HeliosClient client = defaultClient();
 
-    awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     final Map<String, PortMapping> ports1 =
         ImmutableMap.of("foo", PortMapping.of(4711),
-                        "bar", PortMapping.of(4712, externalPort1));
+                        "bar", PortMapping.of(4712, EXTERNAL_PORT1));
 
     final ImmutableMap<String, PortMapping> expectedMapping1 =
         ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint()),
-                        "bar", PortMapping.of(4712, externalPort1));
+                        "bar", PortMapping.of(4712, EXTERNAL_PORT1));
 
     final Map<String, PortMapping> ports2 =
         ImmutableMap.of("foo", PortMapping.of(4711),
-                        "bar", PortMapping.of(4712, externalPort2));
+                        "bar", PortMapping.of(4712, EXTERNAL_PORT2));
 
     final ImmutableMap<String, PortMapping> expectedMapping2 =
         ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint() + 1),
-                        "bar", PortMapping.of(4712, externalPort2));
+                        "bar", PortMapping.of(4712, EXTERNAL_PORT2));
 
     final JobId jobId1 = createJob(JOB_NAME + 1, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
                                    EMPTY_ENV, ports1);
 
     assertNotNull(jobId1);
-    deployJob(jobId1, TEST_HOST);
-    final TaskStatus firstTaskStatus1 = awaitJobState(client, TEST_HOST, jobId1, RUNNING,
+    deployJob(jobId1, getTestHost());
+    final TaskStatus firstTaskStatus1 = awaitJobState(client, getTestHost(), jobId1, RUNNING,
                                                       LONG_WAIT_MINUTES, MINUTES);
 
     final JobId jobId2 = createJob(JOB_NAME + 2, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
                                    EMPTY_ENV, ports2);
 
     assertNotNull(jobId2);
-    deployJob(jobId2, TEST_HOST);
-    final TaskStatus firstTaskStatus2 = awaitJobState(client, TEST_HOST, jobId2, RUNNING,
+    deployJob(jobId2, getTestHost());
+    final TaskStatus firstTaskStatus2 = awaitJobState(client, getTestHost(), jobId2, RUNNING,
                                                       LONG_WAIT_MINUTES, MINUTES);
 
     assertEquals(expectedMapping1, firstTaskStatus1.getPorts());
@@ -88,7 +90,7 @@ public class MultiplePortJobTest extends SystemTestBase {
         LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
-        final HostStatus hostStatus = client.hostStatus(TEST_HOST).get();
+        final HostStatus hostStatus = client.hostStatus(getTestHost()).get();
         final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId1);
         return (taskStatus != null && taskStatus.getState() == RUNNING &&
                 !Objects.equals(taskStatus.getContainerId(), firstTaskStatus1.getContainerId()))
@@ -100,12 +102,12 @@ public class MultiplePortJobTest extends SystemTestBase {
     // Verify that port allocation is kept across agent restarts
     agent1.stopAsync().awaitTerminated();
     dockerClient.kill(firstTaskStatus2.getContainerId());
-    startDefaultAgent(TEST_HOST);
+    startDefaultAgent(getTestHost());
     final TaskStatus restartedTaskStatus2 = Polling.await(
         LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
-        final HostStatus hostStatus = client.hostStatus(TEST_HOST).get();
+        final HostStatus hostStatus = client.hostStatus(getTestHost()).get();
         final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId2);
         return (taskStatus != null && taskStatus.getState() == RUNNING &&
                 !Objects.equals(taskStatus.getContainerId(), firstTaskStatus2.getContainerId()))

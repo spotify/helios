@@ -42,7 +42,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     final HeliosClient client = defaultClient();
 
-    final AgentMain agent1 = startDefaultAgent(TEST_HOST);
+    final AgentMain agent1 = startDefaultAgent(getTestHost());
 
     // Create a job
     final Job job = Job.newBuilder()
@@ -56,16 +56,16 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     // Wait for agent to come up
-    awaitHostRegistered(client, TEST_HOST, LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, getTestHost(), LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Deploy the job on the agent
     final Deployment deployment = Deployment.of(jobId, START);
-    final JobDeployResponse deployed = client.deploy(deployment, TEST_HOST).get();
+    final JobDeployResponse deployed = client.deploy(deployment, getTestHost()).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
     // Wait for the job to run
-    final TaskStatus firstTaskStatus = awaitJobState(client, TEST_HOST, jobId, RUNNING,
+    final TaskStatus firstTaskStatus = awaitJobState(client, getTestHost(), jobId, RUNNING,
                                                      LONG_WAIT_MINUTES, MINUTES);
     assertEquals(job, firstTaskStatus.getJob());
     assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
@@ -81,7 +81,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     agent1.stopAsync().awaitTerminated();
 
     // Start the agent again
-    final AgentMain agent2 = startDefaultAgent(TEST_HOST);
+    final AgentMain agent2 = startDefaultAgent(getTestHost());
 
     // Wait for a while and make sure that the same container is still running
     Thread.sleep(5000);
@@ -109,7 +109,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     assertFalse(dockerClient.inspectContainer(firstRestartedContainerId).state.running);
 
     // Start the agent again
-    startDefaultAgent(TEST_HOST);
+    startDefaultAgent(getTestHost());
 
     // Wait for a while and make sure that a new container was spawned
     final String secondRestartedContainerId =
@@ -126,14 +126,14 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     zk.start();
 
     // Verify that the agent is listed as up
-    awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the new container id to be reflected in the task status
     Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final JobStatus jobStatus = client.jobStatus(jobId).get();
-        final TaskStatus taskStatus = jobStatus.getTaskStatuses().get(TEST_HOST);
+        final TaskStatus taskStatus = jobStatus.getTaskStatuses().get(getTestHost());
         return taskStatus != null && Objects.equals(taskStatus.getContainerId(),
                                                     secondRestartedContainerId)
                ? taskStatus : null;

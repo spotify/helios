@@ -31,8 +31,8 @@ public class JobWatchTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(TEST_HOST);
-    awaitHostStatus(TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(getTestHost());
+    awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
@@ -40,9 +40,9 @@ public class JobWatchTest extends SystemTestBase {
                                                   "BAR", "deadbeef"));
 
     // deploy
-    deployJob(jobId, TEST_HOST);
+    deployJob(jobId, getTestHost());
 
-    final String[] commands = new String[]{"job", "watch", "-z", masterEndpoint(),
+    final String[] commands = new String[]{"job", "watch", "-z", getMasterEndpoint(),
                                            "--no-log-setup", jobId.toString()};
 
     final AtomicBoolean success = new AtomicBoolean(false);
@@ -50,6 +50,7 @@ public class JobWatchTest extends SystemTestBase {
 
     final long deadline = System.currentTimeMillis() + MINUTES.toMillis(LONG_WAIT_MINUTES);
 
+    final String testHost = getTestHost();
     final OutputStream out = new OutputStream() {
       int counter = 0;
       final byte[] lineBuffer = new byte[8192];
@@ -71,7 +72,7 @@ public class JobWatchTest extends SystemTestBase {
         outputLines.add(line);
         counter = 0;
 
-        if (line.contains(TEST_HOST) && !line.contains("UNKNOWN")) {
+        if (line.contains(testHost) && !line.contains("UNKNOWN")) {
           success.set(true);
           throw new IOException("output closed");
         }

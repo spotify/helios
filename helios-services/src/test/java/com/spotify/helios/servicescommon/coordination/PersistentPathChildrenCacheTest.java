@@ -112,7 +112,7 @@ public class PersistentPathChildrenCacheTest {
 
     // Wait for connection to be lost
     final SettableFuture<Void> connectionLost = SettableFuture.create();
-    doAnswer(new Answer() {
+    doAnswer(new Answer<Object>() {
       @Override
       public Object answer(final InvocationOnMock invocationOnMock) throws Throwable {
         if (invocationOnMock.getArguments()[0] == ConnectionState.LOST) {

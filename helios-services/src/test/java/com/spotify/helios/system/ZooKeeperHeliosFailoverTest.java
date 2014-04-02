@@ -26,14 +26,14 @@ import static org.junit.Assert.assertEquals;
 
 public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
 
-  private static final Job FOO = Job.newBuilder()
+  private final Job FOO = Job.newBuilder()
       .setName(PREFIX + "foo")
       .setVersion(JOB_VERSION)
       .setImage("busybox")
       .setCommand(DO_NOTHING_COMMAND)
       .build();
 
-  private static final Job BAR = Job.newBuilder()
+  private final Job BAR = Job.newBuilder()
       .setName(PREFIX + "bar")
       .setVersion(JOB_VERSION)
       .setImage("busybox")
@@ -52,9 +52,9 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
   @Before
   public void setup() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(TEST_HOST);
+    startDefaultAgent(getTestHost());
     client = defaultClient();
-    awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
   }
 
   @Test
@@ -83,24 +83,24 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     final Deployment deployment = Deployment.of(jobId, START);
-    final JobDeployResponse deployed = client.deploy(deployment, TEST_HOST).get();
+    final JobDeployResponse deployed = client.deploy(deployment, getTestHost()).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
     // Wait for the job to run
-    awaitJobState(client, TEST_HOST, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, getTestHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
   }
 
   private void undeploy(final JobId jobId) throws Exception {
     // Check job status can be queried
     final JobStatus jobStatus = client.jobStatus(jobId).get();
-    assertEquals(RUNNING, jobStatus.getTaskStatuses().get(TEST_HOST).getState());
+    assertEquals(RUNNING, jobStatus.getTaskStatuses().get(getTestHost()).getState());
 
     // Undeploy the job
-    final JobUndeployResponse undeployed = client.undeploy(jobId, TEST_HOST).get();
+    final JobUndeployResponse undeployed = client.undeploy(jobId, getTestHost()).get();
     assertEquals(JobUndeployResponse.Status.OK, undeployed.getStatus());
 
     // Wait for the task to disappear
-    awaitTaskGone(client, TEST_HOST, jobId, LONG_WAIT_MINUTES, MINUTES);
+    awaitTaskGone(client, getTestHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
   }
 
 }

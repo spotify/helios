@@ -54,6 +54,6 @@ public class MasterServiceRegistrationTest extends ServiceRegistrationTestBase {
     final ServiceRegistration.Endpoint endpoint = getOnlyElement(registration.getEndpoints());
     assertEquals("http", endpoint.getProtocol());
     assertEquals("helios", endpoint.getName());
-    assertEquals(masterPort(), endpoint.getPort());
+    assertEquals(getMasterPort(), endpoint.getPort());
   }
 }

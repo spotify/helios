@@ -32,21 +32,21 @@ public class EnvironmentVaribleTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(TEST_HOST,
+    startDefaultAgent(getTestHost(),
                       "--env",
                       "SPOTIFY_POD=PODNAME",
                       "SPOTIFY_ROLE=ROLENAME",
                       "BAR=badfood");
-    awaitHostStatus(TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the agent to report environment vars
     Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         Map<String, HostStatus> status = Json.read(
-            cli("host", "status", TEST_HOST, "--json"),
+            cli("host", "status", getTestHost(), "--json"),
             new TypeReference<Map<String, HostStatus>>() {});
-        return status.get(TEST_HOST).getEnvironment();
+        return status.get(getTestHost()).getEnvironment();
       }
     });
 
@@ -64,9 +64,9 @@ public class EnvironmentVaribleTest extends SystemTestBase {
                                                   "BAR", "deadbeef"));
 
     // deploy
-    deployJob(jobId, TEST_HOST);
+    deployJob(jobId, getTestHost());
 
-    final TaskStatus taskStatus = awaitTaskState(jobId, TEST_HOST, EXITED);
+    final TaskStatus taskStatus = awaitTaskState(jobId, getTestHost(), EXITED);
 
     final ClientResponse response = dockerClient.logContainer(taskStatus.getContainerId());
     final String logMessage = readLogFully(response);
@@ -78,18 +78,18 @@ public class EnvironmentVaribleTest extends SystemTestBase {
     // Verify that the the BAR environment variable in the job overrode the agent config
     assertContains("bar: deadbeef", logMessage);
 
-    Map<String, HostStatus> status = Json.read(cli("host", "status", TEST_HOST, "--json"),
+    Map<String, HostStatus> status = Json.read(cli("host", "status", getTestHost(), "--json"),
                                                 new TypeReference<Map<String, HostStatus>>() {});
 
     assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
                                  "SPOTIFY_ROLE", "ROLENAME",
                                  "BAR", "badfood"),
-                 status.get(TEST_HOST).getEnvironment());
+                 status.get(getTestHost()).getEnvironment());
 
     assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
                                  "SPOTIFY_ROLE", "ROLENAME",
                                  "BAR", "deadbeef",
                                  "FOO", "4711"),
-                 status.get(TEST_HOST).getStatuses().get(jobId).getEnv());
+                 status.get(getTestHost()).getStatuses().get(jobId).getEnv());
   }
 }

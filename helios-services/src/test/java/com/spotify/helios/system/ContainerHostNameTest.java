@@ -23,8 +23,8 @@ public class ContainerHostNameTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(TEST_HOST);
-    awaitHostStatus(TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(getTestHost());
+    awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT, false);
 
@@ -34,13 +34,13 @@ public class ContainerHostNameTest extends SystemTestBase {
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", command);
 
     // deploy
-    deployJob(jobId, TEST_HOST);
+    deployJob(jobId, getTestHost());
 
-    final TaskStatus taskStatus = awaitTaskState(jobId, TEST_HOST, EXITED);
+    final TaskStatus taskStatus = awaitTaskState(jobId, getTestHost(), EXITED);
 
     final ClientResponse response = dockerClient.logContainer(taskStatus.getContainerId());
     final String logMessage = readLogFully(response);
 
-    assertContains(JOB_NAME + "_" + JOB_VERSION + "." + TEST_HOST, logMessage);
+    assertContains(JOB_NAME + "_" + JOB_VERSION + "." + getTestHost(), logMessage);
   }
 }
