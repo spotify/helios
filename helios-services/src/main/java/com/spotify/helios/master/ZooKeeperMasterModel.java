@@ -398,6 +398,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     // TODO (dano): Failure handling is racy wrt agent and job modifications. Probably rare, but still.
     try {
       client.transaction(operations);
+      log.debug("deployed {}: {}", deployment, host);
     } catch (NoNodeException e) {
       // Either the job or the host went away
       assertJobExists(client, id);
