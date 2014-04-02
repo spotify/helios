@@ -16,12 +16,8 @@
     <target>System.err</target>
   </appender>
 
-  <logger name="org.apache.curator" level="${externalLoggingLevel:-ERROR}" additivity="false">
-    <appender-ref ref="STDERR_NOPEX"/>
-  </logger>
-  <logger name="org.apache.zookeeper" level="${externalLoggingLevel:-ERROR}" additivity="false">
-    <appender-ref ref="STDERR_NOPEX"/>
-  </logger>
+  <logger name="org.apache.curator" level="${externalLoggingLevel:-ERROR}"/>
+  <logger name="org.apache.zookeeper" level="${externalLoggingLevel:-ERROR}"/>
   <logger name="org.eclipse.jetty" level="${externalLoggingLevel:-ERROR}"/>
   <logger name="com.spotify.hermes" level="${externalLoggingLevel:-ERROR}"/>
   <logger name="com.spotify.helios" level="${heliosLoggingLevel:-DEBUG}"/>

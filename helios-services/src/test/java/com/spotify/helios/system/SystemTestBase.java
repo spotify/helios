@@ -213,17 +213,16 @@ public abstract class SystemTestBase {
       throw Throwables.propagate(e);
     }
 
-    configureLogger("org.eclipse.jetty", Level.ERROR, false);
-    configureLogger("org.apache.curator", Level.ERROR, false);
-    configureLogger("org.apache.zookeeper", Level.ERROR, false);
-    configureLogger("com.spotify.helios", Level.DEBUG, true);
+    configureLogger("org.eclipse.jetty", Level.ERROR);
+    configureLogger("org.apache.curator", Level.ERROR);
+    configureLogger("org.apache.zookeeper", Level.ERROR);
+    configureLogger("com.spotify.helios", Level.DEBUG);
   }
 
-  private void configureLogger(final String name, final Level level, final boolean additive) {
+  private void configureLogger(final String name, final Level level) {
     final ch.qos.logback.classic.Logger logger =
         (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(name);
     logger.setLevel(level);
-    logger.setAdditive(additive);
   }
 
   static final String JOB_NAME = PREFIX + "foo";
