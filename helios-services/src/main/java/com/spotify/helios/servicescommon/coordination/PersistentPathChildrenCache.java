@@ -7,7 +7,9 @@ package com.spotify.helios.servicescommon.coordination;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
@@ -15,6 +17,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
@@ -25,13 +28,16 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.curator.framework.recipes.cache.PathChildrenCache.StartMode.POST_INITIALIZED_EVENT;
 
 public class PersistentPathChildrenCache extends AbstractIdleService {
 
@@ -72,7 +78,7 @@ public class PersistentPathChildrenCache extends AbstractIdleService {
   protected void startUp() throws Exception {
     log.debug("starting cache");
     try {
-      cache.start();
+      cache.start(POST_INITIALIZED_EVENT);
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }
@@ -109,21 +115,31 @@ public class PersistentPathChildrenCache extends AbstractIdleService {
       switch (event.getType()) {
         case CHILD_ADDED:
         case CHILD_UPDATED: {
-          final String path = event.getData().getPath();
-          final byte[] currentData = newSnapshot.get(path);
-          final byte[] newData = event.getData().getData();
-          if (!Arrays.equals(currentData, newData)) {
-            newSnapshot.put(path, newData);
-            mutated = true;
-          }
+          mutated = addUpdateChild(newSnapshot, event.getData());
           break;
         }
         case CHILD_REMOVED: {
-          newSnapshot.remove(event.getData().getPath());
-          mutated = true;
+          final String path = event.getData().getPath();
+          mutated = removeChild(path, newSnapshot);
           break;
         }
-        case INITIALIZED:
+        case INITIALIZED: {
+          final List<ChildData> initialData = event.getInitialData();
+          final Set<String> initialPaths = Sets.newHashSet();
+          for (final ChildData childData : initialData) {
+            initialPaths.add(childData.getPath());
+          }
+          for (final ChildData data : initialData) {
+            mutated |= addUpdateChild(newSnapshot, data);
+          }
+          final Set<String> currentPaths = ImmutableSet.copyOf(newSnapshot.keySet());
+          for (final String path : currentPaths) {
+            if (!initialPaths.contains(path)) {
+              mutated |= removeChild(path, newSnapshot);
+            }
+          }
+          break;
+        }
         case CONNECTION_LOST:
         case CONNECTION_RECONNECTED:
         case CONNECTION_SUSPENDED:
@@ -149,6 +165,29 @@ public class PersistentPathChildrenCache extends AbstractIdleService {
             log.error("Listener threw exception", e);
           }
         }
+      }
+    }
+
+    private boolean removeChild(final String path,
+                                final Map<String, byte[]> newSnapshot) {
+      if (newSnapshot.containsKey(path)) {
+        newSnapshot.remove(path);
+        return true;
+      } else {
+        return false;
+      }
+    }
+
+    private boolean addUpdateChild(final Map<String, byte[]> newSnapshot,
+                                   final ChildData data) {
+      final String path = data.getPath();
+      final byte[] currentData = newSnapshot.get(path);
+      final byte[] newData = data.getData();
+      if (!Arrays.equals(currentData, newData)) {
+        newSnapshot.put(path, newData);
+        return true;
+      } else {
+        return false;
       }
     }
 
