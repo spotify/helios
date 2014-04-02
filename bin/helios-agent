@@ -11,7 +11,7 @@ if [[ -e "$dir/../../helios" ]]; then
     CLASSPATH="$(cd $(dirname $jar) && pwd -P)/$(basename $jar)"
     echo "running in helios project, using $CLASSPATH" 1>&2
 else
-    CLASSPATH="/usr/share/spotify-helios/lib/services/*"
+    CLASSPATH="/usr/share/helios/lib/services/*"
 fi
 
 if [ $JMXPORT ]; then
