@@ -252,13 +252,13 @@
                   </mapper>
                 </data>
                 <data>
-                  <src>${project.parent.basedir}/src/deb/spotify-helios-master/default</src>
+                  <src>${project.parent.basedir}/src/deb/helios-master/default</src>
                   <type>file</type>
                   <dst>/etc/default/helios-master</dst>
                   <conffile>true</conffile>
                 </data>
                 <data>
-                  <src>${project.parent.basedir}/src/deb/spotify-helios-master/upstart</src>
+                  <src>${project.parent.basedir}/src/deb/helios-master/upstart</src>
                   <type>file</type>
                   <dst>/etc/init/helios-master.conf</dst>
                   <conffile>true</conffile>
@@ -288,13 +288,13 @@
                   </mapper>
                 </data>
                 <data>
-                  <src>${project.parent.basedir}/src/deb/spotify-helios-agent/default</src>
+                  <src>${project.parent.basedir}/src/deb/helios-agent/default</src>
                   <type>file</type>
                   <dst>/etc/default/helios-agent</dst>
                   <conffile>true</conffile>
                 </data>
                 <data>
-                  <src>${project.parent.basedir}/src/deb/spotify-helios-agent/upstart</src>
+                  <src>${project.parent.basedir}/src/deb/helios-agent/upstart</src>
                   <type>file</type>
                   <dst>/etc/init/helios-agent.conf</dst>
                   <conffile>true</conffile>
@@ -319,7 +319,7 @@
                   <type>file</type>
                   <mapper>
                     <type>perm</type>
-                    <prefix>/usr/share/spotify-helios/lib/services</prefix>
+                    <prefix>/usr/share/helios/lib/services</prefix>
                   </mapper>
                 </data>
               </dataSet>
