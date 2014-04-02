@@ -21,6 +21,7 @@ import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheEvent;
 import org.apache.curator.framework.recipes.cache.PathChildrenCacheListener;
+import org.apache.curator.framework.state.ConnectionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -141,10 +142,16 @@ public class PersistentPathChildrenCache extends AbstractIdleService {
           break;
         }
         case CONNECTION_LOST:
-        case CONNECTION_RECONNECTED:
-        case CONNECTION_SUSPENDED:
-          // ignored
+          fireConnectionStateChanged(ConnectionState.LOST);
           break;
+        case CONNECTION_RECONNECTED:
+          fireConnectionStateChanged(ConnectionState.RECONNECTED);
+          break;
+        case CONNECTION_SUSPENDED:
+          fireConnectionStateChanged(ConnectionState.SUSPENDED);
+          break;
+        default:
+          throw new IllegalStateException();
       }
 
       if (mutated) {
@@ -193,8 +200,20 @@ public class PersistentPathChildrenCache extends AbstractIdleService {
 
   }
 
+  private void fireConnectionStateChanged(final ConnectionState state) {
+    for (final Listener listener : listeners) {
+      try {
+        listener.connectionStateChanged(state);
+      } catch (Exception e) {
+        log.error("Listener threw exception", e);
+      }
+    }
+  }
+
   public interface Listener {
 
     void nodesChanged(PersistentPathChildrenCache cache);
+
+    void connectionStateChanged(ConnectionState state);
   }
 }

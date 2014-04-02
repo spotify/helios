@@ -21,6 +21,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperPersistentNodeRemover;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory;
 
+import org.apache.curator.framework.state.ConnectionState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -180,6 +181,11 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     @Override
     public void nodesChanged(final PersistentPathChildrenCache cache) {
       fireTasksUpdated();
+    }
+
+    @Override
+    public void connectionStateChanged(final ConnectionState state) {
+      // ignore
     }
   }
 
