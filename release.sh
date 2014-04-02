@@ -1,6 +1,10 @@
-#!/bin/bash
+#!/bin/bash -e
 
-set -e
+if [ `git symbolic-ref HEAD 2>/dev/null` != "refs/heads/master" ]
+then
+	echo "This is not the master branch."
+	exit 1
+fi
 
 # Use the maven release plugin to update the pom versions and tag the release commit
 mvn -B release:prepare release:clean
