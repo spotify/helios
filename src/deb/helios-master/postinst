@@ -1,7 +1,2 @@
 #!/bin/sh
-
-set -e
-
-if [ -e "/etc/init/helios-master" ]; then
-	initctl start helios-master start || exit $?
-fi
+initctl start helios-master

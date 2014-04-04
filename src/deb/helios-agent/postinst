@@ -1,7 +1,2 @@
 #!/bin/sh
-
-set -e
-
-if [ -e "/etc/init/helios-agent.conf" ]; then
-	initctl start helios-agent || exit $?
-fi
+initctl start helios-agent
