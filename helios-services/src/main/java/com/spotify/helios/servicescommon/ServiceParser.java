@@ -6,6 +6,7 @@ import com.spotify.helios.common.LoggingConfig;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
+import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -18,6 +19,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 
+import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Throwables.propagate;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
@@ -27,60 +29,91 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 public class ServiceParser {
 
   private final Namespace options;
-  private final LoggingConfig loggingConfig;
-  private final File serviceRegistrarPlugin;
-  private final String getServiceRegistryAddress;
-  private final String domain;
 
-  public ServiceParser(final String programName, final String description, String... args)
+  private final Argument nameArg;
+  private final Argument sentryDsnArg;
+  private final Argument domainArg;
+  private final Argument serviceRegistryArg;
+  private final Argument serviceRegistrarPluginArg;
+  private final Argument zooKeeperConnectStringArg;
+  private final Argument zooKeeperSessiontimeoutArg;
+  private final Argument zooKeeperConnectiontimeoutArg;
+  private final Argument noMetricsArg;
+  private final Argument statsdHostPortArg;
+  private final Argument riemannHostPortArg;
+  private final Argument verboseArg;
+  private final Argument syslogArg;
+  private final Argument logconfigArg;
+  private final Argument noLogSetupArg;
+
+  public ServiceParser(final String programName, final String description, final String... args)
       throws ArgumentParserException {
 
     final ArgumentParser parser = ArgumentParsers.newArgumentParser(programName)
         .defaultHelp(true)
         .description(description);
 
-    parser.addArgument("--name")
+    nameArg = parser.addArgument("--name")
         .setDefault(getHostName())
         .help("hostname to register as");
 
-    parser.addArgument("--domain")
+    domainArg = parser.addArgument("--domain")
         .help("Service registration domain.");
 
-    parser.addArgument("--service-registry")
+    serviceRegistryArg = parser.addArgument("--service-registry")
         .help("Service registry address. Overrides domain.");
 
-    parser.addArgument("--service-registrar-plugin")
+    serviceRegistrarPluginArg = parser.addArgument("--service-registrar-plugin")
         .type(fileType().verifyExists().verifyCanRead())
         .help("Service registration plugin.");
 
-    parser.addArgument("--zk")
+    zooKeeperConnectStringArg = parser.addArgument("--zk")
         .setDefault("localhost:2181")
         .help("zookeeper connection string");
 
-    parser.addArgument("--zk-session-timeout")
+    zooKeeperSessiontimeoutArg = parser.addArgument("--zk-session-timeout")
         .type(Integer.class)
         .setDefault((int) SECONDS.toMillis(60))
         .help("zookeeper session timeout");
 
-    parser.addArgument("--zk-connection-timeout")
+    zooKeeperConnectiontimeoutArg = parser.addArgument("--zk-connection-timeout")
         .type(Integer.class)
         .setDefault((int) SECONDS.toMillis(15))
         .help("zookeeper connection timeout");
 
-    parser.addArgument("-v", "--verbose")
+    noMetricsArg = parser.addArgument("--no-metrics")
+        .setDefault(SUPPRESS)
+        .action(storeTrue())
+        .help("Turn off all collection and reporting of metrics");
+
+    statsdHostPortArg = parser.addArgument("--statsd-host-port")
+        .setDefault((String) null)
+        .help("host:port of where to send statsd metrics "
+              + "(to be useful, --no-metrics must *NOT* be specified)");
+
+    riemannHostPortArg = parser.addArgument("--riemann-host-port")
+        .setDefault((String) null)
+        .help("host:port of where to send riemann events and metrics "
+              + "(to be useful, --no-metrics must *NOT* be specified)");
+
+    verboseArg = parser.addArgument("-v", "--verbose")
         .action(Arguments.count());
 
-    parser.addArgument("--syslog")
+    syslogArg = parser.addArgument("--syslog")
         .help("Log to syslog.")
         .action(storeTrue());
 
-    parser.addArgument("--logconfig")
+    logconfigArg = parser.addArgument("--logconfig")
         .type(fileType().verifyExists().verifyCanRead())
         .help("Logback configuration file.");
 
-    parser.addArgument("--no-log-setup")
+    noLogSetupArg = parser.addArgument("--no-log-setup")
         .action(storeTrue())
         .help(SUPPRESS);
+
+    sentryDsnArg = parser.addArgument("--sentry-dsn")
+        .setDefault((String) null)
+        .help("The sentry data source name");
 
     addArgs(parser);
 
@@ -90,17 +123,6 @@ public class ServiceParser {
       parser.handleError(e);
       throw e;
     }
-
-    this.loggingConfig = new LoggingConfig(options.getInt("verbose"),
-                                           options.getBoolean("syslog"),
-                                           (File) options.get("logconfig"),
-                                           options.getBoolean("no_log_setup"));
-
-    this.domain = options.getString("domain");
-
-    this.serviceRegistrarPlugin = (File) options.get("service_registrar_plugin");
-
-    this.getServiceRegistryAddress = options.getString("service_registry");
   }
 
   protected void addArgs(final ArgumentParser parser) {
@@ -111,19 +133,55 @@ public class ServiceParser {
   }
 
   public LoggingConfig getLoggingConfig() {
-    return loggingConfig;
+    return new LoggingConfig(options.getInt(verboseArg.getDest()),
+                             options.getBoolean(syslogArg.getDest()),
+                             (File) options.get(logconfigArg.getDest()),
+                             options.getBoolean(noLogSetupArg.getDest()));
   }
 
   public String getDomain() {
-    return domain;
+    return options.getString(domainArg.getDest());
   }
 
   public String getServiceRegistryAddress() {
-    return getServiceRegistryAddress;
+    return options.getString(serviceRegistryArg.getDest());
   }
 
   public Path getServiceRegistrarPlugin() {
-    return serviceRegistrarPlugin != null ? serviceRegistrarPlugin.toPath() : null;
+    final File plugin = (File) options.get(serviceRegistrarPluginArg.getDest());
+    return plugin != null ? plugin.toPath() : null;
+  }
+
+  public String getZooKeeperConnectString() {
+    return options.getString(zooKeeperConnectStringArg.getDest());
+  }
+
+  public String getSentryDsn() {
+    return options.getString(sentryDsnArg.getDest());
+  }
+
+  public Boolean getInhibitMetrics() {
+    return fromNullable(options.getBoolean(noMetricsArg.getDest())).or(false);
+  }
+
+  public String getName() {
+    return options.getString(nameArg.getDest());
+  }
+
+  public String getRiemannHostPort() {
+    return options.getString(riemannHostPortArg.getDest());
+  }
+
+  public String getStatsdHostPort() {
+    return options.getString(statsdHostPortArg.getDest());
+  }
+
+  public int getZooKeeperConnectionTimeoutMillis() {
+    return options.getInt(zooKeeperConnectiontimeoutArg.getDest());
+  }
+
+  public int getZooKeeperSessionTimeoutMillis() {
+    return options.getInt(zooKeeperSessiontimeoutArg.getDest());
   }
 
   private static String getHostName() {
