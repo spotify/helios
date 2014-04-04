@@ -1,7 +1,2 @@
 #!/bin/sh
-
-set -e
-
-if [ -e "/etc/init/helios-agent.conf" ]; then
-	initctl stop helios-agent || exit $?
-fi
+initctl stop helios-agent
