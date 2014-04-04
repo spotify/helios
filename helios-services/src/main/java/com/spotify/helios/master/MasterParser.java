@@ -29,6 +29,8 @@ public class MasterParser extends ServiceParser {
 
     final MasterConfig config = new MasterConfig()
         .setZooKeeperConnectString(options.getString("zk"))
+        .setZooKeeperSessionTimeoutMillis(options.getInt("zk_session_timeout"))
+        .setZooKeeperConnectionTimeoutMillis(options.getInt("zk_connection_timeout"))
         .setDomain(getDomain())
         .setName(options.getString("name"))
         .setStatsdHostPort(options.getString("statsd_host_port"))

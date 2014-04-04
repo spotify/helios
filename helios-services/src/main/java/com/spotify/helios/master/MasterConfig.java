@@ -10,6 +10,8 @@ import java.nio.file.Path;
 
 public class MasterConfig extends Configuration {
 
+  // TODO (dano): defaults
+
   private String domain;
   private String zooKeeperConnectString;
   private String name;
@@ -19,6 +21,8 @@ public class MasterConfig extends Configuration {
   private String serviceRegistryAddress;
   private String sentryDsn;
   private Path serviceRegistrarPlugin;
+  private int zooKeeperSessionTimeoutMillis;
+  private int zooKeeperConnectionTimeoutMillis;
 
   public String getDomain() {
     return domain;
@@ -45,6 +49,24 @@ public class MasterConfig extends Configuration {
   public MasterConfig setZooKeeperConnectString(final String zooKeeperConnectString) {
     this.zooKeeperConnectString = zooKeeperConnectString;
     return this;
+  }
+
+  public MasterConfig setZooKeeperSessionTimeoutMillis(final int timeoutMillis) {
+    this.zooKeeperSessionTimeoutMillis = timeoutMillis;
+    return this;
+  }
+
+  public int getZooKeeperSessionTimeoutMillis() {
+    return zooKeeperSessionTimeoutMillis;
+  }
+
+  public MasterConfig setZooKeeperConnectionTimeoutMillis(final int timeoutMillis) {
+    this.zooKeeperConnectionTimeoutMillis = timeoutMillis;
+    return this;
+  }
+
+  public int getZooKeeperConnectionTimeoutMillis() {
+    return zooKeeperConnectionTimeoutMillis;
   }
 
   public MasterConfig setInhibitMetrics(boolean inhibit) {

@@ -192,7 +192,10 @@ public class MasterService extends AbstractIdleService {
   private ZooKeeperClient setupZookeeperClient(final MasterConfig config) {
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
     final CuratorFramework curator = CuratorFrameworkFactory.newClient(
-        config.getZooKeeperConnectString(), zooKeeperRetryPolicy);
+        config.getZooKeeperConnectString(),
+        config.getZooKeeperSessionTimeoutMillis(),
+        config.getZooKeeperConnectionTimeoutMillis(),
+        zooKeeperRetryPolicy);
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
     client.start();
 
