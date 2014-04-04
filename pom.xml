@@ -57,7 +57,7 @@
             <version>2.16</version>
             <configuration>
               <enableAssertions>false</enableAssertions>
-              <forkCount>2C</forkCount>
+              <forkCount>1C</forkCount>
               <reuseForks>true</reuseForks>
               <argLine>-Xmx128m</argLine>
               <systemPropertyVariables>
