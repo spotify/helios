@@ -44,7 +44,7 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
         .setVersion("v2")
         .setImage("skxskx/memcached")
         .setCommand(DO_NOTHING_COMMAND)
-        .setPorts(ImmutableMap.of("tcp", PortMapping.of(11211, EXTERNAL_PORT1)))
+        .setPorts(ImmutableMap.of("tcp", PortMapping.of(11211, externalPort1)))
         .build();
     final JobId jobId2 = job2.getId();
     client.createJob(job2).get();

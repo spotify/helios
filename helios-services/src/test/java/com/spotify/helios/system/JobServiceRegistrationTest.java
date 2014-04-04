@@ -63,7 +63,7 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
     awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
 
     final ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
-        "PORT_NAME", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT1));
+        "PORT_NAME", PortMapping.of(INTERNAL_PORT, externalPort1));
 
     final String serviceName = "SERVICE";
     final String serviceProto = "PROTO";
@@ -84,6 +84,6 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
 
     assertEquals("wrong service", serviceName, endpoint.getName());
     assertEquals("wrong protocol", serviceProto, endpoint.getProtocol());
-    assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT1);
+    assertEquals("wrong port", endpoint.getPort(), externalPort1);
   }
 }

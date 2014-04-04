@@ -114,8 +114,8 @@ public abstract class SystemTestBase {
   public TemporaryPorts temporaryPorts = new TemporaryPorts();
 
   // TODO (dano): Use temporaryPorts directly everywhere instead of these constants
-  final int EXTERNAL_PORT1 = temporaryPorts.localPort("external-1");
-  final int EXTERNAL_PORT2 = temporaryPorts.localPort("external-2");
+  int externalPort1;
+  int externalPort2;
 
   static final Map<String, String> EMPTY_ENV = emptyMap();
   static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
@@ -134,9 +134,9 @@ public abstract class SystemTestBase {
       new TypeReference<Map<JobId, JobStatus>>() {};
 
 
-  final int masterPort = temporaryPorts.localPort("helios master");
-  final int masterAdminPort = temporaryPorts.localPort("helios master admin");
-  protected final String masterEndpoint = "http://localhost:" + masterPort;
+  private int masterPort;
+  private int masterAdminPort;
+  private String masterEndpoint;
 
   static final String DOCKER_ENDPOINT =
       fromNullable(getenv("DOCKER_ENDPOINT"))
@@ -260,6 +260,13 @@ public abstract class SystemTestBase {
 
   @Before
   public void baseSetup() throws Exception {
+    externalPort1 = temporaryPorts.localPort("external-1");
+    externalPort2 = temporaryPorts.localPort("external-2");
+
+    masterPort = temporaryPorts.localPort("helios master");
+    masterAdminPort = temporaryPorts.localPort("helios master admin");
+    masterEndpoint = "http://localhost:" + masterPort;
+
     zk = zooKeeperTestManager();
     listThreads();
     zk.ensure("/config");
@@ -347,13 +354,15 @@ public abstract class SystemTestBase {
     log.info(Strings.repeat("=", 80));
   }
 
-  protected void startDefaultMaster() throws Exception {
-    startMaster("-vvvv",
-                "--no-log-setup",
-                "--http", masterEndpoint,
-                "--admin=" + masterAdminPort,
-                "--name", TEST_MASTER,
-                "--zk", zk.connectString());
+  protected void startDefaultMaster(final String... args) throws Exception {
+    List<String> argsList = Lists.newArrayList("-vvvv",
+                          "--no-log-setup",
+                          "--http", masterEndpoint,
+                          "--admin=" + masterAdminPort,
+                          "--name", TEST_MASTER,
+                          "--zk", zk.connectString());
+    argsList.addAll(asList(args));
+    startMaster(argsList.toArray(new String[argsList.size()]));
   }
 
   AgentMain startDefaultAgent(final String host, final String... args)
@@ -617,7 +626,8 @@ public abstract class SystemTestBase {
         final String output = cli("job", "status", "--json", jobId.toString());
         final Map<JobId, JobStatus> statusMap;
         try {
-          statusMap = Json.read(output, new TypeReference<Map<JobId, JobStatus>>() {});
+          statusMap = Json.read(output, new TypeReference<Map<JobId, JobStatus>>() {
+          });
         } catch (IOException e) {
           return null;
         }
@@ -726,5 +736,17 @@ public abstract class SystemTestBase {
         .build();
     clients.add(client);
     return client;
+  }
+
+  public int masterPort() {
+    return masterPort;
+  }
+
+  public int masterAdminPort() {
+    return masterAdminPort;
+  }
+
+  public String masterEndpoint() {
+    return masterEndpoint;
   }
 }

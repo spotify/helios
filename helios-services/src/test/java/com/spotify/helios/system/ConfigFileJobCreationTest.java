@@ -36,7 +36,7 @@ public class ConfigFileJobCreationTest extends SystemTestBase {
     final String image = "busybox";
     final Map<String, PortMapping> ports = ImmutableMap.of(
         "foo", PortMapping.of(4711),
-        "bar", PortMapping.of(5000, EXTERNAL_PORT1));
+        "bar", PortMapping.of(5000, externalPort1));
     final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
         ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
         ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));

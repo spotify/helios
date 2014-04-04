@@ -39,7 +39,7 @@ public class JobWatchExactTest extends SystemTestBase {
     // deploy
     deployJob(jobId, TEST_HOST);
 
-    final String[] commands = new String[]{"job", "watch", "--exact", "-z", masterEndpoint,
+    final String[] commands = new String[]{"job", "watch", "--exact", "-z", masterEndpoint(),
                                            "--no-log-setup", jobId.toString(), TEST_HOST,
                                            "FAKE_TEST_AGENT"};
 

@@ -46,12 +46,7 @@ public class MasterServiceRegistrationTest extends ServiceRegistrationTestBase {
 
   @Test
   public void test() throws Exception {
-    startMaster("-vvvv",
-                "--no-log-setup",
-                "--http", masterEndpoint,
-                "--admin=" + masterAdminPort,
-                "--zk", zk.connectString(),
-                "--service-registry=" + registryAddress);
+    startDefaultMaster("--service-registry=" + registryAddress);
 
     verify(registrar, timeout((int) MINUTES.toMillis(LONG_WAIT_MINUTES))).register(registrationCaptor.capture());
     final ServiceRegistration registration = registrationCaptor.getValue();
@@ -59,6 +54,6 @@ public class MasterServiceRegistrationTest extends ServiceRegistrationTestBase {
     final ServiceRegistration.Endpoint endpoint = getOnlyElement(registration.getEndpoints());
     assertEquals("http", endpoint.getProtocol());
     assertEquals("helios", endpoint.getName());
-    assertEquals(masterPort, endpoint.getPort());
+    assertEquals(masterPort(), endpoint.getPort());
   }
 }

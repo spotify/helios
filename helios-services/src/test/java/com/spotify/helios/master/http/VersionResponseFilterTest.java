@@ -120,7 +120,7 @@ public class VersionResponseFilterTest extends SystemTestBase {
     if (version != null) {
       headers.put("X-Helios-Version", asList(version));
     }
-    final URI uri = URI.create(masterEndpoint + "/version");
+    final URI uri = URI.create(masterEndpoint() + "/version");
     final HttpURLConnection connection = connect(uri,  headers);
     return connection;
   }

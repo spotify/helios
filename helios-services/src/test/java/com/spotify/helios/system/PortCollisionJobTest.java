@@ -36,7 +36,7 @@ public class PortCollisionJobTest extends SystemTestBase {
         .setVersion("1")
         .setImage("busybox")
         .setCommand(DO_NOTHING_COMMAND)
-        .setPorts(ImmutableMap.of("foo", PortMapping.of(10001, EXTERNAL_PORT1)))
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(10001, externalPort1)))
         .build();
 
     final Job job2 = Job.newBuilder()
@@ -44,7 +44,7 @@ public class PortCollisionJobTest extends SystemTestBase {
         .setVersion("1")
         .setImage("busybox")
         .setCommand(DO_NOTHING_COMMAND)
-        .setPorts(ImmutableMap.of("foo", PortMapping.of(10002, EXTERNAL_PORT1)))
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(10002, externalPort1)))
         .build();
 
     final CreateJobResponse created1 = client.createJob(job1).get();

@@ -47,19 +47,19 @@ public class MultiplePortJobTest extends SystemTestBase {
 
     final Map<String, PortMapping> ports1 =
         ImmutableMap.of("foo", PortMapping.of(4711),
-                        "bar", PortMapping.of(4712, EXTERNAL_PORT1));
+                        "bar", PortMapping.of(4712, externalPort1));
 
     final ImmutableMap<String, PortMapping> expectedMapping1 =
         ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint()),
-                        "bar", PortMapping.of(4712, EXTERNAL_PORT1));
+                        "bar", PortMapping.of(4712, externalPort1));
 
     final Map<String, PortMapping> ports2 =
         ImmutableMap.of("foo", PortMapping.of(4711),
-                        "bar", PortMapping.of(4712, EXTERNAL_PORT2));
+                        "bar", PortMapping.of(4712, externalPort2));
 
     final ImmutableMap<String, PortMapping> expectedMapping2 =
         ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint() + 1),
-                        "bar", PortMapping.of(4712, EXTERNAL_PORT2));
+                        "bar", PortMapping.of(4712, externalPort2));
 
     final JobId jobId1 = createJob(JOB_NAME + 1, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
                                    EMPTY_ENV, ports1);
