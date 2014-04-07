@@ -119,6 +119,7 @@ public class MasterService extends AbstractIdleService {
     environment.addFilter(VersionResponseFilter.class, "/*");
     environment.addProvider(new ReportingResourceMethodDispatchAdapter(metrics.getMasterMetrics()));
     environment.addResource(new JobsResource(model, metrics.getMasterMetrics()));
+    environment.addResource(new HistoryResource(model));
     environment.addResource(new HostsResource(model));
     environment.addResource(new MastersResource(model));
     environment.addResource(new VersionResource());

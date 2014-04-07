@@ -79,6 +79,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     tasks.startAsync().awaitRunning();
     taskStatuses.startAsync().awaitRunning();
     taskRemover.startAsync().awaitRunning();
+    historyWriter.startAsync().awaitRunning();
   }
 
   @Override

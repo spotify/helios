@@ -25,7 +25,6 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -88,10 +87,10 @@ public class QueueingHistoryWriterTest {
     zk.stop();
   }
 
-  private void makeWriter(ZooKeeperClient client) throws IOException {
+  private void makeWriter(ZooKeeperClient client) throws Exception {
     writer = new QueueingHistoryWriter(HOSTNAME,
         client, agentStateDirs.resolve("task-history.json"));
-    writer.start();
+    writer.startUp();
   }
 
   @Test
@@ -130,7 +129,7 @@ public class QueueingHistoryWriterTest {
   }
 
   private Iterable<TaskStatusEvent> awaitHistoryItems() throws Exception {
-    return await(10L, TimeUnit.SECONDS, new Callable<Iterable<TaskStatusEvent>>() {
+    return await(40L, TimeUnit.SECONDS, new Callable<Iterable<TaskStatusEvent>>() {
       @Override
       public Iterable<TaskStatusEvent> call() throws Exception {
         final List<TaskStatusEvent> items = masterModel.getJobHistory(JOB_ID);

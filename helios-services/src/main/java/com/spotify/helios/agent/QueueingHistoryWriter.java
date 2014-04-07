@@ -17,6 +17,7 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -208,6 +209,9 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         final JobId jobId = item.getStatus().getJob().getId();
         final String historyPath = Paths.historyJobHostEventsTimestamp(
             jobId, hostname, item.getTimestamp());
+        log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
+            item.getTimestamp());
+        client.ensurePath(historyPath, true);
         client.createAndSetData(historyPath, item.getStatus().toJsonBytes());
 
         // See if too many
@@ -215,7 +219,12 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         if (events.size() > MAX_NUMBER_STATUS_EVENTS_TO_RETAIN) {
           trimStatusEvents(events, jobId);
         }
+      } catch (NodeExistsException e) {
+        // Ahh, the two generals problem...  We handle by doing nothing since the thing
+        // we wanted in, is in.
+        log.debug("item we wanted in is already there");
       } catch (KeeperException e) {
+        log.error("Error {} putting item into zookeeper, will retry", e);
         putBack(item);
         break;
       }
