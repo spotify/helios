@@ -162,7 +162,7 @@ public class HeliosClient {
     if (entity != null) {
       headers.put("Content-Type", asList("application/json"));
       headers.put("Charset", asList("utf-8"));
-      headers.put("X-Helios-Version", asList(Version.POM_VERSION));
+      headers.put(VersionCompatibility.HELIOS_VERSION_HEADER, asList(Version.POM_VERSION));
       entityBytes = Json.asBytesUnchecked(entity);
     } else {
       entityBytes = new byte[]{};
