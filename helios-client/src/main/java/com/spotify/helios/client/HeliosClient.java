@@ -29,11 +29,11 @@ import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
@@ -159,10 +159,10 @@ public class HeliosClient {
 
     final Map<String, List<String>> headers = Maps.newHashMap();
     final byte[] entityBytes;
+    headers.put(VersionCompatibility.HELIOS_VERSION_HEADER, asList(Version.POM_VERSION));
     if (entity != null) {
       headers.put("Content-Type", asList("application/json"));
       headers.put("Charset", asList("utf-8"));
-      headers.put("X-Helios-Version", asList(Version.POM_VERSION));
       entityBytes = Json.asBytesUnchecked(entity);
     } else {
       entityBytes = new byte[]{};
@@ -208,6 +208,7 @@ public class HeliosClient {
   private void checkprotocolVersionStatus(final HttpURLConnection connection) {
     final Status versionStatus = getVersionStatus(connection);
     if (versionStatus == null) {
+      log.debug("Server didn't return a version header!");
       return; // shouldn't happen really
     }
 
@@ -277,12 +278,12 @@ public class HeliosClient {
     final HttpURLConnection connection;
     connection = (HttpURLConnection) uri.toURL().openConnection();
     connection.setInstanceFollowRedirects(false);
-    if (entity != null && entity.length > 0) {
-      for (Map.Entry<String, List<String>> header : headers.entrySet()) {
-        for (final String value : header.getValue()) {
-          connection.addRequestProperty(header.getKey(), value);
-        }
+    for (Map.Entry<String, List<String>> header : headers.entrySet()) {
+      for (final String value : header.getValue()) {
+        connection.addRequestProperty(header.getKey(), value);
       }
+    }
+    if (entity != null && entity.length > 0) {
       connection.setDoOutput(true);
       connection.getOutputStream().write(entity);
     }
