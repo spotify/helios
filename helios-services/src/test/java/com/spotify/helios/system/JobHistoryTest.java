@@ -41,7 +41,7 @@ public class JobHistoryTest extends SystemTestBase {
       @Override
       public TaskStatusEvents call() throws Exception {
         final TaskStatusEvents events = client.jobHistory(jobId).get();
-        if (events.getEvents().size() == 5) {
+        if (events.getEvents().size() < 5) {
           return null;
         }
         return events;
