@@ -4,8 +4,8 @@
 
 package com.spotify.helios.system;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -28,26 +28,27 @@ import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
-import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.protocol.JobDeleteResponse;
+import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
 import com.sun.jersey.api.client.ClientResponse;
 
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.TemporaryFolder;
 import org.junit.rules.TestRule;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
@@ -55,16 +56,11 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.lang.management.ManagementFactory;
 import java.net.URI;
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.SecureRandom;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -74,14 +70,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.FileAppender;
-
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -97,138 +87,99 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.fail;
-import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
 public abstract class SystemTestBase {
+  private static final Logger log = LoggerFactory.getLogger(SystemTestBase.class);
 
-  static final Logger log = LoggerFactory.getLogger(SystemTestBase.class);
-
-  static final String PREFIX = Long.toHexString(new SecureRandom().nextLong());
-
-  static final int WAIT_TIMEOUT_SECONDS = 40;
-  static final int LONG_WAIT_MINUTES = 10;
-
-  static final int INTERNAL_PORT = 4444;
-
-  @Rule
-  public TemporaryPorts temporaryPorts = new TemporaryPorts();
-
-  // TODO (dano): Use temporaryPorts directly everywhere instead of these constants
-  int externalPort1;
-  int externalPort2;
-
-  static final Map<String, String> EMPTY_ENV = emptyMap();
-  static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
-  static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
-
-  static final JobId BOGUS_JOB = new JobId("bogus", "job", Strings.repeat("0", 40));
-  static final String BOGUS_HOST = "BOGUS_HOST";
-
-  static final String TEST_USER = "test-user";
-  static final String TEST_HOST = "test-host";
-  static final String TEST_MASTER = "test-master";
-
-  static final List<String> DO_NOTHING_COMMAND = asList("sh", "-c", "while :; do sleep 1; done");
-
-  static final TypeReference<Map<JobId, JobStatus>> STATUSES_TYPE =
-      new TypeReference<Map<JobId, JobStatus>>() {};
-
-
-  private int masterPort;
-  private int masterAdminPort;
-  private String masterEndpoint;
-
-  static final String DOCKER_ENDPOINT =
+  public static final int WAIT_TIMEOUT_SECONDS = 40;
+  public static final int LONG_WAIT_MINUTES = 10;
+  public static final int INTERNAL_PORT = 4444;
+  public static final Map<String, String> EMPTY_ENV = emptyMap();
+  public static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
+  public static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
+  public static final JobId BOGUS_JOB = new JobId("bogus", "job", Strings.repeat("0", 40));
+  public static final String BOGUS_HOST = "BOGUS_HOST";
+  public static final List<String> DO_NOTHING_COMMAND = asList("sh", "-c", "while :; do sleep 1; done");
+  public static final String JOB_VERSION = "test_17";
+  public static final String DOCKER_ENDPOINT =
       fromNullable(getenv("DOCKER_ENDPOINT"))
           .or(fromNullable(getenv("DOCKER_HOST")))
           .or("http://localhost:4160")
           .replace("tcp://", "http://");
 
-  final List<Service> services = newArrayList();
-  final ExecutorService executorService = Executors.newCachedThreadPool();
+  private static final String TEST_USER = "test-user";
+  private static final String TEST_HOST = "test-host";
+  private static final String TEST_MASTER = "test-master";
 
-  static final TypeReference<Map<String, Object>> OBJECT_TYPE =
-      new TypeReference<Map<String, Object>>() {};
+  @Rule
+  public final TemporaryPorts temporaryPorts = new TemporaryPorts();
+  @Rule
+  public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule
+  public final ExpectedException exception = ExpectedException.none();
+  @Rule
+  public final TestRule watcher = new LoggingTestWatcher();
 
-  final AtomicInteger agentCounter = new AtomicInteger();
-  Path agentStateDirs;
+  public final String PREFIX = "test_" + Integer.toHexString(new SecureRandom().nextInt());
+  public final String JOB_NAME = PREFIX + "foo";
+
+  private final int masterPort = temporaryPorts.localPort("helios master");
+  private final int masterAdminPort = temporaryPorts.localPort("helios master admin");
+  private final String masterEndpoint;
+  private final List<Service> services = newArrayList();
+  private final ExecutorService executorService = Executors.newCachedThreadPool();
+  private final List<HeliosClient> clients = Lists.newArrayList();
+  private final boolean integrationMode;
+
+  private String testHost = null;
+  private Path agentStateDirs;
+  private String masterName;
 
   protected ZooKeeperTestManager zk;
 
-  @Rule
-  public ExpectedException exception = ExpectedException.none();
+  public SystemTestBase() {
+    String className = getClass().getName();
+    if (className.endsWith("ITCase")) {
+      masterEndpoint = checkNotNull(System.getenv("HELIOS_ENDPOINT"),
+          "For integration tests, HELIOS_ENDPOINT *must* be set");
+      integrationMode = true;
+    } else if (className.endsWith("Test") || className.endsWith("TestBase")) {
+      integrationMode = false;
+      masterEndpoint = "http://localhost:" + getMasterPort();
+      // unit test
+    } else {
+      throw new RuntimeException("testClass neither ends in Test, TestBase or ITCase");
+    }
+  }
 
-  @Rule
-  public TestRule watcher = new TestWatcher() {
-    @Override
-    protected void starting(Description description) {
-      if (Boolean.getBoolean("logToFile")) {
-        final String name = description.getClassName() + "_" + description.getMethodName();
-        setupFileLogging(name);
+  public boolean isIntegration() {
+    return integrationMode;
+  }
+
+
+  public TemporaryPorts getTemporaryPorts() {
+    return temporaryPorts;
+  }
+
+  public String getMasterEndpoint() {
+    return masterEndpoint;
+  }
+
+  public ZooKeeperTestManager getZk() {
+    return zk;
+  }
+
+  public String masterName() throws InterruptedException, ExecutionException {
+    if (integrationMode) {
+      if (masterName == null) {
+        masterName = defaultClient().listMasters().get().get(0);
       }
-      log.info(Strings.repeat("=", 80));
-      log.info("STARTING: {}: {}", description.getClassName(), description.getMethodName());
-      log.info(Strings.repeat("=", 80));
+      return masterName;
+    } else {
+      return "test-master";
     }
-
-    @Override
-    protected void succeeded(final Description description) {
-      log.info(Strings.repeat("=", 80));
-      log.info("FINISHED: {}: {}", description.getClassName(), description.getMethodName());
-      log.info(Strings.repeat("=", 80));
-    }
-
-    @Override
-    protected void failed(final Throwable e, final Description description) {
-      log.info(Strings.repeat("=", 80));
-      log.info("FAILED  : {} {}", description.getClassName(), description.getMethodName());
-      log.info(Strings.repeat("=", 80));
-    }
-  };
-
-  private void setupFileLogging(final String name) {
-    final ch.qos.logback.classic.Logger rootLogger =
-        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ROOT_LOGGER_NAME);
-    final LoggerContext context = rootLogger.getLoggerContext();
-    context.reset();
-    final FileAppender<ILoggingEvent> fileAppender = new FileAppender<>();
-    final String ts = new SimpleDateFormat("yyyyMMdd'T'HHmmss.SSS").format(new Date());
-    final String pid = ManagementFactory.getRuntimeMXBean().getName().split("@", 2)[0];
-    final Path directory = Paths.get(System.getProperty("logDir", "/tmp/helios-test/log/"));
-    final String filename = String.format("%s-%s-%s.log", ts, name, pid);
-    final Path file = directory.resolve(filename);
-    final PatternLayoutEncoder ple = new PatternLayoutEncoder();
-    ple.setContext(context);
-    ple.setPattern("%d{HH:mm:ss.SSS} %-5level %logger{1} %F:%L - %msg%n");
-    ple.start();
-    fileAppender.setEncoder(ple);
-    fileAppender.setFile(file.toString());
-    fileAppender.setContext(context);
-    fileAppender.start();
-    rootLogger.setLevel(Level.DEBUG);
-    rootLogger.addAppender(fileAppender);
-    try {
-      Files.createDirectories(directory);
-    } catch (IOException e) {
-      throw Throwables.propagate(e);
-    }
-
-    configureLogger("org.eclipse.jetty", Level.ERROR);
-    configureLogger("org.apache.curator", Level.ERROR);
-    configureLogger("org.apache.zookeeper", Level.ERROR);
-    configureLogger("com.spotify.helios", Level.DEBUG);
   }
 
-  private void configureLogger(final String name, final Level level) {
-    final ch.qos.logback.classic.Logger logger =
-        (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(name);
-    logger.setLevel(level);
-  }
-
-  static final String JOB_NAME = PREFIX + "foo";
-  static final String JOB_VERSION = "17";
-
-  final List<HeliosClient> clients = Lists.newArrayList();
 
   @BeforeClass
   public static void staticSetup() {
@@ -260,18 +211,11 @@ public abstract class SystemTestBase {
 
   @Before
   public void baseSetup() throws Exception {
-    externalPort1 = temporaryPorts.localPort("external-1");
-    externalPort2 = temporaryPorts.localPort("external-2");
-
-    masterPort = temporaryPorts.localPort("helios master");
-    masterAdminPort = temporaryPorts.localPort("helios master admin");
-    masterEndpoint = "http://localhost:" + masterPort;
-
     zk = zooKeeperTestManager();
     listThreads();
     zk.ensure("/config");
     zk.ensure("/status");
-    agentStateDirs = Files.createTempDirectory("helios-agents");
+    agentStateDirs = temporaryFolder.newFolder("helios-agents").toPath();
   }
 
   protected ZooKeeperTestManager zooKeeperTestManager() {
@@ -280,6 +224,7 @@ public abstract class SystemTestBase {
 
   @After
   public void baseTeardown() throws Exception {
+    tearDownJobs();
     for (final HeliosClient client : clients) {
       client.close();
     }
@@ -328,14 +273,43 @@ public abstract class SystemTestBase {
       log.error("Docker client exception", e);
     }
 
-    FileUtils.deleteQuietly(agentStateDirs.toFile());
-
     zk.close();
 
     listThreads();
   }
 
-  void listThreads() {
+  private void tearDownJobs() throws InterruptedException, ExecutionException {
+    if (System.getenv("ITCASE_PRESERVE_JOBS") != null) {
+      return;
+    }
+    final List<ListenableFuture<JobUndeployResponse>> undeploys = Lists.newArrayList();
+    final HeliosClient c = defaultClient();
+    final Map<JobId, Job> jobs = c.jobs().get();
+    for (JobId jobId : jobs.keySet()) {
+      if (!jobId.toString().startsWith(PREFIX)) {
+        continue;
+      }
+      final JobStatus st = c.jobStatus(jobId).get();
+      final Set<String> hosts = st.getDeployments().keySet();
+      for (String host : hosts) {
+        System.err.println("Undeploying job " + jobId);
+        undeploys.add(c.undeploy(jobId, host));
+      }
+    }
+    Futures.allAsList(undeploys);
+
+    final List<ListenableFuture<JobDeleteResponse>> deletes = Lists.newArrayList();
+    for (JobId jobId : jobs.keySet()) {
+      if (!jobId.toString().startsWith(PREFIX)) {
+        continue;
+      }
+      System.err.println("Deleting job " + jobId);
+      deletes.add(c.deleteJob(jobId));
+    }
+    Futures.allAsList(deletes);
+  }
+
+  private void listThreads() {
     final Set<Thread> threads = Thread.getAllStackTraces().keySet();
     final Map<String, Thread> sorted = Maps.newTreeMap();
     for (final Thread t : threads) {
@@ -354,19 +328,30 @@ public abstract class SystemTestBase {
     log.info(Strings.repeat("=", 80));
   }
 
-  protected void startDefaultMaster(final String... args) throws Exception {
+  protected void startDefaultMaster(String... args) throws Exception {
+    if (isIntegration()) {
+      Preconditions.checkArgument(args.length == 0,
+          "cannot start default master in integration test with arguments passed " + args.length);
+      return;
+    }
+
     List<String> argsList = Lists.newArrayList("-vvvv",
-                          "--no-log-setup",
-                          "--http", masterEndpoint,
-                          "--admin=" + masterAdminPort,
-                          "--name", TEST_MASTER,
-                          "--zk", zk.connectString());
+        "--no-log-setup",
+        "--http", getMasterEndpoint(),
+        "--admin=" + getMasterAdminPort(),
+        "--name", TEST_MASTER,
+        "--zk", zk.connectString());
     argsList.addAll(asList(args));
     startMaster(argsList.toArray(new String[argsList.size()]));
   }
 
   AgentMain startDefaultAgent(final String host, final String... args)
       throws Exception {
+    if (isIntegration()) {
+      Preconditions.checkArgument(args.length == 0,
+          "cannot start default agent in integration test with arguments passed " + args.length);
+      return null;
+    }
     final String stateDir = agentStateDirs.resolve(host).toString();
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",
@@ -504,7 +489,7 @@ public abstract class SystemTestBase {
 
   String cli(final String command, final String sub, final List<String> args)
       throws Exception {
-    final List<String> commands = asList(command, sub, "-z", masterEndpoint, "--no-log-setup");
+    final List<String> commands = asList(command, sub, "-z", getMasterEndpoint(), "--no-log-setup");
     final List<String> allArgs = newArrayList(concat(commands, args));
     return main(allArgs).toString();
   }
@@ -626,8 +611,7 @@ public abstract class SystemTestBase {
         final String output = cli("job", "status", "--json", jobId.toString());
         final Map<JobId, JobStatus> statusMap;
         try {
-          statusMap = Json.read(output, new TypeReference<Map<JobId, JobStatus>>() {
-          });
+          statusMap = Json.read(output, new TypeReference<Map<JobId, JobStatus>>() {});
         } catch (IOException e) {
           return null;
         }
@@ -726,7 +710,7 @@ public abstract class SystemTestBase {
   }
 
   HeliosClient defaultClient() {
-    return client(TEST_USER, masterEndpoint);
+    return client(TEST_USER, getMasterEndpoint());
   }
 
   HeliosClient client(final String user, final String endpoint) {
@@ -738,15 +722,23 @@ public abstract class SystemTestBase {
     return client;
   }
 
-  public int masterPort() {
+  public int getMasterPort() {
     return masterPort;
   }
 
-  public int masterAdminPort() {
+  int getMasterAdminPort() {
     return masterAdminPort;
   }
 
-  public String masterEndpoint() {
-    return masterEndpoint;
+  public String getTestHost() throws InterruptedException, ExecutionException {
+    if (integrationMode) {
+      if (testHost == null) {
+        final List<String> hosts = defaultClient().listHosts().get();
+        testHost = hosts.get(new SecureRandom().nextInt(hosts.size()));
+      }
+      return testHost;
+    } else {
+      return TEST_HOST;
+    }
   }
 }

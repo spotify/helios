@@ -34,6 +34,7 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
+  private final int EXTERNAL_PORT = temporaryPorts.localPort("external");
 
   @Mock
   public ServiceRegistrar registrar;
@@ -59,11 +60,11 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
 
     final HeliosClient client = defaultClient();
 
-    startDefaultAgent(TEST_HOST, "--service-registry=" + registryAddress);
-    awaitHostStatus(client, TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(getTestHost(), "--service-registry=" + registryAddress);
+    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     final ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
-        "PORT_NAME", PortMapping.of(INTERNAL_PORT, externalPort1));
+        "PORT_NAME", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
 
     final String serviceName = "SERVICE";
     final String serviceProto = "PROTO";
@@ -74,8 +75,8 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
                                   EMPTY_ENV, portMapping, registration);
 
-    deployJob(jobId, TEST_HOST);
-    awaitJobState(client, TEST_HOST, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    deployJob(jobId, getTestHost());
+    awaitJobState(client, getTestHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
     verify(registrar, timeout((int) MINUTES.toMillis(LONG_WAIT_MINUTES))).register(registrationCaptor.capture());
     final ServiceRegistration serviceRegistration = registrationCaptor.getValue();
@@ -84,6 +85,6 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
 
     assertEquals("wrong service", serviceName, endpoint.getName());
     assertEquals("wrong protocol", serviceProto, endpoint.getProtocol());
-    assertEquals("wrong port", endpoint.getPort(), externalPort1);
+    assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT);
   }
 }

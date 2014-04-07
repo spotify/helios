@@ -30,17 +30,17 @@ public class JobWatchExactTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(TEST_HOST);
-    awaitHostStatus(TEST_HOST, UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(getTestHost());
+    awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
     final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND);
 
     // deploy
-    deployJob(jobId, TEST_HOST);
+    deployJob(jobId, getTestHost());
 
-    final String[] commands = new String[]{"job", "watch", "--exact", "-z", masterEndpoint(),
-                                           "--no-log-setup", jobId.toString(), TEST_HOST,
+    final String[] commands = new String[]{"job", "watch", "--exact", "-z", getMasterEndpoint(),
+                                           "--no-log-setup", jobId.toString(), getTestHost(),
                                            "FAKE_TEST_AGENT"};
 
     final AtomicBoolean success = new AtomicBoolean(false);
@@ -48,6 +48,7 @@ public class JobWatchExactTest extends SystemTestBase {
 
     final long deadline = System.currentTimeMillis() + MINUTES.toMillis(LONG_WAIT_MINUTES);
 
+    final String testHost = getTestHost();
     final OutputStream out = new OutputStream() {
       boolean seenKnownState;
       boolean seenUnknownAgent;
@@ -71,7 +72,7 @@ public class JobWatchExactTest extends SystemTestBase {
         outputLines.add(line);
         counter = 0;
 
-        if (line.contains(TEST_HOST) && !line.contains("UNKNOWN")) {
+        if (line.contains(testHost) && !line.contains("UNKNOWN")) {
           seenKnownState = true;
         }
         if (line.contains("FAKE_TEST_AGENT") && line.contains("UNKNOWN")) {

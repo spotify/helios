@@ -23,6 +23,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Optional.fromNullable;
 import static com.spotify.helios.common.descriptors.Goal.START;
@@ -98,7 +99,9 @@ public class ClusterDeploymentTest extends SystemTestBase {
     }
   }
 
-  private String host(final int i) {return TEST_HOST + i;}
+  private String host(final int i) throws InterruptedException, ExecutionException {
+    return getTestHost() + i;
+  }
 
   private void deploy(final Job job, final String host) throws Exception {
     Futures.addCallback(client.deploy(Deployment.of(job.getId(), START), host),
