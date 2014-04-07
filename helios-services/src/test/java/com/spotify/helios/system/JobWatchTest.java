@@ -51,6 +51,13 @@ public class JobWatchTest extends SystemTestBase {
     final long deadline = System.currentTimeMillis() + MINUTES.toMillis(LONG_WAIT_MINUTES);
 
     final String testHost = getTestHost();
+    final String abbreviatedTestHost;
+    if (testHost.length() > 10) {
+      abbreviatedTestHost = testHost.substring(0, 10);
+    } else {
+      abbreviatedTestHost = testHost;
+    }
+
     final OutputStream out = new OutputStream() {
       int counter = 0;
       final byte[] lineBuffer = new byte[8192];
@@ -72,7 +79,7 @@ public class JobWatchTest extends SystemTestBase {
         outputLines.add(line);
         counter = 0;
 
-        if (line.contains(testHost) && !line.contains("UNKNOWN")) {
+        if (line.contains(abbreviatedTestHost) && !line.contains("UNKNOWN")) {
           success.set(true);
           throw new IOException("output closed");
         }

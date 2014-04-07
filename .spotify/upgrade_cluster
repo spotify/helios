@@ -1,0 +1,14 @@
+#!/bin/bash -x
+AGENT_HOSTNAME=$(cat test.AGENT_HOSTNAME)
+MASTER_HOSTNAME=$(cat test.MASTER_HOSTNAME)
+
+# only need strict checking off for first connect, after that, it's been added to the known_hosts file
+scp -o "StrictHostKeyChecking no" helios-services/target/helios-{services,agent}*.deb spotify-buildagent@${AGENT_HOSTNAME}:
+scp -o "StrictHostKeyChecking no" helios-services/target/helios-{services,master}*.deb spotify-buildagent@${MASTER_HOSTNAME}:
+
+#strictly speaking unnecessary, but really nice to have
+scp helios-tools/target/helios_*.deb spotify-buildagent@${AGENT_HOSTNAME}:
+scp helios-tools/target/helios_*.deb spotify-buildagent@${MASTER_HOSTNAME}:
+
+ssh -A spotify-buildagent@${AGENT_HOSTNAME} 'sudo dpkg -i helios-{services,agent}*.deb'
+ssh -A spotify-buildagent@${MASTER_HOSTNAME} 'sudo dpkg -i helios-{services,master}*.deb'

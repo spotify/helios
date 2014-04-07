@@ -57,7 +57,7 @@ spcloud create \
 
 spcloud user \
       --project=$PROJECT \
-      --add=dano,drewc,philipcristiano,rohan,ryan
+      --add=dano,drewc,philipcristiano,rohan,ryan,spotify-buildagent
 
 MASTER_HOSTNAME=awseu3-heliosmaster-a1.helios-ci-$ID.cloud.spotify.net
 AGENT_HOSTNAME=awseu3-heliosagent-a1.helios-ci-$ID.cloud.spotify.net
@@ -69,4 +69,7 @@ DEADLINE=$((START_TIME + MAXTIMEWAIT))
 waitforhealth http://$MASTER_HOSTNAME:5802/healthcheck $DEADLINE
 waitforhealth http://$AGENT_HOSTNAME:5804/healthcheck $DEADLINE
 
+echo tcp://${MASTER_HOSTNAME}:5801 > test.HELIOS_ENDPOINT
+echo ${MASTER_HOSTNAME} > test.MASTER_HOSTNAME
+echo ${AGENT_HOSTNAME} > test.AGENT_HOSTNAME
 #spcloud destroy-project --project=helios-ci-$ID --recursive

@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableList;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.HostStatus.Status;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
@@ -32,7 +33,8 @@ public class JobHistoryTest extends SystemTestBase {
     final HeliosClient client = defaultClient();
 
     startDefaultAgent(getTestHost());
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "ubuntu:12.04", ImmutableList.of("/bin/true"));
+    awaitHostStatus(getTestHost(), Status.UP, LONG_WAIT_MINUTES, MINUTES);
+    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", ImmutableList.of("/bin/true"));
     deployJob(jobId, getTestHost());
     awaitJobState(client, getTestHost(), jobId, EXITED, LONG_WAIT_MINUTES, MINUTES);
     undeployJob(jobId, getTestHost());
