@@ -8,7 +8,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -68,8 +67,8 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
         }
       }
       final String connect = connectString(zkAddresses);
-      final RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
-      curator = CuratorFrameworkFactory.newClient(connect, 5000, 1000, retryPolicy);
+      final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
+      curator = CuratorFrameworkFactory.newClient(connect, 100, 500, retryPolicy);
       curator.start();
       awaitUp(5, TimeUnit.MINUTES);
     } catch (Exception e) {

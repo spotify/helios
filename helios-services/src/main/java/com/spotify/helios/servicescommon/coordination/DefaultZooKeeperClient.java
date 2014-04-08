@@ -1,16 +1,14 @@
 package com.spotify.helios.servicescommon.coordination;
 
-import com.google.common.collect.Lists;
-
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.Op;
-import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
@@ -24,17 +22,13 @@ import java.util.List;
 
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.collect.Lists.reverse;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
-import static org.apache.zookeeper.CreateMode.PERSISTENT;
-import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 public class DefaultZooKeeperClient implements ZooKeeperClient {
 
-  private static final byte[] EMPTY = new byte[0];
-
   private static final Logger log = LoggerFactory.getLogger(DefaultZooKeeperClient.class);
-  public static final int ANY_VERSION = -1;
 
   private final CuratorFramework client;
 
@@ -43,26 +37,18 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
-  public void start() {
-    client.start();
-  }
-
-  @Override
-  public void close() {
-    client.close();
-  }
-
-  @Override
   public CuratorFramework getCuratorFramework() {
     return client;
   }
 
   @Override
+  /** {@inheritDoc} */
   public void ensurePath(final String path) throws KeeperException {
     ensurePath(path, false);
   }
 
   @Override
+  /** {@inheritDoc} */
   public void ensurePath(final String path, final boolean excludingLast) throws KeeperException {
     EnsurePath ensurePath = new EnsurePath(path);
     if (excludingLast) {
@@ -109,6 +95,38 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
+  public void start() {
+    client.start();
+  }
+
+  @Override
+  public void close() {
+    client.close();
+  }
+
+  @Override
+  public PersistentEphemeralNode persistentEphemeralNode(final String path,
+                                                         final PersistentEphemeralNode.Mode mode,
+                                                         final byte[] data) {
+    return new PersistentEphemeralNode(client, mode, path, data);
+  }
+
+  @Override
+  public Listenable<ConnectionStateListener> getConnectionStateListenable() {
+    return client.getConnectionStateListenable();
+  }
+
+  @Override
+  public ZooKeeper.States getState() throws KeeperException {
+    try {
+      return client.getZookeeperClient().getZooKeeper().getState();
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
   public List<String> getChildren(final String path) throws KeeperException {
     try {
       return client.getChildren().forPath(path);
@@ -119,9 +137,27 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
+  public void deleteRecursive(final String path) throws KeeperException {
+    try {
+      final List<String> nodes = listRecursive(path);
+      if (nodes.isEmpty()) {
+        return;
+      }
+      final CuratorTransactionFinal t = client.inTransaction().check().forPath(path).and();
+      for (final String node : reverse(nodes))  {
+        t.delete().forPath(node).and();
+      }
+      t.commit();
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
   public List<String> listRecursive(final String path) throws KeeperException {
     try {
-      return ZKUtil.listSubTreeBFS(zk(), path);
+      return ZKUtil.listSubTreeBFS(client.getZookeeperClient().getZooKeeper(), path);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
@@ -130,13 +166,18 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void delete(final String path) throws KeeperException {
-    delete(path, ANY_VERSION);
+    try {
+      client.delete().forPath(path);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
   }
 
   @Override
   public void delete(final String path, final int version) throws KeeperException {
     try {
-      zk().delete(path, version);
+      client.getZookeeperClient().getZooKeeper().delete(path, version);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
@@ -146,7 +187,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   public void createAndSetData(final String path, final byte[] data) throws KeeperException {
     try {
-      zk().create(path, data, OPEN_ACL_UNSAFE, PERSISTENT);
+      client.create().forPath(path, data);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
@@ -155,13 +196,18 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void create(final String path) throws KeeperException {
-    createWithMode(path, PERSISTENT);
+    try {
+      client.create().forPath(path);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
   }
 
   @Override
   public void createWithMode(final String path, final CreateMode mode) throws KeeperException {
     try {
-      zk().create(path, EMPTY, OPEN_ACL_UNSAFE, mode);
+      client.create().withMode(mode).forPath(path);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
@@ -171,7 +217,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   public void setData(final String path, final byte[] data) throws KeeperException {
     try {
-      zk().setData(path, data, ANY_VERSION);
+      client.setData().forPath(path, data);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
@@ -189,25 +235,13 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
-  public Listenable<ConnectionStateListener> getConnectionStateListenable() {
-    return client.getConnectionStateListenable();
-  }
-
-  @Override
-  public PersistentEphemeralNode persistentEphemeralNode(final String path,
-                                                         final PersistentEphemeralNode.Mode mode,
-                                                         final byte[] data) {
-    return new PersistentEphemeralNode(client, mode, path, data);
-  }
-
-  @Override
   public PersistentPathChildrenCache pathChildrenCache(final String path, final Path snapshotFile)
       throws IOException {
     return new PersistentPathChildrenCache(client, path, snapshotFile);
   }
 
   @Override
-  public Collection<OpResult> transaction(final List<ZooKeeperOperation> operations)
+  public Collection<CuratorTransactionResult> transaction(final List<ZooKeeperOperation> operations)
       throws KeeperException {
 
     log.debug("transaction: {}", operations);
@@ -217,7 +251,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     }
 
     // Assemble transaction
-    final List<Op> transaction = Lists.newArrayList();
+    final CuratorTransactionFinal transaction = (CuratorTransactionFinal) client.inTransaction();
     for (final ZooKeeperOperation operation : operations) {
       try {
         operation.register(transaction);
@@ -228,7 +262,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
 
     // Commit
     try {
-      return zk().multi(transaction);
+      return transaction.commit();
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
@@ -236,17 +270,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
-  public Collection<OpResult> transaction(final ZooKeeperOperation... operations)
+  public Collection<CuratorTransactionResult> transaction(final ZooKeeperOperation... operations)
       throws KeeperException {
     return transaction(asList(operations));
-  }
-
-  private ZooKeeper zk() throws KeeperException {
-    try {
-      return client.getZookeeperClient().getZooKeeper();
-    } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
-    }
   }
 }

@@ -1,11 +1,13 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.IOException;
@@ -37,15 +39,17 @@ public interface ZooKeeperClient {
 
   Stat stat(String path) throws KeeperException;
 
+  void deleteRecursive(String path) throws KeeperException;
+
   List<String> listRecursive(String path) throws KeeperException;
 
   void create(String path) throws KeeperException;
 
   PersistentPathChildrenCache pathChildrenCache(String path, Path snapshotFile) throws IOException;
 
-  Collection<org.apache.zookeeper.OpResult> transaction(List<ZooKeeperOperation> operations) throws KeeperException;
+  Collection<CuratorTransactionResult> transaction(List<ZooKeeperOperation> operations) throws KeeperException;
 
-  Collection<org.apache.zookeeper.OpResult> transaction(ZooKeeperOperation... operations) throws KeeperException;
+  Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations) throws KeeperException;
 
   void delete(String path, int version) throws KeeperException;
 
@@ -54,6 +58,8 @@ public interface ZooKeeperClient {
   Stat exists(String path) throws KeeperException;
 
   Listenable<ConnectionStateListener> getConnectionStateListenable();
+
+  ZooKeeper.States getState() throws KeeperException;
 
   void start();
 

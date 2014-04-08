@@ -1,12 +1,8 @@
 package com.spotify.helios.servicescommon.coordination;
 
-import org.apache.zookeeper.Op;
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
 
-import java.util.Collection;
 import java.util.Map;
-
-import static org.apache.zookeeper.CreateMode.PERSISTENT;
-import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
 public class CreateMany implements ZooKeeperOperation {
 
@@ -17,9 +13,9 @@ public class CreateMany implements ZooKeeperOperation {
   }
 
   @Override
-  public void register(final Collection<Op> operations) throws Exception {
+  public void register(final CuratorTransaction transaction) throws Exception {
     for (final Map.Entry<String, byte[]> entry : nodes.entrySet()) {
-      operations.add(Op.create(entry.getKey(), entry.getValue(), OPEN_ACL_UNSAFE, PERSISTENT));
+      transaction.create().forPath(entry.getKey(), entry.getValue());
     }
   }
 

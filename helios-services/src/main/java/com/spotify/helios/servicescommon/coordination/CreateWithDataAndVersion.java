@@ -2,24 +2,28 @@ package com.spotify.helios.servicescommon.coordination;
 
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 
-public class CheckWithVersion implements ZooKeeperOperation {
+class CreateWithDataAndVersion implements ZooKeeperOperation {
 
   private final String path;
+  private final byte[] data;
   private final int version;
 
-  public CheckWithVersion(final String path, final int version) {
+  CreateWithDataAndVersion(final String path, final byte[] data, final int version) {
     this.path = path;
+    this.data = data;
     this.version = version;
   }
 
   @Override
   public void register(final CuratorTransaction transaction) throws Exception {
-    transaction.check().withVersion(version).forPath(path);
+    transaction
+        .create().forPath(path).and()
+        .setData().withVersion(version).forPath(path, data);
   }
 
   @Override
   public String toString() {
-    return "CheckWithVersion{" +
+    return "CreateWithDataAndVersion{" +
            "path='" + path + '\'' +
            ", version=" + version +
            '}';

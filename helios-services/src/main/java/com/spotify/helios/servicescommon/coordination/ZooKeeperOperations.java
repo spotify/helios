@@ -34,6 +34,16 @@ public class ZooKeeperOperations {
     return create(path, data.toJsonBytes());
   }
 
+  public static ZooKeeperOperation create(final String path, final Descriptor data,
+                                          final int version) {
+    return create(path, data.toJsonBytes(), version);
+  }
+
+  public static ZooKeeperOperation create(final String path, final byte[] bytes,
+                                          final int version) {
+    return new CreateWithDataAndVersion(path, bytes, version);
+  }
+
   public static ZooKeeperOperation create(final String path, final byte[] bytes) {
     return new CreateWithData(path, bytes);
   }

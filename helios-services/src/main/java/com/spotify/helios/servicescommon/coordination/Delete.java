@@ -1,12 +1,8 @@
 package com.spotify.helios.servicescommon.coordination;
 
-import org.apache.zookeeper.Op;
-
-import java.util.Collection;
+import org.apache.curator.framework.api.transaction.CuratorTransaction;
 
 class Delete implements ZooKeeperOperation {
-
-  private static final int ANY_VERSION = -1;
 
   private final String path;
 
@@ -15,8 +11,8 @@ class Delete implements ZooKeeperOperation {
   }
 
   @Override
-  public void register(final Collection<Op> operations) throws Exception {
-    operations.add(Op.delete(path, ANY_VERSION));
+  public void register(final CuratorTransaction transaction) throws Exception {
+    transaction.delete().forPath(path);
   }
 
   @Override

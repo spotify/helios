@@ -1,11 +1,13 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.ZooKeeper;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.IOException;
@@ -118,6 +120,16 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
+  public void deleteRecursive(String path) throws KeeperException {
+    try {
+      client.deleteRecursive(path);
+    } catch (KeeperException e) {
+      reporter.checkException(e, tag, "deleteRecursive");
+      throw e;
+    }
+  }
+
+  @Override
   public List<String> listRecursive(String path) throws KeeperException {
     try {
       return client.listRecursive(path);
@@ -144,7 +156,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
-  public Collection<org.apache.zookeeper.OpResult> transaction(List<ZooKeeperOperation> operations)
+  public Collection<CuratorTransactionResult> transaction(List<ZooKeeperOperation> operations)
       throws KeeperException {
     try {
       return client.transaction(operations);
@@ -155,7 +167,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
-  public Collection<org.apache.zookeeper.OpResult> transaction(ZooKeeperOperation... operations)
+  public Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations)
       throws KeeperException {
     try {
       return client.transaction(operations);
@@ -198,6 +210,16 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   @Override
   public Listenable<ConnectionStateListener> getConnectionStateListenable() {
     return client.getConnectionStateListenable();
+  }
+
+  @Override
+  public ZooKeeper.States getState() throws KeeperException {
+    try {
+      return client.getState();
+    } catch (KeeperException e) {
+      reporter.checkException(e, tag, "getState");
+      throw e;
+    }
   }
 
   @Override
