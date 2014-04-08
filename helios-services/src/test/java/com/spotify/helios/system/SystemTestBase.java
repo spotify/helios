@@ -292,7 +292,7 @@ public abstract class SystemTestBase {
       final JobStatus st = c.jobStatus(jobId).get();
       final Set<String> hosts = st.getDeployments().keySet();
       for (String host : hosts) {
-        System.err.println("Undeploying job " + jobId);
+        log.info("Undeploying job " + jobId);
         undeploys.add(c.undeploy(jobId, host));
       }
     }
@@ -303,7 +303,7 @@ public abstract class SystemTestBase {
       if (!jobId.toString().startsWith(PREFIX)) {
         continue;
       }
-      System.err.println("Deleting job " + jobId);
+      log.info("Deleting job " + jobId);
       deletes.add(c.deleteJob(jobId));
     }
     Futures.allAsList(deletes);
