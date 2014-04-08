@@ -22,6 +22,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.common.Version.POM_VERSION;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_HEADER;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -118,7 +119,7 @@ public class VersionResponseFilterTest extends SystemTestBase {
     headers.put("Content-Type", asList("application/json"));
     headers.put("Charset", asList("utf-8"));
     if (version != null) {
-      headers.put("X-Helios-Version", asList(version));
+      headers.put(HELIOS_VERSION_HEADER, asList(version));
     }
     final URI uri = URI.create(getMasterEndpoint() + "/version");
     final HttpURLConnection connection = connect(uri,  headers);

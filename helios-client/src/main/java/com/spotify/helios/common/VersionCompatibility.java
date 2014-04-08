@@ -2,9 +2,9 @@ package com.spotify.helios.common;
 
 //* Using the meanings from http://semver.org
 public class VersionCompatibility {
-  public static final String HELIOS_VERSION_HEADER = "X-Helios-Version";
-  public static final String HELIOS_SERVER_VERSION_HEADER = "X-Helios-Server-Version";
-  public static final String HELIOS_VERSION_STATUS_HEADER = "X-Helios-Version-Status";
+  public static final String HELIOS_VERSION_HEADER = "Helios-Version";
+  public static final String HELIOS_SERVER_VERSION_HEADER = "Helios-Server-Version";
+  public static final String HELIOS_VERSION_STATUS_HEADER = "Helios-Version-Status";
 
   public enum Status {
     EQUAL,
