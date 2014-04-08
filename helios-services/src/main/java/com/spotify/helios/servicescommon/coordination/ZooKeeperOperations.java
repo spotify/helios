@@ -22,6 +22,10 @@ public class ZooKeeperOperations {
     return new Check(path);
   }
 
+  public static ZooKeeperOperation check(final Node node) {
+    return new CheckWithVersion(node.getPath(), node.getStat().getVersion());
+  }
+
   public static ZooKeeperOperation create(final Map<String, byte[]> nodes) {
     return new CreateMany(nodes);
   }

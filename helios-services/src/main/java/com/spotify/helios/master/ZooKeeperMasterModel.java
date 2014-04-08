@@ -22,10 +22,10 @@ import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -47,6 +47,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.UUID;
 
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.collect.Lists.reverse;
@@ -168,14 +169,23 @@ public class ZooKeeperMasterModel implements MasterModel {
   public void addJob(final Job job) throws JobExistsException {
     log.info("adding job: {}", job);
     final JobId id = job.getId();
+    final UUID operationId = UUID.randomUUID();
+    final String creationPath = Paths.configJobCreation(id, operationId);
+    final ZooKeeperClient client = provider.get("addJob");
     try {
-      final ZooKeeperClient client = provider.get("addJob");
-      client.ensurePath(Paths.historyJob(id));
-      client.transaction(create(Paths.configJob(id), job),
-                         create(Paths.configJobRefShort(id), id),
-                         create(Paths.configJobHosts(id)));
-    } catch (final NodeExistsException e) {
-      throw new JobExistsException(id.toString());
+      try {
+        client.ensurePath(Paths.historyJob(id));
+        client.transaction(create(Paths.configJob(id), job),
+                           create(Paths.configJobRefShort(id), id),
+                           create(Paths.configJobHosts(id)),
+                           create(creationPath));
+      } catch (final NodeExistsException e) {
+        if (client.exists(creationPath) != null) {
+          // The job was created, we're done here
+          return;
+        }
+        throw new JobExistsException(id.toString());
+      }
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException("adding job " + job + " failed", e);
     }
@@ -323,10 +333,15 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public Job removeJob(final JobId id) throws JobDoesNotExistException, JobStillDeployedException {
     log.info("removing job: id={}", id);
-    final Job old = getJob(id);
     final ZooKeeperClient client = provider.get("removeJob");
+    final Job job = getJob(client, id);
+    if (job == null) {
+      throw new JobDoesNotExistException(id);
+    }
     try {
-      client.transaction(delete(Paths.configJobHosts(id)),
+      final UUID jobCreationOperationId = getJobCreation(client, id);
+      client.transaction(delete(Paths.configJobCreation(id, jobCreationOperationId)),
+                         delete(Paths.configJobHosts(id)),
                          delete(Paths.configJobRefShort(id)),
                          delete(Paths.configJob(id)));
     } catch (final NoNodeException e) {
@@ -337,7 +352,19 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new HeliosRuntimeException("removing job " + id + " failed", e);
     }
 
-    return old;
+    return job;
+  }
+
+  private UUID getJobCreation(final ZooKeeperClient client, final JobId id)
+      throws KeeperException {
+    final String parent = Paths.configHostJobCreationParent(id);
+    final List<String> children = client.getChildren(parent);
+    for (final String child : children) {
+      if (Paths.isConfigJobCreation(id, parent, child)) {
+        return Paths.configJobCreationId(id, parent, child);
+      }
+    }
+    return null;
   }
 
   @Override
@@ -365,8 +392,10 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new JobDoesNotExistException(id);
     }
 
+    final UUID operationId = UUID.randomUUID();
     final String jobPath = Paths.configJob(id);
     final String taskPath = Paths.configHostJob(host, id);
+    final String taskCreationPath = Paths.configHostJobCreation(host, id, operationId);
 
     final List<Integer> staticPorts = staticPorts(job);
     final Map<String, byte[]> portNodes = Maps.newHashMap();
@@ -380,9 +409,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     List<ZooKeeperOperation> operations = Lists.newArrayList(
         check(jobPath), create(portNodes), create(Paths.configJobHost(id, host)));
 
-   // Attempt to read a task here.  If it's goal is UNDEPLOY, it's as good as not existing
+    // Attempt to read a task here.  If it's goal is UNDEPLOY, it's as good as not existing
     try {
-      Node existing = client.getNode(taskPath);
+      final Node existing = client.getNode(taskPath);
       byte[] bytes = existing.getBytes();
       Task readTask = Json.read(bytes, Task.class);
       if (readTask.getGoal() != Goal.UNDEPLOY) {
@@ -392,6 +421,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       operations.add(set(taskPath, task));
     } catch (NoNodeException e) {
       operations.add(create(taskPath, task));
+      operations.add(create(taskCreationPath));
     } catch (IOException | KeeperException e) {
       throw new HeliosRuntimeException("reading existing task description failed", e);
     }
@@ -401,6 +431,15 @@ public class ZooKeeperMasterModel implements MasterModel {
       client.transaction(operations);
       log.info("deployed {}: {} (retry={})", deployment, host, count);
     } catch (NoNodeException e) {
+      // Check for conflict due to transaction retry
+      try {
+        if (client.exists(taskCreationPath) != null) {
+          // Our creation operation node existed, we're done here
+          return;
+        }
+      } catch (KeeperException ex) {
+        throw new HeliosRuntimeException("checking job deployment failed", ex);
+      }
       // Either the job or the host went away
       assertJobExists(client, id);
       assertHostExists(client, host);
@@ -468,9 +507,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("updateDeployment");
 
     final JobId jobId = deployment.getJobId();
-    final Job descriptor = getJob(client, jobId);
+    final Job job = getJob(client, jobId);
 
-    if (descriptor == null) {
+    if (job == null) {
       throw new JobNotDeployedException(host, jobId);
     }
 
@@ -478,7 +517,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     assertTaskExists(client, host, deployment.getJobId());
 
     final String path = Paths.configHostJob(host, jobId);
-    final Task task = new Task(descriptor, deployment.getGoal());
+    final Task task = new Task(job, deployment.getGoal());
     try {
       client.setData(path, task.toJsonBytes());
     } catch (Exception e) {

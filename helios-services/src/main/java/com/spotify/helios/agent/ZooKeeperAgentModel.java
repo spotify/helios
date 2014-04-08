@@ -69,7 +69,8 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
                                                                     Paths.statusHostJobs(host));
     final Path removerFile = stateDirectory.resolve(TASK_REMOVER_FILENAME);
     this.taskRemover = ZooKeeperPersistentNodeRemover.create("agent-model-task-remover", provider,
-                                                             removerFile, TASK_GOAL_IS_UNDEPLOY);
+                                                             removerFile, TASK_GOAL_IS_UNDEPLOY,
+                                                             true);
     this.historyWriter = new QueueingHistoryWriter(host, client,
         stateDirectory.resolve(TASK_HISTORY_FILENAME));
   }

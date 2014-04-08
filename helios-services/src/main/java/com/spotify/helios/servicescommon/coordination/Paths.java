@@ -6,17 +6,19 @@ package com.spotify.helios.servicescommon.coordination;
 
 import com.spotify.helios.common.descriptors.JobId;
 
+import java.util.UUID;
+
 public class Paths {
 
   private static final String UP = "up";
-  public static final String CONFIG = "config";
-  public static final String STATUS = "status";
-  public static final String JOBS = "jobs";
-  public static final String JOBREFS = "jobrefs";
-  public static final String HOSTS = "hosts";
-  public static final String EVENTS = "events";
-  public static final String MASTERS = "masters";
-  public static final String HISTORY = "history";
+  private static final String CONFIG = "config";
+  private static final String STATUS = "status";
+  private static final String JOBS = "jobs";
+  private static final String JOBREFS = "jobrefs";
+  private static final String HOSTS = "hosts";
+  private static final String EVENTS = "events";
+  private static final String MASTERS = "masters";
+  private static final String HISTORY = "history";
   private static final String HOSTINFO = "hostinfo";
   private static final String AGENTINFO = "agentinfo";
   private static final String PORTS = "ports";
@@ -29,6 +31,7 @@ public class Paths {
   private static final PathFactory STATUS_HOSTS = new PathFactory("/", STATUS, HOSTS);
   private static final PathFactory STATUS_MASTERS = new PathFactory("/", STATUS, MASTERS);
   private static final PathFactory HISTORY_JOBS = new PathFactory("/", HISTORY, JOBS);
+  private static final String CREATION_PREFIX = "creation-";
 
   public static String configHosts() {
     return CONFIG_HOSTS.path();
@@ -44,6 +47,23 @@ public class Paths {
 
   public static String configJob(final JobId id) {
     return CONFIG_JOBS.path(id.toString());
+  }
+
+  public static boolean isConfigJobCreation(final JobId id, final String parent, final String child) {
+    return child.startsWith(CREATION_PREFIX);
+  }
+
+  public static UUID configJobCreationId(final JobId id, final String parent, final String child) {
+    return UUID.fromString(child.substring(CREATION_PREFIX.length()));
+  }
+
+  public static String configHostJobCreationParent(final JobId id) {
+    return configJob(id);
+  }
+
+  public static String configJobCreation(final JobId id, final UUID operationId) {
+    final String name = CREATION_PREFIX + operationId;
+    return CONFIG_JOBS.path(id.toString(), name);
   }
 
   public static String configJobRefShort(final JobId id) {
@@ -72,6 +92,11 @@ public class Paths {
 
   public static String configHostJob(final String host, final JobId jobId) {
     return CONFIG_HOSTS.path(host, JOBS, jobId.toString());
+  }
+
+  public static String configHostJobCreation(final String host, final JobId id,
+                                             final UUID operationId) {
+    return CONFIG_HOSTS.path(host, JOBS, id.toString(), CREATION_PREFIX + operationId);
   }
 
   public static String configHostPorts(final String host) {
