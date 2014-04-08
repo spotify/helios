@@ -27,6 +27,7 @@ import com.spotify.helios.cli.command.JobUndeployCommand;
 import com.spotify.helios.cli.command.JobWatchCommand;
 import com.spotify.helios.cli.command.MasterListCommand;
 import com.spotify.helios.common.LoggingConfig;
+import com.spotify.helios.common.Version;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -59,6 +60,7 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class CliParser {
 
+  private static final String NAME_AND_VERSION = "Spotify Helios CLI " + Version.POM_VERSION;
   private static final String HELP_JIRA =
       "Report improvements/bugs at https://jira.spotify.net/browse/HEL";
   private static final String HELP_WIKI =
@@ -78,7 +80,8 @@ public class CliParser {
 
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("helios")
         .defaultHelp(true)
-        .description(format("%s%n%n%s%n%s", "Spotify Helios CLI", HELP_JIRA, HELP_WIKI));
+        .version(NAME_AND_VERSION)
+        .description(format("%s%n%n%s%n%s", NAME_AND_VERSION, HELP_JIRA, HELP_WIKI));
 
     cliConfig = CliConfig.fromUserConfig();
 
@@ -267,6 +270,10 @@ public class CliParser {
 
       verbose = addArgument("-v", "--verbose")
           .action(Arguments.count());
+
+      addArgument("--version")
+          .action(Arguments.version())
+          .help("print version");
 
       jsonArg = addArgument("--json")
           .action(storeTrue())
