@@ -699,11 +699,13 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     // TODO (dano): is this safe? can e.g. the ports of an undeployed job collide with a new deployment?
 
-    updateDeployment(host, Deployment.of(jobId, Goal.UNDEPLOY));
+    final Job job = getJob(client, jobId);
+    final String path = Paths.configHostJob(host, jobId);
+    final Task task = new Task(job, UNDEPLOY);
     final List<ZooKeeperOperation> operations = Lists.newArrayList(
+        set(path, task.toJsonBytes()),
         delete(Paths.configJobHost(jobId, host)));
 
-    final Job job = getJob(jobId);
     final List<Integer> staticPorts = staticPorts(job);
     for (int port : staticPorts) {
         operations.add(delete(Paths.configHostPort(host, port)));
