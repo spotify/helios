@@ -68,7 +68,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
       }
       final String connect = connectString(zkAddresses);
       final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
-      curator = CuratorFrameworkFactory.newClient(connect, 100, 500, retryPolicy);
+      curator = CuratorFrameworkFactory.newClient(connect, 500, 500, retryPolicy);
       curator.start();
       awaitUp(5, TimeUnit.MINUTES);
     } catch (Exception e) {
