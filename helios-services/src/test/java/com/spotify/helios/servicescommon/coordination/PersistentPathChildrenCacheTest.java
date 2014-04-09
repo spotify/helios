@@ -85,10 +85,6 @@ public class PersistentPathChildrenCacheTest {
 
   @Test
   public void verifyNodesAreRetainedWhenZKGoesDown() throws Exception {
-    cache = new PersistentPathChildrenCache(zk.curator(), PATH, stateFile);
-    cache.addListener(listener);
-    cache.startAsync().awaitRunning();
-
     // Create two nodes
     final String FOO1 = "/foos/foo1";
     final String FOO2 = "/foos/foo2";
@@ -123,7 +119,11 @@ public class PersistentPathChildrenCacheTest {
     }).when(listener).connectionStateChanged(any(ConnectionState.class));
     connectionLost.get(5, MINUTES);
 
-    assertEquals(paths, cache.getNodes().keySet());
+    // Keep probing for 30 seconds to build some confidence that the snapshot is not going away
+    for (int i = 0; i < 30; i++) {
+      Thread.sleep(1000);
+      assertEquals(paths, cache.getNodes().keySet());
+    }
   }
 
   @Test
