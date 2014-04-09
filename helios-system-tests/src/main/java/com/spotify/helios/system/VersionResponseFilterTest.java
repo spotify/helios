@@ -1,4 +1,4 @@
-package com.spotify.helios.master.http;
+package com.spotify.helios.system;
 
 import com.google.common.collect.Maps;
 
@@ -6,8 +6,7 @@ import com.spotify.helios.Polling;
 import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCompatibility;
-import com.spotify.helios.system.Parallelized;
-import com.spotify.helios.system.SystemTestBase;
+import com.spotify.helios.Parallelized;
 
 import org.junit.Before;
 import org.junit.Test;

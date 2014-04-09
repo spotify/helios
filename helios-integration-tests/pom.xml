@@ -17,6 +17,11 @@
   <dependencies>
     <dependency>
       <groupId>com.spotify</groupId>
+      <artifactId>helios-system-tests</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
       <artifactId>helios-client</artifactId>
       <version>${project.version}</version>
     </dependency>

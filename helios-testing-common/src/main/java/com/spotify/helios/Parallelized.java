@@ -2,7 +2,7 @@
  * Copyright (C) 2014 Spotify AB
  */
 
-package com.spotify.helios.system;
+package com.spotify.helios;
 
 import org.junit.runners.BlockJUnit4ClassRunner;
 import org.junit.runners.model.RunnerScheduler;

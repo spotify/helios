@@ -9,7 +9,7 @@ import com.google.common.util.concurrent.SettableFuture;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.ZooKeeperStandaloneServerManager;
-import com.spotify.helios.system.Parallelized;
+import com.spotify.helios.Parallelized;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.framework.state.ConnectionState;

@@ -1,4 +1,4 @@
-package com.spotify.helios.system;
+package com.spotify.helios.agent;
 
 import org.eclipse.jetty.continuation.Continuation;
 import org.eclipse.jetty.continuation.ContinuationSupport;

@@ -9,7 +9,6 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 
-import org.junit.Ignore;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,7 +31,6 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 
-@Ignore
 public class TemporaryPorts extends ExternalResource {
 
   // Keep port locks for the duration of the process by default to avoid e.g. failing tests where

@@ -4,6 +4,7 @@
 
 package com.spotify.helios.system;
 
+import com.spotify.helios.Parallelized;
 import com.spotify.helios.ZooKeeperClusterTestManager;
 
 import org.apache.zookeeper.KeeperException;
