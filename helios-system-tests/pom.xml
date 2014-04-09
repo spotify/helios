@@ -7,16 +7,22 @@
     <version>0.0.12-SNAPSHOT</version>
   </parent>
 
-  <name>Spotify Helios Services</name>
-  <artifactId>helios-services</artifactId>
+  <name>Spotify Helios System Tests</name>
+  <artifactId>helios-system-tests</artifactId>
   <packaging>jar</packaging>
 
-  <properties>
-    <imageName>registry.spotify.net/spotify/${project.artifactId}</imageName>
-  </properties>
-
   <dependencies>
-    <!--compile deps -->
+    <!--compile and test deps are all one since this module only contains tests-->
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>helios-services</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>helios-testing-common</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>com.yammer.dropwizard</groupId>
       <artifactId>dropwizard-core</artifactId>
@@ -147,42 +153,30 @@
       <version>2.3.0</version>
     </dependency>
 
-    <!--test deps-->
-    <dependency>
-      <groupId>com.spotify</groupId>
-      <artifactId>helios-testing-common</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>helios-tools</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>commons-io</groupId>
       <artifactId>commons-io</artifactId>
       <version>2.4</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
       <version>4.11</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
       <version>1.9.5</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.hamcrest</groupId>
       <artifactId>hamcrest-library</artifactId>
       <version>1.3</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>com.spotify</groupId>
@@ -239,109 +233,6 @@
             <goals>
               <goal>shade</goal>
             </goals>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
-        <artifactId>jdeb</artifactId>
-        <groupId>org.vafer</groupId>
-        <version>1.1.1</version>
-        <executions>
-
-          <!--helios-master-->
-          <execution>
-            <id>helios-master</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jdeb</goal>
-            </goals>
-            <configuration>
-              <deb>${project.build.directory}/helios-master_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
-              <controlDir>${project.parent.basedir}/src/deb/helios-master</controlDir>
-              <dataSet>
-                <data>
-                  <src>${basedir}/../bin/helios-master</src>
-                  <type>file</type>
-                  <mapper>
-                    <type>perm</type>
-                    <prefix>/usr/bin/</prefix>
-                    <filemode>755</filemode>
-                  </mapper>
-                </data>
-                <data>
-                  <src>${project.parent.basedir}/src/deb/helios-master/default</src>
-                  <type>file</type>
-                  <dst>/etc/default/helios-master</dst>
-                  <conffile>true</conffile>
-                </data>
-                <data>
-                  <src>${project.parent.basedir}/src/deb/helios-master/upstart</src>
-                  <type>file</type>
-                  <dst>/etc/init/helios-master.conf</dst>
-                  <conffile>true</conffile>
-                </data>
-              </dataSet>
-            </configuration>
-          </execution>
-
-          <!--helios-agent-->
-          <execution>
-            <id>helios-agent</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jdeb</goal>
-            </goals>
-            <configuration>
-              <deb>${project.build.directory}/helios-agent_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
-              <controlDir>${project.parent.basedir}/src/deb/helios-agent</controlDir>
-              <dataSet>
-                <data>
-                  <src>${basedir}/../bin/helios-agent</src>
-                  <type>file</type>
-                  <mapper>
-                    <type>perm</type>
-                    <prefix>/usr/bin/</prefix>
-                    <filemode>755</filemode>
-                  </mapper>
-                </data>
-                <data>
-                  <src>${project.parent.basedir}/src/deb/helios-agent/default</src>
-                  <type>file</type>
-                  <dst>/etc/default/helios-agent</dst>
-                  <conffile>true</conffile>
-                </data>
-                <data>
-                  <src>${project.parent.basedir}/src/deb/helios-agent/upstart</src>
-                  <type>file</type>
-                  <dst>/etc/init/helios-agent.conf</dst>
-                  <conffile>true</conffile>
-                </data>
-              </dataSet>
-            </configuration>
-          </execution>
-
-          <!--helios-services-->
-          <execution>
-            <id>helios-services</id>
-            <phase>package</phase>
-            <goals>
-              <goal>jdeb</goal>
-            </goals>
-            <configuration>
-              <deb>${project.build.directory}/helios-services_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
-              <controlDir>${project.parent.basedir}/src/deb/helios-services</controlDir>
-              <dataSet>
-                <data>
-                  <src>${project.build.directory}/${project.build.finalName}-shaded.jar</src>
-                  <type>file</type>
-                  <mapper>
-                    <type>perm</type>
-                    <prefix>/usr/share/helios/lib/services</prefix>
-                  </mapper>
-                </data>
-              </dataSet>
-            </configuration>
           </execution>
         </executions>
       </plugin>
