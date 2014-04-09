@@ -23,7 +23,8 @@ public class VersionResource {
   @Timed
   @ExceptionMetered
   public String version() {
-    return Version.POM_VERSION;
+    // wrap in double quotes to make valid json
+    return String.format("\"%s\"", Version.POM_VERSION);
   }
 
   @GET
