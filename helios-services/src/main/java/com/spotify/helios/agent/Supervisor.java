@@ -214,6 +214,13 @@ class Supervisor {
   /**
    * Persist job status.
    */
+  private void setStatus(final TaskStatus.State status) {
+    setStatus(status, getContainerId(), null);
+  }
+
+  /**
+   * Persist job status.
+   */
   private void setStatus(final TaskStatus.State status, final String containerId) {
     setStatus(status, containerId, null);
   }
@@ -411,10 +418,7 @@ class Supervisor {
         Thread.sleep(delayMillis);
 
         // Get persisted status
-        final TaskStatus taskStatus = model.getTaskStatus(jobId);
-        final String registeredContainerId = (taskStatus == null)
-                                             ? null
-                                             : taskStatus.getContainerId();
+        final String registeredContainerId = getContainerId();
 
         // Find out if the container is already running
         final ContainerInspectResponse containerInfo =
@@ -428,15 +432,15 @@ class Supervisor {
           // Ensure we have the image
           final String image = job.getImage();
           try {
-            setStatus(PULLING_IMAGE, null);
+            setStatus(PULLING_IMAGE);
             maybePullImage(image);
           } catch (ImagePullFailedException e) {
             throttle = ThrottleState.IMAGE_PULL_FAILED;
-            setStatus(FAILED, null);
+            setStatus(FAILED);
             throw e;
           } catch (ImageMissingException e) {
             throttle = ThrottleState.IMAGE_MISSING;
-            setStatus(FAILED, null);
+            setStatus(FAILED);
             throw e;
           }
           containerId = startContainer(image);
@@ -770,6 +774,13 @@ class Supervisor {
     }
   }
 
+  private String getContainerId() {
+    final String containerId;
+    final TaskStatus taskStatus = model.getTaskStatus(jobId);
+    containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
+    return containerId;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -903,6 +914,7 @@ class Supervisor {
           if (t instanceof InterruptedException || t instanceof InterruptedIOException) {
             log.debug("task runner interrupted");
           } else {
+            setStatus(FAILED);
             log.error("task runner threw exception", t);
           }
           long restartDelay = restartPolicy.getRetryIntervalMillis();
@@ -999,13 +1011,6 @@ class Supervisor {
       }
 
       return false;
-    }
-
-    private String getContainerId() {
-      final String containerId;
-      final TaskStatus taskStatus = model.getTaskStatus(jobId);
-      containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
-      return containerId;
     }
   }
 
