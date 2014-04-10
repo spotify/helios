@@ -26,6 +26,7 @@ import com.spotify.helios.cli.command.JobStopCommand;
 import com.spotify.helios.cli.command.JobUndeployCommand;
 import com.spotify.helios.cli.command.JobWatchCommand;
 import com.spotify.helios.cli.command.MasterListCommand;
+import com.spotify.helios.cli.command.VersionCommand;
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.common.Version;
 
@@ -195,6 +196,10 @@ public class CliParser {
     final Subparsers master = p("master").help("master commands")
         .addSubparsers().title("master commands").metavar("COMMAND").help("additional help");
     new MasterListCommand(p(master, "list"));
+
+    // Version Command
+    final Subparser version = p("version").help("print version of master and client");
+    new VersionCommand(version);
   }
 
   /**

@@ -14,6 +14,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -37,6 +38,7 @@ import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
+import com.spotify.helios.common.protocol.VersionResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,6 +63,7 @@ import java.util.concurrent.TimeoutException;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
+import static com.google.common.util.concurrent.Futures.withFallback;
 import static com.google.common.util.concurrent.MoreExecutors.getExitingExecutorService;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
@@ -384,6 +387,34 @@ public class HeliosClient {
 
   public ListenableFuture<List<String>> listMasters() {
     return get(uri("/masters/"), new TypeReference<List<String>>() {});
+  }
+
+  public ListenableFuture<VersionResponse> version() {
+    // Create a fallback in case we fail to connect to the master. Return null if this happens.
+    // The transform below will handle this and return an appropriate error message to the caller.
+    final ListenableFuture<Response> futureWithFallback = withFallback(
+        request(uri("/version/"), "GET"),
+        new FutureFallback<Response>() {
+          @Override
+          public ListenableFuture<Response> create(Throwable t) throws Exception {
+            return immediateFuture(null);
+          }
+        }
+    );
+
+    return transform(
+        futureWithFallback,
+        new AsyncFunction<Response, VersionResponse>() {
+          @Override
+          public ListenableFuture<VersionResponse> apply(Response reply) throws Exception {
+            final String masterVersion =
+                reply == null ? "Unable to connect to master" :
+                reply.status == HTTP_OK ? Json.read(reply.payload, String.class) :
+                "Master replied with error code " + reply.status;
+
+            return immediateFuture(new VersionResponse(Version.POM_VERSION, masterVersion));
+          }
+        });
   }
 
   public ListenableFuture<CreateJobResponse> createJob(final Job descriptor) {
