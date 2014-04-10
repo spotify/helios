@@ -2,6 +2,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -22,12 +23,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.nio.file.FileSystems;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -37,7 +36,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Preconditions.checkState;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
+/**
+ * Just some breadcrumbs so next time, the person that follows me can understand why things are
+ * the way they are.
+ *
+ * Theory of operation:
+ * 1. saveHistoryItem should never block for any significant amount of time.  Specifically, it
+ *    should not block on ZK being in any particular state, and ideally not while a file write is
+ *    occurring, as the file may get large if ZK has been away for a long time.
+ * 2. We limit each job to max 30 events in memory (and in ZK for that matter)
+ * 3. Maximum of 600 total events, so as not to consume all available memory.
+ */
 public class QueueingHistoryWriter extends AbstractIdleService implements Runnable {
   private static final Logger log = LoggerFactory.getLogger(QueueingHistoryWriter.class);
 
@@ -48,16 +59,12 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
   private final ConcurrentMap<JobId, Deque<TaskStatusEvent>> items;
   private final ScheduledExecutorService zkWriterExecutor =
       MoreExecutors.getExitingScheduledExecutorService(
-          (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1), 0, TimeUnit.SECONDS);
+          (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1), 0, SECONDS);
   private final String hostname;
   private final AtomicInteger count;
   private final ZooKeeperClient client;
-  private final PersistentAtomicReference<ConcurrentMap<JobId, Deque<TaskStatusEvent>>> backingStore;
-
-  public QueueingHistoryWriter(final String hostname, final ZooKeeperClient client,
-                               final String backingFile) throws IOException {
-    this(hostname, client, FileSystems.getDefault().getPath(backingFile));
-  }
+  private final PersistentAtomicReference<ConcurrentMap<JobId, Deque<TaskStatusEvent>>>
+      backingStore;
 
   public QueueingHistoryWriter(final String hostname, final ZooKeeperClient client,
                                final Path backingFile) throws IOException {
@@ -71,6 +78,15 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
           }
         });
     this.items = backingStore.get();
+
+    // Clean out any errant null values.  Normally shouldn't have any, but we did have a few
+    // where it happened, and this will make sure we can get out of a bad state if we get into it.
+    final ImmutableSet<JobId> curKeys = ImmutableSet.copyOf(this.items.keySet());
+    for (JobId key : curKeys) {
+      if (this.items.get(key) == null) {
+        this.items.remove(key);
+      }
+    }
 
     int itemCount = 0;
     for (Deque<TaskStatusEvent> deque : items.values()) {
@@ -91,7 +107,7 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
   }
 
   private void add(TaskStatusEvent item) {
-    // If too many, toss them
+    // If too many "globally", toss them
     while (count.get() >= MAX_TOTAL_SIZE) {
       getNext();
     }
@@ -107,22 +123,26 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
       }
       deque.add(item);
       count.incrementAndGet();
-      try {
-        backingStore.set(items);
-      } catch (IOException e) { // We are best effort after all...
-        log.warn("Failed to write task status event to backing store", e);
-      }
+    }
+
+    try {
+      backingStore.set(items);
+    } catch (IOException e) { // We are best effort after all...
+      log.warn("Failed to write task status event to backing store", e);
     }
   }
 
   private Deque<TaskStatusEvent> getDeque(final JobId key) {
-    final Deque<TaskStatusEvent> deque = items.get(key);
-    if (deque == null) {  // try more assertively to get a deque
-      final ConcurrentLinkedDeque<TaskStatusEvent> newDeque = new ConcurrentLinkedDeque<TaskStatusEvent>();
-      items.putIfAbsent(key, newDeque);
-      return newDeque;
+    synchronized (items) {
+      final Deque<TaskStatusEvent> deque = items.get(key);
+      if (deque == null) {  // try more assertively to get a deque
+        final ConcurrentLinkedDeque<TaskStatusEvent> newDeque =
+            new ConcurrentLinkedDeque<TaskStatusEvent>();
+        items.put(key, newDeque);
+        return newDeque;
+      }
+      return deque;
     }
-    return deque;
   }
 
   public void saveHistoryItem(final JobId jobId, final TaskStatus status) {
@@ -149,22 +169,31 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         return null;
       }
 
-      final Queue<TaskStatusEvent> mappedQueue = items.get(current.getStatus().getJob().getId());
-      if (mappedQueue == null) {
+      final JobId id = current.getStatus().getJob().getId();
+      final Deque<TaskStatusEvent> deque = items.get(id);
+      if (deque == null) {
         // shouldn't happen because we should be the only one pulling items off, but....
         continue;
       }
 
-      synchronized (mappedQueue) {
-        if (!mappedQueue.peek().equals(current)) {
+      synchronized (deque) {
+        if (!deque.peek().equals(current)) {
           // item got rolled off, try again
           continue;
         }
 
         // Pull it off the queue and be paranoid.
-        final TaskStatusEvent newCurrent = mappedQueue.poll();
+        final TaskStatusEvent newCurrent = deque.poll();
         count.decrementAndGet();
-        checkState(current.equals(newCurrent), "current should equal newcurrent");
+        checkState(current.equals(newCurrent), "current should equal newCurrent");
+        // Safe because this is the *only* place we hold these two locks at the same time.
+        synchronized (items) {
+          // Extra paranoia: curDeque should always == deque
+          final Deque<TaskStatusEvent> curDeque = items.get(id);
+          if (curDeque != null && curDeque.isEmpty()) {
+            items.remove(id);
+          }
+        }
         return current;
       }
     }
@@ -183,12 +212,20 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         return;
       }
       queue.push(event);
+      count.incrementAndGet();
     }
   }
 
   private TaskStatusEvent findEldestEvent() {
+    // We don't lock anything because in the worst case, we just put things in out of order which
+    // while not perfect, won't cause any actual harm.  Out of order meaning between jobids, not
+    // within the same job id.  Whether this is the best strategy (as opposed to fullest deque)
+    // is arguable.
     TaskStatusEvent current = null;
     for (Deque<TaskStatusEvent> queue : items.values()) {
+      if (queue == null) {
+        continue;
+      }
       final TaskStatusEvent item = queue.peek();
       if (current == null || (item.getTimestamp() < current.getTimestamp())) {
         current = item;
@@ -247,7 +284,8 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
       try {
         client.delete(Paths.historyJobHostEventsTimestamp(jobId, hostname, eventsAsLongs.get(i)));
       } catch (KeeperException e) {
-        log.warn("failure deleting overflow of status items - we're hoping a later execution will fix", e);
+        log.warn("failure deleting overflow of status items - we're hoping a later"
+            + " execution will fix", e);
       }
     }
   }

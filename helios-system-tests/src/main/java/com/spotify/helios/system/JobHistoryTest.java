@@ -43,30 +43,52 @@ public class JobHistoryTest extends SystemTestBase {
       @Override
       public TaskStatusEvents call() throws Exception {
         final TaskStatusEvents events = client.jobHistory(jobId).get();
-        if (events.getEvents().size() < 5) {
+        final int size = events.getEvents().size();
+        if (size == 0) {
+          return null;
+        }
+        // We sometimes get more than one PULLING_IMAGE in the history if a pull tempfails.
+        int requiredEventCount = -1;
+        for (int i = 0; i < size; i++) {
+          if (events.getEvents().get(i).getStatus().getState() != State.PULLING_IMAGE) {
+            requiredEventCount = i + 4;
+            break;
+          }
+        }
+
+        if (requiredEventCount == -1) {
+          return null;
+        }
+
+        if (size < requiredEventCount) {
           return null;
         }
         return events;
       }
     });
     final List<TaskStatusEvent> eventsList = events.getEvents();
+    int n = 0;
 
-    final TaskStatusEvent event0 = eventsList.get(0);
-    assertEquals(State.PULLING_IMAGE, event0.getStatus().getState());
-    assertNull(event0.getStatus().getContainerId());
-
-    final TaskStatusEvent event1 = eventsList.get(1);
+    while (true) {
+      final TaskStatusEvent event = eventsList.get(n);
+      if (event.getStatus().getState() != State.PULLING_IMAGE) {
+        break;
+      }
+      assertNull(event.getStatus().getContainerId());
+      n ++;
+    }
+    final TaskStatusEvent event1 = eventsList.get(n);
     assertEquals(State.CREATING, event1.getStatus().getState());
     assertNull(event1.getStatus().getContainerId());
 
-    final TaskStatusEvent event2 = eventsList.get(2);
+    final TaskStatusEvent event2 = eventsList.get(n + 1);
     assertEquals(State.STARTING, event2.getStatus().getState());
     assertNotNull(event2.getStatus().getContainerId());
 
-    final TaskStatusEvent event3 = eventsList.get(3);
+    final TaskStatusEvent event3 = eventsList.get(n + 2);
     assertEquals(State.RUNNING, event3.getStatus().getState());
 
-    final TaskStatusEvent event4 = eventsList.get(4);
+    final TaskStatusEvent event4 = eventsList.get(n + 3);
     assertEquals(State.EXITED, event4.getStatus().getState());
   }
 }
