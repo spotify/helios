@@ -406,8 +406,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     final Task task = new Task(job, deployment.getGoal());
-    List<ZooKeeperOperation> operations = Lists.newArrayList(
-        check(jobPath), create(portNodes), create(Paths.configJobHost(id, host)));
+    final List<ZooKeeperOperation> operations = Lists.newArrayList(
+        check(jobPath),
+        create(portNodes),
+        create(Paths.configJobHost(id, host)));
 
     // Attempt to read a task here.  If it's goal is UNDEPLOY, it's as good as not existing
     try {
@@ -431,6 +433,12 @@ public class ZooKeeperMasterModel implements MasterModel {
       client.transaction(operations);
       log.info("deployed {}: {} (retry={})", deployment, host, count);
     } catch (NoNodeException e) {
+      // Either the job or the host went away
+      assertJobExists(client, id);
+      assertHostExists(client, host);
+      // Retry
+      deployJobRetry(client, host, deployment, count + 1);
+    } catch (NodeExistsException e) {
       // Check for conflict due to transaction retry
       try {
         if (client.exists(taskCreationPath) != null) {
@@ -440,12 +448,6 @@ public class ZooKeeperMasterModel implements MasterModel {
       } catch (KeeperException ex) {
         throw new HeliosRuntimeException("checking job deployment failed", ex);
       }
-      // Either the job or the host went away
-      assertJobExists(client, id);
-      assertHostExists(client, host);
-      // Retry
-      deployJobRetry(client, host, deployment, count + 1);
-    } catch (NodeExistsException e) {
       try {
         // Check if the job was already deployed
         if (client.stat(taskPath) != null) {
