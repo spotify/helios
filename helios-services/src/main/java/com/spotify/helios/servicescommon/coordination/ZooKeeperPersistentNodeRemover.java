@@ -187,7 +187,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
             log.warn("ZooKeeper connection lost while removing node: {}", path);
             throw Throwables.propagate(e);
           } catch (KeeperException e) {
-            log.error("Failed removing node: {}", path);
+            log.error("Failed removing node: {}", path, e);
           }
         }
       }
