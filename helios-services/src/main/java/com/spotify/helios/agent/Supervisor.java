@@ -354,7 +354,7 @@ class Supervisor {
   }
 
   /**
-   * A runner service that runs a container once.
+   * A runner service that starts a container once.
    */
   private class Runner extends InterruptingExecutionThreadService implements Service {
 
@@ -587,6 +587,7 @@ class Supervisor {
 
     @Override
     protected void shutDown() throws Exception {
+      // TODO (dano): restore the startFuture assignment, it got lost in 0146451.
       // Wait for eventual outstanding start request to finish
       final ListenableFuture<Void> future = startFuture;
       if (future != null) {
