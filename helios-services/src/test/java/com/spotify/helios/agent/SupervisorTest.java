@@ -93,6 +93,7 @@ public class SupervisorTest {
 
   @Captor ArgumentCaptor<ContainerConfig> containerConfigCaptor;
   @Captor ArgumentCaptor<String> containerNameCaptor;
+  @Captor ArgumentCaptor<TaskStatus> taskStatusCaptor;
 
   Supervisor sut;
 
@@ -133,7 +134,7 @@ public class SupervisorTest {
         statusMap.put(jobId, status);
         return null;
       }
-    }).when(model).setTaskStatus(eq(JOB_ID), any(TaskStatus.class));
+    }).when(model).setTaskStatus(eq(JOB_ID), taskStatusCaptor.capture());
     when(model.getTaskStatus(eq(JOB_ID))).thenAnswer(new Answer<Object>() {
       @Override
       public Object answer(final InvocationOnMock invocationOnMock) throws Throwable {
@@ -344,9 +345,13 @@ public class SupervisorTest {
 
   @Test
   public void verifyDockerExceptionSetsTaskStatusToFailed() {
-    when(docker.inspectImage(IMAGE)).thenReturn(
-        Futures.<ImageInspectResponse>immediateFailedFuture(
-            new DockerException("Failure!"))
+    when(docker.inspectImage(IMAGE)).thenAnswer(
+        new Answer<Object>() {
+          @Override
+          public Object answer(final InvocationOnMock invocation) throws Throwable {
+            return Futures.immediateFailedFuture(new DockerException("Failure!"));
+          }
+        }
     );
 
     when(retryPolicy.getRetryIntervalMillis()).thenReturn(MINUTES.toMillis(1));
@@ -354,12 +359,8 @@ public class SupervisorTest {
     // Start the job
     sut.setGoal(START);
 
-    verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID), eq(TaskStatus.newBuilder()
-                                                                   .setJob(DESCRIPTOR)
-                                                                   .setGoal(START)
-                                                                   .setState(FAILED)
-                                                                   .setContainerId(null)
-                                                                   .setEnv(ENV)
-                                                                   .build()));
+    verify(retryPolicy, timeout(30000)).getRetryIntervalMillis();
+
+    assertEquals(taskStatusCaptor.getValue().getState(), FAILED);
   }
 }
