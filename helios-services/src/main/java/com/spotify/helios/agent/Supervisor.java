@@ -34,13 +34,13 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
+import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.serviceregistration.ServiceRegistrationHandle;
 import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.InterruptingExecutionThreadService;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.RiemannFacade;
-import com.spotify.helios.serviceregistration.ServiceRegistrar;
-import com.spotify.helios.serviceregistration.ServiceRegistration;
-import com.spotify.helios.serviceregistration.ServiceRegistrationHandle;
 import com.spotify.helios.servicescommon.statistics.MetricsContext;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
@@ -67,7 +67,6 @@ import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
-import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
@@ -893,7 +892,7 @@ class Supervisor {
 
   private interface Command {
 
-    void perform(final boolean done);
+    void perform(final boolean done) throws InterruptedException;
   }
 
   /**
@@ -955,10 +954,14 @@ class Supervisor {
     }
   }
 
+  /**
+   * Stops a container, making sure that the runner spawned by {@link Start} is stopped and the
+   * container is not running.
+   */
   private class Stop implements Command {
 
     @Override
-    public void perform(final boolean done) {
+    public void perform(final boolean done) throws InterruptedException {
       if (done) {
         return;
       }
@@ -980,7 +983,7 @@ class Supervisor {
         while (!awaitTerminated(runner, retryScheduler.nextMillis())) {
           // Kill the container to make the runner stop waiting for on it
           containerId = fromNullable(getContainerId()).or(fromNullable(containerId)).orNull();
-          killContainer(containerId, retryScheduler);
+          killContainer(containerId);
           // Disrupt work in progress to speed the runner to it's demise
           if (runner != null) {
             runner.disrupt();
@@ -991,8 +994,9 @@ class Supervisor {
 
       // Kill the container after stopping the runner
       containerId = fromNullable(getContainerId()).or(fromNullable(containerId)).orNull();
-      while (!killContainer(containerId, retryScheduler)) {
-        sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
+      while (!containerNotRunning(containerId)) {
+        killContainer(containerId);
+        Thread.sleep(retryScheduler.nextMillis());
       }
 
       setStatus(STOPPED, containerId);
@@ -1007,33 +1011,31 @@ class Supervisor {
       }
     }
 
-    private boolean killContainer(final String containerId, final RetryScheduler retryScheduler) {
+    private void killContainer(final String containerId)
+        throws InterruptedException {
+      if (containerId == null) {
+        return;
+      }
+      try {
+        docker.kill(containerId);
+      } catch (DockerException | InterruptedException e) {
+        log.error("failed to kill container {}", containerId, e);
+      }
+    }
+
+    private boolean containerNotRunning(final String containerId)
+        throws InterruptedException {
       if (containerId == null) {
         return true;
       }
-
-      // Check if the container is running
       final ContainerInspectResponse containerInfo;
       try {
         containerInfo = docker.safeInspectContainer(containerId);
       } catch (DockerException e) {
         log.error("failed to query container {}", containerId, e);
-        sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
         return false;
       }
-      if (containerInfo == null || !containerInfo.state.running) {
-        return true;
-      }
-
-      // Kill the container
-      try {
-        docker.kill(containerId);
-      } catch (DockerException | InterruptedException e) {
-        log.error("failed to kill container {}", containerId, e);
-        sleepUninterruptibly(retryScheduler.nextMillis(), MILLISECONDS);
-      }
-
-      return false;
+      return containerInfo == null || !containerInfo.state.running;
     }
   }
 
