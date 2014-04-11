@@ -969,7 +969,7 @@ class Supervisor {
       log.debug("stopping job: id={}: job={}", jobId, job);
 
       final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
-          .setMinIntervalMillis(SECONDS.toMillis(5))
+          .setMinIntervalMillis(SECONDS.toMillis(1))
           .setMaxIntervalMillis(SECONDS.toMillis(30))
           .build().newScheduler();
 
