@@ -20,7 +20,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class PredefinedPortImageDeploymentTest extends SystemTestBase {
-  private final int EXTERNAL_PORT = temporaryPorts.localPort("external");
+  private final int EXTERNAL_PORT = TEMPORARY_PORTS.localPort("external");
 
   @Test
   public void test() throws Exception {

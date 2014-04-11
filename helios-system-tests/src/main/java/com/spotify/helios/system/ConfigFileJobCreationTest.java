@@ -24,7 +24,7 @@ import java.util.Map;
 import static org.junit.Assert.assertEquals;
 
 public class ConfigFileJobCreationTest extends SystemTestBase {
-  final int EXTERNAL_PORT = temporaryPorts.localPort("external");
+  final int EXTERNAL_PORT = TEMPORARY_PORTS.localPort("external");
 
   @Test
   public void test() throws Exception {

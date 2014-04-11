@@ -111,54 +111,38 @@ public abstract class SystemTestBase {
   private static final String TEST_HOST = "test-host";
   private static final String TEST_MASTER = "test-master";
 
-  @Rule
-  public final TemporaryPorts temporaryPorts = new TemporaryPorts();
-  @Rule
-  public final TemporaryFolder temporaryFolder = new TemporaryFolder();
-  @Rule
-  public final ExpectedException exception = ExpectedException.none();
-  @Rule
-  public final TestRule watcher = new LoggingTestWatcher();
+  // Although this is a rule, do not use it as one to keep port locks throughout the test as we
+  // cannot really guarantee that all sockets are closed after tests finish.
+  protected static final TemporaryPorts TEMPORARY_PORTS = new TemporaryPorts();
+
+  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  @Rule public final ExpectedException exception = ExpectedException.none();
+  @Rule public final TestRule watcher = new LoggingTestWatcher();
 
   public final String PREFIX = "test_" + Integer.toHexString(new SecureRandom().nextInt());
   public final String JOB_NAME = PREFIX + "foo";
 
-  private final int masterPort = temporaryPorts.localPort("helios master");
-  private final int masterAdminPort = temporaryPorts.localPort("helios master admin");
-  private final String masterEndpoint;
+  private int masterPort;
+  private int masterAdminPort;
+  private String masterEndpoint;
+  private boolean integrationMode;
+
   private final List<Service> services = newArrayList();
   private final ExecutorService executorService = Executors.newCachedThreadPool();
   private final List<HeliosClient> clients = Lists.newArrayList();
-  private final boolean integrationMode;
 
-  private String testHost = null;
+  private String testHost;
   private Path agentStateDirs;
   private String masterName;
 
   protected ZooKeeperTestManager zk;
 
-  public SystemTestBase() {
-    String className = getClass().getName();
-    if (className.endsWith("ITCase")) {
-      masterEndpoint = checkNotNull(System.getenv("HELIOS_ENDPOINT"),
-          "For integration tests, HELIOS_ENDPOINT *must* be set");
-      integrationMode = true;
-    } else if (className.endsWith("Test") || className.endsWith("TestBase")) {
-      integrationMode = false;
-      masterEndpoint = "http://localhost:" + getMasterPort();
-      // unit test
-    } else {
-      throw new RuntimeException("testClass neither ends in Test, TestBase or ITCase");
-    }
-  }
-
   public boolean isIntegration() {
     return integrationMode;
   }
 
-
   public TemporaryPorts getTemporaryPorts() {
-    return temporaryPorts;
+    return TEMPORARY_PORTS;
   }
 
   public String getMasterEndpoint() {
@@ -179,7 +163,6 @@ public abstract class SystemTestBase {
       return "test-master";
     }
   }
-
 
   @BeforeClass
   public static void staticSetup() {
@@ -211,6 +194,22 @@ public abstract class SystemTestBase {
 
   @Before
   public void baseSetup() throws Exception {
+    masterPort = TEMPORARY_PORTS.localPort("helios master");
+    masterAdminPort = TEMPORARY_PORTS.localPort("helios master admin");
+
+    String className = getClass().getName();
+    if (className.endsWith("ITCase")) {
+      masterEndpoint = checkNotNull(System.getenv("HELIOS_ENDPOINT"),
+                                    "For integration tests, HELIOS_ENDPOINT *must* be set");
+      integrationMode = true;
+    } else if (className.endsWith("Test") || className.endsWith("TestBase")) {
+      integrationMode = false;
+      masterEndpoint = "http://localhost:" + getMasterPort();
+      // unit test
+    } else {
+      throw new RuntimeException("testClass neither ends in Test, TestBase or ITCase");
+    }
+
     zk = zooKeeperTestManager();
     listThreads();
     zk.ensure("/config");

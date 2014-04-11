@@ -34,7 +34,7 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
-  private final int EXTERNAL_PORT = temporaryPorts.localPort("external");
+  private final int EXTERNAL_PORT = TEMPORARY_PORTS.localPort("external");
 
   @Mock
   public ServiceRegistrar registrar;

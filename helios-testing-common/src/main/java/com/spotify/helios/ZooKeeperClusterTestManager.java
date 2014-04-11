@@ -18,7 +18,6 @@ import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
 import org.apache.zookeeper.server.quorum.QuorumPeer;
 import org.apache.zookeeper.server.quorum.flexible.QuorumMaj;
-import org.junit.Rule;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -40,10 +39,9 @@ import static org.apache.zookeeper.server.quorum.QuorumPeer.QuorumServer;
 
 public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
 
-  static final Logger log = LoggerFactory.getLogger(ZooKeeperClusterTestManager.class);
+  private static final Logger log = LoggerFactory.getLogger(ZooKeeperClusterTestManager.class);
 
-  @Rule
-  public TemporaryPorts temporaryPorts = new TemporaryPorts();
+  private static final TemporaryPorts TEMPORARY_PORTS = new TemporaryPorts();
 
   protected Map<Long, QuorumServer> zkPeers;
   protected Map<Long, InetSocketAddress> zkAddresses;
@@ -226,8 +224,8 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
   private Map<Long, QuorumServer> createPeers(final int n) {
     final ImmutableMap.Builder<Long, QuorumServer> peers = ImmutableMap.builder();
     for (long i = 0; i < n; i++) {
-      final int clientPort = temporaryPorts.localPort("zk-peer-client" + i);
-      final int electPort = temporaryPorts.localPort("zk-peer-elect" + i);
+      final int clientPort = TEMPORARY_PORTS.localPort("zk-peer-client" + i);
+      final int electPort = TEMPORARY_PORTS.localPort("zk-peer-elect" + i);
       final InetSocketAddress clientAddr = new InetSocketAddress("127.0.0.1", clientPort);
       final InetSocketAddress electionAddr = new InetSocketAddress("127.0.0.1", electPort);
       peers.put(i, new QuorumServer(i, clientAddr, electionAddr));
@@ -251,7 +249,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
       @Override
       public InetSocketAddress transformEntry(@Nullable final Long key,
                                               @Nullable final QuorumServer value) {
-        final int port = temporaryPorts.localPort("zk-client-" + key);
+        final int port = TEMPORARY_PORTS.localPort("zk-client-" + key);
         return new InetSocketAddress("127.0.0.1", port);
       }
     }));
