@@ -186,6 +186,8 @@ class Supervisor {
   public void join() {
     reactor.awaitTerminated();
     if (runner != null) {
+      // Stop the runner again in case it was rewritten by the reactor before it terminated.
+      runner.stopAsync();
       runner.awaitTerminated();
     }
   }
