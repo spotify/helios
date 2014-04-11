@@ -6,6 +6,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import javax.annotation.Nullable;
 
+/**
+ * Helper for getting the result of a {@link ListenableFuture}.
+ */
 public class Result<V> implements FutureCallback<V> {
 
   private volatile boolean done;

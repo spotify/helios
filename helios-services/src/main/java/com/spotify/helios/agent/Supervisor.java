@@ -65,6 +65,7 @@ import javax.annotation.Nullable;
 
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
 import static com.google.common.util.concurrent.Uninterruptibles.sleepUninterruptibly;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
@@ -894,35 +895,54 @@ class Supervisor {
     void perform(final boolean done);
   }
 
+  /**
+   * Starts a container and attempts to keep it up indefinitely, restarting it when it exits.
+   */
   private class Start implements Command {
 
     @Override
     public void perform(final boolean done) {
       if (runner == null) {
+        // There's no active Runner, start it to bring up the container.
         startAfter(0);
         return;
       }
-      if (!runner.isRunning()) {
-        if (!runner.result().isDone()) {
-          log.warn("runner not running but result future not done!");
-          startAfter(restartPolicy.restartThrottle(throttle));
-          return;
-        }
-        final Result<Integer> result = Result.of(runner.result());
-        if (result.isSuccess()) {
-          startAfter(restartPolicy.restartThrottle(throttle));
+
+      if (runner.isRunning()) {
+        // There's an active Runner, brought up by this or another Start command previously.
+        return;
+      }
+
+      // TODO (dano): Fix Runner mechanism to ensure that the below cannot ever happen. Currently it is possible to by mistake (programming error) introduce an early return in the Runner that doesn't set the result.
+      if (!runner.result().isDone()) {
+        log.warn("runner not running but result future not done!");
+        startAfter(restartPolicy.restartThrottle(throttle));
+        return;
+      }
+
+      // Get the value of the Runner result future
+      final Result<Integer> result = Result.of(runner.result());
+      checkState(result.isDone(), "BUG: runner future is done but result(future) is not done.");
+
+      // Check if the runner exited normally or threw an exception
+      if (result.isSuccess()) {
+        // Runner exited normally without an exception, indicating that the container exited,
+        // so we restart the container.
+        startAfter(restartPolicy.restartThrottle(throttle));
+      } else {
+        // Runner threw an exception, inspect it.
+        final Throwable t = result.getException();
+        if (t instanceof InterruptedException || t instanceof InterruptedIOException) {
+          // We're probably shutting down. Ignore the exception.
+          log.debug("task runner interrupted");
         } else {
-          final Throwable t = result.getException();
-          if (t instanceof InterruptedException || t instanceof InterruptedIOException) {
-            log.debug("task runner interrupted");
-          } else {
-            setStatus(FAILED);
-            log.error("task runner threw exception", t);
-          }
-          long restartDelay = restartPolicy.getRetryIntervalMillis();
-          long throttleDelay = restartPolicy.restartThrottle(throttle);
-          startAfter(Math.max(restartDelay, throttleDelay));
+          // Report the runner failure
+          setStatus(FAILED);
+          log.error("task runner threw exception", t);
         }
+        long restartDelay = restartPolicy.getRetryIntervalMillis();
+        long throttleDelay = restartPolicy.restartThrottle(throttle);
+        startAfter(Math.max(restartDelay, throttleDelay));
       }
     }
 
