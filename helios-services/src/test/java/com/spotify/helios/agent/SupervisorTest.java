@@ -193,15 +193,16 @@ public class SupervisorTest {
 
     // Verify that the container is created
     verify(docker, timeout(30000)).createContainer(containerConfigCaptor.capture(),
-                                                  containerNameCaptor.capture());
+                                                   containerNameCaptor.capture());
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
-                                               eq(TaskStatus.newBuilder()
-                                                      .setJob(DESCRIPTOR)
-                                                      .setGoal(START)
-                                                      .setState(CREATING)
-                                                      .setContainerId(null)
-                                                      .setEnv(ENV)
-                                                      .build()));
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(DESCRIPTOR)
+                                                       .setGoal(START)
+                                                       .setState(CREATING)
+                                                       .setContainerId(null)
+                                                       .setEnv(ENV)
+                                                       .build())
+    );
     assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
@@ -214,26 +215,28 @@ public class SupervisorTest {
     // Verify that the container is started
     verify(docker, timeout(30000)).startContainer(eq(containerId), any(HostConfig.class));
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
-                                               eq(TaskStatus.newBuilder()
-                                                      .setJob(DESCRIPTOR)
-                                                      .setGoal(START)
-                                                      .setState(STARTING)
-                                                      .setContainerId(containerId)
-                                                      .setEnv(ENV)
-                                                      .build()));
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(DESCRIPTOR)
+                                                       .setGoal(START)
+                                                       .setState(STARTING)
+                                                       .setContainerId(containerId)
+                                                       .setEnv(ENV)
+                                                       .build())
+    );
     assertEquals(STARTING, sut.getStatus());
     when(docker.inspectContainer(eq(containerId))).thenReturn(immediateFuture(runningResponse));
     startFuture.set(null);
 
     verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
-                                               eq(TaskStatus.newBuilder()
-                                                      .setJob(DESCRIPTOR)
-                                                      .setGoal(START)
-                                                      .setState(RUNNING)
-                                                      .setContainerId(containerId)
-                                                      .setEnv(ENV)
-                                                      .build()));
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(DESCRIPTOR)
+                                                       .setGoal(START)
+                                                       .setState(RUNNING)
+                                                       .setContainerId(containerId)
+                                                       .setEnv(ENV)
+                                                       .build())
+    );
     assertEquals(RUNNING, sut.getStatus());
 
     // Stop the job
@@ -254,23 +257,25 @@ public class SupervisorTest {
     killFuture.set(null);
 
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
-      eq(TaskStatus.newBuilder()
-             .setJob(DESCRIPTOR)
-             .setGoal(START)
-             .setState(PULLING_IMAGE)
-             .setContainerId(null)
-             .setEnv(ENV)
-             .build()));
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(DESCRIPTOR)
+                                                       .setGoal(START)
+                                                       .setState(PULLING_IMAGE)
+                                                       .setContainerId(null)
+                                                       .setEnv(ENV)
+                                                       .build())
+    );
 
     // Verify that the stopped state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
-                                               eq(TaskStatus.newBuilder()
-                                                      .setJob(DESCRIPTOR)
-                                                      .setGoal(STOP)
-                                                      .setState(STOPPED)
-                                                      .setContainerId(containerId)
-                                                      .setEnv(ENV)
-                                                      .build()));
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(DESCRIPTOR)
+                                                       .setGoal(STOP)
+                                                       .setState(STOPPED)
+                                                       .setContainerId(containerId)
+                                                       .setEnv(ENV)
+                                                       .build())
+    );
     assertEquals(STOPPED, sut.getStatus());
   }
 
