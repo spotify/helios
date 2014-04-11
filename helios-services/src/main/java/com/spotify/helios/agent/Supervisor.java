@@ -536,23 +536,16 @@ class Supervisor {
         metrics.imageCacheHit();
         return;
       }
-      final MetricsContext context = metrics.containerPull();
-      final PullClientResponse response;
-      try {
-        response = docker.pull(image);
-        context.success();
-      } catch (InterruptedException e) {
-        // may be overclassifying user errors as failures here
-        context.failure();
-        throw new ImagePullFailedException(e);
-      }
+      final MetricsContext metric = metrics.containerPull();
+      final PullClientResponse response = docker.pull(image);
       pullStream = response.getResponse().getEntityInputStream();
 
       try {
         // Wait until image is completely pulled
         tailPull(image, pullStream);
+        metric.success();
       } catch (PullingException e) {
-        context.failure();
+        metric.failure();
         throw new ImagePullFailedException(e);
       } finally {
         response.close();
