@@ -11,6 +11,7 @@ import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeoutException;
@@ -20,9 +21,9 @@ import static org.junit.Assert.fail;
 
 public class MonitoredDockerClientTest {
 
-  private static final TemporaryPorts TEMPORARY_PORTS = new TemporaryPorts();
+  @Rule public final TemporaryPorts temporaryPorts = new TemporaryPorts();
 
-  private int badDockerPort = TEMPORARY_PORTS.localPort("bad-docker");
+  private int badDockerPort = temporaryPorts.localPort("bad-docker");
 
   private BadDockerServer badDocker;
 

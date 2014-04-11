@@ -29,14 +29,14 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class MultiplePortJobTest extends SystemTestBase {
-  private final int EXTERNAL_PORT1 = TEMPORARY_PORTS.localPort("external-1");
-  private final int EXTERNAL_PORT2 = TEMPORARY_PORTS.localPort("external-2");
+  private final int EXTERNAL_PORT1 = temporaryPorts.localPort("external-1");
+  private final int EXTERNAL_PORT2 = temporaryPorts.localPort("external-2");
 
   @Test
   public void test() throws Exception {
     startDefaultMaster();
 
-    final Range<Integer> portRange = TEMPORARY_PORTS.localPortRange("agent1", 2);
+    final Range<Integer> portRange = temporaryPorts.localPortRange("agent1", 2);
     final AgentMain agent1 = startDefaultAgent(getTestHost(), "--port-range=" +
                                                           portRange.lowerEndpoint() + ":" +
                                                           portRange.upperEndpoint());

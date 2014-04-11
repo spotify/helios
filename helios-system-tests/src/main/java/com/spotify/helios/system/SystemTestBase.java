@@ -111,9 +111,7 @@ public abstract class SystemTestBase {
   private static final String TEST_HOST = "test-host";
   private static final String TEST_MASTER = "test-master";
 
-  // Although this is a rule, do not use it as one to keep port locks throughout the test as we
-  // cannot really guarantee that all sockets are closed after tests finish.
-  protected static final TemporaryPorts TEMPORARY_PORTS = new TemporaryPorts();
+  @Rule public final TemporaryPorts temporaryPorts = new TemporaryPorts();
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public final ExpectedException exception = ExpectedException.none();
@@ -142,7 +140,7 @@ public abstract class SystemTestBase {
   }
 
   public TemporaryPorts getTemporaryPorts() {
-    return TEMPORARY_PORTS;
+    return temporaryPorts;
   }
 
   public String getMasterEndpoint() {
@@ -194,8 +192,8 @@ public abstract class SystemTestBase {
 
   @Before
   public void baseSetup() throws Exception {
-    masterPort = TEMPORARY_PORTS.localPort("helios master");
-    masterAdminPort = TEMPORARY_PORTS.localPort("helios master admin");
+    masterPort = temporaryPorts.localPort("helios master");
+    masterAdminPort = temporaryPorts.localPort("helios master admin");
 
     String className = getClass().getName();
     if (className.endsWith("ITCase")) {

@@ -31,7 +31,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 public class DeploymentTest extends SystemTestBase {
-  private final int EXTERNAL_PORT = TEMPORARY_PORTS.localPort("external");
+  private final int EXTERNAL_PORT = temporaryPorts.localPort("external");
 
   @Test
   public void test() throws Exception {

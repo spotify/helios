@@ -11,6 +11,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
+import org.junit.Rule;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,9 +26,9 @@ import static org.apache.commons.io.FileUtils.deleteQuietly;
 
 public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
 
-  private static final TemporaryPorts TEMPORARY_PORTS = new TemporaryPorts();
+  @Rule public final TemporaryPorts temporaryPorts = new TemporaryPorts();
 
-  private final int port = TEMPORARY_PORTS.localPort("zookeeper");
+  private final int port = temporaryPorts.localPort("zookeeper");
   private final String endpoint = "127.0.0.1:" + port;
   private final File dataDir;
 
