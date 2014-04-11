@@ -7,8 +7,10 @@ package com.spotify.helios.agent;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.SettableFuture;
 
+import com.kpelykh.docker.client.DockerException;
 import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
@@ -44,12 +46,14 @@ import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
@@ -85,6 +89,7 @@ public class SupervisorTest {
 
   @Mock AgentModel model;
   @Mock AsyncDockerClient docker;
+  @Mock RestartPolicy retryPolicy;
 
   @Captor ArgumentCaptor<ContainerConfig> containerConfigCaptor;
   @Captor ArgumentCaptor<String> containerNameCaptor;
@@ -93,10 +98,7 @@ public class SupervisorTest {
 
   @Before
   public void setup() {
-    RestartPolicy policy = RestartPolicy.newBuilder()
-        .setNormalRestartIntervalMillis(10)
-        .setRetryIntervalMillis(10)
-        .build();
+    when(retryPolicy.getRetryIntervalMillis()).thenReturn(10L);
     TaskStatusManagerImpl manager = TaskStatusManagerImpl.newBuilder()
         .setJob(DESCRIPTOR)
         .setJobId(JOB_ID)
@@ -108,7 +110,7 @@ public class SupervisorTest {
         .setJob(DESCRIPTOR)
         .setModel(model)
         .setDockerClient(docker)
-        .setRestartPolicy(policy)
+        .setRestartPolicy(retryPolicy)
         .setEnvVars(ENV)
         .setFlapController(FlapController.newBuilder()
                                .setJobId(JOB_ID)
@@ -338,5 +340,26 @@ public class SupervisorTest {
     verify(docker, timeout(30000)).createContainer(any(ContainerConfig.class), any(String.class));
     verify(docker, timeout(30000)).startContainer(eq(containerId2), any(HostConfig.class));
     verify(docker, timeout(30000)).waitContainer(containerId2);
+  }
+
+  @Test
+  public void verifyDockerExceptionSetsTaskStatusToFailed() {
+    when(docker.inspectImage(IMAGE)).thenReturn(
+        Futures.<ImageInspectResponse>immediateFailedFuture(
+            new DockerException("Failure!"))
+    );
+
+    when(retryPolicy.getRetryIntervalMillis()).thenReturn(MINUTES.toMillis(1));
+
+    // Start the job
+    sut.setGoal(START);
+
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID), eq(TaskStatus.newBuilder()
+                                                                   .setJob(DESCRIPTOR)
+                                                                   .setGoal(START)
+                                                                   .setState(FAILED)
+                                                                   .setContainerId(null)
+                                                                   .setEnv(ENV)
+                                                                   .build()));
   }
 }
