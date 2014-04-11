@@ -160,7 +160,8 @@ public class MonitoredDockerClient {
   }
 
   public boolean checkForDockerTimeout(DockerException e, final String method) {
-    if (e.getCause().getClass() == TimeoutException.class) {
+    final Throwable cause = e.getCause();
+    if (cause != null && cause.getClass() == TimeoutException.class) {
       metrics.dockerTimeout();
       riemannFacade.event()
           .service("helios-agent/docker")
