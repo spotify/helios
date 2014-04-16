@@ -13,6 +13,7 @@ public class MasterListCommand extends ControlCommand {
 
   public MasterListCommand(Subparser parser) {
     super(parser);
+    parser.help("list masters");
   }
 
   @Override
