@@ -26,7 +26,7 @@ public class JobStartCommand extends WildcardJobCommand {
   public JobStartCommand(Subparser parser) {
     super(parser);
 
-    parser.help("start a job on hosts");
+    parser.help("start a stopped job");
 
     hostsArg = parser.addArgument("hosts")
         .nargs("+")

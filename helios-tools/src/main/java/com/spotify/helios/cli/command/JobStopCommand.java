@@ -22,7 +22,7 @@ public class JobStopCommand extends WildcardJobCommand {
   public JobStopCommand(Subparser parser) {
     super(parser);
 
-    parser.help("stop a job on hosts");
+    parser.help("stop a running job without undeploying it");
 
     hostsArg = parser.addArgument("hosts")
         .nargs("+")
