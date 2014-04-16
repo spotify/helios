@@ -42,7 +42,7 @@ public class JobWatchTest extends SystemTestBase {
     // deploy
     deployJob(jobId, getTestHost());
 
-    final String[] commands = new String[]{"job", "watch", "-z", getMasterEndpoint(),
+    final String[] commands = new String[]{"watch", "-z", getMasterEndpoint(),
                                            "--no-log-setup", jobId.toString()};
 
     final AtomicBoolean success = new AtomicBoolean(false);

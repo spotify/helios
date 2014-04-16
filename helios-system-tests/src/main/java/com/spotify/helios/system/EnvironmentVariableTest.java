@@ -44,7 +44,7 @@ public class EnvironmentVariableTest extends SystemTestBase {
       @Override
       public Object call() throws Exception {
         Map<String, HostStatus> status = Json.read(
-            cli("host", "status", getTestHost(), "--json"),
+            cli("hosts", getTestHost(), "--json"),
             new TypeReference<Map<String, HostStatus>>() {});
         return status.get(getTestHost()).getEnvironment();
       }
@@ -78,7 +78,7 @@ public class EnvironmentVariableTest extends SystemTestBase {
     // Verify that the the BAR environment variable in the job overrode the agent config
     assertContains("bar: deadbeef", logMessage);
 
-    Map<String, HostStatus> status = Json.read(cli("host", "status", getTestHost(), "--json"),
+    Map<String, HostStatus> status = Json.read(cli("hosts", getTestHost(), "--json"),
                                                 new TypeReference<Map<String, HostStatus>>() {});
 
     assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",

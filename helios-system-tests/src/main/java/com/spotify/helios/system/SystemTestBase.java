@@ -71,12 +71,13 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
+import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static java.lang.String.format;
 import static java.lang.System.getenv;
 import static java.util.Arrays.asList;
@@ -86,6 +87,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public abstract class SystemTestBase {
@@ -437,56 +439,63 @@ public abstract class SystemTestBase {
     args.add("--");
     args.addAll(command);
 
-    final String createOutput = cli("job", "create", args);
+    final String createOutput = cli("create", args);
     final String jobId = StringUtils.strip(createOutput);
 
-    final String listOutput = cli("job", "list", "-q");
+    final String listOutput = cli("jobs", "-q");
     assertContains(jobId, listOutput);
     return JobId.fromString(jobId);
   }
 
   void deployJob(final JobId jobId, final String host)
       throws Exception {
-    final String deployOutput = cli("job", "deploy", jobId.toString(), host);
+    final String deployOutput = cli("deploy", jobId.toString(), host);
     assertContains(host + ": done", deployOutput);
 
-    final String listOutput = cli("host", "jobs", "-q", host);
-    assertContains(jobId.toString(), listOutput);
+    final String output = cli("status", "--host", host, "--json");
+    final Map<JobId, JobStatus> statuses =
+        Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {});
+    assertTrue(statuses.keySet().contains(jobId));
   }
 
   void undeployJob(final JobId jobId, final String host) throws Exception {
-    final String undeployOutput = cli("job", "undeploy", jobId.toString(), host);
+    final String undeployOutput = cli("undeploy", jobId.toString(), host);
     assertContains(host + ": done", undeployOutput);
 
-    final String listOutput = cli("host", "jobs", "-q", host);
-    assertNotContains(jobId.toString(), listOutput);
+    final String output = cli("status", "--host", host, "--json");
+    final Map<JobId, JobStatus> statuses =
+        Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {});
+    final JobStatus status = statuses.get(jobId);
+    assertTrue(status == null ||
+               status.getDeployments().get(host) == null ||
+               status.getDeployments().get(host).getGoal() == UNDEPLOY);
   }
 
   String startJob(final JobId jobId, final String host) throws Exception {
-    return cli("job", "start", jobId.toString(), host);
+    return cli("start", jobId.toString(), host);
   }
 
   String stopJob(final JobId jobId, final String host) throws Exception {
-    return cli("job", "stop", jobId.toString(), host);
+    return cli("stop", jobId.toString(), host);
   }
 
   String deregisterHost(final String host) throws Exception {
-    return cli("host", "deregister", host, "--force");
+    return cli("deregister", host, "--force");
   }
 
-  String cli(final String command, final String sub, final Object... args)
+  String cli(final String command, final Object... args)
       throws Exception {
-    return cli(command, sub, flatten(args));
+    return cli(command, flatten(args));
   }
 
-  String cli(final String command, final String sub, final String... args)
+  String cli(final String command, final String... args)
       throws Exception {
-    return cli(command, sub, asList(args));
+    return cli(command, asList(args));
   }
 
-  String cli(final String command, final String sub, final List<String> args)
+  String cli(final String command, final List<String> args)
       throws Exception {
-    final List<String> commands = asList(command, sub, "-z", getMasterEndpoint(), "--no-log-setup");
+    final List<String> commands = asList(command, "-z", getMasterEndpoint(), "--no-log-setup");
     final List<String> allArgs = newArrayList(concat(commands, args));
     return main(allArgs).toString();
   }
@@ -508,7 +517,7 @@ public abstract class SystemTestBase {
     Polling.await(timeout, timeUnit, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
-        final String output = cli("host", "list", "-q");
+        final String output = cli("hosts", "-q");
         return output.contains(name) ? true : null;
       }
     });
@@ -519,11 +528,10 @@ public abstract class SystemTestBase {
     return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
       public HostStatus call() throws Exception {
-        final String output = cli("host", "status", name, "--json");
+        final String output = cli("hosts", name, "--json");
         final Map<String, HostStatus> statuses;
         try {
-          statuses = Json.read(output, new TypeReference<Map<String, HostStatus>>() {
-          });
+          statuses = Json.read(output, new TypeReference<Map<String, HostStatus>>() {});
         } catch (IOException e) {
           return null;
         }
@@ -605,7 +613,7 @@ public abstract class SystemTestBase {
     return Polling.await(timeout, timeUnit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
-        final String output = cli("job", "status", "--json", jobId.toString());
+        final String output = cli("status", "--json", "--job", jobId.toString());
         final Map<JobId, JobStatus> statusMap;
         try {
           statusMap = Json.read(output, new TypeReference<Map<JobId, JobStatus>>() {});

@@ -10,10 +10,8 @@ import com.google.common.collect.Sets;
 
 import com.spotify.helios.cli.command.ControlCommand;
 import com.spotify.helios.cli.command.HostDeregisterCommand;
-import com.spotify.helios.cli.command.HostJobsCommand;
 import com.spotify.helios.cli.command.HostListCommand;
 import com.spotify.helios.cli.command.HostRegisterCommand;
-import com.spotify.helios.cli.command.HostStatusCommand;
 import com.spotify.helios.cli.command.JobCreateCommand;
 import com.spotify.helios.cli.command.JobDeployCommand;
 import com.spotify.helios.cli.command.JobHistoryCommand;
@@ -88,7 +86,9 @@ public class CliParser {
 
     final GlobalArgs globalArgs = addGlobalArgs(parser, cliConfig, true);
 
-    commandParsers = parser.addSubparsers().title("commands");
+    commandParsers = parser.addSubparsers()
+        .metavar("COMMAND")
+        .title("commands");
 
     setupCommands();
 
@@ -169,33 +169,25 @@ public class CliParser {
 
   private void setupCommands() {
     // Job commands
-    final Subparsers job = p("job").help("job commands")
-        .addSubparsers().title("job commands").metavar("COMMAND").help("additional help");
-    new JobCreateCommand(p(job, "create"));
-    new JobInspectCommand(p(job, "inspect"));
-    new JobDeployCommand(p(job, "deploy"));
-    new JobHistoryCommand(p(job, "history"));
-    new JobListCommand(p(job, "list"));
-    new JobRemoveCommand(p(job, "remove"));
-    new JobStartCommand(p(job, "start"));
-    new JobStatusCommand(p(job, "status"));
-    new JobStopCommand(p(job, "stop"));
-    new JobUndeployCommand(p(job, "undeploy"));
-    new JobWatchCommand(p(job, "watch"));
+    new JobCreateCommand(p("create"));
+    new JobRemoveCommand(p("remove"));
+    new JobInspectCommand(p("inspect"));
+    new JobDeployCommand(p("deploy"));
+    new JobUndeployCommand(p("undeploy"));
+    new JobStartCommand(p("start"));
+    new JobStopCommand(p("stop"));
+    new JobHistoryCommand(p("history"));
+    new JobListCommand(p("jobs"));
+    new JobStatusCommand(p("status"));
+    new JobWatchCommand(p("watch"));
 
     // Host commands
-    final Subparsers host = p("host").help("host commands")
-        .addSubparsers().title("host commands").metavar("COMMAND").help("additional help");
-    new HostDeregisterCommand(p(host, "deregister"));
-    new HostJobsCommand(p(host, "jobs"));
-    new HostListCommand(p(host, "list"));
-    new HostRegisterCommand(p(host, "register"));
-    new HostStatusCommand(p(host, "status"));
+    new HostListCommand(p("hosts"));
+    new HostRegisterCommand(p("register"));
+    new HostDeregisterCommand(p("deregister"));
 
     // Master Commands
-    final Subparsers master = p("master").help("master commands")
-        .addSubparsers().title("master commands").metavar("COMMAND").help("additional help");
-    new MasterListCommand(p(master, "list"));
+    new MasterListCommand(p("masters"));
 
     // Version Command
     final Subparser version = p("version").help("print version of master and client");

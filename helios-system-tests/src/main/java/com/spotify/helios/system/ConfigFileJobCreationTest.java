@@ -52,7 +52,7 @@ public class ConfigFileJobCreationTest extends SystemTestBase {
     final Path file = temporaryFolder.newFile().toPath();
     Files.write(file, Json.asBytes(configuration));
 
-    final String output = cli("job", "create", "-q", "-f", file.toAbsolutePath().toString());
+    final String output = cli("create", "-q", "-f", file.toAbsolutePath().toString());
     final JobId jobId = JobId.parse(StringUtils.strip(output));
 
     final Map<JobId, Job> jobs = client.jobs().get();

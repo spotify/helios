@@ -41,7 +41,7 @@ public class CliDeploymentTest extends SystemTestBase {
     Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
       @Override
       public String call() throws Exception {
-        final String output = cli("master", "list");
+        final String output = cli("masters");
         return output.contains(masterName()) ? output : null;
       }
     });
@@ -75,26 +75,26 @@ public class CliDeploymentTest extends SystemTestBase {
         .setPorts(ports)
         .setRegistration(registration)
         .build();
-    final String inspectOutput = cli("job", "inspect", "--json", expected.getId().toString());
+    final String inspectOutput = cli("inspect", "--json", expected.getId().toString());
     final Job parsed = Json.read(inspectOutput, Job.class);
     assertEquals(expected, parsed);
-    assertContains(jobId.toString(), cli("job", "list", JOB_NAME, "-q"));
-    assertContains(jobId.toString(), cli("job", "list", JOB_NAME + ":" + JOB_VERSION, "-q"));
-    assertTrue(cli("job", "list", "foozbarz", "-q").trim().isEmpty());
+    assertContains(jobId.toString(), cli("jobs", JOB_NAME, "-q"));
+    assertContains(jobId.toString(), cli("jobs", JOB_NAME + ":" + JOB_VERSION, "-q"));
+    assertTrue(cli("jobs", "foozbarz", "-q").trim().isEmpty());
 
     // Create a new job using the first job as a template
     final Job expectedCloned = expected.toBuilder()
         .setVersion(expected.getId().getVersion() + "-cloned")
         .build();
-    final JobId clonedJobId = JobId.parse(strip(cli("job", "create", "-q", "-t",
+    final JobId clonedJobId = JobId.parse(strip(cli("create", "-q", "-t",
                                                     JOB_NAME + ":" + JOB_VERSION,
                                                     JOB_NAME, JOB_VERSION + "-cloned")));
-    final String clonedInspectOutput = cli("job", "inspect", "--json", clonedJobId.toString());
+    final String clonedInspectOutput = cli("inspect", "--json", clonedJobId.toString());
     final Job clonedParsed = Json.read(clonedInspectOutput, Job.class);
     assertEquals(expectedCloned, clonedParsed);
 
     // Verify that port mapping and environment variables are correct
-    final String statusString = cli("job", "status", jobId.toString(), "--json");
+    final String statusString = cli("status", "--job", jobId.toString(), "--json");
     final Map<JobId, JobStatus> statuses = Json.read(statusString, STATUSES_TYPE);
     final Job job = statuses.get(jobId).getJob();
     assertEquals(ServicePorts.of("foo"),
@@ -105,8 +105,8 @@ public class CliDeploymentTest extends SystemTestBase {
     assertEquals(PortMapping.of(5000, externalPort), job.getPorts().get("bar"));
     assertEquals("f00d", job.getEnv().get("BAD"));
 
-    final String duplicateJob = cli(
-        "job", "create", JOB_NAME, JOB_VERSION, image, "--", DO_NOTHING_COMMAND);
+    final String duplicateJob = cli("create", JOB_NAME, JOB_VERSION, image, "--",
+                                    DO_NOTHING_COMMAND);
     assertContains("JOB_ALREADY_EXISTS", duplicateJob);
 
     final String prestop = stopJob(jobId, getTestHost());
@@ -124,10 +124,10 @@ public class CliDeploymentTest extends SystemTestBase {
     assertContains(getTestHost() + ": done", stop3);
 
     // Verify that undeploying the job from a nonexistent host fails
-    assertContains("HOST_NOT_FOUND", cli("job", "undeploy", jobId.toString(), BOGUS_HOST));
+    assertContains("HOST_NOT_FOUND", cli("undeploy", jobId.toString(), BOGUS_HOST));
 
     // Verify that undeploying a nonexistent job from the host fails
-    assertContains("Unknown job", cli("job", "undeploy", BOGUS_JOB.toString(), getTestHost()));
+    assertContains("Unknown job", cli("undeploy", BOGUS_JOB.toString(), getTestHost()));
 
     // Undeploy job
     undeployJob(jobId, getTestHost());

@@ -17,7 +17,7 @@ public class MasterResolutionFailureMessageTest {
 
   @Test
   public void test() throws Exception {
-    final String[] commands = {"job", "list", "--no-log-setup", "-s", "bogussite"};
+    final String[] commands = {"jobs", "--no-log-setup", "-s", "bogussite"};
     final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
     final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
     new CliMain(new PrintStream(stdout), new PrintStream(stderr), commands).run();

@@ -4,48 +4,51 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.Lists;
+import com.google.common.base.Strings;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.JobStatusTable;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.TaskStatus;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.PrintStream;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.base.Predicates.containsPattern;
 import static com.spotify.helios.cli.Output.jobStatusTable;
 import static com.spotify.helios.cli.Utils.allAsMap;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class JobStatusCommand extends ControlCommand {
 
-  private final Argument jobsArg;
+  private final Argument jobArg;
+  private final Argument hostArg;
   private final Argument fullArg;
 
   public JobStatusCommand(final Subparser parser) {
     super(parser);
 
-    parser.help("show status for a job");
+    parser.help("show job status");
 
-    jobsArg = parser.addArgument("job")
-        .nargs("*")
-        .help("Job reference");
+    jobArg = parser.addArgument("-j", "--job")
+        .help("Job filter");
+
+    hostArg = parser.addArgument("--host")
+        .setDefault("")
+        .help("Host pattern");
 
     fullArg = parser.addArgument("-f")
         .action(storeTrue())
@@ -55,23 +58,16 @@ public class JobStatusCommand extends ControlCommand {
   @Override
   int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
-    final List<String> jobIdStrings = options.getList(jobsArg.getDest());
+    final String jobIdString = options.getString(jobArg.getDest());
+    final String hostPattern = options.getString(hostArg.getDest());
     final boolean full = options.getBoolean(fullArg.getDest());
 
     final Set<JobId> jobIds;
-    if (jobIdStrings.isEmpty()) {
+    if (Strings.isNullOrEmpty(jobIdString)) {
       jobIds = client.jobs().get().keySet();
     } else {
-      final List<ListenableFuture<Map<JobId, Job>>> jobIdFutures = Lists.newArrayList();
-      for (final String jobIdString : jobIdStrings) {
-        // TODO (dano): complain if there were no matching jobs?
-        jobIdFutures.add(client.jobs(jobIdString));
-      }
-
-      jobIds = Sets.newHashSet();
-      for (ListenableFuture<Map<JobId, Job>> future : jobIdFutures) {
-        jobIds.addAll(future.get().keySet());
-      }
+      // TODO (dano): complain if there were no matching jobs?
+      jobIds = client.jobs(jobIdString).get().keySet();
     }
 
     // TODO (dano): it would sure be nice to be able to report container/task uptime
@@ -102,7 +98,11 @@ public class JobStatusCommand extends ControlCommand {
         }
       }
 
-      for (final String host : taskStatuses.keySet()) {
+      final FluentIterable<String> matchingHosts = FluentIterable
+          .from(taskStatuses.keySet())
+          .filter(containsPattern(hostPattern));
+
+      for (final String host : matchingHosts) {
         final Map<String, Deployment> deployments = jobStatus.getDeployments();
         final TaskStatus ts = taskStatuses.get(host);
         final Deployment deployment = (deployments == null) ? null : deployments.get(host);
