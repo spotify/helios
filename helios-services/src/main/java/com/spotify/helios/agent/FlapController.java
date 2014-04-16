@@ -96,12 +96,14 @@ public class FlapController {
 
   public <T> T waitFuture(ListenableFuture<T> future)
       throws InterruptedException, ExecutionException, HeliosException {
+    log.debug("isFlapping is " + isFlapping());
     if (!isFlapping()) {
       return future.get();
     }
 
     // If we're flapping, see if we this thing lives long enough no not flap anymore
     try {
+      log.debug("Time left to unflap is {}", timeLeftToUnflap);
       return Futures.get(future, timeLeftToUnflap,
           TimeUnit.MILLISECONDS, HeliosException.class);
     } catch (HeliosException e) {

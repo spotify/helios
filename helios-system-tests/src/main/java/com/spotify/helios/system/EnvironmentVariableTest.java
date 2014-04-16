@@ -27,7 +27,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 
-public class EnvironmentVaribleTest extends SystemTestBase {
+public class EnvironmentVariableTest extends SystemTestBase {
 
   @Test
   public void test() throws Exception {
