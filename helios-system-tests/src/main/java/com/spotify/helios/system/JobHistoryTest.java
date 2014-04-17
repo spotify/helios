@@ -4,8 +4,6 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableList;
-
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus.Status;
@@ -19,7 +17,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -34,10 +32,11 @@ public class JobHistoryTest extends SystemTestBase {
 
     startDefaultAgent(getTestHost());
     awaitHostStatus(getTestHost(), Status.UP, LONG_WAIT_MINUTES, MINUTES);
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", ImmutableList.of("/bin/true"));
+    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "ubuntu:12.04", DO_NOTHING_COMMAND);
     deployJob(jobId, getTestHost());
-    awaitJobState(client, getTestHost(), jobId, EXITED, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, getTestHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
     undeployJob(jobId, getTestHost());
+    awaitTaskGone(client, getTestHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
     final TaskStatusEvents events = Polling.await(
         WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<TaskStatusEvents>() {
       @Override
