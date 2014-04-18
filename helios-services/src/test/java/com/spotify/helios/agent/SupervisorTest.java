@@ -9,20 +9,13 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.SettableFuture;
-
 import com.kpelykh.docker.client.DockerException;
-import com.kpelykh.docker.client.model.ContainerConfig;
-import com.kpelykh.docker.client.model.ContainerCreateResponse;
-import com.kpelykh.docker.client.model.ContainerInspectResponse;
-import com.kpelykh.docker.client.model.HostConfig;
-import com.kpelykh.docker.client.model.ImageInspectResponse;
-import com.kpelykh.docker.client.model.ListImage;
+import com.kpelykh.docker.client.model.*;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.servicescommon.NoOpRiemannClient;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -45,22 +38,14 @@ import java.util.concurrent.Executors;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.*;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SupervisorTest {
@@ -81,19 +66,26 @@ public class SupervisorTest {
       .setVersion(VERSION)
       .build();
   static final Map<String, String> ENV = ImmutableMap.of("foo", "17",
-                                                         "bar", "4711");
+      "bar", "4711");
   static final Set<String> EXPECTED_CONTAINER_ENV = ImmutableSet.of("foo=17", "bar=4711");
 
-  static final ListImage DOCKER_IMAGE = new ListImage() {{ }};
+  static final ListImage DOCKER_IMAGE = new ListImage() {{
+  }};
   static final List<ListImage> DOCKER_IMAGES = asList(DOCKER_IMAGE);
 
-  @Mock AgentModel model;
-  @Mock AsyncDockerClient docker;
-  @Mock RestartPolicy retryPolicy;
+  @Mock
+  AgentModel model;
+  @Mock
+  AsyncDockerClient docker;
+  @Mock
+  RestartPolicy retryPolicy;
 
-  @Captor ArgumentCaptor<ContainerConfig> containerConfigCaptor;
-  @Captor ArgumentCaptor<String> containerNameCaptor;
-  @Captor ArgumentCaptor<TaskStatus> taskStatusCaptor;
+  @Captor
+  ArgumentCaptor<ContainerConfig> containerConfigCaptor;
+  @Captor
+  ArgumentCaptor<String> containerNameCaptor;
+  @Captor
+  ArgumentCaptor<TaskStatus> taskStatusCaptor;
 
   Supervisor sut;
 
@@ -114,9 +106,9 @@ public class SupervisorTest {
         .setRestartPolicy(retryPolicy)
         .setEnvVars(ENV)
         .setFlapController(FlapController.newBuilder()
-                               .setJobId(JOB_ID)
-                               .setTaskStatusManager(manager)
-                               .build())
+            .setJobId(JOB_ID)
+            .setTaskStatusManager(manager)
+            .build())
         .setTaskStatusManager(manager)
         .setCommandWrapper(new NoOpCommandWrapper())
         .setMetrics(new NoopSupervisorMetrics())
@@ -177,7 +169,7 @@ public class SupervisorTest {
 
     final SettableFuture<ContainerCreateResponse> createFuture = SettableFuture.create();
     when(docker.createContainer(any(ContainerConfig.class),
-                                any(String.class))).thenReturn(createFuture);
+        any(String.class))).thenReturn(createFuture);
 
     final SettableFuture<Void> startFuture = SettableFuture.create();
     when(docker.startContainer(eq(containerId), any(HostConfig.class))).thenReturn(startFuture);
@@ -193,15 +185,15 @@ public class SupervisorTest {
 
     // Verify that the container is created
     verify(docker, timeout(30000)).createContainer(containerConfigCaptor.capture(),
-                                                   containerNameCaptor.capture());
+        containerNameCaptor.capture());
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(DESCRIPTOR)
-                                                       .setGoal(START)
-                                                       .setState(CREATING)
-                                                       .setContainerId(null)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(DESCRIPTOR)
+            .setGoal(START)
+            .setState(CREATING)
+            .setContainerId(null)
+            .setEnv(ENV)
+            .build())
     );
     assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
@@ -215,13 +207,13 @@ public class SupervisorTest {
     // Verify that the container is started
     verify(docker, timeout(30000)).startContainer(eq(containerId), any(HostConfig.class));
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(DESCRIPTOR)
-                                                       .setGoal(START)
-                                                       .setState(STARTING)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(DESCRIPTOR)
+            .setGoal(START)
+            .setState(STARTING)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
     assertEquals(STARTING, sut.getStatus());
     when(docker.inspectContainer(eq(containerId))).thenReturn(immediateFuture(runningResponse));
@@ -229,13 +221,13 @@ public class SupervisorTest {
 
     verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(DESCRIPTOR)
-                                                       .setGoal(START)
-                                                       .setState(RUNNING)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(DESCRIPTOR)
+            .setGoal(START)
+            .setState(RUNNING)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
     assertEquals(RUNNING, sut.getStatus());
 
@@ -257,24 +249,24 @@ public class SupervisorTest {
     killFuture.set(null);
 
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(DESCRIPTOR)
-                                                       .setGoal(START)
-                                                       .setState(PULLING_IMAGE)
-                                                       .setContainerId(null)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(DESCRIPTOR)
+            .setGoal(START)
+            .setState(PULLING_IMAGE)
+            .setContainerId(null)
+            .setEnv(ENV)
+            .build())
     );
 
     // Verify that the stopped state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB_ID),
-                                                eq(TaskStatus.newBuilder()
-                                                       .setJob(DESCRIPTOR)
-                                                       .setGoal(STOP)
-                                                       .setState(STOPPED)
-                                                       .setContainerId(containerId)
-                                                       .setEnv(ENV)
-                                                       .build())
+        eq(TaskStatus.newBuilder()
+            .setJob(DESCRIPTOR)
+            .setGoal(STOP)
+            .setState(STOPPED)
+            .setContainerId(containerId)
+            .setEnv(ENV)
+            .build())
     );
     assertEquals(STOPPED, sut.getStatus());
   }
@@ -348,13 +340,16 @@ public class SupervisorTest {
     verify(docker, timeout(30000)).waitContainer(containerId2);
   }
 
-  @Test
-  public void verifyDockerExceptionSetsTaskStatusToFailed() {
+  interface ExceptionFactory {
+    Exception make();
+  }
+
+  public void verifyExceptionSetsTaskStatusToFailed(final ExceptionFactory exceptionFactory) {
     when(docker.inspectImage(IMAGE)).thenAnswer(
         new Answer<Object>() {
           @Override
           public Object answer(final InvocationOnMock invocation) throws Throwable {
-            return Futures.immediateFailedFuture(new DockerException("Failure!"));
+            return Futures.immediateFailedFuture(exceptionFactory.make());
           }
         }
     );
@@ -368,4 +363,25 @@ public class SupervisorTest {
 
     assertEquals(taskStatusCaptor.getValue().getState(), FAILED);
   }
+
+  @Test
+  public void verifyDockerExceptionSetsTaskStatusToFailed() {
+    verifyExceptionSetsTaskStatusToFailed(new ExceptionFactory() {
+      @Override
+      public Exception make() {
+        return new DockerException();
+      }
+    });
+  }
+
+  @Test
+  public void verifyRuntimeExceptionSetsTaskStatusToFailed() {
+    verifyExceptionSetsTaskStatusToFailed(new ExceptionFactory() {
+      @Override
+      public Exception make() {
+        return new RuntimeException();
+      }
+    });
+  }
+
 }
