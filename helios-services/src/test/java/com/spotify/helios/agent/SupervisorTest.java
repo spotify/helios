@@ -340,16 +340,12 @@ public class SupervisorTest {
     verify(docker, timeout(30000)).waitContainer(containerId2);
   }
 
-  interface ExceptionFactory {
-    Exception make();
-  }
-
-  public void verifyExceptionSetsTaskStatusToFailed(final ExceptionFactory exceptionFactory) {
+  public void verifyExceptionSetsTaskStatusToFailed(final Exception exception) {
     when(docker.inspectImage(IMAGE)).thenAnswer(
         new Answer<Object>() {
           @Override
           public Object answer(final InvocationOnMock invocation) throws Throwable {
-            return Futures.immediateFailedFuture(exceptionFactory.make());
+            return Futures.immediateFailedFuture(exception);
           }
         }
     );
@@ -366,22 +362,12 @@ public class SupervisorTest {
 
   @Test
   public void verifyDockerExceptionSetsTaskStatusToFailed() {
-    verifyExceptionSetsTaskStatusToFailed(new ExceptionFactory() {
-      @Override
-      public Exception make() {
-        return new DockerException();
-      }
-    });
+    verifyExceptionSetsTaskStatusToFailed(new DockerException());
   }
 
   @Test
   public void verifyRuntimeExceptionSetsTaskStatusToFailed() {
-    verifyExceptionSetsTaskStatusToFailed(new ExceptionFactory() {
-      @Override
-      public Exception make() {
-        return new RuntimeException();
-      }
-    });
+    verifyExceptionSetsTaskStatusToFailed(new RuntimeException());
   }
 
 }
