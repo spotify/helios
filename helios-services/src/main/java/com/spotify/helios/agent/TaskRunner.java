@@ -11,8 +11,6 @@ import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
-import com.spotify.helios.agent.Supervisor.ImageMissingException;
-import com.spotify.helios.agent.Supervisor.ImagePullFailedException;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
@@ -277,7 +275,7 @@ class TaskRunner extends InterruptingExecutionThreadService implements Service {
       metric.success();
     } catch (ContainerUtil.PullingException e) {
       metric.failure();
-      throw new Supervisor.ImagePullFailedException(e);
+      throw new ImagePullFailedException(e);
     } finally {
       response.close();
     }

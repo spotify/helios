@@ -177,23 +177,6 @@ public class Supervisor {
     return stateManager.getStatus();
   }
 
-  static class ImageMissingException extends Exception {
-
-    ImageMissingException(final String message) {
-      super(message);
-    }
-  }
-
-  static class ImagePullFailedException extends Exception {
-    ImagePullFailedException(final Throwable cause) {
-      super(cause);
-    }
-
-    ImagePullFailedException(final String message) {
-      super(message);
-    }
-  }
-
   private class Update implements Reactor.Callback {
 
     @Override

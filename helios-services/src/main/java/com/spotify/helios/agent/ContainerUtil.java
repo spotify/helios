@@ -15,8 +15,6 @@ import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
 import com.kpelykh.docker.client.model.PortBinding;
-import com.spotify.helios.agent.Supervisor.ImageMissingException;
-import com.spotify.helios.agent.Supervisor.ImagePullFailedException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
