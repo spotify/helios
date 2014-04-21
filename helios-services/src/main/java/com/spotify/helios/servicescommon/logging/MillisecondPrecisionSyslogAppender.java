@@ -15,6 +15,8 @@ import ch.qos.logback.classic.spi.StackTraceElementProxy;
 import ch.qos.logback.core.CoreConstants;
 import ch.qos.logback.core.Layout;
 
+import static com.google.common.base.Charsets.UTF_8;
+
 /**
  * A {@link ch.qos.logback.classic.net.SyslogAppender} with millisecond timestamp precision.
  */
@@ -55,7 +57,7 @@ public class MillisecondPrecisionSyslogAppender extends SyslogAppender {
         for (final StackTraceElementProxy step : stepArray) {
           final StringBuilder sb = new StringBuilder();
           sb.append(stackTracePrefix).append(step);
-          sw.write(sb.toString().getBytes());
+          sw.write(sb.toString().getBytes(UTF_8));
           sw.flush();
         }
       } catch (IOException e) {
@@ -75,7 +77,7 @@ public class MillisecondPrecisionSyslogAppender extends SyslogAppender {
       sb.append(CoreConstants.CAUSED_BY);
     }
     sb.append(tp.getClassName()).append(": ").append(tp.getMessage());
-    sw.write(sb.toString().getBytes());
+    sw.write(sb.toString().getBytes(UTF_8));
     sw.flush();
   }
 

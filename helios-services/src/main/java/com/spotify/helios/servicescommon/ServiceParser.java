@@ -19,6 +19,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Throwables.propagate;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -191,7 +192,7 @@ public class ServiceParser {
   private static String exec(final String command) {
     try {
       final Process process = Runtime.getRuntime().exec(command);
-      return CharStreams.toString(new InputStreamReader(process.getInputStream()));
+      return CharStreams.toString(new InputStreamReader(process.getInputStream(), UTF_8));
     } catch (IOException e) {
       throw propagate(e);
     }

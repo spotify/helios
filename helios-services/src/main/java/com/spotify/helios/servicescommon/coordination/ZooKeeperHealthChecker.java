@@ -22,13 +22,13 @@ public class ZooKeeperHealthChecker extends HealthCheck
   private final PathChildrenCache cache;
   private final RiemannFacade facade;
   private final TimeUnit timeUnit;
-  private final int interval;
+  private final long interval;
 
   private AtomicReference<String> reasonString = new AtomicReference<String>(UNKNOWN);
 
   public ZooKeeperHealthChecker(final ZooKeeperClient zooKeeperClient, final String path,
                                 final RiemannFacade facade, final TimeUnit timeUnit,
-                                final int interval) {
+                                final long interval) {
     super("zookeeper");
     this.scheduler = Executors.newScheduledThreadPool(1);
     this.cache = new PathChildrenCache(zooKeeperClient.getCuratorFramework(), path, true, false,

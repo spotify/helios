@@ -5,16 +5,16 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.common.HeliosException;
-import com.spotify.helios.master.JobDoesNotExistException;
-import com.spotify.helios.master.JobExistsException;
-import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobIdParseException;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
-import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.master.JobDoesNotExistException;
+import com.spotify.helios.master.JobExistsException;
+import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.sun.jersey.api.core.InjectParam;
@@ -83,14 +83,15 @@ public class JobsResource {
     }
 
     final Map<JobId, Job> filteredJobs = Maps.newHashMap();
-    for (final JobId jobId : allJobs.keySet()) {
+    for (final Map.Entry<JobId, Job> entry : allJobs.entrySet()) {
+      final JobId jobId = entry.getKey();
+      final Job job = entry.getValue();
       if (needle.getName().equals(jobId.getName()) &&
           (needle.getVersion() == null || needle.getVersion().equals(jobId.getVersion())) &&
           (needle.getHash() == null || jobId.getHash().startsWith(needle.getHash()))) {
-        filteredJobs.put(jobId, allJobs.get(jobId));
+        filteredJobs.put(jobId, job);
       }
     }
-
     metrics.jobsInJobList(filteredJobs.size());
     return filteredJobs;
   }

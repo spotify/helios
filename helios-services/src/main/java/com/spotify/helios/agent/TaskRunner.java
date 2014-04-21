@@ -74,6 +74,7 @@ class TaskRunner extends InterruptingExecutionThreadService implements Service {
                     final AtomicReference<ThrottleState> throttle,
                     final StatusUpdater statusUpdater,
                     final Supplier<String> containerIdSupplier) {
+    super("TaskRunner(" + job.toString() + ")");
     this.delayMillis = delayMillis;
     this.registrar = registrar;
     this.job = job;
@@ -195,12 +196,12 @@ class TaskRunner extends InterruptingExecutionThreadService implements Service {
           log.error("no '{}' port mapped for registration: '{}'", portName, registration);
           continue;
         }
-        if (mapping.getExternalPort() == null) {
+        Integer externalPort = mapping.getExternalPort();
+        if (externalPort == null) {
           log.error("no external '{}' port for registration: '{}'", portName, registration);
           continue;
         }
-        builder.endpoint(registration.getName(), registration.getProtocol(),
-                         mapping.getExternalPort());
+        builder.endpoint(registration.getName(), registration.getProtocol(), externalPort);
       }
     }
 

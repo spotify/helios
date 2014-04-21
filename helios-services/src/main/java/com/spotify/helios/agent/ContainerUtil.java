@@ -140,10 +140,11 @@ public class ContainerUtil {
     for (final Map.Entry<String, PortMapping> e : job.getPorts().entrySet()) {
       final PortMapping mapping = e.getValue();
       final PortBinding binding = new PortBinding();
-      if (mapping.getExternalPort() == null) {
+      final Integer externalPort = mapping.getExternalPort();
+      if (externalPort == null) {
         binding.hostPort = ports.get(e.getKey()).toString();
       } else {
-        binding.hostPort = mapping.getExternalPort().toString();
+        binding.hostPort = externalPort.toString();
       }
       final String entry = containerPort(mapping.getInternalPort(), mapping.getProtocol());
       bindings.put(entry, asList(binding));

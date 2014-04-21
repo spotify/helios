@@ -13,8 +13,19 @@ import java.util.concurrent.Executors;
 
 public abstract class InterruptingExecutionThreadService extends AbstractExecutionThreadService {
 
-  private final ExecutorService executorService = Executors.newSingleThreadExecutor(
-      new ThreadFactoryBuilder().setNameFormat(serviceName() + "-%d").build());
+  private final ExecutorService executorService;
+  private final String name;
+
+  protected InterruptingExecutionThreadService(final String name) {
+    this.name = name;
+    this.executorService = Executors.newSingleThreadExecutor(
+        new ThreadFactoryBuilder().setNameFormat(name + "-%d").build());
+  }
+
+  @Override
+  protected String serviceName() {
+    return name;
+  }
 
   @Override
   protected Executor executor() {

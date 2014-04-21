@@ -48,6 +48,7 @@ public class Agent extends AbstractIdleService {
   private static final Predicate<Execution> PORTS_NOT_ALLOCATED = new Predicate<Execution>() {
     @Override
     public boolean apply(final Execution execution) {
+      assert execution != null;
       return execution.getPorts() == null;
     }
   };

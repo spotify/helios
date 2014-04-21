@@ -99,7 +99,7 @@ public class RetryingZooKeeperNodeWriter extends AbstractIdleService {
     }
   }
 
-  private class Write extends AbstractFuture<Void> {
+  private static class Write extends AbstractFuture<Void> {
 
     final byte[] data;
 

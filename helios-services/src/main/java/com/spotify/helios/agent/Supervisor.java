@@ -469,7 +469,7 @@ public class Supervisor {
     }
   }
 
-  private class Nop implements Command {
+  private static class Nop implements Command {
 
     @Override
     public void perform(final boolean done) {

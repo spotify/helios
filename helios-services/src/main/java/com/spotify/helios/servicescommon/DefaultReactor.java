@@ -10,7 +10,8 @@ import org.slf4j.LoggerFactory;
 import java.io.InterruptedIOException;
 import java.nio.channels.ClosedByInterruptException;
 import java.util.concurrent.Semaphore;
-import java.util.concurrent.TimeUnit;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * A reactor loop that collapses event updates and calls a provided callback.
@@ -34,6 +35,7 @@ public class DefaultReactor extends InterruptingExecutionThreadService implement
    *                      there has been no updates.
    */
   public DefaultReactor(final String name, final Callback callback, final long timeoutMillis) {
+    super("Reactor(" + name + ")");
     this.name = name;
     this.callback = callback;
     this.timeoutMillis = timeoutMillis;
@@ -47,11 +49,6 @@ public class DefaultReactor extends InterruptingExecutionThreadService implement
    */
   public DefaultReactor(final String name, final Callback callback) {
     this(name, callback, 0);
-  }
-
-  @Override
-  protected String serviceName() {
-    return "Reactor(" + name + ")";
   }
 
   @Override
@@ -76,7 +73,10 @@ public class DefaultReactor extends InterruptingExecutionThreadService implement
         if (timeoutMillis == 0) {
           semaphore.acquire();
         } else {
-          semaphore.tryAcquire(timeoutMillis, TimeUnit.MILLISECONDS);
+          final boolean acquired = semaphore.tryAcquire(timeoutMillis, MILLISECONDS);
+          if (!acquired) {
+            log.debug("reactor timeout");
+          }
         }
       } catch (InterruptedException e) {
         continue;

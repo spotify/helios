@@ -8,8 +8,8 @@ import com.google.common.io.CharStreams;
 
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.servicescommon.coordination.NodeUpdaterFactory;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 import com.spotify.helios.servicescommon.coordination.Paths;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 import com.sun.management.OperatingSystemMXBean;
 
 import java.io.IOException;
@@ -18,6 +18,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -69,7 +70,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
   private String exec(final String command) {
     try {
       final Process process = Runtime.getRuntime().exec(command);
-      return CharStreams.toString(new InputStreamReader(process.getInputStream()));
+      return CharStreams.toString(new InputStreamReader(process.getInputStream(), UTF_8));
     } catch (IOException e) {
       throw propagate(e);
     }
