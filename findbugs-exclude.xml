@@ -1,0 +1,12 @@
+<FindBugsFilter>
+  <Match>
+    <Bug code="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
+    <Or>
+      <Class name="com.spotify.helios.servicescommon.coordination.Node" />
+      <Class name="com.spotify.helios.servicescommon.coordination.SetData" />
+    </Or>
+  </Match>
+  <Match>
+    <Bug code="SE_COMPARATOR_SHOULD_BE_SERIALIZABLE"/>
+  </Match>
+</FindBugsFilter>
