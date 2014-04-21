@@ -17,6 +17,8 @@ import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import static org.junit.Assert.assertTrue;
+
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -88,6 +90,7 @@ public class JobHistoryTest extends SystemTestBase {
     assertEquals(State.RUNNING, event3.getStatus().getState());
 
     final TaskStatusEvent event4 = eventsList.get(n + 3);
-    assertEquals(State.EXITED, event4.getStatus().getState());
+    final State finalState = event4.getStatus().getState();
+    assertTrue(finalState == State.EXITED || finalState == State.STOPPED);
   }
 }
