@@ -67,16 +67,6 @@ public class MonitoredDockerClientTest {
   }
 
   @Test
-  public void startContainer() throws Exception {
-    try {
-      client.startContainer("doesnotmatter", new HostConfig());
-      fail("NOOOO");
-    } catch (DockerException e) {
-      assertEquals(TimeoutException.class, e.getCause().getClass());
-    }
-  }
-
-  @Test
   public void testCreateContainer() throws Exception {
     try {
       client.createContainer(new ContainerConfig(), "dunnamatter");

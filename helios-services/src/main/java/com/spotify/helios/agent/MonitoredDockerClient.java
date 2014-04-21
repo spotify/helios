@@ -13,7 +13,6 @@ import com.kpelykh.docker.client.model.ImageInspectResponse;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -91,14 +90,8 @@ public class MonitoredDockerClient {
     }
   }
 
-  public void startContainer(String containerId, HostConfig hostConfig)
-      throws DockerException, InterruptedException {
-    try {
-      longFutureValue(client.startContainer(containerId, hostConfig));
-    } catch (DockerException e) {
-      checkForDockerTimeout(e, "startContainer");
-      throw propagateDockerException(e);
-    }
+  public ListenableFuture<Void> startContainer(String containerId, HostConfig hostConfig) {
+    return client.startContainer(containerId, hostConfig);
   }
 
   public ContainerCreateResponse createContainer(ContainerConfig containerConfig, String name)
@@ -112,9 +105,9 @@ public class MonitoredDockerClient {
 
   }
 
-  public int waitContainer(String containerId) throws InterruptedException, ExecutionException {
+  public ListenableFuture<Integer> waitContainer(String containerId) {
     // can't really put a timeout on this
-    return client.waitContainer(containerId).get();
+    return client.waitContainer(containerId);
   }
 
   public PullClientResponse pull(String image) throws DockerException, InterruptedException {
@@ -172,7 +165,7 @@ public class MonitoredDockerClient {
     return false;
   }
 
-  private DockerException propagateDockerException(DockerException e)
+  public DockerException propagateDockerException(DockerException e)
       throws DockerException, InterruptedException {
     Throwables.propagateIfInstanceOf(e.getCause(), InterruptedException.class);
     Throwables.propagateIfInstanceOf(e.getCause(), DockerException.class);
