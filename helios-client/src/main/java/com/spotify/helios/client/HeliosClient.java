@@ -46,11 +46,13 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -159,7 +161,6 @@ public class HeliosClient {
 
   private ListenableFuture<Response> request(final URI uri, final String method,
                                              final Object entity) {
-
     final Map<String, List<String>> headers = Maps.newHashMap();
     final byte[] entityBytes;
     headers.put(VersionCompatibility.HELIOS_VERSION_HEADER, asList(Version.POM_VERSION));
@@ -169,14 +170,6 @@ public class HeliosClient {
       entityBytes = Json.asBytesUnchecked(entity);
     } else {
       entityBytes = new byte[]{};
-    }
-    if (log.isTraceEnabled()) {
-      log.trace("req: {} {} {} {} {} {}", method, uri,
-                headers.size(),
-                Joiner.on(',').withKeyValueSeparator("=").join(headers),
-                entityBytes.length, entity == null ? "" : Json.asPrettyStringUnchecked(entity));
-    } else {
-      log.debug("req: {} {} {} {}", method, uri, headers.size(), entityBytes.length);
     }
     return executorService.submit(new Callable<Response>() {
       @Override
@@ -197,10 +190,11 @@ public class HeliosClient {
             payload.write(buffer, 0, n);
           }
         }
+        URI realUri = connection.getURL().toURI();
         if (log.isTraceEnabled()) {
-          log.trace("rep: {} {} {} {} {}", method, uri, status, payload.size(), decode(payload));
+          log.trace("rep: {} {} {} {} {}", method, realUri, status, payload.size(), decode(payload));
         } else {
-          log.debug("rep: {} {} {} {}", method, uri, status, payload.size());
+          log.debug("rep: {} {} {} {}", method, realUri, status, payload.size());
         }
         checkprotocolVersionStatus(connection);
         return new Response(method, uri, status, payload.toByteArray());
@@ -278,6 +272,14 @@ public class HeliosClient {
   private HttpURLConnection connect0(final URI uri, final String method, final byte[] entity,
                                      final Map<String, List<String>> headers)
       throws IOException {
+    if (log.isTraceEnabled()) {
+      log.trace("req: {} {} {} {} {} {}", method, uri,
+                headers.size(),
+                Joiner.on(',').withKeyValueSeparator("=").join(headers),
+                entity.length, Json.asPrettyStringUnchecked(entity));
+    } else {
+      log.debug("req: {} {} {} {}", method, uri, headers.size(), entity.length);
+    }
     final HttpURLConnection connection;
     connection = (HttpURLConnection) uri.toURL().openConnection();
     connection.setInstanceFollowRedirects(false);
@@ -286,7 +288,7 @@ public class HeliosClient {
         connection.addRequestProperty(header.getKey(), value);
       }
     }
-    if (entity != null && entity.length > 0) {
+    if (entity.length > 0) {
       connection.setDoOutput(true);
       connection.getOutputStream().write(entity);
     }
