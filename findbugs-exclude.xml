@@ -1,4 +1,6 @@
 <FindBugsFilter>
+
+  <!--We're not worried about someone modifying exposed byte arrays (although maybe we should be)-->
   <Match>
     <Bug code="EI_EXPOSE_REP,EI_EXPOSE_REP2"/>
     <Or>
@@ -6,6 +8,8 @@
       <Class name="com.spotify.helios.servicescommon.coordination.SetData" />
     </Or>
   </Match>
+
+  <!--We're not using Java serialization-->
   <Match>
     <Bug code="SE_COMPARATOR_SHOULD_BE_SERIALIZABLE"/>
   </Match>

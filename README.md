@@ -35,6 +35,15 @@ of running:
 
 The launcher scripts are in `bin/`
 
+# Findbugs
+
+To run [findbugs](http://findbugs.sourceforge.net) on the helios codebase, do
+`mvn clean compile site`. This will build helios and then run an analysis,
+emitting reports in `helios-*/target/site/findbugs.html`.
+
+To silence an irrelevant warning, add a filter match along with a justification
+in `findbugs-exclude.xml`.
+
 # The Nickel Tour
 
 The source for the Helios Master and Agent is under `helios-services`.
