@@ -10,6 +10,8 @@ respawn
 
 env DEFAULTFILE=/etc/default/helios-agent
 
+setuid helios
+
 pre-start script
   [ -f $DEFAULTFILE ] && . $DEFAULTFILE
 
