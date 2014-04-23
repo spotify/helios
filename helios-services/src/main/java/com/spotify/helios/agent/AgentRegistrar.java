@@ -4,18 +4,12 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.SettableFuture;
-
-import com.spotify.helios.servicescommon.DefaultReactor;
-import com.spotify.helios.servicescommon.Reactor;
+import com.spotify.helios.servicescommon.ZooKeeperClientAsyncInitializer;
+import com.spotify.helios.servicescommon.ZooKeeperClientConnectListener;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
-import org.apache.curator.framework.state.ConnectionState;
-import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
@@ -24,57 +18,33 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.util.concurrent.Service.State.STOPPING;
 import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
-public class AgentRegistrar extends AbstractIdleService {
+public class AgentRegistrar extends ZooKeeperClientAsyncInitializer implements ZooKeeperClientConnectListener {
 
   private static final Logger log = LoggerFactory.getLogger(AgentRegistrar.class);
 
   private static final byte[] EMPTY_BYTES = new byte[]{};
 
-  private final ZooKeeperClient client;
   private final String name;
   private final String id;
 
   private PersistentEphemeralNode upNode;
 
-  private SettableFuture<Void> complete = SettableFuture.create();
-
-  private final Reactor reactor = new DefaultReactor("agent-registrar", new Update());
-
-  private ConnectionStateListener listener = new ConnectionStateListener() {
-    @Override
-    public void stateChanged(final CuratorFramework client, final ConnectionState newState) {
-      if (newState == ConnectionState.RECONNECTED) {
-        reactor.signal();
-      }
-    }
-  };
-
-
   public AgentRegistrar(final ZooKeeperClient client, final String name, final String id) {
-    this.client = client;
+    super(client);
+
     this.name = name;
     this.id = id;
-  }
 
-  public SettableFuture<Void> getCompletionFuture() {
-    return complete;
-  }
-
-  @Override
-  protected void startUp() throws Exception {
-    client.getConnectionStateListenable().addListener(listener);
-    reactor.startAsync().awaitRunning();
-    reactor.signal();
+    setCompleteFuture(SettableFuture.<Void>create());
   }
 
   @Override
   protected void shutDown() throws Exception {
-    reactor.stopAsync().awaitTerminated();
+    super.shutDown();
+
     if (upNode != null) {
       try {
         upNode.close();
@@ -85,8 +55,10 @@ public class AgentRegistrar extends AbstractIdleService {
   }
 
 
-  private void register() throws KeeperException {
+  @Override
+  public void onConnect(SettableFuture<Void> complete) throws KeeperException {
     final String idPath = Paths.configHostId(name);
+    final ZooKeeperClient client = getZKClient();
 
     final Stat stat = client.exists(idPath);
     if (stat == null) {
@@ -129,29 +101,4 @@ public class AgentRegistrar extends AbstractIdleService {
     complete.set(null);
   }
 
-  private class Update implements Reactor.Callback {
-
-    final RetryIntervalPolicy RETRY_INTERVAL_POLICY = BoundedRandomExponentialBackoff.newBuilder()
-        .setMinInterval(1, SECONDS)
-        .setMaxInterval(30, SECONDS)
-        .build();
-
-    public void run() throws InterruptedException {
-      final RetryScheduler retryScheduler = RETRY_INTERVAL_POLICY.newScheduler();
-      while (isAlive()) {
-        try {
-          register();
-          return;
-        } catch (KeeperException e) {
-          final long sleep = retryScheduler.nextMillis();
-          log.error("Agent registration failed, retrying in {} ms", sleep, e);
-          Thread.sleep(sleep);
-        }
-      }
-    }
-  }
-
-  private boolean isAlive() {
-    return state().ordinal() < STOPPING.ordinal();
-  }
 }
