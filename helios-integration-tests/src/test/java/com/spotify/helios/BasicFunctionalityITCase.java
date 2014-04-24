@@ -48,7 +48,7 @@ public class BasicFunctionalityITCase {
     if (endpointUrl == null) {
       endpointUrl = "http://localhost:5801";
     }
-    client = new HeliosClient("unittest", ImmutableList.of(new URI(endpointUrl)));
+    client = HeliosClient.newBuilder().setUser("unittest").setEndpoints(endpointUrl).build();
   }
 
   @After

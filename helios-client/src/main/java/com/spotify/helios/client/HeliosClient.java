@@ -89,25 +89,25 @@ public class HeliosClient {
 
   private final ListeningExecutorService executorService;
 
-  public HeliosClient(final String user,
-                      final Supplier<List<URI>> endpointSupplier,
-                      final ListeningExecutorService executorService) {
+  HeliosClient(final String user,
+               final Supplier<List<URI>> endpointSupplier,
+               final ListeningExecutorService executorService) {
     this.user = user;
     this.endpointSupplier = endpointSupplier;
     this.executorService = executorService;
   }
 
-  public HeliosClient(final String user, final List<URI> endpoints,
-                      final ListeningExecutorService executorService) {
+  HeliosClient(final String user, final List<URI> endpoints,
+               final ListeningExecutorService executorService) {
     this(user, Suppliers.ofInstance(endpoints), executorService);
   }
 
-  public HeliosClient(final String user, final Supplier<List<URI>> endpointSupplier) {
+  HeliosClient(final String user, final Supplier<List<URI>> endpointSupplier) {
     this(user, endpointSupplier, MoreExecutors.listeningDecorator(getExitingExecutorService(
         (ThreadPoolExecutor) newFixedThreadPool(4), 0, SECONDS)));
   }
 
-  public HeliosClient(final String user, final List<URI> endpoints) {
+  HeliosClient(final String user, final List<URI> endpoints) {
     this(user, Suppliers.ofInstance(endpoints));
   }
 
@@ -510,6 +510,18 @@ public class HeliosClient {
       return setEndpointSupplier(Suppliers.ofInstance(endpoints));
     }
 
+    public Builder setEndpoints(final URI... endpoints) {
+      return setEndpointSupplier(Suppliers.ofInstance(asList(endpoints)));
+    }
+
+    public Builder setEndpoints(final String... endpoints) {
+      final List<URI> uris = Lists.newArrayList();
+      for (String endpoint : endpoints) {
+        uris.add(URI.create(endpoint));
+      }
+      return setEndpoints(uris);
+    }
+
     public Builder setEndpointSupplier(final Supplier<List<URI>> endpointSupplier) {
       this.endpointSupplier = endpointSupplier;
       return this;
@@ -535,7 +547,7 @@ public class HeliosClient {
         .build();
   }
 
-  private class Response {
+  private static class Response {
 
     private final String method;
     private final URI uri;
