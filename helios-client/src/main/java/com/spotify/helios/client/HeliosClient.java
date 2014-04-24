@@ -23,6 +23,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.Resolver;
 import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.VersionCompatibility.Status;
@@ -46,13 +47,11 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLEncoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -503,19 +502,37 @@ public class HeliosClient {
       return this;
     }
 
-    public Builder setEndpoints(final List<URI> endpoints) {
-      this.endpointSupplier = Suppliers.ofInstance(endpoints);
-      return this;
+    public Builder setDomain(final String domain) {
+      return setEndpointSupplier(Resolver.supplier("helios", domain));
     }
 
-    public HeliosClient build() {
-      return new HeliosClient(user, endpointSupplier);
+    public Builder setEndpoints(final List<URI> endpoints) {
+      return setEndpointSupplier(Suppliers.ofInstance(endpoints));
     }
 
     public Builder setEndpointSupplier(final Supplier<List<URI>> endpointSupplier) {
       this.endpointSupplier = endpointSupplier;
       return this;
     }
+
+    public HeliosClient build() {
+      return new HeliosClient(user, endpointSupplier);
+    }
+  }
+
+  /**
+   * Create a new helios client as a specific user, connecting to a helios master cluster in a
+   * specific domain.
+   *
+   * @param domain The target domain.
+   * @param user   The user to identify as.
+   * @return A helios client.
+   */
+  public static HeliosClient create(final String domain, final String user) {
+    return HeliosClient.newBuilder()
+        .setDomain(domain)
+        .setUser(user)
+        .build();
   }
 
   private class Response {
