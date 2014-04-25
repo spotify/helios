@@ -44,7 +44,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 /**
  * A runner service that starts a container once.
  */
-class TaskRunner extends InterruptingExecutionThreadService implements Service {
+class TaskRunner extends InterruptingExecutionThreadService {
   private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
 
   private final long delayMillis;

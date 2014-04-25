@@ -73,6 +73,8 @@ public class RiemannSupport implements Managed {
           client = RiemannClient.udp(host, port);
         } else if ("tcp".equals(proto)) {
           client = RiemannClient.tcp(host, port);
+        } else {
+          throw new IllegalArgumentException();
         }
         client.connect();
       } catch (IOException e) {

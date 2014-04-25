@@ -195,6 +195,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
 
     @Override
     public boolean apply(final Node node) {
+      assert node != null;
       try {
         final Task task = parse(node.getBytes(), Task.class);
         return task.getGoal() == UNDEPLOY;

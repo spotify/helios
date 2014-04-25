@@ -78,9 +78,6 @@ public class ZooKeeperHealthChecker extends HealthCheck
     switch (event.getType()) {
       case INITIALIZED:
       case CONNECTION_RECONNECTED:
-        setState(null);
-        break;
-
       case CHILD_ADDED:
       case CHILD_REMOVED:
       case CHILD_UPDATED:
@@ -90,10 +87,10 @@ public class ZooKeeperHealthChecker extends HealthCheck
 
       case CONNECTION_LOST:
         setState("CONNECTION_LOST");
+        break;
       case CONNECTION_SUSPENDED:
         setState("CONNECTION_SUSPENDED");
         break;
-
     }
   }
 

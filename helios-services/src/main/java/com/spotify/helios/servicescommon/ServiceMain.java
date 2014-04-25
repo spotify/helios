@@ -20,8 +20,6 @@ import static java.util.Arrays.asList;
 
 public abstract class ServiceMain extends AbstractIdleService {
 
-  protected final Logger log = LoggerFactory.getLogger(this.getClass());
-
   protected ServiceMain(LoggingConfig loggingConfig, String sentryDsn) {
     setupLogging(loggingConfig, sentryDsn);
   }

@@ -34,7 +34,7 @@ public class ZooKeeperModelReporter {
 
   public void checkException(Exception e, String... tags) {
     Throwable t = e;
-    while (t != null && t.getClass() != KeeperException.class) {
+    while (t != null && !(t instanceof KeeperException)) {
       t = t.getCause();
     }
     if (t == null) {

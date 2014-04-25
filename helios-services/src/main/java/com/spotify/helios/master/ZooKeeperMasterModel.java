@@ -65,25 +65,41 @@ import static org.apache.zookeeper.KeeperException.NotEmptyException;
 
 public class ZooKeeperMasterModel implements MasterModel {
 
-  public static final class EventComparator implements Comparator<TaskStatusEvent> {
+  private static final Predicate<Entry<JobId, Deployment>> GOAL_NOT_UNDEPLOY =
+      new Predicate<Entry<JobId, Deployment>>() {
+        @Override
+        public boolean apply(Entry<JobId, Deployment> entry) {
+          assert entry != null;
+          return entry.getValue().getGoal() != UNDEPLOY;
+        }
+      };
 
-    @Override
-    public int compare(TaskStatusEvent arg0, TaskStatusEvent arg1) {
-      if (arg1.getTimestamp() > arg0.getTimestamp()) {
-        return -1;
-      } else if (arg1.getTimestamp() == arg0.getTimestamp()) {
-        return 0;
-      } else {
-        return 1;
-      }
-    }
-  }
-
-  private static final EventComparator EVENT_COMPARATOR = new EventComparator();
+  private static final Comparator<TaskStatusEvent> EVENT_COMPARATOR =
+      new Comparator<TaskStatusEvent>() {
+        @Override
+        public int compare(TaskStatusEvent arg0, TaskStatusEvent arg1) {
+          if (arg1.getTimestamp() > arg0.getTimestamp()) {
+            return -1;
+          } else if (arg1.getTimestamp() == arg0.getTimestamp()) {
+            return 0;
+          } else {
+            return 1;
+          }
+        }
+      };
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperMasterModel.class);
 
   public static final Map<JobId, TaskStatus> EMPTY_STATUSES = emptyMap();
+  public static final TypeReference<HostInfo>
+      HOST_INFO_TYPE =
+      new TypeReference<HostInfo>() {};
+  public static final TypeReference<AgentInfo>
+      AGENT_INFO_TYPE =
+      new TypeReference<AgentInfo>() {};
+  public static final TypeReference<Map<String, String>>
+      STRING_MAP_TYPE =
+      new TypeReference<Map<String, String>>() {};
 
   private final ZooKeeperClientProvider provider;
 
@@ -588,12 +604,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final AgentInfo agentInfo = getAgentInfo(client, host);
     final Map<JobId, Deployment> tasks = getTasks(client, host);
 
-    final Map<JobId, Deployment> jobs = Maps.filterEntries(tasks,
-        new Predicate<Entry<JobId, Deployment>>() {
-          @Override public boolean apply(Entry<JobId, Deployment> entry) {
-            return entry.getValue().getGoal() != UNDEPLOY;
-          }
-        });
+    final Map<JobId, Deployment> jobs = Maps.filterEntries(tasks, GOAL_NOT_UNDEPLOY);
     final Map<JobId, TaskStatus> statuses = getTaskStatuses(client, host);
     final Map<String, String> environment = getEnvironment(client, host);
 
@@ -620,21 +631,15 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private Map<String, String> getEnvironment(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostEnvVars(host),
-                        new TypeReference<Map<String, String>>() {},
-                        "environment");
+    return tryGetEntity(client, Paths.statusHostEnvVars(host), STRING_MAP_TYPE, "environment");
   }
 
   private AgentInfo getAgentInfo(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostAgentInfo(host),
-                        new TypeReference<AgentInfo>() {},
-                        "agent info");
+    return tryGetEntity(client, Paths.statusHostAgentInfo(host), AGENT_INFO_TYPE, "agent info");
   }
 
   private HostInfo getHostInfo(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostInfo(host),
-                        new TypeReference<HostInfo>() {},
-                        "host info");
+    return tryGetEntity(client, Paths.statusHostInfo(host), HOST_INFO_TYPE, "host info");
   }
 
   private boolean checkHostUp(final ZooKeeperClient client, final String host) {

@@ -4,8 +4,6 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingIterator;
@@ -24,13 +22,10 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Queue;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
@@ -273,16 +268,7 @@ public class ContainerUtil {
     }
 
     final BlockingQueue<Map<String, Object>> queue = new LinkedBlockingQueue<>();
-    final Future<?> task = executor.submit(new Callable<Object>() {
-      @Override
-      public Object call() throws Exception {
-        while (messages.hasNext()) {
-          queue.put(messages.next());
-        }
-        queue.put(EOF);
-        return null;
-      }
-    });
+    final Future<?> task = executor.submit(new Tailer(messages, queue));
     try {
       while (true) {
         final Map<String, Object> message = queue.poll(PULL_POLL_TIMEOUT_SECONDS, SECONDS);
@@ -301,6 +287,27 @@ public class ContainerUtil {
       }
     } finally {
       task.cancel(true);
+    }
+  }
+
+  private static class Tailer implements Callable<Object> {
+
+    private final MappingIterator<Map<String, Object>> messages;
+    private final BlockingQueue<Map<String, Object>> queue;
+
+    public Tailer(final MappingIterator<Map<String, Object>> messages,
+                  final BlockingQueue<Map<String, Object>> queue) {
+      this.messages = messages;
+      this.queue = queue;
+    }
+
+    @Override
+    public Object call() throws Exception {
+      while (messages.hasNext()) {
+        queue.put(messages.next());
+      }
+      queue.put(EOF);
+      return null;
     }
   }
 }

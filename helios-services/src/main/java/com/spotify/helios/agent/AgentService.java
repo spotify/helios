@@ -73,6 +73,9 @@ public class AgentService extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
+  private static final TypeReference<Map<JobId, Execution>> JOBID_EXECUTIONS_MAP =
+      new TypeReference<Map<JobId, Execution>>() {};
+
   private final Agent agent;
 
   private final Server server;
@@ -213,10 +216,11 @@ public class AgentService extends AbstractIdleService {
 
     final PortAllocator portAllocator = new PortAllocator(config.getPortRangeStart(),
                                                           config.getPortRangeEnd());
+
     final PersistentAtomicReference<Map<JobId, Execution>> executions;
     try {
       executions = PersistentAtomicReference.create(stateDirectory.resolve("executions.json"),
-                                                    new TypeReference<Map<JobId, Execution>>() {},
+                                                    JOBID_EXECUTIONS_MAP,
                                                     Suppliers.ofInstance(EMPTY_EXECUTIONS));
     } catch (IOException e) {
       throw Throwables.propagate(e);
