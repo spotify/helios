@@ -18,6 +18,7 @@ import java.util.concurrent.Callable;
 import static com.spotify.helios.Polling.await;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter.noop;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.zookeeper.KeeperException.NodeExistsException;
 import static org.junit.Assert.assertArrayEquals;
 
 public class ZooKeeperUpdatingPersistentDirectoryTest {
@@ -73,14 +74,17 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
 
   @Test
   public void verifyUpdatesDifferingNode() throws Exception {
-    zk.curator().create().forPath(FOO_PATH, "old".getBytes());
+    try {
+      zk.curator().create().forPath(FOO_PATH, "old".getBytes());
+    } catch (NodeExistsException ignore) {
+    }
     sut.map().put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
   }
 
   @Test
   public void verifyRemovesUndesiredNode() throws Exception {
-    zk.curator().create().forPath(FOO_PATH, BAR1_DATA);
+    zk.ensure(FOO_PATH);
     zk.stop();
     zk.start();
     awaitNoNode(FOO_PATH);
@@ -89,7 +93,10 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
   @Test
   public void verifyRecoversFromBackupRestoreOnline() throws Exception {
     // Create backup
-    zk.curator().create().forPath("/version", "1".getBytes());
+    try {
+      zk.curator().create().forPath("/version", "1".getBytes());
+    } catch (NodeExistsException ignore) {
+    }
     sut.map().put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
     zk.backup(backupDir);
@@ -115,7 +122,10 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
   @Test
   public void verifyRecoversFromBackupRestoreOffline() throws Exception {
     // Create backup
-    zk.curator().create().forPath("/version", "1".getBytes());
+    try {
+      zk.curator().create().forPath("/version", "1".getBytes());
+    } catch (NodeExistsException ignore) {
+    }
     sut.map().put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
     zk.backup(backupDir);
