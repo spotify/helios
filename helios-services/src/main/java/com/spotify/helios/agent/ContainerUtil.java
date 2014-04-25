@@ -6,8 +6,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.MappingIterator;
@@ -26,14 +24,24 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.SecureRandom;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Queue;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
+import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.ThreadPoolExecutor;
 
+import static com.google.common.util.concurrent.MoreExecutors.getExitingExecutorService;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.Executors.newCachedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -41,6 +49,12 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * client.
  */
 public class ContainerUtil {
+
+  private static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP =
+      new TypeReference<Map<String, Object>>() {};
+
+  private static final Map<String, Object> EOF = new HashMap<>();
+
   public static class PullingException extends Exception {}
 
   private static final Logger log = LoggerFactory.getLogger(ContainerUtil.class);
@@ -51,7 +65,7 @@ public class ContainerUtil {
   private final Map<String, Integer> ports;
   private final Job job;
   private final Map<String, String> envVars;
-  private final ListeningExecutorService pullStreamExecutor;
+  private final ExecutorService executor;
 
   public ContainerUtil(final String host,
                        final Job job,
@@ -61,8 +75,9 @@ public class ContainerUtil {
     this.ports = ports;
     this.job = job;
     this.envVars = envVars;
-    this.pullStreamExecutor = MoreExecutors.listeningDecorator(Executors.newSingleThreadExecutor());
- }
+    this.executor = getExitingExecutorService((ThreadPoolExecutor) newCachedThreadPool(),
+                                              0, SECONDS);
+  }
 
   /**
    * Create docker container configuration for a job.
@@ -247,63 +262,45 @@ public class ContainerUtil {
   }
 
   public void tailPull(final String image, final InputStream stream)
-      throws ImagePullFailedException, ImageMissingException, PullingException {
+      throws ImagePullFailedException, ImageMissingException, PullingException,
+             InterruptedException {
 
     final MappingIterator<Map<String, Object>> messages;
     try {
-      messages = Json.readValues(stream, new TypeReference<Map<String, Object>>() {});
+      messages = Json.readValues(stream, STRING_OBJECT_MAP);
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
 
-    // TODO (dano): this can block forever and seems to be impossible to abort by closing the client
-    while (true) {
-      if (!hasNext(messages)) {
-        break;
-      }
-      Map<String, Object> message = getNext(messages);
-      final Object error = message.get("error");
-      if (error != null) {
-        if (error.toString().contains("404")) {
-          throw new ImageMissingException(message.toString());
-        } else {
-          throw new ImagePullFailedException(message.toString());
-        }
-      }
-      log.info("pull {}: {}", image, message);
-    }
-  }
-
-  private Map<String, Object> getNext(final MappingIterator<Map<String, Object>> messages)
-      throws PullingException {
-    final ListenableFuture<Map<String, Object>> future = pullStreamExecutor.submit(
-      new Callable<Map<String, Object>>() {
-        @Override
-        public Map<String, Object> call() throws Exception {
-          return messages.next();
-        }
-      });
-    try {
-      return Futures.get(future, PULL_POLL_TIMEOUT_SECONDS, SECONDS, PullingException.class);
-    } catch (PullingException e) {
-      future.cancel(true);
-      throw e;
-    }
-  }
-
-  private boolean hasNext(final MappingIterator<Map<String, Object>> messages)
-      throws PullingException {
-    final ListenableFuture<Boolean> future = pullStreamExecutor.submit(new Callable<Boolean>() {
+    final BlockingQueue<Map<String, Object>> queue = new LinkedBlockingQueue<>();
+    final Future<?> task = executor.submit(new Callable<Object>() {
       @Override
-      public Boolean call() throws Exception {
-        return messages.hasNext();
+      public Object call() throws Exception {
+        while (messages.hasNext()) {
+          queue.put(messages.next());
+        }
+        queue.put(EOF);
+        return null;
       }
     });
     try {
-      return Futures.get(future, PULL_POLL_TIMEOUT_SECONDS, SECONDS, PullingException.class);
-    } catch (PullingException e) {
-      future.cancel(true);
-      throw e;
+      while (true) {
+        final Map<String, Object> message = queue.poll(PULL_POLL_TIMEOUT_SECONDS, SECONDS);
+        if (message == EOF) {
+          break;
+        }
+        final Object error = message.get("error");
+        if (error != null) {
+          if (error.toString().contains("404")) {
+            throw new ImageMissingException(message.toString());
+          } else {
+            throw new ImagePullFailedException(message.toString());
+          }
+        }
+        log.info("pull {}: {}", image, message);
+      }
+    } finally {
+      task.cancel(true);
     }
   }
 }
