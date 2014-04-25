@@ -97,7 +97,7 @@ public class TemporaryPorts extends ExternalResource {
   public synchronized int localPort(final String name) {
     Preconditions.checkState(!closed, "closed");
     for (int i = 0; i < retries; i++) {
-      final int port = ThreadLocalRandom.current().nextInt(49151, 65536);
+      final int port = ThreadLocalRandom.current().nextInt(40000, 49152);
       final AllocatedPort allocatedPort = lock(port, name);
       if (allocatedPort == null) {
         continue;
@@ -116,7 +116,7 @@ public class TemporaryPorts extends ExternalResource {
   public synchronized Range<Integer> localPortRange(final String name, final int n) {
     Preconditions.checkState(!closed, "closed");
     for (int i = 0; i < retries; i++) {
-      final int base = ThreadLocalRandom.current().nextInt(49151, 65536);
+      final int base = ThreadLocalRandom.current().nextInt(40000, 49152);
       final List<AllocatedPort> rangePorts = Lists.newArrayList();
       boolean successful = true;
       for (int j = 0; j < n; j++) {
