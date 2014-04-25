@@ -1,6 +1,13 @@
 **Please join our mailing list:**
 https://groups.google.com/a/spotify.com/forum/#!forum/helios
 
+0.0.12
+======
+* CLI: Easier to use flat style instead of hierarchical command structure.
+* CLI: --version and version commands for checking the version of the cli and the master.
+* Run agent and master as helios user instead of root.
+* Lots of bugfixes.
+
 0.0.8
 =====
 * Include a working Upstart job with the Debian package
