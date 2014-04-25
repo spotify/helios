@@ -344,7 +344,7 @@ public abstract class SystemTestBase {
     startMaster(argsList.toArray(new String[argsList.size()]));
   }
 
-  AgentMain startDefaultAgent(final String host, final String... args)
+  protected AgentMain startDefaultAgent(final String host, final String... args)
       throws Exception {
     if (isIntegration()) {
       Preconditions.checkArgument(args.length == 0,
@@ -714,7 +714,7 @@ public abstract class SystemTestBase {
     return list;
   }
 
-  HeliosClient defaultClient() {
+  protected HeliosClient defaultClient() {
     return client(TEST_USER, getMasterEndpoint());
   }
 
