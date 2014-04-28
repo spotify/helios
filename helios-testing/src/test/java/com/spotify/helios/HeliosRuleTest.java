@@ -44,7 +44,7 @@ public class HeliosRuleTest extends SystemTestBase {
       final Map<JobId, Job> jobs = client.jobs().get(15, TimeUnit.SECONDS);
       assertEquals("wrong number of jobs running", 1, jobs.size());
       final Job job = Iterables.getOnlyElement(jobs.values());
-      assertEquals("wrong job running", job.getImage(), IMAGE_NAME);
+      assertEquals("wrong job running", IMAGE_NAME, job.getImage());
     }
 
     private HeliosRule getHeliosRule() {

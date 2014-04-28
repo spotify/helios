@@ -45,7 +45,7 @@ public class HeliosRule extends ExternalResource {
 
   private TaskStatus status;
 
-  public HeliosRule(HeliosClient heliosClient, String jobName, String jobVersion, String imageName,
+  private HeliosRule(HeliosClient heliosClient, String jobName, String jobVersion, String imageName,
                     List<String> command, String host, String portName, int internalPort,
                     Integer externalPort) {
     this.heliosClient = heliosClient;
