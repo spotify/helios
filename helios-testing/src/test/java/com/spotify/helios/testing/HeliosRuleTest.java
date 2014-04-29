@@ -6,7 +6,6 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.system.SystemTestBase;
-import com.spotify.helios.testing.HeliosRule;
 
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,7 +49,7 @@ public class HeliosRuleTest extends SystemTestBase {
 
     private HeliosRule getHeliosRule() {
       return HeliosRule.newBuilder()
-          .setHeliosClient(client)
+          .setClient(client)
           .setJobName(jobName)
           .setJobVersion(JOB_VERSION)
           .setImageName(IMAGE_NAME)
