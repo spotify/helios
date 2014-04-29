@@ -8,6 +8,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -17,6 +18,7 @@ import com.spotify.helios.common.Json;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -183,9 +185,9 @@ public class Job extends Descriptor implements Comparable<Job> {
       public String version;
       public String image;
       public List<String> command = EMPTY_COMMAND;
-      public Map<String, String> env = EMPTY_ENV;
-      public Map<String, PortMapping> ports = EMPTY_PORTS;
-      public Map<ServiceEndpoint, ServicePorts> registration = EMPTY_REGISTRATION;
+      public Map<String, String> env = Maps.newHashMap(EMPTY_ENV);
+      public Map<String, PortMapping> ports = Maps.newHashMap(EMPTY_PORTS);
+      public Map<ServiceEndpoint, ServicePorts> registration = Maps.newHashMap(EMPTY_REGISTRATION);
     }
 
     final Parameters p = new Parameters();
@@ -216,17 +218,32 @@ public class Job extends Descriptor implements Comparable<Job> {
     }
 
     public Builder setEnv(final Map<String, String> env) {
-      p.env = ImmutableMap.copyOf(env);
+      p.env = Maps.newHashMap(env);
+      return this;
+    }
+
+    public Builder addEnv(String key, String value) {
+      p.env.put(key, value);
       return this;
     }
 
     public Builder setPorts(final Map<String, PortMapping> ports) {
-      p.ports = ImmutableMap.copyOf(ports);
+      p.ports = Maps.newHashMap(ports);
+      return this;
+    }
+
+    public Builder addPort(String name, PortMapping port) {
+      p.ports.put(name, port);
       return this;
     }
 
     public Builder setRegistration(final Map<ServiceEndpoint, ServicePorts> registration) {
-      p.registration = ImmutableMap.copyOf(registration);
+      p.registration = Maps.newHashMap(registration);
+      return this;
+    }
+
+    public Builder addRegistration(ServiceEndpoint endpoint, ServicePorts ports) {
+      p.registration.put(endpoint, ports);
       return this;
     }
 
@@ -247,17 +264,16 @@ public class Job extends Descriptor implements Comparable<Job> {
     }
 
     public Map<String, String> getEnv() {
-      return p.env;
+      return Collections.unmodifiableMap(p.env);
     }
 
     public Map<String, PortMapping> getPorts() {
-      return p.ports;
+      return Collections.unmodifiableMap(p.ports);
     }
 
     public Map<ServiceEndpoint, ServicePorts> getRegistration() {
-      return p.registration;
+      return Collections.unmodifiableMap(p.registration);
     }
-
 
     public Job build() {
       final String configHash;

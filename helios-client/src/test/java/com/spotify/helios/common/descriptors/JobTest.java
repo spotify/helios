@@ -40,6 +40,92 @@ public class JobTest {
   }
 
   @Test
+  public void verifyBuilder() throws Exception {
+    final Job.Builder builder = Job.newBuilder();
+
+    // Input to setXXX
+    final String setName = "set_name";
+    final String setVersion = "set_version";
+    final String setImage = "set_image";
+    final List<String> setCommand = asList("set", "command");
+    final Map<String, String> setEnv = ImmutableMap.of("set", "env");
+    final Map<String, PortMapping> setPorts = ImmutableMap.of("set_ports", PortMapping.of(1234));
+    final Map<ServiceEndpoint, ServicePorts> setRegistration = ImmutableMap.of(
+        ServiceEndpoint.of("set_service", "set_proto"),
+        ServicePorts.of("set_ports1", "set_ports2"));
+
+    // Input to addXXX
+    final Map<String, String> addEnv = ImmutableMap.of("add", "env");
+    final Map<String, PortMapping> addPorts = ImmutableMap.of("add_ports", PortMapping.of(4711));
+    final Map<ServiceEndpoint, ServicePorts> addRegistration = ImmutableMap.of(
+        ServiceEndpoint.of("add_service", "add_proto"),
+        ServicePorts.of("add_ports1", "add_ports2"));
+
+    // Expected output from getXXX
+    final String expectedName = setName;
+    final String expectedVersion = setVersion;
+    final String expectedImage = setImage;
+    final List<String> expectedCommand = setCommand;
+    final Map<String, String> expectedEnv = concat(setEnv, addEnv);
+    final Map<String, PortMapping> expectedPorts = concat(setPorts, addPorts);
+    final Map<ServiceEndpoint, ServicePorts> expectedRegistration = concat(setRegistration,
+                                                                           addRegistration);
+
+    // Check setXXX methods
+    builder.setName(setName);
+    builder.setVersion(setVersion);
+    builder.setImage(setImage);
+    builder.setCommand(setCommand);
+    builder.setEnv(setEnv);
+    builder.setPorts(setPorts);
+    builder.setRegistration(setRegistration);
+    assertEquals("name", setName, builder.getName());
+    assertEquals("version", setVersion, builder.getVersion());
+    assertEquals("image", setImage, builder.getImage());
+    assertEquals("command", setCommand, builder.getCommand());
+    assertEquals("env", setEnv, builder.getEnv());
+    assertEquals("ports", setPorts, builder.getPorts());
+    assertEquals("registration", setRegistration, builder.getRegistration());
+
+    // Check addXXX methods
+    for (final Map.Entry<String, String> entry : addEnv.entrySet()) {
+      builder.addEnv(entry.getKey(), entry.getValue());
+    }
+    for (final Map.Entry<String, PortMapping> entry : addPorts.entrySet()) {
+      builder.addPort(entry.getKey(), entry.getValue());
+    }
+    for (final Map.Entry<ServiceEndpoint, ServicePorts> entry : addRegistration.entrySet()) {
+      builder.addRegistration(entry.getKey(), entry.getValue());
+    }
+    assertEquals("name", expectedName, builder.getName());
+    assertEquals("version", expectedVersion, builder.getVersion());
+    assertEquals("image", expectedImage, builder.getImage());
+    assertEquals("command", expectedCommand, builder.getCommand());
+    assertEquals("env", expectedEnv, builder.getEnv());
+    assertEquals("ports", expectedPorts, builder.getPorts());
+    assertEquals("registration", expectedRegistration, builder.getRegistration());
+
+    // Check final output
+    final Job job = builder.build();
+    assertEquals("name", expectedName, job.getId().getName());
+    assertEquals("version", expectedVersion, job.getId().getVersion());
+    assertEquals("image", expectedImage, job.getImage());
+    assertEquals("command", expectedCommand, job.getCommand());
+    assertEquals("env", expectedEnv, job.getEnv());
+    assertEquals("ports", expectedPorts, job.getPorts());
+    assertEquals("registration", expectedRegistration, job.getRegistration());
+  }
+
+  @SafeVarargs
+  private final <K, V> Map<K, V> concat(final Map<K, V>... maps) {
+    final ImmutableMap.Builder<K, V> b = ImmutableMap.builder();
+    for (final Map<K, V> map : maps) {
+      b.putAll(map);
+    }
+    return b.build();
+  }
+
+  @Test
   public void verifySha1ID() throws IOException {
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
                                                    "image", "foobar:4711",
@@ -151,20 +237,26 @@ public class JobTest {
     final HashMap<ServiceEndpoint, ServicePorts> mutableRegistration =
         Maps.newHashMap(expectedRegistration);
 
-    final Job job = Job.newBuilder()
+    final Job.Builder builder = Job.newBuilder()
         .setCommand(mutableCommand)
         .setEnv(mutableEnv)
         .setPorts(mutablePorts)
         .setImage("foobar:4711")
         .setName("foozbarz")
         .setVersion("17")
-        .setRegistration(mutableRegistration)
-        .build();
+        .setRegistration(mutableRegistration);
+
+    final Job job = builder.build();
 
     mutableCommand.add("bar");
     mutableEnv.put("e2", "2");
     mutablePorts.put("p2", PortMapping.of(3, 4));
     mutableRegistration.put(ServiceEndpoint.of("bar", "udp"), ServicePorts.of("p2"));
+
+    builder.addPort("added_port", PortMapping.of(4711));
+    builder.addEnv("added_env", "FOO");
+    builder.addRegistration(ServiceEndpoint.of("added_reg", "added_proto"),
+                            ServicePorts.of("added_port"));
 
     assertEquals(expectedCommand, job.getCommand());
     assertEquals(expectedEnv, job.getEnv());
