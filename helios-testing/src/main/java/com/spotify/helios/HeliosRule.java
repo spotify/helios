@@ -33,7 +33,7 @@ import static org.junit.Assert.fail;
 
 public class HeliosRule extends ExternalResource {
 
-  private final HeliosClient heliosClient;
+  private final HeliosClient client;
   private final String jobName;
   private final String jobVersion;
   private final String imageName;
@@ -45,18 +45,17 @@ public class HeliosRule extends ExternalResource {
 
   private TaskStatus status;
 
-  private HeliosRule(HeliosClient heliosClient, String jobName, String jobVersion, String imageName,
-                    List<String> command, String host, String portName, int internalPort,
-                    Integer externalPort) {
-    this.heliosClient = heliosClient;
-    this.jobName = jobName;
-    this.jobVersion = jobVersion;
-    this.imageName = imageName;
-    this.command = command;
-    this.host = host;
-    this.portName = portName;
-    this.internalPort = internalPort;
-    this.externalPort = externalPort;
+  public HeliosRule(final Builder builder) {
+    this.client = checkNotNull(builder.heliosClient == null ? builder.clientBuilder.build()
+                                                            : builder.heliosClient, "client");
+    this.jobName = checkNotNull(builder.jobName, "jobName");
+    this.jobVersion = checkNotNull(builder.jobVersion, "jobVersion");
+    this.imageName = checkNotNull(builder.imageName, "imageName");
+    this.command = checkNotNull(builder.command, "command");
+    this.host = checkNotNull(builder.host, "host");
+    this.portName = checkNotNull(builder.portName, "portName");
+    this.internalPort = builder.internalPort;
+    this.externalPort = builder.externalPort;
   }
 
   public TaskStatus getStatus() {
@@ -78,7 +77,7 @@ public class HeliosRule extends ExternalResource {
         .setPorts(ImmutableMap.of(portName, PortMapping.of(internalPort, externalPort)))
         .build();
 
-    final CreateJobResponse createJobResponse = heliosClient.createJob(job).get(30, SECONDS);
+    final CreateJobResponse createJobResponse = client.createJob(job).get(30, SECONDS);
     if (createJobResponse.getStatus() != CreateJobResponse.Status.OK) {
       fail(format("Failed to create job %s - %s",
                   job.toString(), createJobResponse.toString()));
@@ -86,7 +85,7 @@ public class HeliosRule extends ExternalResource {
 
     final JobId jobId = JobId.fromString(createJobResponse.getId());
     final Deployment deployment = Deployment.of(jobId, Goal.START);
-    final JobDeployResponse deployResponse = heliosClient.deploy(deployment, host).get(30, SECONDS);
+    final JobDeployResponse deployResponse = client.deploy(deployment, host).get(30, SECONDS);
     if (deployResponse.getStatus() != JobDeployResponse.Status.OK) {
       fail(format("Failed to deploy job %s %s - %s",
                   jobId.toString(), job.toString(), deployResponse.toString()));
@@ -99,7 +98,7 @@ public class HeliosRule extends ExternalResource {
     return Polling.awaitUnchecked(1, MINUTES, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
-        final JobStatus status = getUnchecked(heliosClient.jobStatus(jobId));
+        final JobStatus status = getUnchecked(client.jobStatus(jobId));
         if (status == null) {
           return null;
         }
@@ -116,21 +115,21 @@ public class HeliosRule extends ExternalResource {
   @Override
   protected void after() {
     final String query = format("%s:%s", jobName, jobVersion);
-    final Map<JobId, Job> jobs = getUnchecked(heliosClient.jobs(query));
+    final Map<JobId, Job> jobs = getUnchecked(client.jobs(query));
 
     if (jobs.isEmpty()) {
       return;
     }
 
     final JobId jobId = getOnlyElement(jobs.keySet());
-    final JobUndeployResponse undeployResponse = getUnchecked(heliosClient.undeploy(jobId, host));
+    final JobUndeployResponse undeployResponse = getUnchecked(client.undeploy(jobId, host));
     if (undeployResponse.getStatus() != JobUndeployResponse.Status.OK &&
         undeployResponse.getStatus() != JobUndeployResponse.Status.JOB_NOT_FOUND) {
       fail(format("Failed to undeploy job %s - %s",
                   jobId.toString(), undeployResponse.toString()));
     }
 
-    final JobDeleteResponse deleteResponse = getUnchecked(heliosClient.deleteJob(jobId));
+    final JobDeleteResponse deleteResponse = getUnchecked(client.deleteJob(jobId));
     if (deleteResponse.getStatus() != JobDeleteResponse.Status.OK) {
       fail(format("Failed to delete job %s - %s",
                   jobId.toString(), deleteResponse.toString()));
@@ -144,6 +143,8 @@ public class HeliosRule extends ExternalResource {
 
   public static class Builder {
 
+    private HeliosClient.Builder clientBuilder = HeliosClient.newBuilder()
+        .setUser(System.getProperty("user.name"));
     private HeliosClient heliosClient;
     private String jobName;
     private String jobVersion;
@@ -153,6 +154,17 @@ public class HeliosRule extends ExternalResource {
     private String portName;
     private int internalPort;
     private Integer externalPort;
+
+
+    public Builder setDomain(final String domain) {
+      this.clientBuilder.setDomain(domain);
+      return this;
+    }
+
+    public Builder setUser(final String user) {
+      this.clientBuilder.setUser(user);
+      return this;
+    }
 
     public Builder setHeliosClient(HeliosClient heliosClient) {
       this.heliosClient = heliosClient;
@@ -200,9 +212,7 @@ public class HeliosRule extends ExternalResource {
     }
 
     public HeliosRule build() {
-      return new HeliosRule(heliosClient, jobName, jobVersion, imageName, command, host, portName,
-                            internalPort, externalPort);
+      return new HeliosRule(this);
     }
-
   }
 }
