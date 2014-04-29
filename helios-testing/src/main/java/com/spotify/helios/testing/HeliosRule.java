@@ -1,6 +1,8 @@
 package com.spotify.helios.testing;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -39,9 +41,7 @@ public class HeliosRule extends ExternalResource {
   private final String imageName;
   private final List<String> command;
   private final String host;
-  private final String portName;
-  private final int internalPort;
-  private final Integer externalPort;
+  private final Map<String, PortMapping> ports;
 
   private TaskStatus status;
 
@@ -51,11 +51,9 @@ public class HeliosRule extends ExternalResource {
     this.jobName = checkNotNull(builder.jobName, "jobName");
     this.jobVersion = checkNotNull(builder.jobVersion, "jobVersion");
     this.imageName = checkNotNull(builder.imageName, "imageName");
-    this.command = checkNotNull(builder.command, "command");
+    this.command = ImmutableList.copyOf(checkNotNull(builder.command, "command"));
     this.host = checkNotNull(builder.host, "host");
-    this.portName = checkNotNull(builder.portName, "portName");
-    this.internalPort = builder.internalPort;
-    this.externalPort = builder.externalPort;
+    this.ports = ImmutableMap.copyOf(checkNotNull(builder.ports, "ports"));
   }
 
   public TaskStatus getStatus() {
@@ -74,7 +72,7 @@ public class HeliosRule extends ExternalResource {
         .setVersion(jobVersion)
         .setImage(imageName)
         .setCommand(command)
-        .setPorts(ImmutableMap.of(portName, PortMapping.of(internalPort, externalPort)))
+        .setPorts(ports)
         .build();
 
     final CreateJobResponse createJobResponse = client.createJob(job).get(30, SECONDS);
@@ -151,9 +149,7 @@ public class HeliosRule extends ExternalResource {
     private String imageName;
     private List<String> command = emptyList();
     private String host;
-    private String portName;
-    private int internalPort;
-    private Integer externalPort;
+    private Map<String, PortMapping> ports = Maps.newHashMap();
 
 
     public Builder setDomain(final String domain) {
@@ -196,20 +192,16 @@ public class HeliosRule extends ExternalResource {
       return this;
     }
 
-    public Builder setPortName(String portName) {
-      this.portName = portName;
+    public Builder addPort(String name, int internalPort) {
+      this.ports.put(name, PortMapping.of(internalPort));
       return this;
     }
 
-    public Builder setInternalPort(int internalPort) {
-      this.internalPort = internalPort;
+    public Builder addPort(String name, int internalPort, int externalPort) {
+      this.ports.put(name, PortMapping.of(internalPort, externalPort));
       return this;
     }
 
-    public Builder setExternalPort(int externalPort) {
-      this.externalPort = externalPort;
-      return this;
-    }
 
     public HeliosRule build() {
       return new HeliosRule(this);

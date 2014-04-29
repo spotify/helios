@@ -56,8 +56,7 @@ public class HeliosRuleTest extends SystemTestBase {
           .setImageName(IMAGE_NAME)
           .setCommand(DO_NOTHING_COMMAND)
           .setHost(testHost)
-          .setPortName(PORT_NAME)
-          .setInternalPort(PORT)
+          .addPort(PORT_NAME, PORT)
           .build();
     }
   }
