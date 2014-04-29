@@ -1,4 +1,4 @@
-package com.spotify.helios;
+package com.spotify.helios.testing;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -8,7 +8,7 @@ import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static java.lang.System.nanoTime;
 
-public class Polling {
+class Polling {
 
   public static <T> T await(final long timeout, final TimeUnit timeUnit, final Callable<T> callable)
       throws Exception {

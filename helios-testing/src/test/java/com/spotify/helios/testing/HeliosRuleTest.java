@@ -1,4 +1,4 @@
-package com.spotify.helios;
+package com.spotify.helios.testing;
 
 import com.google.common.collect.Iterables;
 
@@ -6,6 +6,7 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.system.SystemTestBase;
+import com.spotify.helios.testing.HeliosRule;
 
 import org.junit.Rule;
 import org.junit.Test;

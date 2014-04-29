@@ -1,4 +1,4 @@
-package com.spotify.helios;
+package com.spotify.helios.testing;
 
 import com.google.common.collect.ImmutableMap;
 
