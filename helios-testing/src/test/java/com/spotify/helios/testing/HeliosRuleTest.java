@@ -1,10 +1,13 @@
 package com.spotify.helios.testing;
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.system.SystemTestBase;
 
 import org.junit.Rule;
@@ -32,6 +35,8 @@ public class HeliosRuleTest extends SystemTestBase {
 
   public static class FakeTest {
 
+    // TODO (ryan): use wiggum instead of ubuntu so we do DNS lookup and hit with hermes request
+    // so we can test that nameless registration works and ports exposed properly
     private static final String IMAGE_NAME = "ubuntu:12.04";
     private static final String PORT_NAME = "hm";
     private static final int PORT = 4229;
@@ -56,6 +61,7 @@ public class HeliosRuleTest extends SystemTestBase {
           .setCommand(DO_NOTHING_COMMAND)
           .setHost(testHost)
           .addPort(PORT_NAME, PORT)
+          .addRegistration(ServiceEndpoint.of("wiggum", "hm"), ServicePorts.of(PORT_NAME))
           .build();
     }
   }

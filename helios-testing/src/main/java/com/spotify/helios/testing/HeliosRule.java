@@ -7,6 +7,8 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
@@ -16,6 +18,7 @@ import com.spotify.helios.common.protocol.JobUndeployResponse;
 import org.junit.rules.ExternalResource;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 
@@ -163,6 +166,16 @@ public class HeliosRule extends ExternalResource {
 
     public Builder addPort(String name, int internalPort, int externalPort) {
       this.jobBuilder.addPort(name, PortMapping.of(internalPort, externalPort));
+      return this;
+    }
+
+    public Builder addRegistration(ServiceEndpoint endpoint, ServicePorts ports) {
+      this.jobBuilder.addRegistration(endpoint, ports);
+      return this;
+    }
+
+    public Builder setRegistration(final Map<ServiceEndpoint, ServicePorts> registration) {
+      this.jobBuilder.setRegistration(registration);
       return this;
     }
 
