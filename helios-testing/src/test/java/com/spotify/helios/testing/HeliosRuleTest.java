@@ -31,32 +31,22 @@ public class HeliosRuleTest extends SystemTestBase {
 
   public static class FakeTest {
 
-    // TODO (ryan): use wiggum instead of ubuntu so we do DNS lookup and hit with hermes request
-    // so we can test that nameless registration works and ports exposed properly
-    private static final String IMAGE_NAME = "ubuntu:12.04";
-    private static final String PORT_NAME = "hm";
-    private static final int PORT = 4229;
-
     @Rule
-    public final HeliosRule heliosRule = getHeliosRule();
+    public final HeliosRule heliosRule = HeliosRule.builder()
+        .client(client)
+        .image("ubuntu:12.04")
+        .command(DO_NOTHING_COMMAND)
+        .host(testHost)
+        .port("service", 4229)
+        .registration("wiggum", "hm", "service")
+        .build();
 
     @Test
     public void testDeployment() throws Exception {
       final Map<JobId, Job> jobs = client.jobs().get(15, TimeUnit.SECONDS);
       assertEquals("wrong number of jobs running", 1, jobs.size());
       final Job job = Iterables.getOnlyElement(jobs.values());
-      assertEquals("wrong job running", IMAGE_NAME, job.getImage());
-    }
-
-    private HeliosRule getHeliosRule() {
-      return HeliosRule.builder()
-          .client(client)
-          .image(IMAGE_NAME)
-          .command(DO_NOTHING_COMMAND)
-          .host(testHost)
-          .port(PORT_NAME, PORT)
-          .registration("wiggum", "hm", PORT_NAME)
-          .build();
+      assertEquals("wrong job running", "ubuntu:12.04", job.getImage());
     }
   }
 
