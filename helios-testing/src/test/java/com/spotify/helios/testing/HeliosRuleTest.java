@@ -35,7 +35,7 @@ public class HeliosRuleTest extends SystemTestBase {
     public final HeliosRule heliosRule = HeliosRule.builder()
         .client(client)
         .image("ubuntu:12.04")
-        .command(DO_NOTHING_COMMAND)
+        .command("sh", "-c", "while :; do sleep 1; done")
         .host(testHost)
         .port("service", 4229)
         .registration("wiggum", "hm", "service")

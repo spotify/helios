@@ -34,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Futures.getUnchecked;
 import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
@@ -210,6 +211,10 @@ public class HeliosRule extends ExternalResource {
     public Builder command(List<String> command) {
       this.jobBuilder.setCommand(command);
       return this;
+    }
+
+    public Builder command(final String... command) {
+      return command(asList(command));
     }
 
     public Builder port(String name, int internalPort) {
