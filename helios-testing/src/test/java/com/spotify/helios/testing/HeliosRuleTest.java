@@ -27,7 +27,6 @@ public class HeliosRuleTest extends SystemTestBase {
   // instantiates it, it must be a static class, which means it can't access the non-static fields
   // in SystemTestBase.
   private static HeliosClient client;
-  private static String jobName;
   private static String testHost;
 
   public static class FakeTest {
@@ -52,8 +51,6 @@ public class HeliosRuleTest extends SystemTestBase {
     private HeliosRule getHeliosRule() {
       return HeliosRule.builder()
           .client(client)
-          .name(jobName)
-          .version(JOB_VERSION)
           .image(IMAGE_NAME)
           .command(DO_NOTHING_COMMAND)
           .host(testHost)
@@ -67,7 +64,6 @@ public class HeliosRuleTest extends SystemTestBase {
   public void testRule() throws Exception {
     startDefaultMaster();
     client = defaultClient();
-    jobName = JOB_NAME;
     testHost = getTestHost();
     startDefaultAgent(testHost);
 

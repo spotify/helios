@@ -1,5 +1,7 @@
 package com.spotify.helios.testing;
 
+import com.google.common.io.BaseEncoding;
+
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
@@ -20,6 +22,7 @@ import org.junit.rules.ExternalResource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -41,13 +44,32 @@ public class HeliosRule extends ExternalResource {
   public HeliosRule(final Builder builder) {
     this.client = checkNotNull(builder.client == null ? builder.clientBuilder.build()
                                                       : builder.client, "client");
-    this.job = builder.jobBuilder.build();
+    final Job.Builder b = builder.jobBuilder.clone();
+    if (b.getName() == null && b.getVersion() == null) {
+      // Both name and version are unset, use image name as job name and generate random version
+      b.setName(jobName(b.getImage()));
+      b.setVersion(randomVersion());
+    }
+    this.job = b.build();
     this.host = checkNotNull(builder.host, "host");
   }
 
+  private String jobName(final String s) {
+    return s.replace(':', '_');
+  }
+
+  private String randomVersion() {
+    final byte[] versionBytes = new byte[8];
+    ThreadLocalRandom.current().nextBytes(versionBytes);
+    return BaseEncoding.base16().encode(versionBytes);
+  }
 
   public TaskStatus getStatus() {
     return status;
+  }
+
+  public Job getJob() {
+    return job;
   }
 
   public Integer getPort(final String name) {
@@ -122,7 +144,6 @@ public class HeliosRule extends ExternalResource {
     private String host;
 
     private final Job.Builder jobBuilder = Job.newBuilder();
-
 
     public Builder domain(final String domain) {
       this.clientBuilder.setDomain(domain);
