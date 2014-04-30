@@ -1,6 +1,5 @@
 package com.spotify.helios.testing;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 
 import com.spotify.helios.client.HeliosClient;
@@ -53,15 +52,15 @@ public class HeliosRuleTest extends SystemTestBase {
     }
 
     private HeliosRule getHeliosRule() {
-      return HeliosRule.newBuilder()
-          .setClient(client)
-          .setJobName(jobName)
-          .setJobVersion(JOB_VERSION)
-          .setImageName(IMAGE_NAME)
-          .setCommand(DO_NOTHING_COMMAND)
-          .setHost(testHost)
-          .addPort(PORT_NAME, PORT)
-          .addRegistration(ServiceEndpoint.of("wiggum", "hm"), ServicePorts.of(PORT_NAME))
+      return HeliosRule.builder()
+          .client(client)
+          .name(jobName)
+          .version(JOB_VERSION)
+          .image(IMAGE_NAME)
+          .command(DO_NOTHING_COMMAND)
+          .host(testHost)
+          .port(PORT_NAME, PORT)
+          .registration(ServiceEndpoint.of("wiggum", "hm"), ServicePorts.of(PORT_NAME))
           .build();
     }
   }

@@ -109,7 +109,7 @@ public class HeliosRule extends ExternalResource {
 
   }
 
-  public static Builder newBuilder() {
+  public static Builder builder() {
     return new Builder();
   }
 
@@ -124,62 +124,62 @@ public class HeliosRule extends ExternalResource {
     private final Job.Builder jobBuilder = Job.newBuilder();
 
 
-    public Builder setDomain(final String domain) {
+    public Builder domain(final String domain) {
       this.clientBuilder.setDomain(domain);
       return this;
     }
 
-    public Builder setUser(final String user) {
+    public Builder user(final String user) {
       this.clientBuilder.setUser(user);
       return this;
     }
 
-    public Builder setClient(HeliosClient client) {
+    public Builder client(HeliosClient client) {
       this.client = client;
       return this;
     }
 
-    public Builder setJobName(String jobName) {
+    public Builder name(String jobName) {
       this.jobBuilder.setName(jobName);
       return this;
     }
 
-    public Builder setJobVersion(String jobVersion) {
+    public Builder version(String jobVersion) {
       this.jobBuilder.setVersion(jobVersion);
       return this;
     }
 
-    public Builder setImageName(String imageName) {
-      this.jobBuilder.setImage(imageName);
+    public Builder image(String image) {
+      this.jobBuilder.setImage(image);
       return this;
     }
 
-    public Builder setCommand(List<String> command) {
+    public Builder command(List<String> command) {
       this.jobBuilder.setCommand(command);
       return this;
     }
 
-    public Builder addPort(String name, int internalPort) {
+    public Builder port(String name, int internalPort) {
       this.jobBuilder.addPort(name, PortMapping.of(internalPort));
       return this;
     }
 
-    public Builder addPort(String name, int internalPort, int externalPort) {
+    public Builder port(String name, int internalPort, int externalPort) {
       this.jobBuilder.addPort(name, PortMapping.of(internalPort, externalPort));
       return this;
     }
 
-    public Builder addRegistration(ServiceEndpoint endpoint, ServicePorts ports) {
+    public Builder registration(ServiceEndpoint endpoint, ServicePorts ports) {
       this.jobBuilder.addRegistration(endpoint, ports);
       return this;
     }
 
-    public Builder setRegistration(final Map<ServiceEndpoint, ServicePorts> registration) {
+    public Builder registration(final Map<ServiceEndpoint, ServicePorts> registration) {
       this.jobBuilder.setRegistration(registration);
       return this;
     }
 
-    public Builder setHost(String host) {
+    public Builder host(String host) {
       this.host = host;
       return this;
     }
