@@ -188,27 +188,27 @@ public class HeliosRule extends ExternalResource {
       return this;
     }
 
-    public Builder client(HeliosClient client) {
+    public Builder client(final HeliosClient client) {
       this.client = client;
       return this;
     }
 
-    public Builder name(String jobName) {
+    public Builder name(final String jobName) {
       this.jobBuilder.setName(jobName);
       return this;
     }
 
-    public Builder version(String jobVersion) {
+    public Builder version(final String jobVersion) {
       this.jobBuilder.setVersion(jobVersion);
       return this;
     }
 
-    public Builder image(String image) {
+    public Builder image(final String image) {
       this.jobBuilder.setImage(image);
       return this;
     }
 
-    public Builder command(List<String> command) {
+    public Builder command(final List<String> command) {
       this.jobBuilder.setCommand(command);
       return this;
     }
@@ -217,17 +217,17 @@ public class HeliosRule extends ExternalResource {
       return command(asList(command));
     }
 
-    public Builder port(String name, int internalPort) {
+    public Builder port(final String name, final int internalPort) {
       this.jobBuilder.addPort(name, PortMapping.of(internalPort));
       return this;
     }
 
-    public Builder port(String name, int internalPort, int externalPort) {
+    public Builder port(final String name, final int internalPort, final int externalPort) {
       this.jobBuilder.addPort(name, PortMapping.of(internalPort, externalPort));
       return this;
     }
 
-    public Builder registration(ServiceEndpoint endpoint, ServicePorts ports) {
+    public Builder registration(final ServiceEndpoint endpoint, final ServicePorts ports) {
       this.jobBuilder.addRegistration(endpoint, ports);
       return this;
     }
@@ -241,7 +241,7 @@ public class HeliosRule extends ExternalResource {
       return this;
     }
 
-    public Builder host(String host) {
+    public Builder host(final String host) {
       this.hosts.add(host);
       return this;
     }
