@@ -247,7 +247,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
-    public Builder addEnv(String key, String value) {
+    public Builder addEnv(final String key, final String value) {
       p.env.put(key, value);
       return this;
     }
@@ -257,7 +257,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
-    public Builder addPort(String name, PortMapping port) {
+    public Builder addPort(final String name, final PortMapping port) {
       p.ports.put(name, port);
       return this;
     }
@@ -267,7 +267,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
-    public Builder addRegistration(ServiceEndpoint endpoint, ServicePorts ports) {
+    public Builder addRegistration(final ServiceEndpoint endpoint, final ServicePorts ports) {
       p.registration.put(endpoint, ports);
       return this;
     }
