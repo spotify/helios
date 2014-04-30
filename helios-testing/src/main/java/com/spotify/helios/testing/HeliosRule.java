@@ -1,6 +1,11 @@
 package com.spotify.helios.testing;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -22,6 +27,7 @@ import org.junit.rules.ExternalResource;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 
@@ -35,11 +41,11 @@ import static org.junit.Assert.fail;
 public class HeliosRule extends ExternalResource {
 
   private final HeliosClient client;
-  private final String host;
+  private final List<String> hosts;
 
   private final Job job;
 
-  private TaskStatus status;
+  private Map<String, TaskStatus> statuses = Maps.newHashMap();
 
   public HeliosRule(final Builder builder) {
     this.client = checkNotNull(builder.client == null ? builder.clientBuilder.build()
@@ -51,7 +57,7 @@ public class HeliosRule extends ExternalResource {
       b.setVersion(randomVersion());
     }
     this.job = b.build();
-    this.host = checkNotNull(builder.host, "host");
+    this.hosts = ImmutableList.copyOf(checkNotNull(builder.hosts, "hosts"));
   }
 
   private String jobName(final String s) {
@@ -64,17 +70,20 @@ public class HeliosRule extends ExternalResource {
     return BaseEncoding.base16().encode(versionBytes);
   }
 
-  public TaskStatus getStatus() {
-    return status;
+  public TaskStatus getStatus(final String host) {
+    return statuses.get(host);
   }
 
   public Job getJob() {
     return job;
   }
 
-  public Integer getPort(final String name) {
-    checkNotNull(status, "status is null, job is not running");
-    return status.getPorts().get(name).getExternalPort();
+  public Integer getPort(final String host, final String name) {
+    final TaskStatus status = statuses.get(host);
+    checkNotNull(status, "Status is null, job is not running on host %s", host);
+    final PortMapping portMapping = status.getPorts().get(name);
+    checkNotNull(portMapping, "Port %s not found", name);
+    return portMapping.getExternalPort();
   }
 
   @Override
@@ -87,13 +96,20 @@ public class HeliosRule extends ExternalResource {
 
     final JobId jobId = JobId.fromString(createJobResponse.getId());
     final Deployment deployment = Deployment.of(jobId, Goal.START);
-    final JobDeployResponse deployResponse = client.deploy(deployment, host).get(30, SECONDS);
-    if (deployResponse.getStatus() != JobDeployResponse.Status.OK) {
-      fail(format("Failed to deploy job %s %s - %s",
-                  jobId.toString(), job.toString(), deployResponse.toString()));
+    final List<ListenableFuture<JobDeployResponse>> futures = Lists.newArrayList();
+    for (final String host : hosts) {
+      futures.add(client.deploy(deployment, host));
     }
-
-    this.status = awaitUp(jobId, host);
+    final List<JobDeployResponse> responses = Futures.allAsList(futures).get(30, SECONDS);
+    for (final JobDeployResponse response : responses) {
+      if (response.getStatus() != JobDeployResponse.Status.OK) {
+        fail(format("Failed to deploy job %s %s - %s",
+                    jobId.toString(), job.toString(), response.toString()));
+      }
+    }
+    for (final String host : hosts) {
+      statuses.put(host, awaitUp(jobId, host));
+    }
   }
 
   private TaskStatus awaitUp(final JobId jobId, final String host) throws TimeoutException {
@@ -116,19 +132,37 @@ public class HeliosRule extends ExternalResource {
 
   @Override
   protected void after() {
-    final JobUndeployResponse undeployResponse = getUnchecked(client.undeploy(job.getId(), host));
-    if (undeployResponse.getStatus() != JobUndeployResponse.Status.OK &&
-        undeployResponse.getStatus() != JobUndeployResponse.Status.JOB_NOT_FOUND) {
-      fail(format("Failed to undeploy job %s - %s",
-                  job.getId().toString(), undeployResponse.toString()));
+    final List<AssertionError> errors = Lists.newArrayList();
+
+    // Undeploy job
+    final List<ListenableFuture<JobUndeployResponse>> futures = Lists.newArrayList();
+    for (final String host : hosts) {
+      futures.add(client.undeploy(job.getId(), host));
+    }
+    for (final ListenableFuture<JobUndeployResponse> future : futures) {
+      try {
+        final JobUndeployResponse response = future.get(30, SECONDS);
+        if (response.getStatus() != JobUndeployResponse.Status.OK &&
+            response.getStatus() != JobUndeployResponse.Status.JOB_NOT_FOUND) {
+          errors.add(new AssertionError(format("Failed to undeploy job %s - %s",
+                                               job.getId().toString(), response.toString())));
+        }
+      } catch (InterruptedException | ExecutionException | TimeoutException e) {
+        errors.add(new AssertionError(e));
+      }
     }
 
+    // Delete job
     final JobDeleteResponse deleteResponse = getUnchecked(client.deleteJob(job.getId()));
     if (deleteResponse.getStatus() != JobDeleteResponse.Status.OK) {
-      fail(format("Failed to delete job %s - %s",
-                  job.getId().toString(), deleteResponse.toString()));
+      errors.add(new AssertionError(format("Failed to delete job %s - %s",
+                                           job.getId().toString(), deleteResponse.toString())));
     }
 
+    // Raise any errors
+    if (!errors.isEmpty()) {
+      throw errors.get(0);
+    }
   }
 
   public static Builder builder() {
@@ -139,10 +173,8 @@ public class HeliosRule extends ExternalResource {
 
     private final HeliosClient.Builder clientBuilder = HeliosClient.newBuilder()
         .setUser(System.getProperty("user.name"));
-
     private HeliosClient client;
-    private String host;
-
+    private final List<String> hosts = Lists.newArrayList();
     private final Job.Builder jobBuilder = Job.newBuilder();
 
     public Builder domain(final String domain) {
@@ -205,7 +237,7 @@ public class HeliosRule extends ExternalResource {
     }
 
     public Builder host(String host) {
-      this.host = host;
+      this.hosts.add(host);
       return this;
     }
 
