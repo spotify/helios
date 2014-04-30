@@ -152,6 +152,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public void deregisterHost(final String host)
       throws HostNotFoundException, HostStillInUseException {
     log.info("deregistering host: {}", host);
+    // TODO (dano): handle retry failures
     try {
       final ZooKeeperClient client = provider.get("deregisterHost");
       final List<String> nodes = reverse(client.listRecursive(Paths.configHost(host)));
@@ -342,6 +343,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     if (job == null) {
       throw new JobDoesNotExistException(id);
     }
+    // TODO (dano): handle retry failures
     try {
       final UUID jobCreationOperationId = getJobCreation(client, id);
       client.transaction(delete(Paths.configJobCreation(id, jobCreationOperationId)),
@@ -746,6 +748,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     for (int port : staticPorts) {
         operations.add(delete(Paths.configHostPort(host, port)));
     }
+    // TODO (dano): handle retry failures
     try {
       client.transaction(operations);
     } catch (KeeperException e) {
