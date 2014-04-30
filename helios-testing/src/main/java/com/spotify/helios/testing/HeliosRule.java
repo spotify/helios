@@ -174,6 +174,10 @@ public class HeliosRule extends ExternalResource {
       return this;
     }
 
+    public Builder registration(final String service, final String protocol, final String... ports) {
+      return registration(ServiceEndpoint.of(service, protocol), ServicePorts.of(ports));
+    }
+
     public Builder registration(final Map<ServiceEndpoint, ServicePorts> registration) {
       this.jobBuilder.setRegistration(registration);
       return this;

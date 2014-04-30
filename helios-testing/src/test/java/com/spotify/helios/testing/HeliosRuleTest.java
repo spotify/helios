@@ -5,8 +5,6 @@ import com.google.common.collect.Iterables;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.ServiceEndpoint;
-import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.system.SystemTestBase;
 
 import org.junit.Rule;
@@ -60,7 +58,7 @@ public class HeliosRuleTest extends SystemTestBase {
           .command(DO_NOTHING_COMMAND)
           .host(testHost)
           .port(PORT_NAME, PORT)
-          .registration(ServiceEndpoint.of("wiggum", "hm"), ServicePorts.of(PORT_NAME))
+          .registration("wiggum", "hm", PORT_NAME)
           .build();
     }
   }
