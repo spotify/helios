@@ -22,6 +22,8 @@ import static java.util.regex.Pattern.compile;
 
 public class JobValidator {
 
+  public static final Pattern NAME_VERSION_PATTERN = Pattern.compile("[0-9a-zA-Z-_.]+");
+
   public static final Pattern DOMAIN_PATTERN =
       Pattern.compile("^(?:(?:[a-zA-Z0-9]|(?:[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]))" +
                       "(\\.(?:[a-zA-Z0-9]|(?:[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9])))*)\\.?$");
@@ -41,11 +43,10 @@ public class JobValidator {
     final Set<String> errors = Sets.newHashSet();
 
     // Check that the job name and version only contains allowed characters
-    final Pattern nameVersionPattern = Pattern.compile("[0-9a-zA-Z-_.]+");
-    if (!nameVersionPattern.matcher(job.getId().getName()).matches()) {
+    if (!NAME_VERSION_PATTERN.matcher(job.getId().getName()).matches()) {
       errors.add(format("Job name may only contain [0-9a-zA-Z-_.]."));
     }
-    if (!nameVersionPattern.matcher(job.getId().getVersion()).matches()) {
+    if (!NAME_VERSION_PATTERN.matcher(job.getId().getVersion()).matches()) {
       errors.add(format("Job version may only contain [0-9a-zA-Z-_.]."));
     }
 
