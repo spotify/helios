@@ -4,7 +4,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
@@ -29,92 +28,93 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.util.concurrent.Futures.allAsList;
 import static com.google.common.util.concurrent.Futures.getUnchecked;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.fail;
 
 public class HeliosRule extends ExternalResource {
 
   private final HeliosClient client;
-  private final List<String> hosts;
 
-  private final Job job;
+  private final List<TemporaryJob.Builder> builders = Lists.newArrayList();
+  private final Map<JobId, TemporaryJob> jobs = Maps.newLinkedHashMap();
 
-  private Map<String, TaskStatus> statuses = Maps.newHashMap();
+  private final long timeoutMillis = TimeUnit.MINUTES.toMillis(5);
 
-  public HeliosRule(final Builder builder) {
-    this.client = checkNotNull(builder.client == null ? builder.clientBuilder.build()
-                                                      : builder.client, "client");
-    final Job.Builder b = builder.jobBuilder.clone();
-    if (b.getName() == null && b.getVersion() == null) {
-      // Both name and version are unset, use image name as job name and generate random version
-      b.setName(jobName(b.getImage()));
-      b.setVersion(randomVersion());
-    }
-    this.job = b.build();
-    this.hosts = ImmutableList.copyOf(checkNotNull(builder.hosts, "hosts"));
+  public HeliosRule(final HeliosClient client) {
+    this.client = client;
   }
 
-  private String jobName(final String s) {
-    return "test_" + s.replace(':', '_');
+  public TemporaryJob.Builder job() {
+    final TemporaryJob.Builder builder = new TemporaryJob.Builder();
+    builders.add(builder);
+    return builder;
   }
 
-  private String randomVersion() {
-    final byte[] versionBytes = new byte[8];
-    ThreadLocalRandom.current().nextBytes(versionBytes);
-    return BaseEncoding.base16().encode(versionBytes);
-  }
-
-  public TaskStatus getStatus(final String host) {
-    return statuses.get(host);
-  }
-
-  public Job getJob() {
-    return job;
-  }
-
-  public Integer getPort(final String host, final String name) {
-    final TaskStatus status = statuses.get(host);
-    checkNotNull(status, "Status is null, job is not running on host %s", host);
-    final PortMapping portMapping = status.getPorts().get(name);
-    checkNotNull(portMapping, "Port %s not found", name);
-    return portMapping.getExternalPort();
+  public static HeliosRule forDomain(final String domain) {
+    return new HeliosRule(HeliosClient.create(domain, System.getProperty("user.name")));
   }
 
   @Override
   protected void before() throws Throwable {
-    final CreateJobResponse createJobResponse = client.createJob(job).get(30, SECONDS);
-    if (createJobResponse.getStatus() != CreateJobResponse.Status.OK) {
-      fail(format("Failed to create job %s - %s",
-                  job.toString(), createJobResponse.toString()));
+    for (final TemporaryJob.Builder builder : builders) {
+      final TemporaryJob job = builder.build();
+      jobs.put(job.getJob().getId(), job);
     }
 
-    final JobId jobId = JobId.fromString(createJobResponse.getId());
-    final Deployment deployment = Deployment.of(jobId, Goal.START);
-    final List<ListenableFuture<JobDeployResponse>> futures = Lists.newArrayList();
-    for (final String host : hosts) {
-      futures.add(client.deploy(deployment, host));
+    // Create jobs
+    final Map<JobId, ListenableFuture<CreateJobResponse>> createFutures = Maps.newLinkedHashMap();
+    for (Map.Entry<JobId, TemporaryJob> entry : jobs.entrySet()) {
+      createFutures.put(entry.getKey(), client.createJob(entry.getValue().job));
     }
-    final List<JobDeployResponse> responses = Futures.allAsList(futures).get(30, SECONDS);
-    for (final JobDeployResponse response : responses) {
-      if (response.getStatus() != JobDeployResponse.Status.OK) {
-        fail(format("Failed to deploy job %s %s - %s",
-                    jobId.toString(), job.toString(), response.toString()));
+    for (Map.Entry<JobId, ListenableFuture<CreateJobResponse>> entry : createFutures.entrySet()) {
+      final ListenableFuture<CreateJobResponse> future = entry.getValue();
+      final CreateJobResponse response = future.get(timeoutMillis, MILLISECONDS);
+      if (response.getStatus() != CreateJobResponse.Status.OK) {
+        final Job job = jobs.get(entry.getKey()).job;
+        fail(format("Failed to create job %s - %s", job.toString(), response.toString()));
       }
     }
-    for (final String host : hosts) {
-      statuses.put(host, awaitUp(jobId, host));
+
+    // Deploy jobs
+    final Map<JobId, List<ListenableFuture<JobDeployResponse>>> deployFutures =
+        Maps.newLinkedHashMap();
+    for (Map.Entry<JobId, TemporaryJob> entry : jobs.entrySet()) {
+      final List<ListenableFuture<JobDeployResponse>> futures = Lists.newArrayList();
+      deployFutures.put(entry.getKey(), futures);
+      final TemporaryJob job = entry.getValue();
+      final Deployment deployment = Deployment.of(job.getJob().getId(), Goal.START);
+      for (final String host : job.hosts) {
+        futures.add(client.deploy(deployment, host));
+      }
+    }
+    for (Map.Entry<JobId, List<ListenableFuture<JobDeployResponse>>> entry :
+        deployFutures.entrySet()) {
+      final TemporaryJob job = jobs.get(entry.getKey());
+      final List<ListenableFuture<JobDeployResponse>> futures = entry.getValue();
+      final List<JobDeployResponse> responses = allAsList(futures).get(timeoutMillis, MILLISECONDS);
+      for (final JobDeployResponse response : responses) {
+        if (response.getStatus() != JobDeployResponse.Status.OK) {
+          fail(format("Failed to deploy job %s %s - %s",
+                      job.getJob().getId(), job.getJob().toString(), response));
+        }
+      }
+      for (final String host : job.hosts) {
+        job.statuses.put(host, awaitUp(job.getJob().getId(), host));
+      }
     }
   }
 
+
   private TaskStatus awaitUp(final JobId jobId, final String host) throws TimeoutException {
-    return Polling.awaitUnchecked(1, MINUTES, new Callable<TaskStatus>() {
+    return Polling.awaitUnchecked(timeoutMillis, MILLISECONDS, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final JobStatus status = getUnchecked(client.jobStatus(jobId));
@@ -135,29 +135,54 @@ public class HeliosRule extends ExternalResource {
   protected void after() {
     final List<AssertionError> errors = Lists.newArrayList();
 
-    // Undeploy job
-    final List<ListenableFuture<JobUndeployResponse>> futures = Lists.newArrayList();
-    for (final String host : hosts) {
-      futures.add(client.undeploy(job.getId(), host));
+    // Undeploy jobs
+    final Map<JobId, List<ListenableFuture<JobUndeployResponse>>> undeployFutures =
+        Maps.newHashMap();
+    for (final Map.Entry<JobId, TemporaryJob> entry : jobs.entrySet()) {
+      final List<ListenableFuture<JobUndeployResponse>> futures = Lists.newArrayList();
+      undeployFutures.put(entry.getKey(), futures);
+      final TemporaryJob job = entry.getValue();
+      for (final String host : job.hosts) {
+        futures.add(client.undeploy(job.getJob().getId(), host));
+      }
     }
-    for (final ListenableFuture<JobUndeployResponse> future : futures) {
-      try {
-        final JobUndeployResponse response = future.get(30, SECONDS);
-        if (response.getStatus() != JobUndeployResponse.Status.OK &&
-            response.getStatus() != JobUndeployResponse.Status.JOB_NOT_FOUND) {
-          errors.add(new AssertionError(format("Failed to undeploy job %s - %s",
-                                               job.getId().toString(), response.toString())));
+    for (final Map.Entry<JobId, List<ListenableFuture<JobUndeployResponse>>> entry :
+        undeployFutures.entrySet()) {
+      final TemporaryJob job = jobs.get(entry.getKey());
+      final List<ListenableFuture<JobUndeployResponse>> futures = entry.getValue();
+      for (final ListenableFuture<JobUndeployResponse> future : futures) {
+        try {
+          final JobUndeployResponse response = future.get(timeoutMillis, MILLISECONDS);
+          if (response.getStatus() != JobUndeployResponse.Status.OK &&
+              response.getStatus() != JobUndeployResponse.Status.JOB_NOT_FOUND) {
+            errors.add(new AssertionError(format("Failed to undeploy job %s - %s",
+                                                 job.getJob().getId(), response)));
+          }
+        } catch (InterruptedException | ExecutionException | TimeoutException e) {
+          errors.add(new AssertionError(e));
         }
-      } catch (InterruptedException | ExecutionException | TimeoutException e) {
-        errors.add(new AssertionError(e));
       }
     }
 
-    // Delete job
-    final JobDeleteResponse deleteResponse = getUnchecked(client.deleteJob(job.getId()));
-    if (deleteResponse.getStatus() != JobDeleteResponse.Status.OK) {
-      errors.add(new AssertionError(format("Failed to delete job %s - %s",
-                                           job.getId().toString(), deleteResponse.toString())));
+    // Delete jobs
+    final Map<JobId, ListenableFuture<JobDeleteResponse>> deleteFutures = Maps.newHashMap();
+    for (final Map.Entry<JobId, TemporaryJob> entry : jobs.entrySet()) {
+      final TemporaryJob job = jobs.get(entry.getKey());
+      deleteFutures.put(entry.getKey(), client.deleteJob(job.getJob().getId()));
+    }
+    for (Map.Entry<JobId, ListenableFuture<JobDeleteResponse>> entry : deleteFutures.entrySet()) {
+      final TemporaryJob job = jobs.get(entry.getKey());
+      final ListenableFuture<JobDeleteResponse> future = entry.getValue();
+      final JobDeleteResponse response;
+      try {
+        response = future.get(timeoutMillis, MILLISECONDS);
+        if (response.getStatus() != JobDeleteResponse.Status.OK) {
+          errors.add(new AssertionError(format("Failed to delete job %s - %s",
+                                               job.getJob().getId().toString(), response.toString())));
+        }
+      } catch (Exception e) {
+        errors.add(new AssertionError(e));
+      }
     }
 
     // Raise any errors
@@ -166,88 +191,118 @@ public class HeliosRule extends ExternalResource {
     }
   }
 
-  public static Builder builder() {
-    return new Builder();
-  }
+  public static class TemporaryJob {
 
-  public static class Builder {
+    private final Job job;
+    private final List<String> hosts;
 
-    private final HeliosClient.Builder clientBuilder = HeliosClient.newBuilder()
-        .setUser(System.getProperty("user.name"));
-    private HeliosClient client;
-    private final List<String> hosts = Lists.newArrayList();
-    private final Job.Builder jobBuilder = Job.newBuilder();
+    private final Map<String, TaskStatus> statuses = Maps.newHashMap();
 
-    public Builder domain(final String domain) {
-      this.clientBuilder.setDomain(domain);
-      return this;
+    private TemporaryJob(final Builder builder) {
+      final Job.Builder b = builder.jobBuilder.clone();
+      b.setHash(null);
+      if (b.getName() == null && b.getVersion() == null) {
+        // Both name and version are unset, use image name as job name and generate random version
+        b.setName(jobName(b.getImage()));
+        b.setVersion(randomVersion());
+      }
+      this.job = b.build();
+      this.hosts = ImmutableList.copyOf(checkNotNull(builder.hosts, "hosts"));
     }
 
-    public Builder user(final String user) {
-      this.clientBuilder.setUser(user);
-      return this;
+    public Job getJob() {
+      return job;
     }
 
-    public Builder client(final HeliosClient client) {
-      this.client = client;
-      return this;
+    public Integer getPort(final String host, final String port) {
+      final TaskStatus status = statuses.get(host);
+      if (status == null) {
+        return null;
+      }
+      final PortMapping portMapping = status.getPorts().get(port);
+      if (portMapping == null) {
+        return null;
+      }
+      return portMapping.getExternalPort();
     }
 
-    public Builder name(final String jobName) {
-      this.jobBuilder.setName(jobName);
-      return this;
+    private String jobName(final String s) {
+      return "test_" + s.replace(':', '_');
     }
 
-    public Builder version(final String jobVersion) {
-      this.jobBuilder.setVersion(jobVersion);
-      return this;
+    private String randomVersion() {
+      final byte[] versionBytes = new byte[8];
+      ThreadLocalRandom.current().nextBytes(versionBytes);
+      return BaseEncoding.base16().encode(versionBytes);
     }
 
-    public Builder image(final String image) {
-      this.jobBuilder.setImage(image);
-      return this;
-    }
+    public static class Builder {
 
-    public Builder command(final List<String> command) {
-      this.jobBuilder.setCommand(command);
-      return this;
-    }
+      private final List<String> hosts = Lists.newArrayList();
+      private final Job.Builder jobBuilder = Job.newBuilder();
 
-    public Builder command(final String... command) {
-      return command(asList(command));
-    }
+      private TemporaryJob job;
 
-    public Builder port(final String name, final int internalPort) {
-      this.jobBuilder.addPort(name, PortMapping.of(internalPort));
-      return this;
-    }
+      public Builder name(final String jobName) {
+        this.jobBuilder.setName(jobName);
+        return this;
+      }
 
-    public Builder port(final String name, final int internalPort, final int externalPort) {
-      this.jobBuilder.addPort(name, PortMapping.of(internalPort, externalPort));
-      return this;
-    }
+      public Builder version(final String jobVersion) {
+        this.jobBuilder.setVersion(jobVersion);
+        return this;
+      }
 
-    public Builder registration(final ServiceEndpoint endpoint, final ServicePorts ports) {
-      this.jobBuilder.addRegistration(endpoint, ports);
-      return this;
-    }
+      public Builder image(final String image) {
+        this.jobBuilder.setImage(image);
+        return this;
+      }
 
-    public Builder registration(final String service, final String protocol, final String... ports) {
-      return registration(ServiceEndpoint.of(service, protocol), ServicePorts.of(ports));
-    }
+      public Builder command(final List<String> command) {
+        this.jobBuilder.setCommand(command);
+        return this;
+      }
 
-    public Builder registration(final Map<ServiceEndpoint, ServicePorts> registration) {
-      this.jobBuilder.setRegistration(registration);
-      return this;
-    }
+      public Builder command(final String... command) {
+        return command(asList(command));
+      }
 
-    public Builder host(final String host) {
-      this.hosts.add(host);
-      return this;
-    }
+      public Builder port(final String name, final int internalPort) {
+        this.jobBuilder.addPort(name, PortMapping.of(internalPort));
+        return this;
+      }
 
-    public HeliosRule build() {
-      return new HeliosRule(this);
+      public Builder port(final String name, final int internalPort, final int externalPort) {
+        this.jobBuilder.addPort(name, PortMapping.of(internalPort, externalPort));
+        return this;
+      }
+
+      public Builder registration(final ServiceEndpoint endpoint, final ServicePorts ports) {
+        this.jobBuilder.addRegistration(endpoint, ports);
+        return this;
+      }
+
+      public Builder registration(final String service, final String protocol,
+                                  final String... ports) {
+        return registration(ServiceEndpoint.of(service, protocol), ServicePorts.of(ports));
+      }
+
+      public Builder registration(final Map<ServiceEndpoint, ServicePorts> registration) {
+        this.jobBuilder.setRegistration(registration);
+        return this;
+      }
+
+      public Builder host(final String host) {
+        this.hosts.add(host);
+        return this;
+      }
+
+      public TemporaryJob build() {
+        if (job == null) {
+          job = new TemporaryJob(this);
+        }
+        return job;
+      }
     }
   }
 }

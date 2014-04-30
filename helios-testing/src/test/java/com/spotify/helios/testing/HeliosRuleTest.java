@@ -1,7 +1,5 @@
 package com.spotify.helios.testing;
 
-import com.google.common.collect.Iterables;
-
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -13,6 +11,7 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+import static com.spotify.helios.testing.HeliosRule.TemporaryJob;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -32,8 +31,17 @@ public class HeliosRuleTest extends SystemTestBase {
   public static class FakeTest {
 
     @Rule
-    public final HeliosRule heliosRule = HeliosRule.builder()
-        .client(client)
+    public final HeliosRule heliosRule = new HeliosRule(client);
+
+    private final TemporaryJob job1 = heliosRule.job()
+        .image("ubuntu:12.04")
+        .command("sh", "-c", "while :; do sleep 1; done")
+        .host(testHost)
+        .port("service", 4229)
+        .registration("wiggum", "hm", "service")
+        .build();
+
+    private final TemporaryJob job2 = heliosRule.job()
         .image("ubuntu:12.04")
         .command("sh", "-c", "while :; do sleep 1; done")
         .host(testHost)
@@ -44,9 +52,10 @@ public class HeliosRuleTest extends SystemTestBase {
     @Test
     public void testDeployment() throws Exception {
       final Map<JobId, Job> jobs = client.jobs().get(15, TimeUnit.SECONDS);
-      assertEquals("wrong number of jobs running", 1, jobs.size());
-      final Job job = Iterables.getOnlyElement(jobs.values());
-      assertEquals("wrong job running", "ubuntu:12.04", job.getImage());
+      assertEquals("wrong number of jobs running", 2, jobs.size());
+      for (Job job : jobs.values()) {
+        assertEquals("wrong job running", "ubuntu:12.04", job.getImage());
+      }
     }
   }
 
