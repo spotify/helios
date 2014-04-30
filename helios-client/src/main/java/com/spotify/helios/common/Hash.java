@@ -11,18 +11,17 @@ import static com.google.common.base.Throwables.propagate;
 
 public class Hash {
 
-  private static final MessageDigest SHA1;
+  public static byte[] sha1digest(final byte[] bytes) {
+    return sha1().digest(bytes);
+  }
 
-  static {
+  public static MessageDigest sha1() {
+    final MessageDigest SHA1;
     try {
       SHA1 = MessageDigest.getInstance("SHA-1");
     } catch (NoSuchAlgorithmException e) {
       throw propagate(e);
     }
-  }
-
-
-  public static byte[] sha1digest(final byte[] bytes) {
-    return SHA1.digest(bytes);
+    return SHA1;
   }
 }
