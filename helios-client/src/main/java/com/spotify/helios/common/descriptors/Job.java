@@ -172,11 +172,21 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setRegistration(registration);
   }
 
-  public static class Builder {
+  public static class Builder implements Cloneable {
 
+    private final Parameters p;
     private String hash;
 
-    public static class Parameters {
+    private Builder() {
+      this.p = new Parameters();
+    }
+
+    public Builder(final String hash, final Parameters parameters) {
+      this.hash = hash;
+      this.p = parameters;
+    }
+
+    private static class Parameters implements Cloneable {
 
       // Note: Changing the fields of this class will affect the id's of all jobs as it is based
       //       on the sha1 json hash of instances of Parameters.
@@ -184,13 +194,28 @@ public class Job extends Descriptor implements Comparable<Job> {
       public String name;
       public String version;
       public String image;
-      public List<String> command = EMPTY_COMMAND;
-      public Map<String, String> env = Maps.newHashMap(EMPTY_ENV);
-      public Map<String, PortMapping> ports = Maps.newHashMap(EMPTY_PORTS);
-      public Map<ServiceEndpoint, ServicePorts> registration = Maps.newHashMap(EMPTY_REGISTRATION);
-    }
+      public List<String> command;
+      public Map<String, String> env;
+      public Map<String, PortMapping> ports;
+      public Map<ServiceEndpoint, ServicePorts> registration;
 
-    final Parameters p = new Parameters();
+      private Parameters() {
+        this.command = EMPTY_COMMAND;
+        this.env = Maps.newHashMap(EMPTY_ENV);
+        this.ports = Maps.newHashMap(EMPTY_PORTS);
+        this.registration = Maps.newHashMap(EMPTY_REGISTRATION);
+      }
+
+      private Parameters(final Parameters p) {
+        this.name = p.name;
+        this.version = p.version;
+        this.image = p.image;
+        this.command = ImmutableList.copyOf(p.command);
+        this.env = Maps.newHashMap(p.env);
+        this.ports = Maps.newHashMap(p.ports);
+        this.registration = Maps.newHashMap(p.registration);
+      }
+    }
 
     public Builder setHash(final String hash) {
       this.hash = hash;
@@ -273,6 +298,12 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Map<ServiceEndpoint, ServicePorts> getRegistration() {
       return Collections.unmodifiableMap(p.registration);
+    }
+
+    @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
+    @Override
+    public Builder clone() {
+      return new Builder(hash, new Parameters(p));
     }
 
     public Job build() {

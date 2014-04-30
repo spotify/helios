@@ -114,6 +114,25 @@ public class JobTest {
     assertEquals("env", expectedEnv, job.getEnv());
     assertEquals("ports", expectedPorts, job.getPorts());
     assertEquals("registration", expectedRegistration, job.getRegistration());
+
+    // Check clone
+    final Job.Builder cloned = builder.clone();
+    assertEquals("name", expectedName, cloned.getName());
+    assertEquals("version", expectedVersion, cloned.getVersion());
+    assertEquals("image", expectedImage, cloned.getImage());
+    assertEquals("command", expectedCommand, cloned.getCommand());
+    assertEquals("env", expectedEnv, cloned.getEnv());
+    assertEquals("ports", expectedPorts, cloned.getPorts());
+    assertEquals("registration", expectedRegistration, cloned.getRegistration());
+
+    final Job clonedJob = cloned.build();
+    assertEquals("name", expectedName, clonedJob.getId().getName());
+    assertEquals("version", expectedVersion, clonedJob.getId().getVersion());
+    assertEquals("image", expectedImage, clonedJob.getImage());
+    assertEquals("command", expectedCommand, clonedJob.getCommand());
+    assertEquals("env", expectedEnv, clonedJob.getEnv());
+    assertEquals("ports", expectedPorts, clonedJob.getPorts());
+    assertEquals("registration", expectedRegistration, clonedJob.getRegistration());
   }
 
   @SafeVarargs
