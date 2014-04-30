@@ -61,7 +61,7 @@ public class HeliosRule extends ExternalResource {
   }
 
   private String jobName(final String s) {
-    return s.replace(':', '_');
+    return "test_" + s.replace(':', '_');
   }
 
   private String randomVersion() {
