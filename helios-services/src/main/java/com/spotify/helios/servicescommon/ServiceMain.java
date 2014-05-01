@@ -6,8 +6,6 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.servicescommon.logging.LoggingConfigurator;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;

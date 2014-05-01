@@ -2,7 +2,6 @@ package com.spotify.helios.agent;
 
 import com.kpelykh.docker.client.DockerException;
 import com.kpelykh.docker.client.model.ContainerConfig;
-import com.kpelykh.docker.client.model.HostConfig;
 import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.servicescommon.NoOpRiemannClient;
 import com.spotify.helios.servicescommon.RiemannFacade;

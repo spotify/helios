@@ -54,7 +54,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
 
   public ZooKeeperAgentModel(final ZooKeeperClientProvider provider, final String host,
                              final Path stateDirectory) throws IOException {
-    // TODO(dcsillag): we're constructing too many heavyweight things in the ctor, these kinds of
+    // TODO(drewc): we're constructing too many heavyweight things in the ctor, these kinds of
     // things should be passed in/provider'd/etc.
     final ZooKeeperClient client = provider.get("ZooKeeperAgentModel_ctor");
     this.agent = checkNotNull(host);

@@ -374,7 +374,7 @@ public abstract class SystemTestBase {
 
   AgentMain startAgent(final String... args) throws Exception {
     final AgentMain main = new AgentMain(args);
-    main.startAsync();
+    main.startAsync().awaitRunning();
     services.add(main);
     return main;
   }

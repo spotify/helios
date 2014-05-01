@@ -3,7 +3,6 @@ package com.spotify.helios.agent;
 import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.Service;
 import com.google.common.util.concurrent.SettableFuture;
 
 import com.kpelykh.docker.client.DockerException;

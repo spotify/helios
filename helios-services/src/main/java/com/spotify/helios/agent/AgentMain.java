@@ -51,7 +51,7 @@ public class AgentMain extends ServiceMain {
   public static void main(final String... args) {
     try {
       final AgentMain main = new AgentMain(args);
-      main.startAsync();
+      main.startAsync().awaitRunning();
       main.awaitTerminated();
     } catch (Throwable e) {
       e.printStackTrace();

@@ -55,7 +55,7 @@ public class MasterMain extends ServiceMain {
   public static void main(final String... args) {
     try {
       final MasterMain main = new MasterMain(args);
-      main.startAsync();
+      main.startAsync().awaitRunning();
       main.awaitTerminated();
     } catch (Throwable e) {
       log.error("Uncaught exception", e);
