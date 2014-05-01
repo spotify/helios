@@ -90,6 +90,10 @@ public class TaskStatus extends Descriptor {
     return containerId;
   }
 
+  public Goal getGoal() {
+    return goal;
+  }
+
   public State getState() {
     return state;
   }
@@ -172,8 +176,6 @@ public class TaskStatus extends Descriptor {
   }
 
   public static class Builder {
-
-
     Builder() {}
 
     private Job job;

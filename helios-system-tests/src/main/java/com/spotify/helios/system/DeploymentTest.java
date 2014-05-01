@@ -8,6 +8,7 @@ import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -120,7 +121,7 @@ public class DeploymentTest extends SystemTestBase {
 
     // Make sure that it is no longer in the desired state
     final Deployment undeployedJob = client.deployment(getTestHost(), jobId).get();
-    assertNull(undeployedJob);
+    assertTrue(undeployedJob == null || undeployedJob.getGoal() == Goal.UNDEPLOY);
 
     // Wait for the task to disappear
     awaitTaskGone(client, getTestHost(), jobId, LONG_WAIT_MINUTES, MINUTES);

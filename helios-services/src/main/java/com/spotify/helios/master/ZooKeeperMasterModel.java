@@ -4,7 +4,6 @@
 
 package com.spotify.helios.master;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -36,6 +35,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.KeeperException.NotEmptyException;
 import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -46,7 +46,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.UUID;
 
 import static com.google.common.base.Optional.fromNullable;
@@ -61,19 +60,8 @@ import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
-import static org.apache.zookeeper.KeeperException.NotEmptyException;
 
 public class ZooKeeperMasterModel implements MasterModel {
-
-  private static final Predicate<Entry<JobId, Deployment>> GOAL_NOT_UNDEPLOY =
-      new Predicate<Entry<JobId, Deployment>>() {
-        @Override
-        public boolean apply(Entry<JobId, Deployment> entry) {
-          assert entry != null;
-          return entry.getValue().getGoal() != UNDEPLOY;
-        }
-      };
-
   private static final Comparator<TaskStatusEvent> EVENT_COMPARATOR =
       new Comparator<TaskStatusEvent>() {
         @Override
@@ -573,9 +561,6 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       final byte[] data = client.getData(path);
       final Task task = parse(data, Task.class);
-      if (task.getGoal() == UNDEPLOY) {
-        return null;
-      }
       return Deployment.of(jobId, task.getGoal());
     } catch (KeeperException.NoNodeException e) {
       return null;
@@ -603,13 +588,11 @@ public class ZooKeeperMasterModel implements MasterModel {
     final HostInfo hostInfo = getHostInfo(client, host);
     final AgentInfo agentInfo = getAgentInfo(client, host);
     final Map<JobId, Deployment> tasks = getTasks(client, host);
-
-    final Map<JobId, Deployment> jobs = Maps.filterEntries(tasks, GOAL_NOT_UNDEPLOY);
     final Map<JobId, TaskStatus> statuses = getTaskStatuses(client, host);
     final Map<String, String> environment = getEnvironment(client, host);
 
     return HostStatus.newBuilder()
-        .setJobs(jobs)
+        .setJobs(tasks)
         .setStatuses(fromNullable(statuses).or(EMPTY_STATUSES))
         .setHostInfo(hostInfo)
         .setAgentInfo(agentInfo)
@@ -715,9 +698,6 @@ public class ZooKeeperMasterModel implements MasterModel {
         try {
           final byte[] data = client.getData(containerPath);
           final Task task = parse(data, Task.class);
-          if (task.getGoal() == UNDEPLOY) {
-            continue;
-          }
           jobs.put(jobId, Deployment.of(jobId, task.getGoal()));
         } catch (KeeperException.NoNodeException ignored) {
           log.debug("deployment config node disappeared: {}", jobIdString);
@@ -744,6 +724,16 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     // TODO (dano): is this safe? can e.g. the ports of an undeployed job collide with a new deployment?
+    // TODO (drewc):  If it's still in UNDEPLOY, that means the agent hasn't gotten to it
+    //    yet, which means it probably won't see the new job yet either.  However, it may spin up
+    //    a new supervisor for the new job before the old one is done being torn down.  So it can
+    //    race and lose.  With a little change to the Agent where we manage the supervisors, with
+    //    some coordination, we could remove the race, such that this race goes away.  Specifically,
+    //    we're creating new Supervisors before updating existing ones.  If we swap that, part of
+    //    the problem goes away, but we'd need some coordination between the Supervisor and the
+    //    agent such that the Agent could wait until the Supervisor had handled the Goal change.
+    //    Additionally, since ZK guarantees we'll see the writes in the proper order, we wouldn't
+    //    need to deal with seeing the new job before the UNDEPLOY.
 
     final Job job = getJob(client, jobId);
     final String path = Paths.configHostJob(host, jobId);
