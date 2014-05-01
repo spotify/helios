@@ -31,6 +31,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Futures.allAsList;
 import static com.google.common.util.concurrent.Futures.getUnchecked;
@@ -215,6 +216,8 @@ public class HeliosRule extends ExternalResource {
     }
 
     public Integer getPort(final String host, final String port) {
+      checkArgument(hosts.contains(host), "host %s not found", host);
+      checkArgument(job.getPorts().containsKey(port), "port %s not found", port);
       final TaskStatus status = statuses.get(host);
       if (status == null) {
         return null;
