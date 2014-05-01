@@ -267,6 +267,11 @@ public class HeliosRule extends ExternalResource {
         return command(asList(command));
       }
 
+      public Builder env(final String key, final String value) {
+        this.jobBuilder.addEnv(key, value);
+        return this;
+      }
+
       public Builder port(final String name, final int internalPort) {
         this.jobBuilder.addPort(name, PortMapping.of(internalPort));
         return this;
