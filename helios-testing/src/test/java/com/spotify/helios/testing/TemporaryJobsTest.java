@@ -1,25 +1,39 @@
 package com.spotify.helios.testing;
 
 import com.google.common.base.Joiner;
+import com.google.protobuf.ByteString;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.system.SystemTestBase;
+import com.spotify.hermes.Hermes;
+import com.spotify.hermes.message.Message;
+import com.spotify.hermes.message.MessageBuilder;
+import com.spotify.hermes.message.MessageBuilderFactory;
+import com.spotify.hermes.service.Client;
 
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.net.URI;
+import java.util.List;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.testing.TemporaryJobs.TemporaryJob;
+import static com.spotify.hermes.message.Command.REQUEST;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
+/**
+ * Tests
+ */
 public class TemporaryJobsTest extends SystemTestBase {
 
   // These static fields exist as a way for FakeTest to access non-static fields and methods in
@@ -33,21 +47,25 @@ public class TemporaryJobsTest extends SystemTestBase {
   public static class FakeTest {
 
     public static final String SERVICE = "service";
+    private static final String IMAGE_NAME =
+        "registry:80/spotify/wiggum:0.0.1-SNAPSHOT-c387379";
 
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.create(client);
 
     private final TemporaryJob job1 = temporaryJobs.job()
-        .image("ubuntu:12.04")
-        .command("sh", "-c", "while :; do sleep 1; done")
+        .name("wiggum1")
+        .version("1")
+        .image(IMAGE_NAME)
         .host(testHost)
         .port(SERVICE, 4229)
         .registration("wiggum", "hm", SERVICE)
         .deploy();
 
     private final TemporaryJob job2 = temporaryJobs.job()
-        .image("ubuntu:12.04")
-        .command("sh", "-c", "while :; do sleep 1; done")
+        .name("wiggum2")
+        .version("1")
+        .image(IMAGE_NAME)
         .host(testHost)
         .port("service", 4229)
         .registration("wiggum", "hm", "service")
@@ -56,12 +74,29 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     @Test
     public void testDeployment() throws Exception {
-      final Map<JobId, Job> jobs = client.jobs().get(15, TimeUnit.SECONDS);
+      final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 2, jobs.size());
       for (Job job : jobs.values()) {
-        assertEquals("wrong job running", "ubuntu:12.04", job.getImage());
+        assertEquals("wrong job running", IMAGE_NAME, job.getImage());
       }
+
+      final MessageBuilder messageBuilder = MessageBuilderFactory
+          .newBuilder("hm://wiggum/ping", REQUEST)
+          .setTtlMillis(3000)
+          .setMethod("GET");
+
+      final String dockerHost = URI.create(DOCKER_ENDPOINT).getHost();
+      final Integer port = job1.getPort(testHost, SERVICE);
+      assertNotNull("null external port", port);
+      final Client hermesClient = Hermes.newClient(format("tcp://%s:%s/ping",
+                                                          dockerHost, port));
+      final Message message = hermesClient.send(messageBuilder.build()).get(5, SECONDS);
+
+      final List<ByteString> payloads = message.getPayloads();
+      assertEquals("Wrong number of payloads", 1, payloads.size());
+      assertEquals("Wrong payload", "PONG", payloads.get(0).toStringUtf8());
     }
+
   }
 
   @Test
@@ -73,7 +108,7 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     assertThat(testResult(FakeTest.class), isSuccessful());
     assertTrue("jobs are running that should not be",
-               client.jobs().get(15, TimeUnit.SECONDS).isEmpty());
+               client.jobs().get(15, SECONDS).isEmpty());
   }
 
 }
