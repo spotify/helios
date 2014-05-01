@@ -1,9 +1,6 @@
 package com.spotify.helios.testing;
 
-import com.google.common.base.Function;
 import com.google.common.base.Joiner;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
@@ -13,12 +10,8 @@ import com.spotify.helios.system.SystemTestBase;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.net.InetSocketAddress;
-import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import javax.annotation.Nullable;
 
 import static com.spotify.helios.testing.HeliosRule.TemporaryJob;
 import static org.junit.Assert.assertEquals;
@@ -40,6 +33,7 @@ public class HeliosRuleTest extends SystemTestBase {
   public static class FakeTest {
 
     public static final String SERVICE = "service";
+
     @Rule
     public final HeliosRule heliosRule = new HeliosRule(client);
 
@@ -49,7 +43,7 @@ public class HeliosRuleTest extends SystemTestBase {
         .host(testHost)
         .port(SERVICE, 4229)
         .registration("wiggum", "hm", SERVICE)
-        .build();
+        .deploy();
 
     private final TemporaryJob job2 = heliosRule.job()
         .image("ubuntu:12.04")
@@ -57,17 +51,8 @@ public class HeliosRuleTest extends SystemTestBase {
         .host(testHost)
         .port("service", 4229)
         .registration("wiggum", "hm", "service")
-        .env("FOO_ADDRESS", join(':', job1.addresses(SERVICE)))
-        .build();
-
-    private <T> ListenableFuture<String> join(final char c, final List<ListenableFuture<T>> values) {
-      return Futures.transform(Futures.allAsList(values), new Function<List<T>, String>() {
-        @Override
-        public String apply(final List<T> input) {
-          return Joiner.on(c).join(input);
-        }
-      });
-    }
+        .env("FOO_ADDRESS", Joiner.on(',').join(job1.addresses(SERVICE)))
+        .deploy();
 
     @Test
     public void testDeployment() throws Exception {
