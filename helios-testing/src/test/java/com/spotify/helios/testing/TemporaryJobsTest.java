@@ -13,14 +13,14 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import static com.spotify.helios.testing.HeliosRule.TemporaryJob;
+import static com.spotify.helios.testing.TemporaryJobs.TemporaryJob;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
-public class HeliosRuleTest extends SystemTestBase {
+public class TemporaryJobsTest extends SystemTestBase {
 
   // These static fields exist as a way for FakeTest to access non-static fields and methods in
   // SystemTestBase. This is a bit ugly, but we can't pass the values to FakeTest, because we don't
@@ -35,9 +35,9 @@ public class HeliosRuleTest extends SystemTestBase {
     public static final String SERVICE = "service";
 
     @Rule
-    public final HeliosRule heliosRule = new HeliosRule(client);
+    public final TemporaryJobs temporaryJobs = new TemporaryJobs(client);
 
-    private final TemporaryJob job1 = heliosRule.job()
+    private final TemporaryJob job1 = temporaryJobs.job()
         .image("ubuntu:12.04")
         .command("sh", "-c", "while :; do sleep 1; done")
         .host(testHost)
@@ -45,7 +45,7 @@ public class HeliosRuleTest extends SystemTestBase {
         .registration("wiggum", "hm", SERVICE)
         .deploy();
 
-    private final TemporaryJob job2 = heliosRule.job()
+    private final TemporaryJob job2 = temporaryJobs.job()
         .image("ubuntu:12.04")
         .command("sh", "-c", "while :; do sleep 1; done")
         .host(testHost)

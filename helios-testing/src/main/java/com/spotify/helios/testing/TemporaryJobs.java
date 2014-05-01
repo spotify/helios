@@ -40,7 +40,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.fail;
 
-public class HeliosRule extends ExternalResource {
+public class TemporaryJobs extends ExternalResource {
 
   private final HeliosClient client;
 
@@ -49,7 +49,7 @@ public class HeliosRule extends ExternalResource {
 
   private static final long TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
 
-  public HeliosRule(final HeliosClient client) {
+  public TemporaryJobs(final HeliosClient client) {
     this.client = client;
   }
 
@@ -59,8 +59,8 @@ public class HeliosRule extends ExternalResource {
     return builder;
   }
 
-  public static HeliosRule forDomain(final String domain) {
-    return new HeliosRule(HeliosClient.create(domain, System.getProperty("user.name")));
+  public static TemporaryJobs forDomain(final String domain) {
+    return new TemporaryJobs(HeliosClient.create(domain, System.getProperty("user.name")));
   }
 
   @Override
