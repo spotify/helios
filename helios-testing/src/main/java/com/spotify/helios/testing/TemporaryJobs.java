@@ -1,5 +1,7 @@
 package com.spotify.helios.testing;
 
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -42,14 +44,15 @@ import static org.junit.Assert.fail;
 
 public class TemporaryJobs extends ExternalResource {
 
+  private static final String DEFAULT_USER = System.getProperty("user.name");
+  private static final long TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
+
   private final HeliosClient client;
 
   private final List<TemporaryJob.Builder> builders = Lists.newArrayList();
   private final List<TemporaryJob> jobs = Lists.newArrayList();
 
-  private static final long TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
-
-  public TemporaryJobs(final HeliosClient client) {
+  private TemporaryJobs(final HeliosClient client) {
     this.client = client;
   }
 
@@ -59,8 +62,28 @@ public class TemporaryJobs extends ExternalResource {
     return builder;
   }
 
-  public static TemporaryJobs forDomain(final String domain) {
-    return new TemporaryJobs(HeliosClient.create(domain, System.getProperty("user.name")));
+  public static TemporaryJobs create() {
+    final String domain = System.getProperty("HELIOS_DOMAIN");
+    if (!Strings.isNullOrEmpty(domain)) {
+      return create(domain);
+    }
+    final String endpoints = System.getProperty("HELIOS_ENDPOINTS");
+    final HeliosClient.Builder clientBuilder = HeliosClient.newBuilder()
+        .setUser(DEFAULT_USER);
+    if (!Strings.isNullOrEmpty(endpoints)) {
+      clientBuilder.setEndpointStrings(Splitter.on(',').splitToList(endpoints));
+    } else {
+      clientBuilder.setEndpoints("http://localhost:5801");
+    }
+    return create(clientBuilder.build());
+  }
+
+  public static TemporaryJobs create(final HeliosClient client) {
+    return new TemporaryJobs(client);
+  }
+
+  public static TemporaryJobs create(final String domain) {
+    return create(HeliosClient.create(domain, DEFAULT_USER));
   }
 
   @Override

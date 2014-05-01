@@ -35,7 +35,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     public static final String SERVICE = "service";
 
     @Rule
-    public final TemporaryJobs temporaryJobs = new TemporaryJobs(client);
+    public final TemporaryJobs temporaryJobs = TemporaryJobs.create(client);
 
     private final TemporaryJob job1 = temporaryJobs.job()
         .image("ubuntu:12.04")

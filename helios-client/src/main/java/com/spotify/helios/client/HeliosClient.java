@@ -515,6 +515,10 @@ public class HeliosClient {
     }
 
     public Builder setEndpoints(final String... endpoints) {
+      return setEndpointStrings(asList(endpoints));
+    }
+
+    public Builder setEndpointStrings(final List<String> endpoints) {
       final List<URI> uris = Lists.newArrayList();
       for (String endpoint : endpoints) {
         uris.add(URI.create(endpoint));
