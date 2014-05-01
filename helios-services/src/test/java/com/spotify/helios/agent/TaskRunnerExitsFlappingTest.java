@@ -76,7 +76,9 @@ public class TaskRunnerExitsFlappingTest {
         .setTaskStatusManager(manager)
         .build();
 
-    final TaskRunner tr = new TaskRunner(0, new NopServiceRegistrar(),
+    final TaskRunner tr = new TaskRunner(
+        0,
+        new NopServiceRegistrar(),
         JOB, new NoOpCommandWrapper(),
         new ContainerUtil(HOST, JOB, Collections.<String, Integer>emptyMap(),
                           Collections.<String, String>emptyMap()),

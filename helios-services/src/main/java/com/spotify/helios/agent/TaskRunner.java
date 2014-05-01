@@ -10,6 +10,8 @@ import com.kpelykh.docker.client.model.ContainerConfig;
 import com.kpelykh.docker.client.model.ContainerCreateResponse;
 import com.kpelykh.docker.client.model.ContainerInspectResponse;
 import com.kpelykh.docker.client.model.HostConfig;
+import com.kpelykh.docker.client.model.ImageInspectResponse;
+import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
@@ -220,7 +222,11 @@ class TaskRunner extends InterruptingExecutionThreadService {
     statusUpdater.setStatus(CREATING, null);
     final ContainerConfig containerConfig = containerUtil.containerConfig(job);
 
-    commandWrapper.modifyCreateConfig(image, job, docker.safeInspectImage(image), containerConfig);
+    final ImageInspectResponse imageInfo = docker.safeInspectImage(image);
+    if (imageInfo == null) {
+      throw new HeliosRuntimeException("docker inspect image returned null on image " + image);
+    }
+    commandWrapper.modifyCreateConfig(image, job, imageInfo, containerConfig);
 
     final String name = ContainerUtil.containerName(job.getId());
     final ContainerCreateResponse container;
