@@ -16,7 +16,6 @@ import com.spotify.hermes.service.Client;
 import org.junit.Rule;
 import org.junit.Test;
 
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
@@ -64,7 +63,7 @@ public class TemporaryJobsTest extends SystemTestBase {
         .image(IMAGE_NAME)
         .host(testHost)
         .port("service", 4229)
-        .registration("wiggum", "hm", "service")
+        .registration("wiggum", "hm", SERVICE)
         .env("FOO_ADDRESS", Joiner.on(',').join(job1.addresses(SERVICE)))
         .deploy();
 
@@ -81,11 +80,10 @@ public class TemporaryJobsTest extends SystemTestBase {
           .setTtlMillis(3000)
           .setMethod("GET");
 
-      final String dockerHost = URI.create(DOCKER_ENDPOINT).getHost();
       final Integer port = job1.getPort(testHost, SERVICE);
       assertNotNull("null external port", port);
       final Client hermesClient = Hermes.newClient(format("tcp://%s:%s/ping",
-                                                          dockerHost, port));
+                                                          DOCKER_ADDRESS, port));
       final Message message = hermesClient.send(messageBuilder.build()).get(5, SECONDS);
 
       final List<ByteString> payloads = message.getPayloads();

@@ -9,6 +9,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -103,11 +104,23 @@ public abstract class SystemTestBase {
   public static final String BOGUS_HOST = "BOGUS_HOST";
   public static final List<String> DO_NOTHING_COMMAND = asList("sh", "-c", "while :; do sleep 1; done");
   public static final String JOB_VERSION = "test_17";
-  public static final String DOCKER_ENDPOINT =
-      fromNullable(getenv("DOCKER_ENDPOINT"))
-          .or(fromNullable(getenv("DOCKER_HOST")))
-          .or("http://localhost:4160")
-          .replace("tcp://", "http://");
+
+  public static final int DOCKER_PORT = Integer.valueOf(env("DOCKER_PORT", "4160"));
+  public static final String DOCKER_HOST = env("DOCKER_HOST", ":" + DOCKER_PORT);
+  public static final String DOCKER_ADDRESS;
+  public static final String DOCKER_ENDPOINT;
+
+  static {
+    // Parse DOCKER_HOST
+    final String stripped = DOCKER_HOST.replaceAll(".*://", "");
+    final HostAndPort hostAndPort = HostAndPort.fromString(stripped);
+    DOCKER_ADDRESS = fromNullable(hostAndPort.getHostText()).or("localhost");
+    DOCKER_ENDPOINT = format("http://%s:%d", DOCKER_ADDRESS, hostAndPort.getPortOrDefault(DOCKER_PORT));
+  }
+
+  private static String env(final String key, final String defaultValue) {
+    return fromNullable(getenv(key)).or(defaultValue);
+  }
 
   private static final String TEST_USER = "test-user";
   private static final String TEST_HOST = "test-host";
