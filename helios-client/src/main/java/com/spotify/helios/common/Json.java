@@ -10,9 +10,11 @@ import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.Type;
@@ -186,6 +188,42 @@ public class Json {
       throws IOException {
     final JsonParser parser = OBJECT_MAPPER.getFactory().createParser(stream);
     return OBJECT_MAPPER.readValues(parser, typeReference);
+  }
+
+  public static JsonNode readTree(final byte[] bytes) throws IOException {
+    return OBJECT_MAPPER.readTree(bytes);
+  }
+
+  public static JsonNode readTreeUnchecked(final byte[] bytes){
+    try {
+      return readTree(bytes);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  public static JsonNode readTree(final String content) throws IOException {
+    return OBJECT_MAPPER.readTree(content);
+  }
+
+  public static JsonNode readTreeUnchecked(final String content){
+    try {
+      return readTree(content);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  public static JsonNode readTree(final File file) throws IOException {
+    return OBJECT_MAPPER.readTree(file);
+  }
+
+  public static JsonNode readTreeUnchecked(final File file){
+    try {
+      return readTree(file);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
   }
 
   public static JavaType type(Type t) {
