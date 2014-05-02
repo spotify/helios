@@ -1,6 +1,12 @@
 **Please join our mailing list:**
 https://groups.google.com/a/spotify.com/forum/#!forum/helios
 
+0.0.13
+======
+* CLI: No longer filters out jobs with the UNDEPLOY goal, which caused confusion
+* Added HeliosRule to aid in writing integration tests that deploy containers via helios
+* Bug Fixes
+
 0.0.12
 ======
 * CLI: Easier to use flat style instead of hierarchical command structure.
