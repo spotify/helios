@@ -275,6 +275,9 @@ public class ContainerUtil {
         if (message == EOF) {
           break;
         }
+        if (message == null) {
+          throw new ImagePullFailedException("timeout");
+        }
         final Object error = message.get("error");
         if (error != null) {
           if (error.toString().contains("404")) {
