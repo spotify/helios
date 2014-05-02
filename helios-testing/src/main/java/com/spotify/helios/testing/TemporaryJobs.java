@@ -34,6 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -117,12 +118,11 @@ public class TemporaryJobs extends ExternalResource {
 
   public static class TemporaryJob {
 
+    public static final Pattern JOB_NAME_FORBIDDEN_CHARS = Pattern.compile("[^0-9a-zA-Z-_.]+");
+
     private final List<String> hosts;
-
     private final Map<String, TaskStatus> statuses = Maps.newHashMap();
-
     private final HeliosClient client;
-
     private final Job job;
 
     private TemporaryJob(final HeliosClient client, final Builder builder) {
@@ -245,7 +245,7 @@ public class TemporaryJobs extends ExternalResource {
     }
 
     private String jobName(final String s) {
-      return "test_" + s.replace(':', '_');
+      return "test_" + JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
     }
 
     private String randomVersion() {

@@ -54,8 +54,6 @@ public class TemporaryJobsTest extends SystemTestBase {
     public final TemporaryJobs temporaryJobs = TemporaryJobs.create(client);
 
     private final TemporaryJob job1 = temporaryJobs.job()
-        .name("wiggum1")
-        .version("1")
         .image(IMAGE_NAME)
         .host(testHost)
         .port(SERVICE, 4229)
@@ -63,8 +61,6 @@ public class TemporaryJobsTest extends SystemTestBase {
         .deploy();
 
     private final TemporaryJob job2 = temporaryJobs.job()
-        .name("wiggum2")
-        .version("1")
         .image(IMAGE_NAME)
         .host(testHost)
         .port("service", 4229)
