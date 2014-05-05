@@ -10,7 +10,7 @@ done
 
 if [ -z "$as_service" ]
 then
-  : ${JMXPORT=9203}
+  : ${JMXPORT=9202}
   : ${JDWPPORT=5005}
 fi
 
