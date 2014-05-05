@@ -24,9 +24,5 @@ Please fix this and reinstall this package." >&2
         chown -R helios:helios /spotify/var/helios-agent
 fi
 
-if initctl status helios-agent | grep running > /dev/null
-then
-    initctl stop helios-agent
-fi
-
+initctl stop helios-agent || true
 initctl start helios-agent
