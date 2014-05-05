@@ -1,2 +1,2 @@
 #!/bin/sh
-initctl stop helios-master
+initctl stop helios-master || true

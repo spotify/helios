@@ -1,2 +1,2 @@
 #!/bin/sh
-initctl stop helios-agent
+initctl stop helios-agent || true

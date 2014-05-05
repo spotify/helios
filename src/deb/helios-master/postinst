@@ -20,9 +20,6 @@ Please fix this and reinstall this package." >&2
 fi
 
 # if already running, stop it first
-if initctl status helios-master | grep running > /dev/null
-then
-    initctl stop helios-master
-fi
+initctl stop helios-master || true
 
 initctl start helios-master
