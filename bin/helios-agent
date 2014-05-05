@@ -1,7 +1,18 @@
 #!/bin/bash -e
 
-: ${JMXPORT=9203}
-: ${JDWPPORT=5006}
+for i in "$@"
+do
+    if [[ "$i" == "--help" ||  "$i" == "-h" ]]
+    then
+        as_service=false
+    fi
+done
+
+if [ -z "$as_service" ]
+then
+  : ${JMXPORT=9203}
+  : ${JDWPPORT=5006}
+fi
 
 args=()
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
