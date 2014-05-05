@@ -180,7 +180,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
               newBackPaths.remove(path);
               log.debug("Removed node: {}", path);
             }
-          } catch (KeeperException.BadVersionException ignore) {
+          } catch (KeeperException.BadVersionException | KeeperException.NoNodeException ignore) {
             // we're done here
             newBackPaths.remove(path);
           } catch (KeeperException.ConnectionLossException e) {
