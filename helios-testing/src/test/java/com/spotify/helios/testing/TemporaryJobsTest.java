@@ -19,7 +19,6 @@ import org.junit.Test;
 import java.util.List;
 import java.util.Map;
 
-import static com.spotify.helios.testing.TemporaryJobs.TemporaryJob;
 import static com.spotify.hermes.message.Command.REQUEST;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.SECONDS;
