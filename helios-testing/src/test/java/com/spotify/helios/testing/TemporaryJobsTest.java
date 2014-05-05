@@ -30,9 +30,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
-/**
- * Tests
- */
 public class TemporaryJobsTest extends SystemTestBase {
 
   // These static fields exist as a way for FakeTest to access non-static fields and methods in
