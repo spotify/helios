@@ -5,12 +5,12 @@
   <name>Spotify Helios Parent</name>
   <groupId>com.spotify</groupId>
   <artifactId>helios-parent</artifactId>
-  <version>0.0.15</version>
+  <version>0.0.16-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <scm>
     <developerConnection>scm:git:git@ghe.spotify.net:helios/helios.git</developerConnection>
-    <tag>0.0.15</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <dependencies>
