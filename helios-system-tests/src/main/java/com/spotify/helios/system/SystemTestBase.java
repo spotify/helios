@@ -114,7 +114,8 @@ public abstract class SystemTestBase {
     // Parse DOCKER_HOST
     final String stripped = DOCKER_HOST.replaceAll(".*://", "");
     final HostAndPort hostAndPort = HostAndPort.fromString(stripped);
-    DOCKER_ADDRESS = fromNullable(hostAndPort.getHostText()).or("localhost");
+    final String host = hostAndPort.getHostText();
+    DOCKER_ADDRESS = Strings.isNullOrEmpty(host) ? "localhost" : host;
     DOCKER_ENDPOINT = format("http://%s:%d", DOCKER_ADDRESS, hostAndPort.getPortOrDefault(DOCKER_PORT));
   }
 
