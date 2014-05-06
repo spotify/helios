@@ -4,8 +4,11 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.collect.ImmutableList;
+
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -17,17 +20,24 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+
 public class JobUndeployCommand extends WildcardJobCommand {
 
   private final Argument hostsArg;
+  private final Argument allArg;
 
   public JobUndeployCommand(final Subparser parser) {
     super(parser);
 
     parser.help("undeploy a job from hosts");
 
+    allArg = parser.addArgument("-a", "--all")
+        .action(storeTrue())
+        .help("Undeploy from all currently deployed hosts.");
+
     hostsArg = parser.addArgument("hosts")
-        .nargs("+")
+        .nargs("*")
         .help("The hosts to undeploy the job from.");
   }
 
@@ -36,7 +46,28 @@ public class JobUndeployCommand extends WildcardJobCommand {
                              final boolean json, final JobId jobId)
       throws ExecutionException, InterruptedException, IOException {
 
-    final List<String> hosts = options.getList(hostsArg.getDest());
+    final boolean all = options.getBoolean(allArg.getDest());
+    final List<String> hosts;
+
+    if (all) {
+      final JobStatus status = client.jobStatus(jobId).get();
+      hosts = ImmutableList.copyOf(status.getDeployments().keySet());
+      if (hosts.isEmpty()) {
+        out.printf("%s is not currently deployed on any hosts.", jobId);
+        return 0;
+      }
+      out.printf("This will undeploy %s from %s%n", jobId, hosts);
+      out.printf("Do you want to continue? [y/N]%n");
+
+      // TODO (dano): pass in stdin instead using System.in
+      final int c = System.in.read();
+
+      if (c != 'Y' && c != 'y') {
+        return 1;
+      }
+    } else {
+      hosts = options.getList(hostsArg.getDest());
+    }
 
     out.printf("Undeploying %s from %s%n", jobId, hosts);
 
