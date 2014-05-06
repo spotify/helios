@@ -76,7 +76,7 @@ public class TemporaryJobsTest extends SystemTestBase {
           .setTtlMillis(3000)
           .setMethod("GET");
 
-      final Integer port = job1.getPort(testHost, SERVICE);
+      final Integer port = job1.port(testHost, SERVICE);
       assertNotNull("null external port", port);
       final Client hermesClient = Hermes.newClient(format("tcp://%s:%s/ping",
                                                           DOCKER_ADDRESS, port));

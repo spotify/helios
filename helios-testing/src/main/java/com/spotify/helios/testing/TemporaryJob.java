@@ -80,11 +80,11 @@ public class TemporaryJob {
     deploy();
   }
 
-  public Job getJob() {
+  public Job job() {
     return job;
   }
 
-  public Integer getPort(final String host, final String port) {
+  public Integer port(final String host, final String port) {
     checkArgument(hosts.contains(host), "host %s not found", host);
     checkArgument(job.getPorts().containsKey(port), "port %s not found", port);
     final TaskStatus status = statuses.get(host);
