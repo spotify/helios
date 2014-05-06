@@ -40,7 +40,7 @@ public class CliMain {
     } catch (Throwable e) {
       // don't print error message for arg parser exception, because parser will do that
       if (!(e instanceof ArgumentParserException)) {
-        System.err.println(e.getMessage());
+        System.err.println(e.toString());
       }
       System.exit(1);
     }
