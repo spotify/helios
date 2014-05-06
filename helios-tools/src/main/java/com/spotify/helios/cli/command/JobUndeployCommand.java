@@ -67,6 +67,10 @@ public class JobUndeployCommand extends WildcardJobCommand {
       }
     } else {
       hosts = options.getList(hostsArg.getDest());
+      if (hosts.isEmpty()) {
+        out.println("Please either specify a list of hosts or use the -a/--all flag.");
+        return 1;
+      }
     }
 
     out.printf("Undeploying %s from %s%n", jobId, hosts);
