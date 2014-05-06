@@ -12,6 +12,7 @@ if [ -z "$as_service" ]
 then
   : ${JMXPORT=9203}
   : ${JDWPPORT=5006}
+  AGENTLIB=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$JDWPPORT
 fi
 
 args=()
@@ -41,6 +42,6 @@ exec java \
     "${args[@]}" \
     -Djava.net.preferIPv4Stack=true \
     -cp "$CLASSPATH" \
-    -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$JDWPPORT \
+    $AGENTLIB \
     com.spotify.helios.agent.AgentMain \
     "$@"
