@@ -9,6 +9,7 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -31,7 +32,6 @@ import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
@@ -99,13 +99,13 @@ public class TemporaryJob {
   }
 
 
-  public List<InetSocketAddress> addresses(final String port) {
+  public List<HostAndPort> addresses(final String port) {
     checkArgument(job.getPorts().containsKey(port), "port %s not found", port);
-    final List<InetSocketAddress> addresses = Lists.newArrayList();
+    final List<HostAndPort> addresses = Lists.newArrayList();
     for (Map.Entry<String, TaskStatus> entry : statuses.entrySet()) {
       final Integer externalPort = entry.getValue().getPorts().get(port).getExternalPort();
       assert externalPort != null;
-      addresses.add(InetSocketAddress.createUnresolved(entry.getKey(), externalPort));
+      addresses.add(HostAndPort.fromParts(entry.getKey(), externalPort));
     }
     return addresses;
   }
