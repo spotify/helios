@@ -17,7 +17,6 @@ public class TemporaryJobs extends ExternalResource {
   private final HeliosClient client;
 
   private final List<TemporaryJob.Builder> builders = Lists.newArrayList();
-  private final List<TemporaryJob> jobs = Lists.newArrayList();
 
   private TemporaryJobs(final HeliosClient client) {
     this.client = client;
@@ -54,19 +53,16 @@ public class TemporaryJobs extends ExternalResource {
   }
 
   @Override
-  protected void before() throws Throwable {
-    for (final TemporaryJob.Builder builder : builders) {
-      builder.assertDeployed();
-      jobs.add(builder.job);
-    }
-  }
-
-  @Override
   protected void after() {
     final List<AssertionError> errors = Lists.newArrayList();
 
-    for (final TemporaryJob temporaryJob : jobs) {
-      temporaryJob.undeploy(errors);
+    for (TemporaryJob.Builder builder : builders) {
+      final TemporaryJob job = builder.job;
+      if (job == null) {
+        errors.add(new AssertionError("deploy() not called on job"));
+        continue;
+      }
+      job.undeploy(errors);
     }
 
     // Raise any errors

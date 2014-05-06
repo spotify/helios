@@ -65,8 +65,14 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     @Test
     public void testDeployment() throws Exception {
+      // Verify that it is possible to deploy additional jobs during test
+      final TemporaryJob job3 = temporaryJobs.job()
+          .image(IMAGE_NAME)
+          .host(testHost)
+          .deploy();
+
       final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
-      assertEquals("wrong number of jobs running", 2, jobs.size());
+      assertEquals("wrong number of jobs running", 3, jobs.size());
       for (Job job : jobs.values()) {
         assertEquals("wrong job running", IMAGE_NAME, job.getImage());
       }

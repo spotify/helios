@@ -328,11 +328,5 @@ public class TemporaryJob {
         throw new AssertionError("Failed to parse image info: " + source, e);
       }
     }
-
-    void assertDeployed() {
-      if (job == null) {
-        fail("deploy() not called on job");
-      }
-    }
   }
 }
