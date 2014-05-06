@@ -100,7 +100,7 @@ public class BoundedRandomExponentialBackoff implements RetryIntervalPolicy {
     }
 
     public Builder setMaxInterval(final long maxInterval, final TimeUnit timeUnit) {
-      return setMinIntervalMillis(timeUnit.toMillis(maxInterval));
+      return setMaxIntervalMillis(timeUnit.toMillis(maxInterval));
     }
 
     public Builder setMinIntervalMillis(final long minIntervalMillis) {
