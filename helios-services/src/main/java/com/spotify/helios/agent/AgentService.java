@@ -8,8 +8,6 @@ import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.descriptors.JobId;
@@ -20,6 +18,7 @@ import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -54,8 +53,6 @@ import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
-import javax.annotation.Nullable;
-
 import static com.google.common.base.Charsets.UTF_8;
 import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
@@ -72,7 +69,8 @@ public class AgentService extends AbstractIdleService {
   private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
   private static final TypeReference<Map<JobId, Execution>> JOBID_EXECUTIONS_MAP =
-      new TypeReference<Map<JobId, Execution>>() {};
+      new TypeReference<Map<JobId, Execution>>() {
+      };
 
   private final Agent agent;
 
@@ -88,7 +86,7 @@ public class AgentService extends AbstractIdleService {
   private final ServiceRegistrar serviceRegistrar;
   private final Environment environment;
 
-  private AgentRegistrar registrar;
+  private ZooKeeperRegistrar zkRegistrar;
 
   /**
    * Create a new agent instance.
@@ -141,7 +139,7 @@ public class AgentService extends AbstractIdleService {
     // Configure metrics
     final MetricsRegistry metricsRegistry = com.yammer.metrics.Metrics.defaultRegistry();
     RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(),
-      config.getName(), "helios-agent");
+                                                       config.getName(), "helios-agent");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();
     if (config.isInhibitMetrics()) {
       log.info("Not starting metrics");
@@ -206,7 +204,8 @@ public class AgentService extends AbstractIdleService {
         : new NoOpCommandWrapper(),
         config.getName(),
         metrics.getSupervisorMetrics(),
-        riemannFacade);
+        riemannFacade
+    );
 
     final ReactorFactory reactorFactory = new ReactorFactory();
 
@@ -225,7 +224,9 @@ public class AgentService extends AbstractIdleService {
     this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator);
 
     final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
-        Paths.statusHosts(), riemannFacade, TimeUnit.MINUTES, 2);
+                                                                              Paths.statusHosts(),
+                                                                              riemannFacade,
+                                                                              TimeUnit.MINUTES, 2);
     environment.manage(zkHealthChecker);
 
     if (config.getHttpConfiguration() != null) {
@@ -244,7 +245,6 @@ public class AgentService extends AbstractIdleService {
    * Create a Zookeeper client and create the control and state nodes if needed.
    *
    * @param config The service configuration.
-   * @param id
    * @return A zookeeper client.
    */
   private ZooKeeperClient setupZookeeperClient(final AgentConfig config, final String id) {
@@ -258,31 +258,18 @@ public class AgentService extends AbstractIdleService {
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
 
     // Register the agent
-    this.registrar = new AgentRegistrar(client, config.getName(), id);
+    zkRegistrar =
+        new ZooKeeperRegistrar(client, new AgentZooKeeperRegistrar(this, config.getName(), id));
 
-    // Shut down the agent if there is a registration collision
-    Futures.addCallback(registrar.getCompletionFuture(), new FutureCallback<Void>() {
-      @Override
-      public void onSuccess(@Nullable final Void result) {
-        log.debug("Registration completed");
-      }
-
-      @Override
-      public void onFailure(final Throwable t) {
-        log.error("Registration failed", t);
-        stopAsync();
-      }
-    });
-
-    return new DefaultZooKeeperClient(curator);
+    return client;
   }
 
   @Override
   protected void startUp() throws Exception {
     logBanner();
+    zkRegistrar.startAsync().awaitRunning();
     zooKeeperClient.start();
     model.startAsync().awaitRunning();
-    registrar.startAsync().awaitRunning();
     agent.startAsync().awaitRunning();
     hostInfoReporter.startAsync();
     agentInfoReporter.startAsync();
@@ -322,7 +309,7 @@ public class AgentService extends AbstractIdleService {
     if (serviceRegistrar != null) {
       serviceRegistrar.close();
     }
-    registrar.stopAsync().awaitTerminated();
+    zkRegistrar.stopAsync().awaitTerminated();
     model.stopAsync().awaitTerminated();
     metrics.stop();
     zooKeeperClient.close();

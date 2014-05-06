@@ -23,7 +23,7 @@ import static org.mockito.Mockito.*;
 /**
  * Created by snc on 4/21/14.
  */
-public class ZooKeeperClientAsyncInitializerTest {
+public class ZooKeeperRegistrarTest {
 
   ZooKeeperClient zkClient;
   Listenable<ConnectionStateListener> connectionStateListenerListenable;
@@ -45,12 +45,20 @@ public class ZooKeeperClientAsyncInitializerTest {
   @Test
   public void testAllGood() throws Exception {
 
-    final ZooKeeperClientAsyncInitializer init = new ZooKeeperClientAsyncInitializer(zkClient);
-    init.setCompleteFuture(complete);
+    final ZooKeeperRegistrar init = new ZooKeeperRegistrar(zkClient, new ZooKeeperRegistrarEventListener() {
 
-    init.setListener( new ZooKeeperClientConnectListener() {
       @Override
-      public void onConnect(SettableFuture<Void> complete) throws KeeperException {
+      public void startUp() throws Exception {
+
+      }
+
+      @Override
+      public void shutDown() throws Exception {
+
+      }
+
+      @Override
+      public void tryToRegister(ZooKeeperClient client) throws KeeperException {
         complete.set(null);
       }
     });
@@ -63,12 +71,23 @@ public class ZooKeeperClientAsyncInitializerTest {
   @Test
   public void testShutdown() throws Exception {
 
-    final ZooKeeperClientAsyncInitializer init = new ZooKeeperClientAsyncInitializer(zkClient);
-    init.setCompleteFuture(complete);
+    final SettableFuture<Void> shutdownComplete = SettableFuture.create();
 
-    init.setListener( new ZooKeeperClientConnectListener() {
+    final ZooKeeperRegistrar init = new ZooKeeperRegistrar(zkClient, new ZooKeeperRegistrarEventListener() {
+
       @Override
-      public void onConnect(SettableFuture<Void> complete) throws KeeperException {
+      public void startUp() throws Exception {
+
+      }
+
+      @Override
+      public void shutDown() throws Exception {
+
+        shutdownComplete.set(null);
+      }
+
+      @Override
+      public void tryToRegister(ZooKeeperClient client) throws KeeperException {
         complete.set(null);
       }
     });
@@ -79,26 +98,8 @@ public class ZooKeeperClientAsyncInitializerTest {
 
     // if this throws exception something is bonkers
     init.shutDown();
-  }
 
-  @Test(expected = ExecutionException.class)
-  public void testRegistrationBlowsUp() throws Exception {
-
-
-    final ZooKeeperClientAsyncInitializer init = new ZooKeeperClientAsyncInitializer(zkClient);
-    init.setCompleteFuture(complete);
-
-    init.setListener( new ZooKeeperClientConnectListener() {
-      @Override
-      public void onConnect(SettableFuture<Void> complete) throws KeeperException {
-        complete.setException(new IllegalStateException("ALIENS!"));
-      }
-    });
-
-    init.startUp();
-
-    complete.get(3000, TimeUnit.MILLISECONDS);
-
+    Assert.assertNull(shutdownComplete.get(3000, TimeUnit.MILLISECONDS));
   }
 
   @Test
@@ -108,18 +109,26 @@ public class ZooKeeperClientAsyncInitializerTest {
 
     final long maxRetryIntervalMillis = 30;
 
-    final ZooKeeperClientAsyncInitializer init = new ZooKeeperClientAsyncInitializer(zkClient, 1, maxRetryIntervalMillis);
-    init.setCompleteFuture(complete);
+    final ZooKeeperRegistrar init = new ZooKeeperRegistrar(zkClient, new ZooKeeperRegistrarEventListener() {
 
-    init.setListener( new ZooKeeperClientConnectListener() {
       @Override
-      public void onConnect(SettableFuture<Void> complete) throws KeeperException {
+      public void startUp() throws Exception {
+
+      }
+
+      @Override
+      public void shutDown() throws Exception {
+
+      }
+
+      @Override
+      public void tryToRegister(ZooKeeperClient client) throws KeeperException {
         if ( counter.incrementAndGet() == 1 )
           throw new KeeperException.ConnectionLossException();
 
         complete.set(null);
       }
-    });
+    }, 1, maxRetryIntervalMillis);
 
     init.startUp();
 
@@ -134,30 +143,38 @@ public class ZooKeeperClientAsyncInitializerTest {
 
     final long maxRetryIntervalMillis = 30;
 
-    final ZooKeeperClientAsyncInitializer init = new ZooKeeperClientAsyncInitializer(zkClient, 1, maxRetryIntervalMillis);
-    init.setCompleteFuture(complete);
+    final ZooKeeperRegistrar init = new ZooKeeperRegistrar(zkClient, new ZooKeeperRegistrarEventListener() {
 
-    init.setListener( new ZooKeeperClientConnectListener() {
       @Override
-      public void onConnect(SettableFuture<Void> complete) throws KeeperException {
+      public void startUp() throws Exception {
+
+      }
+
+      @Override
+      public void shutDown() throws Exception {
+
+      }
+
+      @Override
+      public void tryToRegister(ZooKeeperClient client) throws KeeperException {
         counter.incrementAndGet();
 
         complete.set(null);
+
       }
-    });
+    }, 1, maxRetryIntervalMillis);
 
     init.startUp();
 
-    Assert.assertNull(init.getCompletionFuture().get(maxRetryIntervalMillis * 2 + 1, TimeUnit.MILLISECONDS));
+    Assert.assertNull(complete.get(maxRetryIntervalMillis * 2 + 1, TimeUnit.MILLISECONDS));
 
     // simulate the reconnect
-    SettableFuture<Void> secondComplete = SettableFuture.create();
-    init.setCompleteFuture(secondComplete);
+    complete = SettableFuture.create();
 
     CuratorFramework curatorFramework = mock(CuratorFramework.class);
     zkClientConnectionListenerCaptor.getValue().stateChanged(curatorFramework, ConnectionState.RECONNECTED);
 
-    Assert.assertNull(init.getCompletionFuture().get(maxRetryIntervalMillis * 2 + 1, TimeUnit.MILLISECONDS));
+    Assert.assertNull(complete.get(maxRetryIntervalMillis * 2 + 1, TimeUnit.MILLISECONDS));
 
     Assert.assertTrue("Count must have been called at least once", counter.get() > 1);
   }

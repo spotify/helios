@@ -4,9 +4,10 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.util.concurrent.Service;
 import com.google.common.util.concurrent.SettableFuture;
-import com.spotify.helios.servicescommon.ZooKeeperClientAsyncInitializer;
-import com.spotify.helios.servicescommon.ZooKeeperClientConnectListener;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrarEventListener;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
@@ -21,30 +22,31 @@ import static com.google.common.base.Charsets.UTF_8;
 import static java.lang.String.format;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
-public class AgentRegistrar extends ZooKeeperClientAsyncInitializer implements ZooKeeperClientConnectListener {
+public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener {
 
-  private static final Logger log = LoggerFactory.getLogger(AgentRegistrar.class);
+  private static final Logger log = LoggerFactory.getLogger(AgentZooKeeperRegistrar.class);
 
   private static final byte[] EMPTY_BYTES = new byte[]{};
 
+  private final Service agentService;
   private final String name;
   private final String id;
 
   private PersistentEphemeralNode upNode;
 
-  public AgentRegistrar(final ZooKeeperClient client, final String name, final String id) {
-    super(client);
-
+  public AgentZooKeeperRegistrar(final Service agentService, final String name, final String id) {
+    this.agentService = agentService;
     this.name = name;
     this.id = id;
-
-    setCompleteFuture(SettableFuture.<Void>create());
   }
 
   @Override
-  protected void shutDown() throws Exception {
-    super.shutDown();
+  public void startUp() throws Exception {
 
+  }
+
+  @Override
+  public void shutDown() throws Exception {
     if (upNode != null) {
       try {
         upNode.close();
@@ -54,11 +56,9 @@ public class AgentRegistrar extends ZooKeeperClientAsyncInitializer implements Z
     }
   }
 
-
   @Override
-  public void onConnect(SettableFuture<Void> complete) throws KeeperException {
+  public void tryToRegister(ZooKeeperClient client) throws KeeperException {
     final String idPath = Paths.configHostId(name);
-    final ZooKeeperClient client = getZKClient();
 
     final Stat stat = client.exists(idPath);
     if (stat == null) {
@@ -81,12 +81,12 @@ public class AgentRegistrar extends ZooKeeperClientAsyncInitializer implements Z
       final String existingId = bytes == null ? "" : new String(bytes, UTF_8);
       if (!id.equals(existingId)) {
         final String message = format("Another agent already registered as '%s' " +
-                                      "(local=%s remote=%s).", name, id, existingId);
-        log.debug(message);
-        complete.setException(new IllegalStateException(message));
+            "(local=%s remote=%s).", name, id, existingId);
+        log.error(message);
+        agentService.stopAsync();
         return;
       } else {
-        log.debug("Matching agent id node already present, not registering agent {}: {}", id, name);
+        log.info("Matching agent id node already present, not registering agent {}: {}", id, name);
       }
     }
 
@@ -98,7 +98,7 @@ public class AgentRegistrar extends ZooKeeperClientAsyncInitializer implements Z
       upNode.start();
     }
 
-    complete.set(null);
+    log.info("ZooKeeper registration complete");
   }
 
 }

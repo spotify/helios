@@ -20,16 +20,14 @@ import org.slf4j.LoggerFactory;
 import static com.google.common.util.concurrent.Service.State.STOPPING;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class ZooKeeperClientAsyncInitializer extends AbstractIdleService {
+public class ZooKeeperRegistrar extends AbstractIdleService {
 
-  private static final Logger log = LoggerFactory.getLogger(ZooKeeperClientAsyncInitializer.class);
+  private static final Logger log = LoggerFactory.getLogger(ZooKeeperRegistrar.class);
 
   private final ZooKeeperClient client;
 
-  private SettableFuture<Void> complete;
-
   private final Reactor reactor;
-  private ZooKeeperClientConnectListener clientConnectListener;
+  private final ZooKeeperRegistrarEventListener eventListener;
 
   private final long minIntervalMillis; // retry backoff interval
   private final long maxIntervalMillis; // retry backoff interval
@@ -37,33 +35,34 @@ public class ZooKeeperClientAsyncInitializer extends AbstractIdleService {
   private ConnectionStateListener listener = new ConnectionStateListener() {
     @Override
     public void stateChanged(final CuratorFramework client, final ConnectionState newState) {
-      if (newState == ConnectionState.RECONNECTED) {
+      if (newState == ConnectionState.CONNECTED || newState == ConnectionState.RECONNECTED) {
         reactor.signal();
       }
     }
   };
 
-  public ZooKeeperClientAsyncInitializer(final ZooKeeperClient client) {
-    this(client, 1 * 1000, 30 * 1000);
+  public ZooKeeperRegistrar(final ZooKeeperClient client,
+                            final ZooKeeperRegistrarEventListener eventListener) {
+    this(client, eventListener, 1 * 1000, 30 * 1000);
   }
 
-  public ZooKeeperClientAsyncInitializer(final ZooKeeperClient client,
-                                         long minIntervalMillis,
-                                         long maxIntervalMillis) {
+  public ZooKeeperRegistrar(final ZooKeeperClient client,
+                            final ZooKeeperRegistrarEventListener eventListener,
+                            long minIntervalMillis,
+                            long maxIntervalMillis) {
     this.client             = client;
+    this.eventListener      = eventListener;
     this.minIntervalMillis  = minIntervalMillis;
     this.maxIntervalMillis  = maxIntervalMillis;
 
     this.reactor = new DefaultReactor("zk-client-async-init", new Update());
   }
 
-  public void setCompleteFuture(SettableFuture<Void> complete) { this.complete = complete; }
-  public SettableFuture<Void> getCompletionFuture() { return complete; }
-
-  protected ZooKeeperClient getZKClient() { return client; }
-
   @Override
   protected void startUp() throws Exception {
+
+    eventListener.startUp();
+
     client.getConnectionStateListenable().addListener(listener);
     reactor.startAsync().awaitRunning();
     reactor.signal();
@@ -71,11 +70,11 @@ public class ZooKeeperClientAsyncInitializer extends AbstractIdleService {
 
   @Override
   protected void shutDown() throws Exception {
-    reactor.stopAsync().awaitTerminated();
-  }
 
-  public void setListener(ZooKeeperClientConnectListener zooKeeperClientConnectListener) {
-    this.clientConnectListener = zooKeeperClientConnectListener;
+    reactor.stopAsync().awaitTerminated();
+
+    eventListener.shutDown();
+
   }
 
   private class Update implements Reactor.Callback {
@@ -89,11 +88,11 @@ public class ZooKeeperClientAsyncInitializer extends AbstractIdleService {
       final RetryScheduler retryScheduler = RETRY_INTERVAL_POLICY.newScheduler();
       while (isAlive()) {
         try {
-          clientConnectListener.onConnect(complete);
+          eventListener.tryToRegister(client);
           return;
         } catch (KeeperException e) {
           final long sleep = retryScheduler.nextMillis();
-          log.error("Agent registration failed, retrying in {} ms", sleep, e);
+          log.error("ZooKeeper registration failed, retrying in {} ms", sleep, e);
           Thread.sleep(sleep);
         }
       }
