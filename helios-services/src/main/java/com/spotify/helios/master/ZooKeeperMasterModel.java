@@ -345,11 +345,15 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
     // TODO (dano): handle retry failures
     try {
+      final ImmutableList.Builder<ZooKeeperOperation> operations = ImmutableList.builder();
       final UUID jobCreationOperationId = getJobCreation(client, id);
-      client.transaction(delete(Paths.configJobCreation(id, jobCreationOperationId)),
-                         delete(Paths.configJobHosts(id)),
-                         delete(Paths.configJobRefShort(id)),
-                         delete(Paths.configJob(id)));
+      if (jobCreationOperationId != null) {
+        operations.add(delete(Paths.configJobCreation(id, jobCreationOperationId)));
+      }
+      operations.add(delete(Paths.configJobHosts(id)),
+                     delete(Paths.configJobRefShort(id)),
+                     delete(Paths.configJob(id)));
+      client.transaction(operations.build());
     } catch (final NoNodeException e) {
       throw new JobDoesNotExistException(id);
     } catch (final NotEmptyException e) {
