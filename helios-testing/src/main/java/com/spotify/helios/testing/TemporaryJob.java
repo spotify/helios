@@ -185,7 +185,7 @@ public class TemporaryJob {
   }
 
   private String jobName(final String s) {
-    return "test_" + JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
+    return "tmp_" + JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
   }
 
   private String randomVersion() {
