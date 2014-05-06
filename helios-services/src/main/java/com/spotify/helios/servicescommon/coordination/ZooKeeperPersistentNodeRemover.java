@@ -172,8 +172,9 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
               final List<String> nodes = Lists.newArrayList();
               if (recursive) {
                 nodes.addAll(reverse(client.listRecursive(path)));
+              } else {
+                nodes.add(path);
               }
-              nodes.add(path);
               client.transaction(check(path, node.getStat().getVersion()),
                                  delete(nodes));
               // we're done here
