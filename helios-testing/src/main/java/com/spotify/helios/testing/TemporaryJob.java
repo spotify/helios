@@ -239,6 +239,16 @@ public class TemporaryJob {
       return this;
     }
 
+    public Builder env(final String key, final int value) {
+      this.jobBuilder.addEnv(key, String.valueOf(value));
+      return this;
+    }
+
+    public Builder env(final String key, final long value) {
+      this.jobBuilder.addEnv(key, String.valueOf(value));
+      return this;
+    }
+
     public Builder port(final String name, final int internalPort) {
       this.jobBuilder.addPort(name, PortMapping.of(internalPort));
       return this;
