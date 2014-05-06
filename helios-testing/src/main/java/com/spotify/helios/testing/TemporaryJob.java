@@ -7,7 +7,6 @@ package com.spotify.helios.testing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.io.BaseEncoding;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.Futures;
@@ -49,6 +48,7 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 import static java.lang.System.getenv;
 import static java.util.Arrays.asList;
@@ -189,9 +189,7 @@ public class TemporaryJob {
   }
 
   private String randomVersion() {
-    final byte[] versionBytes = new byte[8];
-    ThreadLocalRandom.current().nextBytes(versionBytes);
-    return BaseEncoding.base16().encode(versionBytes);
+    return toHexString(ThreadLocalRandom.current().nextInt());
   }
 
   private static <T> T get(final ListenableFuture<T> future)
