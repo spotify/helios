@@ -14,8 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -26,6 +24,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static com.google.common.base.Throwables.propagate;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -102,7 +101,7 @@ public class TemporaryPorts extends ExternalResource {
       if (allocatedPort == null) {
         continue;
       }
-      if (bindable(port)) {
+      if (available(port)) {
         log.debug("allocated port \"{}\": {}", name, port);
         ports.add(allocatedPort);
         return port;
@@ -127,8 +126,7 @@ public class TemporaryPorts extends ExternalResource {
           break;
         }
         rangePorts.add(allocatedPort);
-        final boolean bindable = bindable(port);
-        if (!bindable) {
+        if (!available(port)) {
           successful = false;
           break;
         }
@@ -146,23 +144,17 @@ public class TemporaryPorts extends ExternalResource {
   }
 
   @SuppressWarnings("ThrowFromFinallyBlock")
-  private boolean bindable(int port) {
-    Socket s = null;
+  private boolean available(int port) {
+    final Process p;
     try {
-      s = new Socket();
-      s.bind(new InetSocketAddress("127.0.0.1", port));
-      return true;
-    } catch (IOException ignore) {
-      return false;
-    } finally {
-      try {
-        if (s != null) {
-          s.close();
-        }
-      } catch (IOException e) {
-        throw Throwables.propagate(e);
-      }
+      p = Runtime.getRuntime().exec("lsof -i:" + port);
+      p.waitFor();
+    } catch (IOException | InterruptedException e) {
+      throw propagate(e);
     }
+    final boolean available = p.exitValue() == 1;
+    log.debug("port {} available: {}", port, available);
+    return available;
   }
 
   private AllocatedPort lock(final int port, final String name) {
