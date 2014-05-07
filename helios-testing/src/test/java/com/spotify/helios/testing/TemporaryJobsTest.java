@@ -60,14 +60,16 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     private final TemporaryJob job1 = temporaryJobs.job()
         .image(IMAGE_NAME)
-        .port(SERVICE, 4229)
+        // TODO (dano): restore wait after opening firewall
+        .port(SERVICE, 4229, false)
         .registration("wiggum", "hm", SERVICE)
         .deploy(testHost);
 
     private final TemporaryJob job2 = temporaryJobs.job()
         .imageFromBuild()
         .host(testHost)
-        .port("service", 4229, true)
+        // TODO (dano): restore wait after opening firewall
+        .port("service", 4229, false)
         .registration("wiggum", "hm", SERVICE)
         .env("FOO_ADDRESS", Joiner.on(',').join(job1.addresses(SERVICE)))
         .deploy();
