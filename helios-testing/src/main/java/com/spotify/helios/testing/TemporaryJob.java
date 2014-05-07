@@ -5,8 +5,10 @@
 package com.spotify.helios.testing;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
 import com.google.common.net.HostAndPort;
@@ -30,12 +32,16 @@ import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
@@ -57,16 +63,21 @@ import static org.junit.Assert.fail;
 
 public class TemporaryJob {
 
+  private static final Logger log = LoggerFactory.getLogger(TemporaryJob.class);
+
   public static final Pattern JOB_NAME_FORBIDDEN_CHARS = Pattern.compile("[^0-9a-zA-Z-_.]+");
   private static final long TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
 
   private final List<String> hosts;
   private final Map<String, TaskStatus> statuses = Maps.newHashMap();
   private final HeliosClient client;
+  private final Prober prober;
   private final Job job;
+  private final Set<String> waitPorts;
 
-  private TemporaryJob(final HeliosClient client, final Builder builder) {
+  private TemporaryJob(final HeliosClient client, final Prober prober, final Builder builder) {
     this.client = client;
+    this.prober = prober;
 
     final Job.Builder jobBuilder = builder.jobBuilder.clone();
     if (jobBuilder.getName() == null && jobBuilder.getVersion() == null) {
@@ -75,6 +86,7 @@ public class TemporaryJob {
       jobBuilder.setVersion(randomVersion());
     }
     this.hosts = ImmutableList.copyOf(checkNotNull(builder.hosts, "hosts"));
+    this.waitPorts = ImmutableSet.copyOf(checkNotNull(builder.waitPorts, "waitPorts"));
     this.job = jobBuilder.build();
 
     deploy();
@@ -97,7 +109,6 @@ public class TemporaryJob {
     }
     return portMapping.getExternalPort();
   }
-
 
   public List<HostAndPort> addresses(final String port) {
     checkArgument(job.getPorts().containsKey(port), "port %s not found", port);
@@ -131,7 +142,7 @@ public class TemporaryJob {
 
       // Wait for job to come up
       for (final String host : hosts) {
-        statuses.put(host, awaitUp(job.getId(), host));
+        awaitUp(host);
       }
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       fail(format("Failed to deploy job %s %s - %s",
@@ -166,20 +177,48 @@ public class TemporaryJob {
     }
   }
 
-  private TaskStatus awaitUp(final JobId jobId, final String host) throws TimeoutException {
-    return Polling.awaitUnchecked(TIMEOUT_MILLIS, MILLISECONDS, new Callable<TaskStatus>() {
-      @Override
-      public TaskStatus call() throws Exception {
-        final JobStatus status = Futures.getUnchecked(client.jobStatus(jobId));
-        if (status == null) {
-          return null;
-        }
-        final TaskStatus taskStatus = status.getTaskStatuses().get(host);
-        if (taskStatus == null) {
-          return null;
-        }
+  private void awaitUp(final String host) throws TimeoutException {
+    final TaskStatus status = Polling.awaitUnchecked(
+        TIMEOUT_MILLIS, MILLISECONDS, new Callable<TaskStatus>() {
+          @Override
+          public TaskStatus call() throws Exception {
+            final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
+            if (status == null) {
+              return null;
+            }
+            final TaskStatus taskStatus = status.getTaskStatuses().get(host);
+            if (taskStatus == null) {
+              return null;
+            }
 
-        return taskStatus.getState() == TaskStatus.State.RUNNING ? taskStatus : null;
+            return taskStatus.getState() == TaskStatus.State.RUNNING ? taskStatus : null;
+          }
+        }
+    );
+
+    statuses.put(host, status);
+
+    for (final String port : waitPorts) {
+      awaitPort(port, host);
+    }
+  }
+
+  private void awaitPort(final String port, final String host) throws TimeoutException {
+    final TaskStatus taskStatus = statuses.get(host);
+    assert taskStatus != null;
+    final Integer externalPort = taskStatus.getPorts().get(port).getExternalPort();
+    assert externalPort != null;
+    Polling.awaitUnchecked(TIMEOUT_MILLIS, MILLISECONDS, new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        log.info("Probing: {} @ {}:{}", port, host, externalPort);
+        final boolean up = prober.probe(host, externalPort);
+        if (up) {
+          log.info("Up: {} @ {}:{}", port, host, externalPort);
+          return true;
+        } else {
+          return null;
+        }
       }
     });
   }
@@ -200,14 +239,17 @@ public class TemporaryJob {
   public static class Builder {
 
     private final HeliosClient client;
+    private final Prober prober;
 
     private final List<String> hosts = Lists.newArrayList();
     private final Job.Builder jobBuilder = Job.newBuilder();
+    private final Set<String> waitPorts = Sets.newHashSet();
 
     TemporaryJob job;
 
-    public Builder(final HeliosClient client) {
+    public Builder(final HeliosClient client, final Prober prober) {
       this.client = client;
+      this.prober = prober;
     }
 
     public Builder name(final String jobName) {
@@ -250,12 +292,23 @@ public class TemporaryJob {
     }
 
     public Builder port(final String name, final int internalPort) {
-      this.jobBuilder.addPort(name, PortMapping.of(internalPort));
-      return this;
+      return port(name, internalPort, true);
     }
 
-    public Builder port(final String name, final int internalPort, final int externalPort) {
+    public Builder port(final String name, final int internalPort, final boolean wait) {
+      return port(name, internalPort, null, wait);
+    }
+
+    public Builder port(final String name, final int internalPort, final Integer externalPort) {
+      return port(name, internalPort, externalPort, true);
+    }
+
+    public Builder port(final String name, final int internalPort, final Integer externalPort,
+                        final boolean wait) {
       this.jobBuilder.addPort(name, PortMapping.of(internalPort, externalPort));
+      if (wait) {
+        waitPorts.add(name);
+      }
       return this;
     }
 
@@ -281,7 +334,7 @@ public class TemporaryJob {
 
     public TemporaryJob deploy() {
       if (job == null) {
-        job = new TemporaryJob(client, this);
+        job = new TemporaryJob(client, prober, this);
       }
       return job;
     }

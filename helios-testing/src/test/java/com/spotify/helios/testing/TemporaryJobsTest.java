@@ -39,6 +39,16 @@ public class TemporaryJobsTest extends SystemTestBase {
   private static HeliosClient client;
   private static String testHost;
 
+  private static final class TestProber extends DefaultProber {
+
+    @Override
+    public boolean probe(final String host, final int port) {
+      // Probe for ports where docker is running instead of on the mock testHost address
+      assertEquals(testHost, host);
+      return super.probe(DOCKER_ADDRESS, port);
+    }
+  }
+
   public static class FakeTest {
 
     public static final String SERVICE = "service";
@@ -46,7 +56,7 @@ public class TemporaryJobsTest extends SystemTestBase {
         "registry:80/spotify/wiggum:0.0.1-SNAPSHOT-c387379";
 
     @Rule
-    public final TemporaryJobs temporaryJobs = TemporaryJobs.create(client);
+    public final TemporaryJobs temporaryJobs = new TemporaryJobs(client, new TestProber());
 
     private final TemporaryJob job1 = temporaryJobs.job()
         .image(IMAGE_NAME)
@@ -58,7 +68,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     private final TemporaryJob job2 = temporaryJobs.job()
         .imageFromBuild()
         .host(testHost)
-        .port("service", 4229)
+        .port("service", 4229, true)
         .registration("wiggum", "hm", SERVICE)
         .env("FOO_ADDRESS", Joiner.on(',').join(job1.addresses(SERVICE)))
         .deploy();

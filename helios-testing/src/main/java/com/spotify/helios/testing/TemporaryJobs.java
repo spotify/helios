@@ -13,17 +13,20 @@ import java.util.List;
 public class TemporaryJobs extends ExternalResource {
 
   private static final String DEFAULT_USER = System.getProperty("user.name");
+  private static final Prober DEFAULT_PROBER = new DefaultProber();
 
   private final HeliosClient client;
+  private final Prober prober;
 
   private final List<TemporaryJob.Builder> builders = Lists.newArrayList();
 
-  private TemporaryJobs(final HeliosClient client) {
+  TemporaryJobs(final HeliosClient client, final Prober prober) {
     this.client = client;
+    this.prober = prober;
   }
 
   public TemporaryJob.Builder job() {
-    final TemporaryJob.Builder builder = new TemporaryJob.Builder(client);
+    final TemporaryJob.Builder builder = new TemporaryJob.Builder(client, prober);
     builders.add(builder);
     return builder;
   }
@@ -45,7 +48,7 @@ public class TemporaryJobs extends ExternalResource {
   }
 
   public static TemporaryJobs create(final HeliosClient client) {
-    return new TemporaryJobs(client);
+    return new TemporaryJobs(client, DEFAULT_PROBER);
   }
 
   public static TemporaryJobs create(final String domain) {
