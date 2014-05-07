@@ -60,10 +60,9 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     private final TemporaryJob job1 = temporaryJobs.job()
         .image(IMAGE_NAME)
-        .host(testHost)
         .port(SERVICE, 4229)
         .registration("wiggum", "hm", SERVICE)
-        .deploy();
+        .deploy(testHost);
 
     private final TemporaryJob job2 = temporaryJobs.job()
         .imageFromBuild()

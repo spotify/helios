@@ -332,7 +332,12 @@ public class TemporaryJob {
       return this;
     }
 
-    public TemporaryJob deploy() {
+    public TemporaryJob deploy(final String... hosts) {
+      return deploy(asList(hosts));
+    }
+
+    public TemporaryJob deploy(final List<String> hosts) {
+      this.hosts.addAll(hosts);
       if (job == null) {
         job = new TemporaryJob(client, prober, this);
       }
