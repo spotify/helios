@@ -276,18 +276,8 @@ public class TemporaryJob {
       return command(asList(command));
     }
 
-    public Builder env(final String key, final String value) {
-      this.jobBuilder.addEnv(key, value);
-      return this;
-    }
-
-    public Builder env(final String key, final int value) {
-      this.jobBuilder.addEnv(key, String.valueOf(value));
-      return this;
-    }
-
-    public Builder env(final String key, final long value) {
-      this.jobBuilder.addEnv(key, String.valueOf(value));
+    public Builder env(final String key, final Object value) {
+      this.jobBuilder.addEnv(key, value.toString());
       return this;
     }
 
