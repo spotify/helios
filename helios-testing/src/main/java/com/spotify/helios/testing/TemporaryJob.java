@@ -88,8 +88,6 @@ public class TemporaryJob {
     this.hosts = ImmutableList.copyOf(checkNotNull(builder.hosts, "hosts"));
     this.waitPorts = ImmutableSet.copyOf(checkNotNull(builder.waitPorts, "waitPorts"));
     this.job = jobBuilder.build();
-
-    deploy();
   }
 
   public Job job() {
@@ -330,6 +328,7 @@ public class TemporaryJob {
       this.hosts.addAll(hosts);
       if (job == null) {
         job = new TemporaryJob(client, prober, this);
+        job.deploy();
       }
       return job;
     }
