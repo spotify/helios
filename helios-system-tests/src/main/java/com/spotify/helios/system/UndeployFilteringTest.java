@@ -18,7 +18,6 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
@@ -26,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -56,6 +56,7 @@ public class UndeployFilteringTest extends SystemTestBase {
     startDefaultMaster();
     agent = startDefaultAgent(TEST_HOST);
     client = defaultClient();
+    awaitHostRegistered(client, TEST_HOST, LONG_WAIT_MINUTES, MINUTES);
   }
 
   @Test
