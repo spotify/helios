@@ -382,8 +382,18 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
              JobPortAllocationConflictException {
     final ZooKeeperClient client = provider.get("deployJob");
+    deployJobRetry(client, host, deployment, 0);
+  }
 
-    log.info("deploying {}: {} (retry={})", deployment, host);
+  private void deployJobRetry(final ZooKeeperClient client, final String host,
+                              final Deployment deployment, int count)
+  throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
+             JobPortAllocationConflictException {
+    if (count == 3) {
+      throw new HeliosRuntimeException("3 failures (possibly concurrent modifications) while " +
+                                       "deploying. Giving up.");
+    }
+    log.info("deploying {}: {} (retry={})", deployment, host, count);
 
     final JobId id = deployment.getJobId();
     final Job job = getJob(id);
@@ -431,12 +441,13 @@ public class ZooKeeperMasterModel implements MasterModel {
     // TODO (dano): Failure handling is racy wrt agent and job modifications. Probably rare, but still.
     try {
       client.transaction(operations);
-      log.info("deployed {}: {}", deployment, host);
+      log.info("deployed {}: {} (retry={})", deployment, host, count);
     } catch (NoNodeException e) {
       // Either the job or the host went away
       assertJobExists(client, id);
       assertHostExists(client, host);
-      throw new HeliosRuntimeException("deploying job failed", e);
+      // Retry
+      deployJobRetry(client, host, deployment, count + 1);
     } catch (NodeExistsException e) {
       // Check for conflict due to transaction retry
       try {
