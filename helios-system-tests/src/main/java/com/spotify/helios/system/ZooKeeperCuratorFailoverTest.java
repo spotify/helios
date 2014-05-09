@@ -72,6 +72,7 @@ public class ZooKeeperCuratorFailoverTest {
     zk.stopPeer(1);
     zk.awaitDown(5, MINUTES);
 
+    zk.resetPeer(0);
     zk.startPeer(0);
     zk.awaitUp(5, MINUTES);
 
