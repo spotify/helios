@@ -14,8 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -102,13 +100,9 @@ public class TemporaryPorts extends ExternalResource {
       if (allocatedPort == null) {
         continue;
       }
-      if (bindable(port)) {
-        log.debug("allocated port \"{}\": {}", name, port);
-        ports.add(allocatedPort);
-        return port;
-      } else {
-        allocatedPort.release();
-      }
+      log.debug("allocated port \"{}\": {}", name, port);
+      ports.add(allocatedPort);
+      return port;
     }
     throw new AllocationFailedException();
   }
@@ -127,11 +121,6 @@ public class TemporaryPorts extends ExternalResource {
           break;
         }
         rangePorts.add(allocatedPort);
-        final boolean bindable = bindable(port);
-        if (!bindable) {
-          successful = false;
-          break;
-        }
       }
       if (successful) {
         ports.addAll(rangePorts);
@@ -143,26 +132,6 @@ public class TemporaryPorts extends ExternalResource {
       }
     }
     throw new AllocationFailedException();
-  }
-
-  @SuppressWarnings("ThrowFromFinallyBlock")
-  private boolean bindable(int port) {
-    Socket s = null;
-    try {
-      s = new Socket();
-      s.bind(new InetSocketAddress("127.0.0.1", port));
-      return true;
-    } catch (IOException ignore) {
-      return false;
-    } finally {
-      try {
-        if (s != null) {
-          s.close();
-        }
-      } catch (IOException e) {
-        throw Throwables.propagate(e);
-      }
-    }
   }
 
   private AllocatedPort lock(final int port, final String name) {
