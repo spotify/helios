@@ -443,10 +443,11 @@ public class ZooKeeperMasterModel implements MasterModel {
       client.transaction(operations);
       log.info("deployed {}: {} (retry={})", deployment, host, count);
     } catch (NoNodeException e) {
-      // Either the job or the host went away
+      // Either the job, the host or the task went away
       assertJobExists(client, id);
       assertHostExists(client, host);
-      // Retry
+      // If the job and host still exists, we likely tried to redeploy a job that had an UNDEPLOY
+      // goal and lost the race with the agent removing the task before we could set it. Retry.
       deployJobRetry(client, host, deployment, count + 1);
     } catch (NodeExistsException e) {
       // Check for conflict due to transaction retry
