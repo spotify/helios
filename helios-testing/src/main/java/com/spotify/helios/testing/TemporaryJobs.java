@@ -7,10 +7,14 @@ import com.google.common.collect.Lists;
 import com.spotify.helios.client.HeliosClient;
 
 import org.junit.rules.ExternalResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
 public class TemporaryJobs extends ExternalResource {
+
+  private static final Logger log = LoggerFactory.getLogger(TemporaryJob.class);
 
   private static final String DEFAULT_USER = System.getProperty("user.name");
   private static final Prober DEFAULT_PROBER = new DefaultProber();
@@ -62,15 +66,14 @@ public class TemporaryJobs extends ExternalResource {
     for (TemporaryJob.Builder builder : builders) {
       final TemporaryJob job = builder.job;
       if (job == null) {
-        errors.add(new AssertionError("deploy() not called on job"));
+        log.warn("deploy() not called on job");
         continue;
       }
       job.undeploy(errors);
     }
 
-    // Raise any errors
-    if (!errors.isEmpty()) {
-      throw errors.get(0);
+    for (AssertionError error : errors) {
+      log.error(error.getMessage());
     }
   }
 }
