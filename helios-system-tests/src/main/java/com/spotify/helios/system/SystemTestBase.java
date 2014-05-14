@@ -28,6 +28,7 @@ import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -657,7 +658,8 @@ public abstract class SystemTestBase {
       public Boolean call() throws Exception {
         final HostStatus hostStatus = getOrNull(client.hostStatus(host));
         final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
-        return taskStatus == null ? true : null;
+        final Deployment deployment = hostStatus.getJobs().get(jobId);
+        return taskStatus == null && deployment == null ? true : null;
       }
     });
   }

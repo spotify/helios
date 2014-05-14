@@ -45,11 +45,11 @@ public class Agent extends AbstractIdleService {
 
   private static final long UPDATE_INTERVAL = SECONDS.toMillis(30);
 
-  private static final Predicate<Execution> PORTS_NOT_ALLOCATED = new Predicate<Execution>() {
+  private static final Predicate<Execution> PORT_ALLOCATION_PENDING = new Predicate<Execution>() {
     @Override
     public boolean apply(final Execution execution) {
       assert execution != null;
-      return execution.getPorts() == null;
+      return execution.getGoal() != UNDEPLOY && execution.getPorts() == null;
     }
   };
 
@@ -175,14 +175,14 @@ public class Agent extends AbstractIdleService {
             final Execution execution = existing.withGoal(task.getGoal());
             newExecutions.put(jobId, execution);
           }
-        } else if (task.getGoal() != UNDEPLOY) {
+        } else  {
           newExecutions.put(jobId, Execution.of(task.getJob()).withGoal(task.getGoal()));
         }
       }
 
       // Allocate ports
       final Map<JobId, Execution> pending = ImmutableMap.copyOf(
-          Maps.filterValues(newExecutions, PORTS_NOT_ALLOCATED));
+          Maps.filterValues(newExecutions, PORT_ALLOCATION_PENDING));
       if (!pending.isEmpty()) {
         final ImmutableSet.Builder<Integer> usedPorts = ImmutableSet.builder();
         final Map<JobId, Execution> allocated = Maps.filterKeys(newExecutions,
@@ -245,14 +245,14 @@ public class Agent extends AbstractIdleService {
       }
 
       // Reap dead executions
-      final Set<JobId> reapedExecutions = Sets.newHashSet();
+      final Set<JobId> reapedTasks = Sets.newHashSet();
       for (Entry<JobId, Execution> entry : executions.get().entrySet()) {
         final JobId jobId = entry.getKey();
         final Execution execution = entry.getValue();
         if (execution.getGoal() == UNDEPLOY) {
           final Supervisor supervisor = supervisors.get(jobId);
           if (supervisor == null) {
-            reapedExecutions.add(jobId);
+            reapedTasks.add(jobId);
             log.debug("Removing tombstoned task: {}", jobId);
             model.removeUndeployTombstone(jobId);
             model.removeTaskStatus(jobId);
@@ -261,9 +261,9 @@ public class Agent extends AbstractIdleService {
       }
 
       // Persist executions
-      if (!reapedExecutions.isEmpty()) {
+      if (!reapedTasks.isEmpty()) {
         final Map<JobId, Execution> survivors = Maps.filterKeys(executions.get(),
-                                                                not(in(reapedExecutions)));
+                                                                not(in(reapedTasks)));
         executions.setUnchecked(ImmutableMap.copyOf(survivors));
       }
     }
