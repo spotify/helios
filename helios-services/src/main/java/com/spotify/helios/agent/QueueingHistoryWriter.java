@@ -23,6 +23,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Deque;
@@ -127,6 +128,8 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
 
     try {
       backingStore.set(items);
+    } catch (ClosedByInterruptException e) {
+      log.debug("Writing task status event to backing store was interrupted");
     } catch (IOException e) { // We are best effort after all...
       log.warn("Failed to write task status event to backing store", e);
     }
