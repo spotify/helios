@@ -15,4 +15,4 @@ git merge --ff-only `git describe --abbrev=0 master`
 git checkout master
 
 echo "Created release tag" `git describe --abbrev=0 master`
-echo "Remember to: git push origin master && git push origin release && git push origin --tags"
+echo "Remember to: ./push-release.sh"
