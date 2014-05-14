@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
@@ -96,7 +97,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public void registerHost(final String host) {
+  public void registerHost(final String host, final String id) {
     log.info("registering host: {}", host);
     final ZooKeeperClient client = provider.get("registerHost");
     try {
@@ -113,7 +114,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       client.ensurePath(Paths.statusHostJobs(host));
 
       // Finish registration by creating the id node last
-      client.ensurePath(Paths.configHostId(host));
+      client.createAndSetData(Paths.configHostId(host), id.getBytes(UTF_8));
     } catch (Exception e) {
       throw new HeliosRuntimeException("registering host " + host + " failed", e);
     }

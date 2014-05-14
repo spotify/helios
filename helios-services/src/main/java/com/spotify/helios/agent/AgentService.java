@@ -6,7 +6,6 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
-import com.google.common.io.BaseEncoding;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.FutureCallback;
@@ -52,7 +51,6 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.security.SecureRandom;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -132,9 +130,7 @@ public class AgentService extends AbstractIdleService {
       if (Files.exists(idPath)) {
         id = new String(Files.readAllBytes(idPath), UTF_8);
       } else {
-        final byte[] idBytes = new byte[20];
-        new SecureRandom().nextBytes(idBytes);
-        id = BaseEncoding.base16().encode(idBytes);
+        id = config.getId();
         Files.write(idPath, id.getBytes(UTF_8));
       }
     } catch (IOException e) {

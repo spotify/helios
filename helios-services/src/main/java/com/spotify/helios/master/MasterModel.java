@@ -16,7 +16,7 @@ import java.util.Map;
 
 public interface MasterModel {
 
-  void registerHost(String host);
+  void registerHost(String host, final String id);
 
   void deregisterHost(String host) throws HostNotFoundException, HostStillInUseException;
 

@@ -360,8 +360,8 @@ public class HeliosClient {
     return get(uri(path("/hosts/%s/status", host)), HostStatus.class);
   }
 
-  public ListenableFuture<Integer> registerHost(final String host) {
-    return put(uri(path("/hosts/%s", host)));
+  public ListenableFuture<Integer> registerHost(final String host, final String id) {
+    return put(uri(path("/hosts/%s", host), ImmutableMap.of("id", id)));
   }
 
   public ListenableFuture<JobDeleteResponse> deleteJob(final JobId id) {

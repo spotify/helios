@@ -32,6 +32,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST_NOT_FOUND;
@@ -62,12 +63,13 @@ public class HostsResource {
   }
 
   @PUT
-  @Path("{id}")
+  @Path("{host}")
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Response.Status put(@PathParam("id") final String host) {
-    model.registerHost(host);
+  public Response.Status put(@PathParam("host") final String host,
+                             @QueryParam("id") final String id) {
+    model.registerHost(host, id);
     log.info("added host {}", host);
     return Response.Status.OK;
   }

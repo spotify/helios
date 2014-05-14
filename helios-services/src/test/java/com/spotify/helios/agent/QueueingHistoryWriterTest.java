@@ -77,7 +77,7 @@ public class QueueingHistoryWriterTest {
     client.ensurePath(Paths.configJobs());
     client.ensurePath(Paths.configJobRefs());
     client.ensurePath(Paths.historyJobHostEvents(JOB_ID, HOSTNAME));
-    masterModel.registerHost(HOSTNAME);
+    masterModel.registerHost(HOSTNAME, "foo");
     masterModel.addJob(JOB);
   }
 

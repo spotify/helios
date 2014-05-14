@@ -28,6 +28,7 @@ public class AgentConfig extends Configuration {
   private int portRangeEnd;
   private String sentryDsn;
   private Path serviceRegistrarPlugin;
+  private String id;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -174,6 +175,15 @@ public class AgentConfig extends Configuration {
 
   public AgentConfig setServiceRegistrarPlugin(final Path serviceRegistrarPlugin) {
     this.serviceRegistrarPlugin = serviceRegistrarPlugin;
+    return this;
+  }
+
+  public String getId() {
+    return id;
+  }
+
+  public AgentConfig setId(final String id) {
+    this.id = id;
     return this;
   }
 }

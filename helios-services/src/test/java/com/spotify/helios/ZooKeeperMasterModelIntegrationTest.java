@@ -86,10 +86,10 @@ public class ZooKeeperMasterModelIntegrationTest {
 
     assertThat(model.listHosts(), empty());
 
-    model.registerHost(HOST);
+    model.registerHost(HOST, "foo");
     assertThat(model.listHosts(), contains(HOST));
 
-    model.registerHost(secondHost);
+    model.registerHost(secondHost, "bar");
     assertThat(model.listHosts(), contains(HOST, secondHost));
 
     model.deregisterHost(HOST);
@@ -120,7 +120,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testJobRemove() throws Exception {
     model.addJob(JOB);
-    model.registerHost(HOST);
+    model.registerHost(HOST, "foo");
 
     model.deployJob(HOST,
                     Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
@@ -159,7 +159,7 @@ public class ZooKeeperMasterModelIntegrationTest {
       assertTrue(true);
     }
 
-    model.registerHost(HOST);
+    model.registerHost(HOST, "foo");
 
     model.deployJob(HOST,
                     Deployment.newBuilder().setGoal(Goal.START).setJobId(JOB_ID).build());
@@ -178,7 +178,7 @@ public class ZooKeeperMasterModelIntegrationTest {
 
   @Test
   public void testHostRegistration() throws Exception {
-    model.registerHost(HOST);
+    model.registerHost(HOST, "foo");
     List<String> hosts1 = model.listHosts();
     assertThat(hosts1, hasItem(HOST));
 
@@ -208,7 +208,7 @@ public class ZooKeeperMasterModelIntegrationTest {
       fail("Should have thrown an HostNotFoundException");
     }
 
-    model.registerHost(HOST);
+    model.registerHost(HOST, "foo");
     List<String> hosts = model.listHosts();
     assertThat(hosts, hasItem(HOST));
 

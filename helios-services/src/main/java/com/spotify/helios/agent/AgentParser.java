@@ -15,10 +15,12 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Paths;
+import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.io.BaseEncoding.base16;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -34,6 +36,7 @@ public class AgentParser extends ServiceParser {
   private Argument envArg;
   private Argument syslogRedirectToArg;
   private Argument portRangeArg;
+  private Argument agentIdArg;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -97,6 +100,15 @@ public class AgentParser extends ServiceParser {
         .setServiceRegistryAddress(getServiceRegistryAddress())
         .setServiceRegistrarPlugin(getServiceRegistrarPlugin());
 
+    final String explicitId = options.getString(agentIdArg.getDest());
+    if (explicitId != null) {
+      agentConfig.setId(explicitId);
+    } else {
+      final byte[] idBytes = new byte[20];
+      new SecureRandom().nextBytes(idBytes);
+      agentConfig.setId(base16().encode(idBytes));
+    }
+
     final boolean noHttp = options.getBoolean(noHttpArg.getDest());
 
     if (noHttp) {
@@ -124,6 +136,9 @@ public class AgentParser extends ServiceParser {
         .type(Integer.class)
         .setDefault(5804)
         .help("admin http port");
+
+    agentIdArg = parser.addArgument("--id")
+        .help("Agent unique ID. Generated and persisted on first run if not specified.");
 
     stateDirArg = parser.addArgument("--state-dir")
         .setDefault(".")
