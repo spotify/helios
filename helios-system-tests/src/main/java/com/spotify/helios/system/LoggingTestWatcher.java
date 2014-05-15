@@ -82,6 +82,7 @@ final class LoggingTestWatcher extends TestWatcher {
     configureLogger("org.eclipse.jetty", Level.ERROR);
     configureLogger("org.apache.curator", Level.ERROR);
     configureLogger("org.apache.zookeeper", Level.ERROR);
+    configureLogger("com.yammer.metrics", Level.ERROR);
     configureLogger("com.spotify.helios", Level.DEBUG);
   }
 
