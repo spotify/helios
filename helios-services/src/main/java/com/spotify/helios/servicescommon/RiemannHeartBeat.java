@@ -2,9 +2,12 @@ package com.spotify.helios.servicescommon;
 
 import com.yammer.dropwizard.lifecycle.Managed;
 
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static com.google.common.util.concurrent.MoreExecutors.getExitingScheduledExecutorService;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class RiemannHeartBeat implements Managed {
   private final ScheduledExecutorService scheduler;
@@ -14,7 +17,8 @@ public class RiemannHeartBeat implements Managed {
 
   public RiemannHeartBeat(final TimeUnit timeUnit, final int interval,
                           final RiemannFacade riemannFacade) {
-    this.scheduler = Executors.newScheduledThreadPool(1);
+    this.scheduler = getExitingScheduledExecutorService(new ScheduledThreadPoolExecutor(1),
+                                                        0, SECONDS);
     this.timeUnit = timeUnit;
     this.interval = interval;
     this.facade = riemannFacade.stack("heartbeat");
