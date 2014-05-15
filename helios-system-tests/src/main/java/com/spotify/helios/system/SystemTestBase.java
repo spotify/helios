@@ -9,6 +9,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Range;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
@@ -366,6 +367,7 @@ public abstract class SystemTestBase {
           "cannot start default agent in integration test with arguments passed " + args.length);
       return null;
     }
+    final Range<Integer> portRange = temporaryPorts.localPortRange("agent", 10);
     final String stateDir = agentStateDirs.resolve(host).toString();
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",
@@ -375,7 +377,10 @@ public abstract class SystemTestBase {
                                                      "--zk", zk.connectString(),
                                                      "--zk-session-timeout", "100",
                                                      "--zk-connection-timeout", "100",
-                                                     "--state-dir", stateDir);
+                                                     "--state-dir", stateDir,
+                                                     "--port-range=" +
+                                                     portRange.lowerEndpoint() + ":" +
+                                                     portRange.upperEndpoint());
     argsList.addAll(asList(args));
     return startAgent(argsList.toArray(new String[argsList.size()]));
   }
