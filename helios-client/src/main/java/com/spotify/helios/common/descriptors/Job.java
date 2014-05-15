@@ -11,7 +11,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 
@@ -30,7 +29,6 @@ import static com.spotify.helios.common.Hash.sha1digest;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
-@JsonIgnoreProperties(ignoreUnknown = true)
 public class Job extends Descriptor implements Comparable<Job> {
 
   public static final Map<String, String> EMPTY_ENV = emptyMap();

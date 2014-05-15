@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.MappingIterator;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 
 import java.io.File;
 import java.io.IOException;
@@ -20,20 +21,21 @@ import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.util.Map;
 
+import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHABETICALLY;
-import static com.fasterxml.jackson.databind.SerializationFeature.INDENT_OUTPUT;
 import static com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS;
 
 public class Json {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
-      .configure(ORDER_MAP_ENTRIES_BY_KEYS, true);
+      .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
+      .configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
 
-  private static final ObjectMapper PRETTY_OBJECT_MAPPER = new ObjectMapper()
+  private static final ObjectWriter PRETTY_OBJECT_WRITER = new ObjectMapper()
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
       .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
-      .configure(INDENT_OUTPUT, true);
+      .writerWithDefaultPrettyPrinter();
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE =
       new TypeReference<Map<String, Object>>() {};
@@ -91,7 +93,7 @@ public class Json {
    * @see #asPrettyStringUnchecked(Object)
    */
   public static String asPrettyString(final Object value) throws JsonProcessingException {
-    return PRETTY_OBJECT_MAPPER.writeValueAsString(value);
+    return PRETTY_OBJECT_WRITER.writeValueAsString(value);
   }
 
   /**

@@ -59,4 +59,14 @@ public class JsonTest {
     final byte[] digest = Json.sha1digest(bar);
     assertArrayEquals(expectedDigest, digest);
   }
+
+  public static class SomePojo {
+    public String foo;
+  }
+
+  @Test
+  public void verifyIgnoresUnknownFields() throws Exception {
+    final SomePojo somePojo = Json.read("{\"foo\":\"1\", \"bar\":\"2\"}", SomePojo.class);
+    assertEquals("1", somePojo.foo);
+  }
 }
