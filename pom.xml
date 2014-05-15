@@ -26,11 +26,6 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build.timestamp.format>yyyyMMdd-HHmmss.SSS</build.timestamp.format>
     <timestamp>${build.timestamp}</timestamp>
-
-    <sonar.host.url>https://sonar.spotify.net</sonar.host.url>
-    <sonar.jdbc.url>jdbc:postgresql://real.sonar.spotify.net/sonardb</sonar.jdbc.url>
-    <sonar.jdbc.username>sonaruser</sonar.jdbc.username>
-    <sonar.jdbc.password>Aecausuupaijahshae2re6ie</sonar.jdbc.password>
   </properties>
 
   <modules>
