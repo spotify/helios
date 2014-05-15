@@ -7,6 +7,7 @@ start on runlevel [2345]
 stop on runlevel [!2345]
 
 respawn
+respawn limit unlimited
 
 env DEFAULTFILE=/etc/default/helios-master
 
@@ -24,3 +25,6 @@ script
   [ -f $DEFAULTFILE ] && . $DEFAULTFILE
   /usr/bin/helios-master $HELIOS_MASTER_OPTS
 end script
+
+# prevent respawning more than once every 5 seconds
+post-stop exec sleep 5
