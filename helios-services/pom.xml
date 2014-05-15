@@ -191,7 +191,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
-	<version>2.16</version>
+        <version>2.16</version>
         <executions>
           <execution>
             <goals>
@@ -226,7 +226,7 @@
           </filters>
           <transformers>
             <!--The ServicesResourceTransformer is needed to make jersey happy-->
-            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
+            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
           </transformers>
         </configuration>
         <executions>
