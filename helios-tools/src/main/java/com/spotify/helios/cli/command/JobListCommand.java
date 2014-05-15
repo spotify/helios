@@ -5,6 +5,7 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -21,10 +22,12 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.PrintStream;
+import java.util.List;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.google.common.base.Joiner.on;
 import static com.spotify.helios.cli.Output.table;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
@@ -92,7 +95,7 @@ public class JobListCommand extends ControlCommand {
         for (final Map.Entry<JobId, ListenableFuture<JobStatus>> e : statuses.entrySet()) {
           final JobId jobId = e.getKey();
           final Job job = jobs.get(jobId);
-          final String command = on(' ').join(job.getCommand());
+          final String command = on(' ').join(escape(job.getCommand()));
           final String env = Joiner.on(" ").withKeyValueSeparator("=").join(job.getEnv());
           final JobStatus status = e.getValue().get();
           table.row(full ? jobId : jobId.toShortString(), jobId.getName(), jobId.getVersion(),
@@ -104,6 +107,18 @@ public class JobListCommand extends ControlCommand {
     }
 
     return 0;
+  }
+
+  private static List<String> escape(final List<String> command) {
+    final List<String> escaped = Lists.newArrayList();
+    for (final String s : command) {
+      escaped.add(escape(s));
+    }
+    return escaped;
+  }
+
+  private static String escape(final String arg) {
+    return WHITESPACE.matchesAnyOf(arg) ? '"' + arg + '"' : arg;
   }
 }
 
