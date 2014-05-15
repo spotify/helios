@@ -181,9 +181,14 @@
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>com.spotify</groupId>
+      <groupId>com.aphyr</groupId>
       <artifactId>riemann-java-client</artifactId>
-      <version>0.2.8</version>
+      <version>0.2.10</version>
+    </dependency>
+    <dependency>
+      <groupId>com.google.protobuf</groupId>
+      <artifactId>protobuf-java</artifactId>
+      <version>2.5.0</version>
     </dependency>
   </dependencies>
 

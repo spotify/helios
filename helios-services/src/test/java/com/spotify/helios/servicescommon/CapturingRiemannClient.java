@@ -3,6 +3,7 @@ package com.spotify.helios.servicescommon;
 import com.google.common.collect.ImmutableList;
 
 import com.aphyr.riemann.Proto.Event;
+import com.aphyr.riemann.client.IPromise;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
@@ -28,7 +29,8 @@ public class CapturingRiemannClient extends NoOpRiemannClient {
   }
 
   @Override
-  public void sendEvents(final List<Event> events) {
+  public IPromise<Boolean> aSendEventsWithAck(final List<Event> events) {
     this.events.set(events);
+    return super.aSendEventsWithAck(events);
   }
 }
