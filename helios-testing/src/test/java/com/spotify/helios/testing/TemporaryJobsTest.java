@@ -1,5 +1,7 @@
 package com.spotify.helios.testing;
 
+import com.google.common.collect.Range;
+
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -109,7 +111,11 @@ public class TemporaryJobsTest extends SystemTestBase {
     startDefaultMaster();
     client = defaultClient();
     testHost = getTestHost();
-    startDefaultAgent(testHost);
+
+    final Range<Integer> portRange = temporaryPorts.localPortRange("agent1", 1);
+    startDefaultAgent(testHost, "--port-range=" +
+                                portRange.lowerEndpoint() + ":" +
+                                portRange.upperEndpoint());
 
     assertThat(testResult(SimpleTest.class), isSuccessful());
     assertTrue("jobs are running that should not be",
