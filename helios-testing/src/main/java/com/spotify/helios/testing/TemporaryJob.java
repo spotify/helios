@@ -8,24 +8,17 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-import com.google.common.io.Files;
-import com.google.common.io.Resources;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.common.descriptors.ServiceEndpoint;
-import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
@@ -35,29 +28,17 @@ import com.spotify.helios.common.protocol.JobUndeployResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.IOException;
-import java.net.URL;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.regex.Pattern;
 
-import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
-import static java.lang.System.getenv;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.fail;
 
@@ -65,29 +46,22 @@ public class TemporaryJob {
 
   private static final Logger log = LoggerFactory.getLogger(TemporaryJob.class);
 
-  public static final Pattern JOB_NAME_FORBIDDEN_CHARS = Pattern.compile("[^0-9a-zA-Z-_.]+");
   private static final long TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
 
-  private final List<String> hosts;
   private final Map<String, TaskStatus> statuses = Maps.newHashMap();
   private final HeliosClient client;
   private final Prober prober;
   private final Job job;
+  private final List<String> hosts;
   private final Set<String> waitPorts;
 
-  private TemporaryJob(final HeliosClient client, final Prober prober, final Builder builder) {
-    this.client = client;
-    this.prober = prober;
-
-    final Job.Builder jobBuilder = builder.jobBuilder.clone();
-    if (jobBuilder.getName() == null && jobBuilder.getVersion() == null) {
-      // Both name and version are unset, use image name as job name and generate random version
-      jobBuilder.setName(jobName(jobBuilder.getImage()));
-      jobBuilder.setVersion(randomVersion());
-    }
-    this.hosts = ImmutableList.copyOf(checkNotNull(builder.hosts, "hosts"));
-    this.waitPorts = ImmutableSet.copyOf(checkNotNull(builder.waitPorts, "waitPorts"));
-    this.job = jobBuilder.build();
+  TemporaryJob(final HeliosClient client, final Prober prober, final Job job,
+               final List<String> hosts, final Set<String> waitPorts) {
+    this.client = checkNotNull(client, "client");
+    this.prober = checkNotNull(prober, "prober");
+    this.job = checkNotNull(job, "job");
+    this.hosts = ImmutableList.copyOf(checkNotNull(hosts, "hosts"));
+    this.waitPorts = ImmutableSet.copyOf(checkNotNull(waitPorts, "waitPorts"));
   }
 
   public Job job() {
@@ -221,169 +195,13 @@ public class TemporaryJob {
     });
   }
 
-  private String jobName(final String s) {
-    return "tmp_" + JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
-  }
-
-  private String randomVersion() {
-    return toHexString(ThreadLocalRandom.current().nextInt());
-  }
-
   private static <T> T get(final ListenableFuture<T> future)
       throws InterruptedException, ExecutionException, TimeoutException {
     return future.get(TIMEOUT_MILLIS, MILLISECONDS);
   }
 
-  public static class Builder {
+  public static interface Deployer {
 
-    private final HeliosClient client;
-    private final Prober prober;
-
-    private final List<String> hosts = Lists.newArrayList();
-    private final Job.Builder jobBuilder = Job.newBuilder();
-    private final Set<String> waitPorts = Sets.newHashSet();
-
-    TemporaryJob job;
-
-    public Builder(final HeliosClient client, final Prober prober) {
-      this.client = client;
-      this.prober = prober;
-    }
-
-    public Builder name(final String jobName) {
-      this.jobBuilder.setName(jobName);
-      return this;
-    }
-
-    public Builder version(final String jobVersion) {
-      this.jobBuilder.setVersion(jobVersion);
-      return this;
-    }
-
-    public Builder image(final String image) {
-      this.jobBuilder.setImage(image);
-      return this;
-    }
-
-    public Builder command(final List<String> command) {
-      this.jobBuilder.setCommand(command);
-      return this;
-    }
-
-    public Builder command(final String... command) {
-      return command(asList(command));
-    }
-
-    public Builder env(final String key, final Object value) {
-      this.jobBuilder.addEnv(key, value.toString());
-      return this;
-    }
-
-    public Builder port(final String name, final int internalPort) {
-      return port(name, internalPort, true);
-    }
-
-    public Builder port(final String name, final int internalPort, final boolean wait) {
-      return port(name, internalPort, null, wait);
-    }
-
-    public Builder port(final String name, final int internalPort, final Integer externalPort) {
-      return port(name, internalPort, externalPort, true);
-    }
-
-    public Builder port(final String name, final int internalPort, final Integer externalPort,
-                        final boolean wait) {
-      this.jobBuilder.addPort(name, PortMapping.of(internalPort, externalPort));
-      if (wait) {
-        waitPorts.add(name);
-      }
-      return this;
-    }
-
-    public Builder registration(final ServiceEndpoint endpoint, final ServicePorts ports) {
-      this.jobBuilder.addRegistration(endpoint, ports);
-      return this;
-    }
-
-    public Builder registration(final String service, final String protocol,
-                                final String... ports) {
-      return registration(ServiceEndpoint.of(service, protocol), ServicePorts.of(ports));
-    }
-
-    public Builder registration(final Map<ServiceEndpoint, ServicePorts> registration) {
-      this.jobBuilder.setRegistration(registration);
-      return this;
-    }
-
-    public Builder host(final String host) {
-      this.hosts.add(host);
-      return this;
-    }
-
-    public TemporaryJob deploy(final String... hosts) {
-      return deploy(asList(hosts));
-    }
-
-    public TemporaryJob deploy(final List<String> hosts) {
-      this.hosts.addAll(hosts);
-      if (job == null) {
-        job = new TemporaryJob(client, prober, this);
-        job.deploy();
-      }
-      return job;
-    }
-
-    public Builder imageFromBuild() {
-      final String envPath = getenv("IMAGE_INFO_PATH");
-      if (envPath != null) {
-        return imageFromInfoFile(envPath);
-      } else {
-        try {
-          final String name = fromNullable(getenv("IMAGE_INFO_NAME")).or("image_info.json");
-          final URL info = Resources.getResource(name);
-          final String json = Resources.asCharSource(info, UTF_8).read();
-          return imageFromInfoJson(json, info.toString());
-        } catch (IOException e) {
-          throw new AssertionError("Failed to load image info", e);
-        }
-      }
-    }
-
-    public Builder imageFromInfoFile(final Path path) {
-      return imageFromInfoFile(path.toFile());
-    }
-
-    public Builder imageFromInfoFile(final String path) {
-      return imageFromInfoFile(new File(path));
-    }
-
-    public Builder imageFromInfoFile(final File file) {
-      final String json;
-      try {
-        json = Files.toString(file, UTF_8);
-      } catch (IOException e) {
-        throw new AssertionError("Failed to read image info file: " +
-                                 file + ": " + e.getMessage());
-      }
-      return imageFromInfoJson(json, file.toString());
-    }
-
-    private Builder imageFromInfoJson(final String json,
-                                      final String source) {
-      try {
-        final JsonNode info = Json.readTree(json);
-        final JsonNode imageNode = info.get("image");
-        if (imageNode == null) {
-          fail("Missing image field in image info: " + source);
-        }
-        if (imageNode.getNodeType() != STRING) {
-          fail("Bad image field in image info: " + source);
-        }
-        final String image = imageNode.asText();
-        return image(image);
-      } catch (IOException e) {
-        throw new AssertionError("Failed to parse image info: " + source, e);
-      }
-    }
+    TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts);
   }
 }

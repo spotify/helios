@@ -5,12 +5,16 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.Job;
 
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
+
+import static org.junit.Assert.fail;
 
 public class TemporaryJobs extends ExternalResource {
 
@@ -22,17 +26,31 @@ public class TemporaryJobs extends ExternalResource {
   private final HeliosClient client;
   private final Prober prober;
 
-  private final List<TemporaryJob.Builder> builders = Lists.newArrayList();
+  private final List<TemporaryJob> jobs = Lists.newArrayList();
+
+  private final TemporaryJob.Deployer deployer = new TemporaryJob.Deployer() {
+    @Override
+    public TemporaryJob deploy(final Job job, final List<String> hosts,
+                               final Set<String> waitPorts) {
+      if (!started) {
+        fail("deploy() must be called in a @Before or in the test method");
+      }
+      final TemporaryJob temporaryJob = new TemporaryJob(client, prober, job, hosts, waitPorts);
+      jobs.add(temporaryJob);
+      temporaryJob.deploy();
+      return temporaryJob;
+    }
+  };
+
+  private boolean started;
 
   TemporaryJobs(final HeliosClient client, final Prober prober) {
     this.client = client;
     this.prober = prober;
   }
 
-  public TemporaryJob.Builder job() {
-    final TemporaryJob.Builder builder = new TemporaryJob.Builder(client, prober);
-    builders.add(builder);
-    return builder;
+  public TemporaryJobBuilder job() {
+    return new TemporaryJobBuilder(deployer);
   }
 
   public static TemporaryJobs create() {
@@ -60,15 +78,15 @@ public class TemporaryJobs extends ExternalResource {
   }
 
   @Override
+  protected void before() throws Throwable {
+    started = true;
+  }
+
+  @Override
   protected void after() {
     final List<AssertionError> errors = Lists.newArrayList();
 
-    for (TemporaryJob.Builder builder : builders) {
-      final TemporaryJob job = builder.job;
-      if (job == null) {
-        log.warn("deploy() not called on job");
-        continue;
-      }
+    for (TemporaryJob job : jobs) {
       job.undeploy(errors);
     }
 
