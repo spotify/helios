@@ -4,7 +4,7 @@
   <parent>
     <groupId>com.spotify</groupId>
     <artifactId>helios-parent</artifactId>
-    <version>0.0.19-SNAPSHOT</version>
+    <version>0.0.19</version>
   </parent>
 
   <name>Helios Services</name>
@@ -231,7 +231,7 @@
           </filters>
           <transformers>
             <!--The ServicesResourceTransformer is needed to make jersey happy-->
-            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+            <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
           </transformers>
         </configuration>
         <executions>
