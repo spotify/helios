@@ -11,10 +11,6 @@
   <artifactId>helios-services</artifactId>
   <packaging>jar</packaging>
 
-  <properties>
-    <imageName>registry.spotify.net/spotify/${project.artifactId}</imageName>
-  </properties>
-
   <dependencies>
     <!--compile deps -->
     <dependency>
