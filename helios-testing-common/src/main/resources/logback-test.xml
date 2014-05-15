@@ -19,6 +19,7 @@
   <logger name="org.apache.curator" level="${externalLoggingLevel:-ERROR}"/>
   <logger name="org.apache.zookeeper" level="${externalLoggingLevel:-ERROR}"/>
   <logger name="org.eclipse.jetty" level="${externalLoggingLevel:-ERROR}"/>
+  <logger name="com.yammer.metrics" level="${externalLoggingLevel:-ERROR}"/>
   <logger name="com.spotify.helios" level="${heliosLoggingLevel:-DEBUG}"/>
 
   <root level="${rootLoggingLevel:-DEBUG}">
