@@ -477,7 +477,7 @@ public abstract class SystemTestBase {
       throws Exception {
     checkArgument(name.contains(prefix), "Job name must contain prefix to enable cleanup");
 
-    final List<String> args = Lists.newArrayList("-q", name, version, image);
+    final List<String> args = Lists.newArrayList("-q", name + ':' + version, image);
 
     if (!env.isEmpty()) {
       args.add("--env");

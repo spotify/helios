@@ -106,7 +106,7 @@ public class CliDeploymentTest extends SystemTestBase {
     final JobId clonedJobId = JobId.parse(WHITESPACE.trimFrom(
         cli("create", "-q", "-t",
             jobName + ":" + JOB_VERSION,
-            jobName, JOB_VERSION + "-cloned")));
+            jobName + ":" + JOB_VERSION + "-cloned")));
     final String clonedInspectOutput = cli("inspect", "--json", clonedJobId.toString());
     final Job clonedParsed = Json.read(clonedInspectOutput, Job.class);
     assertEquals(expectedCloned, clonedParsed);
@@ -123,7 +123,7 @@ public class CliDeploymentTest extends SystemTestBase {
     assertEquals(PortMapping.of(5000, externalPort), job.getPorts().get("bar"));
     assertEquals("f00d", job.getEnv().get("BAD"));
 
-    final String duplicateJob = cli("create", jobName, JOB_VERSION, image, "--",
+    final String duplicateJob = cli("create", jobName + ":" + JOB_VERSION, image, "--",
                                     DO_NOTHING_COMMAND);
     assertContains("JOB_ALREADY_EXISTS", duplicateJob);
 

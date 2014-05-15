@@ -64,8 +64,7 @@ public class JobCreateCommand extends ControlCommand {
   private static final JobValidator JOB_VALIDATOR = new JobValidator();
 
   private final Argument quietArg;
-  private final Argument nameArg;
-  private final Argument versionArg;
+  private final Argument idArg;
   private final Argument imageArg;
   private final Argument envArg;
   private final Argument argsArg;
@@ -92,13 +91,9 @@ public class JobCreateCommand extends ControlCommand {
         .action(storeTrue())
         .help("only print job id");
 
-    nameArg = parser.addArgument("name")
+    idArg = parser.addArgument("id")
         .nargs("?")
-        .help("Job name");
-
-    versionArg = parser.addArgument("version")
-        .nargs("?")
-        .help("Job version");
+        .help("Job name:version[:hash]");
 
     imageArg = parser.addArgument("image")
         .nargs("?")
@@ -147,8 +142,7 @@ public class JobCreateCommand extends ControlCommand {
 
     final Job.Builder builder;
 
-    final String name = options.getString(nameArg.getDest());
-    final String version = options.getString(versionArg.getDest());
+    final String id = options.getString(idArg.getDest());
     final String imageIdentifier = options.getString(imageArg.getDest());
 
     // Read job configuration from file
@@ -181,11 +175,11 @@ public class JobCreateCommand extends ControlCommand {
       }
       final Job template = Iterables.getOnlyElement(jobs.values());
       builder = template.toBuilder();
-      if (name == null && version == null) {
-        throw new IllegalArgumentException("Please specify either a new job name or version");
+      if (id == null) {
+        throw new IllegalArgumentException("Please specify new job name and version");
       }
     } else {
-      if (name == null || version == null || imageIdentifier == null) {
+      if (id == null || imageIdentifier == null) {
         throw new IllegalArgumentException(
             "Please specify a file, or a template, or a job name, version and container image");
       }
@@ -195,12 +189,21 @@ public class JobCreateCommand extends ControlCommand {
 
     // Merge job configuration options from command line arguments
 
-    if (name != null) {
-      builder.setName(name);
-    }
-
-    if (version != null) {
-      builder.setVersion(version);
+    if (id != null) {
+      final String[] parts = id.split(":");
+      switch (parts.length) {
+        case 3:
+          builder.setHash(parts[2]);
+          // fall through
+        case 2:
+          builder.setVersion(parts[1]);
+          // fall through
+        case 1:
+          builder.setName(parts[0]);
+          break;
+        default:
+          throw new IllegalArgumentException("Invalid Job id: " + id);
+      }
     }
 
     if (imageIdentifier != null) {
