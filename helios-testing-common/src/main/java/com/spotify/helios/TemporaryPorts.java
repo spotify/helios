@@ -8,12 +8,16 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
+import com.google.common.util.concurrent.Uninterruptibles;
 
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -29,6 +33,7 @@ import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TemporaryPorts extends ExternalResource {
 
@@ -145,16 +150,35 @@ public class TemporaryPorts extends ExternalResource {
 
   @SuppressWarnings("ThrowFromFinallyBlock")
   private boolean available(int port) {
-    final Process p;
+    // First probe by attempting to bind
+    final Socket s = new Socket();
     try {
-      p = Runtime.getRuntime().exec("lsof -i:" + port);
-      p.waitFor();
-    } catch (IOException | InterruptedException e) {
-      throw propagate(e);
+      s.bind(new InetSocketAddress(InetAddress.getLoopbackAddress(), port));
+    } catch (IOException e) {
+      return false;
+    } finally {
+      try {
+        s.close();
+      } catch (IOException e) {
+        throw Throwables.propagate(e);
+      }
     }
-    final boolean available = p.exitValue() == 1;
-    log.debug("port {} available: {}", port, available);
-    return available;
+
+    // Now wait for kernel to consider port to be unused
+    while (true) {
+      final Process p;
+      try {
+        p = Runtime.getRuntime().exec("lsof -i:" + port);
+        p.waitFor();
+      } catch (IOException | InterruptedException e) {
+        throw propagate(e);
+      }
+      if (p.exitValue() == 1) {
+        return true;
+      }
+      log.debug("waiting for port {} to become unused", port);
+      Uninterruptibles.sleepUninterruptibly(1, SECONDS);
+    }
   }
 
   private AllocatedPort lock(final int port, final String name) {
