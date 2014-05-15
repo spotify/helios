@@ -6,7 +6,7 @@
     <version>0.0.19-SNAPSHOT</version>
   </parent>
 
-  <name>Spotify Helios Service Registration</name>
+  <name>Helios Service Registration</name>
   <artifactId>helios-service-registration</artifactId>
   <packaging>jar</packaging>
 

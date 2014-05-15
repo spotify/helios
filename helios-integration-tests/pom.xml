@@ -6,7 +6,7 @@
     <version>0.0.19-SNAPSHOT</version>
   </parent>
 
-  <name>Spotify Helios Integration Tests</name>
+  <name>Helios Integration Tests</name>
   <artifactId>helios-integration-tests</artifactId>
   <packaging>jar</packaging>
 

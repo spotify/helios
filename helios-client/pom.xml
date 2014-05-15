@@ -6,7 +6,7 @@
     <version>0.0.19-SNAPSHOT</version>
   </parent>
 
-  <name>Spotify Helios Client</name>
+  <name>Helios Client</name>
   <artifactId>helios-client</artifactId>
   <packaging>jar</packaging>
 

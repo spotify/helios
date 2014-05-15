@@ -7,7 +7,7 @@
     <version>0.0.19-SNAPSHOT</version>
   </parent>
 
-  <name>Spotify Helios Tools</name>
+  <name>Helios Tools</name>
   <artifactId>helios-tools</artifactId>
   <packaging>jar</packaging>
 

@@ -7,7 +7,7 @@
     <version>0.0.19-SNAPSHOT</version>
   </parent>
 
-  <name>Spotify Helios System Tests</name>
+  <name>Helios System Tests</name>
   <artifactId>helios-system-tests</artifactId>
   <packaging>jar</packaging>
 
