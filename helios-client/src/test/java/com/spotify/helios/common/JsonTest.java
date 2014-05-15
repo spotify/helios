@@ -69,4 +69,12 @@ public class JsonTest {
     final SomePojo somePojo = Json.read("{\"foo\":\"1\", \"bar\":\"2\"}", SomePojo.class);
     assertEquals("1", somePojo.foo);
   }
+
+  @Test
+  public void verifyPrettyOutput() {
+    final String json = Json.asPrettyStringUnchecked(new SomePojo() {{foo = "bar";}});
+    assertEquals("{\n" +
+                 "  \"foo\" : \"bar\"\n" +
+                 "}", json);
+  }
 }
