@@ -37,6 +37,9 @@ public class ZooKeeperNodeUpdater implements NodeUpdater {
         zooKeeperClient.setData(path, bytes);
       }
       return true;
+    } catch (KeeperException.NodeExistsException ignore) {
+      // Conflict due to curator retry or losing a race. We're done here.
+      return true;
     } catch (KeeperException.ConnectionLossException e) {
       log.warn("ZooKeeper connection lost while updating node: {}", path);
       return false;
