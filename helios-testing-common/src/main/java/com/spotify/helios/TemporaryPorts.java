@@ -37,6 +37,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TemporaryPorts extends ExternalResource {
 
+  // Allocate below the linux default ephemeral port range
+  private static final int MIN_PORT = 20000;
+  private static final int MAX_PORT = 32768;
+
   // Keep port locks for the duration of the process by default to avoid e.g. failing tests where
   // ports are still in use after the test to affect subsequent tests.
   private static final boolean DEFAULT_RELEASE = false;
@@ -101,7 +105,7 @@ public class TemporaryPorts extends ExternalResource {
   public synchronized int localPort(final String name) {
     Preconditions.checkState(!closed, "closed");
     for (int i = 0; i < retries; i++) {
-      final int port = ThreadLocalRandom.current().nextInt(40000, 49152);
+      final int port = randomPort();
       final AllocatedPort allocatedPort = lock(port, name);
       if (allocatedPort == null) {
         continue;
@@ -120,7 +124,7 @@ public class TemporaryPorts extends ExternalResource {
   public synchronized Range<Integer> localPortRange(final String name, final int n) {
     Preconditions.checkState(!closed, "closed");
     for (int i = 0; i < retries; i++) {
-      final int base = ThreadLocalRandom.current().nextInt(40000, 49152);
+      final int base = randomPort();
       final List<AllocatedPort> rangePorts = Lists.newArrayList();
       boolean successful = true;
       for (int j = 0; j < n; j++) {
@@ -146,6 +150,10 @@ public class TemporaryPorts extends ExternalResource {
       }
     }
     throw new AllocationFailedException();
+  }
+
+  private int randomPort() {
+    return ThreadLocalRandom.current().nextInt(MIN_PORT, MAX_PORT);
   }
 
   @SuppressWarnings("ThrowFromFinallyBlock")
