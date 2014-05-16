@@ -158,7 +158,7 @@ public class AgentParser extends ServiceParser {
         .help("redirect container's stdout/stderr to syslog running at host:port");
 
     portRangeArg = parser.addArgument("--port-range")
-        .setDefault("40000:49152")
+        .setDefault("20000:32768")
         .help("Port allocation range, start:end (end exclusive).");
   }
 
