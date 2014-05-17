@@ -15,6 +15,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -64,7 +65,12 @@ public abstract class ControlCommand {
                       final PrintStream err, final String username, final boolean json)
       throws InterruptedException, IOException {
 
-    final List<URI> endpoints = target.getEndpointSupplier().get();
+    List<URI> endpoints = Collections.emptyList();
+    try {
+      endpoints = target.getEndpointSupplier().get();
+    } catch (Exception ignore) {
+      // TODO (dano): Nasty. Target should be refactored so it can propagate resolution failure in a checked manner.
+    }
     if (endpoints.size() == 0) {
       err.println("Failed to resolve helios master in " + target);
       return false;
