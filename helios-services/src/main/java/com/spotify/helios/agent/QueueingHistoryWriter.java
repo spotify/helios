@@ -264,7 +264,7 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         // we wanted in, is in.
         log.debug("item we wanted in is already there");
       } catch (KeeperException e) {
-        log.error("Error {} putting item into zookeeper, will retry", e);
+        log.error("Error putting item into zookeeper, will retry", e);
         putBack(item);
         break;
       }
