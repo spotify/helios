@@ -149,10 +149,7 @@ public class JobTest {
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
                                                    "image", "foobar:4711",
                                                    "name", "foozbarz",
-                                                   "version", "17",
-                                                   "env", new HashMap<>(),
-                                                   "ports", new HashMap<>(),
-                                                   "registration", new HashMap<>());
+                                                   "version", "17");
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
@@ -175,9 +172,7 @@ public class JobTest {
                                                    "image", "foobar:4711",
                                                    "name", "foozbarz",
                                                    "version", "17",
-                                                   "env", env,
-                                                   "ports", new HashMap<>(),
-                                                   "registration", new HashMap<>());
+                                                   "env", env);
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));

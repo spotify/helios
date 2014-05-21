@@ -3,12 +3,9 @@ package com.spotify.helios.common.descriptors;
 import com.google.common.base.Splitter;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
-
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ServiceEndpoint extends Descriptor implements Comparable<ServiceEndpoint> {
@@ -34,12 +31,10 @@ public class ServiceEndpoint extends Descriptor implements Comparable<ServiceEnd
     this.protocol = protocol;
   }
 
-  @JsonInclude(ALWAYS)
   public String getName() {
     return name;
   }
 
-  @JsonInclude(ALWAYS)
   public String getProtocol() {
     return protocol;
   }

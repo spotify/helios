@@ -11,8 +11,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 
@@ -23,7 +21,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -189,29 +186,13 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     private static class Parameters implements Cloneable {
 
-      // TODO (dano): Consider breaking backwards compatibility and omitting _all_ null/empty fields
-      //              in the hash, removing the below @JsonInclude(ALWAYS) annotations. This would
-      //              increase the likelihood that it is feasible to implement the job hashing
-      //              in a non-java application without using jackson. If going through with this,
-      //              then also remove all @JsonInclude(ALWAYS) annotations in the PortMapping,
-      //              ServiceEndpoint, ServicePorts and ServicePortParameters classes.
-
-      // Fields are annotated with @JsonInclude(ALWAYS) to ensure that they are always included in
-      // the json string that is sha1 hashed to generate the job id. This is to preserve backwards
-      // compatibility with job id's that were generated when Json.sha1digest did not exclude
-      // null/empty fields. New fields should not be annotated with @JsonInclude(ALWAYS).
-
-      // Note: Do _not_ annotate additional fields with @JsonInclude(ALWAYS)
-
-      @JsonInclude(ALWAYS) public String name;
-      @JsonInclude(ALWAYS) public String version;
-      @JsonInclude(ALWAYS) public String image;
-      @JsonInclude(ALWAYS) public List<String> command;
-      @JsonInclude(ALWAYS) public Map<String, String> env;
-      @JsonInclude(ALWAYS) public Map<String, PortMapping> ports;
-      @JsonInclude(ALWAYS) public Map<ServiceEndpoint, ServicePorts> registration;
-
-      // Note: Do _not_ annotate additional fields with @JsonInclude(ALWAYS)
+      public String name;
+      public String version;
+      public String image;
+      public List<String> command;
+      public Map<String, String> env;
+      public Map<String, PortMapping> ports;
+      public Map<ServiceEndpoint, ServicePorts> registration;
 
       private Parameters() {
         this.command = EMPTY_COMMAND;

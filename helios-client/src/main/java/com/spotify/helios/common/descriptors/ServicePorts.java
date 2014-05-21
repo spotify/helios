@@ -7,12 +7,10 @@ package com.spotify.helios.common.descriptors;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
 
-import static com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS;
 import static java.util.Arrays.asList;
 
 public class ServicePorts extends Descriptor {
@@ -23,7 +21,6 @@ public class ServicePorts extends Descriptor {
     this.ports = ports;
   }
 
-  @JsonInclude(ALWAYS)
   public Map<String, ServicePortParameters> getPorts() {
     return ports;
   }
