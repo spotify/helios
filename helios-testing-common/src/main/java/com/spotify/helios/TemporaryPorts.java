@@ -172,8 +172,8 @@ public class TemporaryPorts extends ExternalResource {
       }
     }
 
-    // Now wait for kernel to consider port to be unused
-    while (true) {
+    // Now wait 15 seconds for kernel to consider port to be unused
+    for (int i = 0; i < 15; i++) {
       final Process p;
       try {
         p = Runtime.getRuntime().exec("lsof -i:" + port);
@@ -187,6 +187,9 @@ public class TemporaryPorts extends ExternalResource {
       log.debug("waiting for port {} to become unused", port);
       Uninterruptibles.sleepUninterruptibly(1, SECONDS);
     }
+
+    // We lost a race with someone else taking the port into use
+    return false;
   }
 
   private AllocatedPort lock(final int port, final String name) {

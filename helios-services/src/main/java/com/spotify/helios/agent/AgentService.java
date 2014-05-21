@@ -10,6 +10,8 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.helios.agent.docker.DefaultDockerClient;
+import com.spotify.helios.agent.docker.DockerClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
@@ -169,9 +171,6 @@ public class AgentService extends AbstractIdleService {
       throw Throwables.propagate(e);
     }
 
-    final DockerClientFactory dockerClientFactory =
-        new DockerClientFactory(config.getDockerEndpoint());
-
     // Set up service registrar
     this.serviceRegistrar = createServiceRegistrar(config.getServiceRegistrarPlugin(),
                                                    config.getServiceRegistryAddress(),
@@ -196,8 +195,12 @@ public class AgentService extends AbstractIdleService {
                                                                        config.getEnvVars(),
                                                                        nodeUpdaterFactory);
 
+    final DockerClient dockerClient = new DefaultDockerClient(config.getDockerEndpoint());
+    final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,
+                                                                          dockerClient);
+
     final SupervisorFactory supervisorFactory = new SupervisorFactory(
-        model, dockerClientFactory,
+        model, monitoredDockerClient,
         config.getEnvVars(), serviceRegistrar,
         config.getRedirectToSyslog() != null
         ? new SyslogRedirectingCommandWrapper(config.getRedirectToSyslog())

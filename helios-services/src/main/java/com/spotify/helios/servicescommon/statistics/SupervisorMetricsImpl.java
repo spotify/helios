@@ -168,6 +168,11 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
   }
 
   @Override
+  public void imageCacheMiss() {
+    // TODO (dano): implement
+  }
+
+  @Override
   public void dockerTimeout() {
     dockerTimeoutCounter.inc();
     dockerTimeoutMeter.mark();

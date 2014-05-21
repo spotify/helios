@@ -1,18 +1,21 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Suppliers;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 
-import com.kpelykh.docker.client.model.ContainerConfig;
-import com.kpelykh.docker.client.model.ContainerCreateResponse;
-import com.kpelykh.docker.client.model.ContainerInspectResponse;
-import com.kpelykh.docker.client.model.HostConfig;
-import com.kpelykh.docker.client.model.ImageInspectResponse;
 import com.spotify.helios.Polling;
+import com.spotify.helios.agent.docker.messages.ContainerConfig;
+import com.spotify.helios.agent.docker.messages.ContainerCreation;
+import com.spotify.helios.agent.docker.messages.ContainerExit;
+import com.spotify.helios.agent.docker.messages.ContainerInfo;
+import com.spotify.helios.agent.docker.messages.ContainerState;
+import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.helios.agent.docker.messages.ImageInfo;
+import com.spotify.helios.agent.docker.messages.NetworkSettings;
+import com.spotify.helios.agent.docker.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.serviceregistration.NopServiceRegistrar;
@@ -22,9 +25,12 @@ import org.joda.time.Instant;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CyclicBarrier;
@@ -34,12 +40,10 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -56,7 +60,7 @@ public class TaskRunnerExitsFlappingTest {
   private static final String HOST = "HOST";
   private static final String CONTAINER_ID = "CONTAINER_ID";
 
-  @Mock private MonitoredDockerClient mockDocker;
+  @Mock private DockerClient mockDocker;
   @Mock private StatusUpdater statusUpdater;
   @Mock private Clock clock;
 
@@ -89,24 +93,37 @@ public class TaskRunnerExitsFlappingTest {
         statusUpdater,
         Suppliers.ofInstance((String) null));
 
-    when(mockDocker.safeInspectImage(IMAGE)).thenReturn(new ImageInspectResponse());
+    when(mockDocker.inspectImage(IMAGE)).thenReturn(new ImageInfo());
     when(mockDocker.createContainer(any(ContainerConfig.class),
-        any(String.class))).thenReturn(new ContainerCreateResponse() {{
-          id = "CONTAINER_ID";
-        }});
-    when(mockDocker.startContainer(eq(CONTAINER_ID), any(HostConfig.class)))
-        .thenReturn(Futures.<Void>immediateFuture(null));
-    when(mockDocker.safeInspectContainer(CONTAINER_ID)).thenReturn(new ContainerInspectResponse() {{
-      state = new ContainerState() {{
-        running = true;
-      }};
-      networkSettings = new NetworkSettings() {{
-        ports = emptyMap();
-      }};
-    }});
+                                    any(String.class))).thenReturn(new ContainerCreation() {
+      @Override
+      public String id() {
+        return "CONTAINER_ID";
+      }
+    });
+    when(mockDocker.inspectContainer(CONTAINER_ID)).thenReturn(new ContainerInfo() {
+      @Override
+      public ContainerState state() {
+        final ContainerState state = new ContainerState();
+        state.running(true);
+        return state;
+      }
 
-    final SettableFuture<Integer> containerWaitFuture = SettableFuture.create();
-    when(mockDocker.waitContainer(CONTAINER_ID)).thenReturn(containerWaitFuture);
+      @Override
+      public NetworkSettings networkSettings() {
+        final NetworkSettings networkSettings = new NetworkSettings();
+        networkSettings.ports(Collections.<String, List<PortBinding>>emptyMap());
+        return networkSettings;
+      }
+    });
+
+    final SettableFuture<ContainerExit> containerWaitFuture = SettableFuture.create();
+    when(mockDocker.waitContainer(CONTAINER_ID)).thenAnswer(new Answer<ContainerExit>() {
+      @Override
+      public ContainerExit answer(final InvocationOnMock invocation) throws Throwable {
+        return containerWaitFuture.get();
+      }
+    });
 
     final CyclicBarrier startBarrier = new CyclicBarrier(2);
     final ListeningExecutorService executor = MoreExecutors.listeningDecorator(
@@ -145,7 +162,7 @@ public class TaskRunnerExitsFlappingTest {
     // make it so container ran for 1s, more than the 10ms req'd
     when(clock.now()).thenReturn(new Instant(MIN_UNFLAP_TIME + 1));
     // tell "container" to die
-    containerWaitFuture.set(CONTAINER_EXIT_CODE);
+    containerWaitFuture.set(new ContainerExit(CONTAINER_EXIT_CODE));
     // wait for task runner to finish
     trFuture.get();
 

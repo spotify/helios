@@ -73,7 +73,7 @@
     <dependency>
       <groupId>com.sun.jersey</groupId>
       <artifactId>jersey-client</artifactId>
-      <version>1.17.1</version>
+      <version>1.18.1</version>
     </dependency>
     <dependency>
       <groupId>joda-time</groupId>
@@ -143,11 +143,6 @@
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
       <version>1.7.6</version>
-    </dependency>
-    <dependency>
-      <groupId>com.kpelykh</groupId>
-      <artifactId>docker-java</artifactId>
-      <version>0.8.0.2</version>
     </dependency>
     <dependency>
       <groupId>net.sourceforge.argparse4j</groupId>

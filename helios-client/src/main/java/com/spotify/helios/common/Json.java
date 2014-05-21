@@ -223,6 +223,13 @@ public class Json {
     return OBJECT_MAPPER.readValues(parser, typeReference);
   }
 
+  public static MappingIterator<JsonNode> readValues(
+      final InputStream stream)
+      throws IOException {
+    final JsonParser parser = OBJECT_MAPPER.getFactory().createParser(stream);
+    return OBJECT_MAPPER.readValues(parser, JsonNode.class);
+  }
+
   public static JsonNode readTree(final byte[] bytes) throws IOException {
     return OBJECT_MAPPER.readTree(bytes);
   }

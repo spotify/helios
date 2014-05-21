@@ -4,14 +4,12 @@ import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.MappingIterator;
-import com.kpelykh.docker.client.model.ContainerConfig;
-import com.kpelykh.docker.client.model.ContainerInspectResponse;
-import com.kpelykh.docker.client.model.HostConfig;
-import com.kpelykh.docker.client.model.PortBinding;
-import com.spotify.helios.common.Json;
+import com.spotify.helios.agent.docker.messages.ContainerConfig;
+import com.spotify.helios.agent.docker.messages.ContainerInfo;
+import com.spotify.helios.agent.docker.messages.HostConfig;
+import com.spotify.helios.agent.docker.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -19,25 +17,15 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.security.SecureRandom;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Future;
-import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.Set;
+import java.util.regex.Pattern;
 
-import static com.google.common.util.concurrent.MoreExecutors.getExitingExecutorService;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
-import static java.util.concurrent.Executors.newCachedThreadPool;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * The miscellaneous bag of utility functions to make/consume things to/from the docker
@@ -45,22 +33,15 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 public class ContainerUtil {
 
-  private static final TypeReference<Map<String, Object>> STRING_OBJECT_MAP =
-      new TypeReference<Map<String, Object>>() {};
-
-  private static final Map<String, Object> EOF = new HashMap<>();
-
-  public static class PullingException extends Exception {}
+  private static final Pattern CONTAINER_NAME_FORBIDDEN = Pattern.compile("[^a-zA-Z0-9_-]");
 
   private static final Logger log = LoggerFactory.getLogger(ContainerUtil.class);
   private static final int HOST_NAME_MAX = 64;
-  private static final long PULL_POLL_TIMEOUT_SECONDS = 30;
 
   private final String host;
   private final Map<String, Integer> ports;
   private final Job job;
   private final Map<String, String> envVars;
-  private final ExecutorService executor;
 
   public ContainerUtil(final String host,
                        final Job job,
@@ -70,8 +51,6 @@ public class ContainerUtil {
     this.ports = ports;
     this.job = job;
     this.envVars = envVars;
-    this.executor = getExitingExecutorService((ThreadPoolExecutor) newCachedThreadPool(),
-                                              0, SECONDS);
   }
 
   /**
@@ -79,25 +58,24 @@ public class ContainerUtil {
    */
   public ContainerConfig containerConfig(final Job descriptor) {
     final ContainerConfig containerConfig = new ContainerConfig();
-    containerConfig.setImage(descriptor.getImage());
-    final List<String> command = descriptor.getCommand();
-    containerConfig.setCmd(command.toArray(new String[command.size()]));
-    containerConfig.setEnv(containerEnv(descriptor));
-    containerConfig.setExposedPorts(containerExposedPorts());
-    containerConfig.setHostName(safeHostNameify(descriptor.getId().getName() + "_" +
-                                                descriptor.getId().getVersion()));
-    containerConfig.setDomainName(host);
+    containerConfig.image(descriptor.getImage());
+    containerConfig.cmd(descriptor.getCommand());
+    containerConfig.env(containerEnv(descriptor));
+    containerConfig.exposedPorts(containerExposedPorts());
+    containerConfig.hostname(safeHostNameify(descriptor.getId().getName() + "_" +
+                                             descriptor.getId().getVersion()));
+    containerConfig.domainname(host);
     return containerConfig;
   }
 
   /**
    * Create container port exposure configuration for a job.
    */
-  public Map<String, Void> containerExposedPorts() {
-    final Map<String, Void> ports = Maps.newHashMap();
+  public Set<String> containerExposedPorts() {
+    final Set<String> ports = Sets.newHashSet();
     for (final Map.Entry<String, PortMapping> entry : job.getPorts().entrySet()) {
       final PortMapping mapping = entry.getValue();
-      ports.put(containerPort(mapping.getInternalPort(), mapping.getProtocol()), null);
+      ports.add(containerPort(mapping.getInternalPort(), mapping.getProtocol()));
     }
     return ports;
   }
@@ -106,9 +84,9 @@ public class ContainerUtil {
     StringBuilder sb = new StringBuilder();
     for (int i = 0; i < name.length(); i++) {
       char c = name.charAt(i);
-      if ( (c >= 'A' && c <= 'Z')
-           || (c >= 'a' && c <= 'z')
-           || (c >= '0' && c <= '9')) {
+      if ((c >= 'A' && c <= 'Z')
+          || (c >= 'a' && c <= 'z')
+          || (c >= '0' && c <= '9')) {
         sb.append(c);
       } else {
         sb.append('_');
@@ -124,7 +102,7 @@ public class ContainerUtil {
   /**
    * Compute docker container environment variables.
    */
-  private String[] containerEnv(final Job descriptor) {
+  private List<String> containerEnv(final Job descriptor) {
     final Map<String, String> env = getContainerEnvMap();
 
     final List<String> envList = Lists.newArrayList();
@@ -132,7 +110,7 @@ public class ContainerUtil {
       envList.add(entry.getKey() + '=' + entry.getValue());
     }
 
-    return envList.toArray(new String[envList.size()]);
+    return envList;
   }
 
   public Map<String, String> getContainerEnvMap() {
@@ -152,9 +130,9 @@ public class ContainerUtil {
       final PortBinding binding = new PortBinding();
       final Integer externalPort = mapping.getExternalPort();
       if (externalPort == null) {
-        binding.hostPort = ports.get(e.getKey()).toString();
+        binding.hostPort(ports.get(e.getKey()).toString());
       } else {
-        binding.hostPort = externalPort.toString();
+        binding.hostPort(externalPort.toString());
       }
       final String entry = containerPort(mapping.getInternalPort(), mapping.getProtocol());
       bindings.put(entry, asList(binding));
@@ -167,7 +145,7 @@ public class ContainerUtil {
    */
   public HostConfig hostConfig() {
     final HostConfig hostConfig = new HostConfig();
-    hostConfig.portBindings = portBindings();
+    hostConfig.portBindings(portBindings());
     return hostConfig;
   }
 
@@ -179,15 +157,16 @@ public class ContainerUtil {
   }
 
   public static String containerName(final JobId id) {
+    final String escaped = CONTAINER_NAME_FORBIDDEN.matcher(id.toShortString()).replaceAll("_");
     final String random = Integer.toHexString(new SecureRandom().nextInt());
-    return id.toShortString().replace(':', '_') + "_" + random;
+    return escaped + "_" + random;
   }
 
-  public Map<String, PortMapping> parsePortBindings(final ContainerInspectResponse info) {
-    if (info.networkSettings.ports == null) {
+  public Map<String, PortMapping> parsePortBindings(final ContainerInfo info) {
+    if (info.networkSettings() == null || info.networkSettings().ports() == null) {
       return emptyMap();
     }
-    return parsePortBindings(info.networkSettings.ports);
+    return parsePortBindings(info.networkSettings().ports());
   }
 
   private Map<String, PortMapping> parsePortBindings(final Map<String, List<PortBinding>> ports) {
@@ -235,9 +214,9 @@ public class ContainerUtil {
       final PortBinding binding = bindings.get(0);
       final int externalPort;
       try {
-        externalPort = Integer.parseInt(binding.hostPort);
+        externalPort = Integer.parseInt(binding.hostPort());
       } catch (NumberFormatException e1) {
-        throw new IllegalArgumentException("Invalid host port: " + binding.hostPort);
+        throw new IllegalArgumentException("Invalid host port: " + binding.hostPort());
       }
       return PortMapping.of(internalPort, externalPort, protocol);
     }
@@ -247,71 +226,14 @@ public class ContainerUtil {
     for (final Entry<String, PortMapping> portMapping : job.getPorts().entrySet()) {
       if (portMapping.getValue().getInternalPort() == internalPort) {
         log.info("found mapping for internal port {} {} -> {}",
-            internalPort,
-            portMapping.getValue().getInternalPort(),
-            portMapping.getKey());
+                 internalPort,
+                 portMapping.getValue().getInternalPort(),
+                 portMapping.getKey());
         return portMapping.getKey();
       }
     }
     return null;
   }
 
-  public void tailPull(final String image, final InputStream stream)
-      throws ImagePullFailedException, ImageMissingException, PullingException,
-             InterruptedException {
-
-    final MappingIterator<Map<String, Object>> messages;
-    try {
-      messages = Json.readValues(stream, STRING_OBJECT_MAP);
-    } catch (IOException e) {
-      throw new RuntimeException(e);
-    }
-
-    final BlockingQueue<Map<String, Object>> queue = new LinkedBlockingQueue<>();
-    final Future<?> task = executor.submit(new Tailer(messages, queue));
-    try {
-      while (true) {
-        final Map<String, Object> message = queue.poll(PULL_POLL_TIMEOUT_SECONDS, SECONDS);
-        if (message == EOF) {
-          break;
-        }
-        if (message == null) {
-          throw new ImagePullFailedException("timeout");
-        }
-        final Object error = message.get("error");
-        if (error != null) {
-          if (error.toString().contains("404")) {
-            throw new ImageMissingException(message.toString());
-          } else {
-            throw new ImagePullFailedException(message.toString());
-          }
-        }
-        log.info("pull {}: {}", image, message);
-      }
-    } finally {
-      task.cancel(true);
-    }
-  }
-
-  private static class Tailer implements Callable<Object> {
-
-    private final MappingIterator<Map<String, Object>> messages;
-    private final BlockingQueue<Map<String, Object>> queue;
-
-    public Tailer(final MappingIterator<Map<String, Object>> messages,
-                  final BlockingQueue<Map<String, Object>> queue) {
-      this.messages = messages;
-      this.queue = queue;
-    }
-
-    @Override
-    public Object call() throws Exception {
-      while (messages.hasNext()) {
-        queue.put(messages.next());
-      }
-      queue.put(EOF);
-      return null;
-    }
-  }
 }
 

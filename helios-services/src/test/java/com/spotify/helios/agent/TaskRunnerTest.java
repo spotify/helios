@@ -2,16 +2,16 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Suppliers;
 
-import com.kpelykh.docker.client.model.ContainerConfig;
-import com.kpelykh.docker.client.model.HostConfig;
-import com.kpelykh.docker.client.model.ImageInspectResponse;
+import com.spotify.helios.agent.docker.messages.ContainerConfig;
+import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.helios.agent.docker.messages.HostConfig;
+import com.spotify.helios.agent.docker.messages.ImageInfo;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.serviceregistration.NopServiceRegistrar;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
 
-import org.joda.time.Instant;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -41,7 +41,7 @@ public class TaskRunnerTest {
       .build();
   private static final String HOST = "HOST";
 
-  @Mock private MonitoredDockerClient mockDocker;
+  @Mock private DockerClient mockDocker;
   @Mock private StatusUpdater statusUpdater;
   @Mock private Clock clock;
 
@@ -66,7 +66,7 @@ public class TaskRunnerTest {
           }
 
           @Override
-          public void modifyCreateConfig(String image, Job job, ImageInspectResponse imageInfo,
+          public void modifyCreateConfig(String image, Job job, ImageInfo imageInfo,
               ContainerConfig createConfig) {
             assertNotNull(image);
             assertNotNull(job);
@@ -83,8 +83,8 @@ public class TaskRunnerTest {
         statusUpdater,
         Suppliers.ofInstance((String) null));
 
-    when(mockDocker.safeInspectImage(IMAGE))
-        .thenReturn(new ImageInspectResponse())
+    when(mockDocker.inspectImage(IMAGE))
+        .thenReturn(new ImageInfo())
         .thenReturn(null);
     tr.run();
     try {

@@ -2,6 +2,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Supplier;
 
+import com.spotify.helios.agent.docker.DockerClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
@@ -16,7 +17,7 @@ public class TaskRunnerFactory {
   private final CommandWrapper commandWrapper;
   private final ContainerUtil containerUtil;
   private final SupervisorMetrics metrics;
-  private final MonitoredDockerClient docker;
+  private final DockerClient docker;
   private final FlapController flapController;
   private final ServiceRegistrar registrar;
 
@@ -25,7 +26,7 @@ public class TaskRunnerFactory {
                            final CommandWrapper commandWrapper,
                            final ContainerUtil containerUtil,
                            final SupervisorMetrics metrics,
-                           final MonitoredDockerClient docker,
+                           final DockerClient docker,
                            final FlapController flapController) {
     this.registrar = registrar;
     this.job = job;
