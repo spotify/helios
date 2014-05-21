@@ -8,7 +8,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.security.MessageDigest;
+import java.util.Collections;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -33,6 +35,12 @@ public class JsonTest {
     public int b;
     public String a;
     public Map<String, Object> c;
+    public String ignoredNullString;
+    public Map<String, Object> ignoredNullMap;
+    public List<String> ignoredNullList;
+    public String ignoredEmptyString;
+    public Map<String, Object> ignoredEmptyMap;
+    public List<String> ignoredEmptyList;
   }
 
   public static class Bar {
@@ -52,9 +60,15 @@ public class JsonTest {
           put("2", "two");
           put("1", 1);
         }};
+        ignoredNullString = null;
+        ignoredNullMap = null;
+        ignoredNullList = null;
+        ignoredEmptyString = "";
+        ignoredEmptyMap = Collections.emptyMap();
+        ignoredEmptyList = Collections.emptyList();
       }};
     }};
-    final String barJson = Json.asString(bar);
+    final String barJson = Json.asNormalizedString(bar);
     assertEquals(EXPECTED_JSON, barJson);
     final byte[] digest = Json.sha1digest(bar);
     assertArrayEquals(expectedDigest, digest);

@@ -6,9 +6,12 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
+
+import static com.fasterxml.jackson.annotation.JsonInclude.Include.ALWAYS;
 
 public class PortMapping extends Descriptor {
 
@@ -43,11 +46,13 @@ public class PortMapping extends Descriptor {
     return internalPort;
   }
 
+  @JsonInclude(ALWAYS)
   @Nullable
   public Integer getExternalPort() {
     return externalPort;
   }
 
+  @JsonInclude(ALWAYS)
   public String getProtocol() {
     return protocol;
   }

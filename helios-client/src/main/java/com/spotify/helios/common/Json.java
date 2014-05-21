@@ -6,6 +6,7 @@ package com.spotify.helios.common;
 
 import com.google.common.base.Throwables;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -31,6 +32,12 @@ public class Json {
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
       .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
       .configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+  private static final ObjectWriter NORMALIZING_OBJECT_WRITER = new ObjectMapper()
+      .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
+      .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
+      .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
+      .writer();
 
   private static final ObjectWriter PRETTY_OBJECT_WRITER = new ObjectMapper()
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
@@ -104,6 +111,30 @@ public class Json {
   public static String asPrettyStringUnchecked(final Object value) {
     try {
       return asPrettyString(value);
+    } catch (JsonProcessingException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  /**
+   * Serialize an object to a json string, ordering fields and omitting null and empty fields.
+   * Use when it is not know whether an object can be json serializable.
+   *
+   * @see #asPrettyStringUnchecked(Object)
+   */
+  public static String asNormalizedString(final Object value) throws JsonProcessingException {
+    return NORMALIZING_OBJECT_WRITER.writeValueAsString(value);
+  }
+
+  /**
+   * Serialize an object to a json string, ordering fields and omitting null and empty fields.
+   * Use when object is expected to be json serializable.
+   *
+   * @see #asPrettyString(Object)
+   */
+  public static String asNormalizedStringUnchecked(final Object value) {
+    try {
+      return asNormalizedString(value);
     } catch (JsonProcessingException e) {
       throw Throwables.propagate(e);
     }
@@ -237,13 +268,13 @@ public class Json {
   }
 
   public static byte[] sha1digest(final Object o) throws IOException {
-    final String json = OBJECT_MAPPER.writeValueAsString(o);
+    final String json = NORMALIZING_OBJECT_WRITER.writeValueAsString(o);
     final Map<String, Object> map = OBJECT_MAPPER.readValue(json, MAP_TYPE);
     return sha1digest(map);
   }
 
   public static byte[] sha1digest(final Map<String, ?> o) throws IOException {
-    final byte[] bytes = OBJECT_MAPPER.writeValueAsBytes(o);
+    final byte[] bytes = NORMALIZING_OBJECT_WRITER.writeValueAsBytes(o);
     return Hash.sha1digest(bytes);
   }
 }
