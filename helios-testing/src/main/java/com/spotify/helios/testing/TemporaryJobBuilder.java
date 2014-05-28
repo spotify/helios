@@ -29,6 +29,7 @@ import java.util.regex.Pattern;
 import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.Integer.toHexString;
 import static java.lang.System.getenv;
 import static java.util.Arrays.asList;
@@ -119,17 +120,40 @@ public class TemporaryJobBuilder {
     return this;
   }
 
+  /**
+   * Deploys the job to the specified hosts. If no hosts are specified, the hostname in the
+   * HELIOS_HOST_FILTER environment variable if set. Otherwise the test will fail.
+   * @param hosts the list of helios hosts to deploy to. The host specified in HELIOS_HOST_FILTER
+   *              will be used if hosts are passed in.
+   * @return a TemporaryJob representing the deployed job
+   */
   public TemporaryJob deploy(final String... hosts) {
     return deploy(asList(hosts));
   }
 
-  public TemporaryJob deploy(final List<String> hosts) {
+  /**
+   * Deploys the job to the specified hosts. If no hosts are specified, the hostname in the
+   * HELIOS_HOST_FILTER environment variable if set. Otherwise the test will fail.
+   * @param hosts the list of helios hosts to deploy to. The host specified in HELIOS_HOST_FILTER
+   *              will be used if no hosts are passed in.
+   * @return a TemporaryJob representing the deployed job
+   */
+  public TemporaryJob deploy(List<String> hosts) {
     this.hosts.addAll(hosts);
     if (job == null) {
       if (builder.getName() == null && builder.getVersion() == null) {
         // Both name and version are unset, use image name as job name and generate random version
         builder.setName(jobName(builder.getImage()));
         builder.setVersion(randomVersion());
+      }
+
+      if (hosts.isEmpty()) {
+        final String host = getenv("HELIOS_HOST_FILTER");
+        if (!isNullOrEmpty(host)) {
+          // need to create a new list instead of adding to existing one, because hosts may be a
+          // fixed size array backed list if it was created from asList in other deploy method
+          hosts = asList(host);
+        }
       }
       job = deployer.deploy(builder.build(), hosts, waitPorts);
     }

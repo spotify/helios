@@ -35,6 +35,9 @@ public class TemporaryJobs extends ExternalResource {
       if (!started) {
         fail("deploy() must be called in a @Before or in the test method");
       }
+      if (hosts.isEmpty()) {
+        fail("a host must be passed to deploy(), or one must be specified in HELIOS_HOST_FILTER");
+      }
       final TemporaryJob temporaryJob = new TemporaryJob(client, prober, job, hosts, waitPorts);
       jobs.add(temporaryJob);
       temporaryJob.deploy();
