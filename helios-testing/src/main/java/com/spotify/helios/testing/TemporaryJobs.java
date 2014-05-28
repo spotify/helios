@@ -56,6 +56,18 @@ public class TemporaryJobs extends ExternalResource {
     return new TemporaryJobBuilder(deployer);
   }
 
+  /**
+   * Creates a new instance of TemporaryJobs. Will attempt to connect to a helios master at
+   * http://localhost:5801 by default. This can be overridden by setting one of two environment
+   * variable.
+   * <ul>
+   * <li>HELIOS_DOMAIN - any domain which contains a helios master</li>
+   * <li>HELIOS_ENDPOINTS - a comma separated list of helios master endpoints</li>
+   * </ul>
+   * If both variables are set, HELIOS_DOMAIN will take precedence.
+   * @return an instance of TemporaryJobs
+   */
+
   public static TemporaryJobs create() {
     final String domain = System.getProperty("HELIOS_DOMAIN");
     if (!Strings.isNullOrEmpty(domain)) {
