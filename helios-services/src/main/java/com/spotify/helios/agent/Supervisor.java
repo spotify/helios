@@ -65,9 +65,8 @@ public class Supervisor {
   private final Reactor reactor;
   private final Listener listener;
   private final DefaultStatusUpdater statusUpdater;
-  private final AtomicReference<Goal> goal = new AtomicReference<Goal>();
-  private final AtomicReference<ThrottleState> throttle = new AtomicReference<ThrottleState>(
-      ThrottleState.NO);
+  private final AtomicReference<Goal> goal = new AtomicReference<>();
+  private final AtomicReference<ThrottleState> throttle = new AtomicReference<>(ThrottleState.NO);
   private final TaskRunnerFactory runnerFactory;
 
   private volatile TaskRunner runner;

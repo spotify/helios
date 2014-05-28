@@ -71,7 +71,7 @@ public class ContainerUtil {
   /**
    * Create container port exposure configuration for a job.
    */
-  public Set<String> containerExposedPorts() {
+  private Set<String> containerExposedPorts() {
     final Set<String> ports = Sets.newHashSet();
     for (final Map.Entry<String, PortMapping> entry : job.getPorts().entrySet()) {
       final PortMapping mapping = entry.getValue();
