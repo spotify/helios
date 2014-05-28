@@ -56,7 +56,7 @@
             <configuration>
               <enableAssertions>false</enableAssertions>
               <forkCount>1C</forkCount>
-              <reuseForks>true</reuseForks>
+              <reuseForks>false</reuseForks>
               <argLine>-Xmx128m</argLine>
               <systemPropertyVariables>
                 <logToFile>true</logToFile>
