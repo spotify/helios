@@ -80,7 +80,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private final Supplier<String> containerIdSupplier;
 
   private ListenableFuture<Void> startFuture;
-  private Map<String, PortMapping> ports;
 
   public TaskRunner(final long delayMillis,
                     final ServiceRegistrar registrar,
@@ -105,7 +104,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.throttle = throttle;
     this.statusUpdater = statusUpdater;
     this.containerIdSupplier = containerIdSupplier;
-    this.ports = containerUtil.ports();
   }
 
   @SuppressWarnings("TryWithIdenticalCatches")
@@ -126,7 +124,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
       // Wait for container to die
       flapController.jobStarted();
-      final ServiceRegistrationHandle registrationHandle = serviceRegister(ports);
+      final ServiceRegistrationHandle registrationHandle = serviceRegister(containerUtil.ports());
       final int exitCode;
       try {
         exitCode = flapController.waitFuture(waitContainer(containerId)).statusCode();
