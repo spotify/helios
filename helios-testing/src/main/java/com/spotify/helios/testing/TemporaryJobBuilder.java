@@ -44,6 +44,8 @@ public class TemporaryJobBuilder {
   private final Set<String> waitPorts = Sets.newHashSet();
   private final TemporaryJob.Deployer deployer;
 
+  private String hostFilter = null;
+
   private TemporaryJob job;
 
   public TemporaryJobBuilder(final TemporaryJob.Deployer deployer) {
@@ -120,11 +122,16 @@ public class TemporaryJobBuilder {
     return this;
   }
 
+  public TemporaryJobBuilder hostFilter(final String hostFilter) {
+    this.hostFilter = hostFilter;
+    return this;
+  }
+
   /**
-   * Deploys the job to the specified hosts. If no hosts are specified, the hostname in the
-   * HELIOS_HOST_FILTER environment variable if set. Otherwise the test will fail.
-   * @param hosts the list of helios hosts to deploy to. The host specified in HELIOS_HOST_FILTER
-   *              will be used if hosts are passed in.
+   * Deploys the job to the specified hosts. If no hosts are specified, a host will be chosen at
+   * random from the current Helios cluster. If the HELIOS_HOST_FILTER environment variable is set,
+   * it will be used to filter the list of hosts in the current Helios cluster.
+   * @param hosts the list of helios hosts to deploy to. A random host will be chosen if the list is empty.
    * @return a TemporaryJob representing the deployed job
    */
   public TemporaryJob deploy(final String... hosts) {
@@ -132,14 +139,15 @@ public class TemporaryJobBuilder {
   }
 
   /**
-   * Deploys the job to the specified hosts. If no hosts are specified, the hostname in the
-   * HELIOS_HOST_FILTER environment variable if set. Otherwise the test will fail.
-   * @param hosts the list of helios hosts to deploy to. The host specified in HELIOS_HOST_FILTER
-   *              will be used if no hosts are passed in.
+   * Deploys the job to the specified hosts. If no hosts are specified, a host will be chosen at
+   * random from the current Helios cluster. If the HELIOS_HOST_FILTER environment variable is set,
+   * it will be used to filter the list of hosts in the current Helios cluster.
+   * @param hosts the list of helios hosts to deploy to. A random host will be chosen if the list is empty.
    * @return a TemporaryJob representing the deployed job
    */
   public TemporaryJob deploy(List<String> hosts) {
     this.hosts.addAll(hosts);
+
     if (job == null) {
       if (builder.getName() == null && builder.getVersion() == null) {
         // Both name and version are unset, use image name as job name and generate random version
@@ -147,16 +155,17 @@ public class TemporaryJobBuilder {
         builder.setVersion(randomVersion());
       }
 
-      if (hosts.isEmpty()) {
-        final String host = getenv("HELIOS_HOST_FILTER");
-        if (!isNullOrEmpty(host)) {
-          // need to create a new list instead of adding to existing one, because hosts may be a
-          // fixed size array backed list if it was created from asList in other deploy method
-          hosts = asList(host);
+      if (this.hosts.isEmpty()) {
+        if (isNullOrEmpty(hostFilter)) {
+          hostFilter = getenv("HELIOS_HOST_FILTER");
         }
+
+        job = deployer.deploy(builder.build(), hostFilter, waitPorts);
+      } else {
+        job = deployer.deploy(builder.build(), this.hosts, waitPorts);
       }
-      job = deployer.deploy(builder.build(), hosts, waitPorts);
     }
+
     return job;
   }
 

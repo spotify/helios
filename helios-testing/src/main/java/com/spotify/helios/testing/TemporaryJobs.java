@@ -1,7 +1,8 @@
 package com.spotify.helios.testing;
 
+import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
-import com.google.common.base.Strings;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.client.HeliosClient;
@@ -11,9 +12,17 @@ import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.regex.Pattern;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 
 public class TemporaryJobs extends ExternalResource {
@@ -30,14 +39,45 @@ public class TemporaryJobs extends ExternalResource {
 
   private final TemporaryJob.Deployer deployer = new TemporaryJob.Deployer() {
     @Override
+    public TemporaryJob deploy(final Job job, final String hostFilter,
+                               final Set<String> waitPorts) {
+      if (isNullOrEmpty(hostFilter)) {
+        fail("a host filter pattern must be passed to hostFilter(), or one must be specified in HELIOS_HOST_FILTER");
+      }
+
+      List<String> hosts = null;
+      try {
+        hosts = client.listHosts().get();
+      } catch (InterruptedException | ExecutionException e) {
+        fail(format("Failed to get list of Helios hosts - %s", e));
+      }
+
+      hosts = new ArrayList<>(Collections2.filter(hosts, new Predicate<String>() {
+        @Override
+        public boolean apply(@Nullable final String input) {
+          return Pattern.matches(hostFilter, input);
+        }
+      }));
+
+      if (hosts.isEmpty()) {
+        fail(format("no hosts matched the filter pattern - %s", hostFilter));
+      }
+
+      String chosenHost = hosts.get(new Random().nextInt(hosts.size()));
+      return deploy(job, asList(chosenHost), waitPorts);
+    }
+
+    @Override
     public TemporaryJob deploy(final Job job, final List<String> hosts,
                                final Set<String> waitPorts) {
       if (!started) {
         fail("deploy() must be called in a @Before or in the test method");
       }
+
       if (hosts.isEmpty()) {
-        fail("a host must be passed to deploy(), or one must be specified in HELIOS_HOST_FILTER");
+        fail("at least one host must be explicitly specified, or deploy() must be called with no arguments to automatically select a host");
       }
+
       final TemporaryJob temporaryJob = new TemporaryJob(client, prober, job, hosts, waitPorts);
       jobs.add(temporaryJob);
       temporaryJob.deploy();
@@ -70,13 +110,13 @@ public class TemporaryJobs extends ExternalResource {
 
   public static TemporaryJobs create() {
     final String domain = System.getProperty("HELIOS_DOMAIN");
-    if (!Strings.isNullOrEmpty(domain)) {
+    if (!isNullOrEmpty(domain)) {
       return create(domain);
     }
     final String endpoints = System.getProperty("HELIOS_ENDPOINTS");
     final HeliosClient.Builder clientBuilder = HeliosClient.newBuilder()
         .setUser(DEFAULT_USER);
-    if (!Strings.isNullOrEmpty(endpoints)) {
+    if (!isNullOrEmpty(endpoints)) {
       clientBuilder.setEndpointStrings(Splitter.on(',').splitToList(endpoints));
     } else {
       clientBuilder.setEndpoints("http://localhost:5801");

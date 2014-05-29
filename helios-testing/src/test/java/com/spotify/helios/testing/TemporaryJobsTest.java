@@ -78,6 +78,42 @@ public class TemporaryJobsTest extends SystemTestBase {
       ping(DOCKER_ADDRESS, job1.port(testHost, "echo"));
     }
 
+    @Test
+    public void testRandomHost() throws Exception {
+      TemporaryJob temporaryJob = temporaryJobs.job()
+        .image("ubuntu:12.04")
+        .command("sh", "-c", "while :; do sleep 5; done")
+        .hostFilter(".+")
+        .deploy();
+
+      final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
+      assertEquals("wrong number of jobs running", 2, jobs.size());
+      for (Job job : jobs.values()) {
+        assertEquals("wrong job running", "ubuntu:12.04", job.getImage());
+      }
+
+      ping(DOCKER_ADDRESS, job1.port(testHost, "echo"));
+    }
+
+    @Test(expected=AssertionError.class)
+    public void testExceptionWithoutHostOrHostFilter() throws Exception {
+      // Shouldn't be able to deploy a host without an explicit host or host filter
+      TemporaryJob temporaryJob = temporaryJobs.job()
+        .image("ubuntu:12.04")
+        .command("sh", "-c", "while :; do sleep 5; done")
+        .deploy();
+    }
+
+    @Test(expected=AssertionError.class)
+    public void testExceptionWithBadHostFilter() throws Exception {
+      // Shouldn't be able to deploy a host without an explicit host or host filter
+      TemporaryJob temporaryJob = temporaryJobs.job()
+        .image("ubuntu:12.04")
+        .command("sh", "-c", "while :; do sleep 5; done")
+        .hostFilter("THIS_FILTER_SHOULDNT_MATCH_ANY_HOST")
+        .deploy();
+    }
+
     private void ping(final String host, final int port) throws Exception {
       try (final Socket s = new Socket(host, port)) {
         byte[] ping = "ping".getBytes(UTF_8);
