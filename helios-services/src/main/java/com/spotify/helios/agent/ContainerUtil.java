@@ -1,5 +1,6 @@
 package com.spotify.helios.agent;
 
+import com.google.common.base.Ascii;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -125,7 +126,7 @@ public class ContainerUtil {
         sb.append('_');
       }
     }
-    return truncate(sb.toString(), HOST_NAME_MAX);
+    return Ascii.truncate(sb.toString(), HOST_NAME_MAX, "");
   }
 
   /**
@@ -175,11 +176,6 @@ public class ContainerUtil {
    */
   private String containerPort(final int port, final String protocol) {
     return port + "/" + protocol;
-  }
-
-  private static String truncate(final String s, final int len) {
-    // TODO (dano): replace with guava 16+
-    return s.substring(0, Math.min(len, s.length()));
   }
 }
 
