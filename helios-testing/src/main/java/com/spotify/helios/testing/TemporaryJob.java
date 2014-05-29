@@ -68,6 +68,13 @@ public class TemporaryJob {
     return job;
   }
 
+  /**
+   * Returns the port that a job can be reached at given the host and name of registered port.
+   * This is useful to discover the value of a dynamically allocated port.
+   * @param host the host where the job is deployed
+   * @param port the name of the registered port
+   * @return the port where the job can be reached, or null if the host or port name is not found
+   */
   public Integer port(final String host, final String port) {
     checkArgument(hosts.contains(host), "host %s not found", host);
     checkArgument(job.getPorts().containsKey(port), "port %s not found", port);
@@ -82,6 +89,36 @@ public class TemporaryJob {
     return portMapping.getExternalPort();
   }
 
+  /**
+   * Returns a {@link com.google.common.net.HostAndPort} for a registered port. This is useful
+   * for discovering the value of dynamically allocated ports. This method should only be called
+   * when the job has been deployed to a single host. If the job has been deployed to multiple
+   * hosts an AssertionError will be thrown indicating that the {@link #addresses(String)} method
+   * should must  called instead.
+   * @param port the name of the registered port
+   * @return a HostAndPort describing where the registered port can be reached. Null if
+   * no ports have been registered.
+   * @throws java.lang.AssertionError if the job has been deployed to more than one host
+   */
+  public HostAndPort address(final String port) {
+    final List<HostAndPort> addresses = addresses(port);
+
+    if (addresses.size() > 1) {
+      throw new AssertionError(
+          "Job has been deployed to multiple hosts, use addresses method instead");
+    }
+
+    return addresses.get(0);
+  }
+
+  /**
+   * Returns a {@link com.google.common.net.HostAndPort} object for a registered port, for each
+   * host the job has been deployed to. This is useful for discovering the value of dynamically
+   * allocated ports.
+   * @param port the name of the registered port
+   * @return a HostAndPort describing where the registered port can be reached. Null if
+   * no ports have been registered.
+   */
   public List<HostAndPort> addresses(final String port) {
     checkArgument(job.getPorts().containsKey(port), "port %s not found", port);
     final List<HostAndPort> addresses = Lists.newArrayList();

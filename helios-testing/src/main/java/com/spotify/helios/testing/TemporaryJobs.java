@@ -99,7 +99,7 @@ public class TemporaryJobs extends ExternalResource {
   /**
    * Creates a new instance of TemporaryJobs. Will attempt to connect to a helios master at
    * http://localhost:5801 by default. This can be overridden by setting one of two environment
-   * variable.
+   * variables.
    * <ul>
    * <li>HELIOS_DOMAIN - any domain which contains a helios master</li>
    * <li>HELIOS_ENDPOINTS - a comma separated list of helios master endpoints</li>

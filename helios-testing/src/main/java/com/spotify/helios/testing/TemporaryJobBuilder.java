@@ -145,7 +145,7 @@ public class TemporaryJobBuilder {
    * @param hosts the list of helios hosts to deploy to. A random host will be chosen if the list is empty.
    * @return a TemporaryJob representing the deployed job
    */
-  public TemporaryJob deploy(List<String> hosts) {
+  public TemporaryJob deploy(final List<String> hosts) {
     this.hosts.addAll(hosts);
 
     if (job == null) {

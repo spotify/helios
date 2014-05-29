@@ -13,6 +13,7 @@ import java.net.Socket;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.collect.Iterables.getOnlyElement;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -65,7 +66,7 @@ public class TemporaryJobsTest extends SystemTestBase {
       // Verify that it is possible to deploy additional jobs during test
       temporaryJobs.job()
           .image("ubuntu:12.04")
-          .command("sh", "-c", "while :; do sleep 5; done")
+          .command(DO_NOTHING_COMMAND)
           .host(testHost)
           .deploy();
 
@@ -74,6 +75,10 @@ public class TemporaryJobsTest extends SystemTestBase {
       for (Job job : jobs.values()) {
         assertEquals("wrong job running", "ubuntu:12.04", job.getImage());
       }
+
+      //verify address and addresses return valid HostAndPort objects
+      assertEquals("wrong host", testHost, job1.address("echo").getHostText());
+      assertEquals("wrong host", testHost, getOnlyElement(job1.addresses("echo")).getHostText());
 
       ping(DOCKER_ADDRESS, job1.port(testHost, "echo"));
     }
