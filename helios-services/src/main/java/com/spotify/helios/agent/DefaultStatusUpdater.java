@@ -15,18 +15,18 @@ public class DefaultStatusUpdater implements StatusUpdater {
   private final ContainerUtil containerUtil;
   private final AtomicReference<ThrottleState> throttle;
   private final AtomicReference<Goal> goal;
-  private final TaskStatusManager stateManager;
+  private final TaskStatusManager statusManager;
   private final Supplier<String> containerIdSupplier;
 
   public DefaultStatusUpdater(final AtomicReference<Goal> goal,
                               final AtomicReference<ThrottleState> throttle,
                               final ContainerUtil containerUtil,
-                              final TaskStatusManager stateManager,
+                              final TaskStatusManager statusManager,
                               final Supplier<String> containerIdSupplier) {
     this.goal = goal;
     this.throttle = throttle;
     this.containerUtil = containerUtil;
-    this.stateManager = stateManager;
+    this.statusManager = statusManager;
     this.containerIdSupplier = containerIdSupplier;
   }
 
@@ -51,9 +51,9 @@ public class DefaultStatusUpdater implements StatusUpdater {
    */
   @Override
   public void setStatus(final TaskStatus.State status, final String containerId,
-                         final Map<String, PortMapping> ports) {
-    stateManager.setStatus(goal.get(), status, throttle.get(), containerId, ports,
-        containerUtil.getContainerEnvMap());
+                        final Map<String, PortMapping> ports) {
+    statusManager.setStatus(goal.get(), status, throttle.get(), containerId, ports,
+                            containerUtil.getContainerEnvMap());
   }
 
 }
