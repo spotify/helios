@@ -43,6 +43,10 @@ public class PortMapping extends Descriptor {
     return internalPort;
   }
 
+  public boolean hasExternalPort() {
+    return externalPort != null;
+  }
+
   @Nullable
   public Integer getExternalPort() {
     return externalPort;
@@ -50,6 +54,10 @@ public class PortMapping extends Descriptor {
 
   public String getProtocol() {
     return protocol;
+  }
+
+  public PortMapping withExternalPort(final Integer externalPort) {
+    return PortMapping.of(internalPort, externalPort, protocol);
   }
 
   public static PortMapping of(final int internalPort) {

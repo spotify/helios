@@ -40,7 +40,7 @@ public class DefaultStatusUpdater implements StatusUpdater {
   public void setStatus(final TaskStatus.State status, final String containerId) {
     statusManager.setStatus(goal.get(), status, throttle.get(),
                             containerId, containerUtil.ports(),
-                            containerUtil.getContainerEnvMap());
+                            containerUtil.containerEnv());
   }
 
 }

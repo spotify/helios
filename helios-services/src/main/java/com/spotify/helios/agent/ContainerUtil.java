@@ -1,31 +1,25 @@
 package com.spotify.helios.agent;
 
-import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import com.spotify.helios.agent.docker.messages.ContainerConfig;
-import com.spotify.helios.agent.docker.messages.ContainerInfo;
 import com.spotify.helios.agent.docker.messages.HostConfig;
 import com.spotify.helios.agent.docker.messages.ImageInfo;
 import com.spotify.helios.agent.docker.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.security.SecureRandom;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
 
 /**
  * The miscellaneous bag of utility functions to make/consume things to/from the docker
@@ -34,8 +28,6 @@ import static java.util.Collections.emptyMap;
 public class ContainerUtil {
 
   private static final Pattern CONTAINER_NAME_FORBIDDEN = Pattern.compile("[^a-zA-Z0-9_-]");
-
-  private static final Logger log = LoggerFactory.getLogger(ContainerUtil.class);
   private static final int HOST_NAME_MAX = 64;
 
   private final String host;
@@ -57,19 +49,53 @@ public class ContainerUtil {
   }
 
   /**
+   * Generate a random container name.
+   */
+  public String containerName() {
+    final String shortId = job.getId().toShortString();
+    final String escaped = CONTAINER_NAME_FORBIDDEN.matcher(shortId).replaceAll("_");
+    final String random = Integer.toHexString(new SecureRandom().nextInt());
+    return escaped + "_" + random;
+  }
+
+  /**
    * Create docker container configuration for a job.
    */
   public ContainerConfig containerConfig(final ImageInfo imageInfo) {
     final ContainerConfig containerConfig = new ContainerConfig();
     containerConfig.image(job.getImage());
     containerConfig.cmd(job.getCommand());
-    containerConfig.env(containerEnv(job));
+    containerConfig.env(containerEnvStrings());
     containerConfig.exposedPorts(containerExposedPorts());
-    containerConfig.hostname(safeHostNameify(job.getId().getName() + "_" +
-                                             job.getId().getVersion()));
+    containerConfig.hostname(containerHostname(job.getId().getName() + "_" +
+                                               job.getId().getVersion()));
     containerConfig.domainname(host);
     containerDecorator.decorateContainerConfig(job, imageInfo, containerConfig);
     return containerConfig;
+  }
+
+  /**
+   * Get final port mappings using allocated ports.
+   */
+  public Map<String, PortMapping> ports() {
+    final ImmutableMap.Builder<String, PortMapping> builder = ImmutableMap.builder();
+    for (final Map.Entry<String, PortMapping> e : job.getPorts().entrySet()) {
+      final PortMapping mapping = e.getValue();
+      builder.put(e.getKey(), mapping.hasExternalPort()
+                              ? mapping
+                              : mapping.withExternalPort(checkNotNull(ports.get(e.getKey()))));
+    }
+    return builder.build();
+  }
+
+  /**
+   * Get environment variables for the container.
+   */
+  public Map<String, String> containerEnv() {
+    final Map<String, String> env = Maps.newHashMap(envVars);
+    // Job environment variables take precedence.
+    env.putAll(job.getEnv());
+    return env;
   }
 
   /**
@@ -84,8 +110,11 @@ public class ContainerUtil {
     return ports;
   }
 
-  private String safeHostNameify(String name) {
-    StringBuilder sb = new StringBuilder();
+  /**
+   * Generate a host name for the container
+   */
+  private String containerHostname(String name) {
+    final StringBuilder sb = new StringBuilder();
     for (int i = 0; i < name.length(); i++) {
       char c = name.charAt(i);
       if ((c >= 'A' && c <= 'Z')
@@ -99,29 +128,16 @@ public class ContainerUtil {
     return truncate(sb.toString(), HOST_NAME_MAX);
   }
 
-  private static String truncate(final String s, final int len) {
-    return s.substring(0, Math.min(len, s.length()));
-  }
-
   /**
    * Compute docker container environment variables.
    */
-  private List<String> containerEnv(final Job descriptor) {
-    final Map<String, String> env = getContainerEnvMap();
-
+  private List<String> containerEnvStrings() {
+    final Map<String, String> env = containerEnv();
     final List<String> envList = Lists.newArrayList();
     for (final Map.Entry<String, String> entry : env.entrySet()) {
       envList.add(entry.getKey() + '=' + entry.getValue());
     }
-
     return envList;
-  }
-
-  public Map<String, String> getContainerEnvMap() {
-    final Map<String, String> env = Maps.newHashMap(envVars);
-    // Job environment variables take precedence.
-    env.putAll(job.getEnv());
-    return env;
   }
 
   /**
@@ -161,88 +177,9 @@ public class ContainerUtil {
     return port + "/" + protocol;
   }
 
-  public String containerName() {
-    final String escaped = CONTAINER_NAME_FORBIDDEN.matcher(job.getId().toShortString()).replaceAll(
-        "_");
-    final String random = Integer.toHexString(new SecureRandom().nextInt());
-    return escaped + "_" + random;
+  private static String truncate(final String s, final int len) {
+    // TODO (dano): replace with guava 16+
+    return s.substring(0, Math.min(len, s.length()));
   }
-
-  public Map<String, PortMapping> parsePortBindings(final ContainerInfo info) {
-    if (info.networkSettings() == null || info.networkSettings().ports() == null) {
-      return emptyMap();
-    }
-    return parsePortBindings(info.networkSettings().ports());
-  }
-
-  private Map<String, PortMapping> parsePortBindings(final Map<String, List<PortBinding>> ports) {
-    final ImmutableMap.Builder<String, PortMapping> builder = ImmutableMap.builder();
-    for (final Map.Entry<String, List<PortBinding>> e : ports.entrySet()) {
-      final PortMapping mapping = parsePortBinding(e.getKey(), e.getValue());
-      final String name = getPortNameForPortNumber(mapping.getInternalPort());
-      if (name == null) {
-        log.info("got internal port unknown to the job: {}", mapping.getInternalPort());
-      } else if (mapping.getExternalPort() == null) {
-        log.debug("unbound port: {}/{}", name, mapping.getInternalPort());
-      } else {
-        builder.put(name, mapping);
-      }
-    }
-    return builder.build();
-  }
-
-  public Map<String, PortMapping> ports() {
-    return parsePortBindings(portBindings());
-  }
-
-  /**
-   * Assumes port binding matches output of {@link #portBindings}
-   */
-  private PortMapping parsePortBinding(final String entry, final List<PortBinding> bindings) {
-    final List<String> parts = Splitter.on('/').splitToList(entry);
-    if (parts.size() != 2) {
-      throw new IllegalArgumentException("Invalid port binding: " + entry);
-    }
-
-    final String protocol = parts.get(1);
-
-    final int internalPort;
-    try {
-      internalPort = Integer.parseInt(parts.get(0));
-    } catch (NumberFormatException ex) {
-      throw new IllegalArgumentException("Invalid port binding: " + entry, ex);
-    }
-
-    if (bindings == null) {
-      return PortMapping.of(internalPort);
-    } else {
-      if (bindings.size() != 1) {
-        throw new IllegalArgumentException("Expected single binding, got " + bindings.size());
-      }
-
-      final PortBinding binding = bindings.get(0);
-      final int externalPort;
-      try {
-        externalPort = Integer.parseInt(binding.hostPort());
-      } catch (NumberFormatException e1) {
-        throw new IllegalArgumentException("Invalid host port: " + binding.hostPort());
-      }
-      return PortMapping.of(internalPort, externalPort, protocol);
-    }
-  }
-
-  private String getPortNameForPortNumber(final int internalPort) {
-    for (final Entry<String, PortMapping> portMapping : job.getPorts().entrySet()) {
-      if (portMapping.getValue().getInternalPort() == internalPort) {
-        log.info("found mapping for internal port {} {} -> {}",
-                 internalPort,
-                 portMapping.getValue().getInternalPort(),
-                 portMapping.getKey());
-        return portMapping.getKey();
-      }
-    }
-    return null;
-  }
-
 }
 
