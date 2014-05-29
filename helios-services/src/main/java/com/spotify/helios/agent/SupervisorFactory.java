@@ -24,7 +24,7 @@ public class SupervisorFactory {
   private final DockerClient dockerClient;
   private final Map<String, String> envVars;
   private final ServiceRegistrar registrar;
-  private final CommandWrapper commandWrapper;
+  private final ContainerDecorator containerDecorator;
   private final String host;
   private final SupervisorMetrics metrics;
   private final RiemannFacade riemannFacade;
@@ -32,7 +32,7 @@ public class SupervisorFactory {
   public SupervisorFactory(final AgentModel model, final DockerClient dockerClient,
                            final Map<String, String> envVars,
                            final @Nullable ServiceRegistrar registrar,
-                           final CommandWrapper commandWrapper,
+                           final ContainerDecorator containerDecorator,
                            final String host,
                            final SupervisorMetrics supervisorMetrics,
                            final RiemannFacade riemannFacade) {
@@ -40,7 +40,7 @@ public class SupervisorFactory {
     this.model = checkNotNull(model);
     this.envVars = checkNotNull(envVars);
     this.registrar = registrar;
-    this.commandWrapper = commandWrapper;
+    this.containerDecorator = containerDecorator;
     this.host = host;
     this.metrics = supervisorMetrics;
     this.riemannFacade = riemannFacade;
@@ -74,7 +74,7 @@ public class SupervisorFactory {
         .setRestartPolicy(policy)
         .setTaskStatusManager(manager)
         .setServiceRegistrar(registrar)
-        .setCommandWrapper(commandWrapper)
+        .setContainerDecorator(containerDecorator)
         .setMetrics(metrics)
         .setPorts(ports)
         .setListener(listener)

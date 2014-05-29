@@ -17,22 +17,22 @@ import static java.util.Arrays.asList;
  * Bind mounts /usr/lib/helios inside the container as /helios, and uses the syslog-redirector
  * executable there to redirect container stdout/err to syslog.
  */
-public class SyslogRedirectingCommandWrapper implements CommandWrapper {
+public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
 
   private final String syslogHostPort;
 
-  public SyslogRedirectingCommandWrapper(String syslogHostPort) {
+  public SyslogRedirectingContainerDecorator(String syslogHostPort) {
     this.syslogHostPort = syslogHostPort;
   }
 
   @Override
-  public void modifyStartConfig(HostConfig hostConfig) {
+  public void decorateHostConfig(HostConfig hostConfig) {
     hostConfig.binds(asList("/usr/lib/helios:/helios:ro"));
   }
 
   @Override
-  public void modifyCreateConfig(String image, Job job, ImageInfo imageInfo,
-                                 ContainerConfig containerConfig) {
+  public void decorateContainerConfig(Job job, ImageInfo imageInfo,
+                                      ContainerConfig containerConfig) {
     ContainerConfig imageConfig = imageInfo.containerConfig();
 
     final List<String> entrypoint = Lists.newArrayList("/helios/syslog-redirector",

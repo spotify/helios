@@ -218,7 +218,7 @@ public class Supervisor {
     private RestartPolicy restartPolicy;
     private TaskStatusManager stateManager;
     private ServiceRegistrar registrar;
-    private CommandWrapper commandWrapper;
+    private ContainerDecorator containerDecorator;
     private String host;
     private SupervisorMetrics metrics;
     private Listener listener;
@@ -270,8 +270,8 @@ public class Supervisor {
       return this;
     }
 
-    public Builder setCommandWrapper(final CommandWrapper commandWrapper) {
-      this.commandWrapper = commandWrapper;
+    public Builder setContainerDecorator(final ContainerDecorator containerDecorator) {
+      this.containerDecorator = containerDecorator;
       return this;
     }
 
@@ -298,9 +298,9 @@ public class Supervisor {
     public Supervisor build() {
       // TODO(drewc) these should be moved either to SupervisorFactory or elsewhere,
       // but *not* into the Supervisor constructor.
-      this.containerUtil = new ContainerUtil(host, job, ports, envVars);
-      this.runnerFactory = new TaskRunnerFactory(registrar, job, commandWrapper,
-          containerUtil, metrics, dockerClient, flapController);
+      this.containerUtil = new ContainerUtil(host, job, ports, envVars, containerDecorator);
+      this.runnerFactory = new TaskRunnerFactory(registrar, job, containerUtil,
+                                                 metrics, dockerClient, flapController);
       return new Supervisor(this);
     }
   }

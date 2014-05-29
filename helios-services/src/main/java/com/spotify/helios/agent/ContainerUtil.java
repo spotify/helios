@@ -9,6 +9,7 @@ import com.google.common.collect.Sets;
 import com.spotify.helios.agent.docker.messages.ContainerConfig;
 import com.spotify.helios.agent.docker.messages.ContainerInfo;
 import com.spotify.helios.agent.docker.messages.HostConfig;
+import com.spotify.helios.agent.docker.messages.ImageInfo;
 import com.spotify.helios.agent.docker.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -41,29 +42,33 @@ public class ContainerUtil {
   private final Map<String, Integer> ports;
   private final Job job;
   private final Map<String, String> envVars;
+  private final ContainerDecorator containerDecorator;
 
   public ContainerUtil(final String host,
                        final Job job,
                        final Map<String, Integer> ports,
-                       final Map<String, String> envVars) {
+                       final Map<String, String> envVars,
+                       final ContainerDecorator containerDecorator) {
     this.host = host;
     this.ports = ports;
     this.job = job;
     this.envVars = envVars;
+    this.containerDecorator = containerDecorator;
   }
 
   /**
    * Create docker container configuration for a job.
    */
-  public ContainerConfig containerConfig(final Job descriptor) {
+  public ContainerConfig containerConfig(final ImageInfo imageInfo) {
     final ContainerConfig containerConfig = new ContainerConfig();
-    containerConfig.image(descriptor.getImage());
-    containerConfig.cmd(descriptor.getCommand());
-    containerConfig.env(containerEnv(descriptor));
+    containerConfig.image(job.getImage());
+    containerConfig.cmd(job.getCommand());
+    containerConfig.env(containerEnv(job));
     containerConfig.exposedPorts(containerExposedPorts());
-    containerConfig.hostname(safeHostNameify(descriptor.getId().getName() + "_" +
-                                             descriptor.getId().getVersion()));
+    containerConfig.hostname(safeHostNameify(job.getId().getName() + "_" +
+                                             job.getId().getVersion()));
     containerConfig.domainname(host);
+    containerDecorator.decorateContainerConfig(job, imageInfo, containerConfig);
     return containerConfig;
   }
 
@@ -145,6 +150,7 @@ public class ContainerUtil {
   public HostConfig hostConfig() {
     final HostConfig hostConfig = new HostConfig();
     hostConfig.portBindings(portBindings());
+    containerDecorator.decorateHostConfig(hostConfig);
     return hostConfig;
   }
 

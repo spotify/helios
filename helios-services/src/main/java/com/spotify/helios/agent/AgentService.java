@@ -203,8 +203,8 @@ public class AgentService extends AbstractIdleService {
         model, monitoredDockerClient,
         config.getEnvVars(), serviceRegistrar,
         config.getRedirectToSyslog() != null
-        ? new SyslogRedirectingCommandWrapper(config.getRedirectToSyslog())
-        : new NoOpCommandWrapper(),
+        ? new SyslogRedirectingContainerDecorator(config.getRedirectToSyslog())
+        : new NoOpContainerDecorator(),
         config.getName(),
         metrics.getSupervisorMetrics(),
         riemannFacade

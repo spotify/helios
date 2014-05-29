@@ -140,7 +140,7 @@ public class SupervisorTest {
                                .setTaskStatusManager(manager)
                                .build())
         .setTaskStatusManager(manager)
-        .setCommandWrapper(new NoOpCommandWrapper())
+        .setContainerDecorator(new NoOpContainerDecorator())
         .setMetrics(new NoopSupervisorMetrics())
         .build();
 

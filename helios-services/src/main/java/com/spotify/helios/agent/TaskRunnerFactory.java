@@ -14,7 +14,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class TaskRunnerFactory {
   private final Job job;
-  private final CommandWrapper commandWrapper;
   private final ContainerUtil containerUtil;
   private final SupervisorMetrics metrics;
   private final DockerClient docker;
@@ -23,14 +22,12 @@ public class TaskRunnerFactory {
 
   public TaskRunnerFactory(final ServiceRegistrar registrar,
                            final Job job,
-                           final CommandWrapper commandWrapper,
                            final ContainerUtil containerUtil,
                            final SupervisorMetrics metrics,
                            final DockerClient docker,
                            final FlapController flapController) {
     this.registrar = registrar;
     this.job = job;
-    this.commandWrapper = checkNotNull(commandWrapper);
     this.containerUtil = containerUtil;
     this.metrics = metrics;
     this.docker = docker;
@@ -41,8 +38,7 @@ public class TaskRunnerFactory {
                            final Supplier<String> containerIdSupplier,
                            final AtomicReference<ThrottleState> throttle,
                            final StatusUpdater statusUpdater) {
-    return new TaskRunner(delay, registrar, job, commandWrapper,
-        containerUtil, metrics, docker, flapController, throttle, statusUpdater,
-        containerIdSupplier);
+    return new TaskRunner(delay, registrar, job, containerUtil, metrics, docker, flapController,
+                          throttle, statusUpdater, containerIdSupplier);
   }
 }

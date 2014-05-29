@@ -69,7 +69,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private final long delayMillis;
   private final SettableFuture<Integer> resultFuture = SettableFuture.create();
   private final ServiceRegistrar registrar;
-  private final CommandWrapper commandWrapper;
   private final Job job;
   private final ContainerUtil containerUtil;
   private final SupervisorMetrics metrics;
@@ -84,7 +83,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
   public TaskRunner(final long delayMillis,
                     final ServiceRegistrar registrar,
                     final Job job,
-                    final CommandWrapper commandWrapper,
                     final ContainerUtil containerUtil,
                     final SupervisorMetrics metrics,
                     final DockerClient docker,
@@ -96,7 +94,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.delayMillis = delayMillis;
     this.registrar = registrar;
     this.job = job;
-    this.commandWrapper = commandWrapper;
     this.containerUtil = containerUtil;
     this.metrics = metrics;
     this.docker = docker;
@@ -248,32 +245,30 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private String startContainer(final String image)
       throws InterruptedException, DockerException {
     statusUpdater.setStatus(CREATING, null);
-    final ContainerConfig containerConfig = containerUtil.containerConfig(job);
 
     final ImageInfo imageInfo = docker.inspectImage(image);
     if (imageInfo == null) {
       throw new HeliosRuntimeException("docker inspect image returned null on image " + image);
     }
-    commandWrapper.modifyCreateConfig(image, job, imageInfo, containerConfig);
 
+    // Create container
+    final ContainerConfig containerConfig = containerUtil.containerConfig(imageInfo);
     final String name = containerUtil.containerName();
     final ContainerCreation container = docker.createContainer(containerConfig, name);
-
     log.info("created container: {}: {}, {}", job, container, containerConfig);
 
+    // Start container
     final HostConfig hostConfig = containerUtil.hostConfig();
-    commandWrapper.modifyStartConfig(hostConfig);
-
     statusUpdater.setStatus(STARTING, container.id());
     log.info("starting container: {}: {} {}", job, container.id(), hostConfig);
-
     startFuture = startContainer(container.id(), hostConfig);
     try {
       startFuture.get(CONTAINER_START_TIMEOUT_SECONDS, SECONDS);
-    } catch (ExecutionException | TimeoutException e) {
+    } catch (TimeoutException e) {
       throw Throwables.propagate(e);
+    } catch (ExecutionException e) {
+      throw Throwables.propagate(e.getCause());
     }
-
     log.info("started container: {}: {}", job, container.id());
     metrics.containerStarted();
     return container.id();

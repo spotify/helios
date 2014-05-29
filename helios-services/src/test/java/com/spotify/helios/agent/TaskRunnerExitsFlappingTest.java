@@ -63,6 +63,7 @@ public class TaskRunnerExitsFlappingTest {
   @Mock private DockerClient mockDocker;
   @Mock private StatusUpdater statusUpdater;
   @Mock private Clock clock;
+  @Mock private ContainerDecorator containerDecorator;
 
   @Test
   public void test() throws Exception {
@@ -83,9 +84,9 @@ public class TaskRunnerExitsFlappingTest {
     final TaskRunner tr = new TaskRunner(
         0,
         new NopServiceRegistrar(),
-        JOB, new NoOpCommandWrapper(),
+        JOB,
         new ContainerUtil(HOST, JOB, Collections.<String, Integer>emptyMap(),
-                          Collections.<String, String>emptyMap()),
+                          Collections.<String, String>emptyMap(), containerDecorator),
         new NoopSupervisorMetrics(),
         mockDocker,
         flapController,

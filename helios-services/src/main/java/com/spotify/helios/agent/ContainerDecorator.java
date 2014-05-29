@@ -5,9 +5,10 @@ import com.spotify.helios.agent.docker.messages.HostConfig;
 import com.spotify.helios.agent.docker.messages.ImageInfo;
 import com.spotify.helios.common.descriptors.Job;
 
-public interface CommandWrapper {
-  void modifyStartConfig(HostConfig hostConfig);
+public interface ContainerDecorator {
 
-  void modifyCreateConfig(String image, Job job, ImageInfo imageInfo,
-                          ContainerConfig createConfig);
+  void decorateHostConfig(HostConfig hostConfig);
+
+  void decorateContainerConfig(Job job, ImageInfo imageInfo,
+                               ContainerConfig createConfig);
 }

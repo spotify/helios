@@ -5,15 +5,16 @@ import com.spotify.helios.agent.docker.messages.HostConfig;
 import com.spotify.helios.agent.docker.messages.ImageInfo;
 import com.spotify.helios.common.descriptors.Job;
 
-public class NoOpCommandWrapper implements CommandWrapper {
+public class NoOpContainerDecorator implements ContainerDecorator {
+
   @Override
-  public void modifyStartConfig(HostConfig hostConfig) {
+  public void decorateHostConfig(HostConfig hostConfig) {
     //noop
   }
 
   @Override
-  public void modifyCreateConfig(String image, Job job, ImageInfo imageInfo,
-      ContainerConfig containerConfig) {
+  public void decorateContainerConfig(Job job, ImageInfo imageInfo,
+                                      ContainerConfig containerConfig) {
     //noop
   }
 }
