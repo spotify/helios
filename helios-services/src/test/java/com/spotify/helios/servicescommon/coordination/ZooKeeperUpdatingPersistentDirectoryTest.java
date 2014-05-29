@@ -1,5 +1,6 @@
 package com.spotify.helios.servicescommon.coordination;
 
+import com.spotify.helios.Parallelized;
 import com.spotify.helios.ZooKeeperStandaloneServerManager;
 
 import org.apache.commons.io.FileUtils;
@@ -8,6 +9,7 @@ import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -21,6 +23,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.zookeeper.KeeperException.NodeExistsException;
 import static org.junit.Assert.assertArrayEquals;
 
+@RunWith(Parallelized.class)
 public class ZooKeeperUpdatingPersistentDirectoryTest {
 
   private static final String PARENT_PATH = "/foobar";
