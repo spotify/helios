@@ -75,10 +75,8 @@ public class Supervisor {
   private final Supplier<String> containerIdSupplier = new Supplier<String>() {
     @Override
     public String get() {
-      final String containerId;
       final TaskStatus taskStatus = model.getTaskStatus(jobId);
-      containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
-      return containerId;
+      return (taskStatus == null) ? null : taskStatus.getContainerId();
     }
   };
 
