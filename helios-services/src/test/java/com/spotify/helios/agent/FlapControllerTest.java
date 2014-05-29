@@ -62,7 +62,8 @@ public class FlapControllerTest {
   }
 
   @Mock private Clock clock;
-  private JobId JOB_ID = new JobId("NAME", "VERSION", "deadbeef");
+
+  private static final JobId JOB_ID = new JobId("NAME", "VERSION", "deadbeef");
 
   @Test
   public void testRecoveryFromFlappingWhileRunning() throws Exception {

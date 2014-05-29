@@ -1,9 +1,7 @@
 package com.spotify.helios.agent;
 
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.common.HeliosException;
@@ -31,8 +29,8 @@ public class FlapController {
   private final Clock clock;
   private final TaskStatusManager stateUpdater;
 
-  private volatile ImmutableList<Long> lastExits = ImmutableList.<Long>of();
-  private volatile long mostRecentStartTime = 0;
+  private volatile ImmutableList<Long> lastExits = ImmutableList.of();
+  private volatile long mostRecentStartTime;
   private volatile long timeLeftToUnflap;
 
   private FlapController(final JobId jobId, final int flappingRestartCount,
@@ -104,17 +102,9 @@ public class FlapController {
     // If we're flapping, see if we this thing lives long enough no not flap anymore
     try {
       log.debug("Time left to unflap is {}", timeLeftToUnflap);
-      return Futures.get(future, timeLeftToUnflap,
-          TimeUnit.MILLISECONDS, HeliosException.class);
-    } catch (HeliosException e) {
-      Throwable cause = e.getCause();
-      if (cause instanceof TimeoutException) {
-        setFlapping(false);
-      } else {
-        Throwables.propagateIfInstanceOf(cause, InterruptedException.class);
-        Throwables.propagateIfInstanceOf(cause, ExecutionException.class);
-        throw e;  // according to docs, we really shouldn't get here
-      }
+      return future.get(timeLeftToUnflap, TimeUnit.MILLISECONDS);
+    } catch (TimeoutException e) {
+      setFlapping(false);
     }
     // We survived long enough to no longer be considered flapping, now just wait until it dies.
     return future.get();
