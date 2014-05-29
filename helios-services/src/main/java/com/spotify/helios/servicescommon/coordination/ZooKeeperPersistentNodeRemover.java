@@ -126,7 +126,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
   private class Update implements Reactor.Callback {
 
     @Override
-    public void run() {
+    public void run(final boolean timeout) {
       // Drain the front to the backlog
       final Set<String> backPaths = Sets.newHashSet(back.get());
       synchronized (lock) {

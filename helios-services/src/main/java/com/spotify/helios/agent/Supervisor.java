@@ -180,7 +180,7 @@ public class Supervisor {
   private class Update implements Reactor.Callback {
 
     @Override
-    public void run() throws InterruptedException {
+    public void run(final boolean timeout) throws InterruptedException {
       final Command command = currentCommand;
       final boolean done = performedCommand == command;
       log.debug("Supervisor {}: update: performedCommand={}, command={}, done={}", jobId, performedCommand, command, done);

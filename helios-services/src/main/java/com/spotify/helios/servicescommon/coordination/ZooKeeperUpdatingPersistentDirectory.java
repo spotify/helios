@@ -141,7 +141,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
   private class Update implements Reactor.Callback {
 
     @Override
-    public void run() {
+    public void run(final boolean timeout) {
       if (!parentExists()) {
         return;
       }

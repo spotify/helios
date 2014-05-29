@@ -9,11 +9,11 @@ import com.google.common.util.concurrent.Service;
 public interface Reactor extends Service {
 
   interface Callback {
-    void run() throws InterruptedException;
+    void run(boolean timeout) throws InterruptedException;
   }
 
   /**
-   * Send a signal to trigger the reactor. Must never block.
+   * Send a signal to trigger the reactor. Does not block.
    */
   void signal();
 

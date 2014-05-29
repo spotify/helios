@@ -149,7 +149,7 @@ public class Agent extends AbstractIdleService {
   private class Update implements Callback {
 
     @Override
-    public void run() throws InterruptedException {
+    public void run(final boolean timeout) throws InterruptedException {
 
       // Note: when changing this code:
       // * Ensure that supervisors for the same container never run concurrently.

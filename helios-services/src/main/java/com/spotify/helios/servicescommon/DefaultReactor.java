@@ -69,14 +69,13 @@ public class DefaultReactor extends InterruptingExecutionThreadService implement
   @Override
   protected void run() throws Exception {
     while (isRunning()) {
+      final boolean timeout;
       try {
         if (timeoutMillis == 0) {
           semaphore.acquire();
+          timeout = false;
         } else {
-          final boolean acquired = semaphore.tryAcquire(timeoutMillis, MILLISECONDS);
-          if (!acquired) {
-            log.debug("reactor timeout");
-          }
+          timeout = !semaphore.tryAcquire(timeoutMillis, MILLISECONDS);
         }
       } catch (InterruptedException e) {
         continue;
@@ -85,7 +84,7 @@ public class DefaultReactor extends InterruptingExecutionThreadService implement
       semaphore.drainPermits();
 
       try {
-        callback.run();
+        callback.run(timeout);
       } catch (InterruptedException e) {
         log.debug("reactor interrupted: {}", name);
       } catch (Exception e) {

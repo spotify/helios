@@ -74,7 +74,8 @@ public class ZooKeeperRegistrar extends AbstractIdleService {
 
   private class Update implements Reactor.Callback {
 
-    public void run() throws InterruptedException {
+    @Override
+    public void run(final boolean timeout) throws InterruptedException {
       final RetryScheduler retryScheduler = retryIntervalPolicy.newScheduler();
       while (isAlive()) {
         try {

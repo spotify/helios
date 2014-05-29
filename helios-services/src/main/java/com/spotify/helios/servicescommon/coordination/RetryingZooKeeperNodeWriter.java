@@ -67,7 +67,7 @@ public class RetryingZooKeeperNodeWriter extends AbstractIdleService {
   private class Update implements Reactor.Callback {
 
     @Override
-    public void run() {
+    public void run(final boolean timeout) {
       if (front.isEmpty() && back.isEmpty()) {
         return;
       }

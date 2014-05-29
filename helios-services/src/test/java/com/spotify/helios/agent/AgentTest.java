@@ -158,17 +158,17 @@ public class AgentTest {
 
   private void start(Job descriptor) throws InterruptedException {
     configure(descriptor, START);
-    callback.run();
+    callback.run(false);
   }
 
   private void badStop(Job descriptor) throws InterruptedException {
     jobs.remove(descriptor.getId());
-    callback.run();
+    callback.run(false);
   }
 
   private void stop(Job descriptor) throws InterruptedException {
     configure(descriptor, UNDEPLOY);
-    callback.run();
+    callback.run(false);
   }
 
   @Test
@@ -207,7 +207,7 @@ public class AgentTest {
                                      eq(EMPTY_PORT_ALLOCATION),
                                      any(Supervisor.Listener.class));
 
-    callback.run();
+    callback.run(false);
 
     verify(fooSupervisor).setGoal(START);
     verify(barSupervisor).setGoal(STOP);
@@ -220,7 +220,7 @@ public class AgentTest {
     when(barSupervisor.isStopping()).thenReturn(true);
     when(barSupervisor.isDone()).thenReturn(true);
 
-    callback.run();
+    callback.run(false);
 
     verify(fooSupervisor, atLeastOnce()).setGoal(START);
     verify(barSupervisor, atLeastOnce()).setGoal(STOP);
@@ -246,7 +246,7 @@ public class AgentTest {
                                      eq(EMPTY_PORT_ALLOCATION), any(Supervisor.Listener.class));
 
     // ... and then started
-    callback.run();
+    callback.run(false);
     verify(fooSupervisor).setGoal(START);
 
     when(fooSupervisor.isStarting()).thenReturn(true);
@@ -254,7 +254,7 @@ public class AgentTest {
     when(fooSupervisor.isDone()).thenReturn(true);
 
     // And not stopped
-    callback.run();
+    callback.run(false);
     verify(fooSupervisor, never()).setGoal(STOP);
   }
 
@@ -280,7 +280,7 @@ public class AgentTest {
                                      eq(EMPTY_PORT_ALLOCATION), any(Supervisor.Listener.class));
 
     // ... and then stopped
-    callback.run();
+    callback.run(false);
     verify(fooSupervisor).setGoal(UNDEPLOY);
 
     when(fooSupervisor.isStopping()).thenReturn(true);
@@ -289,7 +289,7 @@ public class AgentTest {
     when(fooSupervisor.getStatus()).thenReturn(STOPPED);
 
     // And not started again
-    callback.run();
+    callback.run(false);
     verify(fooSupervisor, never()).setGoal(START);
   }
 
@@ -314,7 +314,7 @@ public class AgentTest {
     verify(barSupervisor).setGoal(START);
     when(barSupervisor.isStarting()).thenReturn(true);
 
-    callback.run();
+    callback.run(false);
 
     verify(fooSupervisor, atLeastOnce()).setGoal(START);
     verify(barSupervisor, atLeastOnce()).setGoal(START);
@@ -344,7 +344,7 @@ public class AgentTest {
     when(fooSupervisor.isDone()).thenReturn(true);
     when(fooSupervisor.isStopping()).thenReturn(true);
     when(fooSupervisor.isStarting()).thenReturn(false);
-    callback.run();
+    callback.run(false);
 
     // Verify that a new supervisor is created after the previous one is discarded
     start(FOO_DESCRIPTOR);
