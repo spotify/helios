@@ -42,7 +42,6 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.util.concurrent.MoreExecutors.getExitingExecutorService;
@@ -59,8 +58,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  */
 class TaskRunner extends InterruptingExecutionThreadService {
   private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
-
-  private static final long CONTAINER_START_TIMEOUT_SECONDS = 60;
 
   private final ListeningExecutorService executorService =
       MoreExecutors.listeningDecorator(getExitingExecutorService(
@@ -222,7 +219,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
           log.error("no '{}' port mapped for registration: '{}'", portName, registration);
           continue;
         }
-        Integer externalPort = mapping.getExternalPort();
+        final Integer externalPort = mapping.getExternalPort();
         if (externalPort == null) {
           log.error("no external '{}' port for registration: '{}'", portName, registration);
           continue;
@@ -263,9 +260,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     log.info("starting container: {}: {} {}", job, container.id(), hostConfig);
     startFuture = startContainer(container.id(), hostConfig);
     try {
-      startFuture.get(CONTAINER_START_TIMEOUT_SECONDS, SECONDS);
-    } catch (TimeoutException e) {
-      throw Throwables.propagate(e);
+      startFuture.get();
     } catch (ExecutionException e) {
       throw Throwables.propagate(e.getCause());
     }
