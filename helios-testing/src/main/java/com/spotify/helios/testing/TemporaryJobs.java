@@ -109,11 +109,11 @@ public class TemporaryJobs extends ExternalResource {
    */
 
   public static TemporaryJobs create() {
-    final String domain = System.getProperty("HELIOS_DOMAIN");
+    final String domain = System.getenv("HELIOS_DOMAIN");
     if (!isNullOrEmpty(domain)) {
       return create(domain);
     }
-    final String endpoints = System.getProperty("HELIOS_ENDPOINTS");
+    final String endpoints = System.getenv("HELIOS_ENDPOINTS");
     final HeliosClient.Builder clientBuilder = HeliosClient.newBuilder()
         .setUser(DEFAULT_USER);
     if (!isNullOrEmpty(endpoints)) {

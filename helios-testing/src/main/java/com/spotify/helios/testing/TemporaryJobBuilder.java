@@ -18,6 +18,7 @@ import com.spotify.helios.common.descriptors.ServicePorts;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
 import java.util.List;
@@ -174,14 +175,36 @@ public class TemporaryJobBuilder {
     if (envPath != null) {
       return imageFromInfoFile(envPath);
     } else {
+      final String name = fromNullable(getenv("IMAGE_INFO_NAME")).or("image_info.json");
+      URL info;
       try {
-        final String name = fromNullable(getenv("IMAGE_INFO_NAME")).or("image_info.json");
-        final URL info = Resources.getResource(name);
+        info = Resources.getResource(name);
+      } catch (IllegalArgumentException e) {
+        info = getFromFileSystem(name);
+        if (info == null) {
+          throw e;
+        }
+      }
+
+      try {
         final String json = Resources.asCharSource(info, UTF_8).read();
         return imageFromInfoJson(json, info.toString());
       } catch (IOException e) {
         throw new AssertionError("Failed to load image info", e);
       }
+    }
+  }
+
+  private URL getFromFileSystem(String name) {
+    final File file = new File("target/" + name);
+    if (!file.exists()) {
+      return null;
+    }
+
+    try {
+      return file.toURI().toURL();
+    } catch (MalformedURLException e) {
+      throw new RuntimeException("TEST");
     }
   }
 
