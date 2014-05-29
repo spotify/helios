@@ -57,7 +57,7 @@
               <enableAssertions>false</enableAssertions>
               <forkCount>1C</forkCount>
               <reuseForks>false</reuseForks>
-              <argLine>-Xmx128m</argLine>
+              <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
               <systemPropertyVariables>
                 <logToFile>true</logToFile>
                 <heliosLoggingLevel>OFF</heliosLoggingLevel>
