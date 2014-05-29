@@ -80,6 +80,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private final Supplier<String> containerIdSupplier;
 
   private ListenableFuture<Void> startFuture;
+  private Map<String, PortMapping> ports;
 
   public TaskRunner(final long delayMillis,
                     final ServiceRegistrar registrar,
@@ -104,6 +105,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.throttle = throttle;
     this.statusUpdater = statusUpdater;
     this.containerIdSupplier = containerIdSupplier;
+    this.ports = containerUtil.ports();
   }
 
   @SuppressWarnings("TryWithIdenticalCatches")
@@ -111,26 +113,15 @@ class TaskRunner extends InterruptingExecutionThreadService {
   public void run() {
     try {
       metrics.supervisorRun();
+
       // Delay
       Thread.sleep(delayMillis);
 
-      // Get persisted status
-      final String registeredContainerId = containerIdSupplier.get();
-
-      // Find out if the container is already running
-      final ContainerInfo containerInfo =
-          getRunningContainerInfo(registeredContainerId);
-
       // Create and start container if necessary
-      final String containerId = maybeCreateAndStartContainer(registeredContainerId, containerInfo);
+      final String containerId = createAndStartContainer();
+      statusUpdater.setStatus(RUNNING);
 
-      // Expose ports
-      final ContainerInfo runningContainerInfo = docker.inspectContainer(containerId);
-
-      // TODO (dano): Now that we perform the port allocation in Helios instead of relying on
-      // docker, report the ports we allocated instead of parsing the docker output.
-      final Map<String, PortMapping> ports = containerUtil.parsePortBindings(runningContainerInfo);
-      statusUpdater.setStatus(RUNNING, containerId, ports);
+      // Report
       metrics.containersRunning();
 
       // Wait for container to die
@@ -145,7 +136,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
       log.info("container exited: {}: {}: {}", job, containerId, exitCode);
       flapController.jobDied();
       throttle.set(flapController.isFlapping() ? ThrottleState.FLAPPING : ThrottleState.NO);
-      statusUpdater.setStatus(EXITED, containerId, ports);
+      statusUpdater.setStatus(EXITED);
       metrics.containersExited();
       resultFuture.set(exitCode);
     } catch (DockerTimeoutException e) {
@@ -185,18 +176,22 @@ class TaskRunner extends InterruptingExecutionThreadService {
     });
   }
 
-  private String maybeCreateAndStartContainer(final String registeredContainerId,
-                                              final ContainerInfo containerInfo)
+  private String createAndStartContainer()
       throws DockerException, InterruptedException {
-    if (containerInfo != null && containerInfo.state().running()) {
+
+    // Get persisted status
+    final String registeredContainerId = containerIdSupplier.get();
+
+    // Check if the container is already running
+    final ContainerInfo info = getRunningContainerInfo(registeredContainerId);
+    if (info != null && info.state().running()) {
       return registeredContainerId;
     }
 
     // Ensure we have the image
     final String image = job.getImage();
     try {
-      statusUpdater.setStatus(PULLING_IMAGE);
-      maybePullImage(image);
+      pullImage(image);
     } catch (ImagePullFailedException e) {
       throttle.set(ThrottleState.IMAGE_PULL_FAILED);
       statusUpdater.setStatus(FAILED);
@@ -206,6 +201,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
       statusUpdater.setStatus(FAILED);
       throw e;
     }
+
     return startContainer(image);
   }
 
@@ -262,29 +258,27 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
     commandWrapper.modifyCreateConfig(image, job, imageInfo, containerConfig);
 
-    final String name = ContainerUtil.containerName(job.getId());
-    final ContainerCreation container;
-    container = docker.createContainer(containerConfig, name);
+    final String name = containerUtil.containerName();
+    final ContainerCreation container = docker.createContainer(containerConfig, name);
 
-    final String containerId = container.id();
     log.info("created container: {}: {}, {}", job, container, containerConfig);
 
     final HostConfig hostConfig = containerUtil.hostConfig();
     commandWrapper.modifyStartConfig(hostConfig);
 
-    statusUpdater.setStatus(STARTING, containerId);
-    log.info("starting container: {}: {} {}", job, containerId, hostConfig);
+    statusUpdater.setStatus(STARTING, container.id());
+    log.info("starting container: {}: {} {}", job, container.id(), hostConfig);
 
-    startFuture = startContainer(containerId, hostConfig);
+    startFuture = startContainer(container.id(), hostConfig);
     try {
       startFuture.get(CONTAINER_START_TIMEOUT_SECONDS, SECONDS);
     } catch (ExecutionException | TimeoutException e) {
       throw Throwables.propagate(e);
     }
 
-    log.info("started container: {}: {}", job, containerId);
+    log.info("started container: {}: {}", job, container.id());
     metrics.containerStarted();
-    return containerId;
+    return container.id();
   }
 
   private ContainerInfo getRunningContainerInfo(final String registeredContainerId)
@@ -300,7 +294,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
   }
 
-  private void maybePullImage(final String image) throws DockerException, InterruptedException {
+  private void pullImage(final String image) throws DockerException, InterruptedException {
     try {
       docker.inspectImage(image);
       metrics.imageCacheHit();
@@ -310,6 +304,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
     final MetricsContext metric = metrics.containerPull();
     try {
+      statusUpdater.setStatus(PULLING_IMAGE);
       docker.pull(image);
       metric.success();
     } catch (DockerException e) {

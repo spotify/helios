@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
-import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
@@ -388,8 +387,6 @@ public class Supervisor {
           .setMaxIntervalMillis(SECONDS.toMillis(30))
           .build().newScheduler();
 
-      String containerId = containerIdSupplier.get();
-
       // Stop the runner
       if (runner != null) {
         // Gently tell the runner to stop
@@ -397,20 +394,18 @@ public class Supervisor {
         // Wait for runner to stop
         while (!awaitTerminated(runner, retryScheduler.nextMillis())) {
           // Kill the container to make the runner stop waiting for on it
-          containerId = fromNullable(containerIdSupplier.get()).or(fromNullable(containerId)).orNull();
-          killContainer(containerId);
+          killContainer();
         }
         runner = null;
       }
 
       // Kill the container after stopping the runner
-      containerId = fromNullable(containerIdSupplier.get()).or(fromNullable(containerId)).orNull();
-      while (!containerNotRunning(containerId)) {
-        killContainer(containerId);
+      while (!containerNotRunning()) {
+        killContainer();
         Thread.sleep(retryScheduler.nextMillis());
       }
 
-      statusUpdater.setStatus(STOPPED, containerId);
+      statusUpdater.setStatus(STOPPED);
     }
 
     private boolean awaitTerminated(final TaskRunner runner, final long timeoutMillis) {
@@ -422,7 +417,8 @@ public class Supervisor {
       }
     }
 
-    private void killContainer(final String containerId) throws InterruptedException {
+    private void killContainer() throws InterruptedException {
+      final String containerId = containerIdSupplier.get();
       if (containerId == null) {
         return;
       }
@@ -433,8 +429,9 @@ public class Supervisor {
       }
     }
 
-    private boolean containerNotRunning(final String containerId)
+    private boolean containerNotRunning()
         throws InterruptedException {
+      final String containerId = containerIdSupplier.get();
       if (containerId == null) {
         return true;
       }

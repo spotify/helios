@@ -11,7 +11,6 @@ import com.spotify.helios.agent.docker.messages.ContainerInfo;
 import com.spotify.helios.agent.docker.messages.HostConfig;
 import com.spotify.helios.agent.docker.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.slf4j.Logger;
@@ -156,8 +155,9 @@ public class ContainerUtil {
     return port + "/" + protocol;
   }
 
-  public static String containerName(final JobId id) {
-    final String escaped = CONTAINER_NAME_FORBIDDEN.matcher(id.toShortString()).replaceAll("_");
+  public String containerName() {
+    final String escaped = CONTAINER_NAME_FORBIDDEN.matcher(job.getId().toShortString()).replaceAll(
+        "_");
     final String random = Integer.toHexString(new SecureRandom().nextInt());
     return escaped + "_" + random;
   }
@@ -185,6 +185,9 @@ public class ContainerUtil {
     return builder.build();
   }
 
+  public Map<String, PortMapping> ports() {
+    return parsePortBindings(portBindings());
+  }
 
   /**
    * Assumes port binding matches output of {@link #portBindings}

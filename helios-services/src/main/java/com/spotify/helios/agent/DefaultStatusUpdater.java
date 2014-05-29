@@ -3,11 +3,9 @@ package com.spotify.helios.agent;
 import com.google.common.base.Supplier;
 
 import com.spotify.helios.common.descriptors.Goal;
-import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 public class DefaultStatusUpdater implements StatusUpdater {
@@ -31,28 +29,17 @@ public class DefaultStatusUpdater implements StatusUpdater {
   }
 
   /**
-   * Persist job status.
-   */
-  @Override
-  public void setStatus(final TaskStatus.State status) {
-    setStatus(status, containerIdSupplier.get(), null);
-  }
-
-  /**
-   * Persist job status.
-   */
-  @Override
-  public void setStatus(final TaskStatus.State status, final String containerId) {
-    setStatus(status, containerId, null);
-  }
-
-  /**
    * Persist job status with port mapping.
    */
   @Override
-  public void setStatus(final TaskStatus.State status, final String containerId,
-                        final Map<String, PortMapping> ports) {
-    statusManager.setStatus(goal.get(), status, throttle.get(), containerId, ports,
+  public void setStatus(final TaskStatus.State status) {
+    setStatus(status, containerIdSupplier.get());
+  }
+
+  @Override
+  public void setStatus(final TaskStatus.State status, final String containerId) {
+    statusManager.setStatus(goal.get(), status, throttle.get(),
+                            containerId, containerUtil.ports(),
                             containerUtil.getContainerEnvMap());
   }
 
