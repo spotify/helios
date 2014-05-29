@@ -65,6 +65,7 @@ public class TemporaryJobsTest extends SystemTestBase {
       // Verify that it is possible to deploy additional jobs during test
       temporaryJobs.job()
           .image("ubuntu:12.04")
+          .command("sh", "-c", "while :; do sleep 5; done")
           .host(testHost)
           .deploy();
 
