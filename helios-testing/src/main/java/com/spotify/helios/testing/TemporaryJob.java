@@ -20,6 +20,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
@@ -200,7 +201,21 @@ public class TemporaryJob {
               return null;
             }
 
-            return taskStatus.getState() == TaskStatus.State.RUNNING ? taskStatus : null;
+            final TaskStatus.State state = taskStatus.getState();
+            if (state == TaskStatus.State.RUNNING) {
+              return taskStatus;
+            } else if (state == TaskStatus.State.FAILED ||
+                       state == TaskStatus.State.EXITED ||
+                       state == TaskStatus.State.STOPPED) {
+              String stateString = state.toString();
+              if (taskStatus.getThrottled() != ThrottleState.NO) {
+                stateString += format("(%s)", taskStatus.getThrottled());
+              }
+              throw new AssertionError(format(
+                  "Unexpected job state %s. Check helios agent logs for details.", stateString));
+            }
+
+            return null;
           }
         }
     );
