@@ -101,7 +101,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     log.info("registering host: {}", host);
     final ZooKeeperClient client = provider.get("registerHost");
     try {
-      // TODO (dano): this code is replicated in AgentRegistrar
+      // TODO (dano): this code is replicated in AgentZooKeeperRegistrar
 
       // This would've been nice to do in a transaction but PathChildrenCache ensures paths
       // so we can't know what paths already exist so assembling a suitable transaction is too

@@ -4,8 +4,6 @@
 
 package com.spotify.helios.master;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
@@ -21,6 +19,7 @@ import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -40,9 +39,7 @@ import com.yammer.metrics.core.MetricsRegistry;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.zookeeper.KeeperException;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
@@ -51,6 +48,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
+
+import ch.qos.logback.access.jetty.RequestLogImpl;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
@@ -69,7 +68,8 @@ public class MasterService extends AbstractIdleService {
   private final RiemannFacade riemannFacade;
   private final ZooKeeperClient zooKeeperClient;
 
-  private PersistentEphemeralNode upNode;
+  private ZooKeeperRegistrar zkRegistrar;
+
 
   /**
    * Create a new service instance. Initializes the control interface and the worker.
@@ -85,7 +85,7 @@ public class MasterService extends AbstractIdleService {
     // TODO (dano): do something with the riemann facade
     final MetricsRegistry metricsRegistry = com.yammer.metrics.Metrics.defaultRegistry();
     RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(),
-        config.getName(), "helios-master");
+                                                       config.getName(), "helios-master");
     riemannFacade = riemannSupport.getFacade();
     log.info("Starting metrics");
     final Metrics metrics;
@@ -96,16 +96,21 @@ public class MasterService extends AbstractIdleService {
       metrics.start();
       environment.manage(riemannSupport);
       environment.manage(new ManagedStatsdReporter(config.getStatsdHostPort(), "helios-master",
-          metricsRegistry));
+                                                   metricsRegistry));
     }
 
     // Set up the master model
     this.zooKeeperClient = setupZookeeperClient(config);
     final MasterModel model = new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(zooKeeperClient,
-            new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics())));
+                                    new ZooKeeperModelReporter(riemannFacade,
+                                                               metrics.getZooKeeperMetrics()))
+    );
     ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
-        Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);
+                                                                               Paths
+                                                                                   .statusMasters(),
+                                                                               riemannFacade,
+                                                                               TimeUnit.MINUTES, 2);
     environment.manage(zooKeeperHealthChecker);
     environment.addHealthCheck(zooKeeperHealthChecker);
     environment.manage(new RiemannHeartBeat(TimeUnit.MINUTES, 2, riemannFacade));
@@ -145,6 +150,7 @@ public class MasterService extends AbstractIdleService {
   @Override
   protected void startUp() throws Exception {
     logBanner();
+    zkRegistrar.startAsync().awaitRunning();
     try {
       server.start();
       for (ServerLifecycleListener listener : environment.getServerListeners()) {
@@ -166,13 +172,7 @@ public class MasterService extends AbstractIdleService {
     server.stop();
     server.join();
     registrar.close();
-    if (upNode != null) {
-      try {
-        upNode.close();
-      } catch (IOException e) {
-        log.warn("Exception on closing up node: {}", e.getMessage());
-      }
-    }
+    zkRegistrar.stopAsync().awaitTerminated();
     zooKeeperClient.close();
   }
 
@@ -198,23 +198,8 @@ public class MasterService extends AbstractIdleService {
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy);
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
-    client.start();
 
-    // TODO (dano): move directory initialization elsewhere
-    try {
-      client.ensurePath(Paths.configHosts());
-      client.ensurePath(Paths.configJobs());
-      client.ensurePath(Paths.configJobRefs());
-      client.ensurePath(Paths.statusHosts());
-      client.ensurePath(Paths.statusMasters());
-      client.ensurePath(Paths.historyJobs());
-
-      final String upPath = Paths.statusMasterUp(config.getName());
-      upNode = client.persistentEphemeralNode(upPath, PersistentEphemeralNode.Mode.EPHEMERAL, new byte[]{});
-      upNode.start();
-    } catch (KeeperException e) {
-      throw new RuntimeException("zookeeper initialization failed", e);
-    }
+    zkRegistrar = new ZooKeeperRegistrar(client, new MasterZooKeeperRegistrar(config.getName()));
 
     return client;
   }

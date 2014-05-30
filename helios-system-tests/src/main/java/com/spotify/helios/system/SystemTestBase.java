@@ -293,10 +293,11 @@ public abstract class SystemTestBase {
     listThreads();
   }
 
-  private void tearDownJobs() throws InterruptedException, ExecutionException {
+  protected void tearDownJobs() throws InterruptedException, ExecutionException {
     if (System.getenv("ITCASE_PRESERVE_JOBS") != null) {
       return;
     }
+
     final List<ListenableFuture<JobUndeployResponse>> undeploys = Lists.newArrayList();
     final HeliosClient c = defaultClient();
     final Map<JobId, Job> jobs = c.jobs().get();
