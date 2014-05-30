@@ -80,7 +80,7 @@ public class CliDeploymentTest extends SystemTestBase {
     assertEquals(expected, parsed);
     assertContains(jobId.toString(), cli("jobs", JOB_NAME, "-q"));
     assertContains(jobId.toString(), cli("jobs", JOB_NAME + ":" + JOB_VERSION, "-q"));
-    assertTrue(cli("jobs", "foozbarz", "-q").trim().isEmpty());
+    assertEquals("job pattern foozbarz matched no jobs", cli("jobs", "foozbarz", "-q").trim());
 
     // Create a new job using the first job as a template
     final Job expectedCloned = expected.toBuilder()
