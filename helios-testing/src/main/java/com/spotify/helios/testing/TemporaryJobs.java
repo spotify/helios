@@ -1,5 +1,6 @@
 package com.spotify.helios.testing;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Predicate;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Collections2;
@@ -78,6 +79,7 @@ public class TemporaryJobs extends ExternalResource {
         fail("at least one host must be explicitly specified, or deploy() must be called with no arguments to automatically select a host");
       }
 
+      log.info("Deploying {} to {}", job.getImage(), Joiner.on(", ").skipNulls().join(hosts));
       final TemporaryJob temporaryJob = new TemporaryJob(client, prober, job, hosts, waitPorts);
       jobs.add(temporaryJob);
       temporaryJob.deploy();
