@@ -70,6 +70,11 @@ public class JobStatusCommand extends ControlCommand {
       jobIds = client.jobs(jobIdString).get().keySet();
     }
 
+    if (!Strings.isNullOrEmpty(jobIdString) && jobIds.isEmpty()) {
+      out.printf("job id matcher %s matched no jobs%n", jobIdString);
+      return 1;
+    }
+
     // TODO (dano): it would sure be nice to be able to report container/task uptime
 
     final Map<JobId, ListenableFuture<JobStatus>> futures = Maps.newTreeMap();
@@ -101,6 +106,12 @@ public class JobStatusCommand extends ControlCommand {
       final FluentIterable<String> matchingHosts = FluentIterable
           .from(taskStatuses.keySet())
           .filter(containsPattern(hostPattern));
+
+      out.printf("pattern is [%s] and hostssize is [%d]%n", hostPattern, matchingHosts.size());
+      if (!Strings.isNullOrEmpty(hostPattern) && matchingHosts.isEmpty()) {
+        out.printf("host pattern %s matched no hosts%n", hostPattern);
+        return 1;
+      }
 
       for (final String host : matchingHosts) {
         final Map<String, Deployment> deployments = jobStatus.getDeployments();

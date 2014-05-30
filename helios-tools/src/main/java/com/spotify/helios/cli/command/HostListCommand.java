@@ -4,6 +4,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -65,6 +66,11 @@ public class HostListCommand extends ControlCommand {
         .from(client.listHosts().get())
         .filter(containsPattern(pattern))
         .toList();
+
+    if (!Strings.isNullOrEmpty(pattern) && hosts.isEmpty()) {
+      out.printf("host pattern %s matched no hosts%n", pattern);
+      return 1;
+    }
 
     final List<String> sortedHosts = natural().sortedCopy(hosts);
 

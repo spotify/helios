@@ -5,6 +5,7 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -68,6 +69,11 @@ public class JobListCommand extends ControlCommand {
       jobs = client.jobs().get();
     } else {
       jobs = client.jobs(pattern).get();
+    }
+
+    if (!Strings.isNullOrEmpty(pattern) && jobs.isEmpty()) {
+      out.printf("job pattern %s matched no jobs%n", pattern);
+      return 1;
     }
 
     final SortedSet<JobId> sortedJobIds = Sets.newTreeSet(jobs.keySet());
