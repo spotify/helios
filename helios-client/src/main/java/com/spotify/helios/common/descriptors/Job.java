@@ -186,9 +186,6 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     private static class Parameters implements Cloneable {
 
-      // Note: Changing the fields of this class will affect the id's of all jobs as it is based
-      //       on the sha1 json hash of instances of Parameters.
-
       public String name;
       public String version;
       public String image;
