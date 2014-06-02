@@ -24,5 +24,13 @@ Please fix this and reinstall this package." >&2
         chown -R helios:helios /spotify/var/helios-agent
 fi
 
-initctl stop helios-agent || true
-initctl start helios-agent
+# Start helios-agent
+if which initctl >/dev/null && initctl version | grep -q upstart; then
+    # Using upstart
+    initctl stop helios-agent || true
+    initctl start helios-agent || true
+else
+    # Using SysV init scripts
+    /etc/init.d/helios-agent stop || true
+    /etc/init.d/helios-agent start || true
+fi

@@ -19,7 +19,13 @@ Please fix this and reinstall this package." >&2
     fi
 fi
 
-# if already running, stop it first
-initctl stop helios-master || true
-
-initctl start helios-master
+# Start helios-master
+if which initctl >/dev/null && initctl version | grep -q upstart; then
+    # Using upstart
+    initctl stop helios-master || true
+    initctl start helios-master || true
+else
+    # Using SysV init scripts
+    /etc/init.d/helios-master stop || true
+    /etc/init.d/helios-master start || true
+fi

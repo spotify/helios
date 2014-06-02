@@ -287,6 +287,15 @@
                   <dst>/etc/init/helios-master.conf</dst>
                   <conffile>true</conffile>
                 </data>
+                <data>
+                  <src>${project.parent.basedir}/src/deb/helios-master/init</src>
+                  <type>file</type>
+                  <dst>/etc/init.d/helios-master</dst>
+                  <mapper>
+                    <type>perm</type>
+                    <filemode>755</filemode>
+                  </mapper>
+                </data>
               </dataSet>
             </configuration>
           </execution>
@@ -322,6 +331,15 @@
                   <type>file</type>
                   <dst>/etc/init/helios-agent.conf</dst>
                   <conffile>true</conffile>
+                </data>
+                <data>
+                  <src>${project.parent.basedir}/src/deb/helios-agent/init</src>
+                  <type>file</type>
+                  <dst>/etc/init.d/helios-agent</dst>
+                  <mapper>
+                    <type>perm</type>
+                    <filemode>755</filemode>
+                  </mapper>
                 </data>
               </dataSet>
             </configuration>
