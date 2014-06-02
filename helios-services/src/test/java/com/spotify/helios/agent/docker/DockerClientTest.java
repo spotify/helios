@@ -71,6 +71,11 @@ public class DockerClientTest {
   }
 
   @Test
+  public void testPullWithTag() throws Exception {
+    sut.pull("ubuntu:12.04");
+  }
+
+  @Test
   public void integrationTest() throws Exception {
 
     // Pull image

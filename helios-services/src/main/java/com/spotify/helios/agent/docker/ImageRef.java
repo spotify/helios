@@ -6,14 +6,14 @@ public class ImageRef {
   private final String tag;
 
   public ImageRef(final String image) {
-    final int firstColon = image.indexOf(':');
-    if (firstColon < 0) {
+    final int lastColon = image.lastIndexOf(':');
+    if (lastColon < 0) {
       this.image = image;
       this.tag = null;
     } else {
-      final String tag = image.substring(firstColon);
+      final String tag = image.substring(lastColon + 1);
       if (tag.indexOf('/') < 0) {
-        this.image = image.substring(0, firstColon);
+        this.image = image.substring(0, lastColon);
         this.tag = tag;
       } else {
         this.image = image;
