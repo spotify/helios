@@ -73,6 +73,9 @@ public class DockerClientTest {
   @Test
   public void integrationTest() throws Exception {
 
+    // Pull image
+    sut.pull("busybox");
+
     // Create container
     final ContainerConfig config = new ContainerConfig();
     final String name = randomName();

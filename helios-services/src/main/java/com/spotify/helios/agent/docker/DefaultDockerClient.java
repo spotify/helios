@@ -56,7 +56,8 @@ public class DefaultDockerClient implements DockerClient {
   private static final String VERSION = "v1.11";
   private static final DefaultClientConfig CLIENT_CONFIG = new DefaultClientConfig(
       ObjectMapperProvider.class,
-      LogsResponseReader.class);
+      LogsResponseReader.class,
+      PullResponseReader.class);
 
   private static final Pattern CONTAINER_NAME_PATTERN = Pattern.compile("/?[a-zA-Z0-9_-]+");
 
@@ -245,7 +246,7 @@ public class DefaultDockerClient implements DockerClient {
 
     final WebResource resource = resource().path("images").path("create").queryParams(params);
 
-    try (ImagePull pull = request(GET, ImagePull.class, resource,
+    try (ImagePull pull = request(POST, ImagePull.class, resource,
                                   resource.accept(APPLICATION_OCTET_STREAM_TYPE))) {
       pull.tail(image);
     } catch (DockerRequestException e) {
