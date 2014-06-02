@@ -35,7 +35,7 @@ public class ZooKeeperRegistrar extends AbstractIdleService {
   private ConnectionStateListener listener = new ConnectionStateListener() {
     @Override
     public void stateChanged(final CuratorFramework client, final ConnectionState newState) {
-      if (newState == ConnectionState.CONNECTED || newState == ConnectionState.RECONNECTED) {
+      if (newState == ConnectionState.RECONNECTED) {
         reactor.signal();
       }
     }

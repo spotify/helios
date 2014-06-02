@@ -151,6 +151,7 @@ public class MasterService extends AbstractIdleService {
   protected void startUp() throws Exception {
     logBanner();
     zkRegistrar.startAsync().awaitRunning();
+    zooKeeperClient.start();
     try {
       server.start();
       for (ServerLifecycleListener listener : environment.getServerListeners()) {
