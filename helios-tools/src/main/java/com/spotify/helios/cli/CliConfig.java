@@ -88,6 +88,7 @@ public class CliConfig {
    */
   public static CliConfig fromFile(File defaultsFile) throws IOException {
     final Map<String, Object> config;
+    // TODO: use typesafe config for config file parsing
     if (defaultsFile.exists() && defaultsFile.canRead()) {
       config = Json.read(Files.readAllBytes(defaultsFile.toPath()), OBJECT_TYPE);
     } else {
