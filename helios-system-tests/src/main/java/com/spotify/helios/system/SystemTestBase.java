@@ -298,6 +298,10 @@ public abstract class SystemTestBase {
   }
 
   protected void tearDownJobs() throws InterruptedException, ExecutionException {
+    if (!isIntegration()) {
+      return;
+    }
+
     if (System.getenv("ITCASE_PRESERVE_JOBS") != null) {
       return;
     }
