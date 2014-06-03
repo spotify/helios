@@ -49,6 +49,7 @@ final class LoggingTestWatcher extends TestWatcher {
   protected void failed(final Throwable e, final Description description) {
     log.info(Strings.repeat("=", 80));
     log.info("FAILED  : {} {}", description.getClassName(), description.getMethodName());
+    log.info("Exception", e);
     log.info(Strings.repeat("=", 80));
   }
 
