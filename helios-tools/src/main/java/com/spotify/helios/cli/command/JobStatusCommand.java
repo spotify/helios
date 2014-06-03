@@ -91,6 +91,8 @@ public class JobStatusCommand extends ControlCommand {
 
     final JobStatusTable table = jobStatusTable(out, full);
 
+    boolean noHostMatchedEver = true;
+
     for (final JobId jobId : Ordering.natural().sortedCopy(jobIds)) {
       final JobStatus jobStatus = statuses.get(jobId);
 
@@ -107,10 +109,9 @@ public class JobStatusCommand extends ControlCommand {
           .from(taskStatuses.keySet())
           .filter(containsPattern(hostPattern));
 
-      out.printf("pattern is [%s] and hostssize is [%d]%n", hostPattern, matchingHosts.size());
-      if (!Strings.isNullOrEmpty(hostPattern) && matchingHosts.isEmpty()) {
-        out.printf("host pattern %s matched no hosts%n", hostPattern);
-        return 1;
+      if (Strings.isNullOrEmpty(hostPattern) ||
+          !Strings.isNullOrEmpty(hostPattern) && !matchingHosts.isEmpty()) {
+        noHostMatchedEver = false;
       }
 
       for (final String host : matchingHosts) {
@@ -119,6 +120,11 @@ public class JobStatusCommand extends ControlCommand {
         final Deployment deployment = (deployments == null) ? null : deployments.get(host);
         table.task(jobId, host, ts, deployment);
       }
+    }
+
+    if (noHostMatchedEver) {
+      out.printf("host pattern %s matched no hosts%n", hostPattern);
+      return 1;
     }
 
     table.print();
