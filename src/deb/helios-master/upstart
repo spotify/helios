@@ -23,6 +23,7 @@ end script
 
 script
   [ -f $DEFAULTFILE ] && . $DEFAULTFILE
+  export HELIOS_MASTER_JVM_OPTS
   /usr/bin/helios-master $HELIOS_MASTER_OPTS
 end script
 
