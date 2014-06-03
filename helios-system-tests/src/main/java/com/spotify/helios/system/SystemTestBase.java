@@ -359,6 +359,23 @@ public abstract class SystemTestBase {
         "--zk", zk.connectString());
     argsList.addAll(asList(args));
     startMaster(argsList.toArray(new String[argsList.size()]));
+    waitForMasterToConnectToZK();
+  }
+
+  protected void waitForMasterToConnectToZK() throws Exception
+  {
+    Polling.await(3, TimeUnit.SECONDS, new Callable<Object>() {
+      @Override
+      public Object call() {
+        try {
+          List<String> masters = defaultClient().listMasters().get();
+
+            return masters != null;
+        } catch (Exception e) {}
+
+        return null;
+      }
+    });
   }
 
   protected AgentMain startDefaultAgent(final String host, final String... args)

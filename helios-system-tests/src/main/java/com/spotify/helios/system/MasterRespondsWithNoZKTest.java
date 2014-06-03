@@ -9,6 +9,7 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.HeliosException;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
@@ -73,6 +74,7 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
   protected void tearDownJobs() {
   }
 
+  @Ignore
   @Test
   public void test() throws Exception {
 

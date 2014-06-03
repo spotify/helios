@@ -149,6 +149,7 @@ public class MasterService extends AbstractIdleService {
   @Override
   protected void startUp() throws Exception {
     logBanner();
+    zooKeeperClient.start();
     zkRegistrar.startAsync().awaitRunning();
     try {
       server.start();

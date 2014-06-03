@@ -267,8 +267,8 @@ public class AgentService extends AbstractIdleService {
   @Override
   protected void startUp() throws Exception {
     logBanner();
-    zkRegistrar.startAsync().awaitRunning();
     zooKeeperClient.start();
+    zkRegistrar.startAsync().awaitRunning();
     model.startAsync().awaitRunning();
     agent.startAsync().awaitRunning();
     hostInfoReporter.startAsync();
