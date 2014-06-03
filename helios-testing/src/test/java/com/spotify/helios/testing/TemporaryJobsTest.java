@@ -1,5 +1,16 @@
 package com.spotify.helios.testing;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+
+import com.spotify.helios.TemporaryPorts;
+import com.spotify.helios.agent.docker.DefaultDockerClient;
+import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.helios.agent.docker.messages.ContainerConfig;
+import com.spotify.helios.agent.docker.messages.ContainerCreation;
+import com.spotify.helios.agent.docker.messages.ContainerInfo;
+import com.spotify.helios.agent.docker.messages.HostConfig;
+import com.spotify.helios.agent.docker.messages.PortBinding;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -8,12 +19,17 @@ import com.spotify.helios.system.SystemTestBase;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.Socket;
 import java.util.Map;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -26,6 +42,12 @@ import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
 public class TemporaryJobsTest extends SystemTestBase {
 
+  // Note: This test needs the DOCKER_HOST environment variable set to an address where
+  //       containers can be reacher. If docker is running in a local VM, DOCKER_HOST must be set
+  //       to the address of that VM.
+
+  private static final Logger log = LoggerFactory.getLogger(TemporaryJobsTest.class);
+
   // These static fields exist as a way for nested tests to access non-static fields and methods in
   // SystemTestBase. This is a bit ugly, but we can't pass the values to FakeTest, because we don't
   // instantiate it, JUnit does in the PrintableResult.testResult method. And since JUnit
@@ -33,6 +55,51 @@ public class TemporaryJobsTest extends SystemTestBase {
   // in SystemTestBase.
   private static HeliosClient client;
   private static String testHost;
+
+  private final TemporaryPorts ports = new TemporaryPorts();
+
+  @Before
+  public void verifyContainerReachability() throws Exception {
+    final int port = ports.localPort("docker-probe");
+    final DockerClient docker = new DefaultDockerClient(DOCKER_ENDPOINT);
+    docker.pull("busybox");
+    final ContainerConfig config = new ContainerConfig();
+    config.image("busybox");
+    config.cmd(asList("nc", "-p", "4711", "-lle", "cat"));
+    config.exposedPorts(ImmutableSet.of("4711/tcp"));
+    final HostConfig hostConfig = new HostConfig();
+    hostConfig.portBindings(ImmutableMap.of("4711/tcp", asList(PortBinding.of("0.0.0.0", port))));
+    final ContainerCreation creation = docker.createContainer(config, PREFIX + "-probe");
+    final String containerId = creation.id();
+    docker.startContainer(containerId, hostConfig);
+
+    // Wait for container to come up
+    Polling.await(5, SECONDS, new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        final ContainerInfo info = docker.inspectContainer(containerId);
+        return info.state().running() ? true : null;
+      }
+    });
+
+    log.info("Verifying that docker containers are reachable");
+    try {
+      Polling.awaitUnchecked(5, SECONDS, new Callable<Object>() {
+        @Override
+        public Object call() throws Exception {
+          final DefaultProber prober = new DefaultProber();
+          log.info("Probing: {}:{}", DOCKER_ADDRESS, port);
+          return prober.probe(DOCKER_ADDRESS, port) ? true : null;
+        }
+      });
+    } catch (TimeoutException e) {
+      fail("Please ensure that DOCKER_HOST is set to an address that where containers can " +
+           "be reached. If docker is running in a local VM, DOCKER_HOST must be set to the " +
+           "address of that VM");
+    }
+
+    docker.killContainer(containerId);
+  }
 
   private static final class TestProber extends DefaultProber {
 
