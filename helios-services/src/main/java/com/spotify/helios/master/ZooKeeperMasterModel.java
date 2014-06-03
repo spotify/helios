@@ -107,7 +107,6 @@ public class ZooKeeperMasterModel implements MasterModel {
       // so we can't know what paths already exist so assembling a suitable transaction is too
       // painful.
       client.ensurePath(Paths.configHost(host));
-      client.ensurePath(Paths.configHost(host));
       client.ensurePath(Paths.configHostJobs(host));
       client.ensurePath(Paths.configHostPorts(host));
       client.ensurePath(Paths.statusHost(host));
@@ -153,11 +152,57 @@ public class ZooKeeperMasterModel implements MasterModel {
   public void deregisterHost(final String host)
       throws HostNotFoundException, HostStillInUseException {
     log.info("deregistering host: {}", host);
+    final ZooKeeperClient client = provider.get("deregisterHost");
     // TODO (dano): handle retry failures
     try {
-      final ZooKeeperClient client = provider.get("deregisterHost");
-      final List<String> nodes = reverse(client.listRecursive(Paths.configHost(host)));
-      client.transaction(delete(nodes));
+      final List<ZooKeeperOperation> operations = Lists.newArrayList();
+
+      // Remove all jobs deployed to this host
+      final List<JobId> jobs = listHostJobs(client, host);
+      for (JobId job : jobs) {
+        final String hostJobPath = Paths.configHostJob(host, job);
+        final List<String> nodes = client.listRecursive(hostJobPath);
+        for (final String node : reverse(nodes)) {
+          operations.add(delete(node));
+        }
+        operations.add(delete(Paths.configJobHost(job, host)));
+        // Clean out the history for each job
+        try {
+          final List<String> history = client.listRecursive(Paths.historyJobHost(job, host));
+          for (String s : reverse(history)) {
+            operations.add(delete(s));
+          }
+        } catch (NoNodeException ignore) {
+        }
+      }
+      operations.add(delete(Paths.configHostJobs(host)));
+
+      // Remove the host status
+      try {
+        final List<String> nodes = client.listRecursive(Paths.statusHost(host));
+        for (final String node : reverse(nodes)) {
+          operations.add(delete(node));
+        }
+      } catch (NoNodeException ignore) {
+      }
+
+      // Remove port allocations
+      final List<String> ports = client.getChildren(Paths.configHostPorts(host));
+      for (final String port : ports) {
+        operations.add(delete(Paths.configHostPort(host, Integer.valueOf(port))));
+      }
+      operations.add(delete(Paths.configHostPorts(host)));
+
+      // Remove host id
+      String idPath = Paths.configHostId(host);
+      if (client.exists(idPath) != null) {
+        operations.add(delete(idPath));
+      }
+
+      // Remove host config root
+      operations.add(delete(Paths.configHost(host)));
+
+      client.transaction(operations);
     } catch (NotEmptyException e) {
       final HostStatus hostStatus = getHostStatus(host);
       final List<JobId> jobs = hostStatus != null
