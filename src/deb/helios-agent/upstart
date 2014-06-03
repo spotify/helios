@@ -25,6 +25,7 @@ end script
 
 script
   [ -f $DEFAULTFILE ] && . $DEFAULTFILE
+  export HELIOS_AGENT_JVM_OPTS
   /usr/bin/helios-agent $HELIOS_AGENT_OPTS
 end script
 
