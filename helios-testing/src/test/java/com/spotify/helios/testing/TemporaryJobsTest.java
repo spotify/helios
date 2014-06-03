@@ -125,9 +125,8 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Before
     public void setup() {
       job1 = temporaryJobs.job()
-          .image("ubuntu:12.04")
-          .command("sh", "-c", "apt-get install nmap -qq --force-yes && " +
-                               "while :; do ncat -e /bin/cat -k -l 4711; done")
+          .image("busybox")
+          .command("nc", "-p", "4711", "-lle", "cat")
           .port("echo", 4711)
           .deploy(testHost);
     }
@@ -136,7 +135,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     public void testDeployment() throws Exception {
       // Verify that it is possible to deploy additional jobs during test
       temporaryJobs.job()
-          .image("ubuntu:12.04")
+          .image("busybox")
           .command(DO_NOTHING_COMMAND)
           .host(testHost)
           .deploy();
@@ -144,7 +143,7 @@ public class TemporaryJobsTest extends SystemTestBase {
       final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 2, jobs.size());
       for (Job job : jobs.values()) {
-        assertEquals("wrong job running", "ubuntu:12.04", job.getImage());
+        assertEquals("wrong job running", "busybox", job.getImage());
       }
 
       //verify address and addresses return valid HostAndPort objects
@@ -157,7 +156,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Test
     public void testRandomHost() throws Exception {
       temporaryJobs.job()
-          .image("ubuntu:12.04")
+          .image("busybox")
           .command("sh", "-c", "while :; do sleep 5; done")
           .hostFilter(".+")
           .deploy();
@@ -165,7 +164,7 @@ public class TemporaryJobsTest extends SystemTestBase {
       final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 2, jobs.size());
       for (Job job : jobs.values()) {
-        assertEquals("wrong job running", "ubuntu:12.04", job.getImage());
+        assertEquals("wrong job running", "busybox", job.getImage());
       }
 
       ping(DOCKER_ADDRESS, job1.port(testHost, "echo"));
@@ -173,7 +172,7 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     public void testDefaultLocalHostFilter() throws Exception {
       temporaryJobs.job()
-          .image("ubuntu:12.04")
+          .image("busybox")
           .command("sh", "-c", "while :; do sleep 5; done")
           .deploy();
     }
@@ -182,7 +181,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     public void testExceptionWithBadHostFilter() throws Exception {
       // Shouldn't be able to deploy if filter doesn't match any hosts
       temporaryJobs.job()
-          .image("ubuntu:12.04")
+          .image("busybox")
           .command("sh", "-c", "while :; do sleep 5; done")
           .hostFilter("THIS_FILTER_SHOULDNT_MATCH_ANY_HOST")
           .deploy();
