@@ -263,7 +263,7 @@
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/helios-master_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
+              <deb>${project.build.directory}/helios-master_${project.version}_all.deb</deb>
               <controlDir>${project.parent.basedir}/src/deb/helios-master</controlDir>
               <dataSet>
                 <data>
@@ -299,7 +299,7 @@
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/helios-agent_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
+              <deb>${project.build.directory}/helios-agent_${project.version}_all.deb</deb>
               <controlDir>${project.parent.basedir}/src/deb/helios-agent</controlDir>
               <dataSet>
                 <data>
@@ -335,7 +335,7 @@
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/helios-services_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
+              <deb>${project.build.directory}/helios-services_${project.version}_all.deb</deb>
               <controlDir>${project.parent.basedir}/src/deb/helios-services</controlDir>
               <dataSet>
                 <data>
