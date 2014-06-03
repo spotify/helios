@@ -17,15 +17,17 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.kpelykh.docker.client.DockerClient;
-import com.kpelykh.docker.client.DockerException;
-import com.kpelykh.docker.client.model.Container;
-import com.kpelykh.docker.client.utils.LogReader;
 import com.spotify.helios.Polling;
 import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.ZooKeeperStandaloneServerManager;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.agent.AgentMain;
+import com.spotify.helios.agent.docker.DefaultDockerClient;
+import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.helios.agent.docker.DockerException;
+import com.spotify.helios.agent.docker.messages.Container;
+import com.spotify.helios.agent.docker.LogMessage;
+import com.spotify.helios.agent.docker.LogReader;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
@@ -44,7 +46,6 @@ import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
 import com.sun.jersey.api.client.ClientResponse;
 
-import org.apache.commons.lang.StringUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -74,6 +75,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -270,13 +272,13 @@ public abstract class SystemTestBase {
 
     // Clean up docker
     try {
-      final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT, false);
-      final List<Container> containers = dockerClient.listContainers(false);
+      final DockerClient dockerClient = new DefaultDockerClient(DOCKER_ENDPOINT);
+      final List<Container> containers = dockerClient.listContainers();
       for (final Container container : containers) {
-        for (final String name : container.names) {
+        for (final String name : container.names()) {
           if (name.contains(PREFIX)) {
             try {
-              dockerClient.kill(container.id);
+              dockerClient.killContainer(container.id());
             } catch (DockerException e) {
               e.printStackTrace();
             }
@@ -478,7 +480,7 @@ public abstract class SystemTestBase {
     args.addAll(command);
 
     final String createOutput = cli("create", args);
-    final String jobId = StringUtils.strip(createOutput);
+    final String jobId = WHITESPACE.trimFrom(createOutput);
 
     final String listOutput = cli("jobs", "-q");
     assertContains(jobId, listOutput);
@@ -700,20 +702,21 @@ public abstract class SystemTestBase {
   String readLogFully(final ClientResponse logs) throws IOException {
     final LogReader logReader = new LogReader(logs.getEntityInputStream());
     StringBuilder stringBuilder = new StringBuilder();
-    LogReader.Frame frame;
-    while ((frame = logReader.readFrame()) != null) {
-      stringBuilder.append(UTF_8.decode(frame.getBytes()));
+    LogMessage logMessage;
+    while ((logMessage = logReader.nextMessage()) != null) {
+      stringBuilder.append(UTF_8.decode(logMessage.content()));
     }
     logReader.close();
     return stringBuilder.toString();
   }
 
-  List<Container> listContainers(final DockerClient dockerClient, final String needle) {
-    final List<Container> containers = dockerClient.listContainers(false);
+  List<Container> listContainers(final DockerClient dockerClient, final String needle)
+      throws DockerException, InterruptedException {
+    final List<Container> containers = dockerClient.listContainers();
     final List<Container> matches = Lists.newArrayList();
     for (final Container container : containers) {
-      if (container.names != null) {
-        for (final String name : container.names) {
+      if (container.names() != null) {
+        for (final String name : container.names()) {
           if (name.contains(needle)) {
             matches.add(container);
             break;

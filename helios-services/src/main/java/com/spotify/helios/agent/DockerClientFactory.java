@@ -1,20 +1,20 @@
-/**
- * Copyright (C) 2013 Spotify AB
- */
-
 package com.spotify.helios.agent;
 
-import com.kpelykh.docker.client.DockerClient;
+import com.spotify.helios.agent.docker.DefaultDockerClient;
+import com.spotify.helios.agent.docker.DockerClient;
+
+import java.net.URI;
 
 public class DockerClientFactory {
 
-  private final String endpoint;
+  private final URI dockerEndpoint;
 
-  public DockerClientFactory(final String endpoint) {
-    this.endpoint = endpoint;
+  public DockerClientFactory(final String dockerEndpoint) {
+
+    this.dockerEndpoint = URI.create(dockerEndpoint);
   }
 
   public DockerClient create() {
-    return new DockerClient(endpoint, false);
+    return new DefaultDockerClient(dockerEndpoint);
   }
 }

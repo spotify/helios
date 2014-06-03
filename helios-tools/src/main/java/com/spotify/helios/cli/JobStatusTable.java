@@ -17,9 +17,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.google.common.base.Ascii.truncate;
 import static com.google.common.base.Optional.fromNullable;
 import static com.spotify.helios.cli.Output.table;
-import static com.spotify.helios.cli.Utils.truncate;
 
 public class JobStatusTable {
 
@@ -52,7 +52,7 @@ public class JobStatusTable {
         state += " (" + ts.getThrottled() + ")";
       }
       final String ports = Joiner.on(" ").join(portMappings);
-      final String cid = truncate(fromNullable(ts.getContainerId()).or(""), maxContainerId);
+      final String cid = truncate(fromNullable(ts.getContainerId()).or(""), maxContainerId, "");
       table.row(jobIdString, host, goal, state, cid, ports);
     }
   }

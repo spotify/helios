@@ -21,9 +21,9 @@ import org.junit.Test;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.apache.commons.lang.StringUtils.strip;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -86,9 +86,10 @@ public class CliDeploymentTest extends SystemTestBase {
     final Job expectedCloned = expected.toBuilder()
         .setVersion(expected.getId().getVersion() + "-cloned")
         .build();
-    final JobId clonedJobId = JobId.parse(strip(cli("create", "-q", "-t",
-                                                    JOB_NAME + ":" + JOB_VERSION,
-                                                    JOB_NAME, JOB_VERSION + "-cloned")));
+    final JobId clonedJobId = JobId.parse(WHITESPACE.trimFrom(
+        cli("create", "-q", "-t",
+            JOB_NAME + ":" + JOB_VERSION,
+            JOB_NAME, JOB_VERSION + "-cloned")));
     final String clonedInspectOutput = cli("inspect", "--json", clonedJobId.toString());
     final Job clonedParsed = Json.read(clonedInspectOutput, Job.class);
     assertEquals(expectedCloned, clonedParsed);

@@ -4,18 +4,19 @@
 
 package com.spotify.helios.system;
 
-import com.kpelykh.docker.client.DockerClient;
-import com.kpelykh.docker.client.model.Container;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
+import com.spotify.helios.agent.docker.DefaultDockerClient;
+import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.helios.agent.docker.messages.Container;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-import com.spotify.helios.common.descriptors.JobStatus;
 
 import org.junit.Test;
 
@@ -38,7 +39,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
 
-    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT, false);
+    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_ENDPOINT);
 
     final HeliosClient client = defaultClient();
 
@@ -75,7 +76,8 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for a while and make sure that the container is still running
     Thread.sleep(5000);
-    assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state.running);
+    assertTrue(
+        dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state().running());
 
     // Stop the agent
     agent1.stopAsync().awaitTerminated();
@@ -85,11 +87,13 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for a while and make sure that the same container is still running
     Thread.sleep(5000);
-    assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state.running);
+    assertTrue(
+        dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state().running());
 
     // Kill the container
-    dockerClient.kill(firstTaskStatus.getContainerId());
-    assertFalse(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state.running);
+    dockerClient.killContainer(firstTaskStatus.getContainerId());
+    assertFalse(
+        dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state().running());
 
     // Wait for a while and make sure that a new container was spawned
     final String firstRestartedContainerId =
@@ -97,7 +101,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
           @Override
           public String call() throws Exception {
             final List<Container> containers = listContainers(dockerClient, PREFIX);
-            return containers.size() == 1 ? containers.get(0).id : null;
+            return containers.size() == 1 ? containers.get(0).id() : null;
           }
         });
 
@@ -105,8 +109,8 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     agent2.stopAsync().awaitTerminated();
 
     // Kill the container
-    dockerClient.kill(firstRestartedContainerId);
-    assertFalse(dockerClient.inspectContainer(firstRestartedContainerId).state.running);
+    dockerClient.killContainer(firstRestartedContainerId);
+    assertFalse(dockerClient.inspectContainer(firstRestartedContainerId).state().running());
 
     // Start the agent again
     startDefaultAgent(getTestHost());
@@ -117,10 +121,10 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
           @Override
           public String call() throws Exception {
             final List<Container> containers = listContainers(dockerClient, PREFIX);
-            return containers.size() == 1 ? containers.get(0).id : null;
+            return containers.size() == 1 ? containers.get(0).id() : null;
           }
         });
-    assertTrue(dockerClient.inspectContainer(secondRestartedContainerId).state.running);
+    assertTrue(dockerClient.inspectContainer(secondRestartedContainerId).state().running());
 
     // Start zookeeper
     zk.start();

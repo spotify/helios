@@ -20,8 +20,4 @@ public class Utils {
     }
     return result;
   }
-
-  public static String truncate(final String s, final int len) {
-    return s.substring(0, Math.min(len, s.length()));
-  }
 }

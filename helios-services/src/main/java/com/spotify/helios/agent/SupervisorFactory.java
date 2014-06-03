@@ -1,5 +1,6 @@
 package com.spotify.helios.agent;
 
+import com.spotify.helios.agent.docker.*;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.servicescommon.RiemannFacade;
@@ -20,26 +21,26 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class SupervisorFactory {
 
   private final AgentModel model;
-  private final DockerClientFactory dockerClientFactory;
+  private final DockerClient dockerClient;
   private final Map<String, String> envVars;
   private final ServiceRegistrar registrar;
-  private final CommandWrapper commandWrapper;
+  private final ContainerDecorator containerDecorator;
   private final String host;
   private final SupervisorMetrics metrics;
   private final RiemannFacade riemannFacade;
 
-  public SupervisorFactory(final AgentModel model, final DockerClientFactory dockerClientFactory,
+  public SupervisorFactory(final AgentModel model, final DockerClient dockerClient,
                            final Map<String, String> envVars,
                            final @Nullable ServiceRegistrar registrar,
-                           final CommandWrapper commandWrapper,
+                           final ContainerDecorator containerDecorator,
                            final String host,
                            final SupervisorMetrics supervisorMetrics,
                            final RiemannFacade riemannFacade) {
-    this.dockerClientFactory = dockerClientFactory;
+    this.dockerClient = dockerClient;
     this.model = checkNotNull(model);
     this.envVars = checkNotNull(envVars);
     this.registrar = registrar;
-    this.commandWrapper = commandWrapper;
+    this.containerDecorator = containerDecorator;
     this.host = host;
     this.metrics = supervisorMetrics;
     this.riemannFacade = riemannFacade;
@@ -62,7 +63,6 @@ public class SupervisorFactory {
         .setJobId(jobId)
         .setTaskStatusManager(manager)
         .build();
-    final AsyncDockerClient dockerClient = new AsyncDockerClient(dockerClientFactory);
     return Supervisor.newBuilder()
         .setHost(host)
         .setJobId(jobId)
@@ -74,9 +74,8 @@ public class SupervisorFactory {
         .setRestartPolicy(policy)
         .setTaskStatusManager(manager)
         .setServiceRegistrar(registrar)
-        .setCommandWrapper(commandWrapper)
+        .setContainerDecorator(containerDecorator)
         .setMetrics(metrics)
-        .setRiemannFacade(riemannFacade)
         .setPorts(ports)
         .setListener(listener)
         .build();

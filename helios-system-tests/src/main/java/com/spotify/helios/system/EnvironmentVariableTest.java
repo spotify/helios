@@ -7,13 +7,14 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.kpelykh.docker.client.DockerClient;
 import com.spotify.helios.Polling;
+import com.spotify.helios.agent.docker.DefaultDockerClient;
+import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.helios.agent.docker.LogStream;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.sun.jersey.api.client.ClientResponse;
 
 import org.junit.Test;
 
@@ -21,6 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import static com.spotify.helios.agent.docker.DockerClient.LogsParameter.STDERR;
+import static com.spotify.helios.agent.docker.DockerClient.LogsParameter.STDOUT;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
@@ -50,7 +53,7 @@ public class EnvironmentVariableTest extends SystemTestBase {
       }
     });
 
-    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT, false);
+    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_ENDPOINT);
 
     final List<String> command = asList("sh", "-c",
                                         "echo pod: $SPOTIFY_POD; " +
@@ -68,18 +71,18 @@ public class EnvironmentVariableTest extends SystemTestBase {
 
     final TaskStatus taskStatus = awaitTaskState(jobId, getTestHost(), EXITED);
 
-    final ClientResponse response = dockerClient.logContainer(taskStatus.getContainerId());
-    final String logMessage = readLogFully(response);
+    final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
+    final String log = logs.readFully();
 
-    assertContains("pod: PODNAME", logMessage);
-    assertContains("role: ROLENAME", logMessage);
-    assertContains("foo: 4711", logMessage);
+    assertContains("pod: PODNAME", log);
+    assertContains("role: ROLENAME", log);
+    assertContains("foo: 4711", log);
 
     // Verify that the the BAR environment variable in the job overrode the agent config
-    assertContains("bar: deadbeef", logMessage);
+    assertContains("bar: deadbeef", log);
 
     Map<String, HostStatus> status = Json.read(cli("hosts", getTestHost(), "--json"),
-                                                new TypeReference<Map<String, HostStatus>>() {});
+                                               new TypeReference<Map<String, HostStatus>>() {});
 
     assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
                                  "SPOTIFY_ROLE", "ROLENAME",

@@ -20,6 +20,8 @@ public interface SupervisorMetrics {
 
   void imageCacheHit();
 
+  void imageCacheMiss();
+
   void dockerTimeout();
 
   void supervisorRun();
@@ -27,4 +29,5 @@ public interface SupervisorMetrics {
   MeterRates getDockerTimeoutRates();
   MeterRates getContainersThrewExceptionRates();
   MeterRates getSupervisorRunRates();
+
 }

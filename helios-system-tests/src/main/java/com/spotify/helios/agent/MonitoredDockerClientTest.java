@@ -1,96 +1,78 @@
 package com.spotify.helios.agent;
 
-import com.kpelykh.docker.client.DockerException;
-import com.kpelykh.docker.client.model.ContainerConfig;
-import com.spotify.helios.TemporaryPorts;
-import com.spotify.helios.servicescommon.NoOpRiemannClient;
+import com.aphyr.riemann.Proto;
+import com.aphyr.riemann.client.AbstractRiemannClient;
+import com.aphyr.riemann.client.EventDSL;
+import com.aphyr.riemann.client.Promise;
+import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.helios.agent.docker.DockerException;
+import com.spotify.helios.agent.docker.DockerTimeoutException;
 import com.spotify.helios.servicescommon.RiemannFacade;
-import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
-import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Captor;
+import org.mockito.Mock;
+import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.concurrent.TimeoutException;
-
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+@RunWith(MockitoJUnitRunner.class)
 public class MonitoredDockerClientTest {
 
-  @Rule public final TemporaryPorts temporaryPorts = new TemporaryPorts();
+  private static final String HOST = "FOO_HOST";
+  private static final String SERVICE = "FOO_SERVICE";
 
-  private int badDockerPort = temporaryPorts.localPort("bad-docker");
+  @Rule public ExpectedException exception = ExpectedException.none();
+  @Mock public DockerClient client;
+  @Mock public AbstractRiemannClient riemannClient;
 
-  private BadDockerServer badDocker;
+  @Captor public ArgumentCaptor<Proto.Event> eventCaptor;
 
-  private MonitoredDockerClient client;
+  private DockerClient sut;
 
   @Before
   public void setUp() throws Exception {
-    badDocker = new BadDockerServer(badDockerPort);
-    badDocker.start();
-    DockerClientFactory factory = new DockerClientFactory("http://localhost:" + badDockerPort);
-    AsyncDockerClient asClient = new AsyncDockerClient(factory);
-    SupervisorMetrics metrics = new NoopSupervisorMetrics();
-    RiemannFacade riemannFacade = new NoOpRiemannClient().facade();
-    client = new MonitoredDockerClient(asClient, metrics, riemannFacade,
-        1, 3, 6);
+    when(riemannClient.aSendEventsWithAck(eventCaptor.capture()))
+        .thenReturn(new Promise<Boolean>());
+    when(riemannClient.event()).thenReturn(new EventDSL(riemannClient));
+    final RiemannFacade riemannFacade = new RiemannFacade(riemannClient, HOST, SERVICE);
+    sut = MonitoredDockerClient.wrap(riemannFacade, client);
   }
 
-  @After
-  public void tearDown() throws Exception {
-    badDocker.stop();
-  }
-
-  @Test
-  public void testInspectContainer() throws Exception {
+  @Test()
+  public void testRequestTimeout() throws Exception {
+    when(client.inspectContainer(anyString())).thenThrow(mock(DockerTimeoutException.class));
     try {
-      client.inspectContainer("doesnotmatter");
-      fail("NOOOO");
-    } catch (DockerException e) {
-      assertEquals(TimeoutException.class, e.getCause().getClass());
+      sut.inspectContainer("foo");
+      fail();
+    } catch (DockerTimeoutException ignore) {
     }
+    final Proto.Event event = eventCaptor.getValue();
+    assertThat(event.getTagsList(), contains("docker", "timeout", "inspectContainer"));
+    assertThat(event.getService(), equalTo("helios-agent/docker"));
   }
 
-  @Test
-  public void testInspectImage() throws Exception {
+  @Test()
+  public void testRequestError() throws Exception {
+    when(client.inspectImage(anyString())).thenThrow(mock(DockerException.class));
     try {
-      client.inspectImage("doesnotmatter");
-      fail("NOOOO");
-    } catch (DockerException e) {
-      assertEquals(TimeoutException.class, e.getCause().getClass());
+      sut.inspectImage("bar");
+      fail();
+    } catch (DockerException ignore) {
     }
-  }
-
-  @Test
-  public void testCreateContainer() throws Exception {
-    try {
-      client.createContainer(new ContainerConfig(), "dunnamatter");
-      fail("NOOOO");
-    } catch (DockerException e) {
-      assertEquals(TimeoutException.class, e.getCause().getClass());
-    }
-  }
-
-  @Test
-  public void testPull() throws Exception {
-    try {
-      client.pull("name");
-      fail("NOOOO");
-    } catch (DockerException e) {
-      assertEquals(TimeoutException.class, e.getCause().getClass());
-    }
-  }
-
-  @Test
-  public void testKill() throws Exception {
-    try {
-      client.kill("xxx");
-    } catch (DockerException e) {
-      assertEquals(TimeoutException.class, e.getCause().getClass());
-    }
+    final Proto.Event event = eventCaptor.getValue();
+    assertThat(event.getTagsList(), contains("docker", "error", "inspectImage"));
+    assertThat(event.getService(), equalTo("helios-agent/docker"));
   }
 }

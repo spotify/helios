@@ -14,13 +14,13 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 
-import org.apache.commons.lang.StringUtils;
 import org.junit.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
 
+import static com.google.common.base.CharMatcher.WHITESPACE;
 import static org.junit.Assert.assertEquals;
 
 public class ConfigFileJobCreationTest extends SystemTestBase {
@@ -53,7 +53,7 @@ public class ConfigFileJobCreationTest extends SystemTestBase {
     Files.write(file, Json.asBytes(configuration));
 
     final String output = cli("create", "-q", "-f", file.toAbsolutePath().toString());
-    final JobId jobId = JobId.parse(StringUtils.strip(output));
+    final JobId jobId = JobId.parse(WHITESPACE.trimFrom(output));
 
     final Map<JobId, Job> jobs = client.jobs().get();
     final Job job = jobs.get(jobId);

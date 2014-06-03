@@ -8,8 +8,9 @@ import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-import com.kpelykh.docker.client.DockerException;
-import com.kpelykh.docker.client.model.ContainerInspectResponse;
+import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.helios.agent.docker.DockerException;
+import com.spotify.helios.agent.docker.messages.ContainerInfo;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -18,7 +19,6 @@ import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.Reactor;
-import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
 import org.slf4j.Logger;
@@ -32,7 +32,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.annotation.Nullable;
 
-import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
@@ -55,11 +54,7 @@ public class Supervisor {
   public static final ThreadFactory RUNNER_THREAD_FACTORY =
       new ThreadFactoryBuilder().setNameFormat("helios-supervisor-runner-%d").build();
 
-  // TODO (dano): make these timeouts configurable
-  private static final int DOCKER_REQUEST_TIMEOUT_SECONDS = 30;
-  public static final int DOCKER_LONG_REQUEST_TIMEOUT_SECONDS = 60;
-
-  private final MonitoredDockerClient docker;
+  private final DockerClient docker;
   private final JobId jobId;
   private final Job job;
   private final AgentModel model;
@@ -69,9 +64,8 @@ public class Supervisor {
   private final Reactor reactor;
   private final Listener listener;
   private final DefaultStatusUpdater statusUpdater;
-  private final AtomicReference<Goal> goal = new AtomicReference<Goal>();
-  private final AtomicReference<ThrottleState> throttle = new AtomicReference<ThrottleState>(
-      ThrottleState.NO);
+  private final AtomicReference<Goal> goal = new AtomicReference<>();
+  private final AtomicReference<ThrottleState> throttle = new AtomicReference<>(ThrottleState.NO);
   private final TaskRunnerFactory runnerFactory;
 
   private volatile TaskRunner runner;
@@ -81,21 +75,19 @@ public class Supervisor {
   private final Supplier<String> containerIdSupplier = new Supplier<String>() {
     @Override
     public String get() {
-      final String containerId;
       final TaskStatus taskStatus = model.getTaskStatus(jobId);
-      containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
-      return containerId;
+      return (taskStatus == null) ? null : taskStatus.getContainerId();
     }
   };
 
   public Supervisor(final Builder builder) {
-    this.jobId = checkNotNull(builder.jobId);
-    this.job = checkNotNull(builder.job);
-    this.model = checkNotNull(builder.model);
-    this.docker = builder.docker;
-    this.restartPolicy = checkNotNull(builder.restartPolicy);
-    this.stateManager = checkNotNull(builder.stateManager);
-    this.metrics = checkNotNull(builder.metrics);
+    this.jobId = checkNotNull(builder.jobId, "jobId");
+    this.job = checkNotNull(builder.job, "job");
+    this.model = checkNotNull(builder.model, "model");
+    this.docker = checkNotNull(builder.dockerClient, "docker");
+    this.restartPolicy = checkNotNull(builder.restartPolicy, "restartPolicy");
+    this.stateManager = checkNotNull(builder.stateManager, "stateManager");
+    this.metrics = checkNotNull(builder.metrics, "metrics");
     this.listener = builder.listener;
     this.currentCommand = new Nop();
     this.reactor = new DefaultReactor("supervisor-" + jobId, new Update(), SECONDS.toMillis(30));
@@ -218,20 +210,18 @@ public class Supervisor {
     private JobId jobId;
     private Job job;
     private AgentModel model;
-    private AsyncDockerClient dockerClient;
+    private DockerClient dockerClient;
     private Map<String, String> envVars = emptyMap();
     private FlapController flapController;
     private RestartPolicy restartPolicy;
     private TaskStatusManager stateManager;
     private ServiceRegistrar registrar;
-    private CommandWrapper commandWrapper;
+    private ContainerDecorator containerDecorator;
     private String host;
     private SupervisorMetrics metrics;
-    private RiemannFacade riemannFacade;
     private Listener listener;
     private TaskRunnerFactory runnerFactory;
     private ContainerUtil containerUtil;
-    private MonitoredDockerClient docker;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -253,7 +243,7 @@ public class Supervisor {
       return this;
     }
 
-    public Builder setDockerClient(final AsyncDockerClient dockerClient) {
+    public Builder setDockerClient(final DockerClient dockerClient) {
       this.dockerClient = dockerClient;
       return this;
     }
@@ -278,8 +268,8 @@ public class Supervisor {
       return this;
     }
 
-    public Builder setCommandWrapper(final CommandWrapper commandWrapper) {
-      this.commandWrapper = commandWrapper;
+    public Builder setContainerDecorator(final ContainerDecorator containerDecorator) {
+      this.containerDecorator = containerDecorator;
       return this;
     }
 
@@ -290,11 +280,6 @@ public class Supervisor {
 
     public Builder setMetrics(SupervisorMetrics metrics) {
       this.metrics = metrics;
-      return this;
-    }
-
-    public Builder setRiemannFacade(RiemannFacade riemannFacade) {
-      this.riemannFacade = riemannFacade;
       return this;
     }
 
@@ -311,12 +296,9 @@ public class Supervisor {
     public Supervisor build() {
       // TODO(drewc) these should be moved either to SupervisorFactory or elsewhere,
       // but *not* into the Supervisor constructor.
-      this.docker = new MonitoredDockerClient(checkNotNull(dockerClient),
-          metrics, riemannFacade, DOCKER_REQUEST_TIMEOUT_SECONDS,
-          DOCKER_LONG_REQUEST_TIMEOUT_SECONDS, 120);
-      this.containerUtil = new ContainerUtil(host, job, ports, envVars);
-      this.runnerFactory = new TaskRunnerFactory(registrar, job, commandWrapper,
-          containerUtil, metrics, docker, flapController);
+      this.containerUtil = new ContainerUtil(host, job, ports, envVars, containerDecorator);
+      this.runnerFactory = new TaskRunnerFactory(registrar, job, containerUtil,
+                                                 metrics, dockerClient, flapController);
       return new Supervisor(this);
     }
   }
@@ -403,8 +385,6 @@ public class Supervisor {
           .setMaxIntervalMillis(SECONDS.toMillis(30))
           .build().newScheduler();
 
-      String containerId = containerIdSupplier.get();
-
       // Stop the runner
       if (runner != null) {
         // Gently tell the runner to stop
@@ -412,24 +392,18 @@ public class Supervisor {
         // Wait for runner to stop
         while (!awaitTerminated(runner, retryScheduler.nextMillis())) {
           // Kill the container to make the runner stop waiting for on it
-          containerId = fromNullable(containerIdSupplier.get()).or(fromNullable(containerId)).orNull();
-          killContainer(containerId);
-          // Disrupt work in progress to speed the runner to it's demise
-          if (runner != null) {
-            runner.disrupt();
-          }
+          killContainer();
         }
         runner = null;
       }
 
       // Kill the container after stopping the runner
-      containerId = fromNullable(containerIdSupplier.get()).or(fromNullable(containerId)).orNull();
-      while (!containerNotRunning(containerId)) {
-        killContainer(containerId);
+      while (!containerNotRunning()) {
+        killContainer();
         Thread.sleep(retryScheduler.nextMillis());
       }
 
-      statusUpdater.setStatus(STOPPED, containerId);
+      statusUpdater.setStatus(STOPPED);
     }
 
     private boolean awaitTerminated(final TaskRunner runner, final long timeoutMillis) {
@@ -441,31 +415,32 @@ public class Supervisor {
       }
     }
 
-    private void killContainer(final String containerId)
-        throws InterruptedException {
+    private void killContainer() throws InterruptedException {
+      final String containerId = containerIdSupplier.get();
       if (containerId == null) {
         return;
       }
       try {
-        docker.kill(containerId);
-      } catch (DockerException | InterruptedException e) {
+        docker.killContainer(containerId);
+      } catch (DockerException e) {
         log.error("failed to kill container {}", containerId, e);
       }
     }
 
-    private boolean containerNotRunning(final String containerId)
+    private boolean containerNotRunning()
         throws InterruptedException {
+      final String containerId = containerIdSupplier.get();
       if (containerId == null) {
         return true;
       }
-      final ContainerInspectResponse containerInfo;
+      final ContainerInfo containerInfo;
       try {
-        containerInfo = docker.safeInspectContainer(containerId);
+        containerInfo = docker.inspectContainer(containerId);
       } catch (DockerException e) {
         log.error("failed to query container {}", containerId, e);
         return false;
       }
-      return containerInfo == null || !containerInfo.state.running;
+      return containerInfo == null || !containerInfo.state().running();
     }
   }
 

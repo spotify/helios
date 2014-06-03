@@ -1,16 +1,24 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Supplier;
-import com.google.common.util.concurrent.Futures;
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 
-import com.kpelykh.docker.client.DockerException;
-import com.kpelykh.docker.client.model.ContainerConfig;
-import com.kpelykh.docker.client.model.ContainerCreateResponse;
-import com.kpelykh.docker.client.model.ContainerInspectResponse;
-import com.kpelykh.docker.client.model.HostConfig;
-import com.kpelykh.docker.client.model.ImageInspectResponse;
+import com.spotify.helios.agent.docker.ContainerNotFoundException;
+import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.helios.agent.docker.DockerException;
+import com.spotify.helios.agent.docker.DockerTimeoutException;
+import com.spotify.helios.agent.docker.ImageNotFoundException;
+import com.spotify.helios.agent.docker.ImagePullFailedException;
+import com.spotify.helios.agent.docker.messages.ContainerConfig;
+import com.spotify.helios.agent.docker.messages.ContainerCreation;
+import com.spotify.helios.agent.docker.messages.ContainerExit;
+import com.spotify.helios.agent.docker.messages.ContainerInfo;
+import com.spotify.helios.agent.docker.messages.HostConfig;
+import com.spotify.helios.agent.docker.messages.ImageInfo;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -27,20 +35,23 @@ import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.InputStream;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.Callable;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicReference;
 
+import static com.google.common.util.concurrent.MoreExecutors.getExitingExecutorService;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * A runner service that starts a container once.
@@ -48,15 +59,17 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 class TaskRunner extends InterruptingExecutionThreadService {
   private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
 
+  private final ListeningExecutorService executorService =
+      MoreExecutors.listeningDecorator(getExitingExecutorService(
+          (ThreadPoolExecutor) Executors.newCachedThreadPool(), 0, SECONDS));
+
   private final long delayMillis;
   private final SettableFuture<Integer> resultFuture = SettableFuture.create();
   private final ServiceRegistrar registrar;
-  private final CommandWrapper commandWrapper;
   private final Job job;
   private final ContainerUtil containerUtil;
-  private final AtomicReference<InputStream> pullStream = new AtomicReference<InputStream>();
   private final SupervisorMetrics metrics;
-  private final MonitoredDockerClient docker;
+  private final DockerClient docker;
   private final FlapController flapController;
   private final AtomicReference<ThrottleState> throttle;
   private final StatusUpdater statusUpdater;
@@ -67,10 +80,9 @@ class TaskRunner extends InterruptingExecutionThreadService {
   public TaskRunner(final long delayMillis,
                     final ServiceRegistrar registrar,
                     final Job job,
-                    final CommandWrapper commandWrapper,
                     final ContainerUtil containerUtil,
                     final SupervisorMetrics metrics,
-                    final MonitoredDockerClient docker,
+                    final DockerClient docker,
                     final FlapController flapController,
                     final AtomicReference<ThrottleState> throttle,
                     final StatusUpdater statusUpdater,
@@ -79,7 +91,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.delayMillis = delayMillis;
     this.registrar = registrar;
     this.job = job;
-    this.commandWrapper = commandWrapper;
     this.containerUtil = containerUtil;
     this.metrics = metrics;
     this.docker = docker;
@@ -94,50 +105,36 @@ class TaskRunner extends InterruptingExecutionThreadService {
   public void run() {
     try {
       metrics.supervisorRun();
+
       // Delay
       Thread.sleep(delayMillis);
 
-      // Get persisted status
-      final String registeredContainerId = containerIdSupplier.get();
-
-      // Find out if the container is already running
-      final ContainerInspectResponse containerInfo =
-          getRunningContainerInfo(registeredContainerId);
-
       // Create and start container if necessary
-      final String containerId = maybeCreateAndStartContainer(registeredContainerId, containerInfo);
+      final String containerId = createAndStartContainer();
+      statusUpdater.setStatus(RUNNING);
 
-      // Expose ports
-      final ContainerInspectResponse runningContainerInfo = docker.safeInspectContainer(containerId);
-
-      // TODO (dano): Now that we perform the port allocation in Helios instead of relying on
-      // docker, report the ports we allocated instead of parsing the docker output.
-      final Map<String, PortMapping> ports = containerUtil.parsePortBindings(runningContainerInfo);
-      statusUpdater.setStatus(RUNNING, containerId, ports);
+      // Report
       metrics.containersRunning();
 
       // Wait for container to die
       flapController.jobStarted();
-      final ServiceRegistrationHandle registrationHandle = serviceRegister(ports);
+      final ServiceRegistrationHandle registrationHandle = serviceRegister(containerUtil.ports());
       final int exitCode;
       try {
-        exitCode = flapController.waitFuture(docker.waitContainer(containerId));
+        exitCode = flapController.waitFuture(waitContainer(containerId)).statusCode();
       } finally {
         serviceDeregister(registrationHandle);
       }
       log.info("container exited: {}: {}: {}", job, containerId, exitCode);
       flapController.jobDied();
       throttle.set(flapController.isFlapping() ? ThrottleState.FLAPPING : ThrottleState.NO);
-      statusUpdater.setStatus(EXITED, containerId, ports);
+      statusUpdater.setStatus(EXITED);
       metrics.containersExited();
       resultFuture.set(exitCode);
-    } catch (DockerException e) {
-      if (!docker.checkForDockerTimeout(e, "unspecific")) {
-        metrics.containersThrewException();
-      }
+    } catch (DockerTimeoutException e) {
+      metrics.dockerTimeout();
       resultFuture.setException(e);
     } catch (InterruptedException e) {
-      metrics.containersThrewException();
       resultFuture.setException(e);
     } catch (Throwable e) {
       // Keep separate catch clauses to simplify setting breakpoints on actual errors
@@ -151,27 +148,52 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
   }
 
-  private String maybeCreateAndStartContainer(final String registeredContainerId,
-      final ContainerInspectResponse containerInfo) throws DockerException, InterruptedException,
-      ImagePullFailedException, ImageMissingException {
-    if (containerInfo != null && containerInfo.state.running) {
+  private ListenableFuture<ContainerExit> waitContainer(final String containerId) {
+    return executorService.submit(new Callable<ContainerExit>() {
+      @Override
+      public ContainerExit call() throws Exception {
+        return docker.waitContainer(containerId);
+      }
+    });
+  }
+
+  private ListenableFuture<Void> startContainer(final String containerId,
+                                                final HostConfig hostConfig) {
+    return executorService.submit(new Callable<Void>() {
+      @Override
+      public Void call() throws Exception {
+        docker.startContainer(containerId, hostConfig);
+        return null;
+      }
+    });
+  }
+
+  private String createAndStartContainer()
+      throws DockerException, InterruptedException {
+
+    // Get persisted status
+    final String registeredContainerId = containerIdSupplier.get();
+
+    // Check if the container is already running
+    final ContainerInfo info = getRunningContainerInfo(registeredContainerId);
+    if (info != null && info.state().running()) {
       return registeredContainerId;
     }
 
     // Ensure we have the image
     final String image = job.getImage();
     try {
-      statusUpdater.setStatus(PULLING_IMAGE);
-      maybePullImage(image);
+      pullImage(image);
     } catch (ImagePullFailedException e) {
       throttle.set(ThrottleState.IMAGE_PULL_FAILED);
       statusUpdater.setStatus(FAILED);
       throw e;
-    } catch (ImageMissingException e) {
+    } catch (ImageNotFoundException e) {
       throttle.set(ThrottleState.IMAGE_MISSING);
       statusUpdater.setStatus(FAILED);
       throw e;
     }
+
     return startContainer(image);
   }
 
@@ -197,7 +219,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
           log.error("no '{}' port mapped for registration: '{}'", portName, registration);
           continue;
         }
-        Integer externalPort = mapping.getExternalPort();
+        final Integer externalPort = mapping.getExternalPort();
         if (externalPort == null) {
           log.error("no external '{}' port for registration: '{}'", portName, registration);
           continue;
@@ -220,96 +242,62 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private String startContainer(final String image)
       throws InterruptedException, DockerException {
     statusUpdater.setStatus(CREATING, null);
-    final ContainerConfig containerConfig = containerUtil.containerConfig(job);
 
-    final ImageInspectResponse imageInfo = docker.safeInspectImage(image);
+    final ImageInfo imageInfo = docker.inspectImage(image);
     if (imageInfo == null) {
       throw new HeliosRuntimeException("docker inspect image returned null on image " + image);
     }
-    commandWrapper.modifyCreateConfig(image, job, imageInfo, containerConfig);
 
-    final String name = ContainerUtil.containerName(job.getId());
-    final ContainerCreateResponse container;
-    container = docker.createContainer(containerConfig, name);
-
-    final String containerId = container.id;
+    // Create container
+    final ContainerConfig containerConfig = containerUtil.containerConfig(imageInfo);
+    final String name = containerUtil.containerName();
+    final ContainerCreation container = docker.createContainer(containerConfig, name);
     log.info("created container: {}: {}, {}", job, container, containerConfig);
 
+    // Start container
     final HostConfig hostConfig = containerUtil.hostConfig();
-    commandWrapper.modifyStartConfig(hostConfig);
-
-    statusUpdater.setStatus(STARTING, containerId);
-    log.info("starting container: {}: {} {}", job, containerId, hostConfig);
-
-    startFuture = docker.startContainer(containerId, hostConfig);
+    statusUpdater.setStatus(STARTING, container.id());
+    log.info("starting container: {}: {} {}", job, container.id(), hostConfig);
+    startFuture = startContainer(container.id(), hostConfig);
     try {
-      Futures.get(startFuture, Supervisor.DOCKER_LONG_REQUEST_TIMEOUT_SECONDS, TimeUnit.SECONDS,
-          DockerException.class);
-    } catch (DockerException e) {
-      docker.checkForDockerTimeout(e, "startContainer");
-      throw docker.propagateDockerException(e);
+      startFuture.get();
+    } catch (ExecutionException e) {
+      throw Throwables.propagate(e.getCause());
     }
-
-    log.info("started container: {}: {}", job, containerId);
+    log.info("started container: {}: {}", job, container.id());
     metrics.containerStarted();
-    return containerId;
+    return container.id();
   }
 
-  private ContainerInspectResponse getRunningContainerInfo(final String registeredContainerId)
-      throws DockerException {
-    if (registeredContainerId != null) {
-      log.info("inspecting container: {}: {}", job, registeredContainerId);
-      return docker.safeInspectContainer(registeredContainerId);
+  private ContainerInfo getRunningContainerInfo(final String registeredContainerId)
+      throws DockerException, InterruptedException {
+    if (registeredContainerId == null) {
+      return null;
     }
-    return null;
+    log.info("inspecting container: {}: {}", job, registeredContainerId);
+    try {
+      return docker.inspectContainer(registeredContainerId);
+    } catch (ContainerNotFoundException e) {
+      return null;
+    }
   }
 
-  private void maybePullImage(final String image)
-      throws DockerException, InterruptedException, ImagePullFailedException,
-             ImageMissingException {
-    if (imageExists(image)) {
+  private void pullImage(final String image) throws DockerException, InterruptedException {
+    try {
+      docker.inspectImage(image);
       metrics.imageCacheHit();
       return;
+    } catch (ImageNotFoundException ignore) {
+      metrics.imageCacheMiss();
     }
     final MetricsContext metric = metrics.containerPull();
-    final PullClientResponse response = docker.pull(image);
-    pullStream.set(response.getResponse().getEntityInputStream());
-
     try {
-      // Wait until image is completely pulled
-      containerUtil.tailPull(image, pullStream.get());
+      statusUpdater.setStatus(PULLING_IMAGE);
+      docker.pull(image);
       metric.success();
-    } catch (ContainerUtil.PullingException e) {
-      metric.failure();
-      throw new ImagePullFailedException(e);
-    } finally {
-      response.close();
-    }
-  }
-
-  private boolean imageExists(final String image) throws DockerException, InterruptedException {
-    try {
-      return docker.safeInspectImage(image) != null;
     } catch (DockerException e) {
-      if (e.getMessage().contains("No such image")) {
-        return false;
-      } else {
-        throw e;
-      }
-    }
-  }
-
-  public void disrupt() {
-    // Close the pull stream as it doesn't respond to thread interrupts
-    final InputStream stream = pullStream.get();
-    if (stream == null) {
-      return;
-    }
-    try {
-      stream.close();
-    } catch (Exception e) {
-      // XXX (dano): catch Exception here as the guts of pullStream.close() might throw NPE.
-      log.debug("exception when closing pull feedback stream", e);
+      metric.failure();
+      throw e;
     }
   }
 

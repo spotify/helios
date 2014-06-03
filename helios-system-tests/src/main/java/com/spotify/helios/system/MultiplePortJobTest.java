@@ -7,9 +7,10 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 
-import com.kpelykh.docker.client.DockerClient;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
+import com.spotify.helios.agent.docker.DefaultDockerClient;
+import com.spotify.helios.agent.docker.DockerClient;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -41,7 +42,7 @@ public class MultiplePortJobTest extends SystemTestBase {
                                                           portRange.lowerEndpoint() + ":" +
                                                           portRange.upperEndpoint());
 
-    final DockerClient dockerClient = new DockerClient(DOCKER_ENDPOINT, false);
+    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_ENDPOINT);
 
     final HeliosClient client = defaultClient();
 
@@ -85,7 +86,7 @@ public class MultiplePortJobTest extends SystemTestBase {
     // TODO (dano): the supervisor should report the allocated ports at all times
 
     // Verify that port allocation is kept across container restarts
-    dockerClient.kill(firstTaskStatus1.getContainerId());
+    dockerClient.killContainer(firstTaskStatus1.getContainerId());
     final TaskStatus restartedTaskStatus1 = Polling.await(
         LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
       @Override
@@ -101,7 +102,7 @@ public class MultiplePortJobTest extends SystemTestBase {
 
     // Verify that port allocation is kept across agent restarts
     agent1.stopAsync().awaitTerminated();
-    dockerClient.kill(firstTaskStatus2.getContainerId());
+    dockerClient.killContainer(firstTaskStatus2.getContainerId());
     startDefaultAgent(getTestHost());
     final TaskStatus restartedTaskStatus2 = Polling.await(
         LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
