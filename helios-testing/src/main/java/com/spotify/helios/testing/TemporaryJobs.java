@@ -1,9 +1,9 @@
 package com.spotify.helios.testing;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Predicate;
+import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
-import com.google.common.collect.Collections2;
+import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.client.HeliosClient;
@@ -13,14 +13,14 @@ import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.annotation.Nullable;
-import java.util.ArrayList;
+import java.net.URI;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
-import java.util.regex.Pattern;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Predicates.containsPattern;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -32,9 +32,12 @@ public class TemporaryJobs extends ExternalResource {
 
   private static final String DEFAULT_USER = System.getProperty("user.name");
   private static final Prober DEFAULT_PROBER = new DefaultProber();
+  private static final String DEFAULT_LOCAL_HOST_FILTER = ".*";
+  private static final String DEFAULT_HOST_FILTER = System.getenv("HELIOS_HOST_FILTER");
 
   private final HeliosClient client;
   private final Prober prober;
+  private final String defaultHostFilter;
 
   private final List<TemporaryJob> jobs = Lists.newArrayList();
 
@@ -46,21 +49,18 @@ public class TemporaryJobs extends ExternalResource {
         fail("a host filter pattern must be passed to hostFilter(), or one must be specified in HELIOS_HOST_FILTER");
       }
 
-      List<String> hosts = null;
+      final List<String> hosts;
       try {
         hosts = client.listHosts().get();
       } catch (InterruptedException | ExecutionException e) {
-        fail(format("Failed to get list of Helios hosts - %s", e));
+        throw new AssertionError("Failed to get list of Helios hosts", e);
       }
 
-      hosts = new ArrayList<>(Collections2.filter(hosts, new Predicate<String>() {
-        @Override
-        public boolean apply(@Nullable final String input) {
-          return Pattern.matches(hostFilter, input);
-        }
-      }));
+      final List<String> filteredHosts = FluentIterable.from(hosts)
+          .filter(containsPattern(hostFilter))
+          .toList();
 
-      if (hosts.isEmpty()) {
+      if (filteredHosts.isEmpty()) {
         fail(format("no hosts matched the filter pattern - %s", hostFilter));
       }
 
@@ -89,13 +89,15 @@ public class TemporaryJobs extends ExternalResource {
 
   private boolean started;
 
-  TemporaryJobs(final HeliosClient client, final Prober prober) {
-    this.client = client;
-    this.prober = prober;
+  TemporaryJobs(final Builder builder) {
+    this.client = checkNotNull(builder.client, "client");
+    this.prober = checkNotNull(builder.prober, "prober");
+    this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
   }
 
   public TemporaryJobBuilder job() {
-    return new TemporaryJobBuilder(deployer);
+    return new TemporaryJobBuilder(deployer)
+        .hostFilter(defaultHostFilter);
   }
 
   /**
@@ -116,22 +118,23 @@ public class TemporaryJobs extends ExternalResource {
       return create(domain);
     }
     final String endpoints = System.getenv("HELIOS_ENDPOINTS");
-    final HeliosClient.Builder clientBuilder = HeliosClient.newBuilder()
-        .setUser(DEFAULT_USER);
+    final Builder builder = builder();
     if (!isNullOrEmpty(endpoints)) {
-      clientBuilder.setEndpointStrings(Splitter.on(',').splitToList(endpoints));
+      builder.endpointStrings(Splitter.on(',').splitToList(endpoints));
     } else {
-      clientBuilder.setEndpoints("http://localhost:5801");
+      // We're running locally
+      builder.hostFilter(Optional.fromNullable(DEFAULT_HOST_FILTER).or(DEFAULT_LOCAL_HOST_FILTER));
+      builder.endpoints("http://localhost:5801");
     }
-    return create(clientBuilder.build());
+    return builder.build();
   }
 
   public static TemporaryJobs create(final HeliosClient client) {
-    return new TemporaryJobs(client, DEFAULT_PROBER);
+    return builder().client(client).build();
   }
 
   public static TemporaryJobs create(final String domain) {
-    return create(HeliosClient.create(domain, DEFAULT_USER));
+    return builder().domain(domain).build();
   }
 
   @Override
@@ -149,6 +152,74 @@ public class TemporaryJobs extends ExternalResource {
 
     for (AssertionError error : errors) {
       log.error(error.getMessage());
+    }
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+
+    Builder() {
+    }
+
+    private String user = DEFAULT_USER;
+    private Prober prober = DEFAULT_PROBER;
+    private String hostFilter = DEFAULT_HOST_FILTER;
+    private HeliosClient client;
+
+    public Builder domain(final String domain) {
+      return client(HeliosClient.newBuilder()
+                        .setUser(user)
+                        .setDomain(domain)
+                        .build());
+    }
+
+    public Builder endpoints(final String... endpoints) {
+      return endpointStrings(asList(endpoints));
+    }
+
+    public Builder endpointStrings(final List<String> endpoints) {
+      return client(HeliosClient.newBuilder()
+                        .setUser(user)
+                        .setEndpointStrings(endpoints)
+                        .build());
+    }
+
+    public Builder endpoints(final URI... endpoints) {
+      return endpoints(asList(endpoints));
+    }
+
+    public Builder endpoints(final List<URI> endpoints) {
+      return client(HeliosClient.newBuilder()
+                        .setUser(user)
+                        .setEndpoints(endpoints)
+                        .build());
+    }
+
+    public Builder user(final String user) {
+      this.user = user;
+      return this;
+    }
+
+    public Builder prober(final Prober prober) {
+      this.prober = prober;
+      return this;
+    }
+
+    public Builder client(final HeliosClient client) {
+      this.client = client;
+      return this;
+    }
+
+    public Builder hostFilter(final String hostFilter) {
+      this.hostFilter = hostFilter;
+      return this;
+    }
+
+    public TemporaryJobs build() {
+      return new TemporaryJobs(this);
     }
   }
 }
