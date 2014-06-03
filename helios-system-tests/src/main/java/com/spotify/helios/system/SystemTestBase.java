@@ -4,7 +4,6 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
@@ -25,9 +24,9 @@ import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.agent.docker.DefaultDockerClient;
 import com.spotify.helios.agent.docker.DockerClient;
 import com.spotify.helios.agent.docker.DockerException;
-import com.spotify.helios.agent.docker.messages.Container;
 import com.spotify.helios.agent.docker.LogMessage;
 import com.spotify.helios.agent.docker.LogReader;
+import com.spotify.helios.agent.docker.messages.Container;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
@@ -96,6 +95,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public abstract class SystemTestBase {
+
   private static final Logger log = LoggerFactory.getLogger(SystemTestBase.class);
 
   public static final int WAIT_TIMEOUT_SECONDS = 40;
@@ -106,7 +106,8 @@ public abstract class SystemTestBase {
   public static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
   public static final JobId BOGUS_JOB = new JobId("bogus", "job", Strings.repeat("0", 40));
   public static final String BOGUS_HOST = "BOGUS_HOST";
-  public static final List<String> DO_NOTHING_COMMAND = asList("sh", "-c", "while :; do sleep 1; done");
+  public static final List<String> DO_NOTHING_COMMAND =
+      asList("sh", "-c", "while :; do sleep 1; done");
   public static final String JOB_VERSION = "test_17";
 
   public static final int DOCKER_PORT = Integer.valueOf(env("DOCKER_PORT", "4160"));
@@ -119,8 +120,9 @@ public abstract class SystemTestBase {
     final String stripped = DOCKER_HOST.replaceAll(".*://", "");
     final HostAndPort hostAndPort = HostAndPort.fromString(stripped);
     final String host = hostAndPort.getHostText();
+    final int port = hostAndPort.getPortOrDefault(DOCKER_PORT);
     DOCKER_ADDRESS = Strings.isNullOrEmpty(host) ? "localhost" : host;
-    DOCKER_ENDPOINT = format("http://%s:%d", DOCKER_ADDRESS, hostAndPort.getPortOrDefault(DOCKER_PORT));
+    DOCKER_ENDPOINT = format("http://%s:%d", DOCKER_ADDRESS, port);
   }
 
   private static String env(final String key, final String defaultValue) {
@@ -348,34 +350,32 @@ public abstract class SystemTestBase {
 
   protected void startDefaultMaster(String... args) throws Exception {
     if (isIntegration()) {
-      Preconditions.checkArgument(args.length == 0,
-          "cannot start default master in integration test with arguments passed " + args.length);
+      checkArgument(args.length == 0,
+                    "cannot start default master in integration test with arguments passed");
       return;
     }
 
     List<String> argsList = Lists.newArrayList("-vvvv",
-        "--no-log-setup",
-        "--http", getMasterEndpoint(),
-        "--admin=" + getMasterAdminPort(),
-        "--name", TEST_MASTER,
-        "--zk", zk.connectString());
+                                               "--no-log-setup",
+                                               "--http", getMasterEndpoint(),
+                                               "--admin=" + getMasterAdminPort(),
+                                               "--name", TEST_MASTER,
+                                               "--zk", zk.connectString());
     argsList.addAll(asList(args));
     startMaster(argsList.toArray(new String[argsList.size()]));
     waitForMasterToConnectToZK();
   }
 
-  protected void waitForMasterToConnectToZK() throws Exception
-  {
-    Polling.await(3, TimeUnit.SECONDS, new Callable<Object>() {
+  protected void waitForMasterToConnectToZK() throws Exception {
+    Polling.await(WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<Object>() {
       @Override
       public Object call() {
         try {
-          List<String> masters = defaultClient().listMasters().get();
-
-            return masters != null;
-        } catch (Exception e) {}
-
-        return null;
+          final List<String> masters = defaultClient().listMasters().get();
+          return masters != null;
+        } catch (Exception e) {
+          return null;
+        }
       }
     });
   }
@@ -383,10 +383,11 @@ public abstract class SystemTestBase {
   protected AgentMain startDefaultAgent(final String host, final String... args)
       throws Exception {
     if (isIntegration()) {
-      Preconditions.checkArgument(args.length == 0,
-          "cannot start default agent in integration test with arguments passed " + args.length);
+      checkArgument(args.length == 0,
+                    "cannot start default agent in integration test with arguments passed");
       return null;
     }
+
     final Range<Integer> portRange = temporaryPorts.localPortRange("agent", 10);
     final String stateDir = agentStateDirs.resolve(host).toString();
     final List<String> argsList = Lists.newArrayList("-vvvv",
