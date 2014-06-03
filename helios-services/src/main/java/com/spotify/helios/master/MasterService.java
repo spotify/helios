@@ -101,16 +101,15 @@ public class MasterService extends AbstractIdleService {
 
     // Set up the master model
     this.zooKeeperClient = setupZookeeperClient(config);
-    final MasterModel model = new ZooKeeperMasterModel(
-        new ZooKeeperClientProvider(zooKeeperClient,
-                                    new ZooKeeperModelReporter(riemannFacade,
-                                                               metrics.getZooKeeperMetrics()))
-    );
-    ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
-                                                                               Paths
-                                                                                   .statusMasters(),
-                                                                               riemannFacade,
-                                                                               TimeUnit.MINUTES, 2);
+    final ZooKeeperModelReporter modelReporter = new ZooKeeperModelReporter(
+        riemannFacade, metrics.getZooKeeperMetrics());
+    final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
+        zooKeeperClient, modelReporter);
+    final MasterModel model = new ZooKeeperMasterModel(zkClientProvider);
+
+    final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
+        zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);
+
     environment.manage(zooKeeperHealthChecker);
     environment.addHealthCheck(zooKeeperHealthChecker);
     environment.manage(new RiemannHeartBeat(TimeUnit.MINUTES, 2, riemannFacade));

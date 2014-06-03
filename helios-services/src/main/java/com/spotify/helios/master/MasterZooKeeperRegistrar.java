@@ -1,9 +1,9 @@
 package com.spotify.helios.master;
 
-import com.google.common.util.concurrent.SettableFuture;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarEventListener;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
@@ -11,9 +11,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
-/**
- * Created by snc on 4/28/14.
- */
 public class MasterZooKeeperRegistrar implements ZooKeeperRegistrarEventListener {
 
   private static final Logger log = LoggerFactory.getLogger(MasterZooKeeperRegistrar.class);

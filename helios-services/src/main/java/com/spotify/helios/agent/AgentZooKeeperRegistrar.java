@@ -5,11 +5,11 @@
 package com.spotify.helios.agent;
 
 import com.google.common.util.concurrent.Service;
-import com.google.common.util.concurrent.SettableFuture;
-import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
+
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarEventListener;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
@@ -81,7 +81,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
       final String existingId = bytes == null ? "" : new String(bytes, UTF_8);
       if (!id.equals(existingId)) {
         final String message = format("Another agent already registered as '%s' " +
-            "(local=%s remote=%s).", name, id, existingId);
+                                      "(local=%s remote=%s).", name, id, existingId);
         log.error(message);
         agentService.stopAsync();
         return;

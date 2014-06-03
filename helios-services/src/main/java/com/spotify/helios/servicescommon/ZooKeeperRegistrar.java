@@ -5,11 +5,12 @@
 package com.spotify.helios.servicescommon;
 
 import com.google.common.util.concurrent.AbstractIdleService;
-import com.google.common.util.concurrent.SettableFuture;
+
 import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
 import com.spotify.helios.agent.RetryIntervalPolicy;
 import com.spotify.helios.agent.RetryScheduler;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -18,7 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.util.concurrent.Service.State.STOPPING;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class ZooKeeperRegistrar extends AbstractIdleService {
 
@@ -29,8 +30,7 @@ public class ZooKeeperRegistrar extends AbstractIdleService {
   private final Reactor reactor;
   private final ZooKeeperRegistrarEventListener eventListener;
 
-  private final long minIntervalMillis; // retry backoff interval
-  private final long maxIntervalMillis; // retry backoff interval
+  private final RetryIntervalPolicy retryIntervalPolicy;
 
   private ConnectionStateListener listener = new ConnectionStateListener() {
     @Override
@@ -43,26 +43,24 @@ public class ZooKeeperRegistrar extends AbstractIdleService {
 
   public ZooKeeperRegistrar(final ZooKeeperClient client,
                             final ZooKeeperRegistrarEventListener eventListener) {
-    this(client, eventListener, 1 * 1000, 30 * 1000);
+    this(client, eventListener, BoundedRandomExponentialBackoff.newBuilder()
+        .setMinInterval(1, SECONDS)
+        .setMaxInterval(30, SECONDS)
+        .build());
   }
 
   public ZooKeeperRegistrar(final ZooKeeperClient client,
                             final ZooKeeperRegistrarEventListener eventListener,
-                            long minIntervalMillis,
-                            long maxIntervalMillis) {
-    this.client             = client;
-    this.eventListener      = eventListener;
-    this.minIntervalMillis  = minIntervalMillis;
-    this.maxIntervalMillis  = maxIntervalMillis;
-
+                            final RetryIntervalPolicy retryIntervalPolicy) {
+    this.client = client;
+    this.eventListener = eventListener;
+    this.retryIntervalPolicy = retryIntervalPolicy;
     this.reactor = new DefaultReactor("zk-client-async-init", new Update());
   }
 
   @Override
   protected void startUp() throws Exception {
-
     eventListener.startUp();
-
     client.getConnectionStateListenable().addListener(listener);
     reactor.startAsync().awaitRunning();
     reactor.signal();
@@ -70,22 +68,14 @@ public class ZooKeeperRegistrar extends AbstractIdleService {
 
   @Override
   protected void shutDown() throws Exception {
-
     reactor.stopAsync().awaitTerminated();
-
     eventListener.shutDown();
-
   }
 
   private class Update implements Reactor.Callback {
 
-    final RetryIntervalPolicy RETRY_INTERVAL_POLICY = BoundedRandomExponentialBackoff.newBuilder()
-        .setMinInterval(minIntervalMillis, MILLISECONDS)
-        .setMaxInterval(maxIntervalMillis, MILLISECONDS)
-        .build();
-
     public void run() throws InterruptedException {
-      final RetryScheduler retryScheduler = RETRY_INTERVAL_POLICY.newScheduler();
+      final RetryScheduler retryScheduler = retryIntervalPolicy.newScheduler();
       while (isAlive()) {
         try {
           eventListener.tryToRegister(client);
