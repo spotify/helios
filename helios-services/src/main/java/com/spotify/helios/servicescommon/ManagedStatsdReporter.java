@@ -2,13 +2,11 @@ package com.spotify.helios.servicescommon;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
 
-import com.bealetech.metrics.reporting.StatsdReporter;
+import com.readytalk.metrics.StatsDReporter;
 import com.yammer.dropwizard.lifecycle.Managed;
 import com.yammer.metrics.core.MetricsRegistry;
 
-import java.io.IOException;
 import java.util.List;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -19,7 +17,7 @@ public class ManagedStatsdReporter implements Managed {
   private static final int POLL_INTERVAL_SECONDS = 15;
   private static final int SHUTDOWN_TIMEOUT_SECONDS = 5;
 
-  private final StatsdReporter statsdReporter;
+  private final StatsDReporter statsdReporter;
 
   public ManagedStatsdReporter(final String endpoint, final String name,
                                final MetricsRegistry registry) {
@@ -32,11 +30,7 @@ public class ManagedStatsdReporter implements Managed {
                                      "parts. Should be host:port");
     final String host = parts.get(0);
     final int port = Integer.valueOf(parts.get(1));
-    try {
-      statsdReporter = new StatsdReporter(registry, host, port, name);
-    } catch (IOException e) {
-      throw Throwables.propagate(e);
-    }
+    statsdReporter = new StatsDReporter(registry, host, port, name);
   }
 
   @Override
