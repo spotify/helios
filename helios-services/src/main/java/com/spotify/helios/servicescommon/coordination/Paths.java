@@ -165,6 +165,10 @@ public class Paths {
     return HISTORY_JOBS.path(jobId.toString(), HOSTS);
   }
 
+  public static String historyJobHost(final JobId jobId, final String host) {
+    return HISTORY_JOBS.path(jobId.toString(), HOSTS, host);
+  }
+
   public static String historyJob(final JobId jobId) {
     return HISTORY_JOBS.path(jobId.toString());
   }
