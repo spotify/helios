@@ -43,8 +43,10 @@ import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
+import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.jersey.api.client.ClientResponse;
 
+import org.apache.curator.framework.CuratorFramework;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -358,6 +360,15 @@ public abstract class SystemTestBase {
                     "cannot start default master in integration test with arguments passed");
       return;
     }
+
+    // TODO (dano): Move this bootstrapping to something reusable
+    final CuratorFramework curator = zk.curator();
+    curator.newNamespaceAwareEnsurePath(Paths.configHosts()).ensure(curator.getZookeeperClient());
+    curator.newNamespaceAwareEnsurePath(Paths.configJobs()).ensure(curator.getZookeeperClient());
+    curator.newNamespaceAwareEnsurePath(Paths.configJobRefs()).ensure(curator.getZookeeperClient());
+    curator.newNamespaceAwareEnsurePath(Paths.statusHosts()).ensure(curator.getZookeeperClient());
+    curator.newNamespaceAwareEnsurePath(Paths.statusMasters()).ensure(curator.getZookeeperClient());
+    curator.newNamespaceAwareEnsurePath(Paths.historyJobs()).ensure(curator.getZookeeperClient());
 
     List<String> argsList = Lists.newArrayList("-vvvv",
                                                "--no-log-setup",
