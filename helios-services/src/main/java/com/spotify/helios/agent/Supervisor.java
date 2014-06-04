@@ -8,9 +8,9 @@ import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
-import com.spotify.helios.agent.docker.DockerClient;
-import com.spotify.helios.agent.docker.DockerException;
-import com.spotify.helios.agent.docker.messages.ContainerInfo;
+import com.spotify.docker.DockerClient;
+import com.spotify.docker.DockerException;
+import com.spotify.docker.messages.ContainerInfo;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;

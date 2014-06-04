@@ -2,8 +2,8 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Suppliers;
 
-import com.spotify.helios.agent.docker.DockerClient;
-import com.spotify.helios.agent.docker.messages.ImageInfo;
+import com.spotify.docker.DockerClient;
+import com.spotify.docker.messages.ImageInfo;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.serviceregistration.NopServiceRegistrar;

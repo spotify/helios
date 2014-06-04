@@ -147,6 +147,11 @@
       <artifactId>jersey-core</artifactId>
       <version>1.18.1</version>
     </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>docker-client</artifactId>
+      <version>1.0.1</version>
+    </dependency>
 
     <!--test deps-->
     <dependency>

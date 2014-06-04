@@ -3,9 +3,9 @@ package com.spotify.helios.agent;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import com.spotify.helios.agent.docker.messages.ContainerConfig;
-import com.spotify.helios.agent.docker.messages.HostConfig;
-import com.spotify.helios.agent.docker.messages.ImageInfo;
+import com.spotify.docker.messages.ContainerConfig;
+import com.spotify.docker.messages.HostConfig;
+import com.spotify.docker.messages.ImageInfo;
 import com.spotify.helios.common.descriptors.Job;
 
 import java.util.List;

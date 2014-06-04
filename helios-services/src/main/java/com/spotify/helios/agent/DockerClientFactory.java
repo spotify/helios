@@ -1,7 +1,7 @@
 package com.spotify.helios.agent;
 
-import com.spotify.helios.agent.docker.DefaultDockerClient;
-import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.docker.DefaultDockerClient;
+import com.spotify.docker.DockerClient;
 
 import java.net.URI;
 

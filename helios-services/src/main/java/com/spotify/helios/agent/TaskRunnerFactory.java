@@ -2,7 +2,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Supplier;
 
-import com.spotify.helios.agent.docker.DockerClient;
+import com.spotify.docker.DockerClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;

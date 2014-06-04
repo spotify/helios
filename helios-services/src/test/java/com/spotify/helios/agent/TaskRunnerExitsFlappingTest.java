@@ -6,16 +6,16 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 
+import com.spotify.docker.DockerClient;
+import com.spotify.docker.messages.ContainerConfig;
+import com.spotify.docker.messages.ContainerCreation;
+import com.spotify.docker.messages.ContainerExit;
+import com.spotify.docker.messages.ContainerInfo;
+import com.spotify.docker.messages.ContainerState;
+import com.spotify.docker.messages.ImageInfo;
+import com.spotify.docker.messages.NetworkSettings;
+import com.spotify.docker.messages.PortBinding;
 import com.spotify.helios.Polling;
-import com.spotify.helios.agent.docker.messages.ContainerConfig;
-import com.spotify.helios.agent.docker.messages.ContainerCreation;
-import com.spotify.helios.agent.docker.messages.ContainerExit;
-import com.spotify.helios.agent.docker.messages.ContainerInfo;
-import com.spotify.helios.agent.docker.messages.ContainerState;
-import com.spotify.helios.agent.docker.DockerClient;
-import com.spotify.helios.agent.docker.messages.ImageInfo;
-import com.spotify.helios.agent.docker.messages.NetworkSettings;
-import com.spotify.helios.agent.docker.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.serviceregistration.NopServiceRegistrar;
@@ -112,9 +112,9 @@ public class TaskRunnerExitsFlappingTest {
 
       @Override
       public NetworkSettings networkSettings() {
-        final NetworkSettings networkSettings = new NetworkSettings();
-        networkSettings.ports(Collections.<String, List<PortBinding>>emptyMap());
-        return networkSettings;
+        return NetworkSettings.builder()
+            .ports(Collections.<String, List<PortBinding>>emptyMap())
+            .build();
       }
     });
 
