@@ -39,7 +39,7 @@ if [[ -e /etc/spotify/helios.args ]]; then
 fi
 
 exec java \
-    "$HELIOS_MASTER_JVM_OPTS" \
+    $HELIOS_MASTER_JVM_OPTS \
     "${args[@]}" \
     -Djava.net.preferIPv4Stack=true \
     -cp "$CLASSPATH" \
