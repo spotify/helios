@@ -1,5 +1,5 @@
 Package: helios
-Version: [[project.version]]~[[git.commitsCount]].[[timestamp]].[[git.commit.id.describe]][[version_suffix]]
+Version: [[version]]
 Section: non-free/net
 Priority: optional
 Architecture: all

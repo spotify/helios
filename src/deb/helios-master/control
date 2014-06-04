@@ -1,9 +1,9 @@
 Package: helios-master
-Version: [[project.version]]~[[git.commitsCount]].[[timestamp]].[[git.commit.id.describe]][[version_suffix]]
+Version: [[version]]
 Section: non-free/net
 Priority: optional
 Architecture: all
-Depends: java7-runtime, helios-services (= [[project.version]]~[[git.commitsCount]].[[timestamp]].[[git.commit.id.describe]][[version_suffix]])
+Depends: java7-runtime, helios-services (= [[version]])
 Maintainer: Daniel Norberg <dano@spotify.com>
 Description: Helios Master
 Distribution: development

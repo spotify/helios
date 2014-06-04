@@ -146,7 +146,7 @@
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/helios_${project.version}~${git.commitsCount}.${timestamp}.${git.commit.id.describe}${version_suffix}_all.deb</deb>
+              <deb>${project.build.directory}/helios_${project.version}_all.deb</deb>
               <controlDir>${project.parent.basedir}/src/deb/helios</controlDir>
               <dataSet>
                 <data>
