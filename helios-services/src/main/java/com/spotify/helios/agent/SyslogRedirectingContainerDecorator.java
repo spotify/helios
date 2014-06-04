@@ -26,13 +26,13 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
   }
 
   @Override
-  public void decorateHostConfig(HostConfig hostConfig) {
+  public void decorateHostConfig(HostConfig.Builder hostConfig) {
     hostConfig.binds(asList("/usr/lib/helios:/helios:ro"));
   }
 
   @Override
   public void decorateContainerConfig(Job job, ImageInfo imageInfo,
-                                      ContainerConfig containerConfig) {
+                                      ContainerConfig.Builder containerConfig) {
     ContainerConfig imageConfig = imageInfo.containerConfig();
 
     final List<String> entrypoint = Lists.newArrayList("/helios/syslog-redirector",

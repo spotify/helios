@@ -134,7 +134,7 @@ public class DefaultDockerClient implements DockerClient {
   @Override
   public void startContainer(final String containerId)
       throws DockerException, InterruptedException {
-    startContainer(containerId, new HostConfig());
+    startContainer(containerId, HostConfig.builder().build());
   }
 
   @Override

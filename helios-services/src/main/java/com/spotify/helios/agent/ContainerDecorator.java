@@ -7,8 +7,8 @@ import com.spotify.helios.common.descriptors.Job;
 
 public interface ContainerDecorator {
 
-  void decorateHostConfig(HostConfig hostConfig);
+  void decorateHostConfig(HostConfig.Builder hostConfig);
 
   void decorateContainerConfig(Job job, ImageInfo imageInfo,
-                               ContainerConfig createConfig);
+                               ContainerConfig.Builder containerConfig);
 }

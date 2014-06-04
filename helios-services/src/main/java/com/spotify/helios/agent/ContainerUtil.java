@@ -63,16 +63,16 @@ public class ContainerUtil {
    * Create docker container configuration for a job.
    */
   public ContainerConfig containerConfig(final ImageInfo imageInfo) {
-    final ContainerConfig containerConfig = new ContainerConfig();
-    containerConfig.image(job.getImage());
-    containerConfig.cmd(job.getCommand());
-    containerConfig.env(containerEnvStrings());
-    containerConfig.exposedPorts(containerExposedPorts());
-    containerConfig.hostname(containerHostname(job.getId().getName() + "_" +
-                                               job.getId().getVersion()));
-    containerConfig.domainname(host);
-    containerDecorator.decorateContainerConfig(job, imageInfo, containerConfig);
-    return containerConfig;
+    final ContainerConfig.Builder builder = ContainerConfig.builder();
+    builder.image(job.getImage());
+    builder.cmd(job.getCommand());
+    builder.env(containerEnvStrings());
+    builder.exposedPorts(containerExposedPorts());
+    builder.hostname(containerHostname(job.getId().getName() + "_" +
+                                       job.getId().getVersion()));
+    builder.domainname(host);
+    containerDecorator.decorateContainerConfig(job, imageInfo, builder);
+    return builder.build();
   }
 
   /**
@@ -165,10 +165,10 @@ public class ContainerUtil {
    * Create a container host configuration for the job.
    */
   public HostConfig hostConfig() {
-    final HostConfig hostConfig = new HostConfig();
-    hostConfig.portBindings(portBindings());
-    containerDecorator.decorateHostConfig(hostConfig);
-    return hostConfig;
+    final HostConfig.Builder builder = HostConfig.builder()
+        .portBindings(portBindings());
+    containerDecorator.decorateHostConfig(builder);
+    return builder.build();
   }
 
   /**

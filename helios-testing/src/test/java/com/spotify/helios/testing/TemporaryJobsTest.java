@@ -63,12 +63,14 @@ public class TemporaryJobsTest extends SystemTestBase {
     final int port = ports.localPort("docker-probe");
     final DockerClient docker = new DefaultDockerClient(DOCKER_ENDPOINT);
     docker.pull("busybox");
-    final ContainerConfig config = new ContainerConfig();
-    config.image("busybox");
-    config.cmd(asList("nc", "-p", "4711", "-lle", "cat"));
-    config.exposedPorts(ImmutableSet.of("4711/tcp"));
-    final HostConfig hostConfig = new HostConfig();
-    hostConfig.portBindings(ImmutableMap.of("4711/tcp", asList(PortBinding.of("0.0.0.0", port))));
+    final ContainerConfig config = ContainerConfig.builder()
+        .image("busybox")
+        .cmd("nc", "-p", "4711", "-lle", "cat")
+        .exposedPorts(ImmutableSet.of("4711/tcp"))
+        .build();
+    final HostConfig hostConfig = HostConfig.builder()
+        .portBindings(ImmutableMap.of("4711/tcp", asList(PortBinding.of("0.0.0.0", port))))
+        .build();
     final ContainerCreation creation = docker.createContainer(config, PREFIX + "-probe");
     final String containerId = creation.id();
     docker.startContainer(containerId, hostConfig);

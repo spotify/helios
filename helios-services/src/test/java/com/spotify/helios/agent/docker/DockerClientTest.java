@@ -21,7 +21,6 @@ import static com.google.common.base.Optional.fromNullable;
 import static java.lang.Long.toHexString;
 import static java.lang.String.format;
 import static java.lang.System.getenv;
-import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.any;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.equalTo;
@@ -82,10 +81,11 @@ public class DockerClientTest {
     sut.pull("busybox");
 
     // Create container
-    final ContainerConfig config = new ContainerConfig();
+    final ContainerConfig config = ContainerConfig.builder()
+        .image("busybox")
+        .cmd("sh", "-c", "while :; do sleep 1; done")
+        .build();
     final String name = randomName();
-    config.image("busybox");
-    config.cmd(asList("sh", "-c", "while :; do sleep 1; done"));
     final ContainerCreation creation = sut.createContainer(config, name);
     final String id = creation.id();
     assertThat(creation.getWarnings(), anyOf(is(empty()), is(nullValue())));

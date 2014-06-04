@@ -8,13 +8,13 @@ import com.spotify.helios.common.descriptors.Job;
 public class NoOpContainerDecorator implements ContainerDecorator {
 
   @Override
-  public void decorateHostConfig(HostConfig hostConfig) {
+  public void decorateHostConfig(HostConfig.Builder hostConfig) {
     //noop
   }
 
   @Override
   public void decorateContainerConfig(Job job, ImageInfo imageInfo,
-                                      ContainerConfig containerConfig) {
+                                      ContainerConfig.Builder containerConfig) {
     //noop
   }
 }
