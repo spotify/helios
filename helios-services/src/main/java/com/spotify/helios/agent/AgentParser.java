@@ -24,6 +24,7 @@ package com.spotify.helios.agent;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 
+import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.ServiceParser;
 import com.yammer.dropwizard.config.HttpConfiguration;
 
@@ -33,8 +34,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.net.InetSocketAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.ArrayList;
@@ -63,12 +62,7 @@ public class AgentParser extends ServiceParser {
     super("helios-agent", "Spotify Helios Agent", args);
 
     final Namespace options = getNamespace();
-    final String uriString = options.getString("docker");
-    try {
-      new URI(uriString);
-    } catch (URISyntaxException e) {
-      throw new IllegalArgumentException("Bad docker endpoint: " + uriString, e);
-    }
+    final DockerHost dockerHost = DockerHost.from(options.getString(dockerArg.getDest()));
 
     final List<List<String>> env = options.getList(envArg.getDest());
     final Map<String, String> envVars = Maps.newHashMap();
@@ -110,7 +104,7 @@ public class AgentParser extends ServiceParser {
         .setZooKeeperConnectionTimeoutMillis(getZooKeeperConnectionTimeoutMillis())
         .setDomain(getDomain())
         .setEnvVars(envVars)
-        .setDockerEndpoint(options.getString(dockerArg.getDest()))
+        .setDockerHost(dockerHost)
         .setInhibitMetrics(getInhibitMetrics())
         .setRedirectToSyslog(options.getString(syslogRedirectToArg.getDest()))
         .setStateDirectory(Paths.get(options.getString(stateDirArg.getDest())))
@@ -166,7 +160,7 @@ public class AgentParser extends ServiceParser {
         .help("Directory for persisting agent state locally.");
 
     dockerArg = parser.addArgument("--docker")
-        .setDefault("http://localhost:4160")
+        .setDefault(DockerHost.fromEnv().host())
         .help("docker endpoint");
 
     envArg = parser.addArgument("--env")

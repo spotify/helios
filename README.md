@@ -36,7 +36,7 @@ of running:
 If you would like to run tests against a different docker instance then you can
 use the `DOCKER_HOST` environment variable. An example would be:
 
-    DOCKER_HOST=tcp://localhost:4160
+    DOCKER_HOST=localhost:4243
 
 The launcher scripts are in `bin/`
 

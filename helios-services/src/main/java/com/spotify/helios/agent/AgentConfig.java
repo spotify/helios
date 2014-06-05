@@ -21,6 +21,7 @@
 
 package com.spotify.helios.agent;
 
+import com.spotify.helios.servicescommon.DockerHost;
 import com.yammer.dropwizard.config.Configuration;
 
 import java.nio.file.Path;
@@ -31,7 +32,7 @@ public class AgentConfig extends Configuration {
   private String domain;
   private String name;
   private String zooKeeperConnectionString;
-  private String dockerEndpoint;
+  private DockerHost dockerHost;
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
   private Map<String, String> envVars;
@@ -92,13 +93,13 @@ public class AgentConfig extends Configuration {
     return this;
   }
 
-  public AgentConfig setDockerEndpoint(final String endpoint) {
-    this.dockerEndpoint = endpoint;
+  public AgentConfig setDockerHost(final DockerHost dockerHost) {
+    this.dockerHost = dockerHost;
     return this;
   }
 
-  public String getDockerEndpoint() {
-    return dockerEndpoint;
+  public DockerHost getDockerHost() {
+    return dockerHost;
   }
 
   public AgentConfig setZooKeeperSessionTimeoutMillis(final int timeoutMillis) {

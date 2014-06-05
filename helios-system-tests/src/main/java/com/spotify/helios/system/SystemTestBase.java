@@ -26,24 +26,23 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
-import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.helios.Polling;
-import com.spotify.helios.TemporaryPorts;
-import com.spotify.helios.ZooKeeperStandaloneServerManager;
-import com.spotify.helios.ZooKeeperTestManager;
-import com.spotify.helios.agent.AgentMain;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.LogMessage;
 import com.spotify.docker.client.LogReader;
 import com.spotify.docker.client.messages.Container;
+import com.spotify.helios.Polling;
+import com.spotify.helios.TemporaryPorts;
+import com.spotify.helios.ZooKeeperStandaloneServerManager;
+import com.spotify.helios.ZooKeeperTestManager;
+import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
@@ -60,6 +59,7 @@ import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
+import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.jersey.api.client.ClientResponse;
 
@@ -95,14 +95,12 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static java.lang.String.format;
-import static java.lang.System.getenv;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -129,24 +127,11 @@ public abstract class SystemTestBase {
       asList("sh", "-c", "while :; do sleep 1; done");
   public static final String JOB_VERSION = "test_17";
 
-  public static final int DOCKER_PORT = Integer.valueOf(env("DOCKER_PORT", "4160"));
-  public static final String DOCKER_HOST = env("DOCKER_HOST", ":" + DOCKER_PORT);
-  public static final String DOCKER_ADDRESS;
-  public static final String DOCKER_ENDPOINT;
+  private static final DockerHost dockerHost = DockerHost.fromEnv();
 
-  static {
-    // Parse DOCKER_HOST
-    final String stripped = DOCKER_HOST.replaceAll(".*://", "");
-    final HostAndPort hostAndPort = HostAndPort.fromString(stripped);
-    final String host = hostAndPort.getHostText();
-    final int port = hostAndPort.getPortOrDefault(DOCKER_PORT);
-    DOCKER_ADDRESS = Strings.isNullOrEmpty(host) ? "localhost" : host;
-    DOCKER_ENDPOINT = format("http://%s:%d", DOCKER_ADDRESS, port);
-  }
-
-  private static String env(final String key, final String defaultValue) {
-    return fromNullable(getenv(key)).or(defaultValue);
-  }
+  public static final String DOCKER_HOST = dockerHost.host();
+  public static final String DOCKER_ADDRESS = dockerHost.address();
+  public static final URI DOCKER_ENDPOINT = dockerHost.uri();
 
   private static final String TEST_USER = "test-user";
   private static final String TEST_HOST = "test-host";
@@ -426,7 +411,7 @@ public abstract class SystemTestBase {
                                                      "--no-log-setup",
                                                      "--no-http",
                                                      "--name", host,
-                                                     "--docker", DOCKER_ENDPOINT,
+                                                     "--docker=" + DOCKER_ENDPOINT,
                                                      "--zk", zk.connectString(),
                                                      "--zk-session-timeout", "100",
                                                      "--zk-connection-timeout", "100",

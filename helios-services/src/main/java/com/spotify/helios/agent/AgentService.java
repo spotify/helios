@@ -31,6 +31,7 @@ import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -64,6 +65,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
@@ -212,7 +214,7 @@ public class AgentService extends AbstractIdleService {
                                                                        config.getEnvVars(),
                                                                        nodeUpdaterFactory);
 
-    final DockerClient dockerClient = new DefaultDockerClient(config.getDockerEndpoint());
+    final DockerClient dockerClient = new DefaultDockerClient(config.getDockerHost().uri());
     final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,
                                                                           dockerClient);
 
