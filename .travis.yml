@@ -14,7 +14,7 @@ before_install:
   - echo exit 101 | sudo tee /usr/sbin/policy-rc.d
   - sudo chmod +x /usr/sbin/policy-rc.d
   - sudo apt-get install -qy slirp lxc lxc-docker
-  - git clone git://github.com/rohansingh/sekexe
+  - git clone git://github.com/spotify/sekexe
 
 before_script:
   - "export HOST_IP=`/sbin/ifconfig venet0:0 | grep 'inet addr' | awk -F: '{print $2}' | awk '{print $1}'`"
