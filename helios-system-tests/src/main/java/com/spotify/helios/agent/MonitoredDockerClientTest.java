@@ -4,9 +4,9 @@ import com.aphyr.riemann.Proto;
 import com.aphyr.riemann.client.AbstractRiemannClient;
 import com.aphyr.riemann.client.EventDSL;
 import com.aphyr.riemann.client.Promise;
-import com.spotify.docker.DockerClient;
-import com.spotify.docker.DockerException;
-import com.spotify.docker.DockerTimeoutException;
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.DockerTimeoutException;
 import com.spotify.helios.servicescommon.RiemannFacade;
 
 import org.junit.Before;

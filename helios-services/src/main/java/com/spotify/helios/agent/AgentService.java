@@ -10,8 +10,8 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.docker.DefaultDockerClient;
-import com.spotify.docker.DockerClient;
+import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;

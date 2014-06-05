@@ -1,8 +1,8 @@
 package com.spotify.helios.agent;
 
-import com.spotify.docker.DockerClient;
-import com.spotify.docker.DockerException;
-import com.spotify.docker.DockerTimeoutException;
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.DockerTimeoutException;
 import com.spotify.helios.servicescommon.RiemannFacade;
 
 import java.lang.reflect.InvocationHandler;

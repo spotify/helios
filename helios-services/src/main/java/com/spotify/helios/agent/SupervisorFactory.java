@@ -1,6 +1,6 @@
 package com.spotify.helios.agent;
 
-import com.spotify.docker.DockerClient;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;

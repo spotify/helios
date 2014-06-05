@@ -6,10 +6,10 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
-import com.spotify.docker.messages.ContainerConfig;
-import com.spotify.docker.messages.HostConfig;
-import com.spotify.docker.messages.ImageInfo;
-import com.spotify.docker.messages.PortBinding;
+import com.spotify.docker.client.messages.ContainerConfig;
+import com.spotify.docker.client.messages.HostConfig;
+import com.spotify.docker.client.messages.ImageInfo;
+import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 
