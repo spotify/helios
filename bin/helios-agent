@@ -33,12 +33,6 @@ if [ $JMXPORT ]; then
           -Dcom.sun.management.jmxremote.authenticate=false )
 fi
 
-if [[ -e /etc/spotify/helios.args ]]; then
-    args=("${args[@]}"
-          $(cat /etc/spotify/helios.args | grep -v \#) )
-fi
-
-
 exec java \
     $HELIOS_AGENT_JVM_OPTS \
     "${args[@]}" \

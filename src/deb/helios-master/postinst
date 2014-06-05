@@ -2,7 +2,7 @@
 if [ "$1" = configure ]; then
     # Make sure the helios user exists
     if ! getent passwd helios > /dev/null; then
-        adduser --system --quiet --home /spotify/var/helios --no-create-home \
+        adduser --system --quiet --home /var/lib/helios-master --no-create-home \
             --shell /bin/bash --group --gecos "Helios" helios
     fi
 

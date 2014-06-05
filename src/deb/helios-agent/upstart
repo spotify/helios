@@ -12,7 +12,7 @@ respawn limit unlimited
 env DEFAULTFILE=/etc/default/helios-agent
 
 setuid helios
-chdir /spotify/var/helios-agent
+chdir /var/lib/helios-agent
 
 pre-start script
   [ -f $DEFAULTFILE ] && . $DEFAULTFILE

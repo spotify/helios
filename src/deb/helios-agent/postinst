@@ -2,7 +2,7 @@
 if [ "$1" = configure ]; then
     # Make sure the helios user exists
     if ! getent passwd helios > /dev/null; then
-        adduser --system --quiet --home /spotify/var/helios-agent --no-create-home \
+        adduser --system --quiet --home /var/lib/helios-agent --no-create-home \
             --shell /bin/bash --group --gecos "Helios" helios
     fi
 
@@ -18,10 +18,10 @@ Please fix this and reinstall this package." >&2
         exit 1
     fi
     # ensure home directory ownership
-    mkdir -p /spotify/var/helios-agent
-    su - helios -c "test -O /spotify/var/helios-agent &&
-            test -G /spotify/var/helios-agent" || \
-        chown -R helios:helios /spotify/var/helios-agent
+    mkdir -p /var/lib/helios-agent
+    su - helios -c "test -O /var/lib/helios-agent &&
+            test -G /var/lib/helios-agent" || \
+        chown -R helios:helios /var/lib/helios-agent
 fi
 
 # Start helios-agent
