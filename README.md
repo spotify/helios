@@ -1,16 +1,16 @@
 # Helios
 
 If you're looking for how to use Helios, see the
-[Wiki](https://ghe.spotify.net/helios/helios/wiki), and most probably
+[Wiki](https://github.com/spotify/helios/wiki), and most probably
 the [User
-Manual](https://ghe.spotify.net/helios/helios/wiki/Helios-User-Manual)
+Manual](https://github.com/spotify/helios/wiki/Helios-User-Manual)
 is what you're looking for.
 
 # Building and Testing Helios
 
 You'll want Docker installed somewhere.  If you have Vagrant
 installed, it should be a simple matter of checking out the
-[helios-vagrant](https://ghe.spotify.net/helios/helios-vagrant)
+[helios-vagrant](https://github.com/spotify/helios-vagrant)
 repo, and following the instructions there to bring it up.  If you want to run it
 hosted on your actual machine, contact the NYCSI squad first, but you'll need our
 custom fork of Docker, an installation of ZooKeeper > 3.4.0 and probably some other

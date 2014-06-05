@@ -1,5 +1,0 @@
-#!/bin/bash
-
-ssh-agent sh -exc 'export LOGNAME=spotify-buildagent USER=spotify-buildagent \
-    && ssh-add /var/lib/jenkins/.ssh/spotify-buildagent.id_rsa \
-    && ./.spotify/create_cluster `date +%s`'

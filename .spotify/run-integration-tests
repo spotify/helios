@@ -1,2 +1,0 @@
-#!/bin/bash -x
-HELIOS_ENDPOINT=$(cat test.HELIOS_ENDPOINT) mvn -P integration-only verify

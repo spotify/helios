@@ -1,7 +1,0 @@
-#!/bin/bash
-## THIS ASSUMES YOU HAVE ZOOKEEPER RUNNING LOCALLY
-docker -H tcp://localhost:4160 \
-    run \
-    -e SPOTIFY_ROLE=helios-agent -e SPOTIFY_DOMAIN=localhost -e SPOTIFY_SITE=localhost -e ZOOKEEPER=172.17.42.1:2181 \
-    -h agent-container -t \
-    -i registry.spotify.net/spotify/helios
