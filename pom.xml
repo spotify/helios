@@ -21,6 +21,17 @@
     <tag>HEAD</tag>
   </scm>
 
+  <repositories>
+    <repository>
+      <id>bintray-dano</id>
+      <url>http://dl.bintray.com/dano/spotify</url>
+    </repository>
+    <repository>
+      <id>bintray-readytalk</id>
+      <url>http://dl.bintray.com/readytalk/maven</url>
+    </repository>
+  </repositories>
+
   <dependencies>
     <dependency>
       <groupId>com.intellij</groupId>
