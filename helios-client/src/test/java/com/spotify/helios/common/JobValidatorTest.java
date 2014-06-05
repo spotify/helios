@@ -91,9 +91,9 @@ public class JobValidatorTest {
     assertThat(validator.validate(b.setImage("reg.istry.:4711/namespace/repo").build()),
                is(empty()));
     assertThat(validator.validate(b.setImage("1.2.3.4:4711/namespace/repo").build()), is(empty()));
-    assertThat(validator.validate(b.setImage("registry.spotify.net:80/spotify/wiggum").build()),
+    assertThat(validator.validate(b.setImage("registry.test.net:80/fooo/bar").build()),
                is(empty()));
-    assertThat(validator.validate(b.setImage("registry.spotify.net.:80/spotify/wiggum").build()),
+    assertThat(validator.validate(b.setImage("registry.test.net.:80/fooo/bar").build()),
                is(empty()));
   }
 
