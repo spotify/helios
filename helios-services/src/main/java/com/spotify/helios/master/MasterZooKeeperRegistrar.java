@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode;
+
 public class MasterZooKeeperRegistrar implements ZooKeeperRegistrarEventListener {
 
   private static final Logger log = LoggerFactory.getLogger(MasterZooKeeperRegistrar.class);
@@ -71,7 +73,7 @@ public class MasterZooKeeperRegistrar implements ZooKeeperRegistrarEventListener
 
     if (upNode == null) {
       final String upPath = Paths.statusMasterUp(name);
-      upNode = client.persistentEphemeralNode(upPath, PersistentEphemeralNode.Mode.EPHEMERAL, new byte[]{});
+      upNode = client.persistentEphemeralNode(upPath, Mode.EPHEMERAL, new byte[]{});
       upNode.start();
     }
 

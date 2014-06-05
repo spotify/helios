@@ -41,12 +41,12 @@ public class VersionCommandTest extends SystemTestBase {
     final String regexp = String.format("(?s).*%s.*%s.*", POM_VERSION, POM_VERSION);
     assertTrue("response does not contain two version numbers - \n" + response,
                response.matches(regexp));
-    }
+  }
 
   @Test
   public void testJsonVersion() throws Exception {
     startDefaultMaster();
-    final VersionResponse version  = getVersion("version", "--json", "-z", getMasterEndpoint());
+    final VersionResponse version = getVersion("version", "--json", "-z", getMasterEndpoint());
     assertEquals("wrong client version", POM_VERSION, version.getClientVersion());
     assertEquals("wrong master version", POM_VERSION, version.getMasterVersion());
   }
@@ -78,5 +78,4 @@ public class VersionCommandTest extends SystemTestBase {
     final String response = main(args).toString();
     return Json.read(response, VersionResponse.class);
   }
-
 }

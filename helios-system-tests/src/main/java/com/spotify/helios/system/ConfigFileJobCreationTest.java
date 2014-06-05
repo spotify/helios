@@ -41,7 +41,8 @@ import static com.google.common.base.CharMatcher.WHITESPACE;
 import static org.junit.Assert.assertEquals;
 
 public class ConfigFileJobCreationTest extends SystemTestBase {
-  final int EXTERNAL_PORT = temporaryPorts.localPort("external");
+
+  private final int externalPort = temporaryPorts.localPort("external");
 
   @Test
   public void test() throws Exception {
@@ -49,12 +50,12 @@ public class ConfigFileJobCreationTest extends SystemTestBase {
 
     final HeliosClient client = defaultClient();
 
-    final String name = JOB_NAME;
+    final String name = jobName;
     final String version = "17";
     final String image = "busybox";
     final Map<String, PortMapping> ports = ImmutableMap.of(
         "foo", PortMapping.of(4711),
-        "bar", PortMapping.of(5000, EXTERNAL_PORT));
+        "bar", PortMapping.of(5000, externalPort));
     final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
         ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
         ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));

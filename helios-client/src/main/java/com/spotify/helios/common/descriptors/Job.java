@@ -62,11 +62,11 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
-             @JsonProperty("command") final @Nullable List<String> command,
-             @JsonProperty("env") final @Nullable Map<String, String> env,
-             @JsonProperty("ports") final @Nullable Map<String, PortMapping> ports,
-             @JsonProperty("registration")
-             final @Nullable Map<ServiceEndpoint, ServicePorts> registration) {
+             @JsonProperty("command") @Nullable final List<String> command,
+             @JsonProperty("env") @Nullable final Map<String, String> env,
+             @JsonProperty("ports") @Nullable final Map<String, PortMapping> ports,
+             @JsonProperty("registration") @Nullable
+             final Map<ServiceEndpoint, ServicePorts> registration) {
     this.id = checkNotNull(id, "id");
     this.image = checkNotNull(image, "image");
 

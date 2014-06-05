@@ -141,7 +141,7 @@ public class CliParser {
     // 3. endpoints from config file
     // 4. sites from config file
 
-    // TODO (dano): this is kind of complex, make sure it matches the defaults in the help and maybe factor out and unit test it
+    // TODO (dano): complex, refactor and unit test it
     final List<String> domains = ImmutableList.copyOf(concat(domainsArguments, sitesArguments));
     this.targets = computeTargets(parser, explicitEndpoints, domains, srvName);
   }

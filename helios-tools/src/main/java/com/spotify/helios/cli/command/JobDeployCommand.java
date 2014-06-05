@@ -70,8 +70,8 @@ public class JobDeployCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJobId(final Namespace options, final HeliosClient client, final PrintStream out,
-                             final boolean json, final JobId jobId)
+  protected int runWithJobId(final Namespace options, final HeliosClient client,
+                             final PrintStream out, final boolean json, final JobId jobId)
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
 
@@ -95,7 +95,7 @@ public class JobDeployCommand extends WildcardJobCommand {
 
     if (code == 0 && options.getBoolean(watchArg.getDest())) {
       JobWatchCommand.watchJobsOnHosts(out, true, hosts, ImmutableList.of(jobId),
-        options.getInt(intervalArg.getDest()), client);
+                                       options.getInt(intervalArg.getDest()), client);
     }
     return code;
   }

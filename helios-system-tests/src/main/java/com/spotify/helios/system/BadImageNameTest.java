@@ -33,7 +33,7 @@ public class BadImageNameTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
     exception.expect(IllegalArgumentException.class);
-    createJob(JOB_NAME, JOB_VERSION, "DOES_NOT_LIKE_AT_ALL-CAPITALS",
+    createJob(jobName, JOB_VERSION, "DOES_NOT_LIKE_AT_ALL-CAPITALS",
               ImmutableList.of("/bin/true"));
   }
 }

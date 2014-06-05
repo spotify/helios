@@ -52,7 +52,7 @@ public class UndeployRaceTest extends SystemTestBase {
 
     // Create, deploy and undeploy a job on the host without the agent running
     final Job job = Job.newBuilder()
-        .setName(JOB_NAME)
+        .setName(jobName)
         .setVersion(JOB_VERSION)
         .setImage("ubuntu:12.04")
         .setCommand(DO_NOTHING_COMMAND)

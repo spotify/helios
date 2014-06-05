@@ -79,12 +79,12 @@ public class CliDeploymentTest extends SystemTestBase {
     awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, image, DO_NOTHING_COMMAND, env, ports,
+    final JobId jobId = createJob(jobName, JOB_VERSION, image, DO_NOTHING_COMMAND, env, ports,
                                   registration);
 
     // Query for job
     final Job expected = Job.newBuilder()
-        .setName(JOB_NAME)
+        .setName(jobName)
         .setVersion(JOB_VERSION)
         .setImage(image)
         .setCommand(DO_NOTHING_COMMAND)
@@ -95,8 +95,8 @@ public class CliDeploymentTest extends SystemTestBase {
     final String inspectOutput = cli("inspect", "--json", expected.getId().toString());
     final Job parsed = Json.read(inspectOutput, Job.class);
     assertEquals(expected, parsed);
-    assertContains(jobId.toString(), cli("jobs", JOB_NAME, "-q"));
-    assertContains(jobId.toString(), cli("jobs", JOB_NAME + ":" + JOB_VERSION, "-q"));
+    assertContains(jobId.toString(), cli("jobs", jobName, "-q"));
+    assertContains(jobId.toString(), cli("jobs", jobName + ":" + JOB_VERSION, "-q"));
     assertEquals("job pattern foozbarz matched no jobs", cli("jobs", "foozbarz", "-q").trim());
 
     // Create a new job using the first job as a template
@@ -105,8 +105,8 @@ public class CliDeploymentTest extends SystemTestBase {
         .build();
     final JobId clonedJobId = JobId.parse(WHITESPACE.trimFrom(
         cli("create", "-q", "-t",
-            JOB_NAME + ":" + JOB_VERSION,
-            JOB_NAME, JOB_VERSION + "-cloned")));
+            jobName + ":" + JOB_VERSION,
+            jobName, JOB_VERSION + "-cloned")));
     final String clonedInspectOutput = cli("inspect", "--json", clonedJobId.toString());
     final Job clonedParsed = Json.read(clonedInspectOutput, Job.class);
     assertEquals(expectedCloned, clonedParsed);
@@ -123,7 +123,7 @@ public class CliDeploymentTest extends SystemTestBase {
     assertEquals(PortMapping.of(5000, externalPort), job.getPorts().get("bar"));
     assertEquals("f00d", job.getEnv().get("BAD"));
 
-    final String duplicateJob = cli("create", JOB_NAME, JOB_VERSION, image, "--",
+    final String duplicateJob = cli("create", jobName, JOB_VERSION, image, "--",
                                     DO_NOTHING_COMMAND);
     assertContains("JOB_ALREADY_EXISTS", duplicateJob);
 

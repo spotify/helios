@@ -51,7 +51,7 @@ public class JobWatchExactTest extends SystemTestBase {
     awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND);
+    final JobId jobId = createJob(jobName, JOB_VERSION, "busybox", DO_NOTHING_COMMAND);
 
     // deploy
     deployJob(jobId, getTestHost());

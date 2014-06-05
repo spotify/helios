@@ -83,7 +83,8 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     containerStartedCounterName = new MetricName(group, TYPE, "container_started_counter");
     containersExitedCounterName = new MetricName(group, TYPE, "containers_exited_counter");
     containersRunningCounterName = new MetricName(group, TYPE, "containers_running_counter");
-    containersThrewExceptionCounterName = new MetricName(group, TYPE, "containers_threw_exception_counter");
+    containersThrewExceptionCounterName = new MetricName(group, TYPE,
+                                                         "containers_threw_exception_counter");
     imageCacheHitCounterName = new MetricName(group, TYPE, "image_cache_hit_counter");
     supervisorClosedCounterName = new MetricName(group, TYPE, "supervisor_closed_counter");
     supervisorStartedCounterName = new MetricName(group, TYPE, "supervisors_created_counter");
@@ -94,7 +95,8 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
     containerStartedMeterName = new MetricName(group, TYPE, "container_started_meter");
     containersExitedMeterName = new MetricName(group, TYPE, "containers_exited_meter");
     containersRunningMeterName = new MetricName(group, TYPE, "containers_running_meter");
-    containersThrewExceptionMeterName = new MetricName(group, TYPE, "containers_threw_exception_meter");
+    containersThrewExceptionMeterName = new MetricName(group, TYPE,
+                                                       "containers_threw_exception_meter");
     imageCacheHitMeterName = new MetricName(group, TYPE, "image_cache_hit_meter");
     supervisorClosedMeterName = new MetricName(group, TYPE, "supervisor_closed_meter");
     supervisorStartedMeterName = new MetricName(group, TYPE, "supervisors_created_meter");

@@ -44,6 +44,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.timeout;
@@ -51,7 +52,8 @@ import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
-  private final int EXTERNAL_PORT = temporaryPorts.localPort("external");
+
+  private final int externalPort = temporaryPorts.localPort("external");
 
   @Mock
   public ServiceRegistrar registrar;
@@ -81,7 +83,7 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
     awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     final ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
-        "PORT_NAME", PortMapping.of(INTERNAL_PORT, EXTERNAL_PORT));
+        "PORT_NAME", PortMapping.of(INTERNAL_PORT, externalPort));
 
     final String serviceName = "SERVICE";
     final String serviceProto = "PROTO";
@@ -89,19 +91,20 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
     final ImmutableMap<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
         ServiceEndpoint.of(serviceName, serviceProto), ServicePorts.of("PORT_NAME"));
 
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
+    final JobId jobId = createJob(jobName, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
                                   EMPTY_ENV, portMapping, registration);
 
     deployJob(jobId, getTestHost());
     awaitJobState(client, getTestHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
-    verify(registrar, timeout((int) MINUTES.toMillis(LONG_WAIT_MINUTES))).register(registrationCaptor.capture());
+    verify(registrar, timeout((int) MINUTES.toMillis(LONG_WAIT_MINUTES)))
+        .register(registrationCaptor.capture());
     final ServiceRegistration serviceRegistration = registrationCaptor.getValue();
 
-    final ServiceRegistration.Endpoint endpoint = getOnlyElement(serviceRegistration.getEndpoints());
+    final Endpoint endpoint = getOnlyElement(serviceRegistration.getEndpoints());
 
     assertEquals("wrong service", serviceName, endpoint.getName());
     assertEquals("wrong protocol", serviceProto, endpoint.getProtocol());
-    assertEquals("wrong port", endpoint.getPort(), EXTERNAL_PORT);
+    assertEquals("wrong port", endpoint.getPort(), externalPort);
   }
 }

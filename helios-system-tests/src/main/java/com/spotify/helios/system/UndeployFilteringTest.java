@@ -52,7 +52,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 
 public class UndeployFilteringTest extends SystemTestBase {
+
   private static final String TEST_HOST = "testhost";
+
   private CuratorFramework curator;
   private ZooKeeperClientProvider zkcp;
   private ZooKeeperMasterModel zkMasterModel;
@@ -60,8 +62,8 @@ public class UndeployFilteringTest extends SystemTestBase {
   private HeliosClient client;
 
   // Create a job
-  private final Job JOB = Job.newBuilder()
-      .setName(JOB_NAME)
+  private final Job job = Job.newBuilder()
+      .setName(jobName)
       .setVersion(JOB_VERSION)
       .setImage("busybox")
       .setCommand(DO_NOTHING_COMMAND)
@@ -125,9 +127,9 @@ public class UndeployFilteringTest extends SystemTestBase {
   }
 
   private JobId createAndAwaitJobRunning() throws Exception {
-    final CreateJobResponse jobby = client.createJob(JOB).get();
+    final CreateJobResponse jobby = client.createJob(job).get();
     assertEquals(CreateJobResponse.Status.OK, jobby.getStatus());
-    final JobId jobId = JOB.getId();
+    final JobId jobId = job.getId();
     final JobDeployResponse deployResponse = client.deploy(
         Deployment.of(jobId, START), TEST_HOST).get();
     assertEquals(JobDeployResponse.Status.OK, deployResponse.getStatus());

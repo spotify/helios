@@ -48,12 +48,13 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class DeploymentTest extends SystemTestBase {
-  private final int EXTERNAL_PORT = temporaryPorts.localPort("external");
+
+  private final int externalPort = temporaryPorts.localPort("external");
 
   @Test
   public void test() throws Exception {
     final Map<String, PortMapping> ports = ImmutableMap.of(
-        "foos", PortMapping.of(17, EXTERNAL_PORT));
+        "foos", PortMapping.of(17, externalPort));
 
     startDefaultMaster();
 
@@ -62,7 +63,7 @@ public class DeploymentTest extends SystemTestBase {
 
     // Create a job
     final Job job = Job.newBuilder()
-        .setName(JOB_NAME)
+        .setName(jobName)
         .setVersion(JOB_VERSION)
         .setImage("ubuntu:12.04")
         .setCommand(DO_NOTHING_COMMAND)
@@ -76,13 +77,13 @@ public class DeploymentTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.JOB_ALREADY_EXISTS, duplicateJob.getStatus());
 
     // Try querying for the job
-    final Map<JobId, Job> noMatchJobs = client.jobs(JOB_NAME + "not_matching").get();
+    final Map<JobId, Job> noMatchJobs = client.jobs(jobName + "not_matching").get();
     assertTrue(noMatchJobs.isEmpty());
 
-    final Map<JobId, Job> matchJobs1 = client.jobs(JOB_NAME).get();
+    final Map<JobId, Job> matchJobs1 = client.jobs(jobName).get();
     assertEquals(ImmutableMap.of(jobId, job), matchJobs1);
 
-    final Map<JobId, Job> matchJobs2 = client.jobs(JOB_NAME + ":" + JOB_VERSION).get();
+    final Map<JobId, Job> matchJobs2 = client.jobs(jobName + ":" + JOB_VERSION).get();
     assertEquals(ImmutableMap.of(jobId, job), matchJobs2);
 
     final Map<JobId, Job> matchJobs3 = client.jobs(job.getId().toString()).get();

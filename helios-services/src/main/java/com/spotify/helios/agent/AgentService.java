@@ -223,8 +223,7 @@ public class AgentService extends AbstractIdleService {
         ? new SyslogRedirectingContainerDecorator(config.getRedirectToSyslog())
         : new NoOpContainerDecorator(),
         config.getName(),
-        metrics.getSupervisorMetrics(),
-        riemannFacade
+        metrics.getSupervisorMetrics()
     );
 
     final ReactorFactory reactorFactory = new ReactorFactory();

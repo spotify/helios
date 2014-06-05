@@ -64,7 +64,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Create a job
     final Job job = Job.newBuilder()
-        .setName(JOB_NAME)
+        .setName(jobName)
         .setVersion(JOB_VERSION)
         .setImage("busybox")
         .setCommand(DO_NOTHING_COMMAND)
@@ -117,7 +117,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
         Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
           @Override
           public String call() throws Exception {
-            final List<Container> containers = listContainers(dockerClient, PREFIX);
+            final List<Container> containers = listContainers(dockerClient, prefix);
             return containers.size() == 1 ? containers.get(0).id() : null;
           }
         });
@@ -137,7 +137,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
         Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
           @Override
           public String call() throws Exception {
-            final List<Container> containers = listContainers(dockerClient, PREFIX);
+            final List<Container> containers = listContainers(dockerClient, prefix);
             return containers.size() == 1 ? containers.get(0).id() : null;
           }
         });

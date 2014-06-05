@@ -158,8 +158,8 @@ public abstract class SystemTestBase {
   @Rule public final ExpectedException exception = ExpectedException.none();
   @Rule public final TestRule watcher = new LoggingTestWatcher();
 
-  public final String PREFIX = "test_" + Integer.toHexString(new SecureRandom().nextInt());
-  public final String JOB_NAME = PREFIX + "foo";
+  public final String prefix = "test_" + Integer.toHexString(new SecureRandom().nextInt());
+  public final String jobName = prefix + "foo";
 
   private int masterPort;
   private int masterAdminPort;
@@ -297,7 +297,7 @@ public abstract class SystemTestBase {
       final List<Container> containers = dockerClient.listContainers();
       for (final Container container : containers) {
         for (final String name : container.names()) {
-          if (name.contains(PREFIX)) {
+          if (name.contains(prefix)) {
             try {
               dockerClient.killContainer(container.id());
             } catch (DockerException e) {
@@ -329,7 +329,7 @@ public abstract class SystemTestBase {
     final HeliosClient c = defaultClient();
     final Map<JobId, Job> jobs = c.jobs().get();
     for (JobId jobId : jobs.keySet()) {
-      if (!jobId.toString().startsWith(PREFIX)) {
+      if (!jobId.toString().startsWith(prefix)) {
         continue;
       }
       final JobStatus st = c.jobStatus(jobId).get();
@@ -343,7 +343,7 @@ public abstract class SystemTestBase {
 
     final List<ListenableFuture<JobDeleteResponse>> deletes = Lists.newArrayList();
     for (JobId jobId : jobs.keySet()) {
-      if (!jobId.toString().startsWith(PREFIX)) {
+      if (!jobId.toString().startsWith(prefix)) {
         continue;
       }
       log.info("Deleting job " + jobId);
@@ -475,7 +475,7 @@ public abstract class SystemTestBase {
                   final Map<String, PortMapping> ports,
                   final Map<ServiceEndpoint, ServicePorts> registration)
       throws Exception {
-    checkArgument(name.contains(PREFIX), "Job name must contain PREFIX to enable cleanup");
+    checkArgument(name.contains(prefix), "Job name must contain prefix to enable cleanup");
 
     final List<String> args = Lists.newArrayList("-q", name, version, image);
 

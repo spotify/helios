@@ -38,7 +38,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 
 public class PortCollisionJobTest extends SystemTestBase {
-  private final int EXTERNAL_PORT = temporaryPorts.localPort("external");
+
+  private final int externalPort = temporaryPorts.localPort("external");
 
   @Test
   public void test() throws Exception {
@@ -50,19 +51,19 @@ public class PortCollisionJobTest extends SystemTestBase {
     awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     final Job job1 = Job.newBuilder()
-        .setName(PREFIX + "foo")
+        .setName(prefix + "foo")
         .setVersion("1")
         .setImage("busybox")
         .setCommand(DO_NOTHING_COMMAND)
-        .setPorts(ImmutableMap.of("foo", PortMapping.of(10001, EXTERNAL_PORT)))
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(10001, externalPort)))
         .build();
 
     final Job job2 = Job.newBuilder()
-        .setName(PREFIX + "bar")
+        .setName(prefix + "bar")
         .setVersion("1")
         .setImage("busybox")
         .setCommand(DO_NOTHING_COMMAND)
-        .setPorts(ImmutableMap.of("foo", PortMapping.of(10002, EXTERNAL_PORT)))
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(10002, externalPort)))
         .build();
 
     final CreateJobResponse created1 = client.createJob(job1).get();

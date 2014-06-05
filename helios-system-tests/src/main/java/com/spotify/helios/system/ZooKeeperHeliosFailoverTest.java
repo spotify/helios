@@ -43,15 +43,15 @@ import static org.junit.Assert.assertEquals;
 
 public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
 
-  private final Job FOO = Job.newBuilder()
-      .setName(PREFIX + "foo")
+  private final Job fooJob = Job.newBuilder()
+      .setName(prefix + "foo")
       .setVersion(JOB_VERSION)
       .setImage("busybox")
       .setCommand(DO_NOTHING_COMMAND)
       .build();
 
-  private final Job BAR = Job.newBuilder()
-      .setName(PREFIX + "bar")
+  private final Job barJob = Job.newBuilder()
+      .setName(prefix + "bar")
       .setVersion(JOB_VERSION)
       .setImage("busybox")
       .setCommand(DO_NOTHING_COMMAND)
@@ -76,22 +76,22 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
 
   @Test
   public void verifyCanDeployWithOnePeerDead() throws Exception {
-    deploy(FOO);
+    deploy(fooJob);
     zkc.stopPeer(0);
-    undeploy(FOO.getId());
-    deploy(BAR);
+    undeploy(fooJob.getId());
+    deploy(barJob);
   }
 
   @Test
   public void verifyCanDeployWithOneNodeDeadAfterOneNodeDataLoss() throws Exception {
-    deploy(FOO);
+    deploy(fooJob);
     zkc.stopPeer(0);
     zkc.resetPeer(0);
     zkc.startPeer(0);
     zkc.awaitUp(LONG_WAIT_MINUTES, MINUTES);
     zkc.stopPeer(1);
-    undeploy(FOO.getId());
-    deploy(BAR);
+    undeploy(fooJob.getId());
+    deploy(barJob);
   }
 
   private void deploy(final Job job) throws Exception {

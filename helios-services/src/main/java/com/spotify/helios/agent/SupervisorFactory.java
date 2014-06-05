@@ -48,15 +48,13 @@ public class SupervisorFactory {
   private final ContainerDecorator containerDecorator;
   private final String host;
   private final SupervisorMetrics metrics;
-  private final RiemannFacade riemannFacade;
 
   public SupervisorFactory(final AgentModel model, final DockerClient dockerClient,
                            final Map<String, String> envVars,
-                           final @Nullable ServiceRegistrar registrar,
+                           final ServiceRegistrar registrar,
                            final ContainerDecorator containerDecorator,
                            final String host,
-                           final SupervisorMetrics supervisorMetrics,
-                           final RiemannFacade riemannFacade) {
+                           final SupervisorMetrics supervisorMetrics) {
     this.dockerClient = dockerClient;
     this.model = checkNotNull(model);
     this.envVars = checkNotNull(envVars);
@@ -64,7 +62,6 @@ public class SupervisorFactory {
     this.containerDecorator = containerDecorator;
     this.host = host;
     this.metrics = supervisorMetrics;
-    this.riemannFacade = riemannFacade;
   }
 
   /**

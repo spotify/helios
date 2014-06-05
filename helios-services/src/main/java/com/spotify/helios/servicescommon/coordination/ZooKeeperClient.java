@@ -68,9 +68,11 @@ public interface ZooKeeperClient {
 
   PersistentPathChildrenCache pathChildrenCache(String path, Path snapshotFile) throws IOException;
 
-  Collection<CuratorTransactionResult> transaction(List<ZooKeeperOperation> operations) throws KeeperException;
+  Collection<CuratorTransactionResult> transaction(List<ZooKeeperOperation> operations)
+      throws KeeperException;
 
-  Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations) throws KeeperException;
+  Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations)
+      throws KeeperException;
 
   void delete(String path, int version) throws KeeperException;
 

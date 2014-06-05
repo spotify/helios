@@ -119,7 +119,7 @@ public class MasterConfig extends Configuration {
   }
 
   public String getServiceRegistryAddress() {
-    return serviceRegistryAddress ;
+    return serviceRegistryAddress;
   }
 
   public String getSentryDsn() {

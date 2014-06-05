@@ -58,7 +58,7 @@ public class DeregisterTest extends SystemTestBase {
 
     // Create a job
     final Job job = Job.newBuilder()
-        .setName(JOB_NAME)
+        .setName(jobName)
         .setVersion(JOB_VERSION)
         .setImage("ubuntu:12.04")
         .setCommand(DO_NOTHING_COMMAND)

@@ -67,7 +67,8 @@ public class TemporaryJobs extends ExternalResource {
     public TemporaryJob deploy(final Job job, final String hostFilter,
                                final Set<String> waitPorts) {
       if (isNullOrEmpty(hostFilter)) {
-        fail("a host filter pattern must be passed to hostFilter(), or one must be specified in HELIOS_HOST_FILTER");
+        fail("a host filter pattern must be passed to hostFilter(), " +
+             "or one must be specified in HELIOS_HOST_FILTER");
       }
 
       final List<String> hosts;
@@ -97,7 +98,8 @@ public class TemporaryJobs extends ExternalResource {
       }
 
       if (hosts.isEmpty()) {
-        fail("at least one host must be explicitly specified, or deploy() must be called with no arguments to automatically select a host");
+        fail("at least one host must be explicitly specified, or deploy() must be called with " +
+             "no arguments to automatically select a host");
       }
 
       log.info("Deploying {} to {}", job.getImage(), Joiner.on(", ").skipNulls().join(hosts));

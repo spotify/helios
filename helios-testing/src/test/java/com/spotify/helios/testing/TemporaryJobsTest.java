@@ -92,7 +92,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     final HostConfig hostConfig = HostConfig.builder()
         .portBindings(ImmutableMap.of("4711/tcp", asList(PortBinding.of("0.0.0.0", port))))
         .build();
-    final ContainerCreation creation = docker.createContainer(config, PREFIX + "-probe");
+    final ContainerCreation creation = docker.createContainer(config, prefix + "-probe");
     final String containerId = creation.id();
     docker.startContainer(containerId, hostConfig);
 

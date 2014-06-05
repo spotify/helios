@@ -33,12 +33,10 @@ public class Hash {
   }
 
   public static MessageDigest sha1() {
-    final MessageDigest SHA1;
     try {
-      SHA1 = MessageDigest.getInstance("SHA-1");
+      return MessageDigest.getInstance("SHA-1");
     } catch (NoSuchAlgorithmException e) {
       throw propagate(e);
     }
-    return SHA1;
   }
 }

@@ -241,7 +241,9 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
     return Joiner.on(',').join(endpoints(addresses).values());
   }
 
-  private Path peerDir(final long id) {return tempDir.resolve(Long.toString(id));}
+  private Path peerDir(final long id) {
+    return tempDir.resolve(Long.toString(id));
+  }
 
   private Map<Long, QuorumServer> createPeers(final int n) {
     final ImmutableMap.Builder<Long, QuorumServer> peers = ImmutableMap.builder();

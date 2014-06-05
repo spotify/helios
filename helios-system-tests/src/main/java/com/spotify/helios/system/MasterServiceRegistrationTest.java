@@ -65,7 +65,8 @@ public class MasterServiceRegistrationTest extends ServiceRegistrationTestBase {
   public void test() throws Exception {
     startDefaultMaster("--service-registry=" + registryAddress);
 
-    verify(registrar, timeout((int) MINUTES.toMillis(LONG_WAIT_MINUTES))).register(registrationCaptor.capture());
+    verify(registrar, timeout((int) MINUTES.toMillis(LONG_WAIT_MINUTES)))
+        .register(registrationCaptor.capture());
     final ServiceRegistration registration = registrationCaptor.getValue();
 
     final ServiceRegistration.Endpoint endpoint = getOnlyElement(registration.getEndpoints());
