@@ -210,6 +210,14 @@ public class TemporaryJobsTest extends SystemTestBase {
           .deploy();
     }
 
+    @Test
+    public void testImageFromBuild() {
+      temporaryJobs.job()
+          .imageFromBuild()
+          .command("sh", "-c", "while :; do sleep 5; done")
+          .deploy();
+    }
+
     private void ping(final String host, final int port) throws Exception {
       try (final Socket s = new Socket(host, port)) {
         byte[] ping = "ping".getBytes(UTF_8);
