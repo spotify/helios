@@ -17,7 +17,7 @@
   </licenses>
 
   <scm>
-    <developerConnection>scm:git:git@ghe.spotify.net:helios/helios.git</developerConnection>
+    <developerConnection>scm:git:git@github.com:spotify/helios.git</developerConnection>
     <tag>HEAD</tag>
   </scm>
 
