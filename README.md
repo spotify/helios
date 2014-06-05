@@ -1,5 +1,7 @@
 # Helios
 
+[![Build Status](https://magnum.travis-ci.com/spotify/helios.svg?token=rqLwwGnbfyVvDL1A5Ked&branch=rohan/travis-ci)](https://magnum.travis-ci.com/spotify/helios)
+
 If you're looking for how to use Helios, see the
 [Wiki](https://github.com/spotify/helios/wiki), and most probably
 the [User
