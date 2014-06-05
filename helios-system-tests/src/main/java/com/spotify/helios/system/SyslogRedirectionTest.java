@@ -29,6 +29,7 @@ import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.List;
@@ -41,6 +42,8 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 
+// TODO (dano): open source the syslog-redirector and enable this test
+@Ignore("This needs the syslog-redirector")
 public class SyslogRedirectionTest extends SystemTestBase {
 
   @Test
