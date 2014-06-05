@@ -45,7 +45,7 @@ public class SentryTest {
 
   private static final Logger log = LoggerFactory.getLogger(SentryTest.class);
 
-  @Rule public TemporaryPorts temporaryPorts = new TemporaryPorts();
+  @Rule public TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
   private static final int UDP_SERVER_TIMEOUT = 5000;
 

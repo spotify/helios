@@ -46,7 +46,7 @@ import static org.junit.Assert.assertEquals;
 
 public class DeregisterTest extends SystemTestBase {
 
-  @Rule public final TemporaryPorts ports = new TemporaryPorts();
+  @Rule public final TemporaryPorts ports = TemporaryPorts.create();
 
   @Test
   public void test() throws Exception {

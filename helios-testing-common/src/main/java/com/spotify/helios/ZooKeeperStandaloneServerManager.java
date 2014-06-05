@@ -47,7 +47,7 @@ import static org.apache.commons.io.FileUtils.deleteQuietly;
 
 public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
 
-  @Rule public final TemporaryPorts temporaryPorts = new TemporaryPorts();
+  @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
   private final int port = temporaryPorts.localPort("zookeeper");
   private final String endpoint = "127.0.0.1:" + port;

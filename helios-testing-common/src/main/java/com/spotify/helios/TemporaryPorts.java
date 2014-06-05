@@ -45,6 +45,7 @@ import java.nio.file.Paths;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static java.lang.String.format;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -54,43 +55,31 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TemporaryPorts extends ExternalResource {
 
-  // Allocate below the linux default ephemeral port range
-  private static final int MIN_PORT = 20000;
-  private static final int MAX_PORT = 32768;
-
-  // Keep port locks for the duration of the process by default to avoid e.g. failing tests where
-  // ports are still in use after the test to affect subsequent tests.
-  private static final boolean DEFAULT_RELEASE = false;
-
-  private static final int DEFAULT_RETRIES = 100;
-  private static final Path DEFAULT_LOCK_DIRECTORY = Paths.get("/tmp/helios-test/ports/");
-
   private static final Logger log = LoggerFactory.getLogger(TemporaryPorts.class);
 
+  // Allocate below the linux default ephemeral port range
+  private static final int DEFAULT_START = 20000;
+  private static final int DEFAULT_END = 32768;
+  private static final int DEFAULT_RETRIES = 100;
+  private static final Path DEFAULT_LOCK_DIRECTORY = Paths.get("/tmp/helios-test/ports/");
+  private static final boolean DEFAULT_RELEASE = false;
+
+  private final List<AllocatedPort> ports = Lists.newArrayList();
+
+  private final int start;
+  private final int end;
   private final boolean release;
   private final int retries;
   private final Path lockDirectory;
 
-  private final List<AllocatedPort> ports = Lists.newArrayList();
-
   private volatile boolean closed;
 
-  public TemporaryPorts() {
-    this(DEFAULT_RELEASE);
-  }
-
-  public TemporaryPorts(final boolean release) {
-    this(release, DEFAULT_RETRIES);
-  }
-
-  public TemporaryPorts(final boolean release, final int retries) {
-    this(release, retries, DEFAULT_LOCK_DIRECTORY);
-  }
-
-  public TemporaryPorts(final boolean release, final int retries, final Path lockDirectory) {
-    this.release = release;
-    this.retries = retries;
-    this.lockDirectory = lockDirectory;
+  private TemporaryPorts(final Builder builder) {
+    this.start = builder.start;
+    this.end = builder.end;
+    this.release = builder.release;
+    this.retries = builder.retries;
+    this.lockDirectory = checkNotNull(builder.lockDirectory, "lockDirectory");
     try {
       Files.createDirectories(lockDirectory);
     } catch (IOException e) {
@@ -170,7 +159,7 @@ public class TemporaryPorts extends ExternalResource {
   }
 
   private int randomPort() {
-    return ThreadLocalRandom.current().nextInt(MIN_PORT, MAX_PORT);
+    return ThreadLocalRandom.current().nextInt(start, end);
   }
 
   @SuppressWarnings("ThrowFromFinallyBlock")
@@ -228,6 +217,10 @@ public class TemporaryPorts extends ExternalResource {
     }
   }
 
+  public static TemporaryPorts create() {
+    return builder().build();
+  }
+
   private static class AllocatedPort {
 
     private Path path;
@@ -260,5 +253,64 @@ public class TemporaryPorts extends ExternalResource {
   }
 
   public class AllocationFailedException extends RuntimeException {
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+
+    private int start = DEFAULT_START;
+    private int end = DEFAULT_END;
+    private Path lockDirectory = DEFAULT_LOCK_DIRECTORY;
+    private boolean release = DEFAULT_RELEASE;
+    private int retries = DEFAULT_RETRIES;
+
+    public int start() {
+      return start;
+    }
+
+    public Builder start(final int start) {
+      this.start = start;
+      return this;
+    }
+
+    public int end() {
+      return end;
+    }
+
+    public Builder end(final int end) {
+      this.end = end;
+      return this;
+    }
+
+    public Path lockDirectory() {
+      return lockDirectory;
+    }
+
+    public void lockDirectory(final Path lockDirectory) {
+      this.lockDirectory = lockDirectory;
+    }
+
+    public boolean release() {
+      return release;
+    }
+
+    public void release(final boolean release) {
+      this.release = release;
+    }
+
+    public int retries() {
+      return retries;
+    }
+
+    public void retries(final int retries) {
+      this.retries = retries;
+    }
+
+    public TemporaryPorts build() {
+      return new TemporaryPorts(this);
+    }
   }
 }

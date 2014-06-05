@@ -63,7 +63,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperClusterTestManager.class);
 
-  @Rule public final TemporaryPorts temporaryPorts = new TemporaryPorts();
+  @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
   protected Map<Long, QuorumServer> zkPeers;
   protected Map<Long, InetSocketAddress> zkAddresses;

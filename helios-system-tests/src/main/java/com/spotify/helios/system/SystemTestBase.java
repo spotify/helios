@@ -137,7 +137,7 @@ public abstract class SystemTestBase {
   private static final String TEST_HOST = "test-host";
   private static final String TEST_MASTER = "test-master";
 
-  @Rule public final TemporaryPorts temporaryPorts = new TemporaryPorts();
+  @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
   @Rule public final ExpectedException exception = ExpectedException.none();
