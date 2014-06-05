@@ -51,7 +51,7 @@ public class ContainerHostNameTest extends SystemTestBase {
     final List<String> command = asList("hostname", "-f");
 
     // Create job
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", command);
+    final JobId jobId = createJob(jobName, JOB_VERSION, "busybox", command);
 
     // deploy
     deployJob(jobId, getTestHost());
@@ -63,6 +63,6 @@ public class ContainerHostNameTest extends SystemTestBase {
       log = logs.readFully();
     }
 
-    assertContains(JOB_NAME + "_" + JOB_VERSION + "." + getTestHost(), log);
+    assertContains(jobName + "_" + JOB_VERSION + "." + getTestHost(), log);
   }
 }

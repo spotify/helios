@@ -51,7 +51,7 @@ public class JobHistoryTest extends SystemTestBase {
 
     startDefaultAgent(getTestHost());
     awaitHostStatus(getTestHost(), Status.UP, LONG_WAIT_MINUTES, MINUTES);
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "ubuntu:12.04", DO_NOTHING_COMMAND);
+    final JobId jobId = createJob(jobName, JOB_VERSION, "ubuntu:12.04", DO_NOTHING_COMMAND);
     deployJob(jobId, getTestHost());
     awaitJobState(client, getTestHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
     undeployJob(jobId, getTestHost());
@@ -93,7 +93,7 @@ public class JobHistoryTest extends SystemTestBase {
         break;
       }
       assertNull(event.getStatus().getContainerId());
-      n ++;
+      n++;
     }
     final TaskStatusEvent event1 = eventsList.get(n);
     assertEquals(State.CREATING, event1.getStatus().getState());

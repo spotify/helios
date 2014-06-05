@@ -42,7 +42,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.common.Version.POM_VERSION;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_HEADER;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
@@ -94,7 +96,7 @@ public class VersionResponseFilterTest extends SystemTestBase {
   @Test
   public void testPatchVersion() throws Exception {
     final String newVersion = current.getMajor() + "." + current.getMinor() + "."
-        + (current.getPatch() + 1);
+                              + (current.getPatch() + 1);
     final HttpURLConnection connection = doVersionRequest(newVersion);
     assertResponseCodeType(connection, 2);
     assertServerVersion(connection);
@@ -127,11 +129,11 @@ public class VersionResponseFilterTest extends SystemTestBase {
   }
 
   private void assertVersionStatus(final HttpURLConnection connection, final String status) {
-    assertEquals(status, connection.getHeaderField(VersionCompatibility.HELIOS_VERSION_STATUS_HEADER));
+    assertEquals(status, connection.getHeaderField(HELIOS_VERSION_STATUS_HEADER));
   }
 
   private void assertServerVersion(final HttpURLConnection connection) {
-    assertEquals(POM_VERSION, connection.getHeaderField(VersionCompatibility.HELIOS_SERVER_VERSION_HEADER));
+    assertEquals(POM_VERSION, connection.getHeaderField(HELIOS_SERVER_VERSION_HEADER));
   }
 
   private HttpURLConnection doVersionRequest(String version) throws IOException {
@@ -142,7 +144,7 @@ public class VersionResponseFilterTest extends SystemTestBase {
       headers.put(HELIOS_VERSION_HEADER, asList(version));
     }
     final URI uri = URI.create(getMasterEndpoint() + "/version");
-    final HttpURLConnection connection = connect(uri,  headers);
+    final HttpURLConnection connection = connect(uri, headers);
     return connection;
   }
 

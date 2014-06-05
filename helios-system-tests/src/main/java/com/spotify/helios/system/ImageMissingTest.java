@@ -46,7 +46,7 @@ public class ImageMissingTest extends SystemTestBase {
 
     awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
-    JobId jobId = createJob(JOB_NAME, JOB_VERSION, "this_sould_not_exist",
+    JobId jobId = createJob(jobName, JOB_VERSION, "this_sould_not_exist",
                             ImmutableList.of("/bin/true"));
 
     deployJob(jobId, getTestHost());

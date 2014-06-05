@@ -51,8 +51,8 @@ public class JobStartCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJobId(final Namespace options, final HeliosClient client, final PrintStream out,
-                             final boolean json, final JobId jobId)
+  protected int runWithJobId(final Namespace options, final HeliosClient client,
+                             final PrintStream out, final boolean json, final JobId jobId)
       throws ExecutionException, InterruptedException, IOException {
 
     final List<String> hosts = options.getList(hostsArg.getDest());

@@ -37,7 +37,8 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class PredefinedPortImageDeploymentTest extends SystemTestBase {
-  private final int EXTERNAL_PORT = temporaryPorts.localPort("external");
+
+  private final int externalPort = temporaryPorts.localPort("external");
 
   @Test
   public void test() throws Exception {
@@ -48,7 +49,7 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
 
     // Create a job using an image exposing port 11211 but without mapping it
     final Job job1 = Job.newBuilder()
-        .setName(PREFIX + "memcached")
+        .setName(prefix + "memcached")
         .setVersion("v1")
         .setImage("skxskx/memcached")
         .setCommand(DO_NOTHING_COMMAND)
@@ -58,11 +59,11 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
 
     // Create a job using an image exposing port 11211 and map it to a specific external port
     final Job job2 = Job.newBuilder()
-        .setName(PREFIX + "memcached")
+        .setName(prefix + "memcached")
         .setVersion("v2")
         .setImage("skxskx/memcached")
         .setCommand(DO_NOTHING_COMMAND)
-        .setPorts(ImmutableMap.of("tcp", PortMapping.of(11211, EXTERNAL_PORT)))
+        .setPorts(ImmutableMap.of("tcp", PortMapping.of(11211, externalPort)))
         .build();
     final JobId jobId2 = job2.getId();
     client.createJob(job2).get();

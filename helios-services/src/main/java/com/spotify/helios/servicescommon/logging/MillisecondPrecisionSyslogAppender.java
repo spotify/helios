@@ -41,7 +41,6 @@ public class MillisecondPrecisionSyslogAppender extends SyslogAppender {
 
   PatternLayout stackTraceLayout = new PatternLayout();
 
-
   public void start() {
     super.start();
     setupStackTraceLayout();

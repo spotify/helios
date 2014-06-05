@@ -55,7 +55,8 @@ public class EnvironmentVariableReporter extends InterruptingScheduledService {
   }
 
   @Override
-  protected ScheduledFuture<?> schedule(Runnable runnable, ScheduledExecutorService executorService) {
+  protected ScheduledFuture<?> schedule(final Runnable runnable,
+                                        final ScheduledExecutorService executorService) {
     return executorService.scheduleWithFixedDelay(runnable, 0, RETRY_INTERVAL_MILLIS, MILLISECONDS);
   }
 }

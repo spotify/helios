@@ -60,9 +60,11 @@ public class MillisecondPrecisionSyslogStartConverter extends SyslogStartConvert
     try {
       // ASL doesn't handle milliseconds.
       if (os.equals("Mac OS X")) {
-        simpleFormat = new SimpleDateFormat("MMM dd HH:mm:ss", new DateFormatSymbols(Locale.US));
+        simpleFormat = new SimpleDateFormat("MMM dd HH:mm:ss",
+                                            new DateFormatSymbols(Locale.US));
       } else {
-        simpleFormat = new SimpleDateFormat("MMM dd HH:mm:ss.SSS", new DateFormatSymbols(Locale.US));
+        simpleFormat = new SimpleDateFormat("MMM dd HH:mm:ss.SSS",
+                                            new DateFormatSymbols(Locale.US));
       }
     } catch (IllegalArgumentException e) {
       addError("Could not instantiate SimpleDateFormat", e);

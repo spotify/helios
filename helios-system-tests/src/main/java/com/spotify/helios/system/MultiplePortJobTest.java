@@ -24,10 +24,10 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 
-import com.spotify.helios.Polling;
-import com.spotify.helios.agent.AgentMain;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.helios.Polling;
+import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -47,8 +47,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 public class MultiplePortJobTest extends SystemTestBase {
-  private final int EXTERNAL_PORT1 = temporaryPorts.localPort("external-1");
-  private final int EXTERNAL_PORT2 = temporaryPorts.localPort("external-2");
+
+  private final int externalPort1 = temporaryPorts.localPort("external-1");
+  private final int externalPort2 = temporaryPorts.localPort("external-2");
 
   @Test
   public void test() throws Exception {
@@ -67,21 +68,21 @@ public class MultiplePortJobTest extends SystemTestBase {
 
     final Map<String, PortMapping> ports1 =
         ImmutableMap.of("foo", PortMapping.of(4711),
-                        "bar", PortMapping.of(4712, EXTERNAL_PORT1));
+                        "bar", PortMapping.of(4712, externalPort1));
 
     final ImmutableMap<String, PortMapping> expectedMapping1 =
         ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint()),
-                        "bar", PortMapping.of(4712, EXTERNAL_PORT1));
+                        "bar", PortMapping.of(4712, externalPort1));
 
     final Map<String, PortMapping> ports2 =
         ImmutableMap.of("foo", PortMapping.of(4711),
-                        "bar", PortMapping.of(4712, EXTERNAL_PORT2));
+                        "bar", PortMapping.of(4712, externalPort2));
 
     final ImmutableMap<String, PortMapping> expectedMapping2 =
         ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint() + 1),
-                        "bar", PortMapping.of(4712, EXTERNAL_PORT2));
+                        "bar", PortMapping.of(4712, externalPort2));
 
-    final JobId jobId1 = createJob(JOB_NAME + 1, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
+    final JobId jobId1 = createJob(jobName + 1, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
                                    EMPTY_ENV, ports1);
 
     assertNotNull(jobId1);
@@ -89,7 +90,7 @@ public class MultiplePortJobTest extends SystemTestBase {
     final TaskStatus firstTaskStatus1 = awaitJobState(client, getTestHost(), jobId1, RUNNING,
                                                       LONG_WAIT_MINUTES, MINUTES);
 
-    final JobId jobId2 = createJob(JOB_NAME + 2, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
+    final JobId jobId2 = createJob(jobName + 2, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
                                    EMPTY_ENV, ports2);
 
     assertNotNull(jobId2);

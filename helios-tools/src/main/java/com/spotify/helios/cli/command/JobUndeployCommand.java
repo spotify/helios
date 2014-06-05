@@ -59,8 +59,8 @@ public class JobUndeployCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJobId(final Namespace options, final HeliosClient client, final PrintStream out,
-                             final boolean json, final JobId jobId)
+  protected int runWithJobId(final Namespace options, final HeliosClient client,
+                             final PrintStream out, final boolean json, final JobId jobId)
       throws ExecutionException, InterruptedException, IOException {
 
     final boolean all = options.getBoolean(allArg.getDest());

@@ -51,7 +51,8 @@ public class HistoryResource {
   @GET
   @Produces(APPLICATION_JSON)
   @Path("jobs/{id}")
-  public TaskStatusEvents jobHistory(@PathParam("id") @Valid final JobId jobId) throws HeliosException {
+  public TaskStatusEvents jobHistory(@PathParam("id") @Valid final JobId jobId)
+      throws HeliosException {
     try {
       final List<TaskStatusEvent> events = model.getJobHistory(jobId);
       final TaskStatusEvents result = new TaskStatusEvents(events, OK);

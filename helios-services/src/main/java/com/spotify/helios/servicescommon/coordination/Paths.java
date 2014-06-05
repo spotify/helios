@@ -66,7 +66,8 @@ public class Paths {
     return CONFIG_JOBS.path(id.toString());
   }
 
-  public static boolean isConfigJobCreation(final JobId id, final String parent, final String child) {
+  public static boolean isConfigJobCreation(final JobId id, final String parent,
+                                            final String child) {
     return child.startsWith(CREATION_PREFIX);
   }
 

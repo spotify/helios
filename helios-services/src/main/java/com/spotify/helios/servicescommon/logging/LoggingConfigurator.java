@@ -203,8 +203,8 @@ public class LoggingConfigurator {
     // Setup format
     final PatternLayoutEncoder encoder = new PatternLayoutEncoder();
     encoder.setContext(context);
-    encoder.setPattern(
-        "%date{HH:mm:ss.SSS} %property{ident}[%property{pid}]: %-5level [%thread] %logger{0}: %msg%n");
+    encoder.setPattern("%date{HH:mm:ss.SSS} %property{ident}[%property{pid}]: " +
+                       "%-5level [%thread] %logger{0}: %msg%n");
     encoder.start();
 
     // Setup stderr appender

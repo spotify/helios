@@ -80,7 +80,8 @@ public class HostInfoReporter extends InterruptingScheduledService {
   }
 
   @Override
-  protected ScheduledFuture<?> schedule(Runnable runnable, ScheduledExecutorService executorService) {
+  protected ScheduledFuture<?> schedule(final Runnable runnable,
+                                        final ScheduledExecutorService executorService) {
     return executorService.scheduleWithFixedDelay(runnable, 0, interval, timeUnit);
   }
 

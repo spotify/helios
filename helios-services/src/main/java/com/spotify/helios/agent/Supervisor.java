@@ -109,8 +109,8 @@ public class Supervisor {
     this.currentCommand = new Nop();
     this.reactor = new DefaultReactor("supervisor-" + jobId, new Update(), SECONDS.toMillis(30));
     this.reactor.startAsync();
-    this.statusUpdater = new DefaultStatusUpdater(goal, throttle, builder.containerUtil, stateManager,
-        containerIdSupplier);
+    this.statusUpdater = new DefaultStatusUpdater(goal, throttle, builder.containerUtil,
+                                                  stateManager, containerIdSupplier);
     this.runnerFactory = builder.runnerFactory;
   }
 
@@ -192,7 +192,8 @@ public class Supervisor {
     public void run(final boolean timeout) throws InterruptedException {
       final Command command = currentCommand;
       final boolean done = performedCommand == command;
-      log.debug("Supervisor {}: update: performedCommand={}, command={}, done={}", jobId, performedCommand, command, done);
+      log.debug("Supervisor {}: update: performedCommand={}, command={}, done={}",
+                jobId, performedCommand, command, done);
       command.perform(done);
       if (!done) {
         performedCommand = command;
@@ -280,7 +281,7 @@ public class Supervisor {
       return this;
     }
 
-    public Builder setServiceRegistrar(final @Nullable ServiceRegistrar registrar) {
+    public Builder setServiceRegistrar(final ServiceRegistrar registrar) {
       this.registrar = registrar;
       return this;
     }
@@ -342,7 +343,9 @@ public class Supervisor {
         return;
       }
 
-      // TODO (dano): Fix Runner mechanism to ensure that the below cannot ever happen. Currently it is possible to by mistake (programming error) introduce an early return in the Runner that doesn't set the result.
+      // TODO (dano): Fix Runner mechanism to ensure that the below cannot ever happen.
+      // TODO (dano): Currently it is possible to by mistake (programming error) introduce an
+      // TODO (dano): early return in the Runner that doesn't set the result.
       if (!runner.result().isDone()) {
         log.warn("runner not running but result future not done!");
         startAfter(restartPolicy.restartThrottle(throttle.get()));

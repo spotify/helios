@@ -151,11 +151,11 @@ public class JobValidator {
       repo = imageRef;
     }
 
-    final String INVALID_REPOSITORY_NAME =
-        "Invalid repository name (ex: \"registry.domain.tld/myrepos\")";
+    final String invalidRepoName = "Invalid repository name (ex: \"registry.domain.tld/myrepos\")";
+
     if (repo.contains("://")) {
       // It cannot contain a scheme!
-      errors.add(INVALID_REPOSITORY_NAME);
+      errors.add(invalidRepoName);
       return false;
     }
 
@@ -170,7 +170,7 @@ public class JobValidator {
     if (nameParts.length < 2) {
       // There is a dot in repos name (and no registry address)
       // Is it a Registry address without repos name?
-      errors.add(INVALID_REPOSITORY_NAME);
+      errors.add(invalidRepoName);
       return false;
     }
 

@@ -49,8 +49,8 @@ public class JobRemoveCommand extends WildcardJobCommand {
   }
 
   @Override
-  protected int runWithJobId(final Namespace options, final HeliosClient client, final PrintStream out,
-                             final boolean json, final JobId jobId)
+  protected int runWithJobId(final Namespace options, final HeliosClient client,
+                             final PrintStream out, final boolean json, final JobId jobId)
       throws IOException, ExecutionException, InterruptedException {
     final boolean force = options.getBoolean(forceArg.getDest());
 

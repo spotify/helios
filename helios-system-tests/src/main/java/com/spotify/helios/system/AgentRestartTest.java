@@ -66,7 +66,7 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Create a job
     final Job job = Job.newBuilder()
-        .setName(JOB_NAME)
+        .setName(jobName)
         .setVersion(JOB_VERSION)
         .setImage("busybox")
         .setCommand(DO_NOTHING_COMMAND)
@@ -88,7 +88,7 @@ public class AgentRestartTest extends SystemTestBase {
     final TaskStatus firstTaskStatus = awaitJobState(client, getTestHost(), jobId, RUNNING,
                                                      LONG_WAIT_MINUTES, MINUTES);
     assertEquals(job, firstTaskStatus.getJob());
-    assertEquals(1, listContainers(dockerClient, PREFIX).size());
+    assertEquals(1, listContainers(dockerClient, prefix).size());
     assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state().running());
 
     // Stop the agent
@@ -110,7 +110,7 @@ public class AgentRestartTest extends SystemTestBase {
       assertEquals(RUNNING, taskStatus.getState());
     }
     assertEquals(firstTaskStatus.getContainerId(), taskStatus.getContainerId());
-    assertEquals(1, listContainers(dockerClient, PREFIX).size());
+    assertEquals(1, listContainers(dockerClient, prefix).size());
     assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state().running());
 
     // Stop the agent
@@ -119,7 +119,7 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Kill the container
     dockerClient.killContainer(firstTaskStatus.getContainerId());
-    assertEquals(0, listContainers(dockerClient, PREFIX).size());
+    assertEquals(0, listContainers(dockerClient, prefix).size());
 
     // Start the agent again
     final AgentMain agent3 = startDefaultAgent(getTestHost());
@@ -140,7 +140,7 @@ public class AgentRestartTest extends SystemTestBase {
                    : null;
           }
         });
-    assertEquals(1, listContainers(dockerClient, PREFIX).size());
+    assertEquals(1, listContainers(dockerClient, prefix).size());
     assertTrue(dockerClient.inspectContainer(secondTaskStatus.getContainerId()).state().running());
 
     // Stop the agent
@@ -169,7 +169,7 @@ public class AgentRestartTest extends SystemTestBase {
                : null;
       }
     });
-    assertEquals(1, listContainers(dockerClient, PREFIX).size());
+    assertEquals(1, listContainers(dockerClient, prefix).size());
     assertTrue(dockerClient.inspectContainer(thirdTaskStatus.getContainerId()).state().running());
 
     // Stop the agent
@@ -186,7 +186,7 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Verify that the task is stopped
     awaitJobState(client, getTestHost(), jobId, STOPPED, LONG_WAIT_MINUTES, MINUTES);
-    assertEquals(0, listContainers(dockerClient, PREFIX).size());
+    assertEquals(0, listContainers(dockerClient, prefix).size());
 
     // Stop the agent
     agent5.stopAsync().awaitTerminated();
@@ -203,7 +203,7 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Verify that the task is started
     awaitJobState(client, getTestHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
-    assertEquals(1, listContainers(dockerClient, PREFIX).size());
+    assertEquals(1, listContainers(dockerClient, prefix).size());
 
     // Stop the agent
     agent6.stopAsync().awaitTerminated();
@@ -219,6 +219,6 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Wait for the task to get removed
     awaitTaskGone(client, getTestHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
-    assertEquals(0, listContainers(dockerClient, PREFIX).size());
+    assertEquals(0, listContainers(dockerClient, prefix).size());
   }
 }

@@ -57,7 +57,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
     final List<String> command = asList("sh", "-c", "echo should-be-redirected");
 
     // Create job
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "ubuntu:12.04", command,
+    final JobId jobId = createJob(jobName, JOB_VERSION, "ubuntu:12.04", command,
                                   ImmutableMap.of("FOO", "4711",
                                                   "BAR", "deadbeef"));
 

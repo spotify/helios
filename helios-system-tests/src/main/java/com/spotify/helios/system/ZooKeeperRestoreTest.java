@@ -47,8 +47,8 @@ import static org.junit.Assert.assertEquals;
 
 public class ZooKeeperRestoreTest extends SystemTestBase {
 
-  private final Job FOO = Job.newBuilder()
-      .setName(JOB_NAME)
+  private final Job fooJob = Job.newBuilder()
+      .setName(jobName)
       .setVersion(JOB_VERSION)
       .setImage("busybox")
       .setCommand(DO_NOTHING_COMMAND)
@@ -71,7 +71,7 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     startDefaultMaster();
     client = defaultClient();
 
-    final CreateJobResponse created = client.createJob(FOO).get();
+    final CreateJobResponse created = client.createJob(fooJob).get();
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
   }
 
@@ -108,7 +108,7 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     agent1.stopAsync().awaitTerminated();
 
     // Deploy job
-    final Deployment deployment = Deployment.of(FOO.getId(), START);
+    final Deployment deployment = Deployment.of(fooJob.getId(), START);
     final JobDeployResponse deployed = client.deploy(deployment, getTestHost()).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
@@ -120,7 +120,7 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for agent to indicate that job is running
-    awaitJobState(client, getTestHost(), FOO.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, getTestHost(), fooJob.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
     // Restore zk, erasing task state
     zkc.stop();
@@ -128,9 +128,9 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     zkc.start();
 
     // Wait for agent to again indicate that job is running
-    awaitJobState(client, getTestHost(), FOO.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, getTestHost(), fooJob.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
     // Remove task status
-    zkc.curator().delete().forPath(Paths.statusHostJob(getTestHost(), FOO.getId()));
+    zkc.curator().delete().forPath(Paths.statusHostJob(getTestHost(), fooJob.getId()));
   }
 }

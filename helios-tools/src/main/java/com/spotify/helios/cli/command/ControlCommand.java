@@ -86,7 +86,7 @@ public abstract class ControlCommand {
     try {
       endpoints = target.getEndpointSupplier().get();
     } catch (Exception ignore) {
-      // TODO (dano): Nasty. Target should be refactored so it can propagate resolution failure in a checked manner.
+      // TODO (dano): Nasty. Refactor target to propagate resolution failure in a checked manner.
     }
     if (endpoints.size() == 0) {
       err.println("Failed to resolve helios master in " + target);

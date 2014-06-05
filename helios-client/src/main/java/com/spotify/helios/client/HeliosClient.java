@@ -137,7 +137,7 @@ public class HeliosClient {
   }
 
   private URI uri(final String path, final Map<String, String> query) {
-    // TODO: use a uri builder and clean this mess up
+    // TODO(dano): use a uri builder and clean this mess up
     checkArgument(path.startsWith("/"));
     final Map<String, String> queryWithUser = Maps.newHashMap(query);
     queryWithUser.put("user", user);
@@ -208,9 +208,11 @@ public class HeliosClient {
         }
         URI realUri = connection.getURL().toURI();
         if (log.isTraceEnabled()) {
-          log.trace("rep: {} {} {} {} {}", method, realUri, status, payload.size(), decode(payload));
+          log.trace("rep: {} {} {} {} {}",
+                    method, realUri, status, payload.size(), decode(payload));
         } else {
-          log.debug("rep: {} {} {} {}", method, realUri, status, payload.size());
+          log.debug("rep: {} {} {} {}",
+                    method, realUri, status, payload.size());
         }
         checkprotocolVersionStatus(connection);
         return new Response(method, uri, status, payload.toByteArray());

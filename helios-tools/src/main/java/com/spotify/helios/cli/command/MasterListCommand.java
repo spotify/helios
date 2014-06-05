@@ -38,7 +38,8 @@ public class MasterListCommand extends ControlCommand {
   }
 
   @Override
-  int run(final Namespace options, final HeliosClient client, final PrintStream out, final boolean json)
+  int run(final Namespace options, final HeliosClient client, final PrintStream out,
+          final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> masters = client.listMasters().get();
     for (final String master : masters) {

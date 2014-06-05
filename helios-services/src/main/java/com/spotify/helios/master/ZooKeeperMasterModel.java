@@ -139,7 +139,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public List<String> listHosts() {
     try {
-      // TODO (dano): only return hosts whose agents completed registration (i.e. has agent id nodes)
+      // TODO (dano): only return hosts whose agents completed registration (i.e. has id nodes)
       return provider.get("listHosts").getChildren(Paths.configHosts());
     } catch (KeeperException.NoNodeException e) {
       return emptyList();
@@ -501,7 +501,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new HeliosRuntimeException("reading existing task description failed", e);
     }
 
-    // TODO (dano): Failure handling is racy wrt agent and job modifications. Probably rare, but still.
+    // TODO (dano): Failure handling is racy wrt agent and job modifications.
     try {
       client.transaction(operations);
       log.info("deployed {}: {} (retry={})", deployment, host, count);
@@ -793,7 +793,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new JobNotDeployedException(host, jobId);
     }
 
-    // TODO (dano): is this safe? can e.g. the ports of an undeployed job collide with a new deployment?
+    // TODO (dano): Is this safe? can the ports of an undeployed job collide with a new deployment?
     // TODO (drewc):  If it's still in UNDEPLOY, that means the agent hasn't gotten to it
     //    yet, which means it probably won't see the new job yet either.  However, it may spin up
     //    a new supervisor for the new job before the old one is done being torn down.  So it can

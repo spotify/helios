@@ -52,7 +52,7 @@ public class JobWatchTest extends SystemTestBase {
     awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
-    final JobId jobId = createJob(JOB_NAME, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
+    final JobId jobId = createJob(jobName, JOB_VERSION, "busybox", DO_NOTHING_COMMAND,
                                   ImmutableMap.of("FOO", "4711",
                                                   "BAR", "deadbeef"));
 
