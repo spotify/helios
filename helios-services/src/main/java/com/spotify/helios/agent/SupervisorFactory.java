@@ -1,10 +1,10 @@
 package com.spotify.helios.agent;
 
-import com.spotify.helios.agent.docker.*;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
 import java.util.Map;

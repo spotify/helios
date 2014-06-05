@@ -1,8 +1,8 @@
 package com.spotify.helios.agent;
 
-import com.spotify.helios.agent.docker.messages.ContainerConfig;
-import com.spotify.helios.agent.docker.messages.HostConfig;
-import com.spotify.helios.agent.docker.messages.ImageInfo;
+import com.spotify.docker.client.messages.ContainerConfig;
+import com.spotify.docker.client.messages.HostConfig;
+import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.helios.common.descriptors.Job;
 
 public interface ContainerDecorator {

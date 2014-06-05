@@ -8,9 +8,9 @@ import com.google.common.collect.ImmutableMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.Polling;
-import com.spotify.helios.agent.docker.DefaultDockerClient;
-import com.spotify.helios.agent.docker.DockerClient;
-import com.spotify.helios.agent.docker.LogStream;
+import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -22,8 +22,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import static com.spotify.helios.agent.docker.DockerClient.LogsParameter.STDERR;
-import static com.spotify.helios.agent.docker.DockerClient.LogsParameter.STDOUT;
+import static com.spotify.docker.client.DockerClient.LogsParameter.STDERR;
+import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;

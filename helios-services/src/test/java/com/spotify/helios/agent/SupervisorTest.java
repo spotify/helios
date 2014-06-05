@@ -9,17 +9,17 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.SettableFuture;
 
-import com.spotify.helios.agent.docker.DockerClient;
-import com.spotify.helios.agent.docker.DockerException;
-import com.spotify.helios.agent.docker.messages.ContainerConfig;
-import com.spotify.helios.agent.docker.messages.ContainerCreation;
-import com.spotify.helios.agent.docker.messages.ContainerExit;
-import com.spotify.helios.agent.docker.messages.ContainerInfo;
-import com.spotify.helios.agent.docker.messages.ContainerState;
-import com.spotify.helios.agent.docker.messages.HostConfig;
-import com.spotify.helios.agent.docker.messages.ImageInfo;
-import com.spotify.helios.agent.docker.messages.NetworkSettings;
-import com.spotify.helios.agent.docker.messages.PortBinding;
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.messages.ContainerConfig;
+import com.spotify.docker.client.messages.ContainerCreation;
+import com.spotify.docker.client.messages.ContainerExit;
+import com.spotify.docker.client.messages.ContainerInfo;
+import com.spotify.docker.client.messages.ContainerState;
+import com.spotify.docker.client.messages.HostConfig;
+import com.spotify.docker.client.messages.ImageInfo;
+import com.spotify.docker.client.messages.NetworkSettings;
+import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -94,9 +94,9 @@ public class SupervisorTest {
 
     @Override
     public NetworkSettings networkSettings() {
-      final NetworkSettings settings = new NetworkSettings();
-      settings.ports(Collections.<String, List<PortBinding>>emptyMap());
-      return settings;
+      return NetworkSettings.builder()
+          .ports(Collections.<String, List<PortBinding>>emptyMap())
+          .build();
     }
   };
 
