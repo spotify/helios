@@ -71,4 +71,4 @@ other Java libraries.
     ./release.sh
 
     # Push it
-    git push origin master && git push origin release && git push origin --tags
+    ./push-release.sh
