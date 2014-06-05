@@ -23,8 +23,8 @@ package com.spotify.helios.testing;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Range;
 
-import com.spotify.helios.TemporaryPorts;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.ContainerConfig;
@@ -32,6 +32,7 @@ import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.PortBinding;
+import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -77,11 +78,25 @@ public class TemporaryJobsTest extends SystemTestBase {
   private static HeliosClient client;
   private static String testHost;
 
-  private final TemporaryPorts ports = new TemporaryPorts();
+  private final TemporaryPorts ports = TemporaryPorts.create();
+  private final Range<Integer> dockerPortRange;
+  private final int dockerProbePort;
+
+  {
+    final String portRange = System.getenv("DOCKER_PORT_RANGE");
+    if (portRange != null) {
+      final String[] parts = portRange.split(":", 2);
+      dockerPortRange = Range.closedOpen(Integer.valueOf(parts[0]),
+                                         Integer.valueOf(parts[1]));
+      dockerProbePort = dockerPortRange.lowerEndpoint();
+    } else {
+      dockerPortRange = ports.localPortRange("temporary-jobs", 10);
+      dockerProbePort = ports.localPort("docker-probe");
+    }
+  }
 
   @Before
   public void verifyContainerReachability() throws Exception {
-    final int port = ports.localPort("docker-probe");
     final DockerClient docker = new DefaultDockerClient(DOCKER_ENDPOINT);
     docker.pull("busybox");
     final ContainerConfig config = ContainerConfig.builder()
@@ -90,7 +105,8 @@ public class TemporaryJobsTest extends SystemTestBase {
         .exposedPorts(ImmutableSet.of("4711/tcp"))
         .build();
     final HostConfig hostConfig = HostConfig.builder()
-        .portBindings(ImmutableMap.of("4711/tcp", asList(PortBinding.of("0.0.0.0", port))))
+        .portBindings(ImmutableMap.of("4711/tcp",
+                                      asList(PortBinding.of("0.0.0.0", dockerProbePort))))
         .build();
     final ContainerCreation creation = docker.createContainer(config, prefix + "-probe");
     final String containerId = creation.id();
@@ -111,14 +127,15 @@ public class TemporaryJobsTest extends SystemTestBase {
         @Override
         public Object call() throws Exception {
           final DefaultProber prober = new DefaultProber();
-          log.info("Probing: {}:{}", DOCKER_ADDRESS, port);
-          return prober.probe(DOCKER_ADDRESS, port) ? true : null;
+          log.info("Probing: {}:{}", DOCKER_ADDRESS, dockerProbePort);
+          return prober.probe(DOCKER_ADDRESS, dockerProbePort) ? true : null;
         }
       });
     } catch (TimeoutException e) {
       fail("Please ensure that DOCKER_HOST is set to an address that where containers can " +
            "be reached. If docker is running in a local VM, DOCKER_HOST must be set to the " +
-           "address of that VM");
+           "address of that VM. If docker can only be reached on a limited port range, " +
+           "set the environment variable DOCKER_PORT_RANGE=start:end");
     }
 
     docker.killContainer(containerId);
@@ -254,7 +271,9 @@ public class TemporaryJobsTest extends SystemTestBase {
     startDefaultMaster();
     client = defaultClient();
     testHost = getTestHost();
-    startDefaultAgent(testHost);
+    startDefaultAgent(testHost, "--port-range=" +
+                                dockerPortRange.lowerEndpoint() + ":" +
+                                dockerPortRange.upperEndpoint());
 
     assertThat(testResult(SimpleTest.class), isSuccessful());
     assertTrue("jobs are running that should not be",
