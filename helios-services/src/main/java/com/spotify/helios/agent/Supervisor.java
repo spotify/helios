@@ -280,6 +280,11 @@ public class Supervisor {
 
   private interface Command {
 
+    /**
+     * Perform the command. Although this is declared to throw InterruptedException, this will only
+     * happen when the supervisor is being shut down. During normal operations, the operation will
+     * be allowed to run until it's done.
+     */
     void perform(final boolean done) throws InterruptedException;
   }
 
