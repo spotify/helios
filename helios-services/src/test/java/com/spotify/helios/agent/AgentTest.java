@@ -44,7 +44,9 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -56,7 +58,7 @@ import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptySet;
 import static org.mockito.Matchers.any;
@@ -76,7 +78,8 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class AgentTest {
 
-  public static final Set<Integer> EMPTY_PORT_SET = emptySet();
+  private static final Set<Integer> EMPTY_PORT_SET = emptySet();
+
   @Mock private AgentModel model;
   @Mock private SupervisorFactory supervisorFactory;
   @Mock private ReactorFactory reactorFactory;
@@ -96,14 +99,15 @@ public class AgentTest {
   private final Map<JobId, Task> unmodifiableJobs = Collections.unmodifiableMap(jobs);
 
   private final Map<JobId, TaskStatus> jobStatuses = Maps.newHashMap();
-  private final Map<JobId, TaskStatus> unmodifiableJobStatuses = Collections.unmodifiableMap(jobStatuses);
+  private final Map<JobId, TaskStatus> unmodifiableJobStatuses =
+      Collections.unmodifiableMap(jobStatuses);
 
   private Agent sut;
   private Reactor.Callback callback;
   private AgentModel.Listener listener;
   private PersistentAtomicReference<Map<JobId, Execution>> executions;
 
-  private static final Job FOO_DESCRIPTOR = Job.newBuilder()
+  private static final Job FOO_JOB = Job.newBuilder()
       .setCommand(asList("foo", "foo"))
       .setImage("foo:4711")
       .setName("foo")
@@ -117,7 +121,7 @@ public class AgentTest {
   private static final Set<Integer> FOO_PORT_SET =
       ImmutableSet.copyOf(FOO_PORT_ALLOCATION.values());
 
-  private static final Job BAR_DESCRIPTOR = Job.newBuilder()
+  private static final Job BAR_JOB = Job.newBuilder()
       .setCommand(asList("bar", "bar"))
       .setImage("bar:5656")
       .setName("bar")
@@ -134,15 +138,15 @@ public class AgentTest {
     executions = PersistentAtomicReference.create(executionsFile,
                                                   new TypeReference<Map<JobId, Execution>>() {},
                                                   Suppliers.ofInstance(EMPTY_EXECUTIONS));
-    when(portAllocator.allocate(eq(FOO_DESCRIPTOR.getPorts()), anySet()))
+    when(portAllocator.allocate(eq(FOO_JOB.getPorts()), anySet()))
         .thenReturn(FOO_PORT_ALLOCATION);
-    when(portAllocator.allocate(eq(BAR_DESCRIPTOR.getPorts()), anySet()))
+    when(portAllocator.allocate(eq(BAR_JOB.getPorts()), anySet()))
         .thenReturn(BAR_PORT_ALLOCATION);
-    when(supervisorFactory.create(eq(FOO_DESCRIPTOR),
+    when(supervisorFactory.create(eq(FOO_JOB), anyString(),
                                   anyMapOf(String.class, Integer.class),
                                   any(Supervisor.Listener.class)))
         .thenReturn(fooSupervisor);
-    when(supervisorFactory.create(eq(BAR_DESCRIPTOR),
+    when(supervisorFactory.create(eq(BAR_JOB), anyString(),
                                   anyMapOf(String.class, Integer.class),
                                   any(Supervisor.Listener.class)))
         .thenReturn(barSupervisor);
@@ -151,6 +155,13 @@ public class AgentTest {
         .thenReturn(reactor);
     when(model.getTasks()).thenReturn(unmodifiableJobs);
     when(model.getTaskStatuses()).thenReturn(unmodifiableJobStatuses);
+    when(model.getTaskStatus(any(JobId.class))).then(new Answer<Object>() {
+      @Override
+      public Object answer(final InvocationOnMock invocationOnMock) throws Throwable {
+        final JobId jobId = (JobId) invocationOnMock.getArguments()[0];
+        return unmodifiableJobStatuses.get(jobId);
+      }
+    });
     sut = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator);
   }
 
@@ -198,32 +209,46 @@ public class AgentTest {
   @SuppressWarnings("unchecked")
   @Test
   public void verifyAgentRecoversState() throws Exception {
-    configure(FOO_DESCRIPTOR, START);
-    configure(BAR_DESCRIPTOR, STOP);
+    configure(FOO_JOB, START);
+    configure(BAR_JOB, STOP);
 
-    final Map<JobId, Execution> newExecutions = Maps.newHashMap();
+    executions.setUnchecked(ImmutableMap.of(
+        BAR_JOB.getId(), Execution.of(BAR_JOB)
+            .withGoal(START)
+            .withPorts(EMPTY_PORT_ALLOCATION),
+        FOO_JOB.getId(), Execution.of(FOO_JOB)
+            .withGoal(START)
+            .withPorts(EMPTY_PORT_ALLOCATION)
+    ));
 
-    newExecutions.put(FOO_DESCRIPTOR.getId(), Execution.of(FOO_DESCRIPTOR)
-        .withGoal(START)
-        .withPorts(EMPTY_PORT_ALLOCATION));
-
-    newExecutions.put(BAR_DESCRIPTOR.getId(), Execution.of(BAR_DESCRIPTOR)
-        .withGoal(START)
-        .withPorts(EMPTY_PORT_ALLOCATION));
-
-    executions.setUnchecked(newExecutions);
+    final String fooContainerId = "foo_container_id";
+    final String barContainerId = "bar_container_id";
+    final TaskStatus fooStatus = TaskStatus.newBuilder()
+        .setGoal(START)
+        .setJob(FOO_JOB)
+        .setContainerId(fooContainerId)
+        .setState(RUNNING)
+        .build();
+    final TaskStatus barStatus = TaskStatus.newBuilder()
+        .setGoal(START)
+        .setJob(BAR_JOB)
+        .setContainerId(barContainerId)
+        .setState(RUNNING)
+        .build();
+    jobStatuses.put(FOO_JOB.getId(), fooStatus);
+    jobStatuses.put(BAR_JOB.getId(), barStatus);
 
     startAgent();
 
     verify(portAllocator, never()).allocate(anyMap(), anySet());
 
-    verify(supervisorFactory).create(eq(FOO_DESCRIPTOR),
-                                     eq(EMPTY_PORT_ALLOCATION),
-                                     any(Supervisor.Listener.class));
-    verify(supervisorFactory).create(eq(BAR_DESCRIPTOR),
+    verify(supervisorFactory).create(eq(BAR_JOB), eq(barContainerId),
                                      eq(EMPTY_PORT_ALLOCATION),
                                      any(Supervisor.Listener.class));
 
+    verify(supervisorFactory).create(eq(FOO_JOB), eq(fooContainerId),
+                                     eq(EMPTY_PORT_ALLOCATION),
+                                     any(Supervisor.Listener.class));
     callback.run(false);
 
     verify(fooSupervisor).setGoal(START);
@@ -249,7 +274,7 @@ public class AgentTest {
 
     final Map<JobId, Execution> newExecutions = Maps.newHashMap();
 
-    newExecutions.put(FOO_DESCRIPTOR.getId(), Execution.of(FOO_DESCRIPTOR)
+    newExecutions.put(FOO_JOB.getId(), Execution.of(FOO_JOB)
         .withGoal(START)
         .withPorts(EMPTY_PORT_ALLOCATION));
 
@@ -259,7 +284,7 @@ public class AgentTest {
 
     // Verify that the undesired supervisor was created and started
     verify(portAllocator, never()).allocate(anyMap(), anySet());
-    verify(supervisorFactory).create(eq(FOO_DESCRIPTOR),
+    verify(supervisorFactory).create(eq(FOO_JOB), anyString(),
                                      eq(EMPTY_PORT_ALLOCATION), any(Supervisor.Listener.class));
 
     // ... and then started
@@ -281,19 +306,19 @@ public class AgentTest {
 
     final Map<JobId, Execution> newExecutions = Maps.newHashMap();
 
-    newExecutions.put(FOO_DESCRIPTOR.getId(), Execution.of(FOO_DESCRIPTOR)
+    newExecutions.put(FOO_JOB.getId(), Execution.of(FOO_JOB)
         .withGoal(START)
         .withPorts(EMPTY_PORT_ALLOCATION));
 
     executions.setUnchecked(newExecutions);
 
-    configure(FOO_DESCRIPTOR, UNDEPLOY);
+    configure(FOO_JOB, UNDEPLOY);
 
     startAgent();
 
     // Verify that the undesired supervisor was created
     verify(portAllocator, never()).allocate(anyMap(), anySet());
-    verify(supervisorFactory).create(eq(FOO_DESCRIPTOR),
+    verify(supervisorFactory).create(eq(FOO_JOB), anyString(),
                                      eq(EMPTY_PORT_ALLOCATION), any(Supervisor.Listener.class));
 
     // ... and then stopped
@@ -303,7 +328,6 @@ public class AgentTest {
     when(fooSupervisor.isStopping()).thenReturn(true);
     when(fooSupervisor.isStarting()).thenReturn(false);
     when(fooSupervisor.isDone()).thenReturn(true);
-    when(fooSupervisor.getStatus()).thenReturn(STOPPED);
 
     // And not started again
     callback.run(false);
@@ -314,18 +338,18 @@ public class AgentTest {
   public void verifyAgentStartsSupervisors() throws Exception {
     startAgent();
 
-    start(FOO_DESCRIPTOR);
-    verify(portAllocator).allocate(FOO_DESCRIPTOR.getPorts(), EMPTY_PORT_SET);
-    verify(supervisorFactory).create(eq(FOO_DESCRIPTOR),
+    start(FOO_JOB);
+    verify(portAllocator).allocate(FOO_JOB.getPorts(), EMPTY_PORT_SET);
+    verify(supervisorFactory).create(eq(FOO_JOB), anyString(),
                                      eq(FOO_PORT_ALLOCATION),
                                      any(Supervisor.Listener.class));
 
     verify(fooSupervisor).setGoal(START);
     when(fooSupervisor.isStarting()).thenReturn(true);
 
-    start(BAR_DESCRIPTOR);
-    verify(portAllocator).allocate(BAR_DESCRIPTOR.getPorts(), FOO_PORT_SET);
-    verify(supervisorFactory).create(eq(BAR_DESCRIPTOR),
+    start(BAR_JOB);
+    verify(portAllocator).allocate(BAR_JOB.getPorts(), FOO_PORT_SET);
+    verify(supervisorFactory).create(eq(BAR_JOB), anyString(),
                                      eq(EMPTY_PORT_ALLOCATION),
                                      any(Supervisor.Listener.class));
     verify(barSupervisor).setGoal(START);
@@ -342,31 +366,30 @@ public class AgentTest {
     startAgent();
 
     // Verify that supervisor is started
-    start(FOO_DESCRIPTOR);
-    verify(portAllocator).allocate(FOO_DESCRIPTOR.getPorts(), EMPTY_PORT_SET);
+    start(FOO_JOB);
+    verify(portAllocator).allocate(FOO_JOB.getPorts(), EMPTY_PORT_SET);
     verify(fooSupervisor).setGoal(START);
     when(fooSupervisor.isDone()).thenReturn(true);
     when(fooSupervisor.isStopping()).thenReturn(false);
     when(fooSupervisor.isStarting()).thenReturn(true);
 
     // Verify that removal of the job *doesn't* stop the supervisor
-    badStop(FOO_DESCRIPTOR);
+    badStop(FOO_JOB);
     // Stop should *not* have been called.
     verify(fooSupervisor, never()).setGoal(STOP);
 
     // Stop it the correct way
-    stop(FOO_DESCRIPTOR);
+    stop(FOO_JOB);
     verify(fooSupervisor, atLeastOnce()).setGoal(UNDEPLOY);
-    when(fooSupervisor.getStatus()).thenReturn(STOPPED);
     when(fooSupervisor.isDone()).thenReturn(true);
     when(fooSupervisor.isStopping()).thenReturn(true);
     when(fooSupervisor.isStarting()).thenReturn(false);
     callback.run(false);
 
     // Verify that a new supervisor is created after the previous one is discarded
-    start(FOO_DESCRIPTOR);
-    verify(portAllocator, times(2)).allocate(FOO_DESCRIPTOR.getPorts(), EMPTY_PORT_SET);
-    verify(supervisorFactory, times(2)).create(eq(FOO_DESCRIPTOR),
+    start(FOO_JOB);
+    verify(portAllocator, times(2)).allocate(FOO_JOB.getPorts(), EMPTY_PORT_SET);
+    verify(supervisorFactory, times(2)).create(eq(FOO_JOB), anyString(),
                                                eq(FOO_PORT_ALLOCATION),
                                                any(Supervisor.Listener.class));
     verify(fooSupervisor, atLeast(2)).setGoal(START);
@@ -376,7 +399,7 @@ public class AgentTest {
   public void verifyCloseDoesNotStopJobs() throws Exception {
     startAgent();
 
-    start(FOO_DESCRIPTOR);
+    start(FOO_JOB);
     sut.stopAsync().awaitTerminated();
     verify(fooSupervisor).close();
     verify(fooSupervisor).join();
