@@ -22,16 +22,12 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Objects;
-import com.google.common.base.Supplier;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
@@ -40,16 +36,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InterruptedIOException;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -64,57 +54,46 @@ public class Supervisor {
 
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
-  public static final ThreadFactory RUNNER_THREAD_FACTORY =
-      new ThreadFactoryBuilder().setNameFormat("helios-supervisor-runner-%d").build();
-
   private final DockerClient docker;
   private final Job job;
-  private final AgentModel model;
   private final RestartPolicy restartPolicy;
-  private final TaskStatusManager statusManager;
   private final SupervisorMetrics metrics;
   private final Reactor reactor;
   private final Listener listener;
-  private final DefaultStatusUpdater statusUpdater;
-  private final AtomicReference<Goal> goal = new AtomicReference<>();
-  private final AtomicReference<ThrottleState> throttle = new AtomicReference<>(ThrottleState.NO);
   private final TaskRunnerFactory runnerFactory;
+  private final StatusUpdater statusUpdater;
+  private final TaskMonitor monitor;
 
+  private volatile Goal goal;
+  private volatile String containerId;
   private volatile TaskRunner runner;
   private volatile Command currentCommand;
   private volatile Command performedCommand;
 
-  private final Supplier<String> containerIdSupplier = new Supplier<String>() {
-    @Override
-    public String get() {
-      final TaskStatus taskStatus = model.getTaskStatus(job.getId());
-      return (taskStatus == null) ? null : taskStatus.getContainerId();
-    }
-  };
-
   public Supervisor(final Builder builder) {
     this.job = checkNotNull(builder.job, "job");
-    this.model = checkNotNull(builder.model, "model");
     this.docker = checkNotNull(builder.dockerClient, "docker");
     this.restartPolicy = checkNotNull(builder.restartPolicy, "restartPolicy");
-    this.statusManager = checkNotNull(builder.stateManager, "statusManager");
     this.metrics = checkNotNull(builder.metrics, "metrics");
-    this.listener = builder.listener;
+    this.listener = checkNotNull(builder.listener, "listener");
     this.currentCommand = new Nop();
+    this.containerId = builder.existingContainerId;
+    this.runnerFactory = checkNotNull(builder.runnerFactory, "runnerFactory");
+    this.statusUpdater = checkNotNull(builder.statusUpdater, "statusUpdater");
+    this.monitor = checkNotNull(builder.monitor, "monitor");
     this.reactor = new DefaultReactor("supervisor-" + job.getId(), new Update(),
                                       SECONDS.toMillis(30));
     this.reactor.startAsync();
-    this.statusUpdater = new DefaultStatusUpdater(goal, throttle, builder.taskConfig,
-                                                  statusManager, containerIdSupplier);
-    this.runnerFactory = builder.runnerFactory;
+    statusUpdater.setContainerId(containerId);
   }
 
   public void setGoal(final Goal goal) {
-    if (this.goal.get() == goal) {
+    if (this.goal == goal) {
       return;
     }
     log.debug("Supervisor {}: setting goal: {}", job.getId(), goal);
-    this.goal.set(goal);
+    this.goal = goal;
+    statusUpdater.setGoal(goal);
     switch (goal) {
       case START:
         currentCommand = new Start();
@@ -174,13 +153,6 @@ public class Supervisor {
     return currentCommand == performedCommand;
   }
 
-  /**
-   * Get the current job status.
-   */
-  public TaskStatus.State getStatus() {
-    return statusManager.getStatus();
-  }
-
   private class Update implements Reactor.Callback {
 
     @Override
@@ -199,9 +171,6 @@ public class Supervisor {
 
   private void fireStateChanged() {
     log.debug("Supervisor {}: state changed", job.getId());
-    if (listener == null) {
-      return;
-    }
     try {
       listener.stateChanged(this);
     } catch (Exception e) {
@@ -215,41 +184,39 @@ public class Supervisor {
 
   public static class Builder {
 
+
+
     private Builder() {
     }
 
     private Job job;
-    private AgentModel model;
+    private String existingContainerId;
     private DockerClient dockerClient;
     private RestartPolicy restartPolicy;
-    private TaskStatusManager stateManager;
     private SupervisorMetrics metrics;
-    private Listener listener;
+    private Listener listener = new NopListener();
     private TaskRunnerFactory runnerFactory;
-    private TaskConfig taskConfig;
+    private StatusUpdater statusUpdater;
+    private TaskMonitor monitor;
 
-    public Builder setRestartPolicy(final RestartPolicy restartPolicy) {
-      this.restartPolicy = restartPolicy;
-      return this;
-    }
 
     public Builder setJob(final Job job) {
       this.job = job;
       return this;
     }
 
-    public Builder setModel(final AgentModel model) {
-      this.model = model;
+    public Builder setExistingContainerId(final String existingContainerId) {
+      this.existingContainerId = existingContainerId;
+      return this;
+    }
+
+    public Builder setRestartPolicy(final RestartPolicy restartPolicy) {
+      this.restartPolicy = restartPolicy;
       return this;
     }
 
     public Builder setDockerClient(final DockerClient dockerClient) {
       this.dockerClient = dockerClient;
-      return this;
-    }
-
-    public Builder setTaskStatusManager(final TaskStatusManager manager) {
-      stateManager = manager;
       return this;
     }
 
@@ -268,13 +235,26 @@ public class Supervisor {
       return this;
     }
 
-    public Builder setTaskConfig(final TaskConfig taskConfig) {
-      this.taskConfig = taskConfig;
+    public Builder setStatusUpdater(final StatusUpdater statusUpdater) {
+      this.statusUpdater = statusUpdater;
+      return this;
+    }
+
+    public Builder setMonitor(final TaskMonitor monitor) {
+      this.monitor = monitor;
       return this;
     }
 
     public Supervisor build() {
       return new Supervisor(this);
+    }
+
+    private class NopListener implements Listener {
+
+      @Override
+      public void stateChanged(final Supervisor supervisor) {
+
+      }
     }
   }
 
@@ -306,46 +286,30 @@ public class Supervisor {
         return;
       }
 
-      // TODO (dano): Fix TaskRunner mechanism to ensure that the below cannot ever happen.
-      // TODO (dano): Currently it is possible to by mistake (programming error) introduce an
-      // TODO (dano): early return in the Runner that doesn't set the result.
-      if (!runner.result().isDone()) {
-        log.warn("runner not running but result future not done!");
-        startAfter(restartPolicy.restartThrottle(throttle.get()));
-        return;
-      }
-
-      // Get the value of the runner result future
-      final Result<Integer> result = Result.of(runner.result());
-      checkState(result.isDone(), "BUG: runner future is done but result(future) is not done.");
-
       // Check if the runner exited normally or threw an exception
-      if (result.isSuccess()) {
-        // Runner exited normally without an exception, indicating that the container exited,
-        // so we restart the container.
-        startAfter(restartPolicy.restartThrottle(throttle.get()));
-      } else {
+      final Result<Integer> result = runner.result();
+      if (!result.isSuccess()) {
         // Runner threw an exception, inspect it.
         final Throwable t = result.getException();
         if (t instanceof InterruptedException || t instanceof InterruptedIOException) {
-          // We're probably shutting down. Ignore the exception.
+          // We're probably shutting down, remove the runner and bail.
           log.debug("task runner interrupted");
-        } else {
-          // Report the runner failure
-          statusUpdater.setStatus(FAILED);
-          log.error("task runner threw exception", t);
+          runner = null;
+          reactor.signal();
+          return;
         }
-        long restartDelay = restartPolicy.getRetryIntervalMillis();
-        long throttleDelay = restartPolicy.restartThrottle(throttle.get());
-        startAfter(Math.max(restartDelay, throttleDelay));
+        log.error("task runner threw exception", t);
       }
+
+      // Restart the task
+      startAfter(restartPolicy.delay(monitor.throttle()));
     }
 
     private void startAfter(final long delay) {
       log.debug("starting job (delay={}): {}", delay, job);
-      runner = runnerFactory.create(delay, containerIdSupplier.get(), throttle, statusUpdater);
+      runner = runnerFactory.create(delay, containerId, new TaskListener());
       runner.startAsync();
-      runner.result().addListener(reactor.signalRunnable(), sameThreadExecutor());
+      runner.resultFuture().addListener(reactor.signalRunnable(), sameThreadExecutor());
     }
   }
 
@@ -370,13 +334,7 @@ public class Supervisor {
 
       // Stop the runner
       if (runner != null) {
-        // Gently tell the runner to stop
-        runner.stopAsync();
-        // Wait for runner to stop
-        while (!awaitTerminated(runner, retryScheduler.nextMillis())) {
-          // Kill the container to make the runner stop waiting for on it
-          killContainer();
-        }
+        runner.stopAsync().awaitTerminated();
         runner = null;
       }
 
@@ -386,20 +344,11 @@ public class Supervisor {
         Thread.sleep(retryScheduler.nextMillis());
       }
 
-      statusUpdater.setStatus(STOPPED);
-    }
-
-    private boolean awaitTerminated(final TaskRunner runner, final long timeoutMillis) {
-      try {
-        runner.awaitTerminated(timeoutMillis, MILLISECONDS);
-        return true;
-      } catch (TimeoutException ignore) {
-        return false;
-      }
+      statusUpdater.setState(STOPPED);
+      statusUpdater.update();
     }
 
     private void killContainer() throws InterruptedException {
-      final String containerId = containerIdSupplier.get();
       if (containerId == null) {
         return;
       }
@@ -412,7 +361,6 @@ public class Supervisor {
 
     private boolean containerNotRunning()
         throws InterruptedException {
-      final String containerId = containerIdSupplier.get();
       if (containerId == null) {
         return true;
       }
@@ -441,5 +389,23 @@ public class Supervisor {
         .add("currentCommand", currentCommand)
         .add("performedCommand", performedCommand)
         .toString();
+  }
+
+  private class TaskListener extends TaskRunner.NopListener {
+
+    @Override
+    public void failed(final Throwable t) {
+      metrics.containersThrewException();
+    }
+
+    @Override
+    public void pulling() {
+      metrics.containerPull();
+    }
+
+    @Override
+    public void created(final String createdContainerId) {
+      containerId = createdContainerId;
+    }
   }
 }

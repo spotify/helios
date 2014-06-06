@@ -22,6 +22,7 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Ascii;
+import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -36,6 +37,12 @@ import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePorts;
+import com.spotify.helios.serviceregistration.ServiceRegistration;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.security.SecureRandom;
 import java.util.Collections;
@@ -51,6 +58,8 @@ import static java.util.Arrays.asList;
  * Provides docker container configuration for running a task.
  */
 public class TaskConfig {
+
+  private static final Logger log = LoggerFactory.getLogger(TaskConfig.class);
 
   private static final Pattern CONTAINER_NAME_FORBIDDEN = Pattern.compile("[^a-zA-Z0-9_-]");
   private static final int HOST_NAME_MAX = 64;
@@ -119,6 +128,33 @@ public class TaskConfig {
     env.putAll(job.getEnv());
     return env;
   }
+
+  public ServiceRegistration registration()
+      throws InterruptedException {
+    final ServiceRegistration.Builder builder = ServiceRegistration.newBuilder();
+
+    for (final Map.Entry<ServiceEndpoint, ServicePorts> entry :
+        job.getRegistration().entrySet()) {
+      final ServiceEndpoint registration = entry.getKey();
+      final ServicePorts servicePorts = entry.getValue();
+      for (String portName : servicePorts.getPorts().keySet()) {
+        final PortMapping mapping = job.getPorts().get(portName);
+        if (mapping == null) {
+          log.error("no '{}' port mapped for registration: '{}'", portName, registration);
+          continue;
+        }
+        final Integer externalPort = mapping.getExternalPort();
+        if (externalPort == null) {
+          log.error("no external '{}' port for registration: '{}'", portName, registration);
+          continue;
+        }
+        builder.endpoint(registration.getName(), registration.getProtocol(), externalPort);
+      }
+    }
+
+    return builder.build();
+  }
+
 
   /**
    * Create container port exposure configuration for a job.
@@ -235,6 +271,14 @@ public class TaskConfig {
     return new Builder();
   }
 
+  public String containerImage() {
+    return job.getImage();
+  }
+
+  public String name() {
+    return job.getId().toShortString();
+  }
+
   public static class Builder {
 
     private Builder() {
@@ -274,6 +318,17 @@ public class TaskConfig {
     public TaskConfig build() {
       return new TaskConfig(this);
     }
+  }
+
+  @Override
+  public String toString() {
+    return Objects.toStringHelper(this)
+        .add("job", job)
+        .add("host", host)
+        .add("ports", ports)
+        .add("envVars", envVars)
+        .add("containerDecorator", containerDecorator)
+        .toString();
   }
 }
 
