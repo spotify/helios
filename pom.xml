@@ -109,9 +109,9 @@
               <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
               <systemPropertyVariables>
                 <logToFile>false</logToFile>
-                <heliosLoggingLevel>WARN</heliosLoggingLevel>
+                <heliosLoggingLevel>INFO</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
-                <rootLoggingLevel>WARN</rootLoggingLevel>
+                <rootLoggingLevel>INFO</rootLoggingLevel>
               </systemPropertyVariables>
             </configuration>
           </plugin>
