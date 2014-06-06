@@ -64,9 +64,7 @@
     <profile>
       <id>default</id>
       <activation>
-        <property>
-          <name>!debug</name>
-        </property>
+        <activeByDefault>true</activeByDefault>
       </activation>
       <build>
         <plugins>
@@ -84,6 +82,36 @@
                 <heliosLoggingLevel>OFF</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
                 <rootLoggingLevel>OFF</rootLoggingLevel>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>travis</id>
+      <activation>
+        <property>
+          <name>env.TRAVIS</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.16</version>
+            <configuration>
+              <enableAssertions>false</enableAssertions>
+              <forkCount>1</forkCount>
+              <reuseForks>false</reuseForks>
+              <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
+              <systemPropertyVariables>
+                <logToFile>false</logToFile>
+                <heliosLoggingLevel>WARN</heliosLoggingLevel>
+                <externalLoggingLevel>OFF</externalLoggingLevel>
+                <rootLoggingLevel>WARN</rootLoggingLevel>
               </systemPropertyVariables>
             </configuration>
           </plugin>
