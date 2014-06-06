@@ -1,0 +1,9 @@
+Package: helios-master
+Version: [[version]]
+Section: non-free/net
+Priority: optional
+Architecture: all
+Depends: java7-runtime, helios-services (= [[version]])
+Maintainer: Daniel Norberg <dano@spotify.com>
+Description: Helios Master
+Distribution: development

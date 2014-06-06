@@ -1,0 +1,10 @@
+#!/bin/sh
+# Stop helios-agent
+if which initctl >/dev/null && initctl version | grep -q upstart; then
+    # Using upstart
+    initctl stop helios-agent || true
+else
+    # Using SysV init scripts
+    /etc/init.d/helios-agent stop || true
+fi
+

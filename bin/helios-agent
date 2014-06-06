@@ -1,0 +1,43 @@
+#!/bin/bash -e
+
+for i in "$@"
+do
+    if [[ "$i" == "--help" ||  "$i" == "-h" ]]
+    then
+        as_service=false
+    fi
+done
+
+if [ -z "$as_service" ]
+then
+  : ${JMXPORT=9203}
+  : ${JDWPPORT=5006}
+  AGENTLIB=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$JDWPPORT
+fi
+
+args=()
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [[ -e "$dir/../../helios" ]]; then
+    jar="$(ls -t $dir/../helios-services/target/helios*-shaded.jar | grep -v sources | grep -v javadoc | head -n 1)"
+    CLASSPATH="$(cd $(dirname $jar) && pwd -P)/$(basename $jar)"
+    echo "running in helios project, using $CLASSPATH" 1>&2
+else
+    CLASSPATH="/usr/share/helios/lib/services/*"
+fi
+
+if [ $JMXPORT ]; then
+    args=("${args[@]}"
+          -Dcom.sun.management.jmxremote.port=$JMXPORT
+          -Dcom.sun.management.jmxremote.ssl=false
+          -Dcom.sun.management.jmxremote.authenticate=false )
+fi
+
+exec java \
+    $HELIOS_AGENT_JVM_OPTS \
+    "${args[@]}" \
+    -Djava.net.preferIPv4Stack=true \
+    -cp "$CLASSPATH" \
+    $AGENTLIB \
+    com.spotify.helios.agent.AgentMain \
+    "$@"

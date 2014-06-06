@@ -1,0 +1,33 @@
+# helios-agent - manages jobs across helios agents
+
+description "helios agent"
+author "Rohan Singh <rohan@spotify.com>"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+respawn
+respawn limit unlimited
+
+env DEFAULTFILE=/etc/default/helios-agent
+
+setuid helios
+chdir /var/lib/helios-agent
+
+pre-start script
+  [ -f $DEFAULTFILE ] && . $DEFAULTFILE
+
+  # don't start unless explicitly enabled in config
+  if [ -z "$ENABLED" ] ; then
+    stop; exit 0;
+  fi
+end script
+
+script
+  [ -f $DEFAULTFILE ] && . $DEFAULTFILE
+  export HELIOS_AGENT_JVM_OPTS
+  /usr/bin/helios-agent $HELIOS_AGENT_OPTS
+end script
+
+# prevent respawning more than once every 5 seconds
+post-stop exec sleep 5

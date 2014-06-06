@@ -1,0 +1,36 @@
+#!/bin/sh
+if [ "$1" = configure ]; then
+    # Make sure the helios user exists
+    if ! getent passwd helios > /dev/null; then
+        adduser --system --quiet --home /var/lib/helios-agent --no-create-home \
+            --shell /bin/bash --group --gecos "Helios" helios
+    fi
+
+    # check validity of helios user and group
+    if [ "`id -u helios`" -eq 0 ]; then
+        echo "The helios user must not have uid 0 (root).
+Please fix this and reinstall this package." >&2
+        exit 1
+    fi
+    if [ "`id -g helios`" -eq 0 ]; then
+        echo "The helios user must not have root as primary group.
+Please fix this and reinstall this package." >&2
+        exit 1
+    fi
+    # ensure home directory ownership
+    mkdir -p /var/lib/helios-agent
+    su - helios -c "test -O /var/lib/helios-agent &&
+            test -G /var/lib/helios-agent" || \
+        chown -R helios:helios /var/lib/helios-agent
+fi
+
+# Start helios-agent
+if which initctl >/dev/null && initctl version | grep -q upstart; then
+    # Using upstart
+    initctl stop helios-agent || true
+    initctl start helios-agent || true
+else
+    # Using SysV init scripts
+    /etc/init.d/helios-agent stop || true
+    /etc/init.d/helios-agent start || true
+fi

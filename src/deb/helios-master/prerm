@@ -1,0 +1,10 @@
+#!/bin/sh
+# Stop helios-master
+if which initctl >/dev/null && initctl version | grep -q upstart; then
+    # Using upstart
+    initctl stop helios-master || true
+else
+    # Using SysV init scripts
+    /etc/init.d/helios-master stop || true
+fi
+

@@ -1,0 +1,31 @@
+# helios-master - manages jobs across helios agents
+
+description "helios master"
+author "Rohan Singh <rohan@spotify.com>"
+
+start on runlevel [2345]
+stop on runlevel [!2345]
+
+respawn
+respawn limit unlimited
+
+env DEFAULTFILE=/etc/default/helios-master
+
+setuid helios
+pre-start script
+  [ -f $DEFAULTFILE ] && . $DEFAULTFILE
+
+  # don't start unless explicitly enabled in config
+  if [ -z "$ENABLED" ] ; then
+    stop; exit 0;
+  fi
+end script
+
+script
+  [ -f $DEFAULTFILE ] && . $DEFAULTFILE
+  export HELIOS_MASTER_JVM_OPTS
+  /usr/bin/helios-master $HELIOS_MASTER_OPTS
+end script
+
+# prevent respawning more than once every 5 seconds
+post-stop exec sleep 5

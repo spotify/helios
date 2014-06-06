@@ -1,0 +1,18 @@
+#!/bin/bash -e
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [[ -e "$dir/../../helios" ]]; then
+    jar="$(ls -t $dir/../helios-tools/target/helios-tools*-shaded.jar | grep -v sources | grep -v javadoc | head -n 1)"
+    CLASSPATH="$(cd $(dirname $jar) && pwd -P)/$(basename $jar)"
+    echo "running in helios project, using $CLASSPATH" 1>&2
+else
+    CLASSPATH="/usr/share/helios/lib/tools/*"
+fi
+
+exec java \
+    -Djava.net.preferIPv4Stack=true \
+    -XX:+TieredCompilation -XX:TieredStopAtLevel=1 \
+    -Xverify:none \
+    -cp "$CLASSPATH" \
+    com.spotify.helios.cli.CliMain \
+    "$@"

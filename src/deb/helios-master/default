@@ -1,0 +1,6 @@
+# by default don't start daemon from init script
+ENABLED=
+
+HELIOS_MASTER_JVM_OPTS=
+
+HELIOS_MASTER_OPTS=
