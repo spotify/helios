@@ -317,8 +317,8 @@ public class SupervisorTest {
 
     when(docker.inspectContainer(eq(containerId1))).thenReturn(RUNNING_RESPONSE);
 
-    final SettableFuture<Integer> waitFuture1 = SettableFuture.create();
-    final SettableFuture<Integer> waitFuture2 = SettableFuture.create();
+    final SettableFuture<ContainerExit> waitFuture1 = SettableFuture.create();
+    final SettableFuture<ContainerExit> waitFuture2 = SettableFuture.create();
     when(docker.waitContainer(containerId1)).thenAnswer(futureAnswer(waitFuture1));
     when(docker.waitContainer(containerId2)).thenAnswer(futureAnswer(waitFuture2));
 
@@ -333,7 +333,7 @@ public class SupervisorTest {
     when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
         .thenReturn(createResponse2);
     when(docker.inspectContainer(eq(containerId2))).thenReturn(RUNNING_RESPONSE);
-    waitFuture1.set(1);
+    waitFuture1.set(new ContainerExit(1));
 
     // Verify that the container was restarted
     verify(docker, timeout(30000)).createContainer(any(ContainerConfig.class), any(String.class));
