@@ -49,13 +49,13 @@ public class JobHistoryTest extends SystemTestBase {
     startDefaultMaster();
     final HeliosClient client = defaultClient();
 
-    startDefaultAgent(getTestHost());
-    awaitHostStatus(getTestHost(), Status.UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(testHost());
+    awaitHostStatus(testHost(), Status.UP, LONG_WAIT_MINUTES, MINUTES);
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
-    deployJob(jobId, getTestHost());
-    awaitJobState(client, getTestHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
-    undeployJob(jobId, getTestHost());
-    awaitTaskGone(client, getTestHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
+    deployJob(jobId, testHost());
+    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    undeployJob(jobId, testHost());
+    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
     final TaskStatusEvents events = Polling.await(
         WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<TaskStatusEvents>() {
       @Override

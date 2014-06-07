@@ -111,7 +111,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -155,65 +154,12 @@ public abstract class SystemTestBase {
   private Path agentStateDirs;
   private String masterName;
 
-  protected ZooKeeperTestManager zk;
-
-  public boolean isIntegration() {
-    return integrationMode;
-  }
-
-  public TemporaryPorts getTemporaryPorts() {
-    return temporaryPorts;
-  }
-
-  public String getMasterEndpoint() {
-    return masterEndpoint;
-  }
-
-  public ZooKeeperTestManager getZk() {
-    return zk;
-  }
-
-  public String masterName() throws InterruptedException, ExecutionException {
-    if (integrationMode) {
-      if (masterName == null) {
-        masterName = defaultClient().listMasters().get().get(0);
-      }
-      return masterName;
-    } else {
-      return "test-master";
-    }
-  }
+  private ZooKeeperTestManager zk;
 
   @BeforeClass
   public static void staticSetup() {
     SLF4JBridgeHandler.removeHandlersForRootLogger();
     SLF4JBridgeHandler.install();
-  }
-
-  static void removeContainer(final DockerClient dockerClient, final String containerId)
-      throws Exception {
-    // Work around docker sometimes failing to remove a container directly after killing it
-    Polling.await(1, MINUTES, new Callable<Object>() {
-      @Override
-      public Object call() throws Exception {
-        try {
-          dockerClient.killContainer(containerId);
-          dockerClient.removeContainer(containerId);
-          return true;
-        } catch (ContainerNotFoundException e) {
-          // We're done here
-          return true;
-        } catch (DockerException e) {
-          return null;
-        }
-      }
-    });
-    try {
-      // This should fail with an exception if the container still exists
-      dockerClient.inspectContainer(containerId);
-      fail();
-    } catch (DockerException ignore) {
-    }
   }
 
   @Before
@@ -226,12 +172,12 @@ public abstract class SystemTestBase {
       masterEndpoint = checkNotNull(System.getenv("HELIOS_ENDPOINT"),
                                     "For integration tests, HELIOS_ENDPOINT *must* be set");
       integrationMode = true;
-    } else if (className.endsWith("Test") || className.endsWith("TestBase")) {
+    } else if (className.endsWith("Test")) {
       integrationMode = false;
-      masterEndpoint = "http://localhost:" + getMasterPort();
+      masterEndpoint = "http://localhost:" + masterPort();
       // unit test
     } else {
-      throw new RuntimeException("testClass neither ends in Test, TestBase or ITCase");
+      throw new RuntimeException("testClass neither ends in Test or ITCase");
     }
 
     zk = zooKeeperTestManager();
@@ -301,6 +247,25 @@ public abstract class SystemTestBase {
     listThreads();
   }
 
+  private void listThreads() {
+    final Set<Thread> threads = Thread.getAllStackTraces().keySet();
+    final Map<String, Thread> sorted = Maps.newTreeMap();
+    for (final Thread t : threads) {
+      final ThreadGroup tg = t.getThreadGroup();
+      if (t.isAlive() && (tg == null || !tg.getName().equals("system"))) {
+        sorted.put(t.getName(), t);
+      }
+    }
+    log.info("= THREADS " + Strings.repeat("=", 70));
+    for (final Thread t : sorted.values()) {
+      final ThreadGroup tg = t.getThreadGroup();
+      log.info("{}: \"{}\" ({}{})", t.getId(), t.getName(),
+               (tg == null ? "" : tg.getName() + " "),
+               (t.isDaemon() ? "daemon" : ""));
+    }
+    log.info(Strings.repeat("=", 80));
+  }
+
   protected void tearDownJobs() throws InterruptedException, ExecutionException {
     if (!isIntegration()) {
       return;
@@ -337,23 +302,64 @@ public abstract class SystemTestBase {
     Futures.allAsList(deletes);
   }
 
-  private void listThreads() {
-    final Set<Thread> threads = Thread.getAllStackTraces().keySet();
-    final Map<String, Thread> sorted = Maps.newTreeMap();
-    for (final Thread t : threads) {
-      final ThreadGroup tg = t.getThreadGroup();
-      if (t.isAlive() && (tg == null || !tg.getName().equals("system"))) {
-        sorted.put(t.getName(), t);
+  protected boolean isIntegration() {
+    return integrationMode;
+  }
+
+  protected TemporaryPorts temporaryPorts() {
+    return temporaryPorts;
+  }
+
+  protected ZooKeeperTestManager zk() {
+    return zk;
+  }
+
+  protected String masterEndpoint() {
+    return masterEndpoint;
+  }
+
+  protected String masterName() throws InterruptedException, ExecutionException {
+    if (integrationMode) {
+      if (masterName == null) {
+        masterName = defaultClient().listMasters().get().get(0);
       }
+      return masterName;
+    } else {
+      return "test-master";
     }
-    log.info("= THREADS " + Strings.repeat("=", 70));
-    for (final Thread t : sorted.values()) {
-      final ThreadGroup tg = t.getThreadGroup();
-      log.info("{}: \"{}\" ({}{})", t.getId(), t.getName(),
-               (tg == null ? "" : tg.getName() + " "),
-               (t.isDaemon() ? "daemon" : ""));
+  }
+
+  protected HeliosClient defaultClient() {
+    return client(TEST_USER, masterEndpoint());
+  }
+
+  protected HeliosClient client(final String user, final String endpoint) {
+    final HeliosClient client = HeliosClient.newBuilder()
+        .setUser(user)
+        .setEndpoints(asList(URI.create(endpoint)))
+        .build();
+    clients.add(client);
+    return client;
+  }
+
+  protected int masterPort() {
+    return masterPort;
+  }
+
+  protected int masterAdminPort() {
+    return masterAdminPort;
+  }
+
+  protected String testHost() throws InterruptedException, ExecutionException {
+    if (integrationMode) {
+      if (testHost == null) {
+        final List<String> hosts = defaultClient().listHosts().get();
+        testHost = hosts.get(new SecureRandom().nextInt(hosts.size()));
+      }
+      return testHost;
+    } else {
+      return TEST_HOST;
     }
-    log.info(Strings.repeat("=", 80));
   }
 
   protected void startDefaultMaster(String... args) throws Exception {
@@ -374,8 +380,8 @@ public abstract class SystemTestBase {
 
     List<String> argsList = Lists.newArrayList("-vvvv",
                                                "--no-log-setup",
-                                               "--http", getMasterEndpoint(),
-                                               "--admin=" + getMasterAdminPort(),
+                                               "--http", masterEndpoint(),
+                                               "--admin=" + masterAdminPort(),
                                                "--name", TEST_MASTER,
                                                "--zk", zk.connectString());
     argsList.addAll(asList(args));
@@ -423,42 +429,42 @@ public abstract class SystemTestBase {
     return startAgent(argsList.toArray(new String[argsList.size()]));
   }
 
-  MasterMain startMaster(final String... args) throws Exception {
+  protected MasterMain startMaster(final String... args) throws Exception {
     final MasterMain main = new MasterMain(args);
     main.startAsync().awaitRunning();
     services.add(main);
     return main;
   }
 
-  AgentMain startAgent(final String... args) throws Exception {
+  protected AgentMain startAgent(final String... args) throws Exception {
     final AgentMain main = new AgentMain(args);
     main.startAsync().awaitRunning();
     services.add(main);
     return main;
   }
 
-  JobId createJob(final String name, final String version, final String image,
-                  final List<String> command) throws Exception {
+  protected JobId createJob(final String name, final String version, final String image,
+                            final List<String> command) throws Exception {
     return createJob(name, version, image, command, EMPTY_ENV,
                      EMPTY_PORTS, null);
   }
 
-  JobId createJob(final String name, final String version, final String image,
-                  final List<String> command, final ImmutableMap<String, String> env)
+  protected JobId createJob(final String name, final String version, final String image,
+                            final List<String> command, final ImmutableMap<String, String> env)
       throws Exception {
     return createJob(name, version, image, command, env, new HashMap<String, PortMapping>(), null);
   }
 
-  JobId createJob(final String name, final String version, final String image,
-                  final List<String> command, final Map<String, String> env,
-                  final Map<String, PortMapping> ports) throws Exception {
+  protected JobId createJob(final String name, final String version, final String image,
+                            final List<String> command, final Map<String, String> env,
+                            final Map<String, PortMapping> ports) throws Exception {
     return createJob(name, version, image, command, env, ports, null);
   }
 
-  JobId createJob(final String name, final String version, final String image,
-                  final List<String> command, final Map<String, String> env,
-                  final Map<String, PortMapping> ports,
-                  final Map<ServiceEndpoint, ServicePorts> registration)
+  protected JobId createJob(final String name, final String version, final String image,
+                            final List<String> command, final Map<String, String> env,
+                            final Map<String, PortMapping> ports,
+                            final Map<ServiceEndpoint, ServicePorts> registration)
       throws Exception {
     checkArgument(name.contains(testTag), "Job name must contain testTag to enable cleanup");
 
@@ -501,14 +507,14 @@ public abstract class SystemTestBase {
     final String jobId = WHITESPACE.trimFrom(createOutput);
 
     final String listOutput = cli("jobs", "-q");
-    assertContains(jobId, listOutput);
+    assertThat(listOutput, containsString(jobId));
     return JobId.fromString(jobId);
   }
 
-  void deployJob(final JobId jobId, final String host)
+  protected void deployJob(final JobId jobId, final String host)
       throws Exception {
     final String deployOutput = cli("deploy", jobId.toString(), host);
-    assertContains(host + ": done", deployOutput);
+    assertThat(deployOutput, containsString(host + ": done"));
 
     final String output = cli("status", "--host", host, "--json");
     final Map<JobId, JobStatus> statuses =
@@ -516,9 +522,9 @@ public abstract class SystemTestBase {
     assertTrue(statuses.keySet().contains(jobId));
   }
 
-  void undeployJob(final JobId jobId, final String host) throws Exception {
+  protected void undeployJob(final JobId jobId, final String host) throws Exception {
     final String undeployOutput = cli("undeploy", jobId.toString(), host);
-    assertContains(host + ": done", undeployOutput);
+    assertThat(undeployOutput, containsString(host + ": done"));
 
     final String output = cli("status", "--host", host, "--json");
     final Map<JobId, JobStatus> statuses =
@@ -529,36 +535,36 @@ public abstract class SystemTestBase {
                status.getDeployments().get(host).getGoal() == UNDEPLOY);
   }
 
-  String startJob(final JobId jobId, final String host) throws Exception {
+  protected String startJob(final JobId jobId, final String host) throws Exception {
     return cli("start", jobId.toString(), host);
   }
 
-  String stopJob(final JobId jobId, final String host) throws Exception {
+  protected String stopJob(final JobId jobId, final String host) throws Exception {
     return cli("stop", jobId.toString(), host);
   }
 
-  String deregisterHost(final String host) throws Exception {
+  protected String deregisterHost(final String host) throws Exception {
     return cli("deregister", host, "--force");
   }
 
-  String cli(final String command, final Object... args)
+  protected String cli(final String command, final Object... args)
       throws Exception {
     return cli(command, flatten(args));
   }
 
-  String cli(final String command, final String... args)
+  protected String cli(final String command, final String... args)
       throws Exception {
     return cli(command, asList(args));
   }
 
-  String cli(final String command, final List<String> args)
+  protected String cli(final String command, final List<String> args)
       throws Exception {
-    final List<String> commands = asList(command, "-z", getMasterEndpoint(), "--no-log-setup");
+    final List<String> commands = asList(command, "-z", masterEndpoint(), "--no-log-setup");
     final List<String> allArgs = newArrayList(concat(commands, args));
     return main(allArgs).toString();
   }
 
-  ByteArrayOutputStream main(final String... args) throws Exception {
+  protected ByteArrayOutputStream main(final String... args) throws Exception {
     final ByteArrayOutputStream out = new ByteArrayOutputStream();
     final ByteArrayOutputStream err = new ByteArrayOutputStream();
     final CliMain main = new CliMain(new PrintStream(out), new PrintStream(err), args);
@@ -566,11 +572,11 @@ public abstract class SystemTestBase {
     return out;
   }
 
-  ByteArrayOutputStream main(final Collection<String> args) throws Exception {
+  protected ByteArrayOutputStream main(final Collection<String> args) throws Exception {
     return main(args.toArray(new String[args.size()]));
   }
 
-  void awaitHostRegistered(final String name, final long timeout, final TimeUnit timeUnit)
+  protected void awaitHostRegistered(final String name, final long timeout, final TimeUnit timeUnit)
       throws Exception {
     Polling.await(timeout, timeUnit, new Callable<Object>() {
       @Override
@@ -581,8 +587,9 @@ public abstract class SystemTestBase {
     });
   }
 
-  HostStatus awaitHostStatus(final String name, final HostStatus.Status status,
-                             final int timeout, final TimeUnit timeUnit) throws Exception {
+  protected HostStatus awaitHostStatus(final String name, final HostStatus.Status status,
+                                       final int timeout, final TimeUnit timeUnit)
+      throws Exception {
     return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
       public HostStatus call() throws Exception {
@@ -602,10 +609,10 @@ public abstract class SystemTestBase {
     });
   }
 
-  TaskStatus awaitJobState(final HeliosClient client, final String host,
-                           final JobId jobId,
-                           final TaskStatus.State state, final int timeout,
-                           final TimeUnit timeunit) throws Exception {
+  protected TaskStatus awaitJobState(final HeliosClient client, final String host,
+                                     final JobId jobId,
+                                     final TaskStatus.State state, final int timeout,
+                                     final TimeUnit timeunit) throws Exception {
     return Polling.await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
@@ -620,10 +627,10 @@ public abstract class SystemTestBase {
     });
   }
 
-  TaskStatus awaitJobThrottle(final HeliosClient client, final String host,
-                              final JobId jobId,
-                              final ThrottleState throttled, final int timeout,
-                              final TimeUnit timeunit) throws Exception {
+  protected TaskStatus awaitJobThrottle(final HeliosClient client, final String host,
+                                        final JobId jobId,
+                                        final ThrottleState throttled, final int timeout,
+                                        final TimeUnit timeunit) throws Exception {
     return Polling.await(timeout, timeunit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
@@ -637,9 +644,9 @@ public abstract class SystemTestBase {
     });
   }
 
-  void awaitHostRegistered(final HeliosClient client, final String host,
-                           final int timeout,
-                           final TimeUnit timeUnit) throws Exception {
+  protected void awaitHostRegistered(final HeliosClient client, final String host,
+                                     final int timeout,
+                                     final TimeUnit timeUnit) throws Exception {
     Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
       public HostStatus call() throws Exception {
@@ -648,10 +655,10 @@ public abstract class SystemTestBase {
     });
   }
 
-  HostStatus awaitHostStatus(final HeliosClient client, final String host,
-                             final HostStatus.Status status,
-                             final int timeout,
-                             final TimeUnit timeUnit) throws Exception {
+  protected HostStatus awaitHostStatus(final HeliosClient client, final String host,
+                                       final HostStatus.Status status,
+                                       final int timeout,
+                                       final TimeUnit timeUnit) throws Exception {
     return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
       @Override
       public HostStatus call() throws Exception {
@@ -664,8 +671,8 @@ public abstract class SystemTestBase {
     });
   }
 
-  TaskStatus awaitTaskState(final JobId jobId, final String host,
-                            final TaskStatus.State state) throws Exception {
+  protected TaskStatus awaitTaskState(final JobId jobId, final String host,
+                                      final TaskStatus.State state) throws Exception {
     long timeout = LONG_WAIT_MINUTES;
     TimeUnit timeUnit = MINUTES;
     return Polling.await(timeout, timeUnit, new Callable<TaskStatus>() {
@@ -694,8 +701,8 @@ public abstract class SystemTestBase {
     });
   }
 
-  void awaitTaskGone(final HeliosClient client, final String host, final JobId jobId,
-                     final long timeout, final TimeUnit timeunit) throws Exception {
+  protected void awaitTaskGone(final HeliosClient client, final String host, final JobId jobId,
+                               final long timeout, final TimeUnit timeunit) throws Exception {
     Polling.await(timeout, timeunit, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
@@ -707,7 +714,7 @@ public abstract class SystemTestBase {
     });
   }
 
-  private <T> T getOrNull(final ListenableFuture<T> future)
+  protected <T> T getOrNull(final ListenableFuture<T> future)
       throws ExecutionException, InterruptedException {
     return Futures.withFallback(future, new FutureFallback<T>() {
       @Override
@@ -717,7 +724,7 @@ public abstract class SystemTestBase {
     }).get();
   }
 
-  String readLogFully(final ClientResponse logs) throws IOException {
+  protected String readLogFully(final ClientResponse logs) throws IOException {
     final LogReader logReader = new LogReader(logs.getEntityInputStream());
     StringBuilder stringBuilder = new StringBuilder();
     LogMessage logMessage;
@@ -728,7 +735,33 @@ public abstract class SystemTestBase {
     return stringBuilder.toString();
   }
 
-  List<Container> listContainers(final DockerClient dockerClient, final String needle)
+  protected static void removeContainer(final DockerClient dockerClient, final String containerId)
+      throws Exception {
+    // Work around docker sometimes failing to remove a container directly after killing it
+    Polling.await(1, MINUTES, new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        try {
+          dockerClient.killContainer(containerId);
+          dockerClient.removeContainer(containerId);
+          return true;
+        } catch (ContainerNotFoundException e) {
+          // We're done here
+          return true;
+        } catch (DockerException e) {
+          return null;
+        }
+      }
+    });
+    try {
+      // This should fail with an exception if the container still exists
+      dockerClient.inspectContainer(containerId);
+      fail();
+    } catch (DockerException ignore) {
+    }
+  }
+
+  protected List<Container> listContainers(final DockerClient dockerClient, final String needle)
       throws DockerException, InterruptedException {
     final List<Container> containers = dockerClient.listContainers();
     final List<Container> matches = Lists.newArrayList();
@@ -745,20 +778,12 @@ public abstract class SystemTestBase {
     return matches;
   }
 
-  void assertContains(String needle, String haystack) {
-    assertThat(haystack, containsString(needle));
-  }
-
-  void assertNotContains(String needle, String haystack) {
-    assertThat(haystack, not(containsString(needle)));
-  }
-
-  List<String> flatten(final Object... values) {
+  protected List<String> flatten(final Object... values) {
     final Iterable<Object> valuesList = asList(values);
     return flatten(valuesList);
   }
 
-  List<String> flatten(final Iterable<?> values) {
+  protected List<String> flatten(final Iterable<?> values) {
     final List<String> list = new ArrayList<>();
     for (Object value : values) {
       if (value instanceof Iterable) {
@@ -772,38 +797,5 @@ public abstract class SystemTestBase {
       }
     }
     return list;
-  }
-
-  protected HeliosClient defaultClient() {
-    return client(TEST_USER, getMasterEndpoint());
-  }
-
-  HeliosClient client(final String user, final String endpoint) {
-    final HeliosClient client = HeliosClient.newBuilder()
-        .setUser(user)
-        .setEndpoints(asList(URI.create(endpoint)))
-        .build();
-    clients.add(client);
-    return client;
-  }
-
-  public int getMasterPort() {
-    return masterPort;
-  }
-
-  int getMasterAdminPort() {
-    return masterAdminPort;
-  }
-
-  public String getTestHost() throws InterruptedException, ExecutionException {
-    if (integrationMode) {
-      if (testHost == null) {
-        final List<String> hosts = defaultClient().listHosts().get();
-        testHost = hosts.get(new SecureRandom().nextInt(hosts.size()));
-      }
-      return testHost;
-    } else {
-      return TEST_HOST;
-    }
   }
 }

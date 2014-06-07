@@ -48,8 +48,8 @@ public class JobWatchTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(getTestHost());
-    awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(testHost());
+    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
     final JobId jobId = createJob(testJobName, testJobVersion, "busybox", IDLE_COMMAND,
@@ -57,9 +57,9 @@ public class JobWatchTest extends SystemTestBase {
                                                   "BAR", "deadbeef"));
 
     // deploy
-    deployJob(jobId, getTestHost());
+    deployJob(jobId, testHost());
 
-    final String[] commands = new String[]{"watch", "-z", getMasterEndpoint(),
+    final String[] commands = new String[]{"watch", "-z", masterEndpoint(),
                                            "--no-log-setup", jobId.toString()};
 
     final AtomicBoolean success = new AtomicBoolean(false);
@@ -67,7 +67,7 @@ public class JobWatchTest extends SystemTestBase {
 
     final long deadline = System.currentTimeMillis() + MINUTES.toMillis(LONG_WAIT_MINUTES);
 
-    final String testHost = getTestHost();
+    final String testHost = testHost();
     final String abbreviatedTestHost;
     if (testHost.length() > 10) {
       abbreviatedTestHost = testHost.substring(0, 10);

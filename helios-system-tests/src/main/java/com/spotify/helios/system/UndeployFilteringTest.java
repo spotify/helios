@@ -72,7 +72,7 @@ public class UndeployFilteringTest extends SystemTestBase {
   @Before
   public void setUp() throws Exception {
     // make zookeeper interfaces
-    curator = getZk().curator();
+    curator = zk().curator();
     zkcp = new ZooKeeperClientProvider(
         new DefaultZooKeeperClient(curator), ZooKeeperModelReporter.noop());
     zkMasterModel = new ZooKeeperMasterModel(zkcp);

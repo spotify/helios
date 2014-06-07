@@ -86,8 +86,8 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     zkc.backup(backupDir);
 
     // Start agent
-    startDefaultAgent(getTestHost());
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(testHost());
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Restore zk, erasing task state
     zkc.stop();
@@ -95,32 +95,32 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     zkc.start();
 
     // Wait for agent to reregister
-    awaitHostRegistered(client, getTestHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
   }
 
   @Test
   public void verifyAgentPushesTaskStateAfterRestore() throws Exception {
 
     // Start agent once to have it register
-    final AgentMain agent1 = startDefaultAgent(getTestHost());
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    final AgentMain agent1 = startDefaultAgent(testHost());
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
     agent1.stopAsync().awaitTerminated();
 
     // Deploy job
     final Deployment deployment = Deployment.of(fooJob.getId(), START);
-    final JobDeployResponse deployed = client.deploy(deployment, getTestHost()).get();
+    final JobDeployResponse deployed = client.deploy(deployment, testHost()).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
     // Back up zk
     zkc.backup(backupDir);
 
     // Start agent
-    startDefaultAgent(getTestHost());
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(testHost());
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for agent to indicate that job is running
-    awaitJobState(client, getTestHost(), fooJob.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), fooJob.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
     // Restore zk, erasing task state
     zkc.stop();
@@ -128,9 +128,9 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     zkc.start();
 
     // Wait for agent to again indicate that job is running
-    awaitJobState(client, getTestHost(), fooJob.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), fooJob.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
     // Remove task status
-    zkc.curator().delete().forPath(Paths.statusHostJob(getTestHost(), fooJob.getId()));
+    zkc.curator().delete().forPath(Paths.statusHostJob(testHost(), fooJob.getId()));
   }
 }

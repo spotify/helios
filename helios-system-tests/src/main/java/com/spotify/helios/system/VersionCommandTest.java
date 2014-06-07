@@ -35,7 +35,7 @@ public class VersionCommandTest extends SystemTestBase {
   @Test
   public void testReadableVersion() throws Exception {
     startDefaultMaster();
-    final String response = main("version", "-z", getMasterEndpoint()).toString();
+    final String response = main("version", "-z", masterEndpoint()).toString();
     // instead of testing exact output which would break on formatting changes, match regexp
     // to verify output contains two version numbers (one for client, one for master)
     final String regexp = String.format("(?s).*%s.*%s.*", POM_VERSION, POM_VERSION);
@@ -46,7 +46,7 @@ public class VersionCommandTest extends SystemTestBase {
   @Test
   public void testJsonVersion() throws Exception {
     startDefaultMaster();
-    final VersionResponse version = getVersion("version", "--json", "-z", getMasterEndpoint());
+    final VersionResponse version = getVersion("version", "--json", "-z", masterEndpoint());
     assertEquals("wrong client version", POM_VERSION, version.getClientVersion());
     assertEquals("wrong master version", POM_VERSION, version.getMasterVersion());
   }
@@ -68,7 +68,7 @@ public class VersionCommandTest extends SystemTestBase {
     // If master returns with an error, we should still get the correct client version, and a
     // nice error message instead of master version. Specify bogus path to make this happen.
     final VersionResponse version =
-        getVersion("version", "--json", "-z", getMasterEndpoint() + "/badPath");
+        getVersion("version", "--json", "-z", masterEndpoint() + "/badPath");
     assertEquals("wrong client version", POM_VERSION, version.getClientVersion());
     assertEquals("wrong master version", "Master replied with error code 404",
                  version.getMasterVersion());

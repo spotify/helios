@@ -48,7 +48,7 @@ public class UndeployRaceTest extends SystemTestBase {
     final HeliosClient client = defaultClient();
 
     // Register a host without the agent running
-    client.registerHost(getTestHost(), agentId);
+    client.registerHost(testHost(), agentId);
 
     // Create, deploy and undeploy a job on the host without the agent running
     final Job job = Job.newBuilder()
@@ -62,20 +62,20 @@ public class UndeployRaceTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     final Deployment deployment = Deployment.of(jobId, START);
-    final JobDeployResponse deployed = client.deploy(deployment, getTestHost()).get();
+    final JobDeployResponse deployed = client.deploy(deployment, testHost()).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
-    final JobUndeployResponse undeployed = client.undeploy(jobId, getTestHost()).get();
+    final JobUndeployResponse undeployed = client.undeploy(jobId, testHost()).get();
     assertEquals(JobUndeployResponse.Status.OK, undeployed.getStatus());
 
     // Start agent
-    startDefaultAgent(getTestHost(), "--id", agentId);
+    startDefaultAgent(testHost(), "--id", agentId);
 
-    awaitHostRegistered(client, getTestHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the task to disappear
-    awaitTaskGone(client, getTestHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
+    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
 
     // Verify that the job can be deleted
     assertEquals(JobDeleteResponse.Status.OK, client.deleteJob(jobId).get().getStatus());

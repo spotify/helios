@@ -28,6 +28,8 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import org.junit.Test;
 
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 
 /**
@@ -45,7 +47,7 @@ public class QueryFailureTest extends SystemTestBase {
     startDefaultMaster();
 
     final String result = cli("hosts", "framazama");
-    assertContains("matched no hosts", result);
+    assertThat(result, containsString("matched no hosts"));
   }
 
   @Test
@@ -53,21 +55,21 @@ public class QueryFailureTest extends SystemTestBase {
     startDefaultMaster();
 
     final String result = cli("jobs", "framazama");
-    assertContains("matched no jobs", result);
+    assertThat(result, containsString("matched no jobs"));
   }
 
   @Test
   public void testJobStatusJobFilter() throws Exception {
     startDefaultMaster();
     final String result2 = cli("status", "-j", "framazama");
-    assertContains("matched no jobs", result2);
+    assertThat(result2, containsString("matched no jobs"));
   }
 
   @Test
   public void testJobStatusHostFilter() throws Exception {
     startDefaultMaster();
     final HeliosClient client = defaultClient();
-    startDefaultAgent(getTestHost());
+    startDefaultAgent(testHost());
 
     // Create a job
     final Job job = Job.newBuilder()
@@ -82,6 +84,6 @@ public class QueryFailureTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     final String result = cli("status", "--host", "framazama");
-    assertContains("matched no hosts", result);
+    assertThat(result, containsString("matched no hosts"));
   }
 }

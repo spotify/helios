@@ -37,14 +37,16 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 
 public class ContainerHostNameTest extends SystemTestBase {
 
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(getTestHost());
-    awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(testHost());
+    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
 
@@ -54,16 +56,16 @@ public class ContainerHostNameTest extends SystemTestBase {
     final JobId jobId = createJob(testJobName, testJobVersion, "busybox", command);
 
     // deploy
-    deployJob(jobId, getTestHost());
+    deployJob(jobId, testHost());
 
-    final TaskStatus taskStatus = awaitTaskState(jobId, getTestHost(), EXITED);
+    final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
     final String log;
     try (final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {
       log = logs.readFully();
     }
 
-    final String needle = testJobName + "_" + testJobVersion + "." + getTestHost();
-    assertContains(needle, log);
+    final String needle = testJobName + "_" + testJobVersion + "." + testHost();
+    assertThat(log, containsString(needle));
   }
 }

@@ -51,7 +51,9 @@ import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -270,10 +272,12 @@ public class TemporaryJobsTest extends SystemTestBase {
   public void testRule() throws Exception {
     startDefaultMaster();
     client = defaultClient();
-    testHost = getTestHost();
+    testHost = testHost();
     startDefaultAgent(testHost, "--port-range=" +
                                 dockerPortRange.lowerEndpoint() + ":" +
                                 dockerPortRange.upperEndpoint());
+
+    awaitHostStatus(client, testHost, UP, LONG_WAIT_MINUTES, MINUTES);
 
     assertThat(testResult(SimpleTest.class), isSuccessful());
     assertTrue("jobs are running that should not be",
@@ -284,7 +288,7 @@ public class TemporaryJobsTest extends SystemTestBase {
   public void verifyJobFailsWhenCalledBeforeTestRun() throws Exception {
     startDefaultMaster();
     client = defaultClient();
-    testHost = getTestHost();
+    testHost = testHost();
     assertThat(testResult(BadTest.class),
                hasFailureContaining("deploy() must be called in a @Before or in the test method"));
   }

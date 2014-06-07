@@ -25,7 +25,6 @@ import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
@@ -81,8 +80,8 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
 
     final HeliosClient client = defaultClient();
 
-    startDefaultAgent(getTestHost(), "--service-registry=" + registryAddress);
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(testHost(), "--service-registry=" + registryAddress);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     final ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
         "PORT_NAME", PortMapping.of(INTERNAL_PORT, externalPort));
@@ -96,8 +95,8 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND,
                                   EMPTY_ENV, portMapping, registration);
 
-    deployJob(jobId, getTestHost());
-    awaitJobState(client, getTestHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    deployJob(jobId, testHost());
+    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
     verify(registrar, timeout((int) MINUTES.toMillis(LONG_WAIT_MINUTES)))
         .register(registrationCaptor.capture());

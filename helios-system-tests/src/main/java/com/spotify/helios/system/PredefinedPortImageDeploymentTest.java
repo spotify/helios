@@ -43,7 +43,7 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(getTestHost());
+    startDefaultAgent(testHost());
 
     final HeliosClient client = defaultClient();
 
@@ -67,15 +67,15 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
     client.createJob(job2).get();
 
     // Wait for agent to come up
-    awaitHostRegistered(client, getTestHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Deploy the jobs on the agent
-    client.deploy(Deployment.of(jobId1, START), getTestHost()).get();
-    client.deploy(Deployment.of(jobId2, START), getTestHost()).get();
+    client.deploy(Deployment.of(jobId1, START), testHost()).get();
+    client.deploy(Deployment.of(jobId2, START), testHost()).get();
 
     // Wait for the jobs to run
-    awaitJobState(client, getTestHost(), jobId1, RUNNING, LONG_WAIT_MINUTES, MINUTES);
-    awaitJobState(client, getTestHost(), jobId2, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), jobId1, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), jobId2, RUNNING, LONG_WAIT_MINUTES, MINUTES);
   }
 }
