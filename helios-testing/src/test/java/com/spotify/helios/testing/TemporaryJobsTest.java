@@ -129,8 +129,8 @@ public class TemporaryJobsTest extends SystemTestBase {
         @Override
         public Object call() throws Exception {
           final DefaultProber prober = new DefaultProber();
-          log.info("Probing: {}:{}", DOCKER_HOST, dockerProbePort);
-          return prober.probe(DOCKER_HOST.address(), dockerProbePort) ? true : null;
+          log.info("Probing: {}:{}", DOCKER_HOST.host(), dockerProbePort);
+          return prober.probe(DOCKER_HOST.host(), dockerProbePort) ? true : null;
         }
       });
     } catch (TimeoutException e) {
