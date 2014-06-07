@@ -129,7 +129,7 @@ public class TemporaryJobsTest extends SystemTestBase {
         @Override
         public Object call() throws Exception {
           final DefaultProber prober = new DefaultProber();
-          log.info("Probing: {}:{}", DOCKER_HOST, dockerProbePort);
+          log.info("Probing: {}:{}", DOCKER_HOST.address(), dockerProbePort);
           return prober.probe(DOCKER_HOST.address(), dockerProbePort) ? true : null;
         }
       });
