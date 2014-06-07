@@ -47,17 +47,17 @@ public class JobWatchExactTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(getTestHost());
-    awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(testHost());
+    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
     final JobId jobId = createJob(testJobName, testJobVersion, "busybox", IDLE_COMMAND);
 
     // deploy
-    deployJob(jobId, getTestHost());
+    deployJob(jobId, testHost());
 
-    final String[] commands = new String[]{"watch", "--exact", "-z", getMasterEndpoint(),
-                                           "--no-log-setup", jobId.toString(), getTestHost(),
+    final String[] commands = new String[]{"watch", "--exact", "-z", masterEndpoint(),
+                                           "--no-log-setup", jobId.toString(), testHost(),
                                            "FAKE_TEST_AGENT"};
 
     final AtomicBoolean success = new AtomicBoolean(false);
@@ -65,7 +65,7 @@ public class JobWatchExactTest extends SystemTestBase {
 
     final long deadline = System.currentTimeMillis() + MINUTES.toMillis(LONG_WAIT_MINUTES);
 
-    final String testHost = getTestHost();
+    final String testHost = testHost();
     final String abbreviatedTestHost;
     if (testHost.length() > 10) {
       abbreviatedTestHost = testHost.substring(0, 10);

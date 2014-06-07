@@ -45,6 +45,8 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 
 public class EnvironmentVariableTest extends SystemTestBase {
@@ -52,21 +54,21 @@ public class EnvironmentVariableTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(getTestHost(),
+    startDefaultAgent(testHost(),
                       "--env",
                       "SPOTIFY_POD=PODNAME",
                       "SPOTIFY_ROLE=ROLENAME",
                       "BAR=badfood");
-    awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Wait for the agent to report environment vars
     Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         Map<String, HostStatus> status = Json.read(
-            cli("hosts", getTestHost(), "--json"),
+            cli("hosts", testHost(), "--json"),
             new TypeReference<Map<String, HostStatus>>() {});
-        return status.get(getTestHost()).getEnvironment();
+        return status.get(testHost()).getEnvironment();
       }
     });
 
@@ -84,32 +86,32 @@ public class EnvironmentVariableTest extends SystemTestBase {
                                                   "BAR", "deadbeef"));
 
     // deploy
-    deployJob(jobId, getTestHost());
+    deployJob(jobId, testHost());
 
-    final TaskStatus taskStatus = awaitTaskState(jobId, getTestHost(), EXITED);
+    final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
     final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
     final String log = logs.readFully();
 
-    assertContains("pod: PODNAME", log);
-    assertContains("role: ROLENAME", log);
-    assertContains("foo: 4711", log);
+    assertThat(log, containsString("pod: PODNAME"));
+    assertThat(log, containsString("role: ROLENAME"));
+    assertThat(log, containsString("foo: 4711"));
 
     // Verify that the the BAR environment variable in the job overrode the agent config
-    assertContains("bar: deadbeef", log);
+    assertThat(log, containsString("bar: deadbeef"));
 
-    Map<String, HostStatus> status = Json.read(cli("hosts", getTestHost(), "--json"),
+    Map<String, HostStatus> status = Json.read(cli("hosts", testHost(), "--json"),
                                                new TypeReference<Map<String, HostStatus>>() {});
 
     assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
                                  "SPOTIFY_ROLE", "ROLENAME",
                                  "BAR", "badfood"),
-                 status.get(getTestHost()).getEnvironment());
+                 status.get(testHost()).getEnvironment());
 
     assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
                                  "SPOTIFY_ROLE", "ROLENAME",
                                  "BAR", "deadbeef",
                                  "FOO", "4711"),
-                 status.get(getTestHost()).getStatuses().get(jobId).getEnv());
+                 status.get(testHost()).getStatuses().get(jobId).getEnv());
   }
 }

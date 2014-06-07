@@ -63,7 +63,7 @@ public class DeploymentTest extends SystemTestBase {
     startDefaultMaster();
 
     final HeliosClient client = defaultClient();
-    startDefaultAgent(getTestHost());
+    startDefaultAgent(testHost());
 
     // Create a job
     final Job job = Job.newBuilder()
@@ -94,58 +94,58 @@ public class DeploymentTest extends SystemTestBase {
     assertEquals(ImmutableMap.of(jobId, job), matchJobs3);
 
     // Wait for agent to come up
-    awaitHostRegistered(client, getTestHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Deploy the job on the agent
     final Deployment deployment = Deployment.of(jobId, START);
-    final JobDeployResponse deployed = client.deploy(deployment, getTestHost()).get();
+    final JobDeployResponse deployed = client.deploy(deployment, testHost()).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
-    final JobDeployResponse deployed2 = client.deploy(deployment, getTestHost()).get();
+    final JobDeployResponse deployed2 = client.deploy(deployment, testHost()).get();
     assertEquals(JobDeployResponse.Status.JOB_ALREADY_DEPLOYED, deployed2.getStatus());
 
     final JobDeployResponse deployed3 = client.deploy(Deployment.of(BOGUS_JOB, START),
-                                                      getTestHost()).get();
+                                                      testHost()).get();
     assertEquals(JobDeployResponse.Status.JOB_NOT_FOUND, deployed3.getStatus());
 
     final JobDeployResponse deployed4 = client.deploy(deployment, BOGUS_HOST).get();
     assertEquals(JobDeployResponse.Status.HOST_NOT_FOUND, deployed4.getStatus());
 
     // undeploy and redeploy to make sure things still work in the face of the tombstone
-    JobUndeployResponse undeployResp = client.undeploy(jobId, getTestHost()).get();
+    JobUndeployResponse undeployResp = client.undeploy(jobId, testHost()).get();
     assertEquals(JobUndeployResponse.Status.OK, undeployResp.getStatus());
 
-    final JobDeployResponse redeployed = client.deploy(deployment, getTestHost()).get();
+    final JobDeployResponse redeployed = client.deploy(deployment, testHost()).get();
     assertEquals(JobDeployResponse.Status.OK, redeployed.getStatus());
 
     // Check that the job is in the desired state
-    final Deployment fetchedDeployment = client.deployment(getTestHost(), jobId).get();
+    final Deployment fetchedDeployment = client.deployment(testHost(), jobId).get();
     assertEquals(deployment, fetchedDeployment);
 
     // Wait for the job to run
     TaskStatus taskStatus;
-    taskStatus = awaitJobState(client, getTestHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
     assertEquals(job, taskStatus.getJob());
 
     assertEquals(JobDeleteResponse.Status.STILL_IN_USE, client.deleteJob(jobId).get().getStatus());
 
     // Wait for a while and make sure that the container is still running
     Thread.sleep(5000);
-    final HostStatus hostStatus = client.hostStatus(getTestHost()).get();
+    final HostStatus hostStatus = client.hostStatus(testHost()).get();
     taskStatus = hostStatus.getStatuses().get(jobId);
     assertEquals(RUNNING, taskStatus.getState());
 
     // Undeploy the job
-    final JobUndeployResponse undeployed = client.undeploy(jobId, getTestHost()).get();
+    final JobUndeployResponse undeployed = client.undeploy(jobId, testHost()).get();
     assertEquals(JobUndeployResponse.Status.OK, undeployed.getStatus());
 
     // Make sure that it is no longer in the desired state
-    final Deployment undeployedJob = client.deployment(getTestHost(), jobId).get();
+    final Deployment undeployedJob = client.deployment(testHost(), jobId).get();
     assertTrue(undeployedJob == null || undeployedJob.getGoal() == Goal.UNDEPLOY);
 
     // Wait for the task to disappear
-    awaitTaskGone(client, getTestHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
+    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
 
     // Verify that the job can be deleted
     assertEquals(JobDeleteResponse.Status.OK, client.deleteJob(jobId).get().getStatus());

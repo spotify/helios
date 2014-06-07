@@ -26,7 +26,6 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.common.Version;
-import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.Parallelized;
 
 import org.junit.Before;
@@ -143,7 +142,7 @@ public class VersionResponseFilterTest extends SystemTestBase {
     if (version != null) {
       headers.put(HELIOS_VERSION_HEADER, asList(version));
     }
-    final URI uri = URI.create(getMasterEndpoint() + "/version");
+    final URI uri = URI.create(masterEndpoint() + "/version");
     final HttpURLConnection connection = connect(uri, headers);
     return connection;
   }

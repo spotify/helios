@@ -37,14 +37,14 @@ public class FlappingTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(getTestHost());
+    startDefaultAgent(testHost());
 
     final HeliosClient client = defaultClient();
 
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     JobId jobId = createJob(testJobName, testJobVersion, "busybox", ImmutableList.of("/bin/true"));
-    deployJob(jobId, getTestHost());
-    awaitJobThrottle(client, getTestHost(), jobId, FLAPPING, LONG_WAIT_MINUTES, MINUTES);
+    deployJob(jobId, testHost());
+    awaitJobThrottle(client, testHost(), jobId, FLAPPING, LONG_WAIT_MINUTES, MINUTES);
   }
 }

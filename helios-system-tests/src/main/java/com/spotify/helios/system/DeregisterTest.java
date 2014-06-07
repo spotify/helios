@@ -51,7 +51,7 @@ public class DeregisterTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    final String host = getTestHost();
+    final String host = testHost();
     final AgentMain agent = startDefaultAgent(host);
 
     final HeliosClient client = defaultClient();

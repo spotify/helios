@@ -42,8 +42,9 @@ import java.util.concurrent.Callable;
 import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class CliDeploymentTest extends SystemTestBase {
 
@@ -54,7 +55,7 @@ public class CliDeploymentTest extends SystemTestBase {
   private static final TypeReference<Map<JobId, JobStatus>> STATUSES_TYPE =
       new TypeReference<Map<JobId, JobStatus>>() {};
 
-  private final Integer externalPort = getTemporaryPorts().localPort("external");
+  private final Integer externalPort = temporaryPorts().localPort("external");
 
   @Test
   public void test() throws Exception {
@@ -69,7 +70,7 @@ public class CliDeploymentTest extends SystemTestBase {
       }
     });
 
-    startDefaultAgent(getTestHost());
+    startDefaultAgent(testHost());
 
     final String image = "busybox";
     final Map<String, PortMapping> ports = ImmutableMap.of(
@@ -81,8 +82,8 @@ public class CliDeploymentTest extends SystemTestBase {
     final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
 
     // Wait for agent to come up
-    awaitHostRegistered(getTestHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(testHost(), LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
     final JobId jobId = createJob(testJobName, testJobVersion, image, IDLE_COMMAND, env, ports,
@@ -101,8 +102,9 @@ public class CliDeploymentTest extends SystemTestBase {
     final String inspectOutput = cli("inspect", "--json", expected.getId().toString());
     final Job parsed = Json.read(inspectOutput, Job.class);
     assertEquals(expected, parsed);
-    assertContains(jobId.toString(), cli("jobs", testJobName, "-q"));
-    assertContains(jobId.toString(), cli("jobs", testJobName + ":" + testJobVersion, "-q"));
+    assertThat(cli("jobs", testJobName, "-q"), containsString(jobId.toString()));
+    assertThat(cli("jobs", testJobName + ":" + testJobVersion, "-q"),
+               containsString(jobId.toString()));
     assertEquals("job pattern foozbarz matched no jobs", cli("jobs", "foozbarz", "-q").trim());
 
     // Create a new job using the first job as a template
@@ -131,29 +133,29 @@ public class CliDeploymentTest extends SystemTestBase {
 
     final String duplicateJob = cli("create", testJobName + ":" + testJobVersion, image, "--",
                                     IDLE_COMMAND);
-    assertContains("JOB_ALREADY_EXISTS", duplicateJob);
+    assertThat(duplicateJob, containsString("JOB_ALREADY_EXISTS"));
 
-    final String prestop = stopJob(jobId, getTestHost());
-    assertContains("JOB_NOT_DEPLOYED", prestop);
+    final String prestop = stopJob(jobId, testHost());
+    assertThat(prestop, containsString("JOB_NOT_DEPLOYED"));
 
     // Deploy job
-    deployJob(jobId, getTestHost());
+    deployJob(jobId, testHost());
 
     // Stop job
     final String stop1 = stopJob(jobId, BOGUS_HOST);
-    assertContains("HOST_NOT_FOUND", stop1);
-    final String stop2 = stopJob(BOGUS_JOB, getTestHost());
-    assertContains("Unknown job", stop2);
-    final String stop3 = stopJob(jobId, getTestHost());
-    assertContains(getTestHost() + ": done", stop3);
+    assertThat(stop1, containsString("HOST_NOT_FOUND"));
+    final String stop2 = stopJob(BOGUS_JOB, testHost());
+    assertThat(stop2, containsString("Unknown job"));
+    final String stop3 = stopJob(jobId, testHost());
+    assertThat(stop3, containsString(testHost() + ": done"));
 
     // Verify that undeploying the job from a nonexistent host fails
-    assertContains("HOST_NOT_FOUND", cli("undeploy", jobId.toString(), BOGUS_HOST));
+    assertThat(cli("undeploy", jobId.toString(), BOGUS_HOST), containsString("HOST_NOT_FOUND"));
 
     // Verify that undeploying a nonexistent job from the host fails
-    assertContains("Unknown job", cli("undeploy", BOGUS_JOB.toString(), getTestHost()));
+    assertThat(cli("undeploy", BOGUS_JOB.toString(), testHost()), containsString("Unknown job"));
 
     // Undeploy job
-    undeployJob(jobId, getTestHost());
+    undeployJob(jobId, testHost());
   }
 }

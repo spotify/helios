@@ -44,11 +44,11 @@ public class PortCollisionJobTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(getTestHost());
+    startDefaultAgent(testHost());
 
     final HeliosClient client = defaultClient();
 
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     final Job job1 = Job.newBuilder()
         .setName(testTag + "foo")
@@ -73,11 +73,11 @@ public class PortCollisionJobTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created2.getStatus());
 
     final Deployment deployment1 = Deployment.of(job1.getId(), STOP);
-    final JobDeployResponse deployed1 = client.deploy(deployment1, getTestHost()).get();
+    final JobDeployResponse deployed1 = client.deploy(deployment1, testHost()).get();
     assertEquals(JobDeployResponse.Status.OK, deployed1.getStatus());
 
     final Deployment deployment2 = Deployment.of(job2.getId(), STOP);
-    final JobDeployResponse deployed2 = client.deploy(deployment2, getTestHost()).get();
+    final JobDeployResponse deployed2 = client.deploy(deployment2, testHost()).get();
     assertEquals(JobDeployResponse.Status.PORT_CONFLICT, deployed2.getStatus());
   }
 }

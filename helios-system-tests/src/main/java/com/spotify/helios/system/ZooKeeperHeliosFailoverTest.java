@@ -69,9 +69,9 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
   @Before
   public void setup() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(getTestHost());
+    startDefaultAgent(testHost());
     client = defaultClient();
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
   }
 
   @Test
@@ -100,24 +100,24 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     final Deployment deployment = Deployment.of(jobId, START);
-    final JobDeployResponse deployed = client.deploy(deployment, getTestHost()).get();
+    final JobDeployResponse deployed = client.deploy(deployment, testHost()).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
     // Wait for the job to run
-    awaitJobState(client, getTestHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
   }
 
   private void undeploy(final JobId jobId) throws Exception {
     // Check job status can be queried
     final JobStatus jobStatus = client.jobStatus(jobId).get();
-    assertEquals(RUNNING, jobStatus.getTaskStatuses().get(getTestHost()).getState());
+    assertEquals(RUNNING, jobStatus.getTaskStatuses().get(testHost()).getState());
 
     // Undeploy the job
-    final JobUndeployResponse undeployed = client.undeploy(jobId, getTestHost()).get();
+    final JobUndeployResponse undeployed = client.undeploy(jobId, testHost()).get();
     assertEquals(JobUndeployResponse.Status.OK, undeployed.getStatus());
 
     // Wait for the task to disappear
-    awaitTaskGone(client, getTestHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
+    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
   }
 
 }

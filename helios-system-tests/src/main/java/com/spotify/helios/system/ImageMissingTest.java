@@ -40,19 +40,19 @@ public class ImageMissingTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     startDefaultMaster();
-    startDefaultAgent(getTestHost());
+    startDefaultAgent(testHost());
 
     final HeliosClient client = defaultClient();
 
-    awaitHostStatus(client, getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     JobId jobId = createJob(testJobName, testJobVersion, "this_sould_not_exist",
                             ImmutableList.of("/bin/true"));
 
-    deployJob(jobId, getTestHost());
-    awaitJobThrottle(client, getTestHost(), jobId, IMAGE_MISSING, LONG_WAIT_MINUTES, MINUTES);
+    deployJob(jobId, testHost());
+    awaitJobThrottle(client, testHost(), jobId, IMAGE_MISSING, LONG_WAIT_MINUTES, MINUTES);
 
-    final HostStatus hostStatus = client.hostStatus(getTestHost()).get();
+    final HostStatus hostStatus = client.hostStatus(testHost()).get();
     final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
     assertEquals(TaskStatus.State.FAILED, taskStatus.getState());
   }

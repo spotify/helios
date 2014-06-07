@@ -52,8 +52,8 @@ public class SyslogRedirectionTest extends SystemTestBase {
     // just about every other part of it, and specifically, that the output doesn't get to
     // docker, and that the redirector executable exists and doesn't do anything terribly stupid.
     startDefaultMaster();
-    startDefaultAgent(getTestHost(), "--syslog-redirect", "10.0.3.1:6514");
-    awaitHostStatus(getTestHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(testHost(), "--syslog-redirect", "10.0.3.1:6514");
+    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
 
@@ -65,9 +65,9 @@ public class SyslogRedirectionTest extends SystemTestBase {
                                                   "BAR", "deadbeef"));
 
     // deploy
-    deployJob(jobId, getTestHost());
+    deployJob(jobId, testHost());
 
-    final TaskStatus taskStatus = awaitTaskState(jobId, getTestHost(), EXITED);
+    final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
     final String log;
     try (LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {

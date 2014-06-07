@@ -117,7 +117,7 @@ public class ClusterDeploymentTest extends SystemTestBase {
   }
 
   private String host(final int i) throws InterruptedException, ExecutionException {
-    return getTestHost() + i;
+    return testHost() + i;
   }
 
   private void deploy(final Job job, final String host) throws Exception {
