@@ -51,7 +51,7 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
     final Job job1 = Job.newBuilder()
         .setName(testTag + "memcached")
         .setVersion("v1")
-        .setImage("rohan/memcached-tiny")
+        .setImage("rohan/memcached-mini")
         .build();
     final JobId jobId1 = job1.getId();
     client.createJob(job1).get();
@@ -60,7 +60,7 @@ public class PredefinedPortImageDeploymentTest extends SystemTestBase {
     final Job job2 = Job.newBuilder()
         .setName(testTag + "memcached")
         .setVersion("v2")
-        .setImage("rohan/memcached-tiny")
+        .setImage("rohan/memcached-mini")
         .setPorts(ImmutableMap.of("tcp", PortMapping.of(11211, externalPort)))
         .build();
     final JobId jobId2 = job2.getId();

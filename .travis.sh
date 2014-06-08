@@ -26,6 +26,6 @@ case "$1" in
     while ! docker info; do sleep 1; done
 
     docker pull busybox
-    docker pull rohan/memcached-tiny
+    docker pull rohan/memcached-mini
     ;;
 esac
