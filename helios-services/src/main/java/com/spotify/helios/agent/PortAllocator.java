@@ -85,9 +85,8 @@ public class PortAllocator {
       // Look for an available port
       Integer port = null;
       for (int i = start; i < end; i++) {
-        final int candidate = next();
-        if (!used.contains(candidate)) {
-          port = candidate;
+        if (!used.contains(i)) {
+          port = i;
           break;
         }
       }
@@ -99,12 +98,5 @@ public class PortAllocator {
     }
 
     return allocation.build();
-  }
-
-  private int next() {
-    if (i == end) {
-      i = start;
-    }
-    return i++;
   }
 }
