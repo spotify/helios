@@ -198,10 +198,15 @@ public class AgentService extends AbstractIdleService {
     final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =
         new ZooKeeperNodeUpdaterFactory(zooKeeperClient);
 
+    final DockerClient dockerClient = new DefaultDockerClient(config.getDockerHost().uri());
+    final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,
+                                                                          dockerClient);
+
     this.hostInfoReporter = HostInfoReporter.newBuilder()
         .setNodeUpdaterFactory(nodeUpdaterFactory)
         .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
         .setHost(config.getName())
+        .setDockerClient(dockerClient)
         .build();
 
     this.agentInfoReporter = AgentInfoReporter.newBuilder()
@@ -213,10 +218,6 @@ public class AgentService extends AbstractIdleService {
     this.environmentVariableReporter = new EnvironmentVariableReporter(config.getName(),
                                                                        config.getEnvVars(),
                                                                        nodeUpdaterFactory);
-
-    final DockerClient dockerClient = new DefaultDockerClient(config.getDockerHost().uri());
-    final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,
-                                                                          dockerClient);
 
     final SupervisorFactory supervisorFactory = new SupervisorFactory(
         model, monitoredDockerClient,
