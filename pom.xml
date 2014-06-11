@@ -27,10 +27,6 @@
       <url>http://clojars.org/repo</url>
     </repository>
     <repository>
-      <id>bintray-dano</id>
-      <url>http://dl.bintray.com/dano/maven</url>
-    </repository>
-    <repository>
       <id>bintray-readytalk</id>
       <url>http://dl.bintray.com/readytalk/maven</url>
     </repository>
