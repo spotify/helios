@@ -21,6 +21,8 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.google.common.base.Objects;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class HostInfo extends Descriptor {
@@ -36,6 +38,7 @@ public class HostInfo extends Descriptor {
   private final long memoryFreeBytes;
   private final long swapTotalBytes;
   private final long swapFreeBytes;
+  private final DockerVersion dockerVersion;
 
   public HostInfo(@JsonProperty("hostname") final String hostname,
                   @JsonProperty("uname") final String uname,
@@ -47,7 +50,8 @@ public class HostInfo extends Descriptor {
                   @JsonProperty("memoryTotalBytes") final long memoryTotalBytes,
                   @JsonProperty("memoryFreeBytes") final long memoryFreeBytes,
                   @JsonProperty("swapTotalBytes") final long swapTotalBytes,
-                  @JsonProperty("swapFreeBytes") final long swapFreeBytes) {
+                  @JsonProperty("swapFreeBytes") final long swapFreeBytes,
+                  @JsonProperty("dockerVersion") final DockerVersion dockerVersion) {
     this.hostname = hostname;
     this.uname = uname;
     this.architecture = architecture;
@@ -59,6 +63,7 @@ public class HostInfo extends Descriptor {
     this.memoryFreeBytes = memoryFreeBytes;
     this.swapTotalBytes = swapTotalBytes;
     this.swapFreeBytes = swapFreeBytes;
+    this.dockerVersion = dockerVersion;
   }
 
   public HostInfo(final Builder builder) {
@@ -73,6 +78,7 @@ public class HostInfo extends Descriptor {
     this.memoryFreeBytes = builder.memoryFreeBytes;
     this.swapTotalBytes = builder.swapTotalBytes;
     this.swapFreeBytes = builder.swapFreeBytes;
+    this.dockerVersion = builder.dockerVersion;
   }
 
   public String getHostname() {
@@ -119,6 +125,10 @@ public class HostInfo extends Descriptor {
     return swapFreeBytes;
   }
 
+  public DockerVersion getDockerVersion() {
+    return dockerVersion;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -136,6 +146,7 @@ public class HostInfo extends Descriptor {
     private long memoryFreeBytes;
     private long swapTotalBytes;
     private long swapFreeBytes;
+    private DockerVersion dockerVersion;
 
     public Builder setHostname(final String hostname) {
       this.hostname = hostname;
@@ -192,6 +203,11 @@ public class HostInfo extends Descriptor {
       return this;
     }
 
+    public Builder setDockerVersion(final DockerVersion dockerVersion) {
+      this.dockerVersion = dockerVersion;
+      return this;
+    }
+
     public HostInfo build() {
       return new HostInfo(this);
     }
@@ -200,18 +216,18 @@ public class HostInfo extends Descriptor {
 
   @Override
   public String toString() {
-    return "HostInfo{" +
-           "hostname='" + hostname + '\'' +
-           ", uname='" + uname + '\'' +
-           ", architecture='" + architecture + '\'' +
-           ", osName='" + osName + '\'' +
-           ", osVersion='" + osVersion + '\'' +
-           ", cpus=" + cpus +
-           ", loadAvg=" + loadAvg +
-           ", memoryTotalBytes=" + memoryTotalBytes +
-           ", memoryFreeBytes=" + memoryFreeBytes +
-           ", swapTotalBytes=" + swapTotalBytes +
-           ", swapFreeBytes=" + swapFreeBytes +
-           '}';
+    return Objects.toStringHelper(this)
+        .add("hostname", hostname)
+        .add("uname", uname)
+        .add("architecture", architecture)
+        .add("osName", osName)
+        .add("osVersion", osVersion)
+        .add("cpus", cpus)
+        .add("loadAvg", loadAvg)
+        .add("memoryTotalBytes", memoryTotalBytes)
+        .add("memoryFreeBytes", memoryFreeBytes)
+        .add("swapTotalBytes", swapTotalBytes)
+        .add("swapFreeBytes", swapFreeBytes)
+        .toString();
   }
 }

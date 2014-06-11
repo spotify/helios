@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.DockerVersion;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -115,7 +116,7 @@ public class HostListCommand extends ControlCommand {
       } else {
         final Table table = table(out);
         table.row("HOST", "STATUS", "DEPLOYED", "RUNNING",
-                  "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS", "VERSION");
+                  "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS", "VERSION", "DOCKER");
 
         for (final Map.Entry<String, ListenableFuture<HostStatus>> e : statuses.entrySet()) {
 
@@ -143,6 +144,7 @@ public class HostListCommand extends ControlCommand {
           final String mem;
           final String loadAvg;
           final String os;
+          final String docker;
           if (hi != null) {
             final long free = hi.getMemoryFreeBytes();
             final long total = hi.getMemoryTotalBytes();
@@ -151,8 +153,10 @@ public class HostListCommand extends ControlCommand {
             mem = hi.getMemoryTotalBytes() / (1024 * 1024 * 1024) + " gb";
             loadAvg = format("%.2f", hi.getLoadAvg());
             os = hi.getOsName() + " " + hi.getOsVersion();
+            final DockerVersion dv = hi.getDockerVersion();
+            docker = format("%s (%s)", dv, dv.getApiVersion());
           } else {
-            memUsage = cpus = mem = loadAvg = os = "";
+            memUsage = cpus = mem = loadAvg = os = docker = "";
           }
 
           final String version;
@@ -174,7 +178,7 @@ public class HostListCommand extends ControlCommand {
           }
 
           table.row(host, status, s.getJobs().size(), runningDeployedJobs.size(),
-                    cpus, mem, loadAvg, memUsage, os, version);
+                    cpus, mem, loadAvg, memUsage, os, version, docker);
         }
 
         table.print();

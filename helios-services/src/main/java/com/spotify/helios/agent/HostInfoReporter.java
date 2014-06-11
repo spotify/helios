@@ -23,6 +23,9 @@ package com.spotify.helios.agent;
 
 import com.google.common.io.CharStreams;
 
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.DockerException;
+import com.spotify.helios.common.descriptors.DockerVersion;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.servicescommon.coordination.NodeUpdaterFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -49,16 +52,20 @@ public class HostInfoReporter extends InterruptingScheduledService {
   private final ZooKeeperNodeUpdater nodeUpdater;
   private final int interval;
   private final TimeUnit timeUnit;
+  private final DockerClient dockerClient;
 
   HostInfoReporter(final Builder builder) {
-    this.operatingSystemMXBean = checkNotNull(builder.operatingSystemMXBean);
-    this.nodeUpdater = builder.nodeUpdaterFactory.create(Paths.statusHostInfo(builder.host));
+    this.operatingSystemMXBean = checkNotNull(builder.operatingSystemMXBean,
+                                              "operatingSystemMXBean");
+    this.nodeUpdater = builder.nodeUpdaterFactory.create(
+        Paths.statusHostInfo(checkNotNull(builder.host, "host")));
+    this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
     this.interval = builder.interval;
-    this.timeUnit = checkNotNull(builder.timeUnit);
+    this.timeUnit = checkNotNull(builder.timeUnit, "timeUnit");
   }
 
   @Override
-  protected void runOneIteration() {
+  protected void runOneIteration() throws InterruptedException {
     final String hostname = exec("uname -n").trim();
     final String uname = exec("uname -a").trim();
 
@@ -74,9 +81,31 @@ public class HostInfoReporter extends InterruptingScheduledService {
         .setSwapFreeBytes(operatingSystemMXBean.getFreeSwapSpaceSize())
         .setSwapTotalBytes(operatingSystemMXBean.getTotalSwapSpaceSize())
         .setUname(uname)
+        .setDockerVersion(dockerVersion())
         .build();
 
     nodeUpdater.update(hostInfo.toJsonBytes());
+  }
+
+  private DockerVersion dockerVersion() throws InterruptedException {
+    try {
+      final com.spotify.docker.client.messages.Version version = dockerClient.version();
+      return version == null ? null : dockerVersion(version);
+    } catch (DockerException e) {
+      return null;
+    }
+  }
+
+  private DockerVersion dockerVersion(final com.spotify.docker.client.messages.Version version) {
+    return DockerVersion.builder()
+        .apiVersion(version.apiVersion())
+        .arch(version.arch())
+        .gitCommit(version.gitCommit())
+        .goVersion(version.goVersion())
+        .kernelVersion(version.kernelVersion())
+        .os(version.os())
+        .version(version.version())
+        .build();
   }
 
   @Override
@@ -106,6 +135,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
     private NodeUpdaterFactory nodeUpdaterFactory;
     private OperatingSystemMXBean operatingSystemMXBean;
     private String host;
+    private DockerClient dockerClient;
     private int interval = DEFAULT_INTERVAL;
     private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
 
@@ -122,6 +152,11 @@ public class HostInfoReporter extends InterruptingScheduledService {
 
     public Builder setHost(final String host) {
       this.host = host;
+      return this;
+    }
+
+    public Builder setDockerClient(final DockerClient dockerClient) {
+      this.dockerClient = dockerClient;
       return this;
     }
 
