@@ -16,12 +16,12 @@ case "$1" in
   before_script)
     export HOST_IP=`/sbin/ifconfig venet0:0 | grep 'inet addr' | awk -F: '{print $2}' | awk '{print $1}'`
 
-    export DOCKER_HOST=tcp://$HOST_IP:4243
-    export DOCKER_PORT_RANGE=4250:4300
+    export DOCKER_HOST=tcp://$HOST_IP:2375
+    export DOCKER_PORT_RANGE=2400:2500
 
-    export SLIRP_PORTS=`seq 4243 4300`
+    export SLIRP_PORTS=`seq 2375 2500`
 
-    sekexe/run "docker -d -H tcp://0.0.0.0:4243 " &
+    sekexe/run "docker -d -H tcp://0.0.0.0:2375 " &
 
     while ! docker info; do sleep 1; done
     ;;

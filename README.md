@@ -71,7 +71,7 @@ of running:
 If you would like to run tests against a different Docker instance then you can
 use the `DOCKER_HOST` environment variable.
 
-    $ DOCKER_HOST=tcp://localhost:4243 mvn clean test
+    $ DOCKER_HOST=tcp://localhost:2375 mvn clean test
 
 Install & Run
 -------------
