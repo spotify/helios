@@ -69,10 +69,10 @@ public class VolumeTest extends SystemTestBase {
         .setImage(BUSYBOX)
         .addVolume("/volume")
         .addVolume("/urandom", "/dev/urandom")
-        .setCommand(asList("sh", "-c", "echo foo > /volume/bar && " +
-                                       "nc -p 4711 -le ls / &&" +
-                                       "nc -p 4712 -le ls /dev &&" +
-                                       "nc -p 4713 -le dd if=/volume/bar &&" +
+        .setCommand(asList("sh", "-c", "echo foo > /volume/bar; " +
+                                       "nc -p 4711 -le ls /;" +
+                                       "nc -p 4712 -le ls /dev;" +
+                                       "nc -p 4713 -le dd if=/volume/bar;" +
                                        "nc -p 4714 -lle dd if=/urandom bs=1 count=4"))
         .addPort("root", PortMapping.of(4711))
         .addPort("dev", PortMapping.of(4712))
