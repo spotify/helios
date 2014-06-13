@@ -34,7 +34,6 @@ import com.spotify.helios.common.Json;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -74,7 +73,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.command = Optional.fromNullable(command).or(EMPTY_COMMAND);
     this.env = Optional.fromNullable(env).or(EMPTY_ENV);
     this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
-    this.registration = registration;
+    this.registration = Optional.fromNullable(registration).or(EMPTY_REGISTRATION);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -301,15 +300,16 @@ public class Job extends Descriptor implements Comparable<Job> {
     }
 
     public Map<String, String> getEnv() {
-      return Collections.unmodifiableMap(p.env);
+      return ImmutableMap.copyOf(p.env);
     }
 
     public Map<String, PortMapping> getPorts() {
-      return Collections.unmodifiableMap(p.ports);
+      return ImmutableMap.copyOf(p.ports);
     }
 
     public Map<ServiceEndpoint, ServicePorts> getRegistration() {
-      return Collections.unmodifiableMap(p.registration);
+      return ImmutableMap.copyOf(p.registration);
+    }
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
