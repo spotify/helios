@@ -32,8 +32,6 @@ import com.spotify.helios.common.descriptors.Job;
 import java.util.List;
 import java.util.Set;
 
-import static java.util.Arrays.asList;
-
 /**
  * Bind mounts /usr/lib/helios inside the container as /helios, and uses the syslog-redirector
  * executable there to redirect container stdout/err to syslog.
@@ -48,7 +46,12 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
 
   @Override
   public void decorateHostConfig(HostConfig.Builder hostConfig) {
-    hostConfig.binds(asList("/usr/lib/helios:/helios:ro"));
+    final List<String> binds = Lists.newArrayList();
+    if (hostConfig.binds() != null) {
+      binds.addAll(hostConfig.binds());
+    }
+    binds.add("/usr/lib/helios:/helios:ro");
+    hostConfig.binds(binds);
   }
 
   @Override
