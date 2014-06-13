@@ -10,7 +10,7 @@ case "$1" in
     sudo chmod +x /usr/sbin/policy-rc.d
     sudo apt-get install -qy slirp lxc lxc-docker
 
-    git clone git://github.com/spotify/sekexe
+    git clone git://github.com/spotify/sekexe -b dano/512m
     ;;
 
   before_script)
