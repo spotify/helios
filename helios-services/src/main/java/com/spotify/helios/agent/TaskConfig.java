@@ -22,7 +22,10 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Ascii;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -88,6 +91,7 @@ public class TaskConfig {
     builder.hostname(containerHostname(job.getId().getName() + "_" +
                                        job.getId().getVersion()));
     builder.domainname(host);
+    builder.volumes(volumes());
     containerDecorator.decorateContainerConfig(job, imageInfo, builder);
     return builder.build();
   }
@@ -183,9 +187,41 @@ public class TaskConfig {
    */
   public HostConfig hostConfig() {
     final HostConfig.Builder builder = HostConfig.builder()
+        .binds(binds())
         .portBindings(portBindings());
     containerDecorator.decorateHostConfig(builder);
     return builder.build();
+  }
+
+  /**
+   * Get container volumes.
+   */
+  private Set<String> volumes() {
+    final ImmutableSet.Builder<String> volumes = ImmutableSet.builder();
+    for (Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
+      final String path = entry.getKey();
+      final String source = entry.getValue();
+      if (Strings.isNullOrEmpty(source)) {
+        volumes.add(path);
+      }
+    }
+    return volumes.build();
+  }
+
+  /**
+   * Get container bind mount volumes.
+   */
+  private List<String> binds() {
+    final ImmutableList.Builder<String> binds = ImmutableList.builder();
+    for (Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
+      final String path = entry.getKey();
+      final String source = entry.getValue();
+      if (Strings.isNullOrEmpty(source)) {
+        continue;
+      }
+      binds.add(source + ":" + path);
+    }
+    return binds.build();
   }
 
   /**

@@ -133,6 +133,17 @@ public class JobValidator {
       }
     }
 
+    // Validate volumes
+    for (Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
+      final String path = entry.getKey();
+      final String[] parts = path.split(":", 3);
+      if (path.isEmpty() || path.equals("/") ||
+          parts.length > 2 ||
+          (parts.length > 1 && parts[1].isEmpty())) {
+        errors.add(format("Invalid volume path: %s", path));
+      }
+    }
+
     return errors;
   }
 
