@@ -39,10 +39,13 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.Socket;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Callable;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
@@ -71,16 +74,10 @@ public class VolumeTest extends SystemTestBase {
         .addVolume("/urandom", "/dev/urandom")
         .addVolume("/hostdev", "/dev")
         .setCommand(asList("sh", "-c", "echo foo > /volume/bar; " +
-                                       "nc -p 4711 -le ls /;" +
-                                       "nc -p 4712 -le ls /dev;" +
-                                       "nc -p 4715 -le ls /hostdev;" +
-                                       "nc -p 4713 -le dd if=/volume/bar;" +
-                                       "nc -p 4714 -lle dd if=/urandom bs=1 count=4"))
-        .addPort("root", PortMapping.of(4711))
-        .addPort("dev", PortMapping.of(4712))
-        .addPort("hostdev", PortMapping.of(4715))
-        .addPort("bar", PortMapping.of(4713))
-        .addPort("urandom", PortMapping.of(4714))
+                                       "nc -p 4711 -le dd if=/volume/bar;" +
+                                       "nc -p 4712 -lle dd if=/urandom bs=1 count=4"))
+        .addPort("bar", PortMapping.of(4711))
+        .addPort("urandom", PortMapping.of(4712))
         .build();
     final JobId jobId = job.getId();
 
@@ -101,68 +98,48 @@ public class VolumeTest extends SystemTestBase {
     taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
     assertEquals(job, taskStatus.getJob());
 
-    final Integer root = taskStatus.getPorts().get("root").getExternalPort();
-    final Integer dev = taskStatus.getPorts().get("dev").getExternalPort();
-    final Integer hostdev = taskStatus.getPorts().get("hostdev").getExternalPort();
     final Integer bar = taskStatus.getPorts().get("bar").getExternalPort();
     final Integer urandom = taskStatus.getPorts().get("urandom").getExternalPort();
 
-    assert root != null;
-    assert dev != null;
-    assert hostdev != null;
     assert bar != null;
     assert urandom != null;
 
-    // ls /
-    log.info("$ ls /");
-    read(root);
-
-    // ls /dev
-    log.info("$ ls /dev");
-    read(dev);
-
-    // ls /hostdev
-    log.info("$ ls /hostdev");
-    read(hostdev);
-
     // Read "foo" from /volume/bar
-    final String foo = Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
-      @Override
-      public String call() {
-        try (final Socket s = new Socket(DOCKER_HOST.address(), bar)) {
-          final byte[] foo = new byte[3];
-          ByteStreams.readFully(s.getInputStream(), foo);
-          return new String(foo, UTF_8);
-        } catch (IOException e) {
-          return null;
-        }
-      }
-    });
+    final String foo = recvUtf8(bar, 3);
     assertEquals("foo", foo);
 
     // Attempt to read some random bytes from the mounted /dev/urandom
-    try (final Socket s = new Socket(DOCKER_HOST.address(), urandom)) {
-      ByteStreams.readFully(s.getInputStream(), new byte[4]);
-    }
+    recv(urandom, 4);
   }
 
-  private void read(final int port) throws Exception {
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Boolean>() {
+  private String recvUtf8(final int port, final int n) throws Exception {
+    final byte[] bytes = recv(port, n);
+    return new String(bytes, UTF_8);
+  }
+
+  private byte[] recv(final int port, final int n) throws Exception {
+    checkArgument(n > 0, "n must be > 0");
+    return Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<byte[]>() {
       @Override
-      public Boolean call() {
+      public byte[] call() {
         try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
-          final BufferedReader reader = new BufferedReader(
-              new InputStreamReader(s.getInputStream()));
-          String line;
-          while ((line = reader.readLine()) != null) {
-            log.info(line);
+          final byte[] bytes = new byte[n];
+          final InputStream is = s.getInputStream();
+          final int first = is.read();
+          // Check if the uml kernel slirp driver did an accept->close on us,
+          // i.e. the actual listener is not up yet
+          if (first == -1) {
+            return null;
           }
-          return true;
+          bytes[0] = (byte) first;
+          for (int i = 1; i < n; i++) {
+            bytes[i] = (byte) is.read();
+          }
+          return bytes;
         } catch (IOException e) {
           return null;
         }
       }
     });
-
   }
 }
