@@ -69,13 +69,16 @@ public class VolumeTest extends SystemTestBase {
         .setImage(BUSYBOX)
         .addVolume("/volume")
         .addVolume("/urandom", "/dev/urandom")
+        .addVolume("/hostdev", "/dev")
         .setCommand(asList("sh", "-c", "echo foo > /volume/bar; " +
                                        "nc -p 4711 -le ls /;" +
                                        "nc -p 4712 -le ls /dev;" +
+                                       "nc -p 4715 -le ls /hostdev;" +
                                        "nc -p 4713 -le dd if=/volume/bar;" +
                                        "nc -p 4714 -lle dd if=/urandom bs=1 count=4"))
         .addPort("root", PortMapping.of(4711))
         .addPort("dev", PortMapping.of(4712))
+        .addPort("hostdev", PortMapping.of(4715))
         .addPort("bar", PortMapping.of(4713))
         .addPort("urandom", PortMapping.of(4714))
         .build();
@@ -100,51 +103,27 @@ public class VolumeTest extends SystemTestBase {
 
     final Integer root = taskStatus.getPorts().get("root").getExternalPort();
     final Integer dev = taskStatus.getPorts().get("dev").getExternalPort();
+    final Integer hostdev = taskStatus.getPorts().get("hostdev").getExternalPort();
     final Integer bar = taskStatus.getPorts().get("bar").getExternalPort();
     final Integer urandom = taskStatus.getPorts().get("urandom").getExternalPort();
 
     assert root != null;
     assert dev != null;
+    assert hostdev != null;
     assert bar != null;
     assert urandom != null;
 
     // ls /
     log.info("$ ls /");
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Boolean>() {
-      @Override
-      public Boolean call() {
-        try (final Socket s = new Socket(DOCKER_HOST.address(), root)) {
-          final BufferedReader reader = new BufferedReader(
-              new InputStreamReader(s.getInputStream()));
-          String line;
-          while ((line = reader.readLine()) != null) {
-            log.info(line);
-          }
-          return true;
-        } catch (IOException e) {
-          return null;
-        }
-      }
-    });
+    read(root);
 
     // ls /dev
     log.info("$ ls /dev");
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Boolean>() {
-      @Override
-      public Boolean call() {
-        try (final Socket s = new Socket(DOCKER_HOST.address(), dev)) {
-          final BufferedReader reader = new BufferedReader(
-              new InputStreamReader(s.getInputStream()));
-          String line;
-          while ((line = reader.readLine()) != null) {
-            log.info(line);
-          }
-          return true;
-        } catch (IOException e) {
-          return null;
-        }
-      }
-    });
+    read(dev);
+
+    // ls /hostdev
+    log.info("$ ls /hostdev");
+    read(hostdev);
 
     // Read "foo" from /volume/bar
     final String foo = Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
@@ -165,5 +144,25 @@ public class VolumeTest extends SystemTestBase {
     try (final Socket s = new Socket(DOCKER_HOST.address(), urandom)) {
       ByteStreams.readFully(s.getInputStream(), new byte[4]);
     }
+  }
+
+  private void read(final int port) throws Exception {
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Boolean>() {
+      @Override
+      public Boolean call() {
+        try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
+          final BufferedReader reader = new BufferedReader(
+              new InputStreamReader(s.getInputStream()));
+          String line;
+          while ((line = reader.readLine()) != null) {
+            log.info(line);
+          }
+          return true;
+        } catch (IOException e) {
+          return null;
+        }
+      }
+    });
+
   }
 }
