@@ -71,10 +71,13 @@ public class VolumeTest extends SystemTestBase {
         .addVolume("/urandom", "/dev/urandom")
         .setCommand(asList("sh", "-c", "echo foo > /volume/bar && " +
                                        "nc -p 4711 -le ls / &&" +
-                                       "nc -p 4711 -le ls /dev &&" +
-                                       "nc -p 4711 -le dd if=/volume/bar &&" +
-                                       "nc -p 4711 -lle dd if=/urandom bs=1 count=4"))
-        .addPort("random", PortMapping.of(4711))
+                                       "nc -p 4712 -le ls /dev &&" +
+                                       "nc -p 4713 -le dd if=/volume/bar &&" +
+                                       "nc -p 4714 -lle dd if=/urandom bs=1 count=4"))
+        .addPort("root", PortMapping.of(4711))
+        .addPort("dev", PortMapping.of(4712))
+        .addPort("bar", PortMapping.of(4713))
+        .addPort("urandom", PortMapping.of(4714))
         .build();
     final JobId jobId = job.getId();
 
@@ -95,15 +98,22 @@ public class VolumeTest extends SystemTestBase {
     taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
     assertEquals(job, taskStatus.getJob());
 
-    final Integer port = taskStatus.getPorts().get("random").getExternalPort();
-    assert port != null;
+    final Integer root = taskStatus.getPorts().get("root").getExternalPort();
+    final Integer dev = taskStatus.getPorts().get("dev").getExternalPort();
+    final Integer bar = taskStatus.getPorts().get("bar").getExternalPort();
+    final Integer urandom = taskStatus.getPorts().get("urandom").getExternalPort();
+
+    assert root != null;
+    assert dev != null;
+    assert bar != null;
+    assert urandom != null;
 
     // ls /
     log.info("$ ls /");
     Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Boolean>() {
       @Override
       public Boolean call() {
-        try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
+        try (final Socket s = new Socket(DOCKER_HOST.address(), root)) {
           final BufferedReader reader = new BufferedReader(
               new InputStreamReader(s.getInputStream()));
           String line;
@@ -122,7 +132,7 @@ public class VolumeTest extends SystemTestBase {
     Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Boolean>() {
       @Override
       public Boolean call() {
-        try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
+        try (final Socket s = new Socket(DOCKER_HOST.address(), dev)) {
           final BufferedReader reader = new BufferedReader(
               new InputStreamReader(s.getInputStream()));
           String line;
@@ -140,7 +150,7 @@ public class VolumeTest extends SystemTestBase {
     final String foo = Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
       @Override
       public String call() {
-        try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
+        try (final Socket s = new Socket(DOCKER_HOST.address(), bar)) {
           final byte[] foo = new byte[3];
           ByteStreams.readFully(s.getInputStream(), foo);
           return new String(foo, UTF_8);
@@ -152,7 +162,7 @@ public class VolumeTest extends SystemTestBase {
     assertEquals("foo", foo);
 
     // Attempt to read some random bytes from the mounted /dev/urandom
-    try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
+    try (final Socket s = new Socket(DOCKER_HOST.address(), urandom)) {
       ByteStreams.readFully(s.getInputStream(), new byte[4]);
     }
   }
