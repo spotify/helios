@@ -145,6 +145,7 @@ public abstract class SystemTestBase {
   private int masterAdminPort;
   private String masterEndpoint;
   private boolean integrationMode;
+  private Range<Integer> dockerPortRange;
 
   private final List<Service> services = newArrayList();
   private final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -156,6 +157,7 @@ public abstract class SystemTestBase {
 
   private ZooKeeperTestManager zk;
 
+
   @BeforeClass
   public static void staticSetup() {
     SLF4JBridgeHandler.removeHandlersForRootLogger();
@@ -166,6 +168,15 @@ public abstract class SystemTestBase {
   public void baseSetup() throws Exception {
     masterPort = temporaryPorts.localPort("helios master");
     masterAdminPort = temporaryPorts.localPort("helios master admin");
+
+    final String portRange = System.getenv("DOCKER_PORT_RANGE");
+    if (portRange != null) {
+      final String[] parts = portRange.split(":", 2);
+      dockerPortRange = Range.closedOpen(Integer.valueOf(parts[0]),
+                                         Integer.valueOf(parts[1]));
+    } else {
+      dockerPortRange = temporaryPorts.localPortRange("docker", 10);
+    }
 
     String className = getClass().getName();
     if (className.endsWith("ITCase")) {
@@ -350,6 +361,10 @@ public abstract class SystemTestBase {
     return masterAdminPort;
   }
 
+  public Range<Integer> dockerPortRange() {
+    return dockerPortRange;
+  }
+
   protected String testHost() throws InterruptedException, ExecutionException {
     if (integrationMode) {
       if (testHost == null) {
@@ -411,7 +426,6 @@ public abstract class SystemTestBase {
       return null;
     }
 
-    final Range<Integer> portRange = temporaryPorts.localPortRange("agent", 10);
     final String stateDir = agentStateDirs.resolve(host).toString();
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",
@@ -423,8 +437,8 @@ public abstract class SystemTestBase {
                                                      "--zk-connection-timeout", "100",
                                                      "--state-dir", stateDir,
                                                      "--port-range=" +
-                                                     portRange.lowerEndpoint() + ":" +
-                                                     portRange.upperEndpoint());
+                                                     dockerPortRange.lowerEndpoint() + ":" +
+                                                     dockerPortRange.upperEndpoint());
     argsList.addAll(asList(args));
     return startAgent(argsList.toArray(new String[argsList.size()]));
   }

@@ -49,8 +49,6 @@ import static org.junit.Assert.assertEquals;
 
 public class VolumeTest extends SystemTestBase {
 
-  private final int externalPort = temporaryPorts.localPort("external");
-
   @Test
   public void test() throws Exception {
     startDefaultMaster();
@@ -68,7 +66,7 @@ public class VolumeTest extends SystemTestBase {
         .setCommand(asList("sh", "-c", "echo foo > /volume/bar && " +
                                        "nc -p 4711 -le dd if=/volume/bar &&" +
                                        "nc -p 4711 -lle dd if=/urandom bs=1 count=4"))
-        .addPort("random", PortMapping.of(4711, externalPort))
+        .addPort("random", PortMapping.of(4711))
         .build();
     final JobId jobId = job.getId();
 
@@ -89,11 +87,14 @@ public class VolumeTest extends SystemTestBase {
     taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
     assertEquals(job, taskStatus.getJob());
 
+    final Integer port = taskStatus.getPorts().get("random").getExternalPort();
+    assert port != null;
+
     // Read "foo" from /volume/bar
     final String foo = Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
       @Override
       public String call() {
-        try (final Socket s = new Socket(DOCKER_HOST.address(), externalPort)) {
+        try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
           final byte[] foo = new byte[3];
           ByteStreams.readFully(s.getInputStream(), foo);
           return new String(foo, UTF_8);
@@ -105,7 +106,7 @@ public class VolumeTest extends SystemTestBase {
     assertEquals("foo", foo);
 
     // Attempt to read some random bytes from the mounted /dev/urandom
-    try (final Socket s = new Socket(DOCKER_HOST.address(), externalPort)) {
+    try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
       ByteStreams.readFully(s.getInputStream(), new byte[4]);
     }
   }
