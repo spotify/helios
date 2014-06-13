@@ -58,18 +58,6 @@ public class TaskConfig {
   private final Map<String, String> envVars;
   private final ContainerDecorator containerDecorator;
 
-  private TaskConfig(final String host,
-                     final Job job,
-                     final Map<String, Integer> ports,
-                     final Map<String, String> envVars,
-                     final ContainerDecorator containerDecorator) {
-    this.host = host;
-    this.ports = ports;
-    this.job = job;
-    this.envVars = envVars;
-    this.containerDecorator = containerDecorator;
-  }
-
   private TaskConfig(final Builder builder) {
     this.host = checkNotNull(builder.host, "host");
     this.ports = checkNotNull(builder.ports, "ports");
