@@ -36,6 +36,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -98,6 +99,16 @@ public class JobValidatorTest {
   }
 
   @Test
+  public void testValidVolumesPass() {
+    final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
+    assertThat(validator.validate(j.toBuilder().addVolume("/foo").build()), is(empty()));
+    assertThat(validator.validate(j.toBuilder().addVolume("/foo", "/").build()), is(empty()));
+    assertThat(validator.validate(j.toBuilder().addVolume("/foo:ro", "/").build()), is(empty()));
+    assertThat(validator.validate(j.toBuilder().addVolume("/foo", "/bar").build()), is(empty()));
+    assertThat(validator.validate(j.toBuilder().addVolume("/foo:ro", "/bar").build()), is(empty()));
+  }
+
+  @Test
   public void testPortMappingCollissionFails() throws Exception {
     final Job job = Job.newBuilder()
         .setName("foo")
@@ -121,7 +132,8 @@ public class JobValidatorTest {
   @Test
   public void testIdMismatchFails() throws Exception {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
-                            "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_PORTS, EMPTY_REGISTRATION);
+                            "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_PORTS, EMPTY_REGISTRATION,
+                            EMPTY_VOLUMES);
     final JobId recomputedId = job.toBuilder().build().getId();
     assertEquals(ImmutableSet.of("Id hash mismatch: " + job.getId().getHash()
         + " != " + recomputedId.getHash()), validator.validate(job));
@@ -212,5 +224,15 @@ public class JobValidatorTest {
     assertEquals(newHashSet("Invalid namespace name (" + foos + "), only [a-z0-9_] are allowed, " +
                             "size between 4 and 30"),
                  validator.validate(b.setImage(foos + "/bar").build()));
+  }
+
+  @Test
+  public void testInvalidVolumesFail() {
+    final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
+    assertEquals(newHashSet("Invalid volume path: /"),
+                 validator.validate(j.toBuilder().addVolume("/").build()));
+
+    assertEquals(newHashSet("Invalid volume path: /foo:"),
+                 validator.validate(j.toBuilder().addVolume("/foo:", "/bar").build()));
   }
 }

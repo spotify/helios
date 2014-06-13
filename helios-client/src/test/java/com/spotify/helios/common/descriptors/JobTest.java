@@ -70,6 +70,7 @@ public class JobTest {
     final Map<ServiceEndpoint, ServicePorts> setRegistration = ImmutableMap.of(
         ServiceEndpoint.of("set_service", "set_proto"),
         ServicePorts.of("set_ports1", "set_ports2"));
+    final Map<String, String> setVolumes = ImmutableMap.of("/set", "/volume");
 
     // Input to addXXX
     final Map<String, String> addEnv = ImmutableMap.of("add", "env");
@@ -77,6 +78,7 @@ public class JobTest {
     final Map<ServiceEndpoint, ServicePorts> addRegistration = ImmutableMap.of(
         ServiceEndpoint.of("add_service", "add_proto"),
         ServicePorts.of("add_ports1", "add_ports2"));
+    final Map<String, String> addVolumes = ImmutableMap.of("/add", "/volume");
 
     // Expected output from getXXX
     final String expectedName = setName;
@@ -87,6 +89,7 @@ public class JobTest {
     final Map<String, PortMapping> expectedPorts = concat(setPorts, addPorts);
     final Map<ServiceEndpoint, ServicePorts> expectedRegistration = concat(setRegistration,
                                                                            addRegistration);
+    final Map<String, String> expectedVolumes = concat(setVolumes, addVolumes);
 
     // Check setXXX methods
     builder.setName(setName);
@@ -96,6 +99,7 @@ public class JobTest {
     builder.setEnv(setEnv);
     builder.setPorts(setPorts);
     builder.setRegistration(setRegistration);
+    builder.setVolumes(setVolumes);
     assertEquals("name", setName, builder.getName());
     assertEquals("version", setVersion, builder.getVersion());
     assertEquals("image", setImage, builder.getImage());
@@ -103,6 +107,7 @@ public class JobTest {
     assertEquals("env", setEnv, builder.getEnv());
     assertEquals("ports", setPorts, builder.getPorts());
     assertEquals("registration", setRegistration, builder.getRegistration());
+    assertEquals("volumes", setVolumes, builder.getVolumes());
 
     // Check addXXX methods
     for (final Map.Entry<String, String> entry : addEnv.entrySet()) {
@@ -114,6 +119,9 @@ public class JobTest {
     for (final Map.Entry<ServiceEndpoint, ServicePorts> entry : addRegistration.entrySet()) {
       builder.addRegistration(entry.getKey(), entry.getValue());
     }
+    for (Map.Entry<String, String> entry : addVolumes.entrySet()) {
+      builder.addVolume(entry.getKey(), entry.getValue());
+    }
     assertEquals("name", expectedName, builder.getName());
     assertEquals("version", expectedVersion, builder.getVersion());
     assertEquals("image", expectedImage, builder.getImage());
@@ -121,6 +129,7 @@ public class JobTest {
     assertEquals("env", expectedEnv, builder.getEnv());
     assertEquals("ports", expectedPorts, builder.getPorts());
     assertEquals("registration", expectedRegistration, builder.getRegistration());
+    assertEquals("volumes", expectedVolumes, builder.getVolumes());
 
     // Check final output
     final Job job = builder.build();
@@ -131,6 +140,18 @@ public class JobTest {
     assertEquals("env", expectedEnv, job.getEnv());
     assertEquals("ports", expectedPorts, job.getPorts());
     assertEquals("registration", expectedRegistration, job.getRegistration());
+    assertEquals("volumes", expectedVolumes, job.getVolumes());
+
+    // Check toBuilder
+    final Job.Builder rebuilder = job.toBuilder();
+    assertEquals("name", expectedName, rebuilder.getName());
+    assertEquals("version", expectedVersion, rebuilder.getVersion());
+    assertEquals("image", expectedImage, rebuilder.getImage());
+    assertEquals("command", expectedCommand, rebuilder.getCommand());
+    assertEquals("env", expectedEnv, rebuilder.getEnv());
+    assertEquals("ports", expectedPorts, rebuilder.getPorts());
+    assertEquals("registration", expectedRegistration, rebuilder.getRegistration());
+    assertEquals("volumes", expectedVolumes, rebuilder.getVolumes());
 
     // Check clone
     final Job.Builder cloned = builder.clone();
@@ -141,6 +162,7 @@ public class JobTest {
     assertEquals("env", expectedEnv, cloned.getEnv());
     assertEquals("ports", expectedPorts, cloned.getPorts());
     assertEquals("registration", expectedRegistration, cloned.getRegistration());
+    assertEquals("volumes", expectedVolumes, cloned.getVolumes());
 
     final Job clonedJob = cloned.build();
     assertEquals("name", expectedName, clonedJob.getId().getName());
@@ -150,6 +172,7 @@ public class JobTest {
     assertEquals("env", expectedEnv, clonedJob.getEnv());
     assertEquals("ports", expectedPorts, clonedJob.getPorts());
     assertEquals("registration", expectedRegistration, clonedJob.getRegistration());
+    assertEquals("volumes", expectedVolumes, clonedJob.getVolumes());
   }
 
   @SafeVarargs
