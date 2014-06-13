@@ -34,8 +34,12 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.Socket;
 import java.util.concurrent.Callable;
 
@@ -48,6 +52,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 
 public class VolumeTest extends SystemTestBase {
+
+  private static final Logger log = LoggerFactory.getLogger(VolumeTest.class);
 
   @Test
   public void test() throws Exception {
@@ -64,6 +70,8 @@ public class VolumeTest extends SystemTestBase {
         .addVolume("/volume")
         .addVolume("/urandom", "/dev/urandom")
         .setCommand(asList("sh", "-c", "echo foo > /volume/bar && " +
+                                       "nc -p 4711 -le ls / &&" +
+                                       "nc -p 4711 -le ls /dev &&" +
                                        "nc -p 4711 -le dd if=/volume/bar &&" +
                                        "nc -p 4711 -lle dd if=/urandom bs=1 count=4"))
         .addPort("random", PortMapping.of(4711))
@@ -89,6 +97,44 @@ public class VolumeTest extends SystemTestBase {
 
     final Integer port = taskStatus.getPorts().get("random").getExternalPort();
     assert port != null;
+
+    // ls /
+    log.info("$ ls /");
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Boolean>() {
+      @Override
+      public Boolean call() {
+        try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
+          final BufferedReader reader = new BufferedReader(
+              new InputStreamReader(s.getInputStream()));
+          String line;
+          while ((line = reader.readLine()) != null) {
+            log.info(line);
+          }
+          return true;
+        } catch (IOException e) {
+          return null;
+        }
+      }
+    });
+
+    // ls /dev
+    log.info("$ ls /dev");
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Boolean>() {
+      @Override
+      public Boolean call() {
+        try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
+          final BufferedReader reader = new BufferedReader(
+              new InputStreamReader(s.getInputStream()));
+          String line;
+          while ((line = reader.readLine()) != null) {
+            log.info(line);
+          }
+          return true;
+        } catch (IOException e) {
+          return null;
+        }
+      }
+    });
 
     // Read "foo" from /volume/bar
     final String foo = Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
