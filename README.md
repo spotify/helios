@@ -1,20 +1,48 @@
 Helios
-===
+======
 
 [![Build Status](https://travis-ci.org/spotify/helios.svg)](https://travis-ci.org/spotify/helios)
 
 Helios is a Docker orchestration platform for deploying and managing
 containers across an entire fleet.
 
+Usage Example
+-------------
+
+```sh
+# Create an nginx job using the nginx container image, exposing it on the host on port 8080
+$ helios create nginx:v1 nginx:1.7.1 -p http=80:8080
+
+# Check that the job is listed
+$ helios jobs
+
+# List helios hosts
+$ helios hosts
+
+# Deploy the nginx job on one of the hosts
+$ helios deploy nginx:v1 <host>
+
+# Check the job status
+$ helios status
+
+# Curl the nginx container when it's started running
+$ curl <host>:8080
+
+# Undeploy the nginx job
+$ helios undeploy -a nginx:v1
+
+# Remove the nginx job
+$ helios remove nginx:v1
+```
 
 Danger, Will Robinson!
----
+----------------------
 This is **not** production-ready software! Please do not deploy it in
 mission-critical scenarios, or you will make [the panda](https://www.facebook.com/spotify.panda)
 very sad.
 
 Getting Started
----
+---------------
 
 If you're looking for how to use Helios, see the [wiki](https://github.com/spotify/helios/wiki).
 Most probably the [User Manual](https://github.com/spotify/helios/wiki/Helios-User-Manual)
@@ -23,9 +51,9 @@ is what you're looking for.
 If you're looking for how to build, install and run Helios, keep reading.
 
 Prerequisities
----
+--------------
 
-* [Docker 0.11.1](https://github.com/dotcloud/docker) or newer
+* [Docker 1.0](https://github.com/dotcloud/docker) or newer
 * [Zookeeper 3.4.0](https://zookeeper.apache.org/) or newer
 
 [boot2docker](https://github.com/boot2docker/boot2docker) on OS X should
@@ -33,20 +61,20 @@ work to some degree. You may run into various fun issues, but the test suite
 **will** pass with boot2docker.
 
 Build & Test
----
+------------
 
 Actually building Helios and running its tests should be a simple matter
 of running:
 
-    $ mvn package
+    $ mvn clean test
 
 If you would like to run tests against a different Docker instance then you can
-use the `DOCKER_HOST` environment variable. An example would be:
+use the `DOCKER_HOST` environment variable.
 
-    $ export DOCKER_HOST=tcp://localhost:4243
+    $ DOCKER_HOST=tcp://localhost:4243 mvn clean test
 
 Install & Run
---
+-------------
 
 ### Quick start
 If you have [Vagrant](http://www.vagrantup.com/) installed locally, just run:
@@ -76,7 +104,6 @@ After you've run `mvn package`, you should be able to start the agent and master
 
 If you see any issues, make sure you have the prerequisites (Docker and Zookeeper) installed.
 
-
 ### Production
 
 Note that Helios has **not** been tested in production. That said, you can
@@ -100,7 +127,7 @@ and the master. Install it and either the `helios-agent` or `helios-master`
 Debian package on each agent and master, respectively.
 
 Findbugs
----
+--------
 
 To run [findbugs](http://findbugs.sourceforge.net) on the helios codebase, do
 `mvn clean compile site`. This will build helios and then run an analysis,
@@ -110,7 +137,7 @@ To silence an irrelevant warning, add a filter match along with a justification
 in `findbugs-exclude.xml`.
 
 The Nickel Tour
----
+---------------
 
 The sources for the Helios master and agent are under [helios-services](https://github.com/spotify/helios/tree/master/helios-services).
 The CLI source is under [helios-tools](https://github.com/spotify/helios/tree/master/helios-tools).
@@ -130,7 +157,7 @@ bundle of Jetty, Jersey, Jackson, Yammer Metrics, Guava, Logback and
 other Java libraries.
 
 Releasing
----
+---------
 
     # Run tests and create a tagged release commit
     ./release.sh
