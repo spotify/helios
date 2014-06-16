@@ -100,14 +100,14 @@
             <version>2.16</version>
             <configuration>
               <enableAssertions>false</enableAssertions>
-              <forkCount>1</forkCount>
+              <forkCount>4</forkCount>
               <reuseForks>false</reuseForks>
               <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
               <systemPropertyVariables>
                 <logToFile>false</logToFile>
-                <heliosLoggingLevel>INFO</heliosLoggingLevel>
+                <heliosLoggingLevel>OFF</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
-                <rootLoggingLevel>INFO</rootLoggingLevel>
+                <rootLoggingLevel>OFF</rootLoggingLevel>
               </systemPropertyVariables>
             </configuration>
           </plugin>
