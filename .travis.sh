@@ -24,8 +24,5 @@ case "$1" in
     sekexe/run "docker -d -H tcp://0.0.0.0:4243 " &
 
     while ! docker info; do sleep 1; done
-
-    docker pull busybox
-    docker pull rohan/memcached-mini
     ;;
 esac
