@@ -234,5 +234,14 @@ public class JobValidatorTest {
 
     assertEquals(newHashSet("Invalid volume path: /foo:"),
                  validator.validate(j.toBuilder().addVolume("/foo:", "/bar").build()));
+
+    assertEquals(newHashSet("Volume path is not absolute: foo"),
+                 validator.validate(j.toBuilder().addVolume("foo").build()));
+
+    assertEquals(newHashSet("Volume path is not absolute: foo"),
+                 validator.validate(j.toBuilder().addVolume("foo", "/bar").build()));
+
+    assertEquals(newHashSet("Volume source is not absolute: bar"),
+                 validator.validate(j.toBuilder().addVolume("/foo", "bar").build()));
   }
 }
