@@ -133,8 +133,10 @@ public class JobCreateCommand extends ControlCommand {
     volumeArg = parser.addArgument("--volume")
         .action(append())
         .setDefault(new ArrayList<String>())
-        .help("Container volumes. Specify either a single volume name to create a data volume, " +
-              "or a vl. [host-dir]:[container-dir]:[rw|ro]");
+        .help("Container volumes. Specify either a single path to create a data volume, " +
+              "or a source path and a container path to mount a file or directory from the host. " +
+              "The container path can be suffixed with \"rw\" or \"ro\" to create a read-write " +
+              "or read-only volume, respectively. Format: [host-path]:[container-path]:[rw|ro].");
 
     argsArg = parser.addArgument("args")
         .nargs("*")
