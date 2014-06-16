@@ -72,6 +72,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument registrationArg;
   private final Argument fileArg;
   private final Argument templateArg;
+  private final Argument volumeArg;
 
   public JobCreateCommand(final Subparser parser) {
     super(parser);
@@ -128,6 +129,12 @@ public class JobCreateCommand extends ControlCommand {
               "_spotify-wiggum._hm. If there is only one port mapping this will be used by" +
               "default and it will be enough to specify only the service name, e.g." +
               "-r wiggum.");
+
+    volumeArg = parser.addArgument("--volume")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("Container volumes. Specify either a single volume name to create a data volume, " +
+              "or a vl. [host-dir]:[container-dir]:[rw|ro]");
 
     argsArg = parser.addArgument("args")
         .nargs("*")
@@ -299,6 +306,26 @@ public class JobCreateCommand extends ControlCommand {
     registration.putAll(builder.getRegistration());
     registration.putAll(explicitRegistration);
     builder.setRegistration(registration);
+
+    // Parse volumes
+    final List<String> volumeSpecs = options.getList(volumeArg.getDest());
+    for (final String spec : volumeSpecs) {
+      final String[] parts = spec.split(":", 2);
+      switch (parts.length) {
+        // Data volume
+        case 1:
+          builder.addVolume(parts[0]);
+          break;
+        // Bind mount
+        case 2:
+          final String path = parts[1];
+          final String source = parts[0];
+          builder.addVolume(path, source);
+          break;
+        default:
+          throw new IllegalArgumentException("Invalid volume: " + spec);
+      }
+    }
 
     final Job job = builder.build();
 

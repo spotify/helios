@@ -31,9 +31,8 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 
+import org.junit.Before;
 import org.junit.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -51,17 +50,17 @@ import static org.junit.Assert.assertEquals;
 
 public class VolumeTest extends SystemTestBase {
 
-  private static final Logger log = LoggerFactory.getLogger(VolumeTest.class);
+  private HeliosClient client;
+  private Job job;
 
-  @Test
-  public void test() throws Exception {
+  @Before
+  public void setup() throws Exception {
     startDefaultMaster();
 
-    final HeliosClient client = defaultClient();
+    client = defaultClient();
     startDefaultAgent(testHost());
 
-    // Create a job
-    final Job job = Job.newBuilder()
+    job = Job.newBuilder()
         .setName(testJobName)
         .setVersion(testJobVersion)
         .setImage(BUSYBOX)
@@ -74,10 +73,23 @@ public class VolumeTest extends SystemTestBase {
         .addPort("bar", PortMapping.of(4711))
         .addPort("urandom", PortMapping.of(4712))
         .build();
-    final JobId jobId = job.getId();
+  }
 
+  @Test
+  public void testClient() throws Exception {
     final CreateJobResponse created = client.createJob(job).get();
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
+    assertVolumes();
+  }
+
+  @Test
+  public void testCli() throws Exception {
+    createJob(job);
+    assertVolumes();
+  }
+
+  public void assertVolumes() throws Exception {
+    final JobId jobId = job.getId();
 
     // Wait for agent to come up
     awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);

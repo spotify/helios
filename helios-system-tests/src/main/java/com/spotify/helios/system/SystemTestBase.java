@@ -84,7 +84,6 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -104,6 +103,8 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -457,41 +458,74 @@ public abstract class SystemTestBase {
     return main;
   }
 
-  protected JobId createJob(final String name, final String version, final String image,
+  protected JobId createJob(final String name,
+                            final String version,
+                            final String image,
                             final List<String> command) throws Exception {
-    return createJob(name, version, image, command, EMPTY_ENV,
-                     EMPTY_PORTS, null);
+    return createJob(name, version, image, command, EMPTY_ENV, EMPTY_PORTS, EMPTY_REGISTRATION);
   }
 
-  protected JobId createJob(final String name, final String version, final String image,
-                            final List<String> command, final ImmutableMap<String, String> env)
+  protected JobId createJob(final String name,
+                            final String version,
+                            final String image,
+                            final List<String> command,
+                            final ImmutableMap<String, String> env)
       throws Exception {
-    return createJob(name, version, image, command, env, new HashMap<String, PortMapping>(), null);
+    return createJob(name, version, image, command, env, EMPTY_PORTS, EMPTY_REGISTRATION);
   }
 
-  protected JobId createJob(final String name, final String version, final String image,
-                            final List<String> command, final Map<String, String> env,
+  protected JobId createJob(final String name,
+                            final String version,
+                            final String image,
+                            final List<String> command,
+                            final Map<String, String> env,
                             final Map<String, PortMapping> ports) throws Exception {
-    return createJob(name, version, image, command, env, ports, null);
+    return createJob(name, version, image, command, env, ports, EMPTY_REGISTRATION);
   }
 
-  protected JobId createJob(final String name, final String version, final String image,
-                            final List<String> command, final Map<String, String> env,
+  protected JobId createJob(final String name,
+                            final String version,
+                            final String image,
+                            final List<String> command,
+                            final Map<String, String> env,
                             final Map<String, PortMapping> ports,
                             final Map<ServiceEndpoint, ServicePorts> registration)
       throws Exception {
+    return createJob(name, version, image, command, env, ports, registration, EMPTY_VOLUMES);
+  }
+
+  protected JobId createJob(final String name,
+                            final String version,
+                            final String image,
+                            final List<String> command,
+                            final Map<String, String> env,
+                            final Map<String, PortMapping> ports,
+                            final Map<ServiceEndpoint, ServicePorts> registration,
+                            final Map<String, String> volumes) throws Exception {
+    return createJob(Job.newBuilder()
+                         .setName(name)
+                         .setVersion(version)
+                         .setImage(image)
+                         .setCommand(command)
+                         .setEnv(env)
+                         .setPorts(ports)
+                         .setRegistration(registration)
+                         .setVolumes(volumes)
+                         .build());
+  }
+
+  protected JobId createJob(final Job job) throws Exception {
+    final String name = job.getId().getName();
+    final String version = job.getId().getVersion();
     checkArgument(name.contains(testTag), "Job name must contain testTag to enable cleanup");
 
-    final List<String> args = Lists.newArrayList("-q", name + ':' + version, image);
+    final List<String> args = Lists.newArrayList("-q", name + ':' + version, job.getImage());
 
-    if (!env.isEmpty()) {
-      args.add("--env");
-      for (final Map.Entry<String, String> entry : env.entrySet()) {
-        args.add(entry.getKey() + "=" + entry.getValue());
-      }
+    for (Map.Entry<String, String> entry : job.getEnv().entrySet()) {
+      args.add("--env=" + entry.getKey() + "=" + entry.getValue());
     }
 
-    for (final Map.Entry<String, PortMapping> entry : ports.entrySet()) {
+    for (final Map.Entry<String, PortMapping> entry : job.getPorts().entrySet()) {
       args.add("--port");
       String value = "" + entry.getValue().getInternalPort();
       if (entry.getValue().getExternalPort() != null) {
@@ -503,19 +537,27 @@ public abstract class SystemTestBase {
       args.add(entry.getKey() + "=" + value);
     }
 
-    if (registration != null) {
-      for (final Map.Entry<ServiceEndpoint, ServicePorts> entry : registration.entrySet()) {
-        final ServiceEndpoint r = entry.getKey();
-        for (String portName : entry.getValue().getPorts().keySet()) {
+    for (final Map.Entry<ServiceEndpoint, ServicePorts> entry : job.getRegistration().entrySet()) {
+      final ServiceEndpoint r = entry.getKey();
+      for (String portName : entry.getValue().getPorts().keySet()) {
           args.add("--register=" + ((r.getProtocol() == null)
                                     ? format("%s=%s", r.getName(), portName)
                                     : format("%s/%s=%s", r.getName(), r.getProtocol(), portName)));
         }
+    }
+
+    for (Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
+      if (Strings.isNullOrEmpty(entry.getKey())) {
+        // Data volume
+        args.add("--volume=" + entry.getKey());
+      } else {
+        // Bind mount
+        args.add("--volume=" + entry.getValue() + ":" + entry.getKey());
       }
     }
 
     args.add("--");
-    args.addAll(command);
+    args.addAll(job.getCommand());
 
     final String createOutput = cli("create", args);
     final String jobId = WHITESPACE.trimFrom(createOutput);
