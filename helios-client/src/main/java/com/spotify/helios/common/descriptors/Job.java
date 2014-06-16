@@ -34,7 +34,6 @@ import com.spotify.helios.common.Json;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -52,6 +51,8 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
   public static final List<String> EMPTY_COMMAND = emptyList();
   public static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
+  public static final Map<String, String> EMPTY_VOLUMES = emptyMap();
+  public static final String EMPTY_MOUNT = "";
 
   private final JobId id;
   private final String image;
@@ -59,6 +60,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Map<String, String> env;
   private final Map<String, PortMapping> ports;
   private final Map<ServiceEndpoint, ServicePorts> registration;
+  private final Map<String, String> volumes;
 
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
@@ -66,7 +68,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("env") @Nullable final Map<String, String> env,
              @JsonProperty("ports") @Nullable final Map<String, PortMapping> ports,
              @JsonProperty("registration") @Nullable
-             final Map<ServiceEndpoint, ServicePorts> registration) {
+             final Map<ServiceEndpoint, ServicePorts> registration,
+             @JsonProperty("volumes") @Nullable final Map<String, String> volumes) {
     this.id = checkNotNull(id, "id");
     this.image = checkNotNull(image, "image");
 
@@ -74,7 +77,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.command = Optional.fromNullable(command).or(EMPTY_COMMAND);
     this.env = Optional.fromNullable(env).or(EMPTY_ENV);
     this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
-    this.registration = registration;
+    this.registration = Optional.fromNullable(registration).or(EMPTY_REGISTRATION);
+    this.volumes = Optional.fromNullable(volumes).or(EMPTY_VOLUMES);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -84,6 +88,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
     this.ports = ImmutableMap.copyOf(checkNotNull(p.ports, "ports"));
     this.registration = ImmutableMap.copyOf(checkNotNull(p.registration, "registration"));
+    this.volumes = ImmutableMap.copyOf(checkNotNull(p.volumes, "volumes"));
   }
 
   public JobId getId() {
@@ -108,6 +113,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public Map<ServiceEndpoint, ServicePorts> getRegistration() {
     return registration;
+  }
+
+  public Map<String, String> getVolumes() {
+    return volumes;
   }
 
   public static Builder newBuilder() {
@@ -145,8 +154,10 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (ports != null ? !ports.equals(job.ports) : job.ports != null) {
       return false;
     }
-    if (registration != null ? !registration.equals(job.registration)
-                             : job.registration != null) {
+    if (registration != null ? !registration.equals(job.registration) : job.registration != null) {
+      return false;
+    }
+    if (volumes != null ? !volumes.equals(job.volumes) : job.volumes != null) {
       return false;
     }
 
@@ -161,6 +172,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (env != null ? env.hashCode() : 0);
     result = 31 * result + (ports != null ? ports.hashCode() : 0);
     result = 31 * result + (registration != null ? registration.hashCode() : 0);
+    result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
     return result;
   }
 
@@ -184,7 +196,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setCommand(command)
         .setEnv(env)
         .setPorts(ports)
-        .setRegistration(registration);
+        .setRegistration(registration)
+        .setVolumes(volumes);
   }
 
   public static class Builder implements Cloneable {
@@ -210,12 +223,14 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Map<String, String> env;
       public Map<String, PortMapping> ports;
       public Map<ServiceEndpoint, ServicePorts> registration;
+      public Map<String, String> volumes;
 
       private Parameters() {
         this.command = EMPTY_COMMAND;
         this.env = Maps.newHashMap(EMPTY_ENV);
         this.ports = Maps.newHashMap(EMPTY_PORTS);
         this.registration = Maps.newHashMap(EMPTY_REGISTRATION);
+        this.volumes = Maps.newHashMap(EMPTY_VOLUMES);
       }
 
       private Parameters(final Parameters p) {
@@ -226,6 +241,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.env = Maps.newHashMap(p.env);
         this.ports = Maps.newHashMap(p.ports);
         this.registration = Maps.newHashMap(p.registration);
+        this.volumes = Maps.newHashMap(p.volumes);
       }
     }
 
@@ -284,6 +300,21 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setVolumes(final Map<String, String> volumes) {
+      p.volumes = Maps.newHashMap(volumes);
+      return this;
+    }
+
+    public Builder addVolume(final String path) {
+      p.volumes.put(path, EMPTY_MOUNT);
+      return this;
+    }
+
+    public Builder addVolume(final String path, final String source) {
+      p.volumes.put(path, source);
+      return this;
+    }
+
     public String getName() {
       return p.name;
     }
@@ -301,15 +332,19 @@ public class Job extends Descriptor implements Comparable<Job> {
     }
 
     public Map<String, String> getEnv() {
-      return Collections.unmodifiableMap(p.env);
+      return ImmutableMap.copyOf(p.env);
     }
 
     public Map<String, PortMapping> getPorts() {
-      return Collections.unmodifiableMap(p.ports);
+      return ImmutableMap.copyOf(p.ports);
     }
 
     public Map<ServiceEndpoint, ServicePorts> getRegistration() {
-      return Collections.unmodifiableMap(p.registration);
+      return ImmutableMap.copyOf(p.registration);
+    }
+
+    public Map<String, String> getVolumes() {
+      return ImmutableMap.copyOf(p.volumes);
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})

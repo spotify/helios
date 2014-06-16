@@ -80,25 +80,9 @@ public class TemporaryJobsTest extends SystemTestBase {
   private static HeliosClient client;
   private static String testHost;
 
-  private final TemporaryPorts ports = TemporaryPorts.create();
-  private final Range<Integer> dockerPortRange;
-  private final int dockerProbePort;
-
-  {
-    final String portRange = System.getenv("DOCKER_PORT_RANGE");
-    if (portRange != null) {
-      final String[] parts = portRange.split(":", 2);
-      dockerPortRange = Range.closedOpen(Integer.valueOf(parts[0]),
-                                         Integer.valueOf(parts[1]));
-      dockerProbePort = dockerPortRange.lowerEndpoint();
-    } else {
-      dockerPortRange = ports.localPortRange("temporary-jobs", 10);
-      dockerProbePort = ports.localPort("docker-probe");
-    }
-  }
-
   @Before
   public void verifyContainerReachability() throws Exception {
+    final int dockerProbePort = dockerPortRange().lowerEndpoint();
     final DockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri());
     docker.pull("busybox");
     final ContainerConfig config = ContainerConfig.builder()
@@ -273,9 +257,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     startDefaultMaster();
     client = defaultClient();
     testHost = testHost();
-    startDefaultAgent(testHost, "--port-range=" +
-                                dockerPortRange.lowerEndpoint() + ":" +
-                                dockerPortRange.upperEndpoint());
+    startDefaultAgent(testHost);
 
     awaitHostStatus(client, testHost, UP, LONG_WAIT_MINUTES, MINUTES);
 
@@ -292,5 +274,4 @@ public class TemporaryJobsTest extends SystemTestBase {
     assertThat(testResult(BadTest.class),
                hasFailureContaining("deploy() must be called in a @Before or in the test method"));
   }
-
 }

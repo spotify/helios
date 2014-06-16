@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
 import static java.util.regex.Pattern.compile;
 
@@ -130,6 +131,26 @@ public class JobValidator {
         if (!REGISTRATION_NAME_PATTERN.matcher(registration.getName()).matches()) {
           errors.add(format("Invalid service registration name: %s", registration.getName()));
         }
+      }
+    }
+
+    // Validate volumes
+    for (Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
+      final String path = entry.getKey();
+      final String source = entry.getValue();
+      if (!path.startsWith("/")) {
+        errors.add("Volume path is not absolute: " + path);
+        continue;
+      }
+      if (!isNullOrEmpty(source) && !source.startsWith("/")) {
+        errors.add("Volume source is not absolute: " + source);
+        continue;
+      }
+      final String[] parts = path.split(":", 3);
+      if (path.isEmpty() || path.equals("/") ||
+          parts.length > 2 ||
+          (parts.length > 1 && parts[1].isEmpty())) {
+        errors.add(format("Invalid volume path: %s", path));
       }
     }
 
