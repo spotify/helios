@@ -118,7 +118,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
                                                final ZooKeeperClientProvider provider,
                                                final Path stateFile,
                                                final String path)
-      throws IOException {
+      throws IOException, InterruptedException {
     this.provider = provider;
     this.path = path;
     this.entries = PersistentAtomicReference.create(stateFile, ENTRIES_TYPE,
@@ -194,7 +194,8 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
   public static ZooKeeperUpdatingPersistentDirectory create(final String name,
                                                             final ZooKeeperClientProvider client,
                                                             final Path stateFile,
-                                                            final String path) throws IOException {
+                                                            final String path)
+      throws IOException, InterruptedException {
     return new ZooKeeperUpdatingPersistentDirectory(name, client, stateFile, path);
   }
 

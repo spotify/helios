@@ -267,7 +267,7 @@ public class PersistentPathChildrenCacheTest {
     verify(listener, atLeastOnce()).nodesChanged(cache);
   }
 
-  private void startCache() throws IOException {
+  private void startCache() throws IOException, InterruptedException {
     reset(listener);
     cache = new PersistentPathChildrenCache<>(zk.curator(), PATH, stateFile, Json.type(DataPojo.class));
     cache.addListener(listener);

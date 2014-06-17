@@ -56,18 +56,22 @@ public class PersistentAtomicReference<T> {
   private PersistentAtomicReference(final Path filename,
                                     final JavaType javaType,
                                     final Supplier<? extends T> initialValue)
-      throws IOException {
-    this.filename = filename.toAbsolutePath();
-    this.tempfilename = filename.getFileSystem().getPath(this.filename.toString() + ".tmp");
-    if (Files.exists(filename)) {
-      final byte[] bytes = Files.readAllBytes(filename);
-      if (bytes.length > 0) {
-        value = Json.read(bytes, javaType);
+      throws IOException, InterruptedException {
+    try {
+      this.filename = filename.toAbsolutePath();
+      this.tempfilename = filename.getFileSystem().getPath(this.filename.toString() + ".tmp");
+      if (Files.exists(filename)) {
+        final byte[] bytes = Files.readAllBytes(filename);
+        if (bytes.length > 0) {
+          value = Json.read(bytes, javaType);
+        } else {
+          value = initialValue.get();
+        }
       } else {
         value = initialValue.get();
       }
-    } else {
-      value = initialValue.get();
+    } catch (InterruptedIOException | ClosedByInterruptException e) {
+      throw new InterruptedException(e.getMessage());
     }
   }
 
@@ -106,7 +110,7 @@ public class PersistentAtomicReference<T> {
   public static <T> PersistentAtomicReference<T> create(final Path filename,
                                                         final TypeReference<T> typeReference,
                                                         final Supplier<? extends T> initialValue)
-      throws IOException {
+      throws IOException, InterruptedException {
 
     return new PersistentAtomicReference<>(filename, Json.type(typeReference), initialValue);
   }
@@ -115,14 +119,14 @@ public class PersistentAtomicReference<T> {
   public static <T> PersistentAtomicReference<T> create(final String filename,
                                                         final TypeReference<T> typeReference,
                                                         final Supplier<? extends T> initialValue)
-      throws IOException {
+      throws IOException, InterruptedException {
     return create(FileSystems.getDefault().getPath(filename), typeReference, initialValue);
   }
 
   public static <T> PersistentAtomicReference<T> create(final Path filename,
                                                         final JavaType javaType,
                                                         final Supplier<? extends T> initialValue)
-      throws IOException {
+      throws IOException, InterruptedException {
     return new PersistentAtomicReference<>(filename, javaType, initialValue);
   }
 
@@ -130,7 +134,7 @@ public class PersistentAtomicReference<T> {
   public static <T> PersistentAtomicReference<T> create(final String filename,
                                                         final JavaType javaType,
                                                         final Supplier<? extends T> initialValue)
-      throws IOException {
+      throws IOException, InterruptedException {
     return create(FileSystems.getDefault().getPath(filename), javaType, initialValue);
   }
 

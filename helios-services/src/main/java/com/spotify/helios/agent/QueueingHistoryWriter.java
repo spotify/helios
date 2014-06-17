@@ -89,7 +89,7 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
       backingStore;
 
   public QueueingHistoryWriter(final String hostname, final ZooKeeperClient client,
-                               final Path backingFile) throws IOException {
+                               final Path backingFile) throws IOException, InterruptedException {
     this.hostname = hostname;
     this.client = client;
     this.backingStore = PersistentAtomicReference.create(backingFile,

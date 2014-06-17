@@ -92,7 +92,7 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
 
   public PersistentPathChildrenCache(final CuratorFramework curator, final String path,
                                      final Path snapshotFile, final JavaType valueType)
-      throws IOException {
+      throws IOException, InterruptedException {
     this.curator = curator;
     this.path = path;
     this.valueType = valueType;

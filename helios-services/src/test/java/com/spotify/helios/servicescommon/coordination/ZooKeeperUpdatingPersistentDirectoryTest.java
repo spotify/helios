@@ -72,7 +72,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     setupDirectory();
   }
 
-  private void setupDirectory() throws IOException {
+  private void setupDirectory() throws IOException, InterruptedException {
     final DefaultZooKeeperClient client = new DefaultZooKeeperClient(zk.curator());
     final ZooKeeperClientProvider provider = new ZooKeeperClientProvider(client, noop());
     sut = ZooKeeperUpdatingPersistentDirectory.create("test", provider, stateFile, PARENT_PATH);

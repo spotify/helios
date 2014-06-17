@@ -69,7 +69,8 @@ public interface ZooKeeperClient {
   void create(String path) throws KeeperException;
 
   <T> PersistentPathChildrenCache<T> pathChildrenCache(String path, Path snapshotFile,
-                                                       final JavaType valueType) throws IOException;
+                                                       final JavaType valueType)
+      throws IOException, InterruptedException;
 
   Collection<CuratorTransactionResult> transaction(List<ZooKeeperOperation> operations)
       throws KeeperException;

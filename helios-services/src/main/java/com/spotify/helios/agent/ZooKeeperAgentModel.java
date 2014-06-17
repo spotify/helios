@@ -70,7 +70,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
 
   public ZooKeeperAgentModel(final ZooKeeperClientProvider provider, final String host,
-                             final Path stateDirectory) throws IOException {
+                             final Path stateDirectory) throws IOException, InterruptedException {
     // TODO(drewc): we're constructing too many heavyweight things in the ctor, these kinds of
     // things should be passed in/provider'd/etc.
     final ZooKeeperClient client = provider.get("ZooKeeperAgentModel_ctor");

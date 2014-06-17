@@ -175,7 +175,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   @Override
   public <T> PersistentPathChildrenCache<T> pathChildrenCache(String path, Path snapshotFile,
                                                               final JavaType valueType)
-  throws IOException {
+      throws IOException, InterruptedException {
     return client.pathChildrenCache(path, snapshotFile, valueType);
   }
 
