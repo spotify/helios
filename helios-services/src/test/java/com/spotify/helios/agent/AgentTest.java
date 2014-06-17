@@ -328,7 +328,6 @@ public class AgentTest {
     when(fooSupervisor.isStopping()).thenReturn(true);
     when(fooSupervisor.isStarting()).thenReturn(false);
     when(fooSupervisor.isDone()).thenReturn(true);
-//    when(fooSupervisor.getStatus()).thenReturn(STOPPED);
 
     // And not started again
     callback.run(false);
@@ -382,7 +381,6 @@ public class AgentTest {
     // Stop it the correct way
     stop(FOO_JOB);
     verify(fooSupervisor, atLeastOnce()).setGoal(UNDEPLOY);
-//    when(fooSupervisor.getStatus()).thenReturn(STOPPED);
     when(fooSupervisor.isDone()).thenReturn(true);
     when(fooSupervisor.isStopping()).thenReturn(true);
     when(fooSupervisor.isStarting()).thenReturn(false);
