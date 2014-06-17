@@ -154,6 +154,13 @@ public class Supervisor {
     return currentCommand == performedCommand;
   }
 
+  /**
+   * Get the current container id
+   */
+  public String containerId() {
+    return containerId;
+  }
+
   private class Update implements Reactor.Callback {
 
     @Override

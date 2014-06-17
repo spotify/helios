@@ -44,6 +44,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
 import static com.spotify.helios.common.descriptors.Goal.START;
@@ -78,6 +79,7 @@ public class Agent extends AbstractIdleService {
   private final Reactor reactor;
   private final PersistentAtomicReference<Map<JobId, Execution>> executions;
   private final PortAllocator portAllocator;
+  private final Reaper reaper;
 
   /**
    * Create a new agent.
@@ -91,12 +93,15 @@ public class Agent extends AbstractIdleService {
   public Agent(final AgentModel model, final SupervisorFactory supervisorFactory,
                final ReactorFactory reactorFactory,
                final PersistentAtomicReference<Map<JobId, Execution>> executions,
-               final PortAllocator portAllocator) {
-    this.model = model;
-    this.supervisorFactory = supervisorFactory;
-    this.executions = executions;
-    this.portAllocator = portAllocator;
-    this.reactor = reactorFactory.create("agent", new Update(), UPDATE_INTERVAL);
+               final PortAllocator portAllocator,
+               final Reaper reaper) {
+    this.model = checkNotNull(model, "model");
+    this.supervisorFactory = checkNotNull(supervisorFactory, "supervisorFactory");
+    this.executions = checkNotNull(executions, "executions");
+    this.portAllocator = checkNotNull(portAllocator, "portAllocator");
+    this.reactor = checkNotNull(reactorFactory.create("agent", new Update(), UPDATE_INTERVAL),
+                                "reactor");
+    this.reaper = checkNotNull(reaper, "reaper");
   }
 
   @Override
@@ -173,6 +178,16 @@ public class Agent extends AbstractIdleService {
       // * A new container must either reuse an existing supervisor or wait for the old supervisor
       //   to die before spawning a new one.
       // * Book-keeping a supervisor of one job should not block processing of other jobs
+
+      // Reap containers
+      final Set<String> active = Sets.newHashSet();
+      for (Supervisor supervisor : supervisors.values()) {
+        final String containerId = supervisor.containerId();
+        if (containerId != null) {
+          active.add(containerId);
+        }
+      }
+      reaper.reap(active);
 
       final Map<JobId, Task> tasks = model.getTasks();
 

@@ -217,7 +217,7 @@ public class AgentService extends AbstractIdleService {
                                                                        config.getEnvVars(),
                                                                        nodeUpdaterFactory);
 
-    final String namespace = "helios-agent-" + id;
+    final String namespace = "helios-" + id;
 
     final SupervisorFactory supervisorFactory = new SupervisorFactory(
         model, monitoredDockerClient,
@@ -243,7 +243,9 @@ public class AgentService extends AbstractIdleService {
       throw Throwables.propagate(e);
     }
 
-    this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator);
+    final Reaper reaper = new Reaper(dockerClient, namespace);
+    this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator,
+                           reaper);
 
     final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
                                                                               Paths.statusHosts(),

@@ -88,6 +88,7 @@ public class AgentTest {
   @Mock private Supervisor barSupervisor;
   @Mock private Reactor reactor;
   @Mock private PortAllocator portAllocator;
+  @Mock private Reaper reaper;
 
   @Captor private ArgumentCaptor<Reactor.Callback> callbackCaptor;
   @Captor private ArgumentCaptor<AgentModel.Listener> listenerCaptor;
@@ -162,7 +163,7 @@ public class AgentTest {
         return unmodifiableJobStatuses.get(jobId);
       }
     });
-    sut = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator);
+    sut = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator, reaper);
   }
 
   private void mockService(final Service service) {
