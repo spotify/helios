@@ -136,7 +136,7 @@ public class SupervisorTest {
   Supervisor sut;
 
   @Before
-  public void setup() {
+  public void setup() throws Exception {
     when(retryPolicy.getRetryIntervalMillis()).thenReturn(10L);
     TaskStatusManagerImpl manager = TaskStatusManagerImpl.newBuilder()
         .setJob(JOB)

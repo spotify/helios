@@ -68,7 +68,7 @@ public class FlapController {
     mostRecentStartTime = clock.now().getMillis();
   }
 
-  public void jobDied() {
+  public void jobDied() throws InterruptedException {
     List<Long> trimmed = Lists.newArrayList(lastExits);
 
     while (trimmed.size() >= restartCount) {
@@ -103,7 +103,7 @@ public class FlapController {
     }
   }
 
-  private void setFlapping(boolean isFlapping) {
+  private void setFlapping(boolean isFlapping) throws InterruptedException {
     if (stateUpdater.isFlapping() != isFlapping) {
       log.info("JobId {} flapping status changed from {} to {}", jobId,
         stateUpdater.isFlapping(), isFlapping);

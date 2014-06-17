@@ -52,7 +52,7 @@ public interface AgentModel {
    *
    * @param status The container state.
    */
-  void setTaskStatus(final JobId jobId, TaskStatus status);
+  void setTaskStatus(final JobId jobId, TaskStatus status) throws InterruptedException;
 
   /**
    * Get registered task status.
@@ -64,7 +64,7 @@ public interface AgentModel {
    *
    * @param jobId The job id.
    */
-  void removeTaskStatus(JobId jobId);
+  void removeTaskStatus(JobId jobId) throws InterruptedException;
 
   /**
    * Add a listener for changes to the set of tasks.
@@ -99,5 +99,5 @@ public interface AgentModel {
    *
    * @param jobId The {@link JobId} of the job that is tombstoned.
    */
-  void removeUndeployTombstone(JobId jobId);
+  void removeUndeployTombstone(JobId jobId) throws InterruptedException;
 }

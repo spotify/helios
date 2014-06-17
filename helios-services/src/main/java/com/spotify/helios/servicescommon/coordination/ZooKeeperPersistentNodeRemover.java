@@ -92,7 +92,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
     this.recursive = recursive;
   }
 
-  public void remove(final String path) {
+  public void remove(final String path) throws InterruptedException {
     while (true) {
       try {
         synchronized (lock) {
@@ -143,7 +143,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
   private class Update implements Reactor.Callback {
 
     @Override
-    public void run(final boolean timeout) {
+    public void run(final boolean timeout) throws InterruptedException {
       // Drain the front to the backlog
       final Set<String> backPaths = Sets.newHashSet(back.get());
       synchronized (lock) {

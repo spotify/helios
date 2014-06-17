@@ -33,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -69,7 +71,15 @@ public class PersistentAtomicReference<T> {
     }
   }
 
-  public void set(T newValue) throws IOException {
+  public void set(T newValue) throws IOException, InterruptedException {
+    try {
+      set0(newValue);
+    } catch (InterruptedIOException | ClosedByInterruptException e) {
+      throw new InterruptedException(e.getMessage());
+    }
+  }
+
+  private void set0(final T newValue) throws IOException {
     log.debug("set: ({}) {}", filename, newValue);
     synchronized (sync) {
       final String json = Json.asPrettyStringUnchecked(newValue);
@@ -81,7 +91,7 @@ public class PersistentAtomicReference<T> {
     }
   }
 
-  public void setUnchecked(T newValue) {
+  public void setUnchecked(T newValue) throws InterruptedException {
     try {
       set(newValue);
     } catch (IOException e) {

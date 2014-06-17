@@ -23,7 +23,6 @@ package com.spotify.helios.agent;
 
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
@@ -46,7 +45,7 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
   }
 
   @Override
-  public void updateFlappingState(boolean isFlapping) {
+  public void updateFlappingState(boolean isFlapping) throws InterruptedException {
     if (isFlapping == this.isFlapping) {
       return;
     }
@@ -68,7 +67,8 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
 
   @Override
   public void setStatus(Goal goal, State status, ThrottleState throttle, String containerId,
-                        Map<String, PortMapping> ports, Map<String, String> env) {
+                        Map<String, PortMapping> ports, Map<String, String> env)
+      throws InterruptedException {
 
     this.throttle = throttle;
     this.status = status;
@@ -84,7 +84,7 @@ public class TaskStatusManagerImpl implements TaskStatusManager {
     updateModelStatus(builder);
   }
 
-  private void updateModelStatus(TaskStatus.Builder builder) {
+  private void updateModelStatus(TaskStatus.Builder builder) throws InterruptedException {
     builder.setThrottled(throttle);
     model.setTaskStatus(job.getId(), builder.build());
     taskStatus = builder.build();

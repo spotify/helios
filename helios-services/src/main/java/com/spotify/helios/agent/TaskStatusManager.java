@@ -31,9 +31,10 @@ import java.util.Map;
 public interface TaskStatusManager {
 
   void setStatus(Goal goal, State status, ThrottleState throttle, String containerId,
-                 Map<String, PortMapping> ports, Map<String, String> env);
+                 Map<String, PortMapping> ports, Map<String, String> env)
+      throws InterruptedException;
 
-  void updateFlappingState(boolean isFlapping);
+  void updateFlappingState(boolean isFlapping) throws InterruptedException;
 
   State getStatus();
 

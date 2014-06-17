@@ -128,7 +128,7 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
     zkWriterExecutor.awaitTermination(1, TimeUnit.MINUTES);
   }
 
-  private void add(TaskStatusEvent item) {
+  private void add(TaskStatusEvent item) throws InterruptedException {
     // If too many "globally", toss them
     while (count.get() >= MAX_TOTAL_SIZE) {
       getNext();
@@ -169,11 +169,13 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
     }
   }
 
-  public void saveHistoryItem(final JobId jobId, final TaskStatus status) {
+  public void saveHistoryItem(final JobId jobId, final TaskStatus status)
+      throws InterruptedException {
     saveHistoryItem(jobId, status, System.currentTimeMillis());
   }
 
-  public void saveHistoryItem(final JobId jobId, final TaskStatus status, long timestamp) {
+  public void saveHistoryItem(final JobId jobId, final TaskStatus status, long timestamp)
+      throws InterruptedException {
     add(new TaskStatusEvent(status, timestamp, hostname));
   }
 
