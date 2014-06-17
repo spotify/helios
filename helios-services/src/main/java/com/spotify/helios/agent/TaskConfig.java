@@ -69,6 +69,7 @@ public class TaskConfig {
   private final Job job;
   private final Map<String, String> envVars;
   private final ContainerDecorator containerDecorator;
+  private final String namespace;
 
   private TaskConfig(final Builder builder) {
     this.host = checkNotNull(builder.host, "host");
@@ -76,6 +77,7 @@ public class TaskConfig {
     this.job = checkNotNull(builder.job, "job");
     this.envVars = checkNotNull(builder.envVars, "envVars");
     this.containerDecorator = checkNotNull(builder.containerDecorator, "containerDecorator");
+    this.namespace = checkNotNull(builder.namespace, "namespace");
   }
 
   /**
@@ -85,7 +87,7 @@ public class TaskConfig {
     final String shortId = job.getId().toShortString();
     final String escaped = CONTAINER_NAME_FORBIDDEN.matcher(shortId).replaceAll("_");
     final String random = Integer.toHexString(new SecureRandom().nextInt());
-    return escaped + "_" + random;
+    return namespace + "-" + escaped + "_" + random;
   }
 
   /**
@@ -281,6 +283,7 @@ public class TaskConfig {
 
   public static class Builder {
 
+
     private Builder() {
     }
 
@@ -289,6 +292,7 @@ public class TaskConfig {
     private Map<String, Integer> ports = Collections.emptyMap();
     private Map<String, String> envVars = Collections.emptyMap();
     private ContainerDecorator containerDecorator = new NoOpContainerDecorator();
+    private String namespace;
 
     public Builder host(final String host) {
       this.host = host;
@@ -312,6 +316,11 @@ public class TaskConfig {
 
     public Builder containerDecorator(final ContainerDecorator containerDecorator) {
       this.containerDecorator = containerDecorator;
+      return this;
+    }
+
+    public Builder namespace(final String namespace) {
+      this.namespace = namespace;
       return this;
     }
 

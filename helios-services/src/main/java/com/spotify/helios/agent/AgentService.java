@@ -217,6 +217,8 @@ public class AgentService extends AbstractIdleService {
                                                                        config.getEnvVars(),
                                                                        nodeUpdaterFactory);
 
+    final String namespace = "helios-agent-" + id;
+
     final SupervisorFactory supervisorFactory = new SupervisorFactory(
         model, monitoredDockerClient,
         config.getEnvVars(), serviceRegistrar,
@@ -224,8 +226,8 @@ public class AgentService extends AbstractIdleService {
         ? new SyslogRedirectingContainerDecorator(config.getRedirectToSyslog())
         : new NoOpContainerDecorator(),
         config.getName(),
-        metrics.getSupervisorMetrics()
-    );
+        metrics.getSupervisorMetrics(),
+        namespace);
 
     final ReactorFactory reactorFactory = new ReactorFactory();
 
