@@ -53,12 +53,13 @@ public class DefaultStatusUpdater implements StatusUpdater {
    * Persist job status with port mapping.
    */
   @Override
-  public void setStatus(final TaskStatus.State status) {
+  public void setStatus(final TaskStatus.State status) throws InterruptedException {
     setStatus(status, containerIdSupplier.get());
   }
 
   @Override
-  public void setStatus(final TaskStatus.State status, final String containerId) {
+  public void setStatus(final TaskStatus.State status, final String containerId)
+      throws InterruptedException {
     statusManager.setStatus(goal.get(), status, throttle.get(),
                             containerId, taskConfig.ports(),
                             taskConfig.containerEnv());

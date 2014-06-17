@@ -72,7 +72,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     setupDirectory();
   }
 
-  private void setupDirectory() throws IOException {
+  private void setupDirectory() throws IOException, InterruptedException {
     final DefaultZooKeeperClient client = new DefaultZooKeeperClient(zk.curator());
     final ZooKeeperClientProvider provider = new ZooKeeperClientProvider(client, noop());
     sut = ZooKeeperUpdatingPersistentDirectory.create("test", provider, stateFile, PARENT_PATH);
@@ -89,10 +89,10 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
 
   @Test
   public void verifyCreatesAndRemovesNode() throws Exception {
-    sut.map().put(FOO_NODE, BAR1_DATA);
+    sut.put(FOO_NODE, BAR1_DATA);
     final byte[] remote = awaitNode(FOO_PATH);
     assertArrayEquals(BAR1_DATA, remote);
-    sut.map().remove(FOO_NODE);
+    sut.remove(FOO_NODE);
     awaitNoNode(FOO_PATH);
   }
 
@@ -102,7 +102,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
       zk.curator().create().forPath(FOO_PATH, "old".getBytes());
     } catch (NodeExistsException ignore) {
     }
-    sut.map().put(FOO_NODE, BAR1_DATA);
+    sut.put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
   }
 
@@ -121,14 +121,14 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
       zk.curator().create().forPath("/version", "1".getBytes());
     } catch (NodeExistsException ignore) {
     }
-    sut.map().put(FOO_NODE, BAR1_DATA);
+    sut.put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
     zk.backup(backupDir);
 
     // Write data after backup
     zk.curator().setData().forPath("/version", "2".getBytes());
-    sut.map().put(FOO_NODE, BAR2_DATA);
-    sut.map().put(BAZ_NODE, BAR3_DATA);
+    sut.put(FOO_NODE, BAR2_DATA);
+    sut.put(BAZ_NODE, BAR3_DATA);
     awaitNodeWithData(FOO_PATH, BAR2_DATA);
     awaitNodeWithData(BAZ_PATH, BAR3_DATA);
 
@@ -150,14 +150,14 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
       zk.curator().create().forPath("/version", "1".getBytes());
     } catch (NodeExistsException ignore) {
     }
-    sut.map().put(FOO_NODE, BAR1_DATA);
+    sut.put(FOO_NODE, BAR1_DATA);
     awaitNodeWithData(FOO_PATH, BAR1_DATA);
     zk.backup(backupDir);
 
     // Write data after backup
     zk.curator().setData().forPath("/version", "2".getBytes());
-    sut.map().put(FOO_NODE, BAR2_DATA);
-    sut.map().put(BAZ_NODE, BAR3_DATA);
+    sut.put(FOO_NODE, BAR2_DATA);
+    sut.put(BAZ_NODE, BAR3_DATA);
     awaitNodeWithData(FOO_PATH, BAR2_DATA);
     awaitNodeWithData(BAZ_PATH, BAR3_DATA);
 

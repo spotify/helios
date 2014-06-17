@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.AbstractMap;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -119,7 +118,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
                                                final ZooKeeperClientProvider provider,
                                                final Path stateFile,
                                                final String path)
-      throws IOException {
+      throws IOException, InterruptedException {
     this.provider = provider;
     this.path = path;
     this.entries = PersistentAtomicReference.create(stateFile, ENTRIES_TYPE,
@@ -127,8 +126,53 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
     this.reactor = new DefaultReactor(name, new Update(), RETRY_INTERVAL_MILLIS);
   }
 
-  public Map<String, byte[]> map() {
-    return new MapView();
+  public byte[] put(final String key, final byte[] value) throws InterruptedException {
+    Preconditions.checkArgument(key.indexOf('/') == -1);
+    PathUtils.validatePath(ZKPaths.makePath(path, key));
+    final byte[] prev;
+    synchronized (lock) {
+      final Map<String, byte[]> mutable = Maps.newHashMap(entries.get());
+      prev = mutable.put(key, value);
+      try {
+        entries.set(ImmutableMap.copyOf(mutable));
+      } catch (IOException e) {
+        throw Throwables.propagate(e);
+      }
+    }
+    reactor.signal();
+    return prev;
+  }
+
+  public byte[] remove(final Object key) throws InterruptedException {
+    if (!(key instanceof String)) {
+      return null;
+    }
+    return remove((String) key);
+  }
+
+  private byte[] remove(final String key) throws InterruptedException {
+    Preconditions.checkArgument(key.indexOf('/') == -1);
+    PathUtils.validatePath(ZKPaths.makePath(path, key));
+    final byte[] value;
+    synchronized (lock) {
+      final Map<String, byte[]> mutable = Maps.newHashMap(entries.get());
+      value = mutable.remove(key);
+      try {
+        entries.set(ImmutableMap.copyOf(mutable));
+      } catch (IOException e) {
+        throw Throwables.propagate(e);
+      }
+    }
+    reactor.signal();
+    return value;
+  }
+
+  public byte[] get(final Object key) {
+    return entries.get().get(key);
+  }
+
+  public Set<Map.Entry<String, byte[]>> entrySet() {
+    return entries.get().entrySet();
   }
 
   private ZooKeeperClient client(final String tag) {
@@ -150,7 +194,8 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
   public static ZooKeeperUpdatingPersistentDirectory create(final String name,
                                                             final ZooKeeperClientProvider client,
                                                             final Path stateFile,
-                                                            final String path) throws IOException {
+                                                            final String path)
+      throws IOException, InterruptedException {
     return new ZooKeeperUpdatingPersistentDirectory(name, client, stateFile, path);
   }
 
@@ -294,62 +339,6 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
           remote.remove(node);
         }
       }
-    }
-  }
-
-  private class MapView extends AbstractMap<String, byte[]> {
-
-    @Override
-    public byte[] put(final String key, final byte[] value) {
-      Preconditions.checkArgument(key.indexOf('/') == -1);
-      PathUtils.validatePath(ZKPaths.makePath(path, key));
-      final byte[] prev;
-      synchronized (lock) {
-        final Map<String, byte[]> mutable = Maps.newHashMap(entries.get());
-        prev = mutable.put(key, value);
-        try {
-          entries.set(ImmutableMap.copyOf(mutable));
-        } catch (IOException e) {
-          throw Throwables.propagate(e);
-        }
-      }
-      reactor.signal();
-      return prev;
-    }
-
-    @Override
-    public byte[] remove(final Object key) {
-      if (!(key instanceof String)) {
-        return null;
-      }
-      return remove((String) key);
-    }
-
-    private byte[] remove(final String key) {
-      Preconditions.checkArgument(key.indexOf('/') == -1);
-      PathUtils.validatePath(ZKPaths.makePath(path, key));
-      final byte[] value;
-      synchronized (lock) {
-        final Map<String, byte[]> mutable = Maps.newHashMap(entries.get());
-        value = mutable.remove(key);
-        try {
-          entries.set(ImmutableMap.copyOf(mutable));
-        } catch (IOException e) {
-          throw Throwables.propagate(e);
-        }
-      }
-      reactor.signal();
-      return value;
-    }
-
-    @Override
-    public byte[] get(final Object key) {
-      return entries.get().get(key);
-    }
-
-    @Override
-    public Set<Entry<String, byte[]>> entrySet() {
-      return entries.get().entrySet();
     }
   }
 }

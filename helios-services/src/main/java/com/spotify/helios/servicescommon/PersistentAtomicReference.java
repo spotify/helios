@@ -33,6 +33,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -54,22 +56,34 @@ public class PersistentAtomicReference<T> {
   private PersistentAtomicReference(final Path filename,
                                     final JavaType javaType,
                                     final Supplier<? extends T> initialValue)
-      throws IOException {
-    this.filename = filename.toAbsolutePath();
-    this.tempfilename = filename.getFileSystem().getPath(this.filename.toString() + ".tmp");
-    if (Files.exists(filename)) {
-      final byte[] bytes = Files.readAllBytes(filename);
-      if (bytes.length > 0) {
-        value = Json.read(bytes, javaType);
+      throws IOException, InterruptedException {
+    try {
+      this.filename = filename.toAbsolutePath();
+      this.tempfilename = filename.getFileSystem().getPath(this.filename.toString() + ".tmp");
+      if (Files.exists(filename)) {
+        final byte[] bytes = Files.readAllBytes(filename);
+        if (bytes.length > 0) {
+          value = Json.read(bytes, javaType);
+        } else {
+          value = initialValue.get();
+        }
       } else {
         value = initialValue.get();
       }
-    } else {
-      value = initialValue.get();
+    } catch (InterruptedIOException | ClosedByInterruptException e) {
+      throw new InterruptedException(e.getMessage());
     }
   }
 
-  public void set(T newValue) throws IOException {
+  public void set(T newValue) throws IOException, InterruptedException {
+    try {
+      set0(newValue);
+    } catch (InterruptedIOException | ClosedByInterruptException e) {
+      throw new InterruptedException(e.getMessage());
+    }
+  }
+
+  private void set0(final T newValue) throws IOException {
     log.debug("set: ({}) {}", filename, newValue);
     synchronized (sync) {
       final String json = Json.asPrettyStringUnchecked(newValue);
@@ -81,7 +95,7 @@ public class PersistentAtomicReference<T> {
     }
   }
 
-  public void setUnchecked(T newValue) {
+  public void setUnchecked(T newValue) throws InterruptedException {
     try {
       set(newValue);
     } catch (IOException e) {
@@ -96,7 +110,7 @@ public class PersistentAtomicReference<T> {
   public static <T> PersistentAtomicReference<T> create(final Path filename,
                                                         final TypeReference<T> typeReference,
                                                         final Supplier<? extends T> initialValue)
-      throws IOException {
+      throws IOException, InterruptedException {
 
     return new PersistentAtomicReference<>(filename, Json.type(typeReference), initialValue);
   }
@@ -105,14 +119,14 @@ public class PersistentAtomicReference<T> {
   public static <T> PersistentAtomicReference<T> create(final String filename,
                                                         final TypeReference<T> typeReference,
                                                         final Supplier<? extends T> initialValue)
-      throws IOException {
+      throws IOException, InterruptedException {
     return create(FileSystems.getDefault().getPath(filename), typeReference, initialValue);
   }
 
   public static <T> PersistentAtomicReference<T> create(final Path filename,
                                                         final JavaType javaType,
                                                         final Supplier<? extends T> initialValue)
-      throws IOException {
+      throws IOException, InterruptedException {
     return new PersistentAtomicReference<>(filename, javaType, initialValue);
   }
 
@@ -120,7 +134,7 @@ public class PersistentAtomicReference<T> {
   public static <T> PersistentAtomicReference<T> create(final String filename,
                                                         final JavaType javaType,
                                                         final Supplier<? extends T> initialValue)
-      throws IOException {
+      throws IOException, InterruptedException {
     return create(FileSystems.getDefault().getPath(filename), javaType, initialValue);
   }
 

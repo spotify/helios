@@ -261,7 +261,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   public <T> PersistentPathChildrenCache<T> pathChildrenCache(final String path,
                                                               final Path snapshotFile,
                                                               final JavaType valueType)
-      throws IOException {
+      throws IOException, InterruptedException {
     return new PersistentPathChildrenCache<T>(client, path, snapshotFile, valueType);
   }
 

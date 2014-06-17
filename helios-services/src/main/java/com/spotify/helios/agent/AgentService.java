@@ -31,7 +31,6 @@ import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
-import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -65,7 +64,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
@@ -115,7 +113,7 @@ public class AgentService extends AbstractIdleService {
    * @param config The service configuration.
    */
   public AgentService(final AgentConfig config, final Environment environment)
-      throws ConfigurationException {
+      throws ConfigurationException, InterruptedException {
     this.environment = environment;
     // Create state directory, if necessary
     final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();

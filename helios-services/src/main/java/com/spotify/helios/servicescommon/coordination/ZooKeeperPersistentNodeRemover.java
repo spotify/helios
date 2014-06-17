@@ -74,14 +74,14 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
 
   public ZooKeeperPersistentNodeRemover(final String name, final ZooKeeperClientProvider provider,
                                         final Path stateFile, final Predicate<Node> predicate)
-      throws IOException {
+      throws IOException, InterruptedException {
     this(name, provider, stateFile, predicate, DEFAULT_RECURSIVE);
   }
 
   public ZooKeeperPersistentNodeRemover(final String name, final ZooKeeperClientProvider provider,
                                         final Path stateFile, final Predicate<Node> predicate,
                                         final boolean recursive)
-      throws IOException {
+      throws IOException, InterruptedException {
     this.provider = provider;
     this.predicate = predicate;
     this.front = PersistentAtomicReference.create(stateFile.toString() + ".front", PATHS_TYPE,
@@ -92,7 +92,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
     this.recursive = recursive;
   }
 
-  public void remove(final String path) {
+  public void remove(final String path) throws InterruptedException {
     while (true) {
       try {
         synchronized (lock) {
@@ -103,11 +103,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
         break;
       } catch (IOException e) {
         log.error("Error updating front", e);
-        try {
-          Thread.sleep(1000);
-        } catch (InterruptedException ie) {
-          throw Throwables.propagate(ie);
-        }
+        Thread.sleep(1000);
       }
     }
     reactor.signal();
@@ -117,7 +113,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
                                                       final ZooKeeperClientProvider provider,
                                                       final Path stateFile,
                                                       final Predicate<Node> predicate)
-      throws IOException {
+      throws IOException, InterruptedException {
     return new ZooKeeperPersistentNodeRemover(name, provider, stateFile, predicate);
   }
 
@@ -126,7 +122,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
                                                       final Path stateFile,
                                                       final Predicate<Node> predicate,
                                                       final boolean recursive)
-      throws IOException {
+      throws IOException, InterruptedException {
     return new ZooKeeperPersistentNodeRemover(name, provider, stateFile, predicate, recursive);
   }
 
@@ -143,7 +139,7 @@ public class ZooKeeperPersistentNodeRemover extends AbstractIdleService {
   private class Update implements Reactor.Callback {
 
     @Override
-    public void run(final boolean timeout) {
+    public void run(final boolean timeout) throws InterruptedException {
       // Drain the front to the backlog
       final Set<String> backPaths = Sets.newHashSet(back.get());
       synchronized (lock) {

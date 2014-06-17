@@ -29,8 +29,6 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.databind.type.MapType;
 import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
 import com.spotify.helios.agent.RetryIntervalPolicy;
@@ -50,9 +48,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,8 +60,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.util.concurrent.Service.State.STOPPING;
-import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.zookeeper.Watcher.Event.EventType.NodeDataChanged;
 
@@ -98,7 +92,7 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
 
   public PersistentPathChildrenCache(final CuratorFramework curator, final String path,
                                      final Path snapshotFile, final JavaType valueType)
-      throws IOException {
+      throws IOException, InterruptedException {
     this.curator = curator;
     this.path = path;
     this.valueType = valueType;
@@ -180,7 +174,7 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
     }
   }
 
-  private void update() throws KeeperException {
+  private void update() throws KeeperException, InterruptedException {
     log.debug("updating: {}", path);
 
     final Map<String, T> newSnapshot;

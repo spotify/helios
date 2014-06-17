@@ -30,10 +30,8 @@ import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
-import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
@@ -42,7 +40,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InterruptedIOException;
-import java.util.Map;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicReference;
@@ -52,7 +49,6 @@ import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
-import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -293,7 +289,7 @@ public class Supervisor {
   private class Start implements Command {
 
     @Override
-    public void perform(final boolean done) {
+    public void perform(final boolean done) throws InterruptedException {
       if (runner == null) {
         // There's no active runner, start it to bring up the container.
         startAfter(0);

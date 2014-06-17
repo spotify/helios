@@ -70,7 +70,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
 
   public ZooKeeperAgentModel(final ZooKeeperClientProvider provider, final String host,
-                             final Path stateDirectory) throws IOException {
+                             final Path stateDirectory) throws IOException, InterruptedException {
     // TODO(drewc): we're constructing too many heavyweight things in the ctor, these kinds of
     // things should be passed in/provider'd/etc.
     final ZooKeeperClient client = provider.get("ZooKeeperAgentModel_ctor");
@@ -129,7 +129,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   @Override
   public Map<JobId, TaskStatus> getTaskStatuses() {
     final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
-    for (Map.Entry<String, byte[]> entry : this.taskStatuses.map().entrySet()) {
+    for (Map.Entry<String, byte[]> entry : this.taskStatuses.entrySet()) {
       try {
         final JobId id = JobId.fromString(entry.getKey());
         final TaskStatus status = Json.read(entry.getValue(), TaskStatus.class);
@@ -142,15 +142,16 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   }
 
   @Override
-  public void setTaskStatus(final JobId jobId, final TaskStatus status) {
+  public void setTaskStatus(final JobId jobId, final TaskStatus status)
+      throws InterruptedException {
     log.debug("setting task status: {}", status);
-    taskStatuses.map().put(jobId.toString(), status.toJsonBytes());
+    taskStatuses.put(jobId.toString(), status.toJsonBytes());
     historyWriter.saveHistoryItem(jobId, status);
   }
 
   @Override
   public TaskStatus getTaskStatus(final JobId jobId) {
-    final byte[] data = taskStatuses.map().get(jobId.toString());
+    final byte[] data = taskStatuses.get(jobId.toString());
     if (data == null) {
       return null;
     }
@@ -162,12 +163,12 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   }
 
   @Override
-  public void removeTaskStatus(final JobId jobId) {
-    taskStatuses.map().remove(jobId.toString());
+  public void removeTaskStatus(final JobId jobId) throws InterruptedException {
+    taskStatuses.remove(jobId.toString());
   }
 
   @Override
-  public void removeUndeployTombstone(final JobId jobId) {
+  public void removeUndeployTombstone(final JobId jobId) throws InterruptedException {
     String path = Paths.configHostJob(agent, jobId);
     taskRemover.remove(path);
   }
