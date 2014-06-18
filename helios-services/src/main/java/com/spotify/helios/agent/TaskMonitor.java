@@ -25,13 +25,15 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import com.spotify.docker.client.ImageNotFoundException;
 import com.spotify.docker.client.ImagePullFailedException;
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Executors;
+import java.io.Closeable;
+import java.util.Objects;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -54,30 +56,59 @@ import static java.util.concurrent.TimeUnit.SECONDS;
  * e.g. whether it's flapping etc. This information is published using the {@link StatusUpdater} and
  * a {@link ThrottleState} is made available for supervisors to act on.
  */
-public class TaskMonitor implements TaskRunner.Listener {
+public class TaskMonitor implements TaskRunner.Listener, Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(TaskMonitor.class);
 
-  private static final ScheduledExecutorService scheduler =
-      MoreExecutors.getExitingScheduledExecutorService(
-          (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1), 0, SECONDS);
-
+  private final JobId jobId;
+  private final ScheduledExecutorService scheduler;
   private final FlapController flapController;
   private final StatusUpdater statusUpdater;
 
   private volatile ScheduledFuture<?> flapTimeout;
 
   private ThrottleState imageFailure;
+  private ThrottleState throttle = NO;
 
-  public TaskMonitor(final FlapController flapController,
+  public TaskMonitor(final JobId jobId, final FlapController flapController,
                      final StatusUpdater statusUpdater) {
+    this.jobId = jobId;
     this.flapController = flapController;
     this.statusUpdater = statusUpdater;
+
+    final ScheduledThreadPoolExecutor executor = new ScheduledThreadPoolExecutor(1);
+    // Let core threads time out to avoid unnecessarily keeping a flapping state check thread alive
+    // for the majority of tasks that do not flap.
+    executor.setKeepAliveTime(5, SECONDS);
+    executor.allowCoreThreadTimeOut(true);
+    this.scheduler = MoreExecutors.getExitingScheduledExecutorService(executor, 0, SECONDS);
+  }
+
+  /**
+   * Get the current task throttle as derived from task runner events.
+   */
+  public ThrottleState throttle() {
+    return throttle;
+  }
+
+  @Override
+  public void close() {
+    scheduler.shutdownNow();
+  }
+
+  @Override
+  protected void finalize() throws Throwable {
+    super.finalize();
+    if (!scheduler.isShutdown()) {
+      log.error("task monitor not properly closed: {}", jobId);
+    }
   }
 
   @Override
   public void failed(final Throwable t) {
     if (t instanceof InterruptedException) {
+      // Ignore failures due to interruptions as they're used when tearing down the agent and do
+      // not indicate actual runner failures.
       return;
     }
     if (t instanceof ImageNotFoundException) {
@@ -95,37 +126,33 @@ public class TaskMonitor implements TaskRunner.Listener {
 
   @Override
   public void creating() {
-    resetImageFailure();
     updateState(CREATING);
   }
 
   @Override
   public void created(final String containerId) {
+    // If we managed to create a container, any previous image failure has been resolved
     resetImageFailure();
     statusUpdater.setContainerId(containerId);
   }
 
   @Override
   public void starting() {
+    // If we managed to create a container, any previous image failure has been resolved
     resetImageFailure();
     updateState(STARTING);
   }
 
   @Override
   public void started() {
+    // If we managed to start a container, any previous image failure has been resolved
     resetImageFailure();
   }
 
   @Override
   public void running() {
     flapController.started();
-    if (flapTimeout != null) {
-      flapTimeout.cancel(false);
-    }
-    if (flapController.isFlapping()) {
-      flapTimeout = scheduler.schedule(new UpdateThrottle(),
-                                       flapController.millisLeftToUnflap(), MILLISECONDS);
-    }
+    // If the container is running, any previous image failure has been resolved
     resetImageFailure();
     updateState(RUNNING);
   }
@@ -143,43 +170,77 @@ public class TaskMonitor implements TaskRunner.Listener {
   }
 
   private void resetImageFailure() {
+    imageFailure = null;
+    updateThrottle();
+  }
+
+  /**
+   * Derive a new throttle state and propagate it if needed. If flapping, schedule a future check
+   * to see if we're still flapping and potentially reset the flapping state.
+   */
+  private boolean updateThrottle() {
+
+    // Derive new throttle state
+    final ThrottleState newThrottle;
+    final boolean flapping = flapController.isFlapping();
     if (imageFailure != null) {
-      imageFailure = null;
-      updateThrottle();
+      // Image failures take precedence
+      newThrottle = imageFailure;
+    } else {
+      newThrottle = flapping ? FLAPPING : NO;
     }
+
+    // If the throttle state changed, propagate it
+    final boolean updated;
+    if (!Objects.equals(throttle, newThrottle)) {
+      log.info("throttle state change: {}: {} -> {}", jobId, throttle, newThrottle);
+      throttle = newThrottle;
+      statusUpdater.setThrottleState(throttle);
+      updated = true;
+    } else {
+      updated = false;
+    }
+
+    // If we're flapping, schedule a future check to potentially reset the flapping state
+    if (flapping) {
+      if (flapTimeout != null) {
+        flapTimeout.cancel(false);
+      }
+      flapTimeout = scheduler.schedule(new UpdateThrottle(),
+                                       flapController.millisLeftToUnflap(), MILLISECONDS);
+    }
+
+    // Let the caller know if they need to commit the state change
+    return updated;
   }
 
-  private void updateThrottle() {
-    statusUpdater.setThrottleState(throttle());
-  }
-
+  /**
+   * Propagate a new task state by setting it and committing the status update.
+   */
   private void updateState(final TaskStatus.State state) {
     statusUpdater.setState(state);
+    // Commit and push a new status
     try {
       statusUpdater.update();
     } catch (InterruptedException e) {
-      // TODO: propagate instead?
+      // TODO: propagate interrupt instead?
       Thread.currentThread().interrupt();
     }
   }
 
-  public ThrottleState throttle() {
-    if (imageFailure != null) {
-      // Image failures take precedence
-      return imageFailure;
-    } else {
-      return flapController.isFlapping() ? FLAPPING : NO;
-    }
-  }
-
+  /**
+   * Used to schedule flapping state updates while task is running.
+   * @see #updateThrottle()
+   */
   private class UpdateThrottle implements Runnable {
 
     @Override
     public void run() {
-      updateThrottle();
-      try {
-        statusUpdater.update();
-      } catch (InterruptedException ignore) {
+      if (updateThrottle()) {
+        try {
+          statusUpdater.update();
+        } catch (InterruptedException ignore) {
+        }
       }
     }
   }

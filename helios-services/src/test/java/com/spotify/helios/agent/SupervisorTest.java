@@ -156,7 +156,7 @@ public class SupervisorTest {
         .setPorts(PORTS);
 
     final StatusUpdater statusUpdater = new DefaultStatusUpdater(model, taskStatus);
-    final TaskMonitor monitor = new TaskMonitor(FlapController.create(), statusUpdater);
+    final TaskMonitor monitor = new TaskMonitor(JOB.getId(), FlapController.create(), statusUpdater);
 
     final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
         .registrar(registrar)

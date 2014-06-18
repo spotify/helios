@@ -110,7 +110,7 @@ public class Supervisor {
   }
 
   /**
-   * Close this job. The actual container is left as-is.
+   * Close this supervisor. The actual container is left as-is.
    */
   public void close() {
     reactor.stopAsync();
@@ -118,6 +118,7 @@ public class Supervisor {
       runner.stopAsync();
     }
     metrics.supervisorClosed();
+    monitor.close();
   }
 
   /**

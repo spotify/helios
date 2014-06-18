@@ -84,7 +84,7 @@ public class SupervisorFactory {
         .setPorts(taskConfig.ports());
     final StatusUpdater statusUpdater = new DefaultStatusUpdater(model, taskStatus);
     final FlapController flapController = FlapController.create();
-    final TaskMonitor taskMonitor = new TaskMonitor(flapController, statusUpdater);
+    final TaskMonitor taskMonitor = new TaskMonitor(job.getId(), flapController, statusUpdater);
 
     final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
         .config(taskConfig)
