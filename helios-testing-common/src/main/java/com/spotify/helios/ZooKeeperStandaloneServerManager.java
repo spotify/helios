@@ -32,26 +32,21 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
-import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.spotify.helios.ChildProcesses.spawn;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 
 public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
-
-  private static final Logger log = LoggerFactory.getLogger(ZooKeeperStandaloneServerManager.class);
 
   public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
@@ -126,46 +121,11 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   @Override
   public void start() {
     try {
-      final String classpath = System.getProperty("java.class.path");
-      final String java = System.getProperty("java.home") + "/bin/java";
-      final String main = Worker.class.getName();
-      final String pid = String.valueOf(pid());
-      final ProcessBuilder builder = new ProcessBuilder().command(java, "-cp", classpath,
-                                                                  "-Xms64m", "-Xmx64m",
-                                                                  "-XX:+TieredCompilation",
-                                                                  "-XX:TieredStopAtLevel=1",
-                                                                  main,
-                                                                  pid,
-                                                                  dataDir.toString(),
-                                                                  String.valueOf(port));
-      serverProcess = builder.start();
-      Executors.newSingleThreadExecutor().execute(new Runnable() {
-        @Override
-        public void run() {
-          while (true) {
-            try {
-              final int exitCode = serverProcess.waitFor();
-              if (exitCode != 0) {
-                log.warn("zookeeper exited: " + exitCode);
-              } else {
-                log.info("zookeeper exited: 0");
-              }
-              return;
-            } catch (InterruptedException ignored) {
-            }
-          }
-        }
-      });
+      serverProcess = spawn(ServerProcess.class, dataDir.toString(), String.valueOf(port));
       awaitUp(5, MINUTES);
     } catch (IOException | TimeoutException e) {
       Throwables.propagate(e);
     }
-  }
-
-  private int pid() {
-    final String name = ManagementFactory.getRuntimeMXBean().getName();
-    final String[] parts = name.split("@");
-    return Integer.valueOf(parts[0]);
   }
 
   @Override
@@ -195,42 +155,25 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
     FileUtils.deleteQuietly(dataDir);
   }
 
-  public static class Worker {
+  public static class ServerProcess extends ChildProcesses.Child {
 
-    @SuppressWarnings("UseOfSystemOutOrSystemErr")
     public static void main(String[] args) throws Exception {
       if (args.length != 3) {
         System.err.println("invalid arguments: " + Arrays.toString(args));
         System.exit(2);
         return;
       }
-      final int parent = Integer.valueOf(args[0]);
+      new ServerProcess().run(args);
+    }
+
+    @Override
+    protected void start(final String[] args) throws IOException, InterruptedException {
       final File dataDir = new File(args[1]);
       final int port = Integer.valueOf(args[2]);
-      try {
-        run(dataDir, port);
-        wait(parent);
-        System.exit(0);
-      } catch (InterruptedException e) {
-        System.exit(0);
-      } catch (Exception e) {
-        e.printStackTrace();
-        System.exit(1);
-      }
+      start(dataDir, port);
     }
 
-    private static void wait(final int pid) throws InterruptedException, IOException {
-      while (true) {
-        Thread.sleep(200);
-        final String[] cmd = {"ps", "-p", String.valueOf(pid)};
-        final int exitCode = Runtime.getRuntime().exec(cmd).waitFor();
-        if (exitCode == 1) {
-          return;
-        }
-      }
-    }
-
-    private static void run(final File dataDir, final int port)
+    private void start(final File dataDir, final int port)
         throws IOException, InterruptedException {
       final ZooKeeperServer server = new ZooKeeperServer();
       server.setTxnLogFactory(new FileTxnSnapLog(dataDir, dataDir));

@@ -74,7 +74,7 @@ public class AgentStateDirConflictTest {
   }
 
   @After
-  public void teardown() {
+  public void teardown() throws Exception {
     FileUtils.deleteQuietly(stateDir.toFile());
     stopQuietly(first);
     stopQuietly(second);
