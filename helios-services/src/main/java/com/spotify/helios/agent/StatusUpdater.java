@@ -21,10 +21,19 @@
 
 package com.spotify.helios.agent;
 
+import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.ThrottleState;
 
 public interface StatusUpdater {
-  void setStatus(final TaskStatus.State status) throws InterruptedException;
-  void setStatus(final TaskStatus.State status, final String containerId)
-      throws InterruptedException;
+
+  void setThrottleState(ThrottleState throttleState);
+
+  void setContainerId(String containerId);
+
+  void setState(final TaskStatus.State status);
+
+  void setGoal(Goal goal);
+
+  void update() throws InterruptedException;
 }

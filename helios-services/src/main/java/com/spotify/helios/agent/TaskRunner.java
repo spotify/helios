@@ -21,18 +21,13 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 
 import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
-import com.spotify.docker.client.DockerTimeoutException;
 import com.spotify.docker.client.ImageNotFoundException;
-import com.spotify.docker.client.ImagePullFailedException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
@@ -40,153 +35,83 @@ import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.helios.common.HeliosRuntimeException;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.common.descriptors.ServiceEndpoint;
-import com.spotify.helios.common.descriptors.ServicePorts;
-import com.spotify.helios.common.descriptors.ThrottleState;
+import com.spotify.helios.serviceregistration.NopServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
-import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.serviceregistration.ServiceRegistrationHandle;
 import com.spotify.helios.servicescommon.InterruptingExecutionThreadService;
-import com.spotify.helios.servicescommon.statistics.MetricsContext;
-import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.concurrent.Callable;
-import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadPoolExecutor;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static com.google.common.util.concurrent.MoreExecutors.getExitingExecutorService;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
-import static java.util.concurrent.TimeUnit.SECONDS;
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A runner service that starts a container once.
  */
 class TaskRunner extends InterruptingExecutionThreadService {
+
   private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
 
-  private final ListeningExecutorService executorService =
-      MoreExecutors.listeningDecorator(getExitingExecutorService(
-          (ThreadPoolExecutor) Executors.newCachedThreadPool(), 0, SECONDS));
-
   private final long delayMillis;
-  private final SettableFuture<Integer> resultFuture = SettableFuture.create();
-  private final ServiceRegistrar registrar;
-  private final Job job;
-  private final TaskConfig taskConfig;
-  private final SupervisorMetrics metrics;
+  private final SettableFuture<Integer> result = SettableFuture.create();
+  private final TaskConfig config;
   private final DockerClient docker;
-  private final FlapController flapController;
-  private final AtomicReference<ThrottleState> throttle;
-  private final StatusUpdater statusUpdater;
   private final String existingContainerId;
+  private final Listener listener;
+  private final ServiceRegistrar registrar;
 
-  private ListenableFuture<Void> startFuture;
-
-  public TaskRunner(final long delayMillis,
-                    final ServiceRegistrar registrar,
-                    final Job job,
-                    final TaskConfig taskConfig,
-                    final SupervisorMetrics metrics,
-                    final DockerClient docker,
-                    final FlapController flapController,
-                    final AtomicReference<ThrottleState> throttle,
-                    final StatusUpdater statusUpdater,
-                    final String existingContainerId) {
-    super("TaskRunner(" + job.toString() + ")");
-    this.delayMillis = delayMillis;
-    this.registrar = registrar;
-    this.job = job;
-    this.taskConfig = taskConfig;
-    this.metrics = metrics;
-    this.docker = docker;
-    this.flapController = flapController;
-    this.throttle = throttle;
-    this.statusUpdater = statusUpdater;
-    this.existingContainerId = existingContainerId;
+  private TaskRunner(final Builder builder) {
+    super("TaskRunner(" + builder.taskConfig.name() + ")");
+    this.delayMillis = builder.delayMillis;
+    this.config = checkNotNull(builder.taskConfig, "config");
+    this.docker = checkNotNull(builder.docker, "docker");
+    this.listener = checkNotNull(builder.listener, "listener");
+    this.existingContainerId = builder.existingContainerId;
+    this.registrar = checkNotNull(builder.registrar, "registrar");
   }
 
-  @SuppressWarnings("TryWithIdenticalCatches")
+  public Result<Integer> result() {
+    return Result.of(result);
+  }
+
+  public ListenableFuture<Integer> resultFuture() {
+    return result;
+  }
+
   @Override
-  public void run() {
+  protected void run() {
     try {
-      metrics.supervisorRun();
-
-      // Delay
-      Thread.sleep(delayMillis);
-
-      // Create and start container if necessary
-      final String containerId = createAndStartContainer();
-      statusUpdater.setStatus(RUNNING);
-
-      // Report
-      metrics.containersRunning();
-
-      // Wait for container to die
-      flapController.jobStarted();
-      final ServiceRegistrationHandle registrationHandle =
-          serviceRegister(taskConfig.ports());
-      final int exitCode;
-      try {
-        exitCode = flapController.waitFuture(waitContainer(containerId)).statusCode();
-      } finally {
-        serviceDeregister(registrationHandle);
-      }
-      log.info("container exited: {}: {}: {}", job, containerId, exitCode);
-      flapController.jobDied();
-      throttle.set(flapController.isFlapping() ? ThrottleState.FLAPPING : ThrottleState.NO);
-      statusUpdater.setStatus(EXITED);
-      metrics.containersExited();
-      resultFuture.set(exitCode);
-    } catch (DockerTimeoutException e) {
-      metrics.dockerTimeout();
-      resultFuture.setException(e);
-    } catch (InterruptedException e) {
-      resultFuture.setException(e);
-    } catch (Throwable e) {
-      // Keep separate catch clauses to simplify setting breakpoints on actual errors
-      metrics.containersThrewException();
-      resultFuture.setException(e);
-    } finally {
-      if (!resultFuture.isDone()) {
-        log.error("result future not set!");
-        resultFuture.setException(new Exception("result future not set!"));
-      }
+      final int exitCode = run0();
+      result.set(exitCode);
+    } catch (Exception e) {
+      listener.failed(e);
+      result.setException(e);
     }
   }
 
-  private ListenableFuture<ContainerExit> waitContainer(final String containerId) {
-    return executorService.submit(new Callable<ContainerExit>() {
-      @Override
-      public ContainerExit call() throws Exception {
-        return docker.waitContainer(containerId);
-      }
-    });
-  }
+  private int run0() throws InterruptedException, DockerException, ExecutionException {
+    // Delay
+    Thread.sleep(delayMillis);
 
-  private ListenableFuture<Void> startContainer(final String containerId,
-                                                final HostConfig hostConfig) {
-    return executorService.submit(new Callable<Void>() {
-      @Override
-      public Void call() throws Exception {
-        docker.startContainer(containerId, hostConfig);
-        return null;
-      }
-    });
+    // Create and start container if necessary
+    final String containerId = createAndStartContainer();
+    listener.running();
+
+    // Register and wait for container to exit
+    final ServiceRegistrationHandle handle = registrar.register(config.registration());
+    final ContainerExit exit;
+    try {
+      exit = docker.waitContainer(containerId);
+    } finally {
+      registrar.unregister(handle);
+    }
+
+    log.info("container exited: {}: {}: {}", config, containerId, exit.statusCode());
+    listener.exited(exit.statusCode());
+
+    return exit.statusCode();
   }
 
   private String createAndStartContainer()
@@ -199,91 +124,37 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
 
     // Ensure we have the image
-    final String image = job.getImage();
-    try {
-      pullImage(image);
-    } catch (ImagePullFailedException e) {
-      throttle.set(ThrottleState.IMAGE_PULL_FAILED);
-      statusUpdater.setStatus(FAILED);
-      throw e;
-    } catch (ImageNotFoundException e) {
-      throttle.set(ThrottleState.IMAGE_MISSING);
-      statusUpdater.setStatus(FAILED);
-      throw e;
-    }
+    final String image = config.containerImage();
+    pullImage(image);
 
     return startContainer(image);
   }
 
-  public ListenableFuture<Integer> result() {
-    return resultFuture;
-  }
-
-  private ServiceRegistrationHandle serviceRegister(Map<String, PortMapping> ports)
-      throws InterruptedException {
-    if (registrar == null) {
-      return null;
-    }
-
-    final ServiceRegistration.Builder builder = ServiceRegistration.newBuilder();
-
-    for (final Entry<ServiceEndpoint, ServicePorts> entry :
-        job.getRegistration().entrySet()) {
-      final ServiceEndpoint registration = entry.getKey();
-      final ServicePorts servicePorts = entry.getValue();
-      for (String portName : servicePorts.getPorts().keySet()) {
-        final PortMapping mapping = ports.get(portName);
-        if (mapping == null) {
-          log.error("no '{}' port mapped for registration: '{}'", portName, registration);
-          continue;
-        }
-        final Integer externalPort = mapping.getExternalPort();
-        if (externalPort == null) {
-          log.error("no external '{}' port for registration: '{}'", portName, registration);
-          continue;
-        }
-        builder.endpoint(registration.getName(), registration.getProtocol(), externalPort);
-      }
-    }
-
-    return registrar.register(builder.build());
-  }
-
-  private void serviceDeregister(final ServiceRegistrationHandle handle) {
-    if (registrar == null) {
-      return;
-    }
-
-    registrar.unregister(handle);
-  }
-
   private String startContainer(final String image)
       throws InterruptedException, DockerException {
-    statusUpdater.setStatus(CREATING, null);
 
+    // Get container image info
     final ImageInfo imageInfo = docker.inspectImage(image);
     if (imageInfo == null) {
       throw new HeliosRuntimeException("docker inspect image returned null on image " + image);
     }
 
     // Create container
-    final ContainerConfig containerConfig = taskConfig.containerConfig(imageInfo);
-    final String name = taskConfig.containerName();
+    final ContainerConfig containerConfig = config.containerConfig(imageInfo);
+    final String name = config.containerName();
+    listener.creating();
     final ContainerCreation container = docker.createContainer(containerConfig, name);
-    log.info("created container: {}: {}, {}", job, container, containerConfig);
+    log.info("created container: {}: {}, {}", config, container, containerConfig);
+    listener.created(container.id());
 
     // Start container
-    final HostConfig hostConfig = taskConfig.hostConfig();
-    statusUpdater.setStatus(STARTING, container.id());
-    log.info("starting container: {}: {} {}", job, container.id(), hostConfig);
-    startFuture = startContainer(container.id(), hostConfig);
-    try {
-      startFuture.get();
-    } catch (ExecutionException e) {
-      throw Throwables.propagate(e.getCause());
-    }
-    log.info("started container: {}: {}", job, container.id());
-    metrics.containerStarted();
+    final HostConfig hostConfig = config.hostConfig();
+    log.info("starting container: {}: {} {}", config, container.id(), hostConfig);
+    listener.starting();
+    docker.startContainer(container.id(), hostConfig);
+    log.info("started container: {}: {}", config, container.id());
+    listener.started();
+
     return container.id();
   }
 
@@ -292,7 +163,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     if (existingContainerId == null) {
       return null;
     }
-    log.info("inspecting container: {}: {}", job, existingContainerId);
+    log.info("inspecting container: {}: {}", config, existingContainerId);
     try {
       return docker.inspectContainer(existingContainerId);
     } catch (ContainerNotFoundException e) {
@@ -303,32 +174,124 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private void pullImage(final String image) throws DockerException, InterruptedException {
     try {
       docker.inspectImage(image);
-      metrics.imageCacheHit();
       return;
     } catch (ImageNotFoundException ignore) {
-      metrics.imageCacheMiss();
     }
-    final MetricsContext metric = metrics.containerPull();
-    try {
-      statusUpdater.setStatus(PULLING_IMAGE);
-      docker.pull(image);
-      metric.success();
-    } catch (DockerException e) {
-      metric.failure();
-      throw e;
+    listener.pulling();
+    docker.pull(image);
+  }
+
+  public static interface Listener {
+
+    void failed(Throwable t);
+
+    void pulling();
+
+    void creating();
+
+    void created(String containerId);
+
+    void starting();
+
+    void started();
+
+    void running();
+
+    void exited(int code);
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+
+
+    private Builder() {
+    }
+
+    private long delayMillis;
+    private TaskConfig taskConfig;
+    private DockerClient docker;
+    private String existingContainerId;
+    private Listener listener;
+    public ServiceRegistrar registrar = new NopServiceRegistrar();
+
+    public Builder delayMillis(final long delayMillis) {
+      this.delayMillis = delayMillis;
+      return this;
+    }
+
+    public Builder config(final TaskConfig config) {
+      this.taskConfig = config;
+      return this;
+    }
+
+    public Builder docker(final DockerClient docker) {
+      this.docker = docker;
+      return this;
+    }
+
+    public Builder existingContainerId(final String existingContainerId) {
+      this.existingContainerId = existingContainerId;
+      return this;
+    }
+
+    public Builder listener(final Listener listener) {
+      this.listener = listener;
+      return this;
+    }
+
+    public Builder registrar(final ServiceRegistrar registrar) {
+      this.registrar = registrar;
+      return this;
+    }
+
+    public TaskRunner build() {
+      return new TaskRunner(this);
     }
   }
 
-  @Override
-  protected void shutDown() throws Exception {
-    // Wait for eventual outstanding start request to finish
-    final ListenableFuture<Void> future = startFuture;
-    if (future != null) {
-      try {
-        future.get();
-      } catch (ExecutionException | CancellationException e) {
-        log.debug("exception from docker start request", e);
-      }
+  public static class NopListener implements Listener {
+
+    @Override
+    public void failed(final Throwable t) {
+
+    }
+
+    @Override
+    public void pulling() {
+
+    }
+
+    @Override
+    public void creating() {
+
+    }
+
+    @Override
+    public void created(final String containerId) {
+
+    }
+
+    @Override
+    public void starting() {
+
+    }
+
+    @Override
+    public void started() {
+
+    }
+
+    @Override
+    public void running() {
+
+    }
+
+    @Override
+    public void exited(final int code) {
+
     }
   }
 }

@@ -21,48 +21,54 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Supplier;
-
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 
-import java.util.concurrent.atomic.AtomicReference;
-
 public class DefaultStatusUpdater implements StatusUpdater {
 
-  private final TaskConfig taskConfig;
-  private final AtomicReference<ThrottleState> throttle;
-  private final AtomicReference<Goal> goal;
-  private final TaskStatusManager statusManager;
-  private final Supplier<String> containerIdSupplier;
+  private final TaskStatus.Builder builder;
 
-  public DefaultStatusUpdater(final AtomicReference<Goal> goal,
-                              final AtomicReference<ThrottleState> throttle,
-                              final TaskConfig taskConfig,
-                              final TaskStatusManager statusManager,
-                              final Supplier<String> containerIdSupplier) {
+  private Goal goal;
+  private String containerId;
+  private ThrottleState throttleState = ThrottleState.NO;
+  private AgentModel model;
+  private TaskStatus.State state;
+
+  public DefaultStatusUpdater(final AgentModel model,
+                              final TaskStatus.Builder builder) {
+    this.model = model;
+    this.builder = builder;
+  }
+
+  @Override
+  public void setThrottleState(final ThrottleState throttleState) {
+    this.throttleState = throttleState;
+  }
+
+  @Override
+  public void setContainerId(final String containerId) {
+    this.containerId = containerId;
+  }
+
+  @Override
+  public void setGoal(final Goal goal) {
     this.goal = goal;
-    this.throttle = throttle;
-    this.taskConfig = taskConfig;
-    this.statusManager = statusManager;
-    this.containerIdSupplier = containerIdSupplier;
-  }
-
-  /**
-   * Persist job status with port mapping.
-   */
-  @Override
-  public void setStatus(final TaskStatus.State status) throws InterruptedException {
-    setStatus(status, containerIdSupplier.get());
   }
 
   @Override
-  public void setStatus(final TaskStatus.State status, final String containerId)
-      throws InterruptedException {
-    statusManager.setStatus(goal.get(), status, throttle.get(),
-                            containerId, taskConfig.ports(),
-                            taskConfig.containerEnv());
+  public void update() throws InterruptedException {
+    final TaskStatus status = builder
+        .setGoal(goal)
+        .setState(state)
+        .setContainerId(containerId)
+        .setThrottled(throttleState)
+        .build();
+    model.setTaskStatus(status.getJob().getId(), status);
   }
 
+  @Override
+  public void setState(final TaskStatus.State state) {
+    this.state = state;
+  }
 }

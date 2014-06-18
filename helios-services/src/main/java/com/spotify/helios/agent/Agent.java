@@ -31,6 +31,7 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
+import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -47,7 +48,6 @@ import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static com.spotify.helios.servicescommon.Reactor.Callback;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -101,12 +101,11 @@ public class Agent extends AbstractIdleService {
 
   @Override
   protected void startUp() throws Exception {
-    for (final Entry<JobId, Execution> entry : this.executions.get().entrySet()) {
-      final JobId id = entry.getKey();
+    for (final Entry<JobId, Execution> entry : executions.get().entrySet()) {
       final Execution execution = entry.getValue();
       final Job job = execution.getJob();
       if (execution.getPorts() != null) {
-        createSupervisor(id, job, execution.getPorts());
+        createSupervisor(job, execution.getPorts());
       }
     }
     model.addListener(modelListener);
@@ -126,15 +125,15 @@ public class Agent extends AbstractIdleService {
   /**
    * Create a job supervisor.
    *
-   * @param jobId      The name of the job.
-   * @param descriptor The job descriptor.
+   * @param job The job .
    */
-  private Supervisor createSupervisor(final JobId jobId, final Job descriptor,
-                                      final Map<String, Integer> portAllocation) {
-    log.debug("creating job supervisor: name={}, descriptor={}", jobId, descriptor);
-    final Supervisor supervisor = supervisorFactory.create(descriptor, portAllocation,
+  private Supervisor createSupervisor(final Job job, final Map<String, Integer> portAllocation) {
+    log.debug("creating job supervisor: {}", job);
+    final TaskStatus taskStatus = model.getTaskStatus(job.getId());
+    final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
+    final Supervisor supervisor = supervisorFactory.create(job, containerId, portAllocation,
                                                            supervisorListener);
-    supervisors.put(jobId, supervisor);
+    supervisors.put(job.getId(), supervisor);
     return supervisor;
   }
 
@@ -233,7 +232,7 @@ public class Agent extends AbstractIdleService {
       for (final Entry<JobId, Supervisor> entry : ImmutableSet.copyOf(supervisors.entrySet())) {
         final JobId jobId = entry.getKey();
         final Supervisor supervisor = entry.getValue();
-        if (supervisor.isDone() && supervisor.getStatus() == STOPPED) {
+        if (supervisor.isStopping() && supervisor.isDone()) {
           log.debug("releasing stopped supervisor: {}", jobId);
           supervisors.remove(jobId);
           supervisor.close();
@@ -249,7 +248,7 @@ public class Agent extends AbstractIdleService {
         if (supervisor == null &&
             execution.getGoal() == START &&
             execution.getPorts() != null) {
-          createSupervisor(jobId, execution.getJob(), execution.getPorts());
+          createSupervisor(execution.getJob(), execution.getPorts());
         }
       }
 

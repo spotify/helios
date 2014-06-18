@@ -23,6 +23,8 @@ package com.spotify.helios.agent;
 
 import com.spotify.helios.common.descriptors.ThrottleState;
 
+import static java.lang.Math.max;
+
 public class RestartPolicy {
   private static final long DEFAULT_IMAGE_MISSING_THROTTLE_MILLIS = 2 * 60 * 1000; // 2 minutes
   private static final long DEFAULT_FLAPPING_RESTART_THROTTLE_MILLIS = 30 * 1000;  // 30 seconds
@@ -43,11 +45,11 @@ public class RestartPolicy {
     this.imageMissingThrottleMillis = imageMissingThrottleMillis;
   }
 
-  public long getRetryIntervalMillis() {
-    return retryIntervalMillis;
+  public long delay(final ThrottleState throttle) {
+    return max(retryIntervalMillis, delay0(throttle));
   }
 
-  public long restartThrottle(ThrottleState throttle) {
+  private long delay0(final ThrottleState throttle) {
     switch (throttle) {
       case NO:
         return restartIntervalMillis;
