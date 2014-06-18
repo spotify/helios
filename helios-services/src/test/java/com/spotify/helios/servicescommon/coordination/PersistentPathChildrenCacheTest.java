@@ -122,7 +122,7 @@ public class PersistentPathChildrenCacheTest {
 
   private static final String PATH = "/foos";
 
-  private ZooKeeperStandaloneServerManager zk = new ZooKeeperStandaloneServerManager();
+  private ZooKeeperStandaloneServerManager zk;
 
   private PersistentPathChildrenCache<DataPojo> cache;
   private Path directory;
@@ -133,6 +133,7 @@ public class PersistentPathChildrenCacheTest {
 
   @Before
   public void setup() throws Exception {
+    zk = new ZooKeeperStandaloneServerManager();
     zk.ensure("/foos");
     directory = Files.createTempDirectory("helios-test");
     stateFile = directory.resolve("persistent-path-children-cache-test-nodes.json");
@@ -140,7 +141,7 @@ public class PersistentPathChildrenCacheTest {
   }
 
   @After
-  public void teardown() {
+  public void teardown() throws Exception {
     FileUtils.deleteQuietly(directory.toFile());
     zk.close();
   }

@@ -32,13 +32,17 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.junit.Rule;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
@@ -47,16 +51,16 @@ import static org.apache.commons.io.FileUtils.deleteQuietly;
 
 public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
 
-  @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
+  private static final Logger log = LoggerFactory.getLogger(ZooKeeperStandaloneServerManager.class);
+
+  public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
   private final int port = temporaryPorts.localPort("zookeeper");
   private final String endpoint = "127.0.0.1:" + port;
   private final File dataDir;
 
-  private ZooKeeperServer zkServer;
-  private ServerCnxnFactory cnxnFactory;
-
   private CuratorFramework curator;
+  private Process serverProcess;
 
   public ZooKeeperStandaloneServerManager() {
     this.dataDir = Files.createTempDir();
@@ -72,7 +76,7 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   }
 
   @Override
-  public void close() {
+  public void close() throws InterruptedException {
     curator.close();
     stop();
     deleteQuietly(dataDir);
@@ -122,23 +126,52 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   @Override
   public void start() {
     try {
-      zkServer = new ZooKeeperServer();
-      zkServer.setTxnLogFactory(new FileTxnSnapLog(dataDir, dataDir));
-      zkServer.setTickTime(50);
-      zkServer.setMinSessionTimeout(100);
-      cnxnFactory = ServerCnxnFactory.createFactory();
-      cnxnFactory.configure(new InetSocketAddress(port), 0);
-      cnxnFactory.startup(zkServer);
+      final String classpath = System.getProperty("java.class.path");
+      final String java = System.getProperty("java.home") + "/bin/java";
+      final String main = Worker.class.getName();
+      final String pid = String.valueOf(pid());
+      final ProcessBuilder builder = new ProcessBuilder().command(java, "-cp", classpath,
+                                                                  "-Xms64m", "-Xmx64m",
+                                                                  "-XX:+TieredCompilation",
+                                                                  "-XX:TieredStopAtLevel=1",
+                                                                  main,
+                                                                  pid,
+                                                                  dataDir.toString(),
+                                                                  String.valueOf(port));
+      serverProcess = builder.start();
+      Executors.newSingleThreadExecutor().execute(new Runnable() {
+        @Override
+        public void run() {
+          while (true) {
+            try {
+              final int exitCode = serverProcess.waitFor();
+              if (exitCode != 0) {
+                log.warn("zookeeper exited: " + exitCode);
+              } else {
+                log.info("zookeeper exited: 0");
+              }
+              return;
+            } catch (InterruptedException ignored) {
+            }
+          }
+        }
+      });
       awaitUp(5, MINUTES);
-    } catch (Exception e) {
-      throw Throwables.propagate(e);
+    } catch (IOException | TimeoutException e) {
+      Throwables.propagate(e);
     }
   }
 
+  private int pid() {
+    final String name = ManagementFactory.getRuntimeMXBean().getName();
+    final String[] parts = name.split("@");
+    return Integer.valueOf(parts[0]);
+  }
+
   @Override
-  public void stop() {
-    cnxnFactory.shutdown();
-    zkServer.shutdown();
+  public void stop() throws InterruptedException {
+    serverProcess.destroy();
+    serverProcess.waitFor();
   }
 
   public void backup(final Path destination) {
@@ -158,7 +191,54 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
     }
   }
 
-  public void reset()  {
+  public void reset() {
     FileUtils.deleteQuietly(dataDir);
+  }
+
+  public static class Worker {
+
+    @SuppressWarnings("UseOfSystemOutOrSystemErr")
+    public static void main(String[] args) throws Exception {
+      if (args.length != 3) {
+        System.err.println("invalid arguments: " + Arrays.toString(args));
+        System.exit(2);
+        return;
+      }
+      final int parent = Integer.valueOf(args[0]);
+      final File dataDir = new File(args[1]);
+      final int port = Integer.valueOf(args[2]);
+      try {
+        run(dataDir, port);
+        wait(parent);
+        System.exit(0);
+      } catch (InterruptedException e) {
+        System.exit(0);
+      } catch (Exception e) {
+        e.printStackTrace();
+        System.exit(1);
+      }
+    }
+
+    private static void wait(final int pid) throws InterruptedException, IOException {
+      while (true) {
+        Thread.sleep(200);
+        final String[] cmd = {"ps", "-p", String.valueOf(pid)};
+        final int exitCode = Runtime.getRuntime().exec(cmd).waitFor();
+        if (exitCode == 1) {
+          return;
+        }
+      }
+    }
+
+    private static void run(final File dataDir, final int port)
+        throws IOException, InterruptedException {
+      final ZooKeeperServer server = new ZooKeeperServer();
+      server.setTxnLogFactory(new FileTxnSnapLog(dataDir, dataDir));
+      server.setTickTime(50);
+      server.setMinSessionTimeout(100);
+      final ServerCnxnFactory cnxnFactory = ServerCnxnFactory.createFactory();
+      cnxnFactory.configure(new InetSocketAddress(port), 0);
+      cnxnFactory.startup(server);
+    }
   }
 }
