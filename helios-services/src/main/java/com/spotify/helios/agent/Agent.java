@@ -22,6 +22,7 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Predicate;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -179,15 +180,20 @@ public class Agent extends AbstractIdleService {
       //   to die before spawning a new one.
       // * Book-keeping a supervisor of one job should not block processing of other jobs
 
-      // Reap containers
-      final Set<String> active = Sets.newHashSet();
-      for (Supervisor supervisor : supervisors.values()) {
-        final String containerId = supervisor.containerId();
-        if (containerId != null) {
-          active.add(containerId);
+      // Reap unwanted containers
+      reaper.reap(new Supplier<Set<String>>() {
+        @Override
+        public Set<String> get() {
+          final Set<String> active = Sets.newHashSet();
+          for (Supervisor supervisor : supervisors.values()) {
+            final String containerId = supervisor.containerId();
+            if (containerId != null) {
+              active.add(containerId);
+            }
+          }
+          return active;
         }
-      }
-      reaper.reap(active);
+      });
 
       final Map<JobId, Task> tasks = model.getTasks();
 

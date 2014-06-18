@@ -21,6 +21,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
 
 import com.spotify.docker.client.DockerClient;
@@ -45,7 +46,7 @@ public class Reaper {
     this.prefix = "/" + namespace;
   }
 
-  public void reap(final Set<String> active) throws InterruptedException {
+  public void reap(final Supplier<Set<String>> active) throws InterruptedException {
     try {
       reap0(active);
     } catch (DockerException e) {
@@ -53,7 +54,8 @@ public class Reaper {
     }
   }
 
-  private void reap0(final Set<String> active) throws DockerException, InterruptedException {
+  private void reap0(final Supplier<Set<String>> activeSupplier)
+      throws DockerException, InterruptedException {
     final List<String> candidates = Lists.newArrayList();
     final List<Container> containers = docker.listContainers();
     for (Container container : containers) {
@@ -64,6 +66,10 @@ public class Reaper {
       }
     }
 
+    // Get the active set after we've enumerated candidates to ensure that active set is fresh.
+    // If the active set is fetched before enumerating candidates it might be stale and we might
+    // mistakenly classify a container as not being in the active set.
+    final Set<String> active = activeSupplier.get();
     for (final String candidate : candidates) {
       if (!active.contains(candidate)) {
         reap(candidate);
