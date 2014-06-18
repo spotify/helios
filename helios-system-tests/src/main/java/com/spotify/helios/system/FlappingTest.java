@@ -36,6 +36,7 @@ import java.net.Socket;
 import java.util.concurrent.Callable;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
 import static com.spotify.helios.common.descriptors.ThrottleState.NO;
 import static java.util.Arrays.asList;
@@ -63,25 +64,20 @@ public class FlappingTest extends SystemTestBase {
 
     final JobId jobId = createJob(flapper);
     deployJob(jobId, host);
+    awaitTaskState(jobId, host, RUNNING);
 
     // Poke the container to make it exit until it's classified as flapping
     Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         final JobStatus jobStatus = getOrNull(client.jobStatus(jobId));
-        if (jobStatus == null) {
-          return null;
-        }
         final TaskStatus taskStatus = jobStatus.getTaskStatuses().get(host);
-        if (taskStatus == null) {
-          return null;
-        }
         if (taskStatus.getThrottled() == FLAPPING) {
           return true;
         }
-        final Integer port = taskStatus.getPorts().get("poke").getExternalPort();
-        assert port != null;
-        poke(port);
+        final PortMapping port = taskStatus.getPorts().get("poke");
+        assert port.getExternalPort() != null;
+        poke(port.getExternalPort());
         return null;
       }
     });
