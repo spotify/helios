@@ -39,7 +39,10 @@ import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.ThrottleState;
+import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
 
 import org.junit.After;
@@ -96,6 +99,7 @@ public class SupervisorTest {
       .setImage(IMAGE)
       .setVersion(VERSION)
       .build();
+  static final Map<String, PortMapping> PORTS = Collections.emptyMap();
   static final Map<String, String> ENV = ImmutableMap.of("foo", "17",
                                                          "bar", "4711");
   static final Set<String> EXPECTED_CONTAINER_ENV = ImmutableSet.of("foo=17", "bar=4711");
@@ -128,6 +132,7 @@ public class SupervisorTest {
   @Mock public AgentModel model;
   @Mock public DockerClient docker;
   @Mock public RestartPolicy retryPolicy;
+  @Mock public ServiceRegistrar registrar;
 
   @Captor public ArgumentCaptor<ContainerConfig> containerConfigCaptor;
   @Captor public ArgumentCaptor<String> containerNameCaptor;
@@ -137,34 +142,37 @@ public class SupervisorTest {
 
   @Before
   public void setup() throws Exception {
-    when(retryPolicy.getRetryIntervalMillis()).thenReturn(10L);
-    TaskStatusManagerImpl manager = TaskStatusManagerImpl.newBuilder()
-        .setJob(JOB)
-        .setModel(model)
-        .build();
-    final TaskConfig taskConfig = TaskConfig.builder()
+    when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
+
+    final TaskConfig config = TaskConfig.builder()
         .host("AGENT_NAME")
         .job(JOB)
         .envVars(ENV)
         .build();
+
+    final TaskStatus.Builder taskStatus = TaskStatus.newBuilder()
+        .setJob(JOB)
+        .setEnv(ENV)
+        .setPorts(PORTS);
+
+    final StatusUpdater statusUpdater = new DefaultStatusUpdater(model, taskStatus);
+    final TaskMonitor monitor = new TaskMonitor(JOB.getId(), FlapController.create(), statusUpdater);
+
     final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
-        .job(JOB)
-        .taskConfig(taskConfig)
-        .flapController(FlapController.newBuilder()
-                            .setJobId(JOB.getId())
-                            .setTaskStatusManager(manager)
-                            .build())
+        .registrar(registrar)
+        .config(config)
         .dockerClient(docker)
+        .listener(monitor)
         .build();
+
     sut = Supervisor.newBuilder()
         .setJob(JOB)
-        .setModel(model)
+        .setStatusUpdater(statusUpdater)
         .setDockerClient(docker)
         .setRestartPolicy(retryPolicy)
-        .setTaskConfig(taskConfig)
-        .setTaskStatusManager(manager)
         .setRunnerFactory(runnerFactory)
         .setMetrics(new NoopSupervisorMetrics())
+        .setMonitor(monitor)
         .build();
 
     final ConcurrentMap<JobId, TaskStatus> statusMap = Maps.newConcurrentMap();
@@ -230,7 +238,6 @@ public class SupervisorTest {
                                                        .setEnv(ENV)
                                                        .build())
     );
-    assertEquals(CREATING, sut.getStatus());
     createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
     assertEquals(IMAGE, containerConfig.image());
@@ -250,7 +257,6 @@ public class SupervisorTest {
                                                        .setEnv(ENV)
                                                        .build())
     );
-    assertEquals(STARTING, sut.getStatus());
     when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
     startFuture.set(null);
 
@@ -264,7 +270,6 @@ public class SupervisorTest {
                                                        .setEnv(ENV)
                                                        .build())
     );
-    assertEquals(RUNNING, sut.getStatus());
 
     // Stop the job
     final SettableFuture<Void> killFuture = SettableFuture.create();
@@ -293,7 +298,6 @@ public class SupervisorTest {
                                                        .setEnv(ENV)
                                                        .build())
     );
-    assertEquals(STOPPED, sut.getStatus());
   }
 
   private String shortJobIdFromContainerName(final String containerName) {
@@ -344,12 +348,12 @@ public class SupervisorTest {
   public void verifyExceptionSetsTaskStatusToFailed(final Exception exception) throws Exception {
     when(docker.inspectImage(IMAGE)).thenThrow(exception);
 
-    when(retryPolicy.getRetryIntervalMillis()).thenReturn(MINUTES.toMillis(1));
+    when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(MINUTES.toMillis(1));
 
     // Start the job
     sut.setGoal(START);
 
-    verify(retryPolicy, timeout(30000)).getRetryIntervalMillis();
+    verify(retryPolicy, timeout(30000)).delay(any(ThrottleState.class));
 
     assertEquals(taskStatusCaptor.getValue().getState(), FAILED);
   }

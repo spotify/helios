@@ -25,8 +25,6 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.serviceregistration.NopServiceRegistrar;
-import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -34,9 +32,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static com.spotify.helios.common.descriptors.ThrottleState.NO;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -46,7 +42,6 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class TaskRunnerTest {
 
-  private static final long MIN_UNFLAP_TIME = 10L;
   private static final String IMAGE = "spotify:17";
   private static final Job JOB = Job.newBuilder()
       .setName("foobar")
@@ -63,29 +58,16 @@ public class TaskRunnerTest {
 
   @Test
   public void test() throws Throwable {
-    final FlapController flapController = FlapController.newBuilder()
-        .setJobId(JOB.getId())
-        .setRestartCount(1)
-        .setTimeRangeMillis(MIN_UNFLAP_TIME)
-        .setClock(clock)
-        .setTaskStatusManager(new FakeTaskStatusManager())
+    final TaskRunner tr = TaskRunner.builder()
+        .delayMillis(0)
+        .config(TaskConfig.builder()
+                    .host(HOST)
+                    .job(JOB)
+                    .containerDecorator(containerDecorator)
+                    .build())
+        .docker(mockDocker)
+        .listener(new TaskRunner.NopListener())
         .build();
-
-    final TaskRunner tr = new TaskRunner(
-        0,
-        new NopServiceRegistrar(),
-        JOB,
-        TaskConfig.builder()
-            .host(HOST)
-            .job(JOB)
-            .containerDecorator(containerDecorator)
-            .build(),
-        new NoopSupervisorMetrics(),
-        mockDocker,
-        flapController,
-        new AtomicReference<>(NO),
-        statusUpdater,
-        null);
 
     when(mockDocker.inspectImage(IMAGE))
         .thenReturn(new ImageInfo())
@@ -94,7 +76,7 @@ public class TaskRunnerTest {
     tr.run();
 
     try {
-      tr.result().get();
+      tr.resultFuture().get();
       fail("this should throw");
     } catch (Exception t) {
       assertTrue(t instanceof ExecutionException);

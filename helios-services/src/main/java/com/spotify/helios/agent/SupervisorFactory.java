@@ -23,6 +23,7 @@ package com.spotify.helios.agent;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
@@ -65,17 +66,10 @@ public class SupervisorFactory {
    *
    * @return A new container.
    */
-  public Supervisor create(final Job job, final Map<String, Integer> ports,
+  public Supervisor create(final Job job, final String existingContainerId,
+                           final Map<String, Integer> ports,
                            final Supervisor.Listener listener) {
     final RestartPolicy policy = RestartPolicy.newBuilder().build();
-    final TaskStatusManagerImpl manager = TaskStatusManagerImpl.newBuilder()
-        .setJob(job)
-        .setModel(model)
-        .build();
-    final FlapController flapController = FlapController.newBuilder()
-        .setJobId(job.getId())
-        .setTaskStatusManager(manager)
-        .build();
     final TaskConfig taskConfig = TaskConfig.builder()
         .host(host)
         .job(job)
@@ -83,24 +77,32 @@ public class SupervisorFactory {
         .envVars(envVars)
         .containerDecorator(containerDecorator)
         .build();
+
+    final TaskStatus.Builder taskStatus = TaskStatus.newBuilder()
+        .setJob(job)
+        .setEnv(taskConfig.containerEnv())
+        .setPorts(taskConfig.ports());
+    final StatusUpdater statusUpdater = new DefaultStatusUpdater(model, taskStatus);
+    final FlapController flapController = FlapController.create();
+    final TaskMonitor taskMonitor = new TaskMonitor(job.getId(), flapController, statusUpdater);
+
     final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
+        .config(taskConfig)
         .registrar(registrar)
-        .job(job)
-        .taskConfig(taskConfig)
-        .metrics(metrics)
         .dockerClient(dockerClient)
-        .flapController(flapController)
+        .listener(taskMonitor)
         .build();
+
     return Supervisor.newBuilder()
         .setJob(job)
-        .setModel(model)
+        .setExistingContainerId(existingContainerId)
         .setDockerClient(dockerClient)
         .setRestartPolicy(policy)
-        .setTaskStatusManager(manager)
         .setMetrics(metrics)
         .setListener(listener)
-        .setTaskConfig(taskConfig)
         .setRunnerFactory(runnerFactory)
+        .setStatusUpdater(statusUpdater)
+        .setMonitor(taskMonitor)
         .build();
   }
 }
