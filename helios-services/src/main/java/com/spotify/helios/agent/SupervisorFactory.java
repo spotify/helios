@@ -40,6 +40,7 @@ public class SupervisorFactory {
 
   private final AgentModel model;
   private final DockerClient dockerClient;
+  private final String namespace;
   private final Map<String, String> envVars;
   private final ServiceRegistrar registrar;
   private final ContainerDecorator containerDecorator;
@@ -51,8 +52,10 @@ public class SupervisorFactory {
                            final ServiceRegistrar registrar,
                            final ContainerDecorator containerDecorator,
                            final String host,
-                           final SupervisorMetrics supervisorMetrics) {
+                           final SupervisorMetrics supervisorMetrics,
+                           final String namespace) {
     this.dockerClient = dockerClient;
+    this.namespace = namespace;
     this.model = checkNotNull(model);
     this.envVars = checkNotNull(envVars);
     this.registrar = registrar;
@@ -76,6 +79,7 @@ public class SupervisorFactory {
         .ports(ports)
         .envVars(envVars)
         .containerDecorator(containerDecorator)
+        .namespace(namespace)
         .build();
 
     final TaskStatus.Builder taskStatus = TaskStatus.newBuilder()

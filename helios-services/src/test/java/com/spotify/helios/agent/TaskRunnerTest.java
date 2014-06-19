@@ -61,6 +61,7 @@ public class TaskRunnerTest {
     final TaskRunner tr = TaskRunner.builder()
         .delayMillis(0)
         .config(TaskConfig.builder()
+                    .namespace("test")
                     .host(HOST)
                     .job(JOB)
                     .containerDecorator(containerDecorator)

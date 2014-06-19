@@ -74,7 +74,9 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -87,6 +89,7 @@ public class SupervisorTest {
 
   final ExecutorService executor = Executors.newCachedThreadPool();
 
+  static final String NAMESPACE = "helios-deadbeef";
   static final String REPOSITORY = "spotify";
   static final String TAG = "17";
   static final String IMAGE = REPOSITORY + ":" + TAG;
@@ -145,6 +148,7 @@ public class SupervisorTest {
     when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
 
     final TaskConfig config = TaskConfig.builder()
+        .namespace(NAMESPACE)
         .host("AGENT_NAME")
         .job(JOB)
         .envVars(ENV)
@@ -301,8 +305,10 @@ public class SupervisorTest {
   }
 
   private String shortJobIdFromContainerName(final String containerName) {
-    final int lastUnderscore = containerName.lastIndexOf('_');
-    return containerName.substring(0, lastUnderscore).replace('_', ':');
+    assertThat(containerName, startsWith(NAMESPACE + "-"));
+    final String name = containerName.substring(NAMESPACE.length() + 1);
+    final int lastUnderscore = name.lastIndexOf('_');
+    return name.substring(0, lastUnderscore).replace('_', ':');
   }
 
   @Test

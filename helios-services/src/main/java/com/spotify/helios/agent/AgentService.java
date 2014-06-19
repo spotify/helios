@@ -217,6 +217,8 @@ public class AgentService extends AbstractIdleService {
                                                                        config.getEnvVars(),
                                                                        nodeUpdaterFactory);
 
+    final String namespace = "helios-" + id;
+
     final SupervisorFactory supervisorFactory = new SupervisorFactory(
         model, monitoredDockerClient,
         config.getEnvVars(), serviceRegistrar,
@@ -224,8 +226,8 @@ public class AgentService extends AbstractIdleService {
         ? new SyslogRedirectingContainerDecorator(config.getRedirectToSyslog())
         : new NoOpContainerDecorator(),
         config.getName(),
-        metrics.getSupervisorMetrics()
-    );
+        metrics.getSupervisorMetrics(),
+        namespace);
 
     final ReactorFactory reactorFactory = new ReactorFactory();
 
@@ -241,7 +243,9 @@ public class AgentService extends AbstractIdleService {
       throw Throwables.propagate(e);
     }
 
-    this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator);
+    final Reaper reaper = new Reaper(dockerClient, namespace);
+    this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator,
+                           reaper);
 
     final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
                                                                               Paths.statusHosts(),
