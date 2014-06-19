@@ -36,7 +36,7 @@ public interface ZooKeeperTestManager {
   /**
    * Stop zookeeper.
    */
-  void stop();
+  void stop() throws InterruptedException;
 
   /**
    * Ensure a path.
@@ -46,7 +46,7 @@ public interface ZooKeeperTestManager {
   /**
    * Tear down zookeeper.
    */
-  void close();
+  void close() throws InterruptedException;
 
   /**
    * Get a connection string for this zk cluster.

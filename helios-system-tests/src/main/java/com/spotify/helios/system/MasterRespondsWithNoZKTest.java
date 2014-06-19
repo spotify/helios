@@ -39,7 +39,7 @@ import static org.junit.Assert.fail;
 public class MasterRespondsWithNoZKTest extends SystemTestBase {
 
   @Before
-  public void setup() {
+  public void setup() throws InterruptedException {
     zk().stop();
   }
 

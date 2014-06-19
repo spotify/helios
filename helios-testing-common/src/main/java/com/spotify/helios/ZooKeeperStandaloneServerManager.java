@@ -32,31 +32,30 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
 import org.apache.zookeeper.server.persistence.FileTxnSnapLog;
-import org.junit.Rule;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.spotify.helios.ChildProcesses.spawn;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 
 public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
 
-  @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
+  public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
   private final int port = temporaryPorts.localPort("zookeeper");
   private final String endpoint = "127.0.0.1:" + port;
   private final File dataDir;
 
-  private ZooKeeperServer zkServer;
-  private ServerCnxnFactory cnxnFactory;
-
   private CuratorFramework curator;
+  private Process serverProcess;
 
   public ZooKeeperStandaloneServerManager() {
     this.dataDir = Files.createTempDir();
@@ -72,7 +71,7 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   }
 
   @Override
-  public void close() {
+  public void close() throws InterruptedException {
     curator.close();
     stop();
     deleteQuietly(dataDir);
@@ -122,23 +121,17 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   @Override
   public void start() {
     try {
-      zkServer = new ZooKeeperServer();
-      zkServer.setTxnLogFactory(new FileTxnSnapLog(dataDir, dataDir));
-      zkServer.setTickTime(50);
-      zkServer.setMinSessionTimeout(100);
-      cnxnFactory = ServerCnxnFactory.createFactory();
-      cnxnFactory.configure(new InetSocketAddress(port), 0);
-      cnxnFactory.startup(zkServer);
+      serverProcess = spawn(ServerProcess.class, dataDir.toString(), String.valueOf(port));
       awaitUp(5, MINUTES);
-    } catch (Exception e) {
-      throw Throwables.propagate(e);
+    } catch (IOException | TimeoutException e) {
+      Throwables.propagate(e);
     }
   }
 
   @Override
-  public void stop() {
-    cnxnFactory.shutdown();
-    zkServer.shutdown();
+  public void stop() throws InterruptedException {
+    serverProcess.destroy();
+    serverProcess.waitFor();
   }
 
   public void backup(final Path destination) {
@@ -158,7 +151,37 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
     }
   }
 
-  public void reset()  {
+  public void reset() {
     FileUtils.deleteQuietly(dataDir);
+  }
+
+  public static class ServerProcess extends ChildProcesses.Child {
+
+    public static void main(String[] args) throws Exception {
+      if (args.length != 3) {
+        System.err.println("invalid arguments: " + Arrays.toString(args));
+        System.exit(2);
+        return;
+      }
+      new ServerProcess().run(args);
+    }
+
+    @Override
+    protected void start(final String[] args) throws IOException, InterruptedException {
+      final File dataDir = new File(args[1]);
+      final int port = Integer.valueOf(args[2]);
+      start(dataDir, port);
+    }
+
+    private void start(final File dataDir, final int port)
+        throws IOException, InterruptedException {
+      final ZooKeeperServer server = new ZooKeeperServer();
+      server.setTxnLogFactory(new FileTxnSnapLog(dataDir, dataDir));
+      server.setTickTime(50);
+      server.setMinSessionTimeout(100);
+      final ServerCnxnFactory cnxnFactory = ServerCnxnFactory.createFactory();
+      cnxnFactory.configure(new InetSocketAddress(port), 0);
+      cnxnFactory.startup(server);
+    }
   }
 }
