@@ -240,6 +240,7 @@ public class TemporaryJobsTest extends SystemTestBase {
         .prober(new TestProber())
         .build();
 
+    @SuppressWarnings("unused")
     private TemporaryJob job2 = temporaryJobs.job()
         .image("base")
         .deploy(testHost);
