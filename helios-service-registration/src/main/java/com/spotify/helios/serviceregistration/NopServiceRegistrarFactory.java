@@ -25,14 +25,8 @@ package com.spotify.helios.serviceregistration;
  * A factory for nop service registrars.
  */
 public class NopServiceRegistrarFactory implements ServiceRegistrarFactory {
-
   @Override
-  public ServiceRegistrar create(final String address) {
-    return new NopServiceRegistrar();
-  }
-
-  @Override
-  public ServiceRegistrar createForDomain(final String domain) {
+  public NopServiceRegistrar create(String address, String domain, String thisHostName) {
     return new NopServiceRegistrar();
   }
 }

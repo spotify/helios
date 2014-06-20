@@ -21,6 +21,8 @@
 
 package com.spotify.helios.serviceregistration;
 
+import com.google.common.base.Objects;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,6 +86,15 @@ public class ServiceRegistration {
 
     public int getPort() {
       return port;
+    }
+
+    @Override
+    public String toString() {
+      return Objects.toStringHelper(Endpoint.class)
+          .add("name", name)
+          .add("protocol", protocol)
+          .add("port", port)
+          .toString();
     }
   }
 }
