@@ -146,7 +146,7 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
 
   public interface Listener {
 
-    void nodesChanged(PersistentPathChildrenCache cache);
+    void nodesChanged(PersistentPathChildrenCache<?> cache);
 
     void connectionStateChanged(ConnectionState state);
   }

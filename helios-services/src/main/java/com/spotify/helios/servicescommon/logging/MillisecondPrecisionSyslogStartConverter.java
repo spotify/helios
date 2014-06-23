@@ -84,7 +84,7 @@ public class MillisecondPrecisionSyslogStartConverter extends SyslogStartConvert
     sb.append("<");
     sb.append(pri);
     sb.append(">");
-    sb.append(computeTimeStampString(event.getTimeStamp()));
+    sb.append(getTimeStampString(event.getTimeStamp()));
     sb.append(' ');
     sb.append(localHostName);
     sb.append(' ');
@@ -92,7 +92,7 @@ public class MillisecondPrecisionSyslogStartConverter extends SyslogStartConvert
     return sb.toString();
   }
 
-  String computeTimeStampString(final long now) {
+  String getTimeStampString(final long now) {
     synchronized (this) {
       if (now != lastTimestamp) {
         lastTimestamp = now;

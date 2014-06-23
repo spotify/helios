@@ -120,7 +120,6 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     final Map<JobId, Task> tasks = Maps.newHashMap();
     for (Map.Entry<String, Task> entry : this.tasks.getNodes().entrySet()) {
       final JobId id = jobIdFromTaskPath(entry.getKey());
-      final Task task = entry.getValue();
       tasks.put(id, entry.getValue());
     }
     return tasks;
@@ -197,7 +196,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private class JobsListener implements PersistentPathChildrenCache.Listener {
 
     @Override
-    public void nodesChanged(final PersistentPathChildrenCache cache) {
+    public void nodesChanged(final PersistentPathChildrenCache<?> cache) {
       fireTasksUpdated();
     }
 

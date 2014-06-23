@@ -116,7 +116,8 @@ public class JobStatusCommand extends ControlCommand {
       // Merge hosts without any status into the set of hosts with a reported task status
       final Map<String, TaskStatus> taskStatuses = Maps.newTreeMap();
       taskStatuses.putAll(jobStatus.getTaskStatuses());
-      for (final String host : jobStatus.getDeployedHosts()) {
+
+      for (final String host : jobStatus.getDeployments().keySet()) {
         if (!taskStatuses.containsKey(host)) {
           taskStatuses.put(host, null);
         }

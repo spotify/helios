@@ -46,7 +46,7 @@ public class MillisecondPrecisionSyslogAppender extends SyslogAppender {
     setupStackTraceLayout();
   }
 
-  String getPrefixPattern() {
+  String getLogMsgPrefixPattern() {
     return "%syslogStart{" + getFacility() + "}%nopex{}";
   }
 
@@ -105,7 +105,7 @@ public class MillisecondPrecisionSyslogAppender extends SyslogAppender {
     if (suffixPattern == null) {
       suffixPattern = DEFAULT_SUFFIX_PATTERN;
     }
-    layout.setPattern(getPrefixPattern() + suffixPattern);
+    layout.setPattern(getLogMsgPrefixPattern() + suffixPattern);
     layout.setContext(getContext());
     layout.start();
     return layout;
@@ -115,7 +115,7 @@ public class MillisecondPrecisionSyslogAppender extends SyslogAppender {
     stackTraceLayout.getInstanceConverterMap().put(
         "syslogStart", MillisecondPrecisionSyslogStartConverter.class.getName());
 
-    stackTraceLayout.setPattern(getPrefixPattern() + getStackTracePattern());
+    stackTraceLayout.setPattern(getLogMsgPrefixPattern() + getStackTracePattern());
     stackTraceLayout.setContext(getContext());
     stackTraceLayout.start();
   }
