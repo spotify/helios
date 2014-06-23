@@ -83,7 +83,7 @@ public class ServiceParser {
         .help("Service registration domain.");
 
     serviceRegistryArg = parser.addArgument("--service-registry")
-        .help("Service registry address. Overrides domain.");
+        .help("Service registry address.");
 
     serviceRegistrarPluginArg = parser.addArgument("--service-registrar-plugin")
         .type(fileType().verifyExists().verifyCanRead())

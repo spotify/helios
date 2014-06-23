@@ -191,7 +191,8 @@ public class AgentService extends AbstractIdleService {
     // Set up service registrar
     this.serviceRegistrar = createServiceRegistrar(config.getServiceRegistrarPlugin(),
                                                    config.getServiceRegistryAddress(),
-                                                   config.getDomain());
+                                                   config.getDomain(),
+                                                   config.getName());
 
     final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =
         new ZooKeeperNodeUpdaterFactory(zooKeeperClient);

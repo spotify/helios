@@ -43,7 +43,8 @@ public class ServiceRegistrars {
    */
   public static ServiceRegistrar createServiceRegistrar(final Path path,
                                                         final String address,
-                                                        final String domain) {
+                                                        final String domain,
+                                                        final String name) {
     // Get a registrar factory
     final ServiceRegistrarFactory factory;
     if (path == null) {
@@ -53,14 +54,8 @@ public class ServiceRegistrars {
     }
 
     // Create the registrar
-    if (address != null) {
-      log.info("Creating service registrar with address: {}", address);
-      return factory.create(address);
-    } else if (domain != null) {
-      log.info("Creating service registrar for domain: {}", domain);
-      return domain.equals("localhost")
-             ? factory.create("tcp://localhost:4999")
-             : factory.createForDomain(domain);
+    if (name != null && (address != null || domain != null)) {
+      return factory.create(address, domain, name);
     } else {
       log.info("No address nor domain configured, not creating service registrar.");
       return new NopServiceRegistrar();
@@ -74,6 +69,7 @@ public class ServiceRegistrars {
     final ServiceRegistrarFactory factory;
     final Path absolutePath = path.toAbsolutePath();
     try {
+      log.info("Attempting to load registrar plugin : {}", absolutePath);
       factory = ServiceRegistrarLoader.load(absolutePath);
       final String name = factory.getClass().getName();
       log.info("Loaded service registrar plugin: {} ({})", name, absolutePath);

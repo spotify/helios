@@ -34,16 +34,9 @@ public interface ServiceRegistrarFactory {
    * and semantics are implementation dependent.
    *
    * @param address The address of the registry the registrar should connect to.
+   * @param domain The domain to register containers in
+   * @param thisHostName The host name to tell the registrar the ports are assigned to.
    * @return A registrar.
    */
-  ServiceRegistrar create(String address);
-
-  /**
-   * Create a service registrar connected to a registry managing a specific domain. The domain
-   * format and semantics are implementation dependent. This method is typically used when the
-   * registry in turn is resolved using some service discovery mechanism, e.g. DNS SRV queries.
-   *
-   * @param domain The domain that the registry should be managing.
-   */
-  ServiceRegistrar createForDomain(String domain);
+  ServiceRegistrar create(String address, String domain, String thisHostName);
 }
