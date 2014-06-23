@@ -77,6 +77,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
@@ -100,6 +101,8 @@ public class HeliosClient {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosClient.class);
   private static final long TIMEOUT_MILLIS = SECONDS.toMillis(30);
+
+  private final AtomicBoolean versionWarningLogged = new AtomicBoolean();
 
   private final String user;
   private final Supplier<List<URI>> endpointSupplier;
@@ -229,13 +232,17 @@ public class HeliosClient {
 
     final String serverVersion = connection.getHeaderField(HELIOS_SERVER_VERSION_HEADER);
     if (versionStatus == VersionCompatibility.Status.MAYBE) {
-      log.warn("Your Helios client version [{}] is ahead of the server [{}].  This will"
-          + " probably work ok but there is the potential for weird things.  If in doubt,"
-          + " contact the Helios team if you think the cluster you're connecting to is out of"
-          + " date and should be upgraded.", Version.POM_VERSION, serverVersion);
+      if (versionWarningLogged.compareAndSet(false, true)) {
+        log.warn("Your Helios client version [{}] is ahead of the server [{}].  This will"
+                 + " probably work ok but there is the potential for weird things.  If in doubt,"
+                 + " contact the Helios team if you think the cluster you're connecting to is out"
+                 + " of date and should be upgraded.", Version.POM_VERSION, serverVersion);
+      }
     } else if (versionStatus == VersionCompatibility.Status.UPGRADE_SOON) {
-      log.warn("Your Helios client is nearly out of date.  Please upgrade to [{}]",
-          serverVersion);
+      if (versionWarningLogged.compareAndSet(false, true)) {
+        log.warn("Your Helios client is nearly out of date.  Please upgrade to [{}]",
+                 serverVersion);
+      }
     }
   }
 
