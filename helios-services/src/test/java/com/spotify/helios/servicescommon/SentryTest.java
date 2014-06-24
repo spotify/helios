@@ -25,7 +25,7 @@ import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.agent.AgentParser;
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.master.MasterParser;
-import com.spotify.helios.servicescommon.logging.LoggingConfigurator;
+import com.spotify.logging.LoggingConfigurator;
 
 import org.junit.Before;
 import org.junit.Rule;

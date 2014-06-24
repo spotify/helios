@@ -25,16 +25,17 @@ import com.google.common.base.Strings;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.LoggingConfig;
-import com.spotify.helios.servicescommon.logging.LoggingConfigurator;
+import com.spotify.logging.LoggingConfigurator;
 
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;
 
 import static com.google.common.collect.Iterables.get;
-import static com.spotify.helios.servicescommon.logging.LoggingConfigurator.Level.ALL;
-import static com.spotify.helios.servicescommon.logging.LoggingConfigurator.Level.DEBUG;
-import static com.spotify.helios.servicescommon.logging.LoggingConfigurator.Level.INFO;
+import static com.spotify.logging.LoggingConfigurator.Level;
+import static com.spotify.logging.LoggingConfigurator.Level.ALL;
+import static com.spotify.logging.LoggingConfigurator.Level.DEBUG;
+import static com.spotify.logging.LoggingConfigurator.Level.INFO;
 import static java.util.Arrays.asList;
 
 public abstract class ServiceMain extends AbstractIdleService {
@@ -53,7 +54,7 @@ public abstract class ServiceMain extends AbstractIdleService {
     SLF4JBridgeHandler.install();
 
     final int verbose = config.getVerbosity();
-    final LoggingConfigurator.Level level = get(asList(INFO, DEBUG, ALL), verbose, ALL);
+    final Level level = get(asList(INFO, DEBUG, ALL), verbose, ALL);
     final File logconfig = config.getConfigFile();
 
     if (logconfig != null) {
