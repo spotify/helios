@@ -42,7 +42,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.spotify.helios.ChildProcesses.spawn;
+import static com.spotify.helios.ChildProcesses.Subprocess;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 
@@ -55,7 +55,7 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   private final File dataDir;
 
   private CuratorFramework curator;
-  private Process serverProcess;
+  private Subprocess serverProcess;
 
   public ZooKeeperStandaloneServerManager() {
     this.dataDir = Files.createTempDir();
@@ -121,7 +121,10 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   @Override
   public void start() {
     try {
-      serverProcess = spawn(ServerProcess.class, dataDir.toString(), String.valueOf(port));
+      serverProcess = ChildProcesses.process()
+          .main(ServerProcess.class)
+          .args(dataDir.toString(), String.valueOf(port))
+          .spawn();
       awaitUp(5, MINUTES);
     } catch (IOException | TimeoutException e) {
       Throwables.propagate(e);
@@ -130,8 +133,8 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
 
   @Override
   public void stop() throws InterruptedException {
-    serverProcess.destroy();
-    serverProcess.waitFor();
+    serverProcess.kill();
+    serverProcess.join();
   }
 
   public void backup(final Path destination) {
