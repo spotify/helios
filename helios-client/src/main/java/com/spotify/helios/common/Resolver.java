@@ -21,6 +21,7 @@
 
 package com.spotify.helios.common;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -39,8 +40,15 @@ import java.net.URISyntaxException;
 import java.util.List;
 
 import static java.lang.String.format;
+import static java.lang.System.getenv;
 
 public abstract class Resolver {
+
+  private static final String SRV_FORMAT = env("HELIOS_SRV_FORMAT", "_%s._http.%s");
+
+  private static String env(final String name, final String defaultValue) {
+    return Optional.fromNullable(getenv(name)).or(defaultValue);
+  }
 
   private static final Logger log = LoggerFactory.getLogger(Resolver.class);
 
@@ -54,12 +62,12 @@ public abstract class Resolver {
   }
 
   public static List<URI> resolve(final String srvName, final String domain) {
-    final String fqdn = endpoint(srvName, domain);
+    final String name = srv(srvName, domain);
     final Lookup lookup;
     try {
-      lookup = new Lookup(fqdn, Type.SRV, DClass.IN);
+      lookup = new Lookup(name, Type.SRV, DClass.IN);
     } catch (TextParseException e) {
-      throw new IllegalArgumentException("unable to create lookup for name: " + fqdn, e);
+      throw new IllegalArgumentException("unable to create lookup for name: " + name, e);
     }
 
     Record[] queryResult = lookup.run();
@@ -77,11 +85,11 @@ public abstract class Resolver {
       case Lookup.HOST_NOT_FOUND:
         // fallthrough
       case Lookup.TYPE_NOT_FOUND:
-        log.warn("No results returned for query '{}'", fqdn);
+        log.warn("No results returned for query '{}'", name);
         return ImmutableList.of();
       default:
         throw new HeliosRuntimeException(String.format("Lookup of '%s' failed with code: %d - %s ",
-                                                       fqdn, lookup.getResult(),
+                                                       name, lookup.getResult(),
                                                        lookup.getErrorString()));
     }
   }
@@ -96,14 +104,7 @@ public abstract class Resolver {
     return endpoint;
   }
 
-  private static String endpoint(final String name, final String site) {
-    final String domain;
-    if (site.contains("spotify.net") || site.endsWith(".")) {
-      domain = site;
-    } else {
-      domain = site + ".spotify.net.";
-    }
-    return format("_spotify-%s._http.services.%s", name, domain);
+  private static String srv(final String name, final String domain) {
+    return format(SRV_FORMAT, name, domain);
   }
-
 }
