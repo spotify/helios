@@ -5,7 +5,7 @@
   <name>Helios Parent</name>
   <groupId>com.spotify</groupId>
   <artifactId>helios-parent</artifactId>
-  <version>0.0.29</version>
+  <version>0.0.30-SNAPSHOT</version>
   <packaging>pom</packaging>
 
   <licenses>
@@ -18,7 +18,7 @@
 
   <scm>
     <developerConnection>scm:git:git@github.com:spotify/helios.git</developerConnection>
-    <tag>0.0.29</tag>
+    <tag>HEAD</tag>
   </scm>
 
   <repositories>
