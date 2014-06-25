@@ -154,7 +154,7 @@ public class HostListCommand extends ControlCommand {
             loadAvg = format("%.2f", hi.getLoadAvg());
             os = hi.getOsName() + " " + hi.getOsVersion();
             final DockerVersion dv = hi.getDockerVersion();
-            docker = (dv != null) ? format("%s (%s)", dv, dv.getApiVersion()) : "";
+            docker = (dv != null) ? format("%s (%s)", dv.getVersion(), dv.getApiVersion()) : "";
           } else {
             memUsage = cpus = mem = loadAvg = os = docker = "";
           }
