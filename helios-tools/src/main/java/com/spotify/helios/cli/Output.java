@@ -26,6 +26,8 @@ import org.joda.time.Period;
 
 import java.io.PrintStream;
 
+import static java.lang.String.format;
+
 public class Output {
 
   public static String humanDuration(final long millis) {
@@ -38,13 +40,13 @@ public class Output {
     if (d.getStandardSeconds() == 0) {
       return "0 seconds";
     } else if (d.getStandardSeconds() < 60) {
-      return p.getSeconds() + " seconds";
+      return format("%d second%s", p.getSeconds(), p.getSeconds() > 1 ? "s" : "");
     } else if (d.getStandardMinutes() < 60) {
-      return p.getMinutes() + " minutes " + p.getSeconds() + " seconds";
+      return format("%d minute%s", p.getMinutes(), p.getMinutes() > 1 ? "s" : "");
     } else if (d.getStandardHours() < 24) {
-      return p.getHours() + " hours " + p.getMinutes() + " minutes";
+      return format("%d hour%s", p.getHours(), p.getHours() > 1 ? "s" : "");
     } else {
-      return d.getStandardDays() + " days " + p.getHours() + " hours";
+      return format("%d day%s", d.getStandardDays(), d.getStandardDays() > 1 ? "s" : "");
     }
   }
 
