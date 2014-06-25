@@ -43,6 +43,7 @@ public class JobUndeployCommand extends WildcardJobCommand {
 
   private final Argument hostsArg;
   private final Argument allArg;
+  private final Argument forceArg;
 
   public JobUndeployCommand(final Subparser parser) {
     super(parser);
@@ -52,6 +53,11 @@ public class JobUndeployCommand extends WildcardJobCommand {
     allArg = parser.addArgument("-a", "--all")
         .action(storeTrue())
         .help("Undeploy from all currently deployed hosts.");
+
+    forceArg = parser.addArgument("-f", "--force")
+        .action(storeTrue())
+        .help("Force yes. Immediately undeploy job without prompting. " +
+              "Useful together with -a/--all. Please use with care.");
 
     hostsArg = parser.addArgument("hosts")
         .nargs("*")
@@ -64,6 +70,7 @@ public class JobUndeployCommand extends WildcardJobCommand {
       throws ExecutionException, InterruptedException, IOException {
 
     final boolean all = options.getBoolean(allArg.getDest());
+    final boolean force = options.getBoolean(forceArg.getDest());
     final List<String> hosts;
 
     if (all) {
@@ -73,14 +80,17 @@ public class JobUndeployCommand extends WildcardJobCommand {
         out.printf("%s is not currently deployed on any hosts.", jobId);
         return 0;
       }
-      out.printf("This will undeploy %s from %s%n", jobId, hosts);
-      out.printf("Do you want to continue? [y/N]%n");
 
-      // TODO (dano): pass in stdin instead using System.in
-      final int c = System.in.read();
+      if (!force) {
+        out.printf("This will undeploy %s from %s%n", jobId, hosts);
+        out.printf("Do you want to continue? [y/N]%n");
 
-      if (c != 'Y' && c != 'y') {
-        return 1;
+        // TODO (dano): pass in stdin instead using System.in
+        final int c = System.in.read();
+
+        if (c != 'Y' && c != 'y') {
+          return 1;
+        }
       }
     } else {
       hosts = options.getList(hostsArg.getDest());
