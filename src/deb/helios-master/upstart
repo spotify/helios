@@ -6,6 +6,8 @@ author "Rohan Singh <rohan@spotify.com>"
 start on runlevel [2345]
 stop on runlevel [!2345]
 
+kill signal SIGKILL
+
 respawn
 respawn limit unlimited
 
