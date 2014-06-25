@@ -54,6 +54,7 @@ import java.util.regex.Pattern;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.spotify.helios.common.descriptors.PortMapping.TCP;
+import static com.spotify.helios.common.descriptors.ServiceEndpoint.HTTP;
 import static java.util.regex.Pattern.compile;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.fileType;
@@ -125,10 +126,9 @@ public class JobCreateCommand extends ControlCommand {
         .help("Service discovery registration. Specify a service name, the port name and a " +
               "protocol on the format service/protocol=port. E.g. -r website/tcp=http will " +
               "register the port named http with the protocol tcp. Protocol is optional and " +
-              "default is hm so e.g. -r wiggum=hermes will expose the port named hermes as " +
-              "_spotify-wiggum._hm. If there is only one port mapping this will be used by" +
+              "default is http. If there is only one port mapping this will be used by" +
               "default and it will be enough to specify only the service name, e.g." +
-              "-r wiggum.");
+              "-r wordpress.");
 
     volumeArg = parser.addArgument("--volume")
         .action(append())
@@ -281,7 +281,7 @@ public class JobCreateCommand extends ControlCommand {
         }
 
         final String service = matcher.group("srv");
-        final String proto = fromNullable(matcher.group("prot")).or("hm");
+        final String proto = fromNullable(matcher.group("prot")).or(HTTP);
         final String optionalPort = matcher.group("port");
         final String port;
 

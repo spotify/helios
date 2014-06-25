@@ -31,8 +31,10 @@ import java.util.List;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ServiceEndpoint extends Descriptor implements Comparable<ServiceEndpoint> {
 
+  public static final String UDP = "udp";
   public static final String TCP = "tcp";
   public static final String HERMES = "hm";
+  public static final String HTTP = "http";
 
   private final String name;
   private final String protocol;
@@ -43,7 +45,7 @@ public class ServiceEndpoint extends Descriptor implements Comparable<ServiceEnd
       throw new IllegalArgumentException();
     }
     name = parts.get(0);
-    protocol = parts.size() > 1 ? parts.get(1) : HERMES;
+    protocol = parts.size() > 1 ? parts.get(1) : HTTP;
   }
 
   public ServiceEndpoint(@JsonProperty("name") final String name,
