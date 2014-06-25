@@ -29,10 +29,15 @@ import com.yammer.dropwizard.validation.Validator;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 /**
  * Instantiates and runs helios agent.
  */
 public class AgentMain extends ServiceMain {
+
+  private static final Logger log = LoggerFactory.getLogger(AgentMain.class);
 
   private final AgentConfig agentConfig;
   private AgentService service;
@@ -69,13 +74,9 @@ public class AgentMain extends ServiceMain {
     try {
       final AgentMain main = new AgentMain(args);
       main.startAsync().awaitRunning();
-      main.awaitTerminated();
     } catch (Throwable e) {
-      e.printStackTrace();
+      log.error("Uncaught exception", e);
       System.exit(1);
     }
-    // Ensure we exit even if there's lingering non-daemon threads
-    System.exit(0);
   }
-
 }
