@@ -73,12 +73,9 @@ public class MasterMain extends ServiceMain {
     try {
       final MasterMain main = new MasterMain(args);
       main.startAsync().awaitRunning();
-      main.awaitTerminated();
     } catch (Throwable e) {
       log.error("Uncaught exception", e);
       System.exit(1);
     }
-    // Ensure we exit even if there's lingering non-daemon threads
-    System.exit(0);
   }
 }
