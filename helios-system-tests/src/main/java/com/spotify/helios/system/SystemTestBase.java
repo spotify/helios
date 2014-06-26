@@ -254,7 +254,9 @@ public abstract class SystemTestBase {
       log.error("Docker client exception", e);
     }
 
-    zk.close();
+    if (zk != null) {
+      zk.close();
+    }
 
     listThreads();
   }
