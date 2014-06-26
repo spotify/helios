@@ -23,6 +23,9 @@ package com.spotify.helios.cli;
 
 import org.joda.time.Duration;
 import org.joda.time.Period;
+import org.xbill.DNS.Name;
+import org.xbill.DNS.ResolverConfig;
+import org.xbill.DNS.TextParseException;
 
 import java.io.PrintStream;
 
@@ -56,5 +59,25 @@ public class Output {
 
   public static JobStatusTable jobStatusTable(final PrintStream out, final boolean full) {
     return new JobStatusTable(out, full);
+  }
+
+  public static String shortHostname(final String host) {
+    final Name root = Name.fromConstantString(".");
+    final Name hostname;
+    try {
+      hostname = Name.fromString(host, root);
+    } catch (TextParseException e) {
+      throw new IllegalArgumentException("Invalid hostname '" + host + "'");
+    }
+    for (Name domain : ResolverConfig.getCurrentConfig().searchPath()) {
+      if (hostname.subdomain(domain)) {
+        return hostname.relativize(domain).toString();
+      }
+    }
+    return hostname.toString();
+  }
+
+  public static String formatHostname(final boolean full, final String host) {
+    return full ? host : shortHostname(host);
   }
 }

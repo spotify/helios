@@ -45,6 +45,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Predicates.containsPattern;
+import static com.spotify.helios.cli.Output.formatHostname;
 import static com.spotify.helios.cli.Output.jobStatusTable;
 import static com.spotify.helios.cli.Utils.allAsMap;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
@@ -69,7 +70,7 @@ public class JobStatusCommand extends ControlCommand {
 
     fullArg = parser.addArgument("-f")
         .action(storeTrue())
-        .help("Print full job and container id's.");
+        .help("Print full hostnames, job and container id's.");
   }
 
   @Override
@@ -136,7 +137,7 @@ public class JobStatusCommand extends ControlCommand {
         final Map<String, Deployment> deployments = jobStatus.getDeployments();
         final TaskStatus ts = taskStatuses.get(host);
         final Deployment deployment = (deployments == null) ? null : deployments.get(host);
-        table.task(jobId, host, ts, deployment);
+        table.task(jobId, formatHostname(full, host), ts, deployment);
       }
     }
 
