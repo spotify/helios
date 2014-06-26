@@ -39,7 +39,6 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 
 import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.Code;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -55,6 +54,7 @@ import java.util.concurrent.TimeUnit;
 import static com.spotify.helios.Polling.await;
 import static com.spotify.helios.agent.QueueingHistoryWriter.MAX_NUMBER_STATUS_EVENTS_TO_RETAIN;
 import static com.spotify.helios.common.descriptors.Goal.START;
+import static org.apache.zookeeper.KeeperException.ConnectionLossException;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -119,7 +119,7 @@ public class QueueingHistoryWriterTest {
     final ZooKeeperClient mockClient = mock(ZooKeeperClient.class);
     makeWriter(mockClient);
     final String path = Paths.historyJobHostEventsTimestamp(JOB_ID, HOSTNAME, TIMESTAMP);
-    final KeeperException exc = new KeeperException(Code.APIERROR){};
+    final KeeperException exc = new ConnectionLossException();
     // make save operations fail
     doThrow(exc).when(mockClient).createAndSetData(path, TASK_STATUS.toJsonBytes());
 
