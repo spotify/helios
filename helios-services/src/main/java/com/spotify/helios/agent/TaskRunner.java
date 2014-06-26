@@ -43,8 +43,6 @@ import com.spotify.helios.servicescommon.InterruptingExecutionThreadService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.ExecutionException;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -91,7 +89,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
   }
 
-  private int run0() throws InterruptedException, DockerException, ExecutionException {
+  private int run0() throws InterruptedException, DockerException {
     // Delay
     Thread.sleep(delayMillis);
 
