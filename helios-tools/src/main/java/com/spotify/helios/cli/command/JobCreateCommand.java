@@ -39,6 +39,8 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import org.joda.time.DateTime;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -74,6 +76,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument fileArg;
   private final Argument templateArg;
   private final Argument volumeArg;
+  private final Argument expiresArg;
 
   public JobCreateCommand(final Subparser parser) {
     super(parser);
@@ -141,6 +144,11 @@ public class JobCreateCommand extends ControlCommand {
     argsArg = parser.addArgument("args")
         .nargs("*")
         .help("Command line arguments");
+
+    expiresArg = parser.addArgument("-e", "--expires")
+        .help("An ISO-8601 string representing the date/time when this job should expire. The " +
+              "job will be undeployed from all hosts and removed at this time. E.g. " +
+              "2014-06-01T12:00:00Z");
   }
 
   @Override
@@ -327,6 +335,13 @@ public class JobCreateCommand extends ControlCommand {
         default:
           throw new IllegalArgumentException("Invalid volume: " + spec);
       }
+    }
+
+    // Parse expires timestamp
+    final String expires = options.getString(expiresArg.getDest());
+    if (expires != null) {
+      // Use DateTime to parse the ISO-8601 string
+      builder.setExpires(new DateTime(expires).toDate());
     }
 
     final Job job = builder.build();
