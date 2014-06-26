@@ -31,6 +31,8 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
+import com.spotify.helios.agent.RetryScheduler;
 import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.Reactor;
@@ -53,6 +55,9 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.MapDifference.ValueDifference;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.zookeeper.KeeperException.NoNodeException;
+import static org.apache.zookeeper.KeeperException.NodeExistsException;
 
 /**
  * A map that persists modification locally on disk and attempt to replicate modifications to
@@ -203,16 +208,43 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
   private class Update implements Reactor.Callback {
 
     @Override
-    public void run(final boolean timeout) {
-      if (!parentExists()) {
-        return;
+    public void run(final boolean timeout) throws InterruptedException {
+      try {
+        run0();
+      } catch (KeeperException e) {
+        throw Throwables.propagate(e);
       }
+    }
 
-      if (!initialized) {
-        sync();
-        initialized = true;
+    private void run0() throws KeeperException, InterruptedException {
+      final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
+          .setMinInterval(1, SECONDS)
+          .setMaxInterval(30, SECONDS)
+          .build()
+          .newScheduler();
+
+      while (true) {
+        try {
+          if (!parentExists()) {
+            log.warn("parent does not exist");
+            return;
+          }
+          if (!initialized) {
+            syncChecked();
+            initialized = true;
+          }
+          incrementalUpdate();
+          return;
+        } catch (NodeExistsException | NoNodeException e) {
+          final long backoff = retryScheduler.nextMillis();
+          log.warn("conflict: {} {}. Resyncing in {}ms", e.getPath(), e.code(), backoff);
+          initialized = false;
+          Thread.sleep(backoff);
+        }
       }
+    }
 
+    private void incrementalUpdate() throws KeeperException {
       final MapDifference<String, byte[]> difference = Maps.difference(entries.get(), remote,
                                                                        BYTE_ARRAY_EQUIVALENCE);
       if (difference.areEqual()) {
@@ -247,14 +279,6 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
       remote = newRemote;
     }
 
-    private void sync() {
-      try {
-        syncChecked();
-      } catch (KeeperException e) {
-        throw Throwables.propagate(e);
-      }
-    }
-
     private boolean parentExists() {
       try {
         return client("parentExists").exists(path) != null;
@@ -280,7 +304,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
       }
     }
 
-    private void write(final String node, final byte[] data) {
+    private void write(final String node, final byte[] data) throws KeeperException {
       final ZooKeeperClient client = client("write");
       final String nodePath = ZKPaths.makePath(path, node);
       try {
@@ -293,9 +317,6 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
         }
       } catch (KeeperException.ConnectionLossException e) {
         log.warn("ZooKeeper connection lost while writing node: {}", nodePath);
-        throw Throwables.propagate(e);
-      } catch (KeeperException e) {
-        log.error("Failed to write node: {}", nodePath, e);
         throw Throwables.propagate(e);
       }
     }
@@ -313,7 +334,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
         remote.put(node, data);
       }
 
-      // Create and update missing and nodes outdated nodes
+      // Create and update missing and outdated nodes
       for (final Map.Entry<String, byte[]> entry : snapshot.entrySet()) {
         final String node = entry.getKey();
         final byte[] remoteData = remote.get(node);
