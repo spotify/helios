@@ -70,6 +70,7 @@ import ch.qos.logback.access.jetty.RequestLogImpl;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * The Helios master service.
@@ -84,6 +85,7 @@ public class MasterService extends AbstractIdleService {
   private final ServiceRegistrar registrar;
   private final RiemannFacade riemannFacade;
   private final ZooKeeperClient zooKeeperClient;
+  private final ExpiredJobReaper expiredJobReaper;
 
   private ZooKeeperRegistrar zkRegistrar;
 
@@ -136,6 +138,11 @@ public class MasterService extends AbstractIdleService {
                                             config.getServiceRegistryAddress(),
                                             config.getDomain());
 
+    // Set up reaping of expired jobs
+    this.expiredJobReaper = ExpiredJobReaper.newBuilder()
+        .setMasterModel(model)
+        .build();
+
     // Set up http server
     environment.addFilter(VersionResponseFilter.class, "/*");
     environment.addProvider(new ReportingResourceMethodDispatchAdapter(metrics.getMasterMetrics()));
@@ -168,6 +175,7 @@ public class MasterService extends AbstractIdleService {
     logBanner();
     zooKeeperClient.start();
     zkRegistrar.startAsync().awaitRunning();
+    expiredJobReaper.startAsync().awaitRunning();
     try {
       server.start();
       for (ServerLifecycleListener listener : environment.getServerListeners()) {
@@ -189,6 +197,7 @@ public class MasterService extends AbstractIdleService {
     server.stop();
     server.join();
     registrar.close();
+    expiredJobReaper.stopAsync().awaitTerminated();
     zkRegistrar.stopAsync().awaitTerminated();
     zooKeeperClient.close();
   }

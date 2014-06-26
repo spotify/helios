@@ -54,6 +54,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
   public static final Map<String, String> EMPTY_VOLUMES = emptyMap();
   public static final String EMPTY_MOUNT = "";
+  public static final Date EMPTY_EXPIRES = null;
 
   private final JobId id;
   private final String image;
