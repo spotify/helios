@@ -96,8 +96,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -158,7 +156,6 @@ public abstract class SystemTestBase {
   private Range<Integer> dockerPortRange;
 
   private final List<Service> services = newArrayList();
-  private final ExecutorService executorService = Executors.newCachedThreadPool();
   private final List<HeliosClient> clients = Lists.newArrayList();
 
   private String testHost;
@@ -307,13 +304,6 @@ public abstract class SystemTestBase {
       }
     }
     services.clear();
-
-    try {
-      executorService.shutdownNow();
-      executorService.awaitTermination(30, SECONDS);
-    } catch (InterruptedException e) {
-      log.error("Interrupted", e);
-    }
 
     // Clean up docker
     try {
