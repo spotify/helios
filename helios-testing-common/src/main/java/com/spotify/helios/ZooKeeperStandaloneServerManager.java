@@ -60,7 +60,7 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   public ZooKeeperStandaloneServerManager() {
     this.dataDir = Files.createTempDir();
     final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
-    curator = CuratorFrameworkFactory.newClient(endpoint, 500, 500, retryPolicy);
+    curator = CuratorFrameworkFactory.newClient(endpoint, retryPolicy);
     curator.start();
     start();
   }

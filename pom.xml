@@ -74,6 +74,8 @@
               <reuseForks>false</reuseForks>
               <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
               <systemPropertyVariables>
+                <curator-default-session-timeout>500</curator-default-session-timeout>
+                <curator-default-connection-timeout>500</curator-default-connection-timeout>
                 <logToFile>true</logToFile>
                 <heliosLoggingLevel>OFF</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
