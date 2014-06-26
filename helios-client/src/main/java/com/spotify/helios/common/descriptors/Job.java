@@ -34,6 +34,7 @@ import com.spotify.helios.common.Json;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -61,6 +62,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Map<String, PortMapping> ports;
   private final Map<ServiceEndpoint, ServicePorts> registration;
   private final Map<String, String> volumes;
+  private final Date expires;
 
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
@@ -69,7 +71,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("ports") @Nullable final Map<String, PortMapping> ports,
              @JsonProperty("registration") @Nullable
              final Map<ServiceEndpoint, ServicePorts> registration,
-             @JsonProperty("volumes") @Nullable final Map<String, String> volumes) {
+             @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
+             @JsonProperty("expires") @Nullable final Date expires) {
     this.id = checkNotNull(id, "id");
     this.image = checkNotNull(image, "image");
 
@@ -79,6 +82,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
     this.registration = Optional.fromNullable(registration).or(EMPTY_REGISTRATION);
     this.volumes = Optional.fromNullable(volumes).or(EMPTY_VOLUMES);
+    this.expires = expires;
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -89,6 +93,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.ports = ImmutableMap.copyOf(checkNotNull(p.ports, "ports"));
     this.registration = ImmutableMap.copyOf(checkNotNull(p.registration, "registration"));
     this.volumes = ImmutableMap.copyOf(checkNotNull(p.volumes, "volumes"));
+    this.expires = p.expires;
   }
 
   public JobId getId() {
@@ -119,6 +124,10 @@ public class Job extends Descriptor implements Comparable<Job> {
     return volumes;
   }
 
+  public Date getExpires() {
+    return expires;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -145,6 +154,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (env != null ? !env.equals(job.env) : job.env != null) {
       return false;
     }
+    if (expires != null ? !expires.equals(job.expires) : job.expires != null) {
+      return false;
+    }
     if (id != null ? !id.equals(job.id) : job.id != null) {
       return false;
     }
@@ -168,6 +180,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public int hashCode() {
     int result = id != null ? id.hashCode() : 0;
     result = 31 * result + (image != null ? image.hashCode() : 0);
+    result = 31 * result + (expires != null ? expires.hashCode() : 0);
     result = 31 * result + (command != null ? command.hashCode() : 0);
     result = 31 * result + (env != null ? env.hashCode() : 0);
     result = 31 * result + (ports != null ? ports.hashCode() : 0);
@@ -185,6 +198,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("env", env)
         .add("ports", ports)
         .add("registration", registration)
+        .add("expires", expires)
         .toString();
   }
 
@@ -197,7 +211,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setEnv(env)
         .setPorts(ports)
         .setRegistration(registration)
-        .setVolumes(volumes);
+        .setVolumes(volumes)
+        .setExpires(expires);
   }
 
   public static class Builder implements Cloneable {
@@ -224,6 +239,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Map<String, PortMapping> ports;
       public Map<ServiceEndpoint, ServicePorts> registration;
       public Map<String, String> volumes;
+      public Date expires;
 
       private Parameters() {
         this.command = EMPTY_COMMAND;
@@ -242,6 +258,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.ports = Maps.newHashMap(p.ports);
         this.registration = Maps.newHashMap(p.registration);
         this.volumes = Maps.newHashMap(p.volumes);
+        this.expires = p.expires;
       }
     }
 
@@ -315,6 +332,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setExpires(final Date expires) {
+      p.expires = expires;
+      return this;
+    }
+
     public String getName() {
       return p.name;
     }
@@ -345,6 +367,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Map<String, String> getVolumes() {
       return ImmutableMap.copyOf(p.volumes);
+    }
+
+    public Date getExpires() {
+      return p.expires;
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})

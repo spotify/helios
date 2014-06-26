@@ -109,7 +109,7 @@ public class JobValidatorTest {
   }
 
   @Test
-  public void testPortMappingCollissionFails() throws Exception {
+  public void testPortMappingCollisionFails() throws Exception {
     final Job job = Job.newBuilder()
         .setName("foo")
         .setVersion("1")
@@ -133,7 +133,7 @@ public class JobValidatorTest {
   public void testIdMismatchFails() throws Exception {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
                             "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_PORTS, EMPTY_REGISTRATION,
-                            EMPTY_VOLUMES);
+                            EMPTY_VOLUMES, null);
     final JobId recomputedId = job.toBuilder().build().getId();
     assertEquals(ImmutableSet.of("Id hash mismatch: " + job.getId().getHash()
         + " != " + recomputedId.getHash()), validator.validate(job));

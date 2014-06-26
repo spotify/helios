@@ -92,7 +92,7 @@ public class JobValidator {
       errors.add(format("Id hash mismatch: %s != %s", jobId.getHash(), recomputedId.getHash()));
     }
 
-    // Check that there's not external port collission
+    // Check that there's not external port collision
     final Set<Integer> externalPorts = Sets.newHashSet();
     for (final PortMapping mapping : job.getPorts().values()) {
       Integer externalMappedPort = mapping.getExternalPort();
