@@ -249,20 +249,24 @@ public class TemporaryPorts extends ExternalResource {
     }
 
     public void release() {
+      if (!lock.isValid()) {
+        log.debug("lock already released: {}", path);
+        return;
+      }
       try {
         lock.release();
       } catch (Exception e) {
-        log.error("caught exception releasing port lock: {}", path, e);
+        log.warn("caught exception releasing port lock: {}", path, e);
       }
       try {
         file.close();
       } catch (Exception e) {
-        log.error("caught exception closing port lock file: {}", path, e);
+        log.warn("caught exception closing port lock file: {}", path, e);
       }
       try {
         Files.deleteIfExists(path);
       } catch (Exception e) {
-        log.error("caught exception deleting port lock file: {}", path, e);
+        log.warn("caught exception deleting port lock file: {}", path, e);
       }
     }
   }
