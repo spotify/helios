@@ -23,24 +23,33 @@
 
   <!-- Note: This logging configuration is ignored by system tests when -DlogToFile=true -->
 
-  <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
+  <appender name="EXTERNAL_STDERR" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
       <pattern>%d{HH:mm:ss.SSS} %-5level %logger{1} %F:%L - %msg%n</pattern>
     </encoder>
     <target>System.err</target>
   </appender>
 
-  <appender name="STDERR_NOPEX" class="ch.qos.logback.core.ConsoleAppender">
+  <appender name="STDERR" class="ch.qos.logback.core.ConsoleAppender">
     <encoder>
-      <pattern>%d{HH:mm:ss.SSS} %-5level %F:%L - %msg%nopex%n</pattern>
+      <pattern>%d{HH:mm:ss.SSS} %-5level %F:%L - %msg%n</pattern>
     </encoder>
     <target>System.err</target>
   </appender>
 
-  <logger name="org.apache.curator" level="${externalLoggingLevel:-ERROR}"/>
-  <logger name="org.apache.zookeeper" level="${externalLoggingLevel:-ERROR}"/>
-  <logger name="org.eclipse.jetty" level="${externalLoggingLevel:-ERROR}"/>
-  <logger name="com.yammer.metrics" level="${externalLoggingLevel:-ERROR}"/>
+  <logger name="org.apache.curator" level="${externalLoggingLevel:-ERROR}">
+    <appender-ref ref="EXTERNAL_STDERR"/>
+  </logger>
+  <logger name="org.apache.zookeeper" level="${externalLoggingLevel:-ERROR}">
+    <appender-ref ref="EXTERNAL_STDERR"/>
+  </logger>
+  <logger name="org.eclipse.jetty" level="${externalLoggingLevel:-ERROR}">
+    <appender-ref ref="EXTERNAL_STDERR"/>
+  </logger>
+  <logger name="com.yammer.metrics" level="${externalLoggingLevel:-ERROR}">
+    <appender-ref ref="EXTERNAL_STDERR"/>
+  </logger>
+
   <logger name="com.spotify.helios" level="${heliosLoggingLevel:-DEBUG}"/>
 
   <root level="${rootLoggingLevel:-DEBUG}">
