@@ -108,6 +108,15 @@ public class TemporaryPorts extends ExternalResource {
     ports.clear();
   }
 
+  public synchronized AllocatedPort tryAcquire(final String name, final int port) {
+    final AllocatedPort allocatedPort = lock(port, name);
+    if (allocatedPort == null) {
+      return null;
+    }
+    ports.add(allocatedPort);
+    return allocatedPort;
+  }
+
   public synchronized int localPort(final String name) {
     Preconditions.checkState(!closed, "closed");
     for (int i = 0; i < retries; i++) {
@@ -208,7 +217,7 @@ public class TemporaryPorts extends ExternalResource {
       }
       file.write(ByteBuffer.wrap(format("%d %s%n", port, name).getBytes(UTF_8)));
       file.force(true);
-      return new AllocatedPort(path, file, lock);
+      return new AllocatedPort(port, path, file, lock);
     } catch (OverlappingFileLockException e) {
       return null;
     } catch (IOException e) {
@@ -221,19 +230,25 @@ public class TemporaryPorts extends ExternalResource {
     return builder().build();
   }
 
-  private static class AllocatedPort {
+  public static class AllocatedPort {
 
-    private Path path;
+    private final int port;
+    private final Path path;
     private final FileChannel file;
     private final FileLock lock;
 
-    private AllocatedPort(final Path path, FileChannel file, FileLock lock) {
+    private AllocatedPort(final int port, final Path path, FileChannel file, FileLock lock) {
+      this.port = port;
       this.path = path;
       this.file = file;
       this.lock = lock;
     }
 
-    void release() {
+    public int port() {
+      return port;
+    }
+
+    public void release() {
       try {
         lock.release();
       } catch (Exception e) {
