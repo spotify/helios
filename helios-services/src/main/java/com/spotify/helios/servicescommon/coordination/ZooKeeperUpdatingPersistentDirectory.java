@@ -220,7 +220,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
       while (isAlive()) {
         try {
           if (!parentExists()) {
-            log.warn("parent does not exist");
+            log.warn("parent does not exist: {}", path);
             return;
           }
           if (!initialized) {
