@@ -27,6 +27,7 @@ import com.spotify.helios.ZooKeeperClusterTestManager;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -35,6 +36,8 @@ import org.junit.runner.RunWith;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertArrayEquals;
 
+@Ignore("This is an expensive test that tests the curator framework, not helios. " +
+        "It is disabled as it likely gives travis grief")
 @RunWith(Parallelized.class)
 public class ZooKeeperCuratorFailoverTest {
 
