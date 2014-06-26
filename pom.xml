@@ -105,6 +105,9 @@
               <forkCount>2</forkCount>
               <reuseForks>false</reuseForks>
               <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
+              <environmentVariables>
+                <HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>2</HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>
+              </environmentVariables>
               <systemPropertyVariables>
                 <junit.parallel.threads>1</junit.parallel.threads>
                 <logToFile>false</logToFile>
