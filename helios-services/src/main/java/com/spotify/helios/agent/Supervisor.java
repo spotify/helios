@@ -305,8 +305,11 @@ public class Supervisor {
           runner = null;
           reactor.signal();
           return;
+        } else if (t instanceof DockerException) {
+          log.warn("docker error: {}", t.getMessage());
+        } else {
+          log.error("task runner threw exception", t);
         }
-        log.error("task runner threw exception", t);
       }
 
       // Restart the task

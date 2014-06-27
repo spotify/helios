@@ -60,7 +60,7 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
-import static com.spotify.helios.ChildProcesses.spawn;
+import static com.spotify.helios.ChildProcesses.Subprocess;
 import static java.lang.Integer.MAX_VALUE;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.apache.zookeeper.server.quorum.QuorumPeer.LearnerType;
@@ -77,7 +77,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
   protected Map<Long, QuorumServer> zkPeers;
   protected Map<Long, InetSocketAddress> zkAddresses;
 
-  protected final Map<Long, Process> zkProcesses = Maps.newHashMap();
+  protected final Map<Long, Subprocess> zkProcesses = Maps.newHashMap();
 
   private Path tempDir;
   protected CuratorFramework curator;
@@ -96,7 +96,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
       }
       final String connect = connectString(zkAddresses);
       final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
-      curator = CuratorFrameworkFactory.newClient(connect, 500, 500, retryPolicy);
+      curator = CuratorFrameworkFactory.newClient(connect, retryPolicy);
       curator.start();
       awaitUp(5, TimeUnit.MINUTES);
     } catch (Exception e) {
@@ -202,9 +202,9 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
   }
 
   public void stopPeer(final long id) throws InterruptedException {
-    final Process peer = zkProcesses.remove(id);
-    peer.destroy();
-    peer.waitFor();
+    final Subprocess peer = zkProcesses.remove(id);
+    peer.kill();
+    peer.join();
   }
 
   public void startPeer(final long id) throws Exception {
@@ -214,10 +214,14 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
 
     final int port = zkAddresses.get(id).getPort();
 
-    final Process peerProcess;
+    final Subprocess peerProcess;
     try {
-      peerProcess = spawn(PeerProcess.class, String.valueOf(id), dir.toString(),
-                          String.valueOf(port), Json.asStringUnchecked(zkPeers));
+      peerProcess = ChildProcesses.process()
+          .exitParentOnChildExit()
+          .main(PeerProcess.class)
+          .args(String.valueOf(id), dir.toString(),
+                String.valueOf(port), Json.asStringUnchecked(zkPeers))
+          .spawn();
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
@@ -226,12 +230,10 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
   }
 
   public void resetPeer(final long id) {
-    final Process peer = zkProcesses.get(id);
+    final Subprocess peer = zkProcesses.get(id);
     if (peer != null) {
-      try {
-        peer.exitValue();
-      } catch (IllegalThreadStateException e) {
-        throw new IllegalStateException(e);
+      if (peer.running()) {
+        throw new IllegalStateException("peer is still running: " + id);
       }
     }
     try {

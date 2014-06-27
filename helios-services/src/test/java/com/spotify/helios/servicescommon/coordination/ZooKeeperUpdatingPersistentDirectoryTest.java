@@ -44,6 +44,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.zookeeper.KeeperException.NodeExistsException;
 import static org.junit.Assert.assertArrayEquals;
 
+@RunWith(Parallelized.class)
 public class ZooKeeperUpdatingPersistentDirectoryTest {
 
   private static final String PARENT_PATH = "/foobar";

@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static com.google.common.base.Optional.fromNullable;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode;
 
 public class MasterZooKeeperRegistrar implements ZooKeeperRegistrarEventListener {
@@ -56,7 +57,8 @@ public class MasterZooKeeperRegistrar implements ZooKeeperRegistrarEventListener
       try {
         upNode.close();
       } catch (IOException e) {
-        log.warn("Exception on closing up node: {}", e.getMessage());
+        final Throwable cause = fromNullable(e.getCause()).or(e);
+        log.warn("Exception on closing up node: {}", cause);
       }
     }
   }

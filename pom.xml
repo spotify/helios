@@ -74,6 +74,8 @@
               <reuseForks>false</reuseForks>
               <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
               <systemPropertyVariables>
+                <curator-default-session-timeout>500</curator-default-session-timeout>
+                <curator-default-connection-timeout>500</curator-default-connection-timeout>
                 <logToFile>true</logToFile>
                 <heliosLoggingLevel>OFF</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
@@ -100,14 +102,18 @@
             <version>2.16</version>
             <configuration>
               <enableAssertions>false</enableAssertions>
-              <forkCount>2</forkCount>
+              <forkCount>1</forkCount>
               <reuseForks>false</reuseForks>
               <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
+              <environmentVariables>
+                <HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>2</HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>
+              </environmentVariables>
               <systemPropertyVariables>
+                <junit.parallel.threads>1</junit.parallel.threads>
                 <logToFile>false</logToFile>
-                <heliosLoggingLevel>OFF</heliosLoggingLevel>
+                <heliosLoggingLevel>WARN</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
-                <rootLoggingLevel>OFF</rootLoggingLevel>
+                <rootLoggingLevel>WARN</rootLoggingLevel>
               </systemPropertyVariables>
             </configuration>
           </plugin>

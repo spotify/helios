@@ -55,15 +55,17 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.MapDifference.ValueDifference;
+import static com.google.common.util.concurrent.Service.State.STOPPING;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.zookeeper.KeeperException.ConnectionLossException;
 import static org.apache.zookeeper.KeeperException.NoNodeException;
 import static org.apache.zookeeper.KeeperException.NodeExistsException;
 
 /**
  * A map that persists modification locally on disk and attempt to replicate modifications to
  * ZooKeeper, retrying forever until successful. Note that ZooKeeper is only written to and never
- * read from, so this is not a distributed map. Multiple changes to the same key are folded and
- * only the last value is written to ZooKeeper.
+ * read from, so this is not a distributed map. Multiple changes to the same key are folded and only
+ * the last value is written to ZooKeeper.
  */
 public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
 
@@ -209,24 +211,16 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
 
     @Override
     public void run(final boolean timeout) throws InterruptedException {
-      try {
-        run0();
-      } catch (KeeperException e) {
-        throw Throwables.propagate(e);
-      }
-    }
-
-    private void run0() throws KeeperException, InterruptedException {
       final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
           .setMinInterval(1, SECONDS)
           .setMaxInterval(30, SECONDS)
           .build()
           .newScheduler();
 
-      while (true) {
+      while (isAlive()) {
         try {
           if (!parentExists()) {
-            log.warn("parent does not exist");
+            log.warn("parent does not exist: {}", path);
             return;
           }
           if (!initialized) {
@@ -235,13 +229,23 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
           }
           incrementalUpdate();
           return;
-        } catch (NodeExistsException | NoNodeException e) {
+        } catch (KeeperException e) {
           final long backoff = retryScheduler.nextMillis();
-          log.warn("conflict: {} {}. Resyncing in {}ms", e.getPath(), e.code(), backoff);
           initialized = false;
+          if (e instanceof ConnectionLossException) {
+            log.warn("Connection lost. Resyncing in {}ms", backoff);
+          } else if (e instanceof NodeExistsException || e instanceof NoNodeException) {
+            log.warn("Conflict: {} {}. Resyncing in {}ms", e.getPath(), e.code(), backoff);
+          } else {
+            log.error("Error: Resyncing in {}ms", e.getPath(), e.code(), backoff, e);
+          }
           Thread.sleep(backoff);
         }
       }
+    }
+
+    private boolean isAlive() {
+      return state().ordinal() < STOPPING.ordinal();
     }
 
     private void incrementalUpdate() throws KeeperException {
@@ -279,46 +283,29 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
       remote = newRemote;
     }
 
-    private boolean parentExists() {
-      try {
-        return client("parentExists").exists(path) != null;
-      } catch (KeeperException e) {
-        throw Throwables.propagate(e);
+    private boolean parentExists() throws KeeperException {
+      return client("parentExists").exists(path) != null;
       }
-    }
 
-    private void delete(final String node) {
+    private void delete(final String node) throws KeeperException {
       final ZooKeeperClient client = client("delete");
       final String nodePath = ZKPaths.makePath(path, node);
-      try {
         if (client.stat(nodePath) != null) {
+          log.debug("deleting node: {}", nodePath);
           client.delete(nodePath);
-          log.debug("Deleted node: {}", nodePath);
         }
-      } catch (KeeperException.ConnectionLossException e) {
-        log.warn("ZooKeeper connection lost while deleting node: {}", nodePath);
-        throw Throwables.propagate(e);
-      } catch (KeeperException e) {
-        log.error("Failed to delete node: {}", nodePath, e);
-        throw Throwables.propagate(e);
-      }
     }
 
     private void write(final String node, final byte[] data) throws KeeperException {
       final ZooKeeperClient client = client("write");
       final String nodePath = ZKPaths.makePath(path, node);
-      try {
         if (client.stat(nodePath) != null) {
+          log.debug("setting node: {}", nodePath);
           client.setData(nodePath, data);
-          log.debug("Wrote node: {}", nodePath);
         } else {
+          log.debug("creating node: {}", nodePath);
           client.createAndSetData(nodePath, data);
-          log.debug("Created node: {}", nodePath);
         }
-      } catch (KeeperException.ConnectionLossException e) {
-        log.warn("ZooKeeper connection lost while writing node: {}", nodePath);
-        throw Throwables.propagate(e);
-      }
     }
 
     private void syncChecked() throws KeeperException {

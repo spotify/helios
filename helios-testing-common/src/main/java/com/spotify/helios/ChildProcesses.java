@@ -28,46 +28,46 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import jnr.posix.POSIXFactory;
+
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Arrays.asList;
 
 public class ChildProcesses {
 
   private static final Logger log = LoggerFactory.getLogger(ChildProcesses.class);
 
-  public static Process spawn(final Class<?> clazz, final String... args) throws IOException {
-    final String main = clazz.getName();
-    return spawn(main, args);
+  public static final int OK_EXIT_CODE = 0;
+  public static final int INVALID_ARGUMENTS_EXIT_CODE = 2;
+  public static final int EXCEPTION_EXIT_CODE = 3;
+  public static final int CHILD_EXIT_CODE = 4;
+
+  public static SubprocessBuilder process() {
+    return new SubprocessBuilder();
   }
 
-  public static Process spawn(final String main, final String[] args) throws IOException {
-    final String java = System.getProperty("java.home") + "/bin/java";
-    final String classpath = System.getProperty("java.class.path");
-    final List<String> cmd = ImmutableList.<String>builder()
-        .add(java, "-cp", classpath,
-             "-Xms64m", "-Xmx64m",
-             "-XX:+TieredCompilation",
-             "-XX:TieredStopAtLevel=1")
-        .add(main)
-        .add(String.valueOf(pid()))
-        .add(args)
-        .build();
-    final Process process = new ProcessBuilder()
-        .command(cmd)
-        .start();
-    monitor(main, process);
-    return process;
-  }
-
-  private static void monitor(final String main, final Process process) {
+  private static void monitor(final String main, final Subprocess process,
+                              final Integer exitParentOnChildExit) {
     Executors.newSingleThreadExecutor().execute(new Runnable() {
       @Override
       public void run() {
         while (true) {
           try {
-            final int exitCode = process.waitFor();
-            if (exitCode != 0) {
+            final int exitCode = process.join();
+            if (process.killed()) {
+              return;
+            }
+            if (exitParentOnChildExit != null) {
+              log.error("{} exited: {}. Exiting.", exitCode);
+              System.exit(exitParentOnChildExit);
+            } else if (exitCode != 0) {
               log.warn("{} exited: {}", main, exitCode);
             } else {
               log.info("{} exited: 0");
@@ -92,7 +92,7 @@ public class ChildProcesses {
     public void run(String[] args) throws Exception {
       if (args.length < 1) {
         System.err.println("invalid arguments: " + Arrays.toString(args));
-        System.exit(2);
+        System.exit(INVALID_ARGUMENTS_EXIT_CODE);
         return;
       }
       final int parent = Integer.valueOf(args[0]);
@@ -104,9 +104,9 @@ public class ChildProcesses {
           }
         });
         start(args);
-      } catch (Exception e) {
+      } catch (Throwable e) {
         e.printStackTrace();
-        System.exit(3);
+        System.exit(EXCEPTION_EXIT_CODE);
       }
     }
 
@@ -119,16 +119,114 @@ public class ChildProcesses {
         } catch (InterruptedException e) {
           continue;
         }
-        final String[] cmd = {"ps", "-p", String.valueOf(pid)};
-        try {
-          final int exitCode = Runtime.getRuntime().exec(cmd).waitFor();
-          if (exitCode == 1) {
-            System.exit(0);
-          }
-        } catch (InterruptedException ignored) {
-        } catch (IOException e) {
-          System.exit(0);
+        int ppid = POSIXFactory.getPOSIX().getppid();
+        if (ppid != pid) {
+          // If we've been reparented, then the spawning parent is dead.
+          System.exit(OK_EXIT_CODE);
         }
+      }
+    }
+  }
+
+  public static class SubprocessBuilder {
+
+    private Integer parentExitCodeOnChildExit;
+    private String main;
+    private List<String> args;
+
+    public Subprocess spawn() throws IOException {
+      final String java = System.getProperty("java.home") + "/bin/java";
+      final String classpath = System.getProperty("java.class.path");
+      final List<String> cmd = ImmutableList.<String>builder()
+          .add(java, "-cp", classpath,
+               "-Xms64m", "-Xmx64m",
+               "-XX:+TieredCompilation",
+               "-XX:TieredStopAtLevel=1")
+          .add(main)
+          .add(String.valueOf(pid()))
+          .addAll(args)
+          .build();
+      final Process process = new ProcessBuilder()
+          .command(cmd)
+          .start();
+      Subprocess subprocess = new Subprocess(process);
+      monitor(main, subprocess, parentExitCodeOnChildExit);
+      return subprocess;
+    }
+
+
+    public SubprocessBuilder exitParentOnChildExit(final int exitCode) {
+      this.parentExitCodeOnChildExit = exitCode;
+      return this;
+    }
+
+    public SubprocessBuilder exitParentOnChildExit() {
+      return exitParentOnChildExit(CHILD_EXIT_CODE);
+    }
+
+    public SubprocessBuilder main(final Class<?> main) {
+      checkNotNull(findMain(main), "class %s does not have a main method", main);
+      return main(main.getName());
+    }
+
+    private SubprocessBuilder main(final String main) {
+      this.main = main;
+      return this;
+    }
+
+    private Method findMain(final Class<?> cls) {
+      for (final Method method : cls.getMethods()) {
+        int mod = method.getModifiers();
+        if (method.getName().equals("main") &&
+            Modifier.isPublic(mod) && Modifier.isStatic(mod) &&
+            method.getParameterTypes().length == 1 &&
+            method.getParameterTypes()[0].equals(String[].class)) {
+          return method;
+        }
+      }
+      return null;
+    }
+
+    public SubprocessBuilder args(final String... args) {
+      return args(asList(args));
+    }
+
+    private SubprocessBuilder args(final List<String> args) {
+      this.args = ImmutableList.copyOf(args);
+      return this;
+    }
+  }
+
+  public static class Subprocess {
+
+    private final AtomicBoolean killed = new AtomicBoolean();
+
+    private final Process process;
+
+    public Subprocess(final Process process) {
+      this.process = process;
+    }
+
+    public void kill() {
+      killed.set(true);
+      // TODO (dano): send SIGKILL after a timeout if process doesn't exit on SIGTERM.
+      process.destroy();
+    }
+
+    public boolean killed() {
+      return killed.get();
+    }
+
+    public int join() throws InterruptedException {
+      return process.waitFor();
+    }
+
+    public boolean running() {
+      try {
+        process.exitValue();
+        return false;
+      } catch (IllegalThreadStateException e) {
+        return true;
       }
     }
   }

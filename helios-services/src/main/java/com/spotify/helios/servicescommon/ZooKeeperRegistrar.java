@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import static com.google.common.util.concurrent.Service.State.STOPPING;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.zookeeper.KeeperException.ConnectionLossException;
 
 public class ZooKeeperRegistrar extends AbstractIdleService {
 
@@ -100,7 +101,11 @@ public class ZooKeeperRegistrar extends AbstractIdleService {
           return;
         } catch (KeeperException e) {
           final long sleep = retryScheduler.nextMillis();
-          log.error("ZooKeeper registration failed, retrying in {} ms", sleep, e);
+          if (e instanceof ConnectionLossException) {
+            log.warn("ZooKeeper connection lost, retrying registration in {} ms", sleep);
+          } else {
+            log.error("ZooKeeper registration failed, retrying in {} ms", sleep, e);
+          }
           Thread.sleep(sleep);
         }
       }

@@ -59,6 +59,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.zookeeper.KeeperException.ConnectionLossException;
 
 /**
  * Just some breadcrumbs so next time, the person that follows me can understand why things are
@@ -286,6 +287,10 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         // Ahh, the two generals problem...  We handle by doing nothing since the thing
         // we wanted in, is in.
         log.debug("item we wanted in is already there");
+      } catch (ConnectionLossException e) {
+        log.warn("Connection lost while putting item into zookeeper, will retry");
+        putBack(item);
+        break;
       } catch (KeeperException e) {
         log.error("Error putting item into zookeeper, will retry", e);
         putBack(item);

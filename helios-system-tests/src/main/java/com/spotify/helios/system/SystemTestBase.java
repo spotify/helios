@@ -23,6 +23,7 @@ package com.spotify.helios.system;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
@@ -39,6 +40,11 @@ import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.LogMessage;
 import com.spotify.docker.client.LogReader;
 import com.spotify.docker.client.messages.Container;
+import com.spotify.docker.client.messages.ContainerConfig;
+import com.spotify.docker.client.messages.ContainerCreation;
+import com.spotify.docker.client.messages.ContainerInfo;
+import com.spotify.docker.client.messages.HostConfig;
+import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.Polling;
 import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.ZooKeeperStandaloneServerManager;
@@ -79,6 +85,7 @@ import org.slf4j.bridge.SLF4JBridgeHandler;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.Socket;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.SecureRandom;
@@ -89,10 +96,9 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.google.common.base.Charsets.UTF_8;
@@ -100,6 +106,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
+import static com.spotify.helios.TemporaryPorts.AllocatedPort;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
@@ -149,7 +156,6 @@ public abstract class SystemTestBase {
   private Range<Integer> dockerPortRange;
 
   private final List<Service> services = newArrayList();
-  private final ExecutorService executorService = Executors.newCachedThreadPool();
   private final List<HeliosClient> clients = Lists.newArrayList();
 
   private String testHost;
@@ -157,7 +163,6 @@ public abstract class SystemTestBase {
   private String masterName;
 
   private ZooKeeperTestManager zk;
-
 
   @BeforeClass
   public static void staticSetup() {
@@ -169,15 +174,6 @@ public abstract class SystemTestBase {
   public void baseSetup() throws Exception {
     masterPort = temporaryPorts.localPort("helios master");
     masterAdminPort = temporaryPorts.localPort("helios master admin");
-
-    final String portRange = System.getenv("DOCKER_PORT_RANGE");
-    if (portRange != null) {
-      final String[] parts = portRange.split(":", 2);
-      dockerPortRange = Range.closedOpen(Integer.valueOf(parts[0]),
-                                         Integer.valueOf(parts[1]));
-    } else {
-      dockerPortRange = temporaryPorts.localPortRange("docker", 10);
-    }
 
     String className = getClass().getName();
     if (className.endsWith("ITCase")) {
@@ -197,6 +193,88 @@ public abstract class SystemTestBase {
     zk.ensure("/config");
     zk.ensure("/status");
     agentStateDirs = temporaryFolder.newFolder("helios-agents").toPath();
+  }
+
+  @Before
+  public void dockerSetup() throws Exception {
+    final String portRange = System.getenv("DOCKER_PORT_RANGE");
+
+    final AllocatedPort allocatedPort;
+    final int probePort;
+    if (portRange != null) {
+      final String[] parts = portRange.split(":", 2);
+      dockerPortRange = Range.closedOpen(Integer.valueOf(parts[0]),
+                                         Integer.valueOf(parts[1]));
+      allocatedPort = Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<AllocatedPort>() {
+        @Override
+        public AllocatedPort call() throws Exception {
+          final int port = ThreadLocalRandom.current().nextInt(dockerPortRange.lowerEndpoint(),
+                                                               dockerPortRange.upperEndpoint());
+          return temporaryPorts.tryAcquire("docker-probe", port);
+        }
+      });
+      probePort = allocatedPort.port();
+    } else {
+      dockerPortRange = temporaryPorts.localPortRange("docker", 10);
+      probePort = dockerPortRange().lowerEndpoint();
+      allocatedPort = null;
+    }
+
+    try {
+      assertDockerReachable(probePort);
+    } finally {
+      if (allocatedPort != null) {
+        allocatedPort.release();
+      }
+    }
+  }
+
+  private void assertDockerReachable(final int probePort) throws Exception {
+    final DockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri());
+    docker.pull("busybox");
+    final ContainerConfig config = ContainerConfig.builder()
+        .image("busybox")
+        .cmd("nc", "-p", "4711", "-lle", "cat")
+        .exposedPorts(ImmutableSet.of("4711/tcp"))
+        .build();
+    final HostConfig hostConfig = HostConfig.builder()
+        .portBindings(ImmutableMap.of("4711/tcp",
+                                      asList(PortBinding.of("0.0.0.0", probePort))))
+        .build();
+    final ContainerCreation creation = docker.createContainer(config, testTag + "-probe");
+    final String containerId = creation.id();
+    docker.startContainer(containerId, hostConfig);
+
+    // Wait for container to come up
+    Polling.await(5, SECONDS, new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        final ContainerInfo info = docker.inspectContainer(containerId);
+        return info.state().running() ? true : null;
+      }
+    });
+
+    log.info("Verifying that docker containers are reachable");
+    try {
+      Polling.awaitUnchecked(5, SECONDS, new Callable<Object>() {
+        @Override
+        public Object call() throws Exception {
+          log.info("Probing: {}:{}", DOCKER_HOST.address(), probePort);
+          try (final Socket ignored = new Socket(DOCKER_HOST.address(), probePort)) {
+            return true;
+          } catch (IOException e) {
+            return false;
+          }
+        }
+      });
+    } catch (TimeoutException e) {
+      fail("Please ensure that DOCKER_HOST is set to an address that where containers can " +
+           "be reached. If docker is running in a local VM, DOCKER_HOST must be set to the " +
+           "address of that VM. If docker can only be reached on a limited port range, " +
+           "set the environment variable DOCKER_PORT_RANGE=start:end");
+    }
+
+    docker.killContainer(containerId);
   }
 
   protected ZooKeeperTestManager zooKeeperTestManager() {
@@ -227,13 +305,6 @@ public abstract class SystemTestBase {
     }
     services.clear();
 
-    try {
-      executorService.shutdownNow();
-      executorService.awaitTermination(30, SECONDS);
-    } catch (InterruptedException e) {
-      log.error("Interrupted", e);
-    }
-
     // Clean up docker
     try {
       final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
@@ -254,7 +325,9 @@ public abstract class SystemTestBase {
       log.error("Docker client exception", e);
     }
 
-    zk.close();
+    if (zk != null) {
+      zk.close();
+    }
 
     listThreads();
   }
