@@ -12,5 +12,4 @@ before_install:
 
 before_script:
   - . .travis.sh before_script
-
-script: MAVEN_OPTS="-Xmx128m" mvn test
+  - export MAVEN_OPTS="-Xmx128m"
