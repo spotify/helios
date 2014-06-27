@@ -11,7 +11,7 @@ Vagrant.configure("2") do |config|
   config.vm.box = BOX_NAME
 
   config.ssh.forward_agent = true
-  config.vm.network :forwarded_port, guest: 4243, host: 4243
+  config.vm.network :forwarded_port, guest: 2375, host: 2375
   config.vm.network :forwarded_port, guest: 5801, host: 5801
 
   # sync the maven folder
@@ -25,9 +25,9 @@ Vagrant.configure("2") do |config|
   pkg_cmd << "echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list; "
   pkg_cmd << "apt-get update && apt-get -y install lxc-docker; "
   
-  # Set up docker to listen on 0.0.0.0:4243
-  pkg_cmd << "echo 'DOCKER_OPTS=\"--restart=false -D=true -H=tcp://0.0.0.0:4243 -H=unix:///var/run/docker.sock\"' > /etc/default/docker; "
   
+  # Set up docker to listen on 0.0.0.0:2375
+  pkg_cmd << "echo 'DOCKER_OPTS=\"--restart=false -D=true -H=tcp://0.0.0.0:2375 -H=unix:///var/run/docker.sock\"' > /etc/default/docker; "
   # make docker usable by vagrant user w/o sudo
   pkg_cmd << "groupadd docker; gpasswd -a vagrant docker; service docker restart;"
   

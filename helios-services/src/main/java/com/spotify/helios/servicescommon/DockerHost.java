@@ -34,7 +34,7 @@ import static java.lang.System.getenv;
  */
 public class DockerHost {
 
-  public static final int DEFAULT_PORT = 4243;
+  public static final int DEFAULT_PORT = 2375;
   public static final String DEFAULT_HOST = "localhost";
 
   private final String host;
