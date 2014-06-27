@@ -23,6 +23,7 @@ package com.spotify.helios.cli.command;
 
 import com.spotify.helios.client.HeliosClient;
 
+import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
@@ -30,11 +31,20 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static com.spotify.helios.cli.Output.formatHostname;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+
 public class MasterListCommand extends ControlCommand {
+
+  private final Argument fullArg;
 
   public MasterListCommand(Subparser parser) {
     super(parser);
     parser.help("list masters");
+
+    fullArg = parser.addArgument("-f")
+        .action(storeTrue())
+        .help("Print full hostnames");
   }
 
   @Override
@@ -42,8 +52,9 @@ public class MasterListCommand extends ControlCommand {
           final boolean json)
       throws ExecutionException, InterruptedException {
     final List<String> masters = client.listMasters().get();
-    for (final String master : masters) {
-      out.println(master);
+    final boolean full = options.getBoolean(fullArg.getDest());
+    for (final String host : masters) {
+      out.println(formatHostname(full, host));
     }
     return 0;
   }

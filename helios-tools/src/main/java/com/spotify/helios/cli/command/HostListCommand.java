@@ -49,6 +49,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Predicates.containsPattern;
 import static com.google.common.collect.Ordering.natural;
+import static com.spotify.helios.cli.Output.formatHostname;
 import static com.spotify.helios.cli.Output.humanDuration;
 import static com.spotify.helios.cli.Output.table;
 import static com.spotify.helios.cli.Utils.allAsMap;
@@ -61,6 +62,7 @@ public class HostListCommand extends ControlCommand {
 
   private final Argument quietArg;
   private final Argument patternArg;
+  private final Argument fullArg;
 
   public HostListCommand(final Subparser parser) {
     super(parser);
@@ -76,6 +78,9 @@ public class HostListCommand extends ControlCommand {
         .action(storeTrue())
         .help("only print host names");
 
+    fullArg = parser.addArgument("-f")
+        .action(storeTrue())
+        .help("Print full host names.");
   }
 
   @Override
@@ -86,6 +91,7 @@ public class HostListCommand extends ControlCommand {
         .from(client.listHosts().get())
         .filter(containsPattern(pattern))
         .toList();
+    final boolean full = options.getBoolean(fullArg.getDest());
 
     if (!Strings.isNullOrEmpty(pattern) && hosts.isEmpty()) {
       out.printf("host pattern %s matched no hosts%n", pattern);
@@ -101,7 +107,7 @@ public class HostListCommand extends ControlCommand {
         out.println(Json.asPrettyStringUnchecked(sortedHosts));
       } else {
         for (final String host : sortedHosts) {
-          out.println(host);
+          out.println(formatHostname(full, host));
         }
       }
     } else {
@@ -177,8 +183,8 @@ public class HostListCommand extends ControlCommand {
             }
           }
 
-          table.row(host, status, s.getJobs().size(), runningDeployedJobs.size(),
-                    cpus, mem, loadAvg, memUsage, os, version, docker);
+          table.row(formatHostname(full, host), status, s.getJobs().size(),
+                    runningDeployedJobs.size(), cpus, mem, loadAvg, memUsage, os, version, docker);
         }
 
         table.print();
