@@ -35,6 +35,7 @@ import com.spotify.helios.common.Json;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -71,6 +72,7 @@ public class JobTest {
         ServiceEndpoint.of("set_service", "set_proto"),
         ServicePorts.of("set_ports1", "set_ports2"));
     final Map<String, String> setVolumes = ImmutableMap.of("/set", "/volume");
+    final Date setExpires = new Date();
 
     // Input to addXXX
     final Map<String, String> addEnv = ImmutableMap.of("add", "env");
@@ -90,6 +92,7 @@ public class JobTest {
     final Map<ServiceEndpoint, ServicePorts> expectedRegistration = concat(setRegistration,
                                                                            addRegistration);
     final Map<String, String> expectedVolumes = concat(setVolumes, addVolumes);
+    final Date expectedExpires = setExpires;
 
     // Check setXXX methods
     builder.setName(setName);
@@ -100,6 +103,7 @@ public class JobTest {
     builder.setPorts(setPorts);
     builder.setRegistration(setRegistration);
     builder.setVolumes(setVolumes);
+    builder.setExpires(setExpires);
     assertEquals("name", setName, builder.getName());
     assertEquals("version", setVersion, builder.getVersion());
     assertEquals("image", setImage, builder.getImage());
@@ -108,6 +112,7 @@ public class JobTest {
     assertEquals("ports", setPorts, builder.getPorts());
     assertEquals("registration", setRegistration, builder.getRegistration());
     assertEquals("volumes", setVolumes, builder.getVolumes());
+    assertEquals("expires", setExpires, builder.getExpires());
 
     // Check addXXX methods
     for (final Map.Entry<String, String> entry : addEnv.entrySet()) {
@@ -130,6 +135,7 @@ public class JobTest {
     assertEquals("ports", expectedPorts, builder.getPorts());
     assertEquals("registration", expectedRegistration, builder.getRegistration());
     assertEquals("volumes", expectedVolumes, builder.getVolumes());
+    assertEquals("expires", expectedExpires, builder.getExpires());
 
     // Check final output
     final Job job = builder.build();
@@ -141,6 +147,8 @@ public class JobTest {
     assertEquals("ports", expectedPorts, job.getPorts());
     assertEquals("registration", expectedRegistration, job.getRegistration());
     assertEquals("volumes", expectedVolumes, job.getVolumes());
+    assertEquals("expires", expectedExpires, job.getExpires());
+
 
     // Check toBuilder
     final Job.Builder rebuilder = job.toBuilder();
@@ -152,6 +160,7 @@ public class JobTest {
     assertEquals("ports", expectedPorts, rebuilder.getPorts());
     assertEquals("registration", expectedRegistration, rebuilder.getRegistration());
     assertEquals("volumes", expectedVolumes, rebuilder.getVolumes());
+    assertEquals("expires", expectedExpires, rebuilder.getExpires());
 
     // Check clone
     final Job.Builder cloned = builder.clone();
@@ -163,6 +172,7 @@ public class JobTest {
     assertEquals("ports", expectedPorts, cloned.getPorts());
     assertEquals("registration", expectedRegistration, cloned.getRegistration());
     assertEquals("volumes", expectedVolumes, cloned.getVolumes());
+    assertEquals("expires", expectedExpires, cloned.getExpires());
 
     final Job clonedJob = cloned.build();
     assertEquals("name", expectedName, clonedJob.getId().getName());
@@ -173,6 +183,7 @@ public class JobTest {
     assertEquals("ports", expectedPorts, clonedJob.getPorts());
     assertEquals("registration", expectedRegistration, clonedJob.getRegistration());
     assertEquals("volumes", expectedVolumes, clonedJob.getVolumes());
+    assertEquals("expires", expectedExpires, clonedJob.getExpires());
   }
 
   @SafeVarargs
