@@ -35,6 +35,8 @@ import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import jnr.posix.POSIXFactory;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Arrays.asList;
 
@@ -117,14 +119,9 @@ public class ChildProcesses {
         } catch (InterruptedException e) {
           continue;
         }
-        final String[] cmd = {"ps", "-p", String.valueOf(pid)};
-        try {
-          final int exitCode = Runtime.getRuntime().exec(cmd).waitFor();
-          if (exitCode == 1) {
-            System.exit(OK_EXIT_CODE);
-          }
-        } catch (InterruptedException ignored) {
-        } catch (IOException e) {
+        int ppid = POSIXFactory.getPOSIX().getppid();
+        if (ppid != pid) {
+          // If we've been reparented, then the spawning parent is dead.
           System.exit(OK_EXIT_CODE);
         }
       }
