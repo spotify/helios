@@ -32,6 +32,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION_DOMAIN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static org.junit.Assert.assertEquals;
 
@@ -44,7 +45,8 @@ public class IdMismatchJobCreateTest extends SystemTestBase {
 
     final CreateJobResponse createIdMismatch = client.createJob(
         new Job(JobId.fromString("bad:job:deadbeef"), "busyBox", IDLE_COMMAND, EMPTY_ENV,
-                EMPTY_PORTS, EMPTY_REGISTRATION, EMPTY_VOLUMES, EMPTY_EXPIRES)).get();
+                EMPTY_PORTS, EMPTY_REGISTRATION, EMPTY_VOLUMES, EMPTY_EXPIRES,
+                EMPTY_REGISTRATION_DOMAIN)).get();
 
     // TODO (dano): Maybe this should be ID_MISMATCH but then JobValidator must become able to
     // TODO (dano): communicate that

@@ -227,7 +227,8 @@ public class AgentService extends AbstractIdleService {
         : new NoOpContainerDecorator(),
         config.getName(),
         metrics.getSupervisorMetrics(),
-        namespace);
+        namespace,
+        config.getDomain());
 
     final ReactorFactory reactorFactory = new ReactorFactory();
 

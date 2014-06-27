@@ -70,6 +70,7 @@ public class TaskConfig {
   private final Map<String, String> envVars;
   private final ContainerDecorator containerDecorator;
   private final String namespace;
+  private final String defaultRegistrationDomain;
 
   private TaskConfig(final Builder builder) {
     this.host = checkNotNull(builder.host, "host");
@@ -78,6 +79,8 @@ public class TaskConfig {
     this.envVars = checkNotNull(builder.envVars, "envVars");
     this.containerDecorator = checkNotNull(builder.containerDecorator, "containerDecorator");
     this.namespace = checkNotNull(builder.namespace, "namespace");
+    this.defaultRegistrationDomain = checkNotNull(builder.defaultRegistrationDomain,
+        "defaultRegistrationDomain");
   }
 
   /**
@@ -150,13 +153,27 @@ public class TaskConfig {
           log.error("no external '{}' port for registration: '{}'", portName, registration);
           continue;
         }
-        builder.endpoint(registration.getName(), registration.getProtocol(), externalPort);
+        builder.endpoint(registration.getName(), registration.getProtocol(), externalPort,
+            fullyQualifiedRegistrationDomain(), host);
       }
     }
 
     return builder.build();
   }
 
+  /**
+   * Given the registration domain in the job, and the default registration domain for the agent,
+   * figure out what domain we should actually register the job in.
+   */
+  private String fullyQualifiedRegistrationDomain() {
+    if (job.getRegistrationDomain().endsWith(".")) {
+      return job.getRegistrationDomain();
+    } else if ("".equals(job.getRegistrationDomain())) {
+      return defaultRegistrationDomain;
+    } else {
+      return job.getRegistrationDomain() + "." + defaultRegistrationDomain;
+    }
+  }
 
   /**
    * Create container port exposure configuration for a job.
@@ -293,6 +310,7 @@ public class TaskConfig {
     private Map<String, String> envVars = Collections.emptyMap();
     private ContainerDecorator containerDecorator = new NoOpContainerDecorator();
     private String namespace;
+    private String defaultRegistrationDomain = "";
 
     public Builder host(final String host) {
       this.host = host;
@@ -301,6 +319,11 @@ public class TaskConfig {
 
     public Builder job(final Job job) {
       this.job = job;
+      return this;
+    }
+
+    public Builder defaultRegistrationDomain(final String domain) {
+      this.defaultRegistrationDomain = checkNotNull(domain, "domain");
       return this;
     }
 
@@ -337,6 +360,7 @@ public class TaskConfig {
         .add("ports", ports)
         .add("envVars", envVars)
         .add("containerDecorator", containerDecorator)
+        .add("defaultRegistrationDomain", defaultRegistrationDomain)
         .toString();
   }
 }
