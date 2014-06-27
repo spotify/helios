@@ -3,10 +3,18 @@
   <modelVersion>4.0.0</modelVersion>
 
   <name>Helios Parent</name>
+  <description>A docker container orchestration system and deployment platform</description>
+  <url>https://github.com/spotify/helios</url>
   <groupId>com.spotify</groupId>
   <artifactId>helios-parent</artifactId>
   <version>0.0.31-SNAPSHOT</version>
   <packaging>pom</packaging>
+
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
 
   <licenses>
     <license>
@@ -17,9 +25,49 @@
   </licenses>
 
   <scm>
+    <connection>scm:git:https://github.com/spotify/helios.git</connection>
     <developerConnection>scm:git:git@github.com:spotify/helios.git</developerConnection>
+    <url>https://github.com/spotify/helios</url>
     <tag>HEAD</tag>
   </scm>
+
+  <developers>
+    <developer>
+      <id>dano</id>
+      <name>Daniel Norberg</name>
+      <email>dano@spotify.com</email>
+    </developer>
+    <developer>
+      <id>drewc</id>
+      <name>Drew Csillag</name>
+      <email>drewc@spotify.com</email>
+    </developer>
+    <developer>
+      <id>matslina</id>
+      <name>Mats Linander</name>
+      <email>matslina@spotify.com</email>
+    </developer>
+    <developer>
+      <id>philipcristiano</id>
+      <name>Philip Cristiano</name>
+      <email>philipcristiano@spotify.com</email>
+    </developer>
+    <developer>
+      <id>rohan</id>
+      <name>Rohan Singh</name>
+      <email>rohan@spotify.com</email>
+    </developer>
+    <developer>
+      <id>ryan</id>
+      <name>Ryan Culbertson</name>
+      <email>ryan@spotify.com</email>
+    </developer>
+    <developer>
+      <id>snc</id>
+      <name>Simon Cohen</name>
+      <email>snc@spotify.com</email>
+    </developer>
+  </developers>
 
   <repositories>
     <repository>
