@@ -56,22 +56,24 @@ Prerequisities
 * [Docker 1.0](https://github.com/dotcloud/docker) or newer
 * [Zookeeper 3.4.0](https://zookeeper.apache.org/) or newer
 
-[boot2docker](https://github.com/boot2docker/boot2docker) on OS X should
-work to some degree. You may run into various fun issues, but the test suite
-**will** pass with boot2docker.
 
 Build & Test
 ------------
+
+First, make sure you have Docker installed locally. If you're using OS X, you can use
+the included Vagrantfile to bring up Docker inside of a VM:
+
+```sh
+$ vagrant up
+
+# set DOCKER_HOST to use the Docker instance inside the VM
+$ export DOCKER_HOST=tcp://192.168.33.10:2375
+```
 
 Actually building Helios and running its tests should be a simple matter
 of running:
 
     $ mvn clean test
-
-If you would like to run tests against a different Docker instance then you can
-use the `DOCKER_HOST` environment variable.
-
-    $ DOCKER_HOST=tcp://localhost:2375 mvn clean test
 
 Install & Run
 -------------
