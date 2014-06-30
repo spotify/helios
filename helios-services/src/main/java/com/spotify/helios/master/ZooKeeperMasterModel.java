@@ -817,9 +817,18 @@ public class ZooKeeperMasterModel implements MasterModel {
     for (int port : staticPorts) {
         operations.add(delete(Paths.configHostPort(host, port)));
     }
-    // TODO (dano): handle retry failures
+
     try {
       client.transaction(operations);
+    } catch (NoNodeException e) {
+      if (e.getPath().equals(path)) {
+        // NoNodeException on updating the deployment node may happen due to retry failures.
+        // If the deployment isn't there anymore, we're done.
+        return deployment;
+      } else {
+        // The relation node deletes should not fail unless there is a programming error.
+        throw new HeliosRuntimeException("Removing deployment failed", e);
+      }
     } catch (KeeperException e) {
       throw new HeliosRuntimeException("Removing deployment failed", e);
     }
