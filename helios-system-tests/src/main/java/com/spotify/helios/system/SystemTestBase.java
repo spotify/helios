@@ -505,17 +505,17 @@ public abstract class SystemTestBase {
 
     final String stateDir = agentStateDirs.resolve(host).toString();
     final List<String> argsList = Lists.newArrayList("-vvvv",
-      "--no-log-setup",
-      "--no-http",
-      "--name", host,
-      "--docker=" + DOCKER_HOST,
-      "--zk", zk.connectString(),
-      "--zk-session-timeout", "100",
-      "--zk-connection-timeout", "100",
-      "--state-dir", stateDir,
-      "--port-range=" +
-        dockerPortRange.lowerEndpoint() + ":" +
-        dockerPortRange.upperEndpoint()
+                                                     "--no-log-setup",
+                                                     "--no-http",
+                                                     "--name", host,
+                                                     "--docker=" + DOCKER_HOST,
+                                                     "--zk", zk.connectString(),
+                                                     "--zk-session-timeout", "100",
+                                                     "--zk-connection-timeout", "100",
+                                                     "--state-dir", stateDir,
+                                                     "--port-range=" +
+                                                     dockerPortRange.lowerEndpoint() + ":" +
+                                                     dockerPortRange.upperEndpoint()
     );
     argsList.addAll(asList(args));
     return startAgent(argsList.toArray(new String[argsList.size()]));
