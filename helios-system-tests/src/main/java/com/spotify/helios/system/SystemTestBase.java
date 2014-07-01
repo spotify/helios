@@ -21,6 +21,7 @@
 
 package com.spotify.helios.system;
 
+import com.fasterxml.jackson.databind.util.ISO8601Utils;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -91,6 +92,7 @@ import java.nio.file.Path;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -109,6 +111,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.TemporaryPorts.AllocatedPort;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
@@ -502,17 +505,18 @@ public abstract class SystemTestBase {
 
     final String stateDir = agentStateDirs.resolve(host).toString();
     final List<String> argsList = Lists.newArrayList("-vvvv",
-                                                     "--no-log-setup",
-                                                     "--no-http",
-                                                     "--name", host,
-                                                     "--docker=" + DOCKER_HOST,
-                                                     "--zk", zk.connectString(),
-                                                     "--zk-session-timeout", "100",
-                                                     "--zk-connection-timeout", "100",
-                                                     "--state-dir", stateDir,
-                                                     "--port-range=" +
-                                                     dockerPortRange.lowerEndpoint() + ":" +
-                                                     dockerPortRange.upperEndpoint());
+      "--no-log-setup",
+      "--no-http",
+      "--name", host,
+      "--docker=" + DOCKER_HOST,
+      "--zk", zk.connectString(),
+      "--zk-session-timeout", "100",
+      "--zk-connection-timeout", "100",
+      "--state-dir", stateDir,
+      "--port-range=" +
+        dockerPortRange.lowerEndpoint() + ":" +
+        dockerPortRange.upperEndpoint()
+    );
     argsList.addAll(asList(args));
     return startAgent(argsList.toArray(new String[argsList.size()]));
   }
@@ -536,6 +540,15 @@ public abstract class SystemTestBase {
                             final String image,
                             final List<String> command) throws Exception {
     return createJob(name, version, image, command, EMPTY_ENV, EMPTY_PORTS, EMPTY_REGISTRATION);
+  }
+
+  protected JobId createJob(final String name,
+                            final String version,
+                            final String image,
+                            final List<String> command,
+                            final Date expires) throws Exception {
+    return createJob(name, version, image, command, EMPTY_ENV, EMPTY_PORTS, EMPTY_REGISTRATION,
+      EMPTY_VOLUMES, expires);
   }
 
   protected JobId createJob(final String name,
@@ -575,16 +588,30 @@ public abstract class SystemTestBase {
                             final Map<String, PortMapping> ports,
                             final Map<ServiceEndpoint, ServicePorts> registration,
                             final Map<String, String> volumes) throws Exception {
+    return createJob(name, version, image, command, env, ports, registration, volumes,
+        EMPTY_EXPIRES);
+  }
+
+  protected JobId createJob(final String name,
+                            final String version,
+                            final String image,
+                            final List<String> command,
+                            final Map<String, String> env,
+                            final Map<String, PortMapping> ports,
+                            final Map<ServiceEndpoint, ServicePorts> registration,
+                            final Map<String, String> volumes,
+                            final Date expires) throws Exception {
     return createJob(Job.newBuilder()
-                         .setName(name)
-                         .setVersion(version)
-                         .setImage(image)
-                         .setCommand(command)
-                         .setEnv(env)
-                         .setPorts(ports)
-                         .setRegistration(registration)
-                         .setVolumes(volumes)
-                         .build());
+        .setName(name)
+        .setVersion(version)
+        .setImage(image)
+        .setCommand(command)
+        .setEnv(env)
+        .setPorts(ports)
+        .setRegistration(registration)
+        .setVolumes(volumes)
+        .setExpires(expires)
+        .build());
   }
 
   protected JobId createJob(final Job job) throws Exception {
@@ -627,6 +654,10 @@ public abstract class SystemTestBase {
         // Bind mount
         args.add("--volume=" + entry.getValue() + ":" + entry.getKey());
       }
+    }
+
+    if (job.getExpires() != null) {
+      args.add("--expires=" + ISO8601Utils.format(job.getExpires()));
     }
 
     args.add("--");

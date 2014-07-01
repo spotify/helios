@@ -44,23 +44,27 @@ import java.util.Map;
 import static com.fasterxml.jackson.databind.DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES;
 import static com.fasterxml.jackson.databind.MapperFeature.SORT_PROPERTIES_ALPHABETICALLY;
 import static com.fasterxml.jackson.databind.SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS;
+import static com.fasterxml.jackson.databind.SerializationFeature.WRITE_DATES_AS_TIMESTAMPS;
 
 public class Json {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper()
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
       .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
+      .configure(WRITE_DATES_AS_TIMESTAMPS, false)
       .configure(FAIL_ON_UNKNOWN_PROPERTIES, false);
 
   private static final ObjectWriter NORMALIZING_OBJECT_WRITER = new ObjectMapper()
       .setSerializationInclusion(JsonInclude.Include.NON_EMPTY)
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
       .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
+      .configure(WRITE_DATES_AS_TIMESTAMPS, false)
       .writer();
 
   private static final ObjectWriter PRETTY_OBJECT_WRITER = new ObjectMapper()
       .configure(SORT_PROPERTIES_ALPHABETICALLY, true)
       .configure(ORDER_MAP_ENTRIES_BY_KEYS, true)
+      .configure(WRITE_DATES_AS_TIMESTAMPS, false)
       .writerWithDefaultPrettyPrinter();
 
   private static final TypeReference<Map<String, Object>> MAP_TYPE =
