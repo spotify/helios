@@ -13,6 +13,7 @@ Vagrant.configure("2") do |config|
   config.ssh.forward_agent = true
   config.vm.network :forwarded_port, guest: 2375, host: 2375
   config.vm.network :forwarded_port, guest: 5801, host: 5801
+  config.vm.network :private_network, ip: "192.168.33.10"
 
   # sync the maven folder
   config.vm.synced_folder "~/.m2", "/home/vagrant/.m2"
@@ -72,12 +73,6 @@ Vagrant::VERSION >= "1.1.0" and Vagrant.configure("2") do |config|
     config.vm.box = BOX_NAME
     vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
     vb.customize ["modifyvm", :id, "--natdnsproxy1", "on"]
-
-    override.vm.network :private_network, ip: "192.168.33.10"
-  end
-
-  config.vm.provider :vmware_fusion do |vf, override|
-    override.vm.network :private_network, ip: "192.168.66.10"
   end
 end
 
