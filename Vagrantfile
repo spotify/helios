@@ -63,6 +63,28 @@ Vagrant.configure("2") do |config|
             /vagrant/helios-services/target/*.deb ;
     END
 
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
+    curl -L https://github.com/spotify/container-agent/releases/download/0.1/container-agent_0.1-1.0.0.0.24.535bef3.2_amd64.deb -o container-agent.deb && \
+    apt-get install -y --force-yes libyaml-dev &&
+    dpkg -i container-agent.deb && \
+    echo 'containers:
+      - name: skydns
+        image: drewcsillag/skydns:0.3
+        ports:
+          - name: domain
+            hostPort: 53
+            containerPort: 53
+            protocol: UDP
+            hostIp: 192.168.33.10
+          - name: etcd
+            hostPort: 4001
+            containerPort: 4001
+        env:
+          - key: DOMAIN
+            value: skydns.local
+    ' > /etc/container-agent/containers.d/skydns.yaml ;
+    END
+
   config.vm.provision :shell, :inline => pkg_cmd
 end
 
