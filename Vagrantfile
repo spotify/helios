@@ -36,14 +36,14 @@ Vagrant.configure("2") do |config|
   pkg_cmd << "apt-get install -y default-jdk maven zookeeperd=3.4.5+dfsg-1 git vim curl; "
 
   # install helios conf files
-  pkg_cmd << <<-END.gsub(/^ {6}/, '')
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
     echo '
     ENABLED=true
 
     HELIOS_AGENT_OPTS="--state-dir=/var/lib/helios-agent --name=192.168.33.10 --zk localhost:2181"
     ' > /etc/default/helios-agent ;
     END
-  pkg_cmd << <<-END.gsub(/^ {6}/, '')
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
     echo '
     ENABLED=true
 
@@ -51,12 +51,12 @@ Vagrant.configure("2") do |config|
     ' > /etc/default/helios-master ;
     END
   pkg_cmd << "mkdir -p /home/vagrant/.helios;"
-  pkg_cmd << <<-END.gsub(/^ {6}/, '')
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
     echo '{"masterEndpoints":["http://localhost:5801"]}' > /home/vagrant/.helios/config;
     END
 
   # build and install Helios
-  pkg_cmd << <<-END.gsub(/^ {6}/, '')
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
     cd /vagrant && sudo -u vagrant mvn -B -DskipTests package && \
         dpkg --force-confdef --force-confold -i \
             /vagrant/helios-tools/target/*.deb \
