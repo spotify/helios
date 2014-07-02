@@ -21,6 +21,8 @@
 
 package com.spotify.helios.servicescommon;
 
+import com.google.common.base.Strings;
+
 import com.spotify.helios.serviceregistration.NopServiceRegistrar;
 import com.spotify.helios.serviceregistration.NopServiceRegistrarFactory;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
@@ -56,8 +58,11 @@ public class ServiceRegistrars {
     if (address != null) {
       log.info("Creating service registrar with address: {}", address);
       return factory.create(address);
-    } else if (domain != null) {
+    } else if (!Strings.isNullOrEmpty(domain)) {
       log.info("Creating service registrar for domain: {}", domain);
+
+      // TODO: localhost:4999 is pretty specific to Spotify's registrar, this should be
+      // handled in createForDomain there, rather than here.  Localhost should just pass through.
       return domain.equals("localhost")
              ? factory.create("tcp://localhost:4999")
              : factory.createForDomain(domain);

@@ -55,6 +55,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Map<String, String> EMPTY_VOLUMES = emptyMap();
   public static final String EMPTY_MOUNT = "";
   public static final Date EMPTY_EXPIRES = null;
+  public static final String EMPTY_REGISTRATION_DOMAIN = "";
 
   private final JobId id;
   private final String image;
@@ -64,6 +65,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Map<ServiceEndpoint, ServicePorts> registration;
   private final Map<String, String> volumes;
   private final Date expires;
+  private final String registrationDomain;
 
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
@@ -73,7 +75,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("registration") @Nullable
              final Map<ServiceEndpoint, ServicePorts> registration,
              @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
-             @JsonProperty("expires") @Nullable final Date expires) {
+             @JsonProperty("expires") @Nullable final Date expires,
+             @JsonProperty("registrationDomain") @Nullable String registrationDomain) {
     this.id = checkNotNull(id, "id");
     this.image = checkNotNull(image, "image");
 
@@ -84,6 +87,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.registration = Optional.fromNullable(registration).or(EMPTY_REGISTRATION);
     this.volumes = Optional.fromNullable(volumes).or(EMPTY_VOLUMES);
     this.expires = expires;
+    this.registrationDomain = Optional.fromNullable(registrationDomain)
+        .or(EMPTY_REGISTRATION_DOMAIN);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -95,6 +100,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.registration = ImmutableMap.copyOf(checkNotNull(p.registration, "registration"));
     this.volumes = ImmutableMap.copyOf(checkNotNull(p.volumes, "volumes"));
     this.expires = p.expires;
+    this.registrationDomain = Optional.fromNullable(p.registrationDomain)
+        .or(EMPTY_REGISTRATION_DOMAIN);
   }
 
   public JobId getId() {
@@ -119,6 +126,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public Map<ServiceEndpoint, ServicePorts> getRegistration() {
     return registration;
+  }
+
+  public String getRegistrationDomain() {
+    return registrationDomain;
   }
 
   public Map<String, String> getVolumes() {
@@ -170,6 +181,11 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (registration != null ? !registration.equals(job.registration) : job.registration != null) {
       return false;
     }
+    if (registrationDomain != null
+        ? !registrationDomain.equals(job.registrationDomain)
+        : job.registrationDomain != null) {
+      return false;
+    }
     if (volumes != null ? !volumes.equals(job.volumes) : job.volumes != null) {
       return false;
     }
@@ -186,6 +202,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (env != null ? env.hashCode() : 0);
     result = 31 * result + (ports != null ? ports.hashCode() : 0);
     result = 31 * result + (registration != null ? registration.hashCode() : 0);
+    result = 31 * result + (registrationDomain != null ? registrationDomain.hashCode() : 0);
     result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
     return result;
   }
@@ -200,6 +217,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("ports", ports)
         .add("registration", registration)
         .add("expires", expires)
+        .add("registrationDomain", registrationDomain)
         .toString();
   }
 
@@ -213,7 +231,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setPorts(ports)
         .setRegistration(registration)
         .setVolumes(volumes)
-        .setExpires(expires);
+        .setExpires(expires)
+        .setRegistrationDomain(registrationDomain);
   }
 
   public static class Builder implements Cloneable {
@@ -232,6 +251,7 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     private static class Parameters implements Cloneable {
 
+      public String registrationDomain;
       public String name;
       public String version;
       public String image;
@@ -248,6 +268,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.ports = Maps.newHashMap(EMPTY_PORTS);
         this.registration = Maps.newHashMap(EMPTY_REGISTRATION);
         this.volumes = Maps.newHashMap(EMPTY_VOLUMES);
+        this.registrationDomain = EMPTY_REGISTRATION_DOMAIN;
       }
 
       private Parameters(final Parameters p) {
@@ -260,7 +281,13 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.registration = Maps.newHashMap(p.registration);
         this.volumes = Maps.newHashMap(p.volumes);
         this.expires = p.expires;
+        this.registrationDomain = p.registrationDomain;
       }
+    }
+
+    public Builder setRegistrationDomain(final String domain) {
+      this.p.registrationDomain = domain;
+      return this;
     }
 
     public Builder setHash(final String hash) {
@@ -364,6 +391,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Map<ServiceEndpoint, ServicePorts> getRegistration() {
       return ImmutableMap.copyOf(p.registration);
+    }
+
+    public String getRegistrationDomain() {
+      return p.registrationDomain;
     }
 
     public Map<String, String> getVolumes() {

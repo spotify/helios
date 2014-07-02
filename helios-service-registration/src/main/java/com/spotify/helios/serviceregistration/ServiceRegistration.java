@@ -49,8 +49,12 @@ public class ServiceRegistration {
 
     private List<Endpoint> endpoints = new ArrayList<>();
 
-    public Builder endpoint(final String name, final String protocol, final int port) {
-      endpoints.add(new Endpoint(name, protocol, port));
+    public Builder endpoint(final String name,
+                            final String protocol,
+                            final int port,
+                            final String domain,
+                            final String host) {
+      endpoints.add(new Endpoint(name, protocol, port, domain, host));
       return this;
     }
 
@@ -67,11 +71,25 @@ public class ServiceRegistration {
     private final String name;
     private final String protocol;
     private final int port;
+    private final String domain;
+    /** The hostname on which we will advertise this service in service discovery */
+    private final String host;
 
-    public Endpoint(final String name, final String protocol, final int port) {
+    public Endpoint(final String name, final String protocol, final int port,
+                    final String domain, final String host) {
       this.name = name;
       this.protocol = protocol;
       this.port = port;
+      this.domain = domain;
+      this.host = host;
+    }
+
+    public String getHost() {
+      return host;
+    }
+
+    public String getDomain() {
+      return domain;
     }
 
     public String getName() {

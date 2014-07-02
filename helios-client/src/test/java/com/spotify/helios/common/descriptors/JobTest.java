@@ -45,6 +45,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 
 public class JobTest {
 
@@ -55,6 +56,13 @@ public class JobTest {
       builder.put((String) objects[i], objects[i + 1]);
     }
     return builder.build();
+  }
+
+  @Test
+  public void testNormalizedExcludesEmptyStrings() throws Exception {
+    final Job j = Job.newBuilder().setName("x").setImage("x").setVersion("x")
+        .setRegistrationDomain("").build();
+    assertFalse(Json.asNormalizedString(j).contains("registrationDomain"));
   }
 
   @Test
@@ -73,6 +81,7 @@ public class JobTest {
         ServicePorts.of("set_ports1", "set_ports2"));
     final Map<String, String> setVolumes = ImmutableMap.of("/set", "/volume");
     final Date setExpires = new Date();
+    final String setRegistrationDomain = "my.domain";
 
     // Input to addXXX
     final Map<String, String> addEnv = ImmutableMap.of("add", "env");
@@ -93,6 +102,7 @@ public class JobTest {
                                                                            addRegistration);
     final Map<String, String> expectedVolumes = concat(setVolumes, addVolumes);
     final Date expectedExpires = setExpires;
+    final String expectedRegistrationDomain = setRegistrationDomain;
 
     // Check setXXX methods
     builder.setName(setName);
@@ -104,6 +114,7 @@ public class JobTest {
     builder.setRegistration(setRegistration);
     builder.setVolumes(setVolumes);
     builder.setExpires(setExpires);
+    builder.setRegistrationDomain(setRegistrationDomain);
     assertEquals("name", setName, builder.getName());
     assertEquals("version", setVersion, builder.getVersion());
     assertEquals("image", setImage, builder.getImage());
@@ -113,6 +124,7 @@ public class JobTest {
     assertEquals("registration", setRegistration, builder.getRegistration());
     assertEquals("volumes", setVolumes, builder.getVolumes());
     assertEquals("expires", setExpires, builder.getExpires());
+    assertEquals("registrationDomain", setRegistrationDomain, builder.getRegistrationDomain());
 
     // Check addXXX methods
     for (final Map.Entry<String, String> entry : addEnv.entrySet()) {
@@ -136,6 +148,7 @@ public class JobTest {
     assertEquals("registration", expectedRegistration, builder.getRegistration());
     assertEquals("volumes", expectedVolumes, builder.getVolumes());
     assertEquals("expires", expectedExpires, builder.getExpires());
+    assertEquals("registrationDomain", expectedRegistrationDomain, builder.getRegistrationDomain());
 
     // Check final output
     final Job job = builder.build();
@@ -148,7 +161,7 @@ public class JobTest {
     assertEquals("registration", expectedRegistration, job.getRegistration());
     assertEquals("volumes", expectedVolumes, job.getVolumes());
     assertEquals("expires", expectedExpires, job.getExpires());
-
+    assertEquals("registrationDomain", expectedRegistrationDomain, job.getRegistrationDomain());
 
     // Check toBuilder
     final Job.Builder rebuilder = job.toBuilder();
@@ -161,6 +174,8 @@ public class JobTest {
     assertEquals("registration", expectedRegistration, rebuilder.getRegistration());
     assertEquals("volumes", expectedVolumes, rebuilder.getVolumes());
     assertEquals("expires", expectedExpires, rebuilder.getExpires());
+    assertEquals("registrationDomain", expectedRegistrationDomain,
+        rebuilder.getRegistrationDomain());
 
     // Check clone
     final Job.Builder cloned = builder.clone();
@@ -173,6 +188,8 @@ public class JobTest {
     assertEquals("registration", expectedRegistration, cloned.getRegistration());
     assertEquals("volumes", expectedVolumes, cloned.getVolumes());
     assertEquals("expires", expectedExpires, cloned.getExpires());
+    assertEquals("registrationDomain", expectedRegistrationDomain,
+        cloned.getRegistrationDomain());
 
     final Job clonedJob = cloned.build();
     assertEquals("name", expectedName, clonedJob.getId().getName());
@@ -184,6 +201,8 @@ public class JobTest {
     assertEquals("registration", expectedRegistration, clonedJob.getRegistration());
     assertEquals("volumes", expectedVolumes, clonedJob.getVolumes());
     assertEquals("expires", expectedExpires, clonedJob.getExpires());
+    assertEquals("RegistrationDomain", expectedRegistrationDomain,
+        clonedJob.getRegistrationDomain());
   }
 
   @SafeVarargs

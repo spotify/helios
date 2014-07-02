@@ -80,6 +80,7 @@ public class ServiceParser {
         .help("hostname to register as");
 
     domainArg = parser.addArgument("--domain")
+        .setDefault(ResolverConfReader.getDomainFromResolverConf("/etc/resolv.conf"))
         .help("Service registration domain.");
 
     serviceRegistryArg = parser.addArgument("--service-registry")
