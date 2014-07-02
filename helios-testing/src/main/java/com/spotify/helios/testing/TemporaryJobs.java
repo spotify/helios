@@ -24,18 +24,28 @@ package com.spotify.helios.testing;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
+import com.google.common.base.Throwables;
 import com.google.common.collect.FluentIterable;
-import com.google.common.collect.Lists;
+import com.google.common.collect.ImmutableList;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
 
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URI;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -43,6 +53,8 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.containsPattern;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.collect.Lists.newArrayList;
+import static com.spotify.helios.testing.Jobs.undeploy;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
@@ -55,12 +67,14 @@ public class TemporaryJobs extends ExternalResource {
   private static final Prober DEFAULT_PROBER = new DefaultProber();
   private static final String DEFAULT_LOCAL_HOST_FILTER = ".*";
   private static final String DEFAULT_HOST_FILTER = System.getenv("HELIOS_HOST_FILTER");
+  private static final String DEFAULT_PREFIX_DIRECTORY = "/tmp/helios-temp-jobs";
 
   private final HeliosClient client;
   private final Prober prober;
   private final String defaultHostFilter;
+  private final JobPrefixFile jobPrefixFile;
 
-  private final List<TemporaryJob> jobs = Lists.newArrayList();
+  private final List<TemporaryJob> jobs = newArrayList();
 
   private final TemporaryJob.Deployer deployer = new TemporaryJob.Deployer() {
     @Override
@@ -116,10 +130,19 @@ public class TemporaryJobs extends ExternalResource {
     this.client = checkNotNull(builder.client, "client");
     this.prober = checkNotNull(builder.prober, "prober");
     this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
+    final Path prefixDirectory = Paths.get(Optional.fromNullable(builder.prefixDirectory)
+        .or(DEFAULT_PREFIX_DIRECTORY));
+
+    try {
+      removeOldJobs(prefixDirectory);
+      this.jobPrefixFile = JobPrefixFile.create(prefixDirectory);
+    } catch (IOException | ExecutionException | InterruptedException e) {
+      throw Throwables.propagate(e);
+    }
   }
 
   public TemporaryJobBuilder job() {
-    return new TemporaryJobBuilder(deployer)
+    return new TemporaryJobBuilder(deployer, jobPrefixFile.prefix())
         .hostFilter(defaultHostFilter);
   }
 
@@ -167,7 +190,7 @@ public class TemporaryJobs extends ExternalResource {
 
   @Override
   protected void after() {
-    final List<AssertionError> errors = Lists.newArrayList();
+    final List<AssertionError> errors = newArrayList();
 
     for (TemporaryJob job : jobs) {
       job.undeploy(errors);
@@ -176,6 +199,83 @@ public class TemporaryJobs extends ExternalResource {
     for (AssertionError error : errors) {
       log.error(error.getMessage());
     }
+
+    // Don't delete the prefix file if any errors occurred during undeployment, so that we'll
+    // try to undeploy them the next time TemporaryJobs is run.
+    if (errors.isEmpty()) {
+      jobPrefixFile.delete();
+    }
+  }
+
+  /**
+   * Undeploys and deletes jobs leftover from previous runs of TemporaryJobs. This would happen if
+   * the test was terminated before the cleanup code was called. This method will iterate over each
+   * file in the specified directory. Each filename is the prefix that was used for job names
+   * during previous runs. The method will undeploy and delete any jobs that have a matching
+   * prefix, and the delete the file. If the file is locked, it is currently in use, and will be
+   * skipped.
+   * @throws ExecutionException
+   * @throws InterruptedException
+   * @throws IOException
+   */
+  private void removeOldJobs(final Path prefixDirectory)
+      throws ExecutionException, InterruptedException, IOException {
+    final File[] files = prefixDirectory.toFile().listFiles();
+    if (files == null) {
+      return;
+    }
+    final Map<JobId, Job> jobs = client.jobs().get();
+
+    // Iterate over all files in the directory
+    for (File file : files) {
+      // Skip over '.tmp' files which are generated when JobPrefixFile instances are created
+      if (file.getName().endsWith(".tmp")) {
+         continue;
+      }
+      // If we can't obtain a lock for the file, it either has already been deleted, or is being
+      // used by another process. In either case, skip over it.
+      try (
+        JobPrefixFile prefixFile = JobPrefixFile.tryFromExistingFile(file.toPath())
+      ) {
+        if (prefixFile == null) {
+          log.debug("Unable to create JobPrefixFile for {}", file.getPath());
+          continue;
+        }
+
+        boolean jobRemovalFailed = false;
+        // Iterate over jobs, looking for ones with a matching prefix.
+        for (Map.Entry<JobId, Job> entry : jobs.entrySet()) {
+          final JobId jobId = entry.getKey();
+          // Skip over job if the id doesn't start with current filename.
+          if (!jobId.getName().startsWith(prefixFile.prefix())) {
+            continue;
+          }
+          // Get list of all hosts where this job is deployed, and undeploy
+          final JobStatus status = client.jobStatus(entry.getKey()).get();
+          final List<String> hosts = ImmutableList.copyOf(status.getDeployments().keySet());
+          final List<AssertionError> errors =
+              undeploy(client, jobId, hosts, new ArrayList<AssertionError>());
+
+          // Set flag indicating if any errors occur
+          if (!errors.isEmpty()) {
+            jobRemovalFailed = true;
+          }
+        }
+
+        // If all jobs were removed successfully, then delete the prefix file. Otherwise,
+        // leave it there so we can try again next time.
+        if (!jobRemovalFailed) {
+          prefixFile.delete();
+        }
+      } catch (Exception e) {
+        // log exception and continue on to next file
+        log.warn("Exception processing file {}", file.getPath(), e);
+      }
+    }
+  }
+
+  public JobPrefixFile jobPrefixFile() {
+    return jobPrefixFile;
   }
 
   public static Builder builder() {
@@ -191,6 +291,7 @@ public class TemporaryJobs extends ExternalResource {
     private Prober prober = DEFAULT_PROBER;
     private String hostFilter = DEFAULT_HOST_FILTER;
     private HeliosClient client;
+    private String prefixDirectory;
 
     public Builder domain(final String domain) {
       return client(HeliosClient.newBuilder()
@@ -238,6 +339,11 @@ public class TemporaryJobs extends ExternalResource {
 
     public Builder hostFilter(final String hostFilter) {
       this.hostFilter = hostFilter;
+      return this;
+    }
+
+    public Builder prefixDirectory(final String prefixDirectory) {
+      this.prefixDirectory = prefixDirectory;
       return this;
     }
 
