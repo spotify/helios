@@ -70,7 +70,8 @@ public class AgentStateDirConflictTest {
                         "--no-http",
                         "--name=" + name,
                         "--zk=" + zk.connectString(),
-                        "--state-dir", stateDir.toString());
+                        "--state-dir", stateDir.toString(),
+                        "--domain", "");
   }
 
   @After
