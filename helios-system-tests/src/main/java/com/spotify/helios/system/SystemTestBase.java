@@ -475,6 +475,7 @@ public abstract class SystemTestBase {
                                                "--http", masterEndpoint(),
                                                "--admin=" + masterAdminPort(),
                                                "--name", TEST_MASTER,
+                                               "--domain", "",
                                                "--zk", zk.connectString());
     argsList.addAll(asList(args));
     startMaster(argsList.toArray(new String[argsList.size()]));
@@ -513,6 +514,7 @@ public abstract class SystemTestBase {
                                                      "--zk-session-timeout", "100",
                                                      "--zk-connection-timeout", "100",
                                                      "--state-dir", stateDir,
+                                                     "--domain", "",
                                                      "--port-range=" +
                                                      dockerPortRange.lowerEndpoint() + ":" +
                                                      dockerPortRange.upperEndpoint()
