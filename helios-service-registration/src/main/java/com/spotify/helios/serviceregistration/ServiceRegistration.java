@@ -49,6 +49,14 @@ public class ServiceRegistration {
 
     private List<Endpoint> endpoints = new ArrayList<>();
 
+    @Deprecated
+    public Builder endpoint(final String name,
+                            final String protocol,
+                            final int port) {
+      endpoints.add(new Endpoint(name, protocol, port, "", ""));
+      return this;
+    }
+
     public Builder endpoint(final String name,
                             final String protocol,
                             final int port,
