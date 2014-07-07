@@ -23,6 +23,7 @@ package com.spotify.helios.common;
 
 import com.google.common.collect.Sets;
 
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -93,9 +94,9 @@ public class JobValidator {
     }
 
     // Check that there's not external port collision
-    final Set<Integer> externalPorts = Sets.newHashSet();
+    final Set<ExternalPort> externalPorts = Sets.newHashSet();
     for (final PortMapping mapping : job.getPorts().values()) {
-      Integer externalMappedPort = mapping.getExternalPort();
+      ExternalPort externalMappedPort = mapping.getExternalPort();
       if (externalPorts.contains(externalMappedPort) && externalMappedPort != null) {
         errors.add(format("Duplicate external port mapping: %s", externalMappedPort));
       }
@@ -112,7 +113,7 @@ public class JobValidator {
       if (!legalPort(mapping.getInternalPort())) {
         errors.add(format("Invalid internal port: %d", mapping.getInternalPort()));
       }
-      if (mapping.getExternalPort() != null && !legalPort(mapping.getExternalPort())) {
+      if (mapping.getExternalPort() != null && !legalPort(mapping.getExternalPort().get())) {
         errors.add(format("Invalid external port: %d", mapping.getExternalPort()));
       }
       if (!PORT_MAPPING_NAME_PATTERN.matcher(name).matches()) {

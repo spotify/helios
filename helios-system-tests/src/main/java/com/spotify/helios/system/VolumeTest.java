@@ -24,6 +24,7 @@ package com.spotify.helios.system;
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -105,8 +106,8 @@ public class VolumeTest extends SystemTestBase {
     taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
     assertEquals(job, taskStatus.getJob());
 
-    final Integer bar = taskStatus.getPorts().get("bar").getExternalPort();
-    final Integer urandom = taskStatus.getPorts().get("urandom").getExternalPort();
+    final ExternalPort bar = taskStatus.getPorts().get("bar").getExternalPort();
+    final ExternalPort urandom = taskStatus.getPorts().get("urandom").getExternalPort();
 
     assert bar != null;
     assert urandom != null;
@@ -119,17 +120,17 @@ public class VolumeTest extends SystemTestBase {
     recv(urandom, 4);
   }
 
-  private String recvUtf8(final int port, final int n) throws Exception {
+  private String recvUtf8(final ExternalPort port, final int n) throws Exception {
     final byte[] bytes = recv(port, n);
     return new String(bytes, UTF_8);
   }
 
-  private byte[] recv(final int port, final int n) throws Exception {
+  private byte[] recv(final ExternalPort port, final int n) throws Exception {
     checkArgument(n > 0, "n must be > 0");
     return Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<byte[]>() {
       @Override
       public byte[] call() {
-        try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {
+        try (final Socket s = new Socket(DOCKER_HOST.address(), port.get())) {
           final byte[] bytes = new byte[n];
           final InputStream is = s.getInputStream();
           final int first = is.read();

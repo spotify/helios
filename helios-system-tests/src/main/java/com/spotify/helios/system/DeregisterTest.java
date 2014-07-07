@@ -62,8 +62,9 @@ public class DeregisterTest extends SystemTestBase {
         .setVersion(testJobVersion)
         .setImage(BUSYBOX)
         .setCommand(IDLE_COMMAND)
-        .setPorts(ImmutableMap.of("foo", PortMapping.of(4711),
-                                  "bar", PortMapping.of(4712, ports.localPort("bar"))))
+        .setPorts(ImmutableMap.of(
+            "foo", PortMapping.of(4711),
+            "bar", PortMapping.of(4712, ports.localExternalPort("bar"))))
         .build();
     final JobId jobId = job.getId();
     final CreateJobResponse created = client.createJob(job).get();

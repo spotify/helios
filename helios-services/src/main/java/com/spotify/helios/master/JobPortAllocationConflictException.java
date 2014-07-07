@@ -22,6 +22,7 @@
 package com.spotify.helios.master;
 
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.JobId;
 
 import static java.lang.String.format;
@@ -31,12 +32,12 @@ public class JobPortAllocationConflictException extends HeliosException {
   private final JobId id;
   private final JobId conflictingId;
   private final String host;
-  private final int port;
+  private final ExternalPort port;
 
   public JobPortAllocationConflictException(final JobId id, final JobId conflictingId,
-                                            final String host, final int port) {
+                                            final String host, final ExternalPort port) {
 
-    super(format("Allocation of port %d for job %s collides with job %s on host %s",
+    super(format("Allocation of port %s for job %s collides with job %s on host %s",
                  port, id, conflictingId, host));
     this.id = id;
     this.conflictingId = conflictingId;
@@ -56,7 +57,7 @@ public class JobPortAllocationConflictException extends HeliosException {
     return host;
   }
 
-  public int getPort() {
+  public ExternalPort getPort() {
     return port;
   }
 }

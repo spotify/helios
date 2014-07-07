@@ -24,6 +24,7 @@ package com.spotify.helios.agent;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
 
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.PortMapping;
 
 import java.util.Map;
@@ -42,21 +43,21 @@ public class PortAllocator {
     this.i = start;
   }
 
-  public Map<String, Integer> allocate(final Map<String, PortMapping> ports,
-                                       final Set<Integer> used) {
+  public Map<String, ExternalPort> allocate(final Map<String, PortMapping> ports,
+                                            final Set<ExternalPort> used) {
     return allocate0(ports, Sets.newHashSet(used));
   }
 
-  private Map<String, Integer> allocate0(final Map<String, PortMapping> mappings,
-                                         final Set<Integer> used) {
+  private Map<String, ExternalPort> allocate0(final Map<String, PortMapping> mappings,
+                                              final Set<ExternalPort> used) {
 
-    final ImmutableMap.Builder<String, Integer> allocation = ImmutableMap.builder();
+    final ImmutableMap.Builder<String, ExternalPort> allocation = ImmutableMap.builder();
 
     // Allocate static ports
     for (Map.Entry<String, PortMapping> entry : mappings.entrySet()) {
       final String name = entry.getKey();
       final PortMapping portMapping = entry.getValue();
-      final Integer externalPort = portMapping.getExternalPort();
+      final ExternalPort externalPort = portMapping.getExternalPort();
 
       // Skip dynamic ports
       if (externalPort == null) {
@@ -75,7 +76,7 @@ public class PortAllocator {
     for (Map.Entry<String, PortMapping> entry : mappings.entrySet()) {
       final String name = entry.getKey();
       final PortMapping portMapping = entry.getValue();
-      final Integer externalPort = portMapping.getExternalPort();
+      final ExternalPort externalPort = portMapping.getExternalPort();
 
       // Skip static ports
       if (externalPort != null) {
@@ -83,9 +84,9 @@ public class PortAllocator {
       }
 
       // Look for an available port
-      Integer port = null;
+      ExternalPort port = null;
       for (int i = start; i < end; i++) {
-        final int candidate = next();
+        final ExternalPort candidate = ExternalPort.of(next());
         if (!used.contains(candidate)) {
           port = candidate;
           break;

@@ -22,6 +22,7 @@
 package com.spotify.helios.agent;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 
@@ -30,11 +31,11 @@ import java.util.Map;
 public class Execution {
 
   private final Job job;
-  private final Map<String, Integer> ports;
+  private final Map<String, ExternalPort> ports;
   private final Goal goal;
 
   public Execution(@JsonProperty("job") final Job job,
-                   @JsonProperty("ports") final Map<String, Integer> ports,
+                   @JsonProperty("ports") final Map<String, ExternalPort> ports,
                    @JsonProperty("goal") final Goal goal) {
     this.job = job;
     this.ports = ports;
@@ -45,7 +46,7 @@ public class Execution {
     return job;
   }
 
-  public Map<String, Integer> getPorts() {
+  public Map<String, ExternalPort> getPorts() {
     return ports;
   }
 
@@ -57,7 +58,7 @@ public class Execution {
     return new Execution(job, ports, goal);
   }
 
-  public Execution withPorts(final Map<String, Integer> ports) {
+  public Execution withPorts(final Map<String, ExternalPort> ports) {
     return new Execution(job, ports, goal);
   }
 

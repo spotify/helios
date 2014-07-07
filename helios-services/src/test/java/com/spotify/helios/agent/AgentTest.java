@@ -28,6 +28,7 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -78,7 +79,7 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class AgentTest {
 
-  private static final Set<Integer> EMPTY_PORT_SET = emptySet();
+  private static final Set<ExternalPort> EMPTY_PORT_SET = emptySet();
 
   @Mock private AgentModel model;
   @Mock private SupervisorFactory supervisorFactory;
@@ -94,7 +95,7 @@ public class AgentTest {
   @Captor private ArgumentCaptor<AgentModel.Listener> listenerCaptor;
   @Captor private ArgumentCaptor<Long> timeoutCaptor;
 
-  private static final Map<String, Integer> EMPTY_PORT_ALLOCATION = Collections.emptyMap();
+  private static final Map<String, ExternalPort> EMPTY_PORT_ALLOCATION = Collections.emptyMap();
 
   private final Map<JobId, Task> jobs = Maps.newHashMap();
   private final Map<JobId, Task> unmodifiableJobs = Collections.unmodifiableMap(jobs);
@@ -114,12 +115,13 @@ public class AgentTest {
       .setName("foo")
       .setVersion("17")
       .setPorts(ImmutableMap.of("p1", PortMapping.of(4711),
-                                "p2", PortMapping.of(4712, 12345)))
+                                "p2", PortMapping.of(4712, ExternalPort.of(12345))))
       .build();
 
-  private static final Map<String, Integer> FOO_PORT_ALLOCATION = ImmutableMap.of("p1", 30000,
-                                                                                  "p2", 12345);
-  private static final Set<Integer> FOO_PORT_SET =
+  private static final Map<String, ExternalPort> FOO_PORT_ALLOCATION = ImmutableMap.of(
+      "p1", ExternalPort.of(30000), "p2", ExternalPort.of(12345));
+
+  private static final Set<ExternalPort> FOO_PORT_SET =
       ImmutableSet.copyOf(FOO_PORT_ALLOCATION.values());
 
   private static final Job BAR_JOB = Job.newBuilder()
@@ -129,7 +131,7 @@ public class AgentTest {
       .setVersion("63")
       .build();
 
-  private static final Map<String, Integer> BAR_PORT_ALLOCATION = ImmutableMap.of();
+  private static final Map<String, ExternalPort> BAR_PORT_ALLOCATION = ImmutableMap.of();
 
 
   @SuppressWarnings("unchecked")
@@ -144,11 +146,11 @@ public class AgentTest {
     when(portAllocator.allocate(eq(BAR_JOB.getPorts()), anySet()))
         .thenReturn(BAR_PORT_ALLOCATION);
     when(supervisorFactory.create(eq(FOO_JOB), anyString(),
-                                  anyMapOf(String.class, Integer.class),
+                                  anyMapOf(String.class, ExternalPort.class),
                                   any(Supervisor.Listener.class)))
         .thenReturn(fooSupervisor);
     when(supervisorFactory.create(eq(BAR_JOB), anyString(),
-                                  anyMapOf(String.class, Integer.class),
+                                  anyMapOf(String.class, ExternalPort.class),
                                   any(Supervisor.Listener.class)))
         .thenReturn(barSupervisor);
     mockService(reactor);

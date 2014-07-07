@@ -29,6 +29,7 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -49,8 +50,8 @@ import static org.junit.Assert.assertNotNull;
 
 public class MultiplePortJobTest extends SystemTestBase {
 
-  private final int externalPort1 = temporaryPorts.localPort("external-1");
-  private final int externalPort2 = temporaryPorts.localPort("external-2");
+  private final ExternalPort externalPort1 = temporaryPorts.localExternalPort("external-1");
+  private final ExternalPort externalPort2 = temporaryPorts.localExternalPort("external-2");
 
   @Test
   public void test() throws Exception {
@@ -72,7 +73,7 @@ public class MultiplePortJobTest extends SystemTestBase {
                         "bar", PortMapping.of(4712, externalPort1));
 
     final ImmutableMap<String, PortMapping> expectedMapping1 =
-        ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint()),
+        ImmutableMap.of("foo", PortMapping.of(4711, ExternalPort.of(portRange.lowerEndpoint())),
                         "bar", PortMapping.of(4712, externalPort1));
 
     final Map<String, PortMapping> ports2 =
@@ -80,7 +81,7 @@ public class MultiplePortJobTest extends SystemTestBase {
                         "bar", PortMapping.of(4712, externalPort2));
 
     final ImmutableMap<String, PortMapping> expectedMapping2 =
-        ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint() + 1),
+        ImmutableMap.of("foo", PortMapping.of(4711, ExternalPort.of(portRange.lowerEndpoint() + 1)),
                         "bar", PortMapping.of(4712, externalPort2));
 
     final JobId jobId1 = createJob(testJobName + 1, testJobVersion, "busybox", IDLE_COMMAND,

@@ -33,18 +33,18 @@ public class PortMapping extends Descriptor {
   public static final String UDP = "udp";
 
   private final int internalPort;
-  private final Integer externalPort;
+  private final ExternalPort externalPort;
   private final String protocol;
 
   public PortMapping(@JsonProperty("internalPort") final int internalPort,
-                     @JsonProperty("externalPort") final Integer externalPort,
+                     @JsonProperty("externalPort") final ExternalPort externalPort,
                      @JsonProperty("protocol") final String protocol) {
     this.internalPort = internalPort;
     this.externalPort = externalPort;
     this.protocol = protocol;
   }
 
-  public PortMapping(final int internalPort, final Integer externalPort) {
+  public PortMapping(final int internalPort, final ExternalPort externalPort) {
     this.internalPort = internalPort;
     this.externalPort = externalPort;
     this.protocol = TCP;
@@ -65,7 +65,7 @@ public class PortMapping extends Descriptor {
   }
 
   @Nullable
-  public Integer getExternalPort() {
+  public ExternalPort getExternalPort() {
     return externalPort;
   }
 
@@ -73,7 +73,7 @@ public class PortMapping extends Descriptor {
     return protocol;
   }
 
-  public PortMapping withExternalPort(final Integer externalPort) {
+  public PortMapping withExternalPort(final ExternalPort externalPort) {
     return PortMapping.of(internalPort, externalPort, protocol);
   }
 
@@ -81,11 +81,11 @@ public class PortMapping extends Descriptor {
     return new PortMapping(internalPort);
   }
 
-  public static PortMapping of(final int internalPort, final Integer externalPort) {
+  public static PortMapping of(final int internalPort, final ExternalPort externalPort) {
     return new PortMapping(internalPort, externalPort);
   }
 
-  public static PortMapping of(final int internalPort, final Integer externalPort,
+  public static PortMapping of(final int internalPort, final ExternalPort externalPort,
                                final String protocol) {
     return new PortMapping(internalPort, externalPort, protocol);
   }

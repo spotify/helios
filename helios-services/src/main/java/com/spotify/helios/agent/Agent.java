@@ -29,12 +29,14 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
 
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.Reactor;
+import com.spotify.helios.servicescommon.Reactor.Callback;
 import com.spotify.helios.servicescommon.ReactorFactory;
 
 import org.slf4j.Logger;
@@ -50,7 +52,6 @@ import static com.google.common.base.Predicates.in;
 import static com.google.common.base.Predicates.not;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
-import static com.spotify.helios.servicescommon.Reactor.Callback;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -133,7 +134,8 @@ public class Agent extends AbstractIdleService {
    *
    * @param job The job .
    */
-  private Supervisor createSupervisor(final Job job, final Map<String, Integer> portAllocation) {
+  private Supervisor createSupervisor(final Job job,
+                                      final Map<String, ExternalPort> portAllocation) {
     log.debug("creating job supervisor: {}", job);
     final TaskStatus taskStatus = model.getTaskStatus(job.getId());
     final String containerId = (taskStatus == null) ? null : taskStatus.getContainerId();
@@ -221,7 +223,7 @@ public class Agent extends AbstractIdleService {
       final Map<JobId, Execution> pending = ImmutableMap.copyOf(
           Maps.filterValues(newExecutions, PORT_ALLOCATION_PENDING));
       if (!pending.isEmpty()) {
-        final ImmutableSet.Builder<Integer> usedPorts = ImmutableSet.builder();
+        final ImmutableSet.Builder<ExternalPort> usedPorts = ImmutableSet.builder();
         final Map<JobId, Execution> allocated = Maps.filterKeys(newExecutions,
                                                                 not(in(pending.keySet())));
         for (final Entry<JobId, Execution> entry : allocated.entrySet()) {
@@ -232,8 +234,8 @@ public class Agent extends AbstractIdleService {
           final JobId jobId = entry.getKey();
           final Execution execution = entry.getValue();
           final Job job = execution.getJob();
-          final Map<String, Integer> ports = portAllocator.allocate(job.getPorts(),
-                                                                    usedPorts.build());
+          final Map<String, ExternalPort> ports = portAllocator.allocate(job.getPorts(),
+                                                                         usedPorts.build());
           log.debug("Allocated ports for job {}: {}", jobId, ports);
           if (ports != null) {
             newExecutions.put(jobId, execution.withPorts(ports));

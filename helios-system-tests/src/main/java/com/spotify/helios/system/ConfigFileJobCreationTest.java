@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -42,7 +43,7 @@ import static org.junit.Assert.assertEquals;
 
 public class ConfigFileJobCreationTest extends SystemTestBase {
 
-  private final int externalPort = temporaryPorts.localPort("external");
+  private final ExternalPort externalPort = temporaryPorts.localExternalPort("external");
 
   @Test
   public void test() throws Exception {

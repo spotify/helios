@@ -21,6 +21,7 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.JobId;
 
 import java.util.UUID;
@@ -121,8 +122,8 @@ public class Paths {
     return CONFIG_HOSTS.path(host, PORTS);
   }
 
-  public static String configHostPort(final String host, final int port) {
-    return CONFIG_HOSTS.path(host, PORTS, String.valueOf(port));
+  public static String configHostPort(final String host, final ExternalPort port) {
+    return CONFIG_HOSTS.path(host, PORTS, port.toString());
   }
 
   public static String statusHosts() {

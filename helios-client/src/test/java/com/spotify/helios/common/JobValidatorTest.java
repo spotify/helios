@@ -25,6 +25,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -48,13 +49,15 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class JobValidatorTest {
+  private static final ExternalPort EXT_PORT_1 = ExternalPort.of(1);
+
   private final Job VALID_JOB = Job.newBuilder()
       .setName("foo")
       .setVersion("1")
       .setImage("bar")
       .setEnv(ImmutableMap.of("FOO", "BAR"))
-      .setPorts(ImmutableMap.of("1", PortMapping.of(1, 1),
-                                "2", PortMapping.of(2, 2)))
+      .setPorts(ImmutableMap.of("1", PortMapping.of(1, EXT_PORT_1),
+                                "2", PortMapping.of(2, ExternalPort.of(2))))
       .build();
 
   final JobValidator validator = new JobValidator();
@@ -116,8 +119,8 @@ public class JobValidatorTest {
         .setName("foo")
         .setVersion("1")
         .setImage("bar")
-        .setPorts(ImmutableMap.of("1", PortMapping.of(1, 1),
-                                  "2", PortMapping.of(2, 1)))
+        .setPorts(ImmutableMap.of("1", PortMapping.of(1, EXT_PORT_1),
+                                  "2", PortMapping.of(2, EXT_PORT_1)))
         .build();
 
     assertEquals(ImmutableSet.of("Duplicate external port mapping: 1"), validator.validate(job));

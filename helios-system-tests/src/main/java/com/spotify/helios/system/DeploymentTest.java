@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
@@ -53,7 +54,7 @@ public class DeploymentTest extends SystemTestBase {
   private static final JobId BOGUS_JOB = new JobId("bogus", "job", Strings.repeat("0", 40));
   private static final String BOGUS_HOST = "BOGUS_HOST";
 
-  private final int externalPort = temporaryPorts.localPort("external");
+  private final ExternalPort externalPort = temporaryPorts.localExternalPort("external");
 
   @Test
   public void test() throws Exception {

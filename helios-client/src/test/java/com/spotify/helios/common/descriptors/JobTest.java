@@ -311,7 +311,8 @@ public class JobTest {
   public void verifyJobIsImmutable() {
     final List<String> expectedCommand = ImmutableList.of("foo");
     final Map<String, String> expectedEnv = ImmutableMap.of("e1", "1");
-    final Map<String, PortMapping> expectedPorts = ImmutableMap.of("p1", PortMapping.of(1, 2));
+    final Map<String, PortMapping> expectedPorts = ImmutableMap.of(
+        "p1", PortMapping.of(1, ExternalPort.of(2)));
     final Map<ServiceEndpoint, ServicePorts> expectedRegistration =
         ImmutableMap.of(ServiceEndpoint.of("foo", "tcp"), ServicePorts.of("p1"));
 
@@ -334,7 +335,7 @@ public class JobTest {
 
     mutableCommand.add("bar");
     mutableEnv.put("e2", "2");
-    mutablePorts.put("p2", PortMapping.of(3, 4));
+    mutablePorts.put("p2", PortMapping.of(3, ExternalPort.of(4)));
     mutableRegistration.put(ServiceEndpoint.of("bar", "udp"), ServicePorts.of("p2"));
 
     builder.addPort("added_port", PortMapping.of(4711));

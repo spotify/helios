@@ -22,6 +22,7 @@
 package com.spotify.helios.agent;
 
 import com.spotify.docker.client.DockerClient;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
@@ -73,7 +74,7 @@ public class SupervisorFactory {
    * @return A new container.
    */
   public Supervisor create(final Job job, final String existingContainerId,
-                           final Map<String, Integer> ports,
+                           final Map<String, ExternalPort> ports,
                            final Supervisor.Listener listener) {
     final RestartPolicy policy = RestartPolicy.newBuilder().build();
     final TaskConfig taskConfig = TaskConfig.builder()

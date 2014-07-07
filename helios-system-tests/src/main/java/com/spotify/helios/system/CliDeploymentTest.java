@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableMap;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
@@ -55,7 +56,7 @@ public class CliDeploymentTest extends SystemTestBase {
   private static final TypeReference<Map<JobId, JobStatus>> STATUSES_TYPE =
       new TypeReference<Map<JobId, JobStatus>>() {};
 
-  private final Integer externalPort = temporaryPorts().localPort("external");
+  private final ExternalPort externalPort = temporaryPorts().localExternalPort("external");
 
   @Test
   public void test() throws Exception {

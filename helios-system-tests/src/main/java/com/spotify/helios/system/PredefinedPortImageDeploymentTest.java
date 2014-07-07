@@ -25,20 +25,21 @@ import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.junit.Test;
 
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class PredefinedPortImageDeploymentTest extends SystemTestBase {
 
-  private final int externalPort = temporaryPorts.localPort("external");
+  private final ExternalPort externalPort = temporaryPorts.localExternalPort("external");
 
   @Test
   public void test() throws Exception {

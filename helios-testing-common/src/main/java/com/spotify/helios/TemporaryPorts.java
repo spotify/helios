@@ -27,6 +27,8 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
 import com.google.common.util.concurrent.Uninterruptibles;
 
+import com.spotify.helios.common.descriptors.ExternalPort;
+
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -115,6 +117,10 @@ public class TemporaryPorts extends ExternalResource {
     }
     ports.add(allocatedPort);
     return allocatedPort;
+  }
+
+  public ExternalPort localExternalPort(final String name) {
+    return ExternalPort.of(localPort(name));
   }
 
   public synchronized int localPort(final String name) {

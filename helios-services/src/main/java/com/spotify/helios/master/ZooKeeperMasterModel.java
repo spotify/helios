@@ -33,6 +33,7 @@ import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.HostStatus;
@@ -206,7 +207,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       // Remove port allocations
       final List<String> ports = client.getChildren(Paths.configHostPorts(host));
       for (final String port : ports) {
-        operations.add(delete(Paths.configHostPort(host, Integer.valueOf(port))));
+        operations.add(delete(Paths.configHostPort(host, ExternalPort.of(Integer.valueOf(port)))));
       }
       operations.add(delete(Paths.configHostPorts(host)));
 
@@ -471,10 +472,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     final String taskPath = Paths.configHostJob(host, id);
     final String taskCreationPath = Paths.configHostJobCreation(host, id, operationId);
 
-    final List<Integer> staticPorts = staticPorts(job);
+    final List<ExternalPort> staticPorts = staticPorts(job);
     final Map<String, byte[]> portNodes = Maps.newHashMap();
     final byte[] idJson = id.toJsonBytes();
-    for (final int port : staticPorts) {
+    for (final ExternalPort port : staticPorts) {
       final String path = Paths.configHostPort(host, port);
       portNodes.put(path, idJson);
     }
@@ -533,7 +534,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       }
 
       // Check for static port collisions
-      for (final int port : staticPorts) {
+      for (final ExternalPort port : staticPorts) {
         final String path = Paths.configHostPort(host, port);
         try {
           if (client.stat(path) == null) {
@@ -566,8 +567,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  private List<Integer> staticPorts(final Job job) {
-    final List<Integer> staticPorts = Lists.newArrayList();
+  private List<ExternalPort> staticPorts(final Job job) {
+    final List<ExternalPort> staticPorts = Lists.newArrayList();
     for (final PortMapping portMapping : job.getPorts().values()) {
       if (portMapping.getExternalPort() != null) {
         staticPorts.add(portMapping.getExternalPort());
@@ -813,8 +814,8 @@ public class ZooKeeperMasterModel implements MasterModel {
         set(path, task.toJsonBytes()),
         delete(Paths.configJobHost(jobId, host)));
 
-    final List<Integer> staticPorts = staticPorts(job);
-    for (int port : staticPorts) {
+    final List<ExternalPort> staticPorts = staticPorts(job);
+    for (ExternalPort port : staticPorts) {
         operations.add(delete(Paths.configHostPort(host, port)));
     }
 

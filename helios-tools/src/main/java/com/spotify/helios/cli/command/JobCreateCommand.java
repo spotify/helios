@@ -28,6 +28,7 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -267,7 +268,7 @@ public class JobCreateCommand extends ControlCommand {
         throw new IllegalArgumentException("Duplicate port mapping: " + portName);
       }
 
-      explicitPorts.put(portName, PortMapping.of(internal, external, protocol));
+      explicitPorts.put(portName, PortMapping.of(internal, ExternalPort.of(external), protocol));
     }
 
     // Merge port mappings

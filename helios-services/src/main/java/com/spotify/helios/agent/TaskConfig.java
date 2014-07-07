@@ -35,6 +35,7 @@ import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.PortBinding;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
@@ -65,7 +66,7 @@ public class TaskConfig {
   private static final int HOST_NAME_MAX = 64;
 
   private final String host;
-  private final Map<String, Integer> ports;
+  private final Map<String, ExternalPort> ports;
   private final Job job;
   private final Map<String, String> envVars;
   private final ContainerDecorator containerDecorator;
@@ -148,12 +149,12 @@ public class TaskConfig {
           log.error("no '{}' port mapped for registration: '{}'", portName, registration);
           continue;
         }
-        final Integer externalPort = mapping.getExternalPort();
+        final ExternalPort externalPort = mapping.getExternalPort();
         if (externalPort == null) {
           log.error("no external '{}' port for registration: '{}'", portName, registration);
           continue;
         }
-        builder.endpoint(registration.getName(), registration.getProtocol(), externalPort,
+        builder.endpoint(registration.getName(), registration.getProtocol(), externalPort.get(),
             fullyQualifiedRegistrationDomain(), host);
       }
     }
@@ -225,7 +226,7 @@ public class TaskConfig {
     for (final Map.Entry<String, PortMapping> e : job.getPorts().entrySet()) {
       final PortMapping mapping = e.getValue();
       final PortBinding binding = new PortBinding();
-      final Integer externalPort = mapping.getExternalPort();
+      final ExternalPort externalPort = mapping.getExternalPort();
       if (externalPort == null) {
         binding.hostPort(ports.get(e.getKey()).toString());
       } else {
@@ -306,7 +307,7 @@ public class TaskConfig {
 
     private String host;
     private Job job;
-    private Map<String, Integer> ports = Collections.emptyMap();
+    private Map<String, ExternalPort> ports = Collections.emptyMap();
     private Map<String, String> envVars = Collections.emptyMap();
     private ContainerDecorator containerDecorator = new NoOpContainerDecorator();
     private String namespace;
@@ -327,7 +328,7 @@ public class TaskConfig {
       return this;
     }
 
-    public Builder ports(final Map<String, Integer> ports) {
+    public Builder ports(final Map<String, ExternalPort> ports) {
       this.ports = ports;
       return this;
     }

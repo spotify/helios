@@ -25,12 +25,14 @@ import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
 
 import org.junit.After;
 import org.junit.Before;
@@ -45,7 +47,6 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.timeout;
@@ -54,7 +55,7 @@ import static org.mockito.Mockito.verify;
 @RunWith(MockitoJUnitRunner.class)
 public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
 
-  private final int externalPort = temporaryPorts.localPort("external");
+  private final ExternalPort externalPort = temporaryPorts.localExternalPort("external");
 
   @Mock
   public ServiceRegistrar registrar;
@@ -106,6 +107,6 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
 
     assertEquals("wrong service", serviceName, endpoint.getName());
     assertEquals("wrong protocol", serviceProto, endpoint.getProtocol());
-    assertEquals("wrong port", endpoint.getPort(), externalPort);
+    assertEquals("wrong port", (Integer) endpoint.getPort(), externalPort.get());
   }
 }

@@ -28,6 +28,7 @@ import com.google.common.io.Resources;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
@@ -114,7 +115,7 @@ public class TemporaryJobBuilder {
 
   public TemporaryJobBuilder port(final String name, final int internalPort,
                                   final Integer externalPort, final boolean wait) {
-    this.builder.addPort(name, PortMapping.of(internalPort, externalPort));
+    this.builder.addPort(name, PortMapping.of(internalPort, ExternalPort.of(externalPort)));
     if (wait) {
       waitPorts.add(name);
     }

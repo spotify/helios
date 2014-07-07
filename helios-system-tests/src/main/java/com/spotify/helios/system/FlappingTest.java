@@ -23,6 +23,7 @@ package com.spotify.helios.system;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.ExternalPort;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
@@ -86,8 +87,8 @@ public class FlappingTest extends SystemTestBase {
     awaitJobThrottle(client, host, jobId, NO, LONG_WAIT_MINUTES, MINUTES);
   }
 
-  private boolean poke(final int port) {
-    try (Socket ignored = new Socket(DOCKER_HOST.address(), port)) {
+  private boolean poke(final ExternalPort port) {
+    try (Socket ignored = new Socket(DOCKER_HOST.address(), port.get())) {
       return true;
     } catch (IOException e) {
       return false;

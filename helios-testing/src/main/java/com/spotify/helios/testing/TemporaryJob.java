@@ -104,7 +104,7 @@ public class TemporaryJob {
     if (portMapping == null) {
       return null;
     }
-    return portMapping.getExternalPort();
+    return portMapping.getExternalPort().get();
   }
 
   /**
@@ -141,7 +141,7 @@ public class TemporaryJob {
     checkArgument(job.getPorts().containsKey(port), "port %s not found", port);
     final List<HostAndPort> addresses = Lists.newArrayList();
     for (Map.Entry<String, TaskStatus> entry : statuses.entrySet()) {
-      final Integer externalPort = entry.getValue().getPorts().get(port).getExternalPort();
+      final Integer externalPort = entry.getValue().getPorts().get(port).getExternalPort().get();
       assert externalPort != null;
       addresses.add(HostAndPort.fromParts(entry.getKey(), externalPort));
     }
@@ -247,7 +247,7 @@ public class TemporaryJob {
   private void awaitPort(final String port, final String host) throws TimeoutException {
     final TaskStatus taskStatus = statuses.get(host);
     assert taskStatus != null;
-    final Integer externalPort = taskStatus.getPorts().get(port).getExternalPort();
+    final Integer externalPort = taskStatus.getPorts().get(port).getExternalPort().get();
     assert externalPort != null;
     Polling.awaitUnchecked(TIMEOUT_MILLIS, MILLISECONDS, new Callable<Boolean>() {
       @Override
