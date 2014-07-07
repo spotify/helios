@@ -72,6 +72,14 @@ public class Agent extends AbstractIdleService {
     }
   };
 
+  private static final Predicate<Execution> PORTS_ALLOCATED = new Predicate<Execution>() {
+    @Override
+    public boolean apply(final Execution execution) {
+      assert execution != null;
+      return execution.getPorts() != null;
+    }
+  };
+
   private final AgentModel model;
   private final SupervisorFactory supervisorFactory;
   private final ModelListener modelListener = new ModelListener();
@@ -222,8 +230,7 @@ public class Agent extends AbstractIdleService {
           Maps.filterValues(newExecutions, PORT_ALLOCATION_PENDING));
       if (!pending.isEmpty()) {
         final ImmutableSet.Builder<Integer> usedPorts = ImmutableSet.builder();
-        final Map<JobId, Execution> allocated = Maps.filterKeys(newExecutions,
-                                                                not(in(pending.keySet())));
+        final Map<JobId, Execution> allocated = Maps.filterValues(newExecutions, PORTS_ALLOCATED);
         for (final Entry<JobId, Execution> entry : allocated.entrySet()) {
           usedPorts.addAll(entry.getValue().getPorts().values());
         }
