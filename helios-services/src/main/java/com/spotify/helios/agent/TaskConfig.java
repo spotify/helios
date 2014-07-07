@@ -71,6 +71,7 @@ public class TaskConfig {
   private final ContainerDecorator containerDecorator;
   private final String namespace;
   private final String defaultRegistrationDomain;
+  private final String fullyQualifiedRegistrationDomain;
 
   private TaskConfig(final Builder builder) {
     this.host = checkNotNull(builder.host, "host");
@@ -81,6 +82,8 @@ public class TaskConfig {
     this.namespace = checkNotNull(builder.namespace, "namespace");
     this.defaultRegistrationDomain = checkNotNull(builder.defaultRegistrationDomain,
         "defaultRegistrationDomain");
+
+    this.fullyQualifiedRegistrationDomain = fullyQualifiedRegistrationDomain();
   }
 
   /**
@@ -134,7 +137,7 @@ public class TaskConfig {
     return env;
   }
 
-  public ServiceRegistration registration()
+  public ServiceRegistration registration(final Map<String, List<PortBinding>> exposedPorts)
       throws InterruptedException {
     final ServiceRegistration.Builder builder = ServiceRegistration.newBuilder();
 
@@ -148,13 +151,38 @@ public class TaskConfig {
           log.error("no '{}' port mapped for registration: '{}'", portName, registration);
           continue;
         }
-        final Integer externalPort = mapping.getExternalPort();
-        if (externalPort == null) {
-          log.error("no external '{}' port for registration: '{}'", portName, registration);
-          continue;
+
+        final List<Integer> externalPorts = Lists.newArrayList();
+        final Integer explicitExternalPort = mapping.getExternalPort();
+
+        if (explicitExternalPort == null) {
+          // Keys look like 5999/tcp
+          final String exposedPortKey = mapping.getInternalPort() + "/" + mapping.getProtocol();
+          final List<PortBinding> exposedPortInfo = exposedPorts.get(exposedPortKey);
+          if (exposedPortInfo == null) {
+            log.error("no external '{}' port for registration: '{}'", portName, registration);
+            continue;
+          }
+          // TODO(drewc): if we ever support selective exposition of ports based upon interface
+          // this will need to be fixed.  That is, we're totally ignoring the host part of the
+          // binding here.
+
+          // This list *should* be length one (or zero if no port actually registered (yet)).
+          for (final PortBinding b : exposedPortInfo) {
+            externalPorts.add(Integer.valueOf(b.hostPort()));
+          }
+        } else {
+          externalPorts.add(explicitExternalPort);
         }
-        builder.endpoint(registration.getName(), registration.getProtocol(), externalPort,
-            fullyQualifiedRegistrationDomain(), host);
+
+        for (final Integer externalPort : externalPorts) {
+          log.debug("creating endpoint for name=[{}] proto=[{}] externalPort=[{}] "
+              + "domain=[{}] host=[{}]",
+              registration.getName(), registration.getProtocol(), externalPort,
+              fullyQualifiedRegistrationDomain, host);
+          builder.endpoint(registration.getName(), registration.getProtocol(), externalPort,
+              fullyQualifiedRegistrationDomain, host);
+        }
       }
     }
 

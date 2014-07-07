@@ -34,6 +34,7 @@ import com.spotify.docker.client.messages.ContainerExit;
 import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
+import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.serviceregistration.NopServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
@@ -42,6 +43,9 @@ import com.spotify.helios.servicescommon.InterruptingExecutionThreadService;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -97,8 +101,11 @@ class TaskRunner extends InterruptingExecutionThreadService {
     final String containerId = createAndStartContainer();
     listener.running();
 
+    final ContainerInfo containerInfo = getContainerInfo(containerId);
+    final Map<String, List<PortBinding>> exposedPorts = containerInfo.networkSettings().ports();
+
     // Register and wait for container to exit
-    final ServiceRegistrationHandle handle = registrar.register(config.registration());
+    final ServiceRegistrationHandle handle = registrar.register(config.registration(exposedPorts));
     final ContainerExit exit;
     try {
       exit = docker.waitContainer(containerId);
