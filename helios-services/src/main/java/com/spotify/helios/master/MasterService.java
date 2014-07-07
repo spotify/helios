@@ -21,6 +21,8 @@
 
 package com.spotify.helios.master;
 
+import ch.qos.logback.access.jetty.RequestLogImpl;
+
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
@@ -66,11 +68,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.concurrent.TimeUnit;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-
 import static com.google.common.base.Charsets.UTF_8;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * The Helios master service.

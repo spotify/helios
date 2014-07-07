@@ -86,7 +86,7 @@ public class JobCreateCommand extends ControlCommand {
     fileArg = parser.addArgument("-f", "--file")
         .type(fileType().acceptSystemIn())
         .help("Job configuration file. Options specified on the command line will be merged with" +
-              "the contents of this file. Cannot be used together with -t/--template.");
+              " the contents of this file. Cannot be used together with -t/--template.");
 
     templateArg = parser.addArgument("-t", "--template")
         .help("Template job id. The new job will be based on this job. Cannot be used together " +
@@ -129,8 +129,8 @@ public class JobCreateCommand extends ControlCommand {
         .help("Service discovery registration. Specify a service name, the port name and a " +
               "protocol on the format service/protocol=port. E.g. -r website/tcp=http will " +
               "register the port named http with the protocol tcp. Protocol is optional and " +
-              "default is http. If there is only one port mapping this will be used by" +
-              "default and it will be enough to specify only the service name, e.g." +
+              "default is http. If there is only one port mapping this will be used by " +
+              "default and it will be enough to specify only the service name, e.g. " +
               "-r wordpress.");
 
     volumeArg = parser.addArgument("--volume")
