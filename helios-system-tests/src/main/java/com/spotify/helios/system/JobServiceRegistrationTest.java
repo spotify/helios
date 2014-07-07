@@ -22,6 +22,7 @@
 package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.client.HeliosClient;
@@ -41,13 +42,15 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import static com.google.common.collect.Iterables.getOnlyElement;
+import java.util.Map;
+
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
@@ -84,13 +87,12 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
     awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     final ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
-        "PORT_NAME", PortMapping.of(INTERNAL_PORT, externalPort));
-
-    final String serviceName = "SERVICE";
-    final String serviceProto = "PROTO";
+        "foo_port", PortMapping.of(4711, externalPort),
+        "bar_port", PortMapping.of(4712));
 
     final ImmutableMap<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
-        ServiceEndpoint.of(serviceName, serviceProto), ServicePorts.of("PORT_NAME"));
+        ServiceEndpoint.of("foo_service", "foo_proto"), ServicePorts.of("foo_port"),
+        ServiceEndpoint.of("bar_service", "bar_proto"), ServicePorts.of("bar_port"));
 
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND,
                                   EMPTY_ENV, portMapping, registration);
@@ -102,10 +104,17 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
         .register(registrationCaptor.capture());
     final ServiceRegistration serviceRegistration = registrationCaptor.getValue();
 
-    final Endpoint endpoint = getOnlyElement(serviceRegistration.getEndpoints());
+    final Map<String, Endpoint> registered = Maps.newHashMap();
+    for (final Endpoint endpoint : serviceRegistration.getEndpoints()) {
+      registered.put(endpoint.getName(), endpoint);
+    }
 
-    assertEquals("wrong service", serviceName, endpoint.getName());
-    assertEquals("wrong protocol", serviceProto, endpoint.getProtocol());
-    assertEquals("wrong port", endpoint.getPort(), externalPort);
+    assertEquals("wrong service", "foo_service", registered.get("foo_service").getName());
+    assertEquals("wrong protocol", "foo_proto", registered.get("foo_service").getProtocol());
+    assertEquals("wrong port", externalPort, registered.get("foo_service").getPort());
+
+    assertEquals("wrong service", "bar_service", registered.get("bar_service").getName());
+    assertEquals("wrong protocol", "bar_proto", registered.get("bar_service").getProtocol());
+    assertNotEquals("wrong port", externalPort, registered.get("bar_service").getPort());
   }
 }

@@ -148,7 +148,14 @@ public class TaskConfig {
           log.error("no '{}' port mapped for registration: '{}'", portName, registration);
           continue;
         }
-        final Integer externalPort = mapping.getExternalPort();
+        final Integer externalPort;
+        if (mapping.getExternalPort() != null) {
+          // Use the statically assigned port if one is specified
+          externalPort = mapping.getExternalPort();
+        } else {
+          // Otherwise use the dynamically allocated port
+          externalPort = ports.get(portName);
+        }
         if (externalPort == null) {
           log.error("no external '{}' port for registration: '{}'", portName, registration);
           continue;
