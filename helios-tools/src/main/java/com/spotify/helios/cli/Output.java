@@ -69,9 +69,16 @@ public class Output {
     } catch (TextParseException e) {
       throw new IllegalArgumentException("Invalid hostname '" + host + "'");
     }
-    for (Name domain : ResolverConfig.getCurrentConfig().searchPath()) {
-      if (hostname.subdomain(domain)) {
-        return hostname.relativize(domain).toString();
+
+    final ResolverConfig currentConfig = ResolverConfig.getCurrentConfig();
+    if (currentConfig != null) {
+      final Name[] searchPath = currentConfig.searchPath();
+      if (searchPath != null) {
+        for (Name domain : searchPath) {
+          if (hostname.subdomain(domain)) {
+            return hostname.relativize(domain).toString();
+          }
+        }
       }
     }
     return hostname.toString();
