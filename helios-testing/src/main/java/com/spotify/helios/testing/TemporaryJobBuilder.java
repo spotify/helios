@@ -61,13 +61,15 @@ public class TemporaryJobBuilder {
   private final Job.Builder builder = Job.newBuilder();
   private final Set<String> waitPorts = Sets.newHashSet();
   private final TemporaryJob.Deployer deployer;
+  private final String jobNamePrefix;
 
   private String hostFilter = null;
 
   private TemporaryJob job;
 
-  public TemporaryJobBuilder(final TemporaryJob.Deployer deployer) {
+  public TemporaryJobBuilder(final TemporaryJob.Deployer deployer, final String jobNamePrefix) {
     this.deployer = deployer;
+    this.jobNamePrefix = jobNamePrefix;
   }
 
   public TemporaryJobBuilder name(final String jobName) {
@@ -175,7 +177,7 @@ public class TemporaryJobBuilder {
     if (job == null) {
       if (builder.getName() == null && builder.getVersion() == null) {
         // Both name and version are unset, use image name as job name and generate random version
-        builder.setName(jobName(builder.getImage()));
+        builder.setName(jobName(builder.getImage(), jobNamePrefix));
         builder.setVersion(randomVersion());
       }
 
@@ -268,8 +270,8 @@ public class TemporaryJobBuilder {
     }
   }
 
-  private String jobName(final String s) {
-    return "tmp_" + JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
+  private String jobName(final String s, final String jobNamePrefix) {
+    return jobNamePrefix + "_" + JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
   }
 
   private String randomVersion() {

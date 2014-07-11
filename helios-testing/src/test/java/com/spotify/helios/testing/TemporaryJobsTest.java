@@ -24,13 +24,16 @@ package com.spotify.helios.testing;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.system.SystemTestBase;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.io.File;
 import java.net.Socket;
+import java.nio.file.Path;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -38,8 +41,12 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -56,6 +63,8 @@ public class TemporaryJobsTest extends SystemTestBase {
   // in SystemTestBase.
   private static HeliosClient client;
   private static String testHost;
+  private static JobPrefixFile jobPrefixFile;
+  private static Path prefixDirectory;
 
   private static final class TestProber extends DefaultProber {
 
@@ -183,6 +192,32 @@ public class TemporaryJobsTest extends SystemTestBase {
     }
   }
 
+  public static class JobNamePrefixTest {
+
+    @Rule
+    public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
+        .hostFilter(".*")
+        .client(client)
+        .prober(new TestProber())
+        .prefixDirectory(prefixDirectory.toString())
+        .build();
+
+    private TemporaryJob job1;
+
+    @Before
+    public void setup() {
+      job1 = temporaryJobs.job()
+          .image(BUSYBOX)
+          .command(IDLE_COMMAND)
+          .deploy(testHost);
+    }
+
+    @Test public void testJobPrefixFile() throws Exception {
+      // Set jobPrefixFile so we can verify it was deleted after test completed
+      jobPrefixFile = temporaryJobs.jobPrefixFile();
+    }
+  }
+
   @Test
   public void testRule() throws Exception {
     startDefaultMaster();
@@ -205,4 +240,84 @@ public class TemporaryJobsTest extends SystemTestBase {
     assertThat(testResult(BadTest.class),
                hasFailureContaining("deploy() must be called in a @Before or in the test method"));
   }
+
+  @Test
+  public void testJobNamePrefix() throws Exception {
+    startDefaultMaster();
+    client = defaultClient();
+    testHost = testHost();
+    prefixDirectory = tempFolder();
+    startDefaultAgent(testHost);
+    awaitHostStatus(client, testHost, UP, LONG_WAIT_MINUTES, MINUTES);
+
+    // Create four jobs which represent these use cases:
+    //  job1 - Created, deployed, locked. Simulates a job being used by another process. The
+    //         job should not get undeployed or deleted since it is in use.
+    //  job2 - Created, not deployed, locked. Simulates a job being used by another process. The
+    //         job should not get deleted since it is in use.
+    //  job3 - Created, deployed, not locked. Simulates an old job no longer in use, which should
+    //         be undeployed and deleted.
+    //  job4 - Created, not deployed, not locked. Simulates an old job no longer in use, which
+    //         should be deleted.
+
+    // job1 - create and deploy
+    final JobId jobId1 = createJob(testJobName + "_1", testJobVersion, BUSYBOX, IDLE_COMMAND);
+    deployJob(jobId1, testHost);
+    // job2 - create
+    final JobId jobId2 = createJob(testJobName + "_2", testJobVersion, BUSYBOX, IDLE_COMMAND);
+    // job3 - create and deploy
+    final JobId jobId3 = createJob(testJobName + "_3", testJobVersion, BUSYBOX, IDLE_COMMAND);
+    deployJob(jobId3, testHost);
+    // job4 - create
+    final JobId jobId4 = createJob(testJobName + "_4", testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    try (
+        // Create prefix files for all four jobs. They will be locked by default.
+        JobPrefixFile file1 = JobPrefixFile.create(jobId1.getName(), tempFolder());
+        JobPrefixFile file2 = JobPrefixFile.create(jobId2.getName(), tempFolder());
+        JobPrefixFile file3 = JobPrefixFile.create(jobId3.getName(), tempFolder());
+        JobPrefixFile file4 = JobPrefixFile.create(jobId4.getName(), tempFolder())
+    ) {
+      // Release the locks of jobs 3 and 4 so they can be cleaned up
+      file3.release();
+      file4.release();
+
+      assertThat(testResult(JobNamePrefixTest.class), isSuccessful());
+
+      final Map<JobId, Job> jobs = client.jobs().get();
+
+      // Verify job1 is still deployed and the prefix file has not been deleted.
+      assertThat(jobs, hasKey(jobId1));
+      final JobStatus status1 = client.jobStatus(jobId1).get();
+      assertThat(status1.getDeployments().size(), is(1));
+      assertTrue(jobPrefixFileExists(jobId1.getName()));
+
+      // Verify job2 still exists, is not deployed, and the prefix file is still there.
+      assertThat(jobs, hasKey(jobId2));
+      final JobStatus status2 = client.jobStatus(jobId2).get();
+      assertThat(status2.getDeployments().size(), is(0));
+      assertTrue(jobPrefixFileExists(jobId2.getName()));
+
+      // Verify that job3 has been deleted (which means it has also been undeployed), and
+      // the prefix file has been deleted.
+      assertThat(jobs, not(hasKey(jobId3)));
+      assertFalse(jobPrefixFileExists(jobId3.getName()));
+
+      // Verify that job4 and its prefix file have been deleted.
+      assertThat(jobs, not(hasKey(jobId4)));
+      assertFalse(jobPrefixFileExists(jobId4.getName()));
+
+      // Verify the prefix file created during the run of JobNamePrefixTest was deleted
+      assertFalse(jobPrefixFileExists(jobPrefixFile.prefix()));
+    }
+  }
+
+  private Path tempFolder() {
+    return temporaryFolder.getRoot().toPath();
+  }
+
+  private boolean jobPrefixFileExists(final String prefix) {
+    return new File(tempFolder().toFile(), prefix).exists();
+  }
+
 }

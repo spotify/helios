@@ -27,21 +27,17 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.CreateJobResponse;
-import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,11 +47,12 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.spotify.helios.testing.Jobs.TIMEOUT_MILLIS;
+import static com.spotify.helios.testing.Jobs.get;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.fail;
@@ -63,8 +60,6 @@ import static org.junit.Assert.fail;
 public class TemporaryJob {
 
   private static final Logger log = LoggerFactory.getLogger(TemporaryJob.class);
-
-  private static final long TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
 
   private final Map<String, TaskStatus> statuses = Maps.newHashMap();
   private final HeliosClient client;
@@ -178,30 +173,7 @@ public class TemporaryJob {
   }
 
   void undeploy(final List<AssertionError> errors) {
-    for (String host : hosts) {
-      final JobId jobId = job.getId();
-      final JobUndeployResponse response;
-      try {
-        response = get(client.undeploy(jobId, host));
-        if (response.getStatus() != JobUndeployResponse.Status.OK &&
-            response.getStatus() != JobUndeployResponse.Status.JOB_NOT_FOUND) {
-          errors.add(new AssertionError(format("Failed to undeploy job %s - %s",
-                                               job.getId(), response)));
-        }
-      } catch (InterruptedException | ExecutionException | TimeoutException e) {
-        errors.add(new AssertionError(e));
-      }
-    }
-
-    try {
-      final JobDeleteResponse response = get(client.deleteJob(job.getId()));
-      if (response.getStatus() != JobDeleteResponse.Status.OK) {
-        errors.add(new AssertionError(format("Failed to delete job %s - %s",
-                                             job.getId().toString(), response.toString())));
-      }
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      errors.add(new AssertionError(e));
-    }
+    Jobs.undeploy(client, job.getId(), hosts, errors);
   }
 
   private void awaitUp(final String host) throws TimeoutException {
@@ -262,11 +234,6 @@ public class TemporaryJob {
         }
       }
     });
-  }
-
-  private static <T> T get(final ListenableFuture<T> future)
-      throws InterruptedException, ExecutionException, TimeoutException {
-    return future.get(TIMEOUT_MILLIS, MILLISECONDS);
   }
 
   public static interface Deployer {
