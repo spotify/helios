@@ -107,7 +107,6 @@ public class JobCreateCommand extends ControlCommand {
     envArg = parser.addArgument("--env")
         .action(append())
         .setDefault(new ArrayList<String>())
-        .nargs("+")
         .help("Environment variables");
 
     portArg = parser.addArgument("-p", "--port")
@@ -125,7 +124,6 @@ public class JobCreateCommand extends ControlCommand {
     registrationArg = parser.addArgument("-r", "--register")
         .action(append())
         .setDefault(new ArrayList<String>())
-        .nargs("+")
         .help("Service discovery registration. Specify a service name, the port name and a " +
               "protocol on the format service/protocol=port. E.g. -r website/tcp=http will " +
               "register the port named http with the protocol tcp. Protocol is optional and " +
@@ -232,18 +230,16 @@ public class JobCreateCommand extends ControlCommand {
       builder.setCommand(command);
     }
 
-    final List<List<String>> envList = options.getList(envArg.getDest());
+    final List<String> envList = options.getList(envArg.getDest());
     if (!envList.isEmpty()) {
       final ImmutableMap.Builder<String, String> env = ImmutableMap.builder();
       env.putAll(builder.getEnv());
-      for (final List<String> group : envList) {
-        for (final String s : group) {
-          final String[] parts = s.split("=", 2);
-          if (parts.length != 2) {
-            throw new IllegalArgumentException("Bad environment variable: " + s);
-          }
-          env.put(parts[0], parts[1]);
+      for (final String s : envList) {
+        final String[] parts = s.split("=", 2);
+        if (parts.length != 2) {
+          throw new IllegalArgumentException("Bad environment variable: " + s);
         }
+        env.put(parts[0], parts[1]);
       }
       builder.setEnv(env.build());
     }
@@ -280,35 +276,33 @@ public class JobCreateCommand extends ControlCommand {
     final Map<ServiceEndpoint, ServicePorts> explicitRegistration = Maps.newHashMap();
     final Pattern registrationPattern =
         compile("(?<srv>[a-zA-Z][_\\-\\w]+)(?:/(?<prot>\\w+))?(?:=(?<port>[_\\-\\w]+))?");
-    final List<List<String>> registrationSpecLists = options.getList(registrationArg.getDest());
-    for (List<String> registrationSpecList : registrationSpecLists) {
-      for (final String spec : registrationSpecList) {
-        final Matcher matcher = registrationPattern.matcher(spec);
-        if (!matcher.matches()) {
-          throw new IllegalArgumentException("Bad registration: " + spec);
-        }
-
-        final String service = matcher.group("srv");
-        final String proto = fromNullable(matcher.group("prot")).or(HTTP);
-        final String optionalPort = matcher.group("port");
-        final String port;
-
-        if (ports.size() == 0) {
-          throw new IllegalArgumentException("Need port mappings for service registration.");
-        }
-
-        if (optionalPort == null) {
-          if (ports.size() != 1) {
-            throw new IllegalArgumentException(
-                "Need exactly one port mapping for implicit service registration");
-          }
-          port = Iterables.getLast(ports.keySet());
-        } else {
-          port = optionalPort;
-        }
-
-        explicitRegistration.put(ServiceEndpoint.of(service, proto), ServicePorts.of(port));
+    final List<String> registrationSpecs = options.getList(registrationArg.getDest());
+    for (final String spec : registrationSpecs) {
+      final Matcher matcher = registrationPattern.matcher(spec);
+      if (!matcher.matches()) {
+        throw new IllegalArgumentException("Bad registration: " + spec);
       }
+
+      final String service = matcher.group("srv");
+      final String proto = fromNullable(matcher.group("prot")).or(HTTP);
+      final String optionalPort = matcher.group("port");
+      final String port;
+
+      if (ports.size() == 0) {
+        throw new IllegalArgumentException("Need port mappings for service registration.");
+      }
+
+      if (optionalPort == null) {
+        if (ports.size() != 1) {
+          throw new IllegalArgumentException(
+              "Need exactly one port mapping for implicit service registration");
+        }
+        port = Iterables.getLast(ports.keySet());
+      } else {
+        port = optionalPort;
+      }
+
+      explicitRegistration.put(ServiceEndpoint.of(service, proto), ServicePorts.of(port));
     }
 
     // Merge service registrations
