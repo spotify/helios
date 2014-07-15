@@ -103,16 +103,15 @@ public class JobInspectCommand extends WildcardJobCommand {
       out.printf("Id: %s%n", job.getId());
       out.printf("Image: %s%n", job.getImage());
       out.printf("Command: %s%n", quote(job.getCommand()));
-      printMap(out, "Env:   ", "%s=%s", QUOTE, job.getEnv());
-      printMap(out, "Ports: ", "%s=%s", FORMAT_PORTMAPPING, job.getPorts());
-      printMap(out, "Reg: ", "%s: %s", FORMAT_SERVICE_PORTS, job.getRegistration());
+      printMap(out, "Env:   ", QUOTE, job.getEnv());
+      printMap(out, "Ports: ", FORMAT_PORTMAPPING, job.getPorts());
+      printMap(out, "Reg: ", FORMAT_SERVICE_PORTS, job.getRegistration());
     }
 
     return 0;
   }
 
   private <K extends Comparable<K>, V> void printMap(final PrintStream out, final String name,
-                                                     final String format,
                                                      final Function<V, String> transform,
                                                      final Map<K, V> values) {
     out.print(name);
@@ -122,7 +121,7 @@ public class JobInspectCommand extends WildcardJobCommand {
         out.print(Strings.repeat(" ", name.length()));
       }
       final V value = values.get(key);
-      out.printf(format + "%n", key, transform.apply(value));
+      out.printf("%s=%s%n", key, transform.apply(value));
       first = false;
     }
     if (first) {
