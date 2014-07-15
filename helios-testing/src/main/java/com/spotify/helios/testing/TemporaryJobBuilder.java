@@ -33,11 +33,14 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 
+import org.joda.time.DateTime;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -56,6 +59,7 @@ import static org.junit.Assert.fail;
 public class TemporaryJobBuilder {
 
   private static final Pattern JOB_NAME_FORBIDDEN_CHARS = Pattern.compile("[^0-9a-zA-Z-_.]+");
+  private static final int DEFAULT_EXPIRES_MINUTES = 30;
 
   private final List<String> hosts = Lists.newArrayList();
   private final Job.Builder builder = Job.newBuilder();
@@ -150,6 +154,19 @@ public class TemporaryJobBuilder {
   }
 
   /**
+   * The Helios master will undeploy and delete the job at the specified date, if it has not
+   * already been removed. If not set, jobs will be removed after 30 minutes. This is for the
+   * case when a TemporaryJob is not cleaned up properly, perhaps because the process terminated
+   * prematurely.
+   * @param expires the Date when the job should be removed
+   * @return the TemporaryJobBuilder
+   */
+  public TemporaryJobBuilder expires(final Date expires) {
+    this.builder.setExpires(expires);
+    return this;
+  }
+
+  /**
    * Deploys the job to the specified hosts. If no hosts are specified, a host will be chosen at
    * random from the current Helios cluster. If the HELIOS_HOST_FILTER environment variable is set,
    * it will be used to filter the list of hosts in the current Helios cluster.
@@ -179,6 +196,12 @@ public class TemporaryJobBuilder {
         // Both name and version are unset, use image name as job name and generate random version
         builder.setName(jobName(builder.getImage(), jobNamePrefix));
         builder.setVersion(randomVersion());
+      }
+
+      // Set job to expires value, if it's not already set. This ensures temporary jobs which
+      // aren't cleaned up properly by the test will be removed by the master.
+      if (builder.getExpires() == null) {
+        builder.setExpires(new DateTime().plusMinutes(DEFAULT_EXPIRES_MINUTES).toDate());
       }
 
       if (this.hosts.isEmpty()) {

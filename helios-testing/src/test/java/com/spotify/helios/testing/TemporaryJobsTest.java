@@ -27,6 +27,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.system.SystemTestBase;
 
+import org.joda.time.DateTime;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -34,6 +35,7 @@ import org.junit.Test;
 import java.io.File;
 import java.net.Socket;
 import java.nio.file.Path;
+import java.util.Date;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -41,9 +43,11 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -202,7 +206,10 @@ public class TemporaryJobsTest extends SystemTestBase {
         .prefixDirectory(prefixDirectory.toString())
         .build();
 
+    private final Date expires = new DateTime().plusHours(1).toDate();
+
     private TemporaryJob job1;
+    private TemporaryJob job2;
 
     @Before
     public void setup() {
@@ -210,9 +217,34 @@ public class TemporaryJobsTest extends SystemTestBase {
           .image(BUSYBOX)
           .command(IDLE_COMMAND)
           .deploy(testHost);
+
+      job2 = temporaryJobs.job()
+          .image(BUSYBOX)
+          .command(IDLE_COMMAND)
+          .expires(expires)
+          .deploy(testHost);
     }
 
     @Test public void testJobPrefixFile() throws Exception {
+      // Verify a default expires values was set on job1
+      assertThat(job1.job().getExpires(), is(notNullValue()));
+
+      // Verify expires was set correctly on job2
+      assertThat(job2.job().getExpires(), is(equalTo(expires)));
+
+      // Get all jobs from master to make sure values are set correctly there
+      final Map<JobId, Job> jobs = client.jobs().get();
+
+      // Verify job1 was set correctly on master
+      final Job remoteJob1 = jobs.get(job1.job().getId());
+      assertThat(remoteJob1, is(notNullValue()));
+      assertThat(remoteJob1.getExpires(), is(equalTo(job1.job().getExpires())));
+
+      // Verify job2 was set correctly on master
+      final Job remoteJob2 = jobs.get(job2.job().getId());
+      assertThat(remoteJob2, is(notNullValue()));
+      assertThat(remoteJob2.getExpires(), equalTo(expires));
+
       // Set jobPrefixFile so we can verify it was deleted after test completed
       jobPrefixFile = temporaryJobs.jobPrefixFile();
     }
