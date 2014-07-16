@@ -21,24 +21,28 @@
 
 package com.spotify.helios.system;
 
+import com.spotify.helios.Polling;
 import com.spotify.helios.ZooKeeperClusterTestManager;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.concurrent.Callable;
+
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.zookeeper.KeeperException.NodeExistsException;
 import static org.junit.Assert.assertEquals;
 
 public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
@@ -84,12 +88,32 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
 
   @Test
   public void verifyCanDeployWithOneNodeDeadAfterOneNodeDataLoss() throws Exception {
+    // First deploy a job
     deploy(fooJob);
+
+    // Create a node that we know is written after the job
+    try {
+      zkc.curator().create().forPath("/barrier");
+    } catch (NodeExistsException ignore) {
+    }
+
+    // Wipe one zk peer
     zkc.stopPeer(0);
     zkc.resetPeer(0);
     zkc.startPeer(0);
-    zkc.awaitUp(LONG_WAIT_MINUTES, MINUTES);
+
+    // Wait for the zk peer to recover
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        return zkc.peerCurator(0).checkExists().forPath("/barrier");
+      }
+    });
+
+    // Then take down another peer
     zkc.stopPeer(1);
+
+    // Now verify that we can still undeploy and deploy jobs
     undeploy(fooJob.getId());
     deploy(barJob);
   }

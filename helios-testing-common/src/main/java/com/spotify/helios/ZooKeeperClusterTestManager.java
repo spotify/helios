@@ -24,6 +24,7 @@ package com.spotify.helios;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
@@ -53,6 +54,7 @@ import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -60,8 +62,10 @@ import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
 
+import static com.google.common.collect.Iterables.transform;
 import static com.spotify.helios.ChildProcesses.Subprocess;
 import static java.lang.Integer.MAX_VALUE;
+import static java.util.Arrays.asList;
 import static org.apache.commons.io.FileUtils.deleteDirectory;
 import static org.apache.zookeeper.server.quorum.QuorumPeer.LearnerType;
 import static org.apache.zookeeper.server.quorum.QuorumPeer.QuorumServer;
@@ -76,6 +80,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
 
   protected Map<Long, QuorumServer> zkPeers;
   protected Map<Long, InetSocketAddress> zkAddresses;
+  protected Map<Long, CuratorFramework> peerCurators;
 
   protected final Map<Long, Subprocess> zkProcesses = Maps.newHashMap();
 
@@ -94,10 +99,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
           Thread.sleep(100);
         }
       }
-      final String connect = connectString(zkAddresses);
-      final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
-      curator = CuratorFrameworkFactory.newClient(connect, retryPolicy);
-      curator.start();
+      curator = createCurator(connectString(zkAddresses.values()));
       awaitUp(5, TimeUnit.MINUTES);
     } catch (Exception e) {
       throw Throwables.propagate(e);
@@ -112,6 +114,9 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
   @Override
   public void close() {
     try {
+      for (CuratorFramework curator : peerCurators.values()) {
+        curator.close();
+      }
       curator.close();
       stop();
       deleteDirectory(tempDir.toFile());
@@ -122,7 +127,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
 
   @Override
   public String connectString() {
-    return connectString(zkAddresses);
+    return connectString(zkAddresses.values());
   }
 
   @Override
@@ -189,6 +194,7 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
   private void start0() throws BindException {
     zkPeers = createPeers(3);
     zkAddresses = allocateAddresses(zkPeers);
+    peerCurators = createCurators(zkAddresses);
     try {
       for (final Map.Entry<Long, QuorumServer> entry : zkPeers.entrySet()) {
         final Long id = entry.getKey();
@@ -199,6 +205,21 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
       Throwables.propagateIfInstanceOf(e, BindException.class);
       throw Throwables.propagate(e);
     }
+  }
+
+  private Map<Long, CuratorFramework> createCurators(final Map<Long, InetSocketAddress> addresses) {
+    final ImmutableMap.Builder<Long, CuratorFramework> curators = ImmutableMap.builder();
+    for (Map.Entry<Long, InetSocketAddress> entry : addresses.entrySet()) {
+      curators.put(entry.getKey(), createCurator(connectString(entry.getValue())));
+    }
+    return curators.build();
+  }
+
+  private CuratorFramework createCurator(final String connectString) {
+    final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
+    final CuratorFramework curator = CuratorFrameworkFactory.newClient(connectString, retryPolicy);
+    curator.start();
+    return curator;
   }
 
   public void stopPeer(final long id) throws InterruptedException {
@@ -243,8 +264,19 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
     }
   }
 
-  private String connectString(final Map<Long, InetSocketAddress> addresses) {
-    return Joiner.on(',').join(endpoints(addresses).values());
+  /**
+   * Get a {@link CuratorFramework} client connected to only one of the peers.
+   */
+  public CuratorFramework peerCurator(final long id) {
+    return peerCurators.get(id);
+  }
+
+  private String connectString(final InetSocketAddress... addresses) {
+    return connectString(asList(addresses));
+  }
+
+  private String connectString(final Iterable<InetSocketAddress> addresses) {
+    return Joiner.on(',').join(endpoints(addresses));
   }
 
   private Path peerDir(final long id) {
@@ -263,14 +295,13 @@ public class ZooKeeperClusterTestManager implements ZooKeeperTestManager {
     return peers.build();
   }
 
-  private Map<Long, String> endpoints(final Map<Long, InetSocketAddress> peers) {
-    return ImmutableMap.copyOf(Maps.transformValues(
-        peers, new Function<InetSocketAddress, String>() {
-          @Override
-          public String apply(final InetSocketAddress addr) {
-            return addr.getHostString() + ":" + addr.getPort();
-          }
-        }));
+  private List<String> endpoints(final Iterable<InetSocketAddress> addresses) {
+    return ImmutableList.copyOf(transform(addresses, new Function<InetSocketAddress, String>() {
+      @Override
+      public String apply(final InetSocketAddress addr) {
+        return addr.getHostString() + ":" + addr.getPort();
+      }
+    }));
   }
 
   private Map<Long, InetSocketAddress> allocateAddresses(final Map<Long, QuorumServer> peers) {
