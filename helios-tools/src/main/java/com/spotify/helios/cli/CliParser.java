@@ -99,7 +99,7 @@ public class CliParser {
         .version(NAME_AND_VERSION)
         .description(format("%s%n%n%s%n%s", NAME_AND_VERSION, HELP_JIRA, HELP_WIKI));
 
-    cliConfig = CliConfig.fromUserConfig();
+    cliConfig = CliConfig.getConfig();
 
     final GlobalArgs globalArgs = addGlobalArgs(parser, cliConfig, true);
 

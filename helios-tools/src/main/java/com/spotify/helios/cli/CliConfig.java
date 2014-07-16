@@ -79,20 +79,45 @@ public class CliConfig {
   }
 
   /**
-   * Returns a CliConfig instance with values from a config file from under the users home
-   * directory:
+   * Returns a {@link File} representing the user configuration file under the users home directory:
    *
    * <user.home>/.helios/config
-   *
-   * If the file is not found, a CliConfig with pre-defined values will be returned.
-   *
-   * @throws IOException   If the file exists but could not be read
    */
-  public static CliConfig fromUserConfig() throws IOException {
+  private static File getUserConfigFile() {
     final String userHome = System.getProperty("user.home");
-    final String defaults = userHome + File.separator + CONFIG_PATH;
-    final File defaultsFile = new File(defaults);
-    return fromFile(defaultsFile);
+    return new File(userHome + File.separator + CONFIG_PATH);
+  }
+
+  /**
+   * Returns a {@link File} representing configuration file specified by environment variable.
+   */
+  public static File getEnvironmentConfigFile() throws IOException {
+    final String systemConfigPath = System.getenv("HELIOS_CONFIG_FILE");
+    if (systemConfigPath == null) {
+      return null;
+    }
+    return new File(systemConfigPath);
+  }
+
+  /**
+   * Obtains the configuration from a file if it exists, or empty config otherwise.
+   *
+   * It first attempts to return the config from the file specified by the HELIOS_CONFIG_FILE
+   * environment variable.  If there is no environment variable present, or that file doesn't exist,
+   * it looks in the user config file.  If there is no user config file, you get the empty
+   * configuration.
+   */
+  public static CliConfig getConfig() throws IOException {
+    final File envConfigFile = getEnvironmentConfigFile();
+    if (envConfigFile != null && envConfigFile.exists()) {
+      return fromFile(envConfigFile);
+    }
+    final File userConfigFile = getUserConfigFile();
+    if (userConfigFile.exists()) {
+      return fromFile(userConfigFile);
+    }
+
+    return fromMap(ImmutableMap.<String, Object>of());
   }
 
   /**
