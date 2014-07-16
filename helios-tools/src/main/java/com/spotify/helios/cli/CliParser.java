@@ -58,6 +58,7 @@ import net.sourceforge.argparse4j.inf.Subparsers;
 
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -77,10 +78,10 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 public class CliParser {
 
   private static final String NAME_AND_VERSION = "Spotify Helios CLI " + Version.POM_VERSION;
-  private static final String HELP_JIRA =
-      "Report improvements/bugs at https://jira.spotify.net/browse/HEL";
+  private static final String HELP_ISSUES =
+      "Report improvements/bugs at https://github.com/spotify/helios/issues";
   private static final String HELP_WIKI =
-      "For documentation see https://wiki.spotify.net/wiki/Helios";
+      "For documentation see https://github.com/spotify/helios/wiki";
 
   private final Namespace options;
   private final ControlCommand command;
@@ -92,12 +93,12 @@ public class CliParser {
   private boolean json;
 
   public CliParser(final String... args)
-      throws ArgumentParserException, IOException {
+      throws ArgumentParserException, IOException, URISyntaxException {
 
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("helios")
         .defaultHelp(true)
         .version(NAME_AND_VERSION)
-        .description(format("%s%n%n%s%n%s", NAME_AND_VERSION, HELP_JIRA, HELP_WIKI));
+        .description(format("%s%n%n%s%n%s", NAME_AND_VERSION, HELP_ISSUES, HELP_WIKI));
 
     cliConfig = CliConfig.fromUserConfig();
 
@@ -219,7 +220,7 @@ public class CliParser {
    */
   @SuppressWarnings("UseOfSystemOutOrSystemErr")
   private void handleError(ArgumentParser parser, ArgumentParserException e) {
-    System.err.println("# " + HELP_JIRA);
+    System.err.println("# " + HELP_ISSUES);
     System.err.println("# " + HELP_WIKI);
     System.err.println("# ---------------------------------------------------------------");
     parser.handleError(e);
