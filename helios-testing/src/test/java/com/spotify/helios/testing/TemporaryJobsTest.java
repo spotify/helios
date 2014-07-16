@@ -278,7 +278,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     startDefaultMaster();
     client = defaultClient();
     testHost = testHost();
-    prefixDirectory = tempFolder();
+    prefixDirectory = temporaryFolder.newFolder().toPath();
     startDefaultAgent(testHost);
     awaitHostStatus(client, testHost, UP, LONG_WAIT_MINUTES, MINUTES);
 
@@ -305,10 +305,10 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     try (
         // Create prefix files for all four jobs. They will be locked by default.
-        JobPrefixFile file1 = JobPrefixFile.create(jobId1.getName(), tempFolder());
-        JobPrefixFile file2 = JobPrefixFile.create(jobId2.getName(), tempFolder());
-        JobPrefixFile file3 = JobPrefixFile.create(jobId3.getName(), tempFolder());
-        JobPrefixFile file4 = JobPrefixFile.create(jobId4.getName(), tempFolder())
+        JobPrefixFile file1 = JobPrefixFile.create(jobId1.getName(), prefixDirectory);
+        JobPrefixFile file2 = JobPrefixFile.create(jobId2.getName(), prefixDirectory);
+        JobPrefixFile file3 = JobPrefixFile.create(jobId3.getName(), prefixDirectory);
+        JobPrefixFile file4 = JobPrefixFile.create(jobId4.getName(), prefixDirectory)
     ) {
       // Release the locks of jobs 3 and 4 so they can be cleaned up
       file3.release();
@@ -322,34 +322,30 @@ public class TemporaryJobsTest extends SystemTestBase {
       assertThat(jobs, hasKey(jobId1));
       final JobStatus status1 = client.jobStatus(jobId1).get();
       assertThat(status1.getDeployments().size(), is(1));
-      assertTrue(jobPrefixFileExists(jobId1.getName()));
+      assertTrue(fileExists(prefixDirectory, jobId1.getName()));
 
       // Verify job2 still exists, is not deployed, and the prefix file is still there.
       assertThat(jobs, hasKey(jobId2));
       final JobStatus status2 = client.jobStatus(jobId2).get();
       assertThat(status2.getDeployments().size(), is(0));
-      assertTrue(jobPrefixFileExists(jobId2.getName()));
+      assertTrue(fileExists(prefixDirectory, jobId2.getName()));
 
       // Verify that job3 has been deleted (which means it has also been undeployed), and
       // the prefix file has been deleted.
       assertThat(jobs, not(hasKey(jobId3)));
-      assertFalse(jobPrefixFileExists(jobId3.getName()));
+      assertFalse(fileExists(prefixDirectory, jobId3.getName()));
 
       // Verify that job4 and its prefix file have been deleted.
       assertThat(jobs, not(hasKey(jobId4)));
-      assertFalse(jobPrefixFileExists(jobId4.getName()));
+      assertFalse(fileExists(prefixDirectory, jobId4.getName()));
 
       // Verify the prefix file created during the run of JobNamePrefixTest was deleted
-      assertFalse(jobPrefixFileExists(jobPrefixFile.prefix()));
+      assertFalse(fileExists(prefixDirectory, jobPrefixFile.prefix()));
     }
   }
 
-  private Path tempFolder() {
-    return temporaryFolder.getRoot().toPath();
-  }
-
-  private boolean jobPrefixFileExists(final String prefix) {
-    return new File(tempFolder().toFile(), prefix).exists();
+  private static boolean fileExists(final Path path, final String prefix) {
+    return new File(path.toFile(), prefix).exists();
   }
 
 }

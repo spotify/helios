@@ -228,9 +228,10 @@ public class TemporaryJobs extends ExternalResource {
 
     // Iterate over all files in the directory
     for (File file : files) {
-      // Skip over '.tmp' files which are generated when JobPrefixFile instances are created
-      if (file.getName().endsWith(".tmp")) {
-         continue;
+      // Skip .tmp files which are generated when JobPrefixFiles are created. Also skip
+      // directories. We don't expect any, but skip them just in case.
+      if (file.getName().endsWith(".tmp") || file.isDirectory()) {
+        continue;
       }
       // If we can't obtain a lock for the file, it either has already been deleted, or is being
       // used by another process. In either case, skip over it.
