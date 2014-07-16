@@ -47,7 +47,7 @@ public class SentryTest {
 
   @Rule public TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
-  private static final int UDP_SERVER_TIMEOUT = 5000;
+  private static final int UDP_SERVER_TIMEOUT = 60000;
 
   private int sentryPort;
   private String testDsn;

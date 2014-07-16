@@ -51,7 +51,7 @@ public class ZooKeeperHealthChecker extends HealthCheck
                                 final RiemannFacade facade, final TimeUnit timeUnit,
                                 final long interval) {
     super("zookeeper");
-    this.scheduler = Executors.newScheduledThreadPool(1);
+    this.scheduler = Executors.newScheduledThreadPool(2);
     this.cache = new PathChildrenCache(zooKeeperClient.getCuratorFramework(), path, true, false,
         scheduler);
     this.facade = facade.stack("zookeeper-connection");
