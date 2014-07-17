@@ -380,7 +380,6 @@ public class ZooKeeperMasterModel implements MasterModel {
     final Map<String, Deployment> deploymentsMap = deployments.build();
     return JobStatus.newBuilder()
         .setJob(job)
-        .setDeployedHosts(deploymentsMap.keySet())
         .setDeployments(deploymentsMap)
         .setTaskStatuses(taskStatuses.build())
         .build();
