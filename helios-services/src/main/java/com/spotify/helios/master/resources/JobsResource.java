@@ -29,7 +29,6 @@ import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.JobIdParseException;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
@@ -47,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Collection;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
@@ -94,25 +94,13 @@ public class JobsResource {
     }
 
     // Filter jobs
-    // TODO (dano): support prefix matching queries?
-    final JobId needle;
-    try {
-      needle = JobId.parse(q);
-    } catch (JobIdParseException e1) {
-      log.error("failed to parse job id query, e");
-      throw badRequest();
-    }
-
     final Map<JobId, Job> filteredJobs = Maps.newHashMap();
-    for (final Map.Entry<JobId, Job> entry : allJobs.entrySet()) {
-      final JobId jobId = entry.getKey();
-      final Job job = entry.getValue();
-      if (needle.getName().equals(jobId.getName()) &&
-          (needle.getVersion() == null || needle.getVersion().equals(jobId.getVersion())) &&
-          (needle.getHash() == null || jobId.getHash().startsWith(needle.getHash()))) {
-        filteredJobs.put(jobId, job);
+    for (Entry<JobId, Job> entry : allJobs.entrySet()) {
+      if (entry.getKey().toString().contains(q)) {
+        filteredJobs.put(entry.getKey(), entry.getValue());
       }
     }
+
     metrics.jobsInJobList(filteredJobs.size());
     return filteredJobs;
   }
