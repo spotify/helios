@@ -28,8 +28,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.TaskStatus;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -81,7 +81,7 @@ public class JobWatchCommand extends ControlCommand {
       throws ExecutionException, InterruptedException, IOException {
     boolean exact = options.getBoolean(exactArg.getDest());
     final List<String> prefixes = options.getList(prefixesArg.getDest());
-    String jobIdString = options.getString(jobsArg.getDest());
+    final String jobIdString = options.getString(jobsArg.getDest());
     final List<ListenableFuture<Map<JobId, Job>>> jobIdFutures = Lists.newArrayList();
     jobIdFutures.add(client.jobs(jobIdString));
 
@@ -100,11 +100,11 @@ public class JobWatchCommand extends ControlCommand {
       throws InterruptedException, ExecutionException {
     out.println("Control-C to stop");
     out.println("JOB                  HOST                           STATE    THROTTLED?");
-    DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-DD HH:mm:ss");
+    final DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss");
     while (true) {
       final Map<JobId, JobStatus> statuses = getStatuses(client, jobIds);
 
-      Instant now = new Instant();
+      final Instant now = new Instant();
       out.printf("-------------------- ------------------------------ -------- "
           + "---------- [%s UTC]%n", now.toString(formatter));
       for (final JobId jobId : jobIds) {
