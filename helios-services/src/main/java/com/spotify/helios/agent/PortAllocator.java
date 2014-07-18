@@ -29,8 +29,19 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * A simple port allocator. Given a port range and a set of used ports it will linearly search
+ * through the port range until it finds an available port and claim it.
+ *
+ * The index into the port range is kept between calls to {@link #allocate(Map, Set)}. Successive
+ * allocations will not reuse an available port until the port range has been exhausted and the
+ * index wraps around from the start of the port range.
+ */
 public class PortAllocator {
 
+  /**
+   * Index for port allocation. Reused between allocations so we do not immediately reuse ports.
+   */
   private int i;
 
   private final int start;
@@ -42,6 +53,13 @@ public class PortAllocator {
     this.i = start;
   }
 
+  /**
+   * Allocate ports for portmappings with no external ports configured.
+   *
+   * @param ports A mutable map of port mappings for a container, both with statically configured
+   *              external ports and dynamic unconfigured external ports.
+   * @param used  A mutable set of used ports. The ports allocated will not clash with these ports.
+   */
   public Map<String, Integer> allocate(final Map<String, PortMapping> ports,
                                        final Set<Integer> used) {
     return allocate0(ports, Sets.newHashSet(used));
@@ -82,7 +100,7 @@ public class PortAllocator {
         continue;
       }
 
-      // Look for an available port
+      // Look for an available port, checking at most (end - start) ports.
       Integer port = null;
       for (int i = start; i < end; i++) {
         final int candidate = next();
@@ -101,6 +119,10 @@ public class PortAllocator {
     return allocation.build();
   }
 
+  /**
+   * Get the next port number to try, continuing from the previous port allocation to avoid eagerly
+   * reusing ports. Wraps around when the end of the port range has been reached.
+   */
   private int next() {
     if (i == end) {
       i = start;
