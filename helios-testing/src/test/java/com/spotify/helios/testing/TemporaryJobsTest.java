@@ -22,6 +22,7 @@
 package com.spotify.helios.testing;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
@@ -43,6 +44,7 @@ import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
@@ -66,7 +68,8 @@ public class TemporaryJobsTest extends SystemTestBase {
   // instantiates it, it must be a static class, which means it can't access the non-static fields
   // in SystemTestBase.
   private static HeliosClient client;
-  private static String testHost;
+  private static String testHost1;
+  private static String testHost2;
   private static JobPrefixFile jobPrefixFile;
   private static Path prefixDirectory;
 
@@ -75,7 +78,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Override
     public boolean probe(final String host, final int port) {
       // Probe for ports where docker is running instead of on the mock testHost address
-      assertEquals(testHost, host);
+      assertEquals(testHost1, host);
       return super.probe(DOCKER_HOST.address(), port);
     }
   }
@@ -97,7 +100,7 @@ public class TemporaryJobsTest extends SystemTestBase {
           .image("busybox")
           .command("nc", "-p", "4711", "-lle", "cat")
           .port("echo", 4711)
-          .deploy(testHost);
+          .deploy(testHost1);
     }
 
     @Test
@@ -106,7 +109,7 @@ public class TemporaryJobsTest extends SystemTestBase {
       temporaryJobs.job()
           .image("busybox")
           .command(IDLE_COMMAND)
-          .host(testHost)
+          .host(testHost1)
           .deploy();
 
       final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
@@ -116,10 +119,10 @@ public class TemporaryJobsTest extends SystemTestBase {
       }
 
       //verify address and addresses return valid HostAndPort objects
-      assertEquals("wrong host", testHost, job1.address("echo").getHostText());
-      assertEquals("wrong host", testHost, getOnlyElement(job1.addresses("echo")).getHostText());
+      assertEquals("wrong host", testHost1, job1.address("echo").getHostText());
+      assertEquals("wrong host", testHost1, getOnlyElement(job1.addresses("echo")).getHostText());
 
-      ping(DOCKER_HOST.address(), job1.port(testHost, "echo"));
+      ping(DOCKER_HOST.address(), job1.port(testHost1, "echo"));
     }
 
     @Test
@@ -136,7 +139,20 @@ public class TemporaryJobsTest extends SystemTestBase {
         assertEquals("wrong job running", "busybox", job.getImage());
       }
 
-      ping(DOCKER_HOST.address(), job1.port(testHost, "echo"));
+      ping(DOCKER_HOST.address(), job1.port(testHost1, "echo"));
+    }
+
+    @Test
+    public void testSpecificHost() throws Exception {
+      final TemporaryJob job = temporaryJobs.job()
+          .image("busybox")
+          .command(IDLE_COMMAND)
+          .hostFilter(testHost2)
+          .deploy();
+
+      final JobStatus status = client.jobStatus(job.job().getId()).get(15, SECONDS);
+      final Map<String, Deployment> deployments = status.getDeployments();
+      assertThat(deployments.keySet(), contains(testHost2));
     }
 
     public void testDefaultLocalHostFilter() throws Exception {
@@ -188,7 +204,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     @SuppressWarnings("unused")
     private TemporaryJob job2 = temporaryJobs.job()
         .image("base")
-        .deploy(testHost);
+        .deploy(testHost1);
 
     @Test
     public void testFail() throws Exception {
@@ -216,13 +232,13 @@ public class TemporaryJobsTest extends SystemTestBase {
       job1 = temporaryJobs.job()
           .image(BUSYBOX)
           .command(IDLE_COMMAND)
-          .deploy(testHost);
+          .deploy(testHost1);
 
       job2 = temporaryJobs.job()
           .image(BUSYBOX)
           .command(IDLE_COMMAND)
           .expires(expires)
-          .deploy(testHost);
+          .deploy(testHost1);
     }
 
     @Test public void testJobPrefixFile() throws Exception {
@@ -254,10 +270,13 @@ public class TemporaryJobsTest extends SystemTestBase {
   public void testRule() throws Exception {
     startDefaultMaster();
     client = defaultClient();
-    testHost = testHost();
-    startDefaultAgent(testHost);
+    testHost1 = testHost() + "1";
+    testHost2 = testHost() + "2";
+    startDefaultAgent(testHost1);
+    startDefaultAgent(testHost2);
 
-    awaitHostStatus(client, testHost, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost1, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost2, UP, LONG_WAIT_MINUTES, MINUTES);
 
     assertThat(testResult(SimpleTest.class), isSuccessful());
     assertTrue("jobs are running that should not be",
@@ -268,7 +287,7 @@ public class TemporaryJobsTest extends SystemTestBase {
   public void verifyJobFailsWhenCalledBeforeTestRun() throws Exception {
     startDefaultMaster();
     client = defaultClient();
-    testHost = testHost();
+    testHost1 = testHost();
     assertThat(testResult(BadTest.class),
                hasFailureContaining("deploy() must be called in a @Before or in the test method"));
   }
@@ -277,10 +296,10 @@ public class TemporaryJobsTest extends SystemTestBase {
   public void testJobNamePrefix() throws Exception {
     startDefaultMaster();
     client = defaultClient();
-    testHost = testHost();
+    testHost1 = testHost();
     prefixDirectory = temporaryFolder.newFolder().toPath();
-    startDefaultAgent(testHost);
-    awaitHostStatus(client, testHost, UP, LONG_WAIT_MINUTES, MINUTES);
+    startDefaultAgent(testHost1);
+    awaitHostStatus(client, testHost1, UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create four jobs which represent these use cases:
     //  job1 - Created, deployed, locked. Simulates a job being used by another process. The
@@ -294,12 +313,12 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     // job1 - create and deploy
     final JobId jobId1 = createJob(testJobName + "_1", testJobVersion, BUSYBOX, IDLE_COMMAND);
-    deployJob(jobId1, testHost);
+    deployJob(jobId1, testHost1);
     // job2 - create
     final JobId jobId2 = createJob(testJobName + "_2", testJobVersion, BUSYBOX, IDLE_COMMAND);
     // job3 - create and deploy
     final JobId jobId3 = createJob(testJobName + "_3", testJobVersion, BUSYBOX, IDLE_COMMAND);
-    deployJob(jobId3, testHost);
+    deployJob(jobId3, testHost1);
     // job4 - create
     final JobId jobId4 = createJob(testJobName + "_4", testJobVersion, BUSYBOX, IDLE_COMMAND);
 
