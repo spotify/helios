@@ -43,7 +43,6 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -100,7 +99,7 @@ public class TemporaryJobs extends ExternalResource {
         fail(format("no hosts matched the filter pattern - %s", hostFilter));
       }
 
-      String chosenHost = hosts.get(new Random().nextInt(hosts.size()));
+      final String chosenHost = filteredHosts.get(new Random().nextInt(filteredHosts.size()));
       return deploy(job, asList(chosenHost), waitPorts);
     }
 
