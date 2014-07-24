@@ -103,8 +103,11 @@ public class JobUndeployCommand extends WildcardJobCommand {
     out.printf("Undeploying %s from %s%n", jobId, hosts);
 
     int code = 0;
+    final HostResolver resolver = HostResolver.create(client);
 
-    for (final String host : hosts) {
+    for (final String candidateHost : hosts) {
+      final String host = resolver.resolveName(candidateHost);
+
       out.printf("%s: ", host);
       final JobUndeployResponse response = client.undeploy(jobId, host).get();
       if (response.getStatus() == JobUndeployResponse.Status.OK) {

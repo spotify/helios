@@ -74,7 +74,6 @@ public class JobDeployCommand extends WildcardJobCommand {
                              final PrintStream out, final boolean json, final JobId jobId)
       throws ExecutionException, InterruptedException {
     final List<String> hosts = options.getList(hostsArg.getDest());
-
     final Deployment job = Deployment.of(jobId,
                                          options.getBoolean(noStartArg.getDest()) ? STOP : START);
 
@@ -82,7 +81,10 @@ public class JobDeployCommand extends WildcardJobCommand {
 
     int code = 0;
 
-    for (final String host : hosts) {
+    final HostResolver resolver = HostResolver.create(client);
+
+    for (final String candidateHost : hosts) {
+      final String host = resolver.resolveName(candidateHost);
       out.printf("%s: ", host);
       final JobDeployResponse result = client.deploy(job, host).get();
       if (result.getStatus() == JobDeployResponse.Status.OK) {
