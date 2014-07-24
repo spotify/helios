@@ -24,7 +24,7 @@ When using the CLI, you'll have to specify which Helios endpoint you want to tal
 
     helios -z http://localhost:5801
 
-If you have multiple masters, you can [setup automatic master lookup](https://github.com/spotify/helios/wiki/Automatic-master-lookup).
+If you have multiple masters, you can [setup automatic master lookup](automatic_master_lookup.md).
 
 **Note:** that the rest of this manual uses the `helios` command without specifying either the `-z` or `-s` flag. This is only for simplicity, though you can emulate this behavior by aliasing the `helios` command. For example:
 
