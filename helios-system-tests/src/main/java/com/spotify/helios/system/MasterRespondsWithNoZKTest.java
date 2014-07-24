@@ -21,33 +21,54 @@
 
 package com.spotify.helios.system;
 
+import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 
-import org.junit.Before;
-import org.junit.Ignore;
+import org.apache.curator.utils.EnsurePath;
+import org.junit.Assert;
+import org.apache.curator.CuratorZookeeperClient;
+import org.apache.curator.RetryLoop;
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.listen.Listenable;
+import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
-
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
 import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MasterRespondsWithNoZKTest extends SystemTestBase {
 
-  @Before
-  public void setup() throws InterruptedException {
-    zk().stop();
+  @Override
+  protected ZooKeeperTestManager zooKeeperTestManager() {
+    final ZooKeeperTestManager testManager = mock(ZooKeeperTestManager.class);
+    final MockCuratorClientFactory mockCuratorClientFactory = new MockCuratorClientFactory();
+    final CuratorFramework curator = mockCuratorClientFactory.newClient(null, 0, 0, null);
+    when(testManager.curator()).thenReturn(curator);
+
+    when(testManager.connectString()).thenReturn("127.0.0.1");
+    return testManager;
   }
 
-  @Ignore
+  @Override
+  protected void tearDownJobs() {}
+
   @Test
   public void test() throws Exception {
 
-    startDefaultMaster();
+    startDefaultMasterDontWaitForZK(new MockCuratorClientFactory(), "--zk-connection-timeout", "1");
+
     final HeliosClient client = defaultClient();
 
     try {
@@ -61,4 +82,28 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
 
   }
 
+  private static class MockCuratorClientFactory implements CuratorClientFactory {
+
+    @Override
+    public CuratorFramework newClient(String connectString,
+                                      int sessionTimeoutMs,
+                                      int connectionTimeoutMs,
+                                      RetryPolicy retryPolicy) {
+      final CuratorFramework curator = mock(CuratorFramework.class);
+
+      final RetryLoop retryLoop = mock(RetryLoop.class);
+      when(retryLoop.shouldContinue()).thenReturn(false);
+
+      final CuratorZookeeperClient czkClient = mock(CuratorZookeeperClient.class);
+      when(czkClient.newRetryLoop()).thenReturn(retryLoop);
+
+      when(curator.getZookeeperClient()).thenReturn(czkClient);
+
+      when(curator.getConnectionStateListenable()).thenReturn(mock(Listenable.class));
+      when(curator.getChildren()).thenThrow(KeeperException.ConnectionLossException.class);
+      when(curator.newNamespaceAwareEnsurePath(anyString())).thenReturn(mock(EnsurePath.class));
+
+      return curator;
+    }
+  }
 }

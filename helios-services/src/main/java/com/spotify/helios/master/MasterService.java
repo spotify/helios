@@ -39,6 +39,7 @@ import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
+import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -85,6 +86,7 @@ public class MasterService extends AbstractIdleService {
   private final RiemannFacade riemannFacade;
   private final ZooKeeperClient zooKeeperClient;
   private final ExpiredJobReaper expiredJobReaper;
+  private final CuratorClientFactory curatorClientFactory;
 
   private ZooKeeperRegistrar zkRegistrar;
 
@@ -94,10 +96,12 @@ public class MasterService extends AbstractIdleService {
    *
    * @param config The service configuration.
    */
-  public MasterService(final MasterConfig config, final Environment environment)
+  public MasterService(final MasterConfig config, final Environment environment,
+                       final CuratorClientFactory curatorClientFactory)
       throws ConfigurationException {
     this.config = config;
     this.environment = environment;
+    this.curatorClientFactory = curatorClientFactory;
 
     // Configure metrics
     // TODO (dano): do something with the riemann facade
@@ -218,7 +222,7 @@ public class MasterService extends AbstractIdleService {
    */
   private ZooKeeperClient setupZookeeperClient(final MasterConfig config) {
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
-    final CuratorFramework curator = CuratorFrameworkFactory.newClient(
+    final CuratorFramework curator = curatorClientFactory.newClient(
         config.getZooKeeperConnectString(),
         config.getZooKeeperSessionTimeoutMillis(),
         config.getZooKeeperConnectionTimeoutMillis(),
