@@ -1,13 +1,13 @@
 package com.spotify.helios.master;
 
 import com.google.common.collect.ImmutableMap;
+
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
-import com.spotify.helios.common.descriptors.PortMapping;
-import org.apache.http.impl.cookie.DateUtils;
+
 import org.joda.time.DateTime;
 import org.junit.Test;
 import org.junit.runner.RunWith;
