@@ -68,6 +68,7 @@ import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
 import com.spotify.helios.servicescommon.DockerHost;
+import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.jersey.api.client.ClientResponse;
 
@@ -234,9 +235,9 @@ public abstract class SystemTestBase {
 
   private void assertDockerReachable(final int probePort) throws Exception {
     final DockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri());
-    docker.pull("busybox");
+    docker.pull(BUSYBOX);
     final ContainerConfig config = ContainerConfig.builder()
-        .image("busybox")
+        .image(BUSYBOX)
         .cmd("nc", "-p", "4711", "-lle", "cat")
         .exposedPorts(ImmutableSet.of("4711/tcp"))
         .build();
@@ -454,11 +455,11 @@ public abstract class SystemTestBase {
     }
   }
 
-  protected void startDefaultMaster(String... args) throws Exception {
+  protected List<String> setupDefaultMaster(String... args) throws Exception {
     if (isIntegration()) {
       checkArgument(args.length == 0,
                     "cannot start default master in integration test with arguments passed");
-      return;
+      return null;
     }
 
     // TODO (dano): Move this bootstrapping to something reusable
@@ -470,14 +471,25 @@ public abstract class SystemTestBase {
     curator.newNamespaceAwareEnsurePath(Paths.statusMasters()).ensure(curator.getZookeeperClient());
     curator.newNamespaceAwareEnsurePath(Paths.historyJobs()).ensure(curator.getZookeeperClient());
 
-    List<String> argsList = Lists.newArrayList("-vvvv",
-                                               "--no-log-setup",
-                                               "--http", masterEndpoint(),
-                                               "--admin=" + masterAdminPort(),
-                                               "--name", TEST_MASTER,
-                                               "--domain", "",
-                                               "--zk", zk.connectString());
+    final List<String> argsList = Lists.newArrayList("-vvvv",
+                                                     "--no-log-setup",
+                                                     "--http", masterEndpoint(),
+                                                     "--admin=" + masterAdminPort(),
+                                                     "--name", TEST_MASTER,
+                                                     "--domain", "",
+                                                     "--zk", zk.connectString());
     argsList.addAll(asList(args));
+
+    return argsList;
+  }
+
+  protected void startDefaultMaster(String... args) throws Exception {
+    final List<String> argsList = setupDefaultMaster(args);
+
+    if (argsList == null) {
+      return;
+    }
+
     startMaster(argsList.toArray(new String[argsList.size()]));
     waitForMasterToConnectToZK();
   }
@@ -494,6 +506,17 @@ public abstract class SystemTestBase {
         }
       }
     });
+  }
+
+  protected void startDefaultMasterDontWaitForZK(final CuratorClientFactory curatorClientFactory,
+                                                 String... args) throws Exception {
+    List<String> argsList = setupDefaultMaster(args);
+
+    if (argsList == null) {
+      return;
+    }
+
+    startMaster(curatorClientFactory, argsList.toArray(new String[argsList.size()]));
   }
 
   protected AgentMain startDefaultAgent(final String host, final String... args)
@@ -525,6 +548,14 @@ public abstract class SystemTestBase {
 
   protected MasterMain startMaster(final String... args) throws Exception {
     final MasterMain main = new MasterMain(args);
+    main.startAsync().awaitRunning();
+    services.add(main);
+    return main;
+  }
+
+  MasterMain startMaster(final CuratorClientFactory curatorClientFactory,
+                         final String... args) throws Exception {
+    final MasterMain main = new MasterMain(curatorClientFactory, args);
     main.startAsync().awaitRunning();
     services.add(main);
     return main;

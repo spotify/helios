@@ -23,6 +23,8 @@ package com.spotify.helios.master;
 
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.servicescommon.ServiceMain;
+import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
+import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
 import com.yammer.dropwizard.config.Environment;
 import com.yammer.dropwizard.json.ObjectMapperFactory;
 import com.yammer.dropwizard.validation.Validator;
@@ -41,26 +43,36 @@ public class MasterMain extends ServiceMain {
   private static final Logger log = LoggerFactory.getLogger(MasterMain.class);
 
   private final MasterConfig masterConfig;
+  private final CuratorClientFactory curatorClientFactory;
   private MasterService service;
 
   public MasterMain(final String[] args) throws ArgumentParserException {
-    this(new MasterParser(args));
+    this(new CuratorClientFactoryImpl(), new MasterParser(args));
   }
 
-  public MasterMain(final MasterParser parser) {
-    this(parser.getMasterConfig(), parser.getLoggingConfig());
+  public MasterMain(final CuratorClientFactory curatorClientFactory,
+                    final String[] args) throws ArgumentParserException {
+    this(curatorClientFactory, new MasterParser(args));
   }
 
-  public MasterMain(final MasterConfig masterConfig, final LoggingConfig loggingConfig) {
+  public MasterMain(final CuratorClientFactory curatorClientFactory,
+                    final MasterParser parser) {
+    this(curatorClientFactory, parser.getMasterConfig(), parser.getLoggingConfig());
+  }
+
+  public MasterMain(final CuratorClientFactory curatorClientFactory,
+                    final MasterConfig masterConfig,
+                    final LoggingConfig loggingConfig) {
     super(loggingConfig, masterConfig.getSentryDsn());
     this.masterConfig = masterConfig;
+    this.curatorClientFactory = curatorClientFactory;
   }
 
   @Override
   protected void startUp() throws Exception {
     final Environment environment = new Environment("helios-master", masterConfig,
                                                     new ObjectMapperFactory(), new Validator());
-    service = new MasterService(masterConfig, environment);
+    service = new MasterService(masterConfig, environment, curatorClientFactory);
     service.startAsync().awaitRunning();
   }
 
