@@ -49,6 +49,16 @@ public class DeregisterTest extends SystemTestBase {
   @Rule public final TemporaryPorts ports = TemporaryPorts.create();
 
   @Test
+  public void testDeregisterHostThatDoesntExist() throws Exception {
+    startDefaultMaster();
+    final String host = testHost();
+    final HeliosClient client = defaultClient();
+
+    final HostDeregisterResponse deregisterResponse = client.deregisterHost(host).get();
+    assertEquals(HostDeregisterResponse.Status.NOT_FOUND, deregisterResponse.getStatus());
+  }
+
+  @Test
   public void test() throws Exception {
     startDefaultMaster();
     final String host = testHost();

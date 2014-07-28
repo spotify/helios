@@ -37,6 +37,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 class HostResolver {
+  private static final Name[] EMPTY_PATH = new Name[]{};
   private final Set<String> allHosts;
   private final Name[] searchPath;
 
@@ -50,9 +51,14 @@ class HostResolver {
     final ResolverConfig currentConfig = ResolverConfig.getCurrentConfig();
     final Name[] path;
     if (currentConfig != null) {
-      path = currentConfig.searchPath();
+      final Name[] possiblePath = currentConfig.searchPath();
+      if (possiblePath != null) {
+        path = possiblePath;
+      } else {
+        path = EMPTY_PATH;
+      }
     } else {
-      path = new Name[]{};
+      path = EMPTY_PATH;
     }
     return new HostResolver(Sets.newHashSet(client.listHosts().get()), path);
   }
@@ -92,6 +98,17 @@ class HostResolver {
     }
 
     return minScoreHosts.get(0);
+  }
+
+  public List<String> getSortedMatches(final String hostName) {
+    final List<String> matches = findPrefixMatches(hostName);
+    final List<ScoredHost> scored = scoreMatches(matches);
+    final List<ScoredHost> sorted = sortScoredHosts(scored);
+    final ImmutableList.Builder<String> builder = ImmutableList.builder();
+    for (final ScoredHost host : sorted) {
+      builder.add(host.host);
+    }
+    return builder.build();
   }
 
   private List<ScoredHost> sortScoredHosts(List<ScoredHost> scored) {
