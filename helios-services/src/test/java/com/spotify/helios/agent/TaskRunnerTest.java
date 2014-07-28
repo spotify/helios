@@ -22,7 +22,6 @@
 package com.spotify.helios.agent;
 
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
 
@@ -37,7 +36,6 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TaskRunnerTest {
@@ -46,7 +44,7 @@ public class TaskRunnerTest {
   private static final Job JOB = Job.newBuilder()
       .setName("foobar")
       .setCommand(asList("foo", "bar"))
-      .setImage("spotify:17")
+      .setImage(IMAGE)
       .setVersion("4711")
       .build();
   private static final String HOST = "HOST";
@@ -69,10 +67,6 @@ public class TaskRunnerTest {
         .docker(mockDocker)
         .listener(new TaskRunner.NopListener())
         .build();
-
-    when(mockDocker.inspectImage(IMAGE))
-        .thenReturn(new ImageInfo())
-        .thenReturn(null);
 
     tr.run();
 
