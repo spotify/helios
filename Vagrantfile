@@ -26,21 +26,23 @@ Vagrant.configure("2") do |config|
   pkg_cmd << "echo deb http://get.docker.io/ubuntu docker main > /etc/apt/sources.list.d/docker.list; "
   pkg_cmd << "apt-get update && apt-get -y install lxc-docker; "
 
-
   # Set up docker to listen on 0.0.0.0:2375
   pkg_cmd << "echo 'DOCKER_OPTS=\"--restart=false -D=true -H=tcp://0.0.0.0:2375 -H=unix:///var/run/docker.sock\"' > /etc/default/docker; "
   # make docker usable by vagrant user w/o sudo
   pkg_cmd << "groupadd docker; gpasswd -a vagrant docker; service docker restart;"
 
   # install other helios dependencies and development tools
-  pkg_cmd << "apt-get install -y default-jdk maven zookeeperd=3.4.5+dfsg-1 git vim curl; "
+  pkg_cmd << "apt-get install -y default-jdk maven zookeeperd=3.4.5+dfsg-1 git vim curl golang mercurial; "
+
+  # make sure zk is running
+  pkg_cmd << "initctl start zookeeper ;"
 
   # install helios conf files
   pkg_cmd << <<-END.gsub(/^ {4}/, '')
     echo '
     ENABLED=true
 
-    HELIOS_AGENT_OPTS="--state-dir=/var/lib/helios-agent --name=192.168.33.10 --zk localhost:2181"
+    HELIOS_AGENT_OPTS="--state-dir=/var/lib/helios-agent --name=192.168.33.10 --zk localhost:2181 --service-registry http://127.0.0.1:4001 --service-registrar-plugin /usr/share/helios/lib/plugins/helios-skydns-0.1.jar --domain skydns.local"
     ' > /etc/default/helios-agent ;
     END
   pkg_cmd << <<-END.gsub(/^ {4}/, '')
@@ -50,6 +52,14 @@ Vagrant.configure("2") do |config|
     HELIOS_MASTER_OPTS="--zk localhost:2181"
     ' > /etc/default/helios-master ;
     END
+
+  # Download and install skydns registrar plugin version 0.1 release from github
+  # If you change which version, update the conf file bit above
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
+    curl -L https://github.com/spotify/helios-skydns/releases/download/0.1/helios-skydns_0.1_all.deb -o helios-skydns_0.1_all.deb && \
+    dpkg -i helios-skydns_0.1_all.deb ;
+    END
+
   pkg_cmd << "mkdir -p /home/vagrant/.helios;"
   pkg_cmd << <<-END.gsub(/^ {4}/, '')
     echo '{"masterEndpoints":["http://localhost:5801"]}' > /home/vagrant/.helios/config;
@@ -63,28 +73,79 @@ Vagrant.configure("2") do |config|
             /vagrant/helios-services/target/*.deb ;
     END
 
+  #build skydns version 24a11ee to be at least consistent
   pkg_cmd << <<-END.gsub(/^ {4}/, '')
-    curl -L https://github.com/spotify/container-agent/releases/download/0.1/container-agent_0.1-1.0.0.0.24.535bef3.2_amd64.deb -o container-agent.deb && \
-    apt-get install -y --force-yes libyaml-dev &&
-    dpkg -i container-agent.deb && \
-    echo 'containers:
-      - name: skydns
-        image: drewcsillag/skydns:0.3
-        ports:
-          - name: domain
-            hostPort: 53
-            containerPort: 53
-            protocol: UDP
-            hostIp: 192.168.33.10
-          - name: etcd
-            hostPort: 4001
-            containerPort: 4001
-        env:
-          - key: DOMAIN
-            value: skydns.local
-    ' > /etc/container-agent/containers.d/skydns.yaml ;
+    export GOPATH=/home/vagrant/gopath && \
+    mkdir -p $GOPATH/src/github.com/skynetservices && \
+    cd $GOPATH/src/github.com/skynetservices && \
+    git clone https://github.com/skynetservices/skydns.git && \
+    cd skydns && \
+    git checkout 24a11ee && \
+    go get -d -v ./... && go build -v && \
+    cp skydns /usr/bin/skydns ;
     END
 
+  # build etcd v0.4.5
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
+    cd /home/vagrant && \
+    git clone https://github.com/coreos/etcd && \
+    cd etcd && \
+    git checkout v0.4.5 && \
+    git fetch origin pull/899/head:pull-899 && \
+    git merge pull-899 && \
+    ./build && \
+    cp bin/etcd /usr/bin ;
+    END
+
+  # put in upstart config for etcd
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
+    echo '
+    description "etcd"
+    
+    start on runlevel [2345]
+    stop on runlevel [!2345]
+    
+    respawn
+    respawn limit unlimited
+    
+    script
+        [ -r /etc/default/etcd ] && . /etc/default/etcd
+        /usr/bin/etcd $ETCD_OPTS
+    end script
+    
+    # prevent respawning more than once every second
+    post-stop exec sleep 1
+    ' > /etc/init/etcd.conf && \
+    initctl start etcd ;
+    END
+
+  # put in config for skydns
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
+    echo '
+    SKYDNS_OPTS="-addr=0.0.0.0:53"
+    ' > /etc/default/skydns ;
+    END
+
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
+    echo '
+    description "skydns"
+    
+    start on runlevel [2345]
+    stop on runlevel [!2345]
+    
+    respawn
+    respawn limit unlimited
+    
+    script
+        [ -r /etc/default/skydns ] && . /etc/default/skydns
+        /usr/bin/skydns $SKYDNS_OPTS
+    end script
+    
+    # prevent respawning more than once every second
+    post-stop exec sleep 1
+    ' > /etc/init/skydns.conf && \
+    initctl start skydns ;
+  END
   config.vm.provision :shell, :inline => pkg_cmd
 end
 
