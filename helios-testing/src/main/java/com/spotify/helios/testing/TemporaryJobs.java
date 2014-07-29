@@ -32,7 +32,6 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
-import com.sun.deploy.util.StringUtils;
 
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
@@ -263,7 +262,9 @@ public class TemporaryJobs extends ExternalResource {
           final JobStatus status = client.jobStatus(entry.getKey()).get();
           final List<String> hosts = ImmutableList.copyOf(status.getDeployments().keySet());
 
-          log.info("Undeploying job {} from hosts {}", jobId, StringUtils.join(hosts, ","));
+          log.info("Undeploying job {} from hosts {}",
+                   jobId,
+                   Joiner.on(", ").skipNulls().join(hosts));
 
           final List<AssertionError> errors =
               undeploy(client, jobId, hosts, new ArrayList<AssertionError>());
