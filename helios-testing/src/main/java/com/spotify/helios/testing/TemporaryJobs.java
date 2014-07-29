@@ -32,6 +32,7 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.sun.deploy.util.StringUtils;
 
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
@@ -86,6 +87,8 @@ public class TemporaryJobs extends ExternalResource {
 
       final List<String> hosts;
       try {
+        log.info("Getting list of hosts");
+
         hosts = client.listHosts().get();
       } catch (InterruptedException | ExecutionException e) {
         throw new AssertionError("Failed to get list of Helios hosts", e);
@@ -191,6 +194,8 @@ public class TemporaryJobs extends ExternalResource {
   protected void after() {
     final List<AssertionError> errors = newArrayList();
 
+    log.info("Undeploying temporary jobs");
+
     for (TemporaryJob job : jobs) {
       job.undeploy(errors);
     }
@@ -223,6 +228,9 @@ public class TemporaryJobs extends ExternalResource {
     if (files == null) {
       return;
     }
+
+    log.info("Removing old temporary jobs");
+
     final Map<JobId, Job> jobs = client.jobs().get();
 
     // Iterate over all files in the directory
@@ -251,8 +259,12 @@ public class TemporaryJobs extends ExternalResource {
             continue;
           }
           // Get list of all hosts where this job is deployed, and undeploy
+          log.info("Getting status for job {}", jobId);
           final JobStatus status = client.jobStatus(entry.getKey()).get();
           final List<String> hosts = ImmutableList.copyOf(status.getDeployments().keySet());
+
+          log.info("Undeploying job {} from hosts {}", jobId, StringUtils.join(hosts, ","));
+
           final List<AssertionError> errors =
               undeploy(client, jobId, hosts, new ArrayList<AssertionError>());
 

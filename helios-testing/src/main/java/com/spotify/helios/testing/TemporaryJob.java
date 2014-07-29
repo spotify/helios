@@ -145,6 +145,8 @@ public class TemporaryJob {
 
   void deploy() {
     try {
+      log.info("Deploying job {} with image {}", job.getId(), job.getImage());
+
       // Create job
       final CreateJobResponse createResponse = get(client.createJob(job));
       if (createResponse.getStatus() != CreateJobResponse.Status.OK) {
@@ -155,6 +157,8 @@ public class TemporaryJob {
       // Deploy job
       final Deployment deployment = Deployment.of(job.getId(), Goal.START);
       for (final String host : hosts) {
+        log.info("Waiting for Helios job deploy of {} on host {}", deployment.getJobId(), host);
+
         final JobDeployResponse deployResponse = get(client.deploy(deployment, host));
         if (deployResponse.getStatus() != JobDeployResponse.Status.OK) {
           fail(format("Failed to deploy job %s %s - %s",
@@ -173,14 +177,20 @@ public class TemporaryJob {
   }
 
   void undeploy(final List<AssertionError> errors) {
+    log.info("Undeploying job {}", job.getId());
+
     Jobs.undeploy(client, job.getId(), hosts, errors);
   }
 
   private void awaitUp(final String host) throws TimeoutException {
+    log.info("Waiting for job {} to be up on host {}", job.getId(), host);
+
     final TaskStatus status = Polling.awaitUnchecked(
         TIMEOUT_MILLIS, MILLISECONDS, new Callable<TaskStatus>() {
           @Override
           public TaskStatus call() throws Exception {
+            log.info("Getting job status for job {}", job.getId());
+
             final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
             if (status == null) {
               return null;
@@ -219,6 +229,8 @@ public class TemporaryJob {
   }
 
   private void awaitPort(final String port, final String host) throws TimeoutException {
+    log.info("Awaiting port availability on {}:{}", host, port);
+
     final TaskStatus taskStatus = statuses.get(host);
     assert taskStatus != null;
     final Integer externalPort = taskStatus.getPorts().get(port).getExternalPort();
