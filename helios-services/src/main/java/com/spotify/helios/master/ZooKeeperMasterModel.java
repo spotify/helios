@@ -176,6 +176,13 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       // Remove all jobs deployed to this host
       final List<JobId> jobs = listHostJobs(client, host);
+
+      if (jobs == null) {
+        if (client.exists(Paths.configHost(host)) == null) {
+          throw new HostNotFoundException("host [" + host + "] does not exist");
+        }
+      }
+
       for (JobId job : jobs) {
         final String hostJobPath = Paths.configHostJob(host, job);
         final List<String> nodes = client.listRecursive(hostJobPath);

@@ -21,6 +21,8 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Joiner;
+
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
 
@@ -31,6 +33,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 public class HostDeregisterCommand extends ControlCommand {
@@ -79,6 +82,15 @@ public class HostDeregisterCommand extends ControlCommand {
       out.printf("done%n");
     } else {
       out.printf("failed: %s%n", response);
+
+      if (response.getStatus() == HostDeregisterResponse.Status.NOT_FOUND) {
+        final HostResolver resolver = HostResolver.create(client);
+        final List<String> resolved = resolver.getSortedMatches(host);
+        if (!resolved.isEmpty()) {
+          out.println("We didn't find your hostname, but we did find some possible matches for you:"
+              + "\n    " + Joiner.on("\n    ").join(resolved) + "\n");
+        }
+      }
       code = 1;
     }
     return code;
