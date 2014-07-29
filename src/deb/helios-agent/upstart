@@ -28,7 +28,7 @@ end script
 script
   [ -f $DEFAULTFILE ] && . $DEFAULTFILE
   export HELIOS_AGENT_JVM_OPTS
-  /usr/bin/helios-agent $HELIOS_AGENT_OPTS
+  exec /usr/bin/helios-agent $HELIOS_AGENT_OPTS
 end script
 
 # prevent respawning more than once every 5 seconds

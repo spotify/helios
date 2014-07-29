@@ -14,6 +14,7 @@ respawn limit unlimited
 env DEFAULTFILE=/etc/default/helios-master
 
 setuid helios
+
 pre-start script
   [ -f $DEFAULTFILE ] && . $DEFAULTFILE
 
@@ -26,7 +27,7 @@ end script
 script
   [ -f $DEFAULTFILE ] && . $DEFAULTFILE
   export HELIOS_MASTER_JVM_OPTS
-  /usr/bin/helios-master $HELIOS_MASTER_OPTS
+  exec /usr/bin/helios-master $HELIOS_MASTER_OPTS
 end script
 
 # prevent respawning more than once every 5 seconds
