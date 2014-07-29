@@ -196,15 +196,17 @@ public class TemporaryJob {
             } else if (state == TaskStatus.State.FAILED ||
                        state == TaskStatus.State.EXITED ||
                        state == TaskStatus.State.STOPPED) {
+              // Throw exception which should stop the test dead in it's tracks
               String stateString = state.toString();
               if (taskStatus.getThrottled() != ThrottleState.NO) {
                 stateString += format("(%s)", taskStatus.getThrottled());
               }
               throw new AssertionError(format(
                   "Unexpected job state %s. Check helios agent logs for details.", stateString));
+            } else {
+              // For things like PULLING_IMAGE, STARTING, etc., we just continue waiting.
+              return null;
             }
-
-            return null;
           }
         }
     );

@@ -363,6 +363,44 @@ public class TemporaryJobsTest extends SystemTestBase {
     }
   }
 
+  public static class TempJobFailureTest {
+    @Rule
+    public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
+        .hostFilter(".*")
+        .client(client)
+        .prober(new TestProber())
+        .prefixDirectory(prefixDirectory.toString())
+        .build();
+
+    @Test
+    public void testThatThisFailsQuickly() {
+      final long start = System.currentTimeMillis();
+      try {
+        temporaryJobs.job()
+            .image(BUSYBOX)
+            .command("false")
+            .deploy(testHost1);
+        fail("should blow chunks");
+      } catch (AssertionError e) {
+        final long end = System.currentTimeMillis();
+        assertTrue("Test should not time out", (end-start) < Jobs.TIMEOUT_MILLIS);
+        assertTrue(e.getMessage().contains("EXITED"));
+      }
+    }
+  }
+
+  @Test
+  public void testDeploymentFailure() throws Exception {
+    startDefaultMaster();
+    client = defaultClient();
+    testHost1 = testHost();
+    prefixDirectory = temporaryFolder.newFolder().toPath();
+    startDefaultAgent(testHost1);
+    awaitHostStatus(client, testHost1, UP, LONG_WAIT_MINUTES, MINUTES);
+
+    assertThat(testResult(TempJobFailureTest.class), isSuccessful());
+  }
+
   private static boolean fileExists(final Path path, final String prefix) {
     return new File(path.toFile(), prefix).exists();
   }
