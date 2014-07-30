@@ -107,7 +107,8 @@ public class TemporaryJobs extends ExternalResource {
     public TemporaryJob deploy(final Job job, final List<String> hosts,
                                final Set<String> waitPorts) {
       if (!started) {
-        fail("deploy() must be called in a @Before or in the test method");
+        fail("deploy() must be called in a @Before or in the test method, or perhaps you forgot"
+            + " to put @Rule before TemporaryJobs");
       }
 
       if (hosts.isEmpty()) {
