@@ -26,22 +26,22 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 
-import org.apache.curator.utils.EnsurePath;
-import org.junit.Assert;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.GetChildrenBuilder;
 import org.apache.curator.framework.listen.Listenable;
+import org.apache.curator.framework.state.ConnectionStateListener;
+import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.KeeperException;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
-import static org.junit.Assert.*;
+import java.util.concurrent.ExecutionException;
+
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -99,8 +99,19 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
 
       when(curator.getZookeeperClient()).thenReturn(czkClient);
 
-      when(curator.getConnectionStateListenable()).thenReturn(mock(Listenable.class));
-      when(curator.getChildren()).thenThrow(KeeperException.ConnectionLossException.class);
+      @SuppressWarnings("unchecked")
+      final Listenable<ConnectionStateListener> mockListener =
+          (Listenable<ConnectionStateListener>) mock(Listenable.class);
+
+      when(curator.getConnectionStateListenable()).thenReturn(mockListener);
+
+      final GetChildrenBuilder builder = mock(GetChildrenBuilder.class);
+      when(curator.getChildren()).thenReturn(builder);
+
+      try {
+        when(builder.forPath(anyString())).thenThrow(
+            new KeeperException.ConnectionLossException());
+      } catch (Exception e) {} // never throws
       when(curator.newNamespaceAwareEnsurePath(anyString())).thenReturn(mock(EnsurePath.class));
 
       return curator;
