@@ -1,15 +1,11 @@
 language: java
-
 jdk:
-  - oraclejdk7
-
+- oraclejdk7
 cache:
   directories:
   - $HOME/.m2
-
 before_install:
-  - . .travis.sh before_install
-
+- . .travis.sh before_install
 before_script:
-  - . .travis.sh before_script
-  - export MAVEN_OPTS="-Xmx128m"
+- . .travis.sh before_script
+- export MAVEN_OPTS="-Xmx128m"
