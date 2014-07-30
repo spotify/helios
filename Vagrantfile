@@ -73,15 +73,15 @@ Vagrant.configure("2") do |config|
             /vagrant/helios-services/target/*.deb ;
     END
 
-  #build skydns version 24a11ee to be at least consistent
+  #build skydns version c83f12 to be at least consistent
   pkg_cmd << <<-END.gsub(/^ {4}/, '')
     export GOPATH=/home/vagrant/gopath && \
     mkdir -p $GOPATH/src/github.com/skynetservices && \
     cd $GOPATH/src/github.com/skynetservices && \
     git clone https://github.com/skynetservices/skydns.git && \
     cd skydns && \
-    git checkout 24a11ee && \
-    go get -d -v ./... && go build -v && \
+    git checkout c83f12b96ff3331c0412d7d100ba3e0724f8aa84 && \
+    go get -d -v ./... && go build -v ./... && \
     cp skydns /usr/bin/skydns ;
     END
 
