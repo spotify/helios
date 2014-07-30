@@ -80,6 +80,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.Futures.withFallback;
@@ -112,9 +113,9 @@ public class HeliosClient {
   HeliosClient(final String user,
                final Supplier<List<URI>> endpointSupplier,
                final ListeningExecutorService executorService) {
-    this.user = user;
-    this.endpointSupplier = endpointSupplier;
-    this.executorService = executorService;
+    this.user = checkNotNull(user);
+    this.endpointSupplier = checkNotNull(endpointSupplier);
+    this.executorService = checkNotNull(executorService);
   }
 
   HeliosClient(final String user, final List<URI> endpoints,
