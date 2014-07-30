@@ -27,6 +27,7 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.ImageNotFoundException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
@@ -170,7 +171,16 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
   private void pullImage(final String image) throws DockerException, InterruptedException {
     listener.pulling();
-    docker.pull(image);
+
+    // Attempt to pull.  Failure, while less than ideal, is ok.
+    try {
+      docker.pull(image);
+    } catch (ImageNotFoundException e) {
+      log.warn("Pulling image {} failed", image, e);
+    }
+
+    // If we don't have the image by now, fail.
+    docker.inspectImage(image);
   }
 
   public static interface Listener {
