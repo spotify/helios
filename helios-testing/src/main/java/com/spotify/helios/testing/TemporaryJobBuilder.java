@@ -74,6 +74,7 @@ public class TemporaryJobBuilder {
   public TemporaryJobBuilder(final TemporaryJob.Deployer deployer, final String jobNamePrefix) {
     this.deployer = deployer;
     this.jobNamePrefix = jobNamePrefix;
+    this.builder.setRegistrationDomain(jobNamePrefix);
   }
 
   public TemporaryJobBuilder name(final String jobName) {
@@ -102,6 +103,11 @@ public class TemporaryJobBuilder {
 
   public TemporaryJobBuilder env(final String key, final Object value) {
     this.builder.addEnv(key, value.toString());
+    return this;
+  }
+
+  public TemporaryJobBuilder disablePrivateRegistrationDomain() {
+    this.builder.setRegistrationDomain(Job.EMPTY_REGISTRATION_DOMAIN);
     return this;
   }
 

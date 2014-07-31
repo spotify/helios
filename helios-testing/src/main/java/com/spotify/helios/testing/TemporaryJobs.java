@@ -292,6 +292,10 @@ public class TemporaryJobs extends ExternalResource {
     return jobPrefixFile;
   }
 
+  public String prefix() {
+    return jobPrefixFile.prefix();
+  }
+
   public static Builder builder() {
     return new Builder();
   }
