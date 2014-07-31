@@ -27,7 +27,7 @@ case "$1" in
     ;;
 
   before_deploy)
-    tar --xform s:^.*/:: -czf debs.tgz helios-tools/target/*.deb helios-services/target/*.deb
+    tar --xform s:^.*/:: -czf debs.tgz helios-tools/target/*.{deb,changes} helios-services/target/*.{deb,changes}
     tar -ztvf debs.tgz
     ;;
 esac
