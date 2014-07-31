@@ -22,6 +22,7 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -83,8 +84,10 @@ public class JobDeployCommand extends WildcardJobCommand {
 
     final HostResolver resolver = HostResolver.create(client);
 
+    final List<String> resolvedHosts = Lists.newArrayList();
     for (final String candidateHost : hosts) {
       final String host = resolver.resolveName(candidateHost);
+      resolvedHosts.add(host);
       out.printf("%s: ", host);
       final JobDeployResponse result = client.deploy(job, host).get();
       if (result.getStatus() == JobDeployResponse.Status.OK) {
@@ -96,7 +99,7 @@ public class JobDeployCommand extends WildcardJobCommand {
     }
 
     if (code == 0 && options.getBoolean(watchArg.getDest())) {
-      JobWatchCommand.watchJobsOnHosts(out, true, hosts, ImmutableList.of(jobId),
+      JobWatchCommand.watchJobsOnHosts(out, true, resolvedHosts, ImmutableList.of(jobId),
                                        options.getInt(intervalArg.getDest()), client);
     }
     return code;
