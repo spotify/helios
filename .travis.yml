@@ -9,3 +9,15 @@ before_install:
 before_script:
 - . .travis.sh before_script
 - export MAVEN_OPTS="-Xmx128m"
+before_deploy:
+- . .travis.sh before_deploy
+deploy:
+  provider: releases
+  skip_cleanup: true
+  api_key:
+    secure: QOXIIQwINj8rCRbD9vFKc6nhobELQBEK+Tc9lgAVWGfGG7Ry4Yh3xcRQWJCutdlkdCwtmLz5EcefzXxCwlc1a/a63+xtrbxMKunpV5jNnupoFkXdh3f/4TIE5NOZNNV+QjwDSP/bNRmx4YU9XZbzmZDWWnen3WVcEIIPQxYxCx4=
+  file: debs.tgz
+  on:
+    # All all_branches is required due to https://github.com/travis-ci/travis-ci/issues/1675
+    all_branches: true
+    tags: true
