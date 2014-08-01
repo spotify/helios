@@ -25,4 +25,9 @@ case "$1" in
 
     while ! docker info; do sleep 1; done
     ;;
+
+  before_deploy)
+    tar --xform s:^.*/:: -czf debs.tgz helios-tools/target/*.{deb,changes} helios-services/target/*.{deb,changes}
+    tar -ztvf debs.tgz
+    ;;
 esac
