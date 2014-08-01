@@ -11,6 +11,13 @@ before_script:
 - export MAVEN_OPTS="-Xmx128m"
 before_deploy:
 - . .travis.sh before_deploy
+after_deploy:
+- . .travis.sh after_deploy
+env:
+  global:
+  - SONATYPE_USERNAME=spotify-helios
+  # generated with travis encrypt SONATYPE_PASSWORD=pass
+  - secure: "nGumIjLR2bz88sGBdDGu/e0P91MRGuBrvyrn49Cfr5jtDRVdByTLkCjZ88c1OxYnjquMN0MT/oAThpdHeRt+A12I0YXXAmlMvvs7Ic5GbljziVmEeX17yLjloqxB8DyhpOcjXba4akqKSAqJqBOrLANmlDZDlcZDcNs3IxBV1yw="
 deploy:
   provider: releases
   skip_cleanup: true
