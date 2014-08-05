@@ -30,4 +30,10 @@ case "$1" in
     tar --xform s:^.*/:: -czf debs.tgz helios-tools/target/*.{deb,changes} helios-services/target/*.{deb,changes}
     tar -ztvf debs.tgz
     ;;
+
+  after_deploy)
+    python .travis.addServer.py
+    mvn clean deploy -DskipTests --settings ~/.m2/mySettings.xml
+    ;;
+
 esac
