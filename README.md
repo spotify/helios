@@ -35,11 +35,11 @@ $ helios undeploy -a nginx:v1
 $ helios remove nginx:v1
 ```
 
-Danger, Will Robinson!
-----------------------
-This is **not** production-ready software! Please do not deploy it in
-mission-critical scenarios, or you will make [the panda](https://www.facebook.com/spotify.panda)
-very sad.
+Production Readiness
+--------------------
+We at Spotify are running this in production now (as of early July 2014) with a money-generating
+service, so we trust it.  Whether you should trust it to not cause smoking holes in your 
+infrastructure is up to you.
 
 Getting Started
 ---------------
@@ -48,7 +48,7 @@ If you're looking for how to use Helios, see the [wiki](https://github.com/spoti
 Most probably the [User Manual](https://github.com/spotify/helios/wiki/Helios-User-Manual)
 is what you're looking for.
 
-If you're looking for how to build, install and run Helios, keep reading.
+If you're looking for how to download, build, install and run Helios, keep reading.
 
 Prerequisities
 --------------
@@ -56,6 +56,10 @@ Prerequisities
 * [Docker 1.0](https://github.com/dotcloud/docker) or newer
 * [Zookeeper 3.4.0](https://zookeeper.apache.org/) or newer
 
+Downloading
+-----------
+You can download Debian packages from our [releases page](https://github.com/spotify/helios/releases).  Though if you want to build it yourself, the process described below is the same process that
+generates those packages.
 
 Build & Test
 ------------
@@ -107,9 +111,8 @@ After you've run `mvn package`, you should be able to start the agent and master
 If you see any issues, make sure you have the prerequisites (Docker and Zookeeper) installed.
 
 ### Production
-
-Note that Helios has **not** been tested in production. That said, you can
-follow these instructions for test deployments.
+You can install the downloaded Debian packages as mentioned above, or you
+can build them yourself.
 
 Running `mvn package` generates Debian packages that you can install on
 your servers. For example:
