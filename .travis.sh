@@ -14,6 +14,8 @@ case "$1" in
     ;;
 
   before_script)
+    export MAVEN_OPTS="-Xmx128m"
+
     export HOST_IP=`/sbin/ifconfig venet0:0 | grep 'inet addr' | awk -F: '{print $2}' | awk '{print $1}'`
 
     export DOCKER_HOST=tcp://$HOST_IP:2375
