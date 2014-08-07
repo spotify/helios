@@ -79,7 +79,8 @@ class Jobs {
 
     try {
       final JobDeleteResponse response = get(client.deleteJob(jobId));
-      if (response.getStatus() != JobDeleteResponse.Status.OK) {
+      if (response.getStatus() != JobDeleteResponse.Status.OK &&
+          response.getStatus() != JobDeleteResponse.Status.JOB_NOT_FOUND) {
         errors.add(new AssertionError(format("Failed to delete job %s - %s",
                                              jobId.toString(), response.toString())));
       }

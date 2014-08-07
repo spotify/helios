@@ -394,13 +394,15 @@ public class HeliosClient {
   public ListenableFuture<JobDeleteResponse> deleteJob(final JobId id) {
     return transform(request(uri(path("/jobs/%s", id)), "DELETE"),
                      ConvertResponseToPojo.create(JobDeleteResponse.class,
-                                                  ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
+                                                                  HTTP_BAD_REQUEST)));
   }
 
   public ListenableFuture<JobUndeployResponse> undeploy(final JobId jobId, final String host) {
     return transform(request(uri(path("/hosts/%s/jobs/%s", host, jobId)), "DELETE"),
                      ConvertResponseToPojo.create(JobUndeployResponse.class,
-                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
+                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
+                                                                  HTTP_BAD_REQUEST)));
   }
 
   public ListenableFuture<HostDeregisterResponse> deregisterHost(final String host) {

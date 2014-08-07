@@ -154,7 +154,7 @@ public class JobsResource {
       model.removeJob(id);
       return new JobDeleteResponse(JobDeleteResponse.Status.OK);
     } catch (JobDoesNotExistException e) {
-      throw notFound();
+      throw notFound(new JobDeleteResponse(JobDeleteResponse.Status.JOB_NOT_FOUND));
     } catch (JobStillDeployedException e) {
       throw badRequest(new JobDeleteResponse(JobDeleteResponse.Status.STILL_IN_USE));
     }
