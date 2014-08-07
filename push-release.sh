@@ -1,4 +1,5 @@
 #!/bin/bash -e
 git push origin master
 git push origin release
-git push origin --tags
+TAGREF=refs/tags/$(git describe --abbrev=0 release)
+git push origin ${TAGREF}:${TAGREF}
