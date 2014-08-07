@@ -149,5 +149,8 @@ public class DeploymentTest extends SystemTestBase {
 
     // Verify that the job can be deleted
     assertEquals(JobDeleteResponse.Status.OK, client.deleteJob(jobId).get().getStatus());
+
+    // Verify that a nonexistent job returns JOB_NOT_FOUND
+    assertEquals(JobDeleteResponse.Status.JOB_NOT_FOUND, client.deleteJob(jobId).get().getStatus());
   }
 }

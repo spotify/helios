@@ -25,7 +25,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 
 public class JobDeleteResponse {
-  public enum Status { OK, STILL_IN_USE }
+  public enum Status { OK, STILL_IN_USE, JOB_NOT_FOUND }
 
   private final Status status;
 
