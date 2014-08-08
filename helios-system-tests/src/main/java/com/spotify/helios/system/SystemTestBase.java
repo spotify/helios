@@ -38,6 +38,7 @@ import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.DockerRequestException;
 import com.spotify.docker.client.LogMessage;
 import com.spotify.docker.client.LogReader;
 import com.spotify.docker.client.messages.Container;
@@ -942,7 +943,15 @@ public abstract class SystemTestBase {
           // We're done here
           return true;
         } catch (DockerException e) {
-          return null;
+          if ((e instanceof DockerRequestException) &&
+              ((DockerRequestException) e).message().contains(
+                  "Driver btrfs failed to remove root filesystem")) {
+            // Workaround btrfs issue where removing containers throws an exception,
+            // but succeeds anyway.
+            return true;
+          } else {
+            return null;
+          }
         }
       }
     });
