@@ -46,7 +46,7 @@ case "$1" in
     ;;
 
   after_deploy)
-    mvn clean deploy -DskipTests
+    mvn -P sign-artifacts clean deploy -DskipTests
     ;;
 
 esac
