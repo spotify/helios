@@ -86,8 +86,14 @@ public class JobExpirationTest extends SystemTestBase {
       }
     });
 
+    int expectedExitCode = -1;
+    if (docker.info().executionDriver().startsWith("lxc-")) {
+      // with LXC, killing a container results in exit code 0
+      expectedExitCode = 0;
+    }
+
     // Wait for the agent to kill the container
     final ContainerExit exit = docker.waitContainer(taskStatus.getContainerId());
-    assertThat(exit.statusCode(), is(-1));
+    assertThat(exit.statusCode(), is(expectedExitCode));
   }
 }

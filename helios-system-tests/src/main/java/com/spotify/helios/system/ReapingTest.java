@@ -62,16 +62,22 @@ public class ReapingTest extends SystemTestBase {
     awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
     awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
+    int expectedExitCode = -1;
+    if (docker.info().executionDriver().startsWith("lxc-")) {
+      // with LXC, killing a container results in exit code 0
+      expectedExitCode = 0;
+    }
+
     // Wait for the agent to kill the container
     final ContainerExit exit1 = docker.waitContainer(intruder1);
-    assertThat(exit1.statusCode(), is(-1));
+    assertThat(exit1.statusCode(), is(expectedExitCode));
 
     // Start another container in the agent namespace
     startContainer(intruder2);
 
     // Wait for the agent to kill the second container as well
     final ContainerExit exit2 = docker.waitContainer(intruder2);
-    assertThat(exit2.statusCode(), is(-1));
+    assertThat(exit2.statusCode(), is(expectedExitCode));
   }
 
   private String intruder(final String namespace) {
