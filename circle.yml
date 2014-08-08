@@ -1,0 +1,16 @@
+dependencies:
+  override:
+    - mvn install -DskipTests=true -B -V
+
+test:
+  override:
+    - mvn test -B
+
+machine:
+  pre:
+    - sudo sh -c 'echo DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://127.0.0.1:2375\" >> /etc/default/docker'
+  services:
+    - docker
+  environment:
+    DOCKER_HOST: tcp://127.0.0.1:2375
+    MAVEN_OPTS: -Xmx128m
