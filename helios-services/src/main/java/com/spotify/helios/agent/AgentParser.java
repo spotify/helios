@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.io.BaseEncoding.base16;
+import static com.google.common.net.InetAddresses.isInetAddress;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -57,6 +58,7 @@ public class AgentParser extends ServiceParser {
   private Argument syslogRedirectToArg;
   private Argument portRangeArg;
   private Argument agentIdArg;
+  private Argument dnsArg;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -134,6 +136,16 @@ public class AgentParser extends ServiceParser {
       http.setBindHost(httpAddress.getHostString());
       http.setAdminPort(options.getInt(adminArg.getDest()));
     }
+
+    final List<String> dns = options.getList(dnsArg.getDest());
+    if (!dns.isEmpty()) {
+      for (String d : dns) {
+        if (!isInetAddress(d)) {
+          throw new IllegalArgumentException("Invalid IP address " + d);
+        }
+      }
+    }
+    agentConfig.setDns(dns);
   }
 
   @Override
@@ -175,6 +187,12 @@ public class AgentParser extends ServiceParser {
     portRangeArg = parser.addArgument("--port-range")
         .setDefault("20000:32768")
         .help("Port allocation range, start:end (end exclusive).");
+
+    dnsArg = parser.addArgument("--dns")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("Dns servers to use.");
+
   }
 
   public AgentConfig getAgentConfig() {
