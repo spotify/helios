@@ -145,7 +145,8 @@ public class TemporaryJobs extends ExternalResource {
 
   public TemporaryJobBuilder job() {
     return new TemporaryJobBuilder(deployer, jobPrefixFile.prefix())
-        .hostFilter(defaultHostFilter);
+        .hostFilter(defaultHostFilter)
+        .env("SPOTIFY_POD", prefix() + ".local");
   }
 
   /**

@@ -24,13 +24,13 @@ package com.spotify.helios.testing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.Futures;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -51,6 +51,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Maps.newHashMap;
 import static com.spotify.helios.testing.Jobs.TIMEOUT_MILLIS;
 import static com.spotify.helios.testing.Jobs.get;
 import static java.lang.String.format;
@@ -61,11 +62,12 @@ public class TemporaryJob {
 
   private static final Logger log = LoggerFactory.getLogger(TemporaryJob.class);
 
-  private final Map<String, TaskStatus> statuses = Maps.newHashMap();
+  private final Map<String, TaskStatus> statuses = newHashMap();
   private final HeliosClient client;
   private final Prober prober;
   private final Job job;
   private final List<String> hosts;
+  private final Map<String, String> hostToIp = newHashMap();
   private final Set<String> waitPorts;
 
   TemporaryJob(final HeliosClient client, final Prober prober, final Job job,
@@ -138,7 +140,8 @@ public class TemporaryJob {
     for (Map.Entry<String, TaskStatus> entry : statuses.entrySet()) {
       final Integer externalPort = entry.getValue().getPorts().get(port).getExternalPort();
       assert externalPort != null;
-      addresses.add(HostAndPort.fromParts(entry.getKey(), externalPort));
+      final String host = endpointFromHost(entry.getKey());
+      addresses.add(HostAndPort.fromParts(host, externalPort));
     }
     return addresses;
   }
@@ -157,8 +160,17 @@ public class TemporaryJob {
       // Deploy job
       final Deployment deployment = Deployment.of(job.getId(), Goal.START);
       for (final String host : hosts) {
-        log.info("Waiting for Helios job deploy of {} on host {}", deployment.getJobId(), host);
+        // HELIOS_HOST_ADDRESS is the IP address we should use to reach the host, instead of
+        // the hostname. This is used when running a helios cluster inside a VM, and the containers
+        // can be reached by IP address only, since DNS won't be able to resolve the host name of
+        // the helios agent running in the VM.
+        final HostStatus hostStatus = client.hostStatus(host).get();
+        final String hostAddress = hostStatus.getEnvironment().get("HELIOS_HOST_ADDRESS");
+        if (hostAddress != null) {
+          hostToIp.put(host, hostAddress);
+        }
 
+        log.info("Waiting for Helios job deploy of {} on host {}", deployment.getJobId(), host);
         final JobDeployResponse deployResponse = get(client.deploy(deployment, host));
         if (deployResponse.getStatus() != JobDeployResponse.Status.OK) {
           fail(format("Failed to deploy job %s %s - %s",
@@ -229,7 +241,8 @@ public class TemporaryJob {
   }
 
   private void awaitPort(final String port, final String host) throws TimeoutException {
-    log.info("Awaiting port availability on {}:{}", host, port);
+    final String endpoint = endpointFromHost(host);
+    log.info("Awaiting port availability on {}:{}", endpoint, port);
 
     final TaskStatus taskStatus = statuses.get(host);
     assert taskStatus != null;
@@ -238,16 +251,27 @@ public class TemporaryJob {
     Polling.awaitUnchecked(TIMEOUT_MILLIS, MILLISECONDS, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
-        log.info("Probing: {} @ {}:{}", port, host, externalPort);
-        final boolean up = prober.probe(host, externalPort);
+        log.info("Probing: {} @ {}:{}", port, endpoint, externalPort);
+        final boolean up = prober.probe(endpoint, externalPort);
         if (up) {
-          log.info("Up: {} @ {}:{}", port, host, externalPort);
+          log.info("Up: {} @ {}:{}", port, endpoint, externalPort);
           return true;
         } else {
           return null;
         }
       }
     });
+  }
+
+  /**
+   * Returns the ip address mapped to the given hostname. If no mapping exists, the hostname is
+   * returned.
+   * @param host the hostname to look up
+   * @return The host's ip address if one exists, otherwise the hostname which was passed in.
+   */
+  private String endpointFromHost(String host) {
+    final String ip = hostToIp.get("host");
+    return ip == null ? host : ip;
   }
 
   public static interface Deployer {

@@ -29,9 +29,11 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class HostStatus extends Descriptor {
@@ -61,7 +63,7 @@ public class HostStatus extends Descriptor {
     // Host, runtime info and environment might not be available
     this.hostInfo = hostInfo;
     this.agentInfo = agentInfo;
-    this.environment = environment;
+    this.environment = fromNullable(environment).or(Collections.<String, String>emptyMap());
   }
 
   public Map<String, String> getEnvironment() {
