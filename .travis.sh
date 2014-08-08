@@ -11,6 +11,18 @@ case "$1" in
     sudo apt-get install -qy slirp lxc lxc-docker
 
     git clone git://github.com/spotify/sekexe
+
+    echo "decrypt secret keyring"
+    # generated with travis encrypt-file secring.pgp encrypted_secring
+    openssl aes-256-cbc -K $encrypted_671b00c64785_key -iv $encrypted_671b00c64785_iv -in encrypted_secring -out secring.gpg -d
+    echo "importing public key"
+    cat pubkey.asc | gpg --import
+    echo "importing secret key"
+    cat secring.gpg | gpg --import
+
+    echo "putting secret bits into settings.xml"
+    python .travis.addServer.py
+    mv ~/.m2/mySettings.xml ~/.m2/settings.xml
     ;;
 
   before_script)
@@ -34,8 +46,7 @@ case "$1" in
     ;;
 
   after_deploy)
-    python .travis.addServer.py
-    mvn clean deploy -DskipTests --settings ~/.m2/mySettings.xml
+    mvn clean deploy -DskipTests
     ;;
 
 esac

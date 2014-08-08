@@ -21,6 +21,8 @@ env:
   - SONATYPE_USERNAME=spotify-helios
   # generated with travis encrypt SONATYPE_PASSWORD=pass
   - secure: "nGumIjLR2bz88sGBdDGu/e0P91MRGuBrvyrn49Cfr5jtDRVdByTLkCjZ88c1OxYnjquMN0MT/oAThpdHeRt+A12I0YXXAmlMvvs7Ic5GbljziVmEeX17yLjloqxB8DyhpOcjXba4akqKSAqJqBOrLANmlDZDlcZDcNs3IxBV1yw="
+  # generated with travis encrypt SONATYPE_GPG_PASSPHRASE=passphrase
+  - secure: "LoU12MUupIUum85oqLktXSLjs6yZvg5LLE8glj2NYXQHm9wW57Oir7WaVgAEl6FbrXLL6qUhB2ek4zLj7STE73baCbLFicg8ivEAob052mRcEeZe3qnTrzIqAsg3KtSh3mKEb/Fa0iypjXovtOS0JENY0BWi0rbOheq5DzVmwh4="
 
 deploy:
   provider: releases
