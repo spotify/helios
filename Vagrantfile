@@ -42,7 +42,7 @@ Vagrant.configure("2") do |config|
     echo '
     ENABLED=true
 
-    HELIOS_AGENT_OPTS="--state-dir=/var/lib/helios-agent --name=192.168.33.10 --zk localhost:2181 --service-registry http://127.0.0.1:4001 --service-registrar-plugin /usr/share/helios/lib/plugins/helios-skydns-0.1.jar --domain skydns.local"
+    HELIOS_AGENT_OPTS="--state-dir=/var/lib/helios-agent --name=ubuntu-14.skydns.local --zk localhost:2181 --service-registry http://127.0.0.1:4001 --service-registrar-plugin /usr/share/helios/lib/plugins/helios-skydns-0.1.jar --domain skydns.local"
     ' > /etc/default/helios-agent ;
     END
   pkg_cmd << <<-END.gsub(/^ {4}/, '')
@@ -122,7 +122,7 @@ Vagrant.configure("2") do |config|
   # put in config for skydns
   pkg_cmd << <<-END.gsub(/^ {4}/, '')
     echo '
-    SKYDNS_OPTS="-addr=0.0.0.0:53"
+    SKYDNS_OPTS="-addr=0.0.0.0:53 -nameservers=8.8.8.8:53,8.8.4.4:53"
     ' > /etc/default/skydns ;
     END
 
@@ -145,7 +145,18 @@ Vagrant.configure("2") do |config|
     post-stop exec sleep 1
     ' > /etc/init/skydns.conf && \
     initctl start skydns ;
-  END
+    END
+
+  # make sure we can look up ubuntu-14.skydns.local
+  pkg_cmd << <<-END.gsub(/^ {4}/, '')
+    curl -XPUT http://127.0.0.1:4001/v2/keys/skydns/local/skydns/ubuntu-14 \
+         -d value='{"host":"192.168.33.10"}' && \
+    mv /sbin/resolvconf /sbin/resolvconf.no && \
+    echo 'nameserver 127.0.0.1
+    search skydns.local
+    ' > /etc/resolv.conf;
+    END
+
   config.vm.provision :shell, :inline => pkg_cmd
 end
 
