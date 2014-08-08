@@ -5,6 +5,11 @@ dependencies:
 test:
   override:
     - mvn test -B
+  post:
+    - rm -rf artifacts && mkdir artifacts
+    - find . -regex ".*/target/.*-[0-9]\.jar" | xargs -I {} mv {} artifacts
+    - find . -regex ".*/target/.*-SNAPSHOT\.jar" | xargs -I {} mv {} artifacts
+    - find . -regex ".*/target/.*\.deb" | xargs -I {} mv {} artifacts
 
 machine:
   pre:
@@ -14,3 +19,7 @@ machine:
   environment:
     DOCKER_HOST: tcp://127.0.0.1:2375
     MAVEN_OPTS: -Xmx128m
+
+general:
+  artifacts:
+    - artifacts
