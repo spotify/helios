@@ -81,7 +81,7 @@ public class CliParser {
   private static final String HELP_ISSUES =
       "Report improvements/bugs at https://github.com/spotify/helios/issues";
   private static final String HELP_WIKI =
-      "For documentation see https://github.com/spotify/helios/wiki";
+      "For documentation see https://github.com/spotify/helios/tree/master/docs";
 
   private final Namespace options;
   private final ControlCommand command;
