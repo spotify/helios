@@ -51,7 +51,7 @@ If you specified an `ENTRYPOINT` in the `Dockerfile` you built your image with, 
 
 If you didn't specify an `ENTRYPOINT` in your Dockerfile, you can specify a command to run when the container is started. For example, to create a Ubuntu container that prints the time every 60 seconds:
 
-    $ helios create testjob 1 ubuntu:12.04 -- \
+    $ helios create testjob:1 ubuntu:12.04 -- \
         /bin/sh -c 'while true; do date; sleep 60; done'
     Creating job: {"id":"testjob:1:9689a0350f3655c1cb2342a4230eb1418b64d
     cc5","image":"ubuntu:12.04","command":["/bin/sh","-c","while true; do dat
