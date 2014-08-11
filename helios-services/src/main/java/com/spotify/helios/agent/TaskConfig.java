@@ -71,6 +71,7 @@ public class TaskConfig {
   private final ContainerDecorator containerDecorator;
   private final String namespace;
   private final String defaultRegistrationDomain;
+  private final List<String> dns;
 
   private TaskConfig(final Builder builder) {
     this.host = checkNotNull(builder.host, "host");
@@ -81,6 +82,7 @@ public class TaskConfig {
     this.namespace = checkNotNull(builder.namespace, "namespace");
     this.defaultRegistrationDomain = checkNotNull(builder.defaultRegistrationDomain,
         "defaultRegistrationDomain");
+    this.dns = checkNotNull(builder.dns, "dns");
   }
 
   /**
@@ -250,7 +252,8 @@ public class TaskConfig {
   public HostConfig hostConfig() {
     final HostConfig.Builder builder = HostConfig.builder()
         .binds(binds())
-        .portBindings(portBindings());
+        .portBindings(portBindings())
+        .dns(dns);
     containerDecorator.decorateHostConfig(builder);
     return builder.build();
   }
@@ -318,6 +321,7 @@ public class TaskConfig {
     private ContainerDecorator containerDecorator = new NoOpContainerDecorator();
     private String namespace;
     private String defaultRegistrationDomain = "";
+    private List<String> dns = Collections.emptyList();
 
     public Builder host(final String host) {
       this.host = host;
@@ -351,6 +355,11 @@ public class TaskConfig {
 
     public Builder namespace(final String namespace) {
       this.namespace = namespace;
+      return this;
+    }
+
+    public Builder dns(final List<String> dns) {
+      this.dns = dns;
       return this;
     }
 

@@ -27,6 +27,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -47,6 +48,7 @@ public class SupervisorFactory {
   private final String host;
   private final SupervisorMetrics metrics;
   private final String defaultRegistrationDomain;
+  private final List<String> dns;
 
   public SupervisorFactory(final AgentModel model, final DockerClient dockerClient,
                            final Map<String, String> envVars,
@@ -55,16 +57,19 @@ public class SupervisorFactory {
                            final String host,
                            final SupervisorMetrics supervisorMetrics,
                            final String namespace,
-                           final String defaultRegistrationDomain) {
+                           final String defaultRegistrationDomain,
+                           final List<String> dns) {
     this.dockerClient = dockerClient;
     this.namespace = namespace;
-    this.model = checkNotNull(model);
-    this.envVars = checkNotNull(envVars);
+    this.model = checkNotNull(model, "model");
+    this.envVars = checkNotNull(envVars, "envVars");
     this.registrar = registrar;
     this.containerDecorator = containerDecorator;
     this.host = host;
     this.metrics = supervisorMetrics;
-    this.defaultRegistrationDomain = checkNotNull(defaultRegistrationDomain);
+    this.defaultRegistrationDomain = checkNotNull(defaultRegistrationDomain,
+                                                  "defaultRegistrationDomain");
+    this.dns = checkNotNull(dns, "dns");
   }
 
   /**
@@ -84,6 +89,7 @@ public class SupervisorFactory {
         .containerDecorator(containerDecorator)
         .namespace(namespace)
         .defaultRegistrationDomain(defaultRegistrationDomain)
+        .dns(dns)
         .build();
 
     final TaskStatus.Builder taskStatus = TaskStatus.newBuilder()

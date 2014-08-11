@@ -25,6 +25,7 @@ import com.spotify.helios.servicescommon.DockerHost;
 import com.yammer.dropwizard.config.Configuration;
 
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 public class AgentConfig extends Configuration {
@@ -47,6 +48,7 @@ public class AgentConfig extends Configuration {
   private String sentryDsn;
   private Path serviceRegistrarPlugin;
   private String id;
+  private List<String> dns;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -202,6 +204,15 @@ public class AgentConfig extends Configuration {
 
   public AgentConfig setId(final String id) {
     this.id = id;
+    return this;
+  }
+
+  public List<String> getDns() {
+    return dns;
+  }
+
+  public AgentConfig setDns(List<String> dns) {
+    this.dns = dns;
     return this;
   }
 }
