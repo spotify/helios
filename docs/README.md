@@ -1,4 +1,4 @@
-Reviewed by [philipcristiano](https://github.com/philipcristiano) on 2014-05-13
+Reviewed by [rculbertson](https://github.com/rculbertson) on 2014-08-11
 
 ***
 
@@ -57,21 +57,21 @@ If you didn't specify an `ENTRYPOINT` in your Dockerfile, you can specify a comm
     done"],"env":{},"expires":null,"id":"testjob:1:4f7125bff35d3cecaac237da3ab17efca8a765f9",
     "image":"ubuntu:12.04","ports":{},"registration":{},"registrationDomain":"","volumes":{}}
     Done.
-    testjob:1:4f7125bff35d3cecaac237da3ab17efca8a765f9
+    testjob:1:da2fa2d26da6a8392536826631e58803e3fcc911
 
-**NOTE**: When passing a command-line to your container, precede it with the double dash (`--`) as in the above example. While it might work sometimes without it, I wouldn't count on it, as the Helios CLI may misinterpert your intent.
+**NOTE**: When passing a command-line to your container, precede it with the double dash (`--`) as in the above example. While it might work sometimes without it, I wouldn't count on it, as the Helios CLI may misinterpret your intent.
 
 ### Passing environment variables
 
 For some use cases, you may want to pass some environment variables to the job that aren't baked into the image. In which case you can do:
 
-    $ helios create testjob 1 ubuntu:12.04 --env FOO=bar -- \
+    $ helios create testjob:1 ubuntu:12.04 --env FOO=bar -- \
         /bin/sh -c 'while true; do echo $FOO; date; sleep 60; done'
     Creating job: {"id":"testjob:1:bad9111c6c9e10975408f2f41c561fd3849f55
     61","image":"ubuntu:12.04","command":["/bin/sh","-c","while true; do echo $FOO; date; sleep 60;
     done"],"env":{"FOO":"bar"}}
     Done.
-    testjob:1:bad9111c6c9e10975408f2f41c561fd3849f5561
+    testjob:1:4f7125bff35d3cecaac237da3ab17efca8a765f9
 
 The last line of output in the command output is the canonical job ID. Most times, you will only need the `jobName:jobVersion` parts, but in the event that you create two jobs with the same name and version, you can unambiguously choose which one you intend to operate on by supplying the full ID.
 
@@ -88,7 +88,7 @@ Now that you've created a Helios job, you can deploy it to Helios hosts. You'll 
 In the this example, there's a single agent named `192.168.33.10`, so we'll deploy our job there. To deploy the job we can just run:
 
     $ helios deploy testjob:1 192.168.33.10
-    Deploying Deployment{jobId=testjob:1:bad9111c6c9e10975408f2f41c561fd3849f5561, goal=START} on [192.168.33.10]
+    Deploying testjob:1:4f7125bff35d3cecaac237da3ab17efca8a765f9|START on [192.168.33.10]
     192.168.33.10: done
 
 While we only have one host listed here in the `deploy` command, you can specify multiple. While the number of times this will fail should be exceptionally low, the more hosts listed, the higher the probability of failure. But since the operation is idempotent, you can just re-execute it until it succeeds for all hosts. The hosts where the job is already deployed will respond with an error saying `JOB_ALREADY_DEPLOYED`, but that won't prevent the others from being deployed to.
@@ -99,33 +99,33 @@ You can deploy more than one job on a host, so deploying another job on the same
 
 Now we'd like to see if everything went according to plan:
 
-    $ helios job testjob:1
-    JOB ID                                                 HOST                    STATE      CONTAINER ID     COMMAND                                                       THROTTLED?    ENVIRONMENT
-    testjob:1:bad9111c6c9e10975408f2f41c561fd3849f5561    192.168.33.10    RUNNING    60671498ae98    /bin/sh -c while true; do echo $FOO; date; sleep 60; done    NO            FOO=bar
+    $ helios jobs testjob:1
+    JOB ID               NAME       VERSION    HOSTS    COMMAND                                             ENVIRONMENT
+    testjob:1:4f7125b    testjob    1          1        /bin/sh -c "while true; do date; sleep 60; done"    FOO=bar
 
-This is a little hard to read because of the line wrapping, but the `STATE` of `RUNNING` is the key thing to note above. It would appear that our job is running just fine. Now we can also see what the history of the job is across all agents if we chose by running:
+    Now we can also see what the history of the job is across all agents if we chose by running:
 
     $ helios history testjob:1
-    AGENT                   TIMESTAMP                  STATE       THROTTLED    CONTAINERID
-    192.168.33.10    2013-11-27 14:37:44.987    CREATING    NO           <none>
-    192.168.33.10    2013-11-27 14:37:45.202    STARTING    NO           60671498ae98
-    192.168.33.10    2013-11-27 14:37:45.387    RUNNING     NO           60671498ae98
+    AGENT            TIMESTAMP                  STATE       THROTTLED    CONTAINERID
+    192.168.33.10    2014-08-11 14:37:44.987    CREATING    NO           <none>
+    192.168.33.10    2014-08-11 14:37:45.202    STARTING    NO           60671498ae98
+    192.168.33.10    2014-08-11 14:37:45.387    RUNNING     NO           60671498ae98
 
 ### Undeploying
 
 We can stop our job by undeploying it:
 
     $ helios undeploy testjob:1 192.168.33.10
-    Undeploying testjob:1:bad9111c6c9e10975408f2f41c561fd3849f5561 from [192.168.33.10]
+    Undeploying testjob:1:4f7125bff35d3cecaac237da3ab17efca8a765f9 from [192.168.33.10]
     192.168.33.10: done
 
 If we view the history again, it should show something like this:
 
     $ helios history testjob:1
-    AGENT                   TIMESTAMP                  STATE       THROTTLED    CONTAINERID
-    192.168.33.10    2013-11-27 14:37:44.987    CREATING    NO           <none>
-    192.168.33.10    2013-11-27 14:37:45.202    STARTING    NO           60671498ae98
-    192.168.33.10    2013-11-27 14:37:45.387    RUNNING     NO           60671498ae98
-    192.168.33.10    2013-11-27 14:42:14.403    STOPPED     NO           60671498ae98
+    AGENT            TIMESTAMP                  STATE       THROTTLED    CONTAINERID
+    192.168.33.10    2014-08-11 14:37:44.987    CREATING    NO           <none>
+    192.168.33.10    2014-08-11 14:37:45.202    STARTING    NO           60671498ae98
+    192.168.33.10    2014-08-11 14:37:45.387    RUNNING     NO           60671498ae98
+    192.168.33.10    2014-08-11 14:42:14.403    STOPPED     NO           60671498ae98
 
 We can see that the job stopped. Additionally, checking job status will show again, that the job is stopped.
