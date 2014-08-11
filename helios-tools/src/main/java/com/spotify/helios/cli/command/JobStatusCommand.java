@@ -59,7 +59,7 @@ public class JobStatusCommand extends ControlCommand {
   public JobStatusCommand(final Subparser parser) {
     super(parser);
 
-    parser.help("show job status");
+    parser.help("show job or host status");
 
     jobArg = parser.addArgument("-j", "--job")
         .help("Job filter");
