@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.containsString;
 public class DnsServerTest extends SystemTestBase {
 
   @Test
-  public void testValidNameServers() throws Exception {
+  public void testDnsParam() throws Exception {
     final String server1 = "127.0.0.1";
     final String server2 = "127.0.0.2";
     startDefaultMaster();
@@ -61,6 +61,26 @@ public class DnsServerTest extends SystemTestBase {
 
     assertThat(log, containsString(server1));
     assertThat(log, containsString(server2));
+  }
+
+  @Test
+  public void testNoDnsParam() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(testHost());
+    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+
+    final JobId jobId = createJob(testJobName, testJobVersion, "busybox",
+                                  asList("cat", "/etc/resolv.conf"));
+
+    deployJob(jobId, testHost());
+
+    final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
+    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
+    final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
+    final String log = logs.readFully();
+
+    // Verify that a nameserver is set even if we don't specify the --dns param
+    assertThat(log, containsString("nameserver"));
   }
 
 }

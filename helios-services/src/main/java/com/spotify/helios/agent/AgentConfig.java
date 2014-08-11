@@ -211,7 +211,8 @@ public class AgentConfig extends Configuration {
     return dns;
   }
 
-  public void setDns(List<String> dns) {
+  public AgentConfig setDns(List<String> dns) {
     this.dns = dns;
+    return this;
   }
 }
