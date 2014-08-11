@@ -82,8 +82,8 @@ Deploying Your Job
 Now that you've created a Helios job, you can deploy it to Helios hosts. You'll need to find a running Helios host to do so. You can see which hosts are available using the CLI. For example:
 
     $ helios hosts
-    HOST                    STATUS          DEPLOYED    RUNNING    CPUS     MEM     LOAD AVG    MEM USAGE    OS       VERSION
-    192.168.33.10    Up 39 minutes 49 seconds    0           0          2       0 gb    0.00        0.83         Linux    3.13.0-24-generic
+    HOST           STATUS         DEPLOYED  RUNNING  CPUS  MEM   LOAD AVG  MEM USAGE  OS                      VERSION  DOCKER
+    192.168.33.10. Up 29 minutes  0         0        4     1 gb  0.00      0.39       Linux3.15.3-tinycore64  0.0.33   1.1.2 (1.13)
 
 In the this example, there's a single agent named `192.168.33.10`, so we'll deploy our job there. To deploy the job we can just run:
 
