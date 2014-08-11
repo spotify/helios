@@ -53,11 +53,11 @@ If you didn't specify an `ENTRYPOINT` in your Dockerfile, you can specify a comm
 
     $ helios create testjob:1 ubuntu:12.04 -- \
         /bin/sh -c 'while true; do date; sleep 60; done'
-    Creating job: {"id":"testjob:1:9689a0350f3655c1cb2342a4230eb1418b64d
-    cc5","image":"ubuntu:12.04","command":["/bin/sh","-c","while true; do dat
-    e; sleep 60; done"],"env":{}}
+    Creating job: {"command":["/bin/sh","-c","while true; do date; sleep 60;        
+    done"],"env":{},"expires":null,"id":"testjob:1:4f7125bff35d3cecaac237da3ab17efca8a765f9",
+    "image":"ubuntu:12.04","ports":{},"registration":{},"registrationDomain":"","volumes":{}}
     Done.
-    testjob:1:9689a0350f3655c1cb2342a4230eb1418b64dcc5
+    testjob:1:4f7125bff35d3cecaac237da3ab17efca8a765f9
 
 **NOTE**: When passing a command-line to your container, precede it with the double dash (`--`) as in the above example. While it might work sometimes without it, I wouldn't count on it, as the Helios CLI may misinterpert your intent.
 
