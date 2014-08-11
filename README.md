@@ -44,8 +44,8 @@ infrastructure is up to you.
 Getting Started
 ---------------
 
-If you're looking for how to use Helios, see the [wiki](https://github.com/spotify/helios/wiki).
-Most probably the [User Manual](https://github.com/spotify/helios/wiki/Helios-User-Manual)
+If you're looking for how to use Helios, see the [docs directory](https://github.com/spotify/helios/tree/master/docs).
+Most probably the [User Manual](https://github.com/spotify/helios/tree/master/docs)
 is what you're looking for.
 
 If you're looking for how to download, build, install and run Helios, keep reading.
