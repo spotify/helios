@@ -1,16 +1,25 @@
 dependencies:
   override:
-    - mvn install -DskipTests=true -B -V
+    - ./circle.sh dependencies
 
 test:
+  pre:
+    - ./circle.sh pre_test
   override:
-    - mvn test -B
+    - ./circle.sh test:
+        parallel: true
+  post:
+    - ./circle.sh post_test
 
 machine:
   pre:
-    - sudo sh -c 'echo DOCKER_OPTS=\"\$DOCKER_OPTS -H tcp://127.0.0.1:2375\" >> /etc/default/docker'
+    - helios/circle.sh pre_machine
   services:
     - docker
   environment:
     DOCKER_HOST: tcp://127.0.0.1:2375
     MAVEN_OPTS: -Xmx128m
+
+general:
+  artifacts:
+    - artifacts
