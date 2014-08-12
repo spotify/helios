@@ -3,7 +3,7 @@
   <parent>
     <groupId>com.spotify</groupId>
     <artifactId>helios-parent</artifactId>
-    <version>0.0.35-SNAPSHOT</version>
+    <version>0.8.0</version>
   </parent>
 
   <name>Helios Testing Library</name>
