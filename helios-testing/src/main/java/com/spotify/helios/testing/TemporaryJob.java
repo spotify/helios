@@ -200,23 +200,14 @@ public class TemporaryJob {
               return null;
             }
 
+            verifyHealthy(host, taskStatus);
+
             final TaskStatus.State state = taskStatus.getState();
             if (state == TaskStatus.State.RUNNING) {
               return taskStatus;
-            } else if (state == TaskStatus.State.FAILED ||
-                       state == TaskStatus.State.EXITED ||
-                       state == TaskStatus.State.STOPPED) {
-              // Throw exception which should stop the test dead in it's tracks
-              String stateString = state.toString();
-              if (taskStatus.getThrottled() != ThrottleState.NO) {
-                stateString += format("(%s)", taskStatus.getThrottled());
-              }
-              throw new AssertionError(format(
-                  "Unexpected job state %s. Check helios agent logs for details.", stateString));
-            } else {
-              // For things like PULLING_IMAGE, STARTING, etc., we just continue waiting.
-              return null;
             }
+
+            return null;
           }
         }
     );
@@ -225,6 +216,33 @@ public class TemporaryJob {
 
     for (final String port : waitPorts) {
       awaitPort(port, host);
+    }
+  }
+
+  void verifyHealthy() throws AssertionError {
+    log.debug("Checking health of {}", job.getId());
+    final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
+    if (status == null) {
+      return;
+    }
+    for (Map.Entry<String, TaskStatus> entry : status.getTaskStatuses().entrySet()) {
+      verifyHealthy(entry.getKey(), entry.getValue());
+    }
+  }
+
+  private void verifyHealthy(final String host, final TaskStatus status) {
+    log.debug("Checking health of {} on {}", job.getId(), host);
+    final TaskStatus.State state = status.getState();
+    if (state == TaskStatus.State.FAILED ||
+        state == TaskStatus.State.EXITED ||
+        state == TaskStatus.State.STOPPED) {
+      // Throw exception which should stop the test dead in it's tracks
+      String stateString = state.toString();
+      if (status.getThrottled() != ThrottleState.NO) {
+        stateString += format("(%s)", status.getThrottled());
+      }
+      throw new AssertionError(format(
+          "Unexpected job state %s. Check helios agent logs for details.", stateString));
     }
   }
 

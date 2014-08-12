@@ -58,6 +58,7 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.hasFailureContaining;
+import static org.junit.experimental.results.ResultMatchers.hasSingleFailureContaining;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
 public class TemporaryJobsTest extends SystemTestBase {
@@ -373,19 +374,12 @@ public class TemporaryJobsTest extends SystemTestBase {
         .build();
 
     @Test
-    public void testThatThisFailsQuickly() {
-      final long start = System.currentTimeMillis();
-      try {
-        temporaryJobs.job()
-            .image(BUSYBOX)
-            .command("false")
-            .deploy(testHost1);
-        fail("should blow chunks");
-      } catch (AssertionError e) {
-        final long end = System.currentTimeMillis();
-        assertTrue("Test should not time out", (end-start) < Jobs.TIMEOUT_MILLIS);
-        assertTrue(e.getMessage().contains("EXITED"));
-      }
+    public void testThatThisFailsQuickly() throws InterruptedException {
+      temporaryJobs.job()
+          .image(BUSYBOX)
+          .command("false")
+          .deploy(testHost1);
+      Thread.sleep(Jobs.TIMEOUT_MILLIS);
     }
   }
 
@@ -398,7 +392,10 @@ public class TemporaryJobsTest extends SystemTestBase {
     startDefaultAgent(testHost1);
     awaitHostStatus(client, testHost1, UP, LONG_WAIT_MINUTES, MINUTES);
 
-    assertThat(testResult(TempJobFailureTest.class), isSuccessful());
+    final long start = System.currentTimeMillis();
+    assertThat(testResult(TempJobFailureTest.class), hasSingleFailureContaining("AssertionError: Unexpected job state"));
+    final long end = System.currentTimeMillis();
+    assertTrue("Test should not time out", (end-start) < Jobs.TIMEOUT_MILLIS);
   }
 
   private static boolean fileExists(final Path path, final String prefix) {
