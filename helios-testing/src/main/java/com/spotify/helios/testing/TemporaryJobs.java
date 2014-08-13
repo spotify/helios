@@ -163,6 +163,50 @@ public class TemporaryJobs implements TestRule {
     }
   }
 
+  /**
+   * Perform setup. This is normally called by JUnit when TemporaryJobs is used with @Rule.
+   * If @Rule cannot be used, call this method before calling {@link #job()}.
+   *
+   * Note: When not being used as a @Rule, jobs will not be monitored during test runs.
+   */
+  public void before() {
+    started = true;
+  }
+
+  /**
+   * Perform teardown. This is normally called by JUnit when TemporaryJobs is used with @Rule.
+   * If @Rule cannot be used, call this method after running tests.
+   */
+  public void after() {
+    // Stop the test runner thread
+    executor.shutdownNow();
+    try {
+      final boolean terminated = executor.awaitTermination(30, SECONDS);
+      if (!terminated) {
+        log.warn("Failed to stop test runner thread");
+      }
+    } catch (InterruptedException ignore) {
+    }
+
+    final List<AssertionError> errors = newArrayList();
+
+    log.info("Undeploying temporary jobs");
+
+    for (TemporaryJob job : jobs) {
+      job.undeploy(errors);
+    }
+
+    for (AssertionError error : errors) {
+      log.error(error.getMessage());
+    }
+
+    // Don't delete the prefix file if any errors occurred during undeployment, so that we'll
+    // try to undeploy them the next time TemporaryJobs is run.
+    if (errors.isEmpty()) {
+      jobPrefixFile.delete();
+    }
+  }
+
   public TemporaryJobBuilder job() {
     return new TemporaryJobBuilder(deployer, jobPrefixFile.prefix())
         .hostFilter(defaultHostFilter)
@@ -255,40 +299,6 @@ public class TemporaryJobs implements TestRule {
   private void verifyJobsHealthy() throws AssertionError {
     for (TemporaryJob job : jobs) {
       job.verifyHealthy();
-    }
-  }
-
-  private void before() {
-    started = true;
-  }
-
-  private void after() {
-    // Stop the test runner thread
-    executor.shutdownNow();
-    try {
-      final boolean terminated = executor.awaitTermination(30, SECONDS);
-      if (!terminated) {
-        log.warn("Failed to stop test runner thread");
-      }
-    } catch (InterruptedException ignore) {
-    }
-
-    final List<AssertionError> errors = newArrayList();
-
-    log.info("Undeploying temporary jobs");
-
-    for (TemporaryJob job : jobs) {
-      job.undeploy(errors);
-    }
-
-    for (AssertionError error : errors) {
-      log.error(error.getMessage());
-    }
-
-    // Don't delete the prefix file if any errors occurred during undeployment, so that we'll
-    // try to undeploy them the next time TemporaryJobs is run.
-    if (errors.isEmpty()) {
-      jobPrefixFile.delete();
     }
   }
 
