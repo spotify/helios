@@ -39,6 +39,7 @@ import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.DockerRequestException;
+import com.spotify.docker.client.ImageNotFoundException;
 import com.spotify.docker.client.LogMessage;
 import com.spotify.docker.client.LogReader;
 import com.spotify.docker.client.messages.Container;
@@ -236,7 +237,13 @@ public abstract class SystemTestBase {
 
   private void assertDockerReachable(final int probePort) throws Exception {
     final DockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri());
-    docker.pull(BUSYBOX);
+
+    try {
+      docker.inspectImage(BUSYBOX);
+    } catch (ImageNotFoundException e) {
+      docker.pull(BUSYBOX);
+    }
+
     final ContainerConfig config = ContainerConfig.builder()
         .image(BUSYBOX)
         .cmd("nc", "-p", "4711", "-lle", "cat")
