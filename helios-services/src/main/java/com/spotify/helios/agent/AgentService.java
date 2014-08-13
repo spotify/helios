@@ -27,7 +27,6 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
@@ -196,7 +195,7 @@ public class AgentService extends AbstractIdleService {
     final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =
         new ZooKeeperNodeUpdaterFactory(zooKeeperClient);
 
-    final DockerClient dockerClient = new DefaultDockerClient(config.getDockerHost().uri());
+    final DockerClient dockerClient = new PollingDockerClient(config.getDockerHost().uri());
     final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,
                                                                           dockerClient);
 
