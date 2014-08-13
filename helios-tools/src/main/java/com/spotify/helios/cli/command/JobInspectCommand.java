@@ -106,6 +106,7 @@ public class JobInspectCommand extends WildcardJobCommand {
       printMap(out, "Env:   ", QUOTE, job.getEnv());
       printMap(out, "Ports: ", FORMAT_PORTMAPPING, job.getPorts());
       printMap(out, "Reg: ", FORMAT_SERVICE_PORTS, job.getRegistration());
+      printVolumes(out, job.getVolumes());
     }
 
     return 0;
@@ -122,6 +123,30 @@ public class JobInspectCommand extends WildcardJobCommand {
       }
       final V value = values.get(key);
       out.printf("%s=%s%n", key, transform.apply(value));
+      first = false;
+    }
+    if (first) {
+      out.println();
+    }
+  }
+
+  private void printVolumes(final PrintStream out, final Map<String, String> volumes) {
+    final String prefix = "Volumes: ";
+    out.print(prefix);
+    boolean first = true;
+    for (Map.Entry<String, String> entry : volumes.entrySet()) {
+      if (!first) {
+        out.print(Strings.repeat(" ", prefix.length()));
+      }
+      final String path = entry.getValue();
+      final String source = entry.getKey();
+      if (source == null) {
+        out.printf("%s%n", path);
+      } else {
+        // Note that we're printing this in value:key order as that's the host:container:[rw|ro]
+        // order used by docker and the helios create command.
+        out.printf("%s:%s%n", path, source);
+      }
       first = false;
     }
     if (first) {
