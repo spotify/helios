@@ -1,3 +1,7 @@
+branches:
+  only:
+  - /^\d+\.\d+\.\d+$/
+
 language: java
 
 jdk:
