@@ -27,13 +27,18 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.MoreExecutors;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 
-import org.junit.rules.ExternalResource;
+import org.junit.rules.TestRule;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -47,7 +52,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.containsPattern;
@@ -56,9 +66,10 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.testing.Jobs.undeploy;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.fail;
 
-public class TemporaryJobs extends ExternalResource {
+public class TemporaryJobs implements TestRule {
 
   private static final Logger log = LoggerFactory.getLogger(TemporaryJob.class);
 
@@ -67,13 +78,22 @@ public class TemporaryJobs extends ExternalResource {
   private static final String DEFAULT_LOCAL_HOST_FILTER = ".*";
   private static final String DEFAULT_HOST_FILTER = System.getenv("HELIOS_HOST_FILTER");
   private static final String DEFAULT_PREFIX_DIRECTORY = "/tmp/helios-temp-jobs";
+  private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
 
   private final HeliosClient client;
   private final Prober prober;
   private final String defaultHostFilter;
   private final JobPrefixFile jobPrefixFile;
 
-  private final List<TemporaryJob> jobs = newArrayList();
+  private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
+
+  private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
+      (ThreadPoolExecutor) Executors.newFixedThreadPool(
+          1, new ThreadFactoryBuilder()
+              .setNameFormat("helios-temporary-jobs-test-runner-%d")
+              .setDaemon(true)
+              .build()),
+      0, SECONDS);
 
   private final TemporaryJob.Deployer deployer = new TemporaryJob.Deployer() {
     @Override
@@ -187,12 +207,72 @@ public class TemporaryJobs extends ExternalResource {
   }
 
   @Override
-  protected void before() throws Throwable {
+  public Statement apply(final Statement base, Description description) {
+    return new Statement() {
+      @Override
+      public void evaluate() throws Throwable {
+        before();
+        try {
+          perform(base);
+        } finally {
+          after();
+        }
+      }
+    };
+  }
+
+  private void perform(final Statement base)
+      throws InterruptedException {
+    // Run the actual test on a thread
+    final Future<Object> future = executor.submit(new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        try {
+          base.evaluate();
+        } catch (Throwable throwable) {
+          Throwables.propagateIfPossible(throwable, Exception.class);
+          throw Throwables.propagate(throwable);
+        }
+        return null;
+      }
+    });
+
+    // Monitor jobs while test is running
+    while (!future.isDone()) {
+      Thread.sleep(JOB_HEALTH_CHECK_INTERVAL_MILLIS);
+      verifyJobsHealthy();
+    }
+
+    // Rethrow test failure, if any
+    try {
+      future.get();
+    } catch (ExecutionException e) {
+      final Throwable cause = (e.getCause() == null) ? e : e.getCause();
+      throw Throwables.propagate(cause);
+    }
+  }
+
+  private void verifyJobsHealthy() throws AssertionError {
+    for (TemporaryJob job : jobs) {
+      job.verifyHealthy();
+    }
+  }
+
+  private void before() {
     started = true;
   }
 
-  @Override
-  protected void after() {
+  private void after() {
+    // Stop the test runner thread
+    executor.shutdownNow();
+    try {
+      final boolean terminated = executor.awaitTermination(30, SECONDS);
+      if (!terminated) {
+        log.warn("Failed to stop test runner thread");
+      }
+    } catch (InterruptedException ignore) {
+    }
+
     final List<AssertionError> errors = newArrayList();
 
     log.info("Undeploying temporary jobs");
