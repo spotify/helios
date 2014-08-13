@@ -221,7 +221,8 @@ public class TemporaryJobs implements TestRule {
   }
 
   private void perform(final Statement base)
-      throws InterruptedException {// Run the actual test on a thread
+      throws InterruptedException {
+    // Run the actual test on a thread
     final Future<Object> future = executor.submit(new Callable<Object>() {
       @Override
       public Object call() throws Exception {
