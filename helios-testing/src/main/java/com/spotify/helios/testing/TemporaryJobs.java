@@ -210,41 +210,44 @@ public class TemporaryJobs implements TestRule {
     return new Statement() {
       @Override
       public void evaluate() throws Throwable {
-
-        // Run the actual test on a thread
-        final Future<Object> future = executor.submit(new Callable<Object>() {
-          @Override
-          public Object call() throws Exception {
-            before();
-            try {
-              try {
-                base.evaluate();
-              } catch (Throwable throwable) {
-                Throwables.propagateIfPossible(throwable, Exception.class);
-                throw Throwables.propagate(throwable);
-              }
-            } finally {
-              after();
-            }
-            return null;
-          }
-        });
-
-        // Monitor jobs while test is running
-        while (!future.isDone()) {
-          Thread.sleep(JOB_HEALTH_CHECK_INTERVAL_MILLIS);
-          verifyJobsHealthy();
-        }
-
-        // Rethrow test failure, if any
+        before();
         try {
-          future.get();
-        } catch (ExecutionException e) {
-          final Throwable cause = (e.getCause() == null) ? e : e.getCause();
-          throw Throwables.propagate(cause);
+          perform(base);
+        } finally {
+          after();
         }
       }
     };
+  }
+
+  private void perform(final Statement base)
+      throws InterruptedException {// Run the actual test on a thread
+    final Future<Object> future = executor.submit(new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        try {
+          base.evaluate();
+        } catch (Throwable throwable) {
+          Throwables.propagateIfPossible(throwable, Exception.class);
+          throw Throwables.propagate(throwable);
+        }
+        return null;
+      }
+    });
+
+    // Monitor jobs while test is running
+    while (!future.isDone()) {
+      Thread.sleep(JOB_HEALTH_CHECK_INTERVAL_MILLIS);
+      verifyJobsHealthy();
+    }
+
+    // Rethrow test failure, if any
+    try {
+      future.get();
+    } catch (ExecutionException e) {
+      final Throwable cause = (e.getCause() == null) ? e : e.getCause();
+      throw Throwables.propagate(cause);
+    }
   }
 
   private void verifyJobsHealthy() throws AssertionError {
