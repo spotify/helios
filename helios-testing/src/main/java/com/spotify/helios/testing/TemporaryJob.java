@@ -288,7 +288,7 @@ public class TemporaryJob {
    * @return The host's ip address if one exists, otherwise the hostname which was passed in.
    */
   private String endpointFromHost(String host) {
-    final String ip = hostToIp.get("host");
+    final String ip = hostToIp.get(host);
     return ip == null ? host : ip;
   }
 
