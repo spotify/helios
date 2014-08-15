@@ -36,23 +36,23 @@ Takes options:
 
   `--name NAME`            hostname to register as (default: system's fqdn)
 
-  `--domain DOMAIN`        Service registration domain.
+  `--domain DOMAIN`        Optional.  Service registration domain.  Used for the master to register itself with the service registrar.
 
-  `--service-registry`     Service registry address. Overrides domain.
+  `--service-registry`     Optional. Service registry address. Overrides domain.  Used for the master to register itself with the service registrar.
 
-  `--service-registrar-plugin PATH_TO_PLUGIN` Service registration plugin used to register the master with an external service (EtcD for example). These are not well documented yet or open sourced.
+  `--service-registrar-plugin PATH_TO_PLUGIN` Optional. Service registration plugin used to register the master with an external service (EtcD for example). These are not well documented yet.  Used for the master to register itself with the service registrar.
 
   `--zk ZK`                zookeeper connection string (default: localhost:2181) Can include multiple zookeeper hosts (example: `zookeeper1.example.com:2181,zookeeper2.example.com:2181,zookeeper3.example.com:2181`).
 
-  `--zk-session-timeout ZK_SESSION_TIMEOUT` zookeeper session timeout (default: 60000)
+  `--zk-session-timeout ZK_SESSION_TIMEOUT` Optional.  Zookeeper session timeout (default: 60000)
 
-  `--zk-connection-timeout ZK_CONNECTION_TIMEOUT` zookeeper connection timeout (default: 15000)
+  `--zk-connection-timeout ZK_CONNECTION_TIMEOUT` Optional.  Zookeeper connection timeout (default: 15000)
 
   `--no-metrics` Turn off all collection and reporting of metrics (default: false)
 
-  `--statsd-host-port STATSD_HOST_PORT` host:port of where to send statsd metrics (to be useful, --no-metrics must *NOT* be specified)
+  `--statsd-host-port STATSD_HOST_PORT` Optional.  The host:port of where to send statsd metrics (to be useful, --no-metrics must *NOT* be specified)
 
-  --riemann-host-port RIEMANN_HOST_PORT host:port of where to send riemann events and metrics (to be useful, --no-metrics must *NOT* be specified)
+  --riemann-host-port RIEMANN_HOST_PORT Optional.  The host:port of where to send riemann events and metrics (to be useful, --no-metrics must *NOT* be specified)
 
   `-v, --verbose` (default: 0)
 
@@ -60,11 +60,11 @@ Takes options:
 
   `--logconfig LOGCONFIG` Logback configuration file.
 
-  `--sentry-dsn SENTRY_DSN` The sentry data source name (For http://getsentry.com)
+  `--sentry-dsn SENTRY_DSN`  Optional.  The sentry data source name (For http://getsentry.com)
 
-  `--http HTTP` http endpoint (default: http://0.0.0.0:5801)
+  `--http HTTP` http endpoint (default: http://0.0.0.0:5801) the master will listen on.
 
-  `--admin ADMIN` admin http port (default: 5802)
+  `--admin ADMIN` admin http port (default: 5802) the master will listen on.
 
 Example `/etc/default/helios-master`
 
@@ -90,12 +90,12 @@ Takes options:
 
   `--name NAME`            hostname to register as (default system's fqdn)
 
-  `--domain DOMAIN`        Service registration domain.
+  `--domain DOMAIN`        Optional. Service registration domain.  Used for the agent to register deployed jobs in the service registrar.
 
   `--service-registry SERVICE_REGISTRY`
-                         Service registry address. Overrides domain.
+                         Optional.  Service registry address. Used for the agent to register deployed jobs in the service registrar.
 
-  `--service-registrar-plugin PATH_TO_PLUGIN` Service registration plugin used to register running conatiners with an external service (EtcD for example). These are not well documented yet or open sourced.
+  `--service-registrar-plugin PATH_TO_PLUGIN` Optional. Service registration plugin used to register running conatiners with an external service (EtcD for example). These are not well documented yet.  Used for the agent to register deployed jobs in the service registrar.
 
   `--zk ZK`                zookeeper connection string (default: localhost:2181) Can include multiple zookeeper hosts (example: `zookeeper1.example.com:2181,zookeeper2.example.com:2181,zookeeper3.example.com:2181`).
 
@@ -109,11 +109,11 @@ Takes options:
                          false)
 
   `--statsd-host-port STATSD_HOST_PORT`
-                         host:port of where to send statsd metrics (to be useful, --
+                         Optional.  The host:port of where to send statsd metrics (to be useful, --
                          no-metrics must *NOT* be specified)
 
   `--riemann-host-port RIEMANN_HOST_PORT`
-                         host:port of where to send  riemann  events and metrics (to
+                         Optional.  The host:port of where to send  riemann  events and metrics (to
                          be useful, --no-metrics must *NOT* be specified)
 
   `-v, --verbose`          (default: 0)
@@ -122,13 +122,13 @@ Takes options:
 
   `--logconfig LOGCONFIG`  Logback configuration file.
 
-  `--sentry-dsn SENTRY_DSN` The sentry data source name (For http://getsentry.com)
+  `--sentry-dsn SENTRY_DSN` Optional.  The sentry data source name (For http://getsentry.com)
 
-  `--no-http`              disable http server (default: false)
+  `--no-http`              Disable http server (default: false)
 
-  `--http HTTP`            http endpoint (default: http://0.0.0.0:5803)
+  `--http HTTP`            The http endpoint (default: http://0.0.0.0:5803) to listen on.
 
-  `--admin ADMIN`          admin http port (default: 5804)
+  `--admin ADMIN`          The admin http port (default: 5804) to listen on.
 
   `--id ID`                Agent unique ID. Generated  and  persisted  on first run if
                          not specified.
@@ -140,7 +140,7 @@ Takes options:
                          containers (default: [])
 
   `--syslog-redirect-to SYSLOG_REDIRECT_TO`
-                         redirect container's  stdout/stderr  to  syslog  running at
+                         Optional.  Redirect container's  stdout/stderr  to  syslog  running at
                          host:port
 
   `--port-range PORT_RANGE`
