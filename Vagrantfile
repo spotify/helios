@@ -19,7 +19,7 @@ Vagrant.configure("2") do |config|
   config.vm.synced_folder "~/.m2", "/home/vagrant/.m2"
 
   pkg_cmd = "export DEBIAN_FRONTEND=noninteractive; "
-  pkg_cmd = "set -x; "
+  pkg_cmd << "set -x; "
 
   # install docker
   pkg_cmd << "curl -s https://get.docker.io/gpg | apt-key add -; "
