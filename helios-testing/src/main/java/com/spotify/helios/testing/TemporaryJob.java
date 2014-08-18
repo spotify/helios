@@ -201,7 +201,7 @@ public class TemporaryJob {
         TIMEOUT_MILLIS, MILLISECONDS, new Callable<TaskStatus>() {
           @Override
           public TaskStatus call() throws Exception {
-            log.info("Getting job status for job {}", job.getId());
+            log.debug("Getting job status for job {}", job.getId());
 
             final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
             if (status == null) {
@@ -215,6 +215,7 @@ public class TemporaryJob {
             verifyHealthy(host, taskStatus);
 
             final TaskStatus.State state = taskStatus.getState();
+
             if (state == TaskStatus.State.RUNNING) {
               return taskStatus;
             }
@@ -255,6 +256,8 @@ public class TemporaryJob {
       }
       throw new AssertionError(format(
           "Unexpected job state %s. Check helios agent logs for details.", stateString));
+    } else if (state == TaskStatus.State.PULLING_IMAGE) {
+        log.info("Pulling image for {} on {}", job.getId(), host);
     }
   }
 
