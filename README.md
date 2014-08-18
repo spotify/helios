@@ -44,9 +44,8 @@ infrastructure is up to you.
 Getting Started
 ---------------
 
-If you're looking for how to use Helios, see the [docs directory](https://github.com/spotify/helios/tree/master/docs).
-Most probably the [User Manual](https://github.com/spotify/helios/tree/master/docs)
-is what you're looking for.
+If you're looking for how to use Helios, see the [docs directory](docs).
+Most probably the [User Manual](docs/user_manual.md) is what you're looking for.
 
 If you're looking for how to download, build, install and run Helios, keep reading.
 
@@ -102,7 +101,7 @@ yourself to run the test suite.
 
 ### Manual approach
 
-The launcher scripts are in [bin/](https://github.com/spotify/helios/tree/master/bin).
+The launcher scripts are in [bin/](bin).
 After you've run `mvn package`, you should be able to start the agent and master:
 
     $ bin/helios-master &
@@ -144,17 +143,17 @@ in `findbugs-exclude.xml`.
 The Nickel Tour
 ---------------
 
-The sources for the Helios master and agent are under [helios-services](https://github.com/spotify/helios/tree/master/helios-services).
-The CLI source is under [helios-tools](https://github.com/spotify/helios/tree/master/helios-tools).
-The Helios Java client is under [helios-client](https://github.com/spotify/helios/tree/master/helios-client).
+The sources for the Helios master and agent are under [helios-services](helios-services).
+The CLI source is under [helios-tools](helios-tools).
+The Helios Java client is under [helios-client](helios-client).
 
-The main meat of the Helios agent is in [Supervisor.java](https://github.com/spotify/helios/blob/master/helios-services/src/main/java/com/spotify/helios/agent/Supervisor.java),
+The main meat of the Helios agent is in [Supervisor.java](helios-services/src/main/java/com/spotify/helios/agent/Supervisor.java),
 which revolves around the lifecycle of managing individual running Docker containers.
 
-For the master, the HTTP response handlers are in [src/main/java/com/spotify/helios/master/resources](https://github.com/spotify/helios/tree/master/helios-services/src/main/java/com/spotify/helios/master/resources).
+For the master, the HTTP response handlers are in [src/main/java/com/spotify/helios/master/resources](helios-services/src/main/java/com/spotify/helios/master/resources).
 
-Interactions with ZooKeeper for the agent and master are mainly in [ZookeeperAgentModel.java](https://github.com/spotify/helios/blob/master/helios-services/src/main/java/com/spotify/helios/agent/ZooKeeperAgentModel.java)
-and [ZooKeeperMasterModel.java](https://github.com/spotify/helios/blob/master/helios-services/src/main/java/com/spotify/helios/master/ZooKeeperMasterModel.java),
+Interactions with ZooKeeper for the agent and master are mainly in [ZookeeperAgentModel.java](helios-services/src/main/java/com/spotify/helios/agent/ZooKeeperAgentModel.java)
+and [ZooKeeperMasterModel.java](helios-services/src/main/java/com/spotify/helios/master/ZooKeeperMasterModel.java),
 respectively.
 
 The Helios services use [Dropwizard](http://dropwizard.io) which is a
