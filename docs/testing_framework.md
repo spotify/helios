@@ -1,3 +1,7 @@
+Reviewed by [rculbertson](https://github.com/rculbertson) on 2014-08-18
+
+***
+
 The Helios testing framework lets you deploy multiple services as docker containers, and run automated tests against them. The tests can be run locally or as part of an automated build. You can use the containers available in the Docker Registry, as well as containers built on your local machine.
 
 The framework integrates with standard JUnit tests, and provides a JUnit rule called `TemporaryJobs`. This rule is the starting point for using the framework, and is used to define helios jobs, deploy them, and automatically undeploy them when the tests have completed.
@@ -11,7 +15,7 @@ The framework integrates with standard JUnit tests, and provides a JUnit rule ca
     <dependency>
         <groupId>com.spotify</groupId>
         <artifactId>helios-testing</artifactId>
-        <version>0.0.30</version>
+        <version>0.8.1</version>
         <scope>test</scope>
     </dependency>
     ```
@@ -55,37 +59,37 @@ public class ServiceIT {
   @Rule
   public TemporaryJobs temporaryJobs = TemporaryJobs.create();
 
-  private String wiggumEndpoint;
+  private Client client;
 
   @Before
   public void setup() {
     // Deploy the wiggum image created during the last build.The wiggum container will be listening
-    // on a dynamically allocated port. 4228 is the port wiggum listens on in the container.
-    final TemporaryJob wiggumJob = temporaryJobs.job()
+    // on a dynamically allocated port. 4229 is the port wiggum listens on in the container.
+    temporaryJob = temporaryJobs.job()
         .imageFromBuild()
-        .port("wiggum", 4228)
+        .port("wiggum", 4229)
         .deploy();
-
-    // create a hermes endpoint string using the host and dynamically allocated port of the job
-    wiggumEndpoint = "tcp://" + wiggumJob.address("wiggum");
+     
+    // create a hermes client using the host and dynamically allocated port of the job
+    client = new Client("tcp://" + temporaryJob.address("wiggum"));
   }
 
   @Test
-  public void testPing() throws Exception {
-    final Client client = new Client(wiggumEndpoint);
+  public void testPing() throws Exception {    
     final Message message = client.ping().get(10, SECONDS);
     assertEquals("ping failed", StatusCode.OK, message.getStatusCode());
   }
-
-}
 ```
 
-This example deploys cassandra, memcached, and a service called foobar.
+This example deploys cassandra, memcached, and a service called foobar. Helios will register 
+cassandra and memcached with a service discovery mechanism using the service registration plugin.
+Foobar will then lookup each service via that mechanism, just as it would in production. 
 
 ```java
 package com.spotify.foobar;
 
 import com.google.common.net.HostAndPort;
+
 import com.spotify.foobar.store.CassandraClient;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
@@ -105,20 +109,20 @@ public class SystemIT {
   public void setup() throws Exception {
 
     final TemporaryJob cassandra = temporaryJobs.job()
-        .image("poklet/cassandra")
+        .image("spotify/cassandra")
         .port("cassandra", 9160)
+        .registration("cassandra", "tcp", "cassandra")
         .deploy();
 
     final TemporaryJob memcached = temporaryJobs.job()
         .image("ehazlett/memcached")
         .env("MEMORY", "16")
         .port("memcached", 11211)
+        .registration("memcached", "tcp", "memcached")
         .deploy();
 
     final TemporaryJob foobar = temporaryJobs.job()
         .imageFromBuild()
-        .env("MEMCACHED_ADDRESSES", memcached.address("memcached"))
-        .env("CASSANDRA_ADDRESSES", cassandra.address("cassandra"))
         .env("CASSANDRA_MAX_CONNS_PER_HOST", String.valueOf(1))
         .port("foobar", 9600)
         .deploy();
@@ -138,28 +142,42 @@ public class SystemIT {
 }
 ```
 
+# Environment Configuration
+
+There are 3 environment variables you can use to configure the test to run in different environments.
+ 
+  * `HELIOS_DOMAIN` - the domain where the helios master can be reached.
+  * `HELIOS_ENDPOINTS` - the specific endpoint(s) to connect to. When set, this overrides HELIOS_DOMAIN.
+  * `HELIOS_HOST_FILTER` - regular expression or FQDN of the helios host you want to deploy to. If more
+    than one host matches the regex, one will be selected randomly.
+   
+   If neither `HELIOS_DOMAIN` nor `HELIOS_ENDPOINTS` is set, TemporaryJobs will connect to `tcp://localhost:5801` and set `HELIOS_HOST_FILTER` to `.+`. `HELIOS_HOST_FILTER` must be set if either `HELIOS_DOMAIN` or `HELIOS_ENDPOINTS` is set. 
+  
 # Running locally
 
 1. Make sure Helios and Docker are running locally.
 
-2. Set the following environment variable:
-    ```text
-    HELIOS_HOST_FILTER=.+
-    ```
-   `HELIOS_HOST_FILTER` is a regular expression that is used to select which Helios agents to deploy to. Since you're running locally, we'll just use any agent in your local cluster (which should only be one agent).
+2. If Helios is exposed on `localhost:5801`, there is no need to set any environment variables. 
+   By default it will connect to `localhost:5801` and will set HELIOS_HOST_FILTER to `.+`.
+    
+    If Helios is not exposed on `localhost:5801`, you will need to set these variables. This would be the
+    case if you are running helios in a VM and ports must be reached through the VM's IP address.
+
+    `HELIOS_ENDPOINTS=tcp://<host>:5801`
+    
+    `HELIOS_HOST_FILTER=.+`
 
 3. Run `mvn clean verify`. This will build the container, and run the integration test. You can also run the integration test in IntelliJ.
 
 # Running from a build server
 
-1. In your build configuration set these environment variables
+1. In your build configuration
 
-    `HELIOS_HOST_FILTER` - regex of hosts you want to deploy to
+    Set either `HELIOS_DOMAIN` or `HELIOS_ENDPOINTS` to connect to Helios. `HELIOS_DOMAIN` is preferred.
+    
+    Set `HELIOS_HOST_FILTER` to a regex or FQDN of the host you want to deploy to.
 
-    `HELIOS_DOMAIN` - the domain where the helios master can be reached
-
-
-3. Make sure your build runs `mvn verify` which will build the docker image and run the integration test.
+2. Make sure your build runs `mvn clean verify` which will build the docker image and run the integration test.
 
 # Job Cleanup
 
