@@ -62,7 +62,7 @@ public class TaskConfig {
   private static final Logger log = LoggerFactory.getLogger(TaskConfig.class);
 
   private static final Pattern CONTAINER_NAME_FORBIDDEN = Pattern.compile("[^a-zA-Z0-9_-]");
-  private static final int HOST_NAME_MAX = 64;
+  private static final int HOST_NAME_MAX = 63;
 
   private final String host;
   private final Map<String, Integer> ports;
