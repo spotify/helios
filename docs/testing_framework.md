@@ -1,4 +1,4 @@
-Reviewed by [rculbertson](https://github.com/rculbertson) on 2014-08-18
+Reviewed by [rculbertson](https://github.com/rculbertson) on 2014-08-19
 
 ***
 
@@ -8,7 +8,7 @@ The framework integrates with standard JUnit tests, and provides a JUnit rule ca
 
 # Instructions
 
-1. Make sure running `mvn package` builds your service into a docker container. You can do this with the [docker-maven-plugin](https://github.com/spotify/docker-maven-plugin).
+1. Make sure running `mvn package` builds your service into a docker container. You can do this with the [docker-maven-plugin](https://github.com/spotify/docker-maven-plugin), by binding the build goal to the package lifecycle phase. When we run `mvn verify` we'll want to build the image first, and binding to the package phase lets us do that.  
 
 2. Add helios-testing to your pom.xml in the <dependencies> element. Use the latest version if a newer one is available.
     ```
@@ -153,7 +153,7 @@ There are 3 environment variables you can use to configure the test to run in di
    
    If neither `HELIOS_DOMAIN` nor `HELIOS_ENDPOINTS` is set, TemporaryJobs will connect to `tcp://localhost:5801` and set `HELIOS_HOST_FILTER` to `.+`. `HELIOS_HOST_FILTER` must be set if either `HELIOS_DOMAIN` or `HELIOS_ENDPOINTS` is set. 
   
-# Running locally
+# Run Tests Locally
 
 1. Make sure Helios and Docker are running locally.
 
@@ -169,7 +169,7 @@ There are 3 environment variables you can use to configure the test to run in di
 
 3. Run `mvn clean verify`. This will build the container, and run the integration test. You can also run the integration test in IntelliJ.
 
-# Running from a build server
+# Run Tests From a Build Server
 
 1. In your build configuration
 
@@ -177,7 +177,7 @@ There are 3 environment variables you can use to configure the test to run in di
     
     Set `HELIOS_HOST_FILTER` to a regex or FQDN of the host you want to deploy to.
 
-2. Make sure your build runs `mvn clean verify` which will build the docker image and run the integration test.
+2. Configure the build to run `mvn clean verify docker:push` which will build the docker image, run the integration test, and push it to the registry.
 
 # Job Cleanup
 
