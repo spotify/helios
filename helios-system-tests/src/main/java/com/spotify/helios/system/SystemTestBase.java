@@ -21,7 +21,6 @@
 
 package com.spotify.helios.system;
 
-import com.fasterxml.jackson.databind.util.ISO8601Utils;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -34,6 +33,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.util.ISO8601Utils;
 import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
@@ -50,6 +50,7 @@ import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.Polling;
 import com.spotify.helios.TemporaryPorts;
+import com.spotify.helios.TemporaryPorts.AllocatedPort;
 import com.spotify.helios.ZooKeeperStandaloneServerManager;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.agent.AgentMain;
@@ -111,7 +112,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
-import static com.spotify.helios.TemporaryPorts.AllocatedPort;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
@@ -236,57 +236,57 @@ public abstract class SystemTestBase {
   }
 
   private void assertDockerReachable(final int probePort) throws Exception {
-    final DockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri());
-
-    try {
-      docker.inspectImage(BUSYBOX);
-    } catch (ImageNotFoundException e) {
-      docker.pull(BUSYBOX);
-    }
-
-    final ContainerConfig config = ContainerConfig.builder()
-        .image(BUSYBOX)
-        .cmd("nc", "-p", "4711", "-lle", "cat")
-        .exposedPorts(ImmutableSet.of("4711/tcp"))
-        .build();
-    final HostConfig hostConfig = HostConfig.builder()
-        .portBindings(ImmutableMap.of("4711/tcp",
-                                      asList(PortBinding.of("0.0.0.0", probePort))))
-        .build();
-    final ContainerCreation creation = docker.createContainer(config, testTag + "-probe");
-    final String containerId = creation.id();
-    docker.startContainer(containerId, hostConfig);
-
-    // Wait for container to come up
-    Polling.await(5, SECONDS, new Callable<Object>() {
-      @Override
-      public Object call() throws Exception {
-        final ContainerInfo info = docker.inspectContainer(containerId);
-        return info.state().running() ? true : null;
+    try (final DefaultDockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri())) {
+      try {
+        docker.inspectImage(BUSYBOX);
+      } catch (ImageNotFoundException e) {
+        docker.pull(BUSYBOX);
       }
-    });
 
-    log.info("Verifying that docker containers are reachable");
-    try {
-      Polling.awaitUnchecked(5, SECONDS, new Callable<Object>() {
+      final ContainerConfig config = ContainerConfig.builder()
+          .image(BUSYBOX)
+          .cmd("nc", "-p", "4711", "-lle", "cat")
+          .exposedPorts(ImmutableSet.of("4711/tcp"))
+          .build();
+      final HostConfig hostConfig = HostConfig.builder()
+          .portBindings(ImmutableMap.of("4711/tcp",
+                                        asList(PortBinding.of("0.0.0.0", probePort))))
+          .build();
+      final ContainerCreation creation = docker.createContainer(config, testTag + "-probe");
+      final String containerId = creation.id();
+      docker.startContainer(containerId, hostConfig);
+
+      // Wait for container to come up
+      Polling.await(5, SECONDS, new Callable<Object>() {
         @Override
         public Object call() throws Exception {
-          log.info("Probing: {}:{}", DOCKER_HOST.address(), probePort);
-          try (final Socket ignored = new Socket(DOCKER_HOST.address(), probePort)) {
-            return true;
-          } catch (IOException e) {
-            return false;
-          }
+          final ContainerInfo info = docker.inspectContainer(containerId);
+          return info.state().running() ? true : null;
         }
       });
-    } catch (TimeoutException e) {
-      fail("Please ensure that DOCKER_HOST is set to an address that where containers can " +
-           "be reached. If docker is running in a local VM, DOCKER_HOST must be set to the " +
-           "address of that VM. If docker can only be reached on a limited port range, " +
-           "set the environment variable DOCKER_PORT_RANGE=start:end");
-    }
 
-    docker.killContainer(containerId);
+      log.info("Verifying that docker containers are reachable");
+      try {
+        Polling.awaitUnchecked(5, SECONDS, new Callable<Object>() {
+          @Override
+          public Object call() throws Exception {
+            log.info("Probing: {}:{}", DOCKER_HOST.address(), probePort);
+            try (final Socket ignored = new Socket(DOCKER_HOST.address(), probePort)) {
+              return true;
+            } catch (IOException e) {
+              return false;
+            }
+          }
+        });
+      } catch (TimeoutException e) {
+        fail("Please ensure that DOCKER_HOST is set to an address that where containers can " +
+             "be reached. If docker is running in a local VM, DOCKER_HOST must be set to the " +
+             "address of that VM. If docker can only be reached on a limited port range, " +
+             "set the environment variable DOCKER_PORT_RANGE=start:end");
+      }
+
+      docker.killContainer(containerId);
+    }
   }
 
   protected ZooKeeperTestManager zooKeeperTestManager() {
@@ -318,8 +318,7 @@ public abstract class SystemTestBase {
     services.clear();
 
     // Clean up docker
-    try {
-      final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
+    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
       final List<Container> containers = dockerClient.listContainers();
       for (final Container container : containers) {
         for (final String name : container.names()) {

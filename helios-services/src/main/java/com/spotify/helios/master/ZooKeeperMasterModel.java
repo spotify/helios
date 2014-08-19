@@ -354,7 +354,6 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  @SuppressWarnings("deprecation") // for setDeployedHosts
   @Override
   public JobStatus getJobStatus(final JobId jobId) {
     final ZooKeeperClient client = provider.get("getJobStatus");
