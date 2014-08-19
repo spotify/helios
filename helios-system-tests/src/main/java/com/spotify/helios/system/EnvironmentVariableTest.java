@@ -24,10 +24,9 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.helios.Polling;
 import com.spotify.docker.client.DefaultDockerClient;
-import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
+import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -72,46 +71,46 @@ public class EnvironmentVariableTest extends SystemTestBase {
       }
     });
 
-    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
+    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+      final List<String> command = asList("sh", "-c",
+                                          "echo pod: $SPOTIFY_POD; " +
+                                          "echo role: $SPOTIFY_ROLE; " +
+                                          "echo foo: $FOO; " +
+                                          "echo bar: $BAR");
 
-    final List<String> command = asList("sh", "-c",
-                                        "echo pod: $SPOTIFY_POD; " +
-                                        "echo role: $SPOTIFY_ROLE; " +
-                                        "echo foo: $FOO; " +
-                                        "echo bar: $BAR");
+      // Create job
+      final JobId jobId = createJob(testJobName, testJobVersion, "busybox", command,
+                                    ImmutableMap.of("FOO", "4711",
+                                                    "BAR", "deadbeef"));
 
-    // Create job
-    final JobId jobId = createJob(testJobName, testJobVersion, "busybox", command,
-                                  ImmutableMap.of("FOO", "4711",
-                                                  "BAR", "deadbeef"));
+      // deploy
+      deployJob(jobId, testHost());
 
-    // deploy
-    deployJob(jobId, testHost());
+      final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
-    final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
+      final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
+      final String log = logs.readFully();
 
-    final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
-    final String log = logs.readFully();
+      assertThat(log, containsString("pod: PODNAME"));
+      assertThat(log, containsString("role: ROLENAME"));
+      assertThat(log, containsString("foo: 4711"));
 
-    assertThat(log, containsString("pod: PODNAME"));
-    assertThat(log, containsString("role: ROLENAME"));
-    assertThat(log, containsString("foo: 4711"));
+      // Verify that the the BAR environment variable in the job overrode the agent config
+      assertThat(log, containsString("bar: deadbeef"));
 
-    // Verify that the the BAR environment variable in the job overrode the agent config
-    assertThat(log, containsString("bar: deadbeef"));
+      Map<String, HostStatus> status = Json.read(cli("hosts", testHost(), "--json"),
+                                                 new TypeReference<Map<String, HostStatus>>() {});
 
-    Map<String, HostStatus> status = Json.read(cli("hosts", testHost(), "--json"),
-                                               new TypeReference<Map<String, HostStatus>>() {});
+      assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
+                                   "SPOTIFY_ROLE", "ROLENAME",
+                                   "BAR", "badfood"),
+                   status.get(testHost()).getEnvironment());
 
-    assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
-                                 "SPOTIFY_ROLE", "ROLENAME",
-                                 "BAR", "badfood"),
-                 status.get(testHost()).getEnvironment());
-
-    assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
-                                 "SPOTIFY_ROLE", "ROLENAME",
-                                 "BAR", "deadbeef",
-                                 "FOO", "4711"),
-                 status.get(testHost()).getStatuses().get(jobId).getEnv());
+      assertEquals(ImmutableMap.of("SPOTIFY_POD", "PODNAME",
+                                   "SPOTIFY_ROLE", "ROLENAME",
+                                   "BAR", "deadbeef",
+                                   "FOO", "4711"),
+                   status.get(testHost()).getStatuses().get(jobId).getEnv());
+    }
   }
 }

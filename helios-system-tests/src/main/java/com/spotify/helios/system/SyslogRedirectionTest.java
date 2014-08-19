@@ -24,7 +24,6 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableMap;
 
 import com.spotify.docker.client.DefaultDockerClient;
-import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -55,27 +54,27 @@ public class SyslogRedirectionTest extends SystemTestBase {
     startDefaultAgent(testHost(), "--syslog-redirect", "10.0.3.1:6514");
     awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
-    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
+    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+      final List<String> command = asList("sh", "-c", "echo should-be-redirected");
 
-    final List<String> command = asList("sh", "-c", "echo should-be-redirected");
+      // Create job
+      final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, command,
+                                    ImmutableMap.of("FOO", "4711",
+                                                    "BAR", "deadbeef"));
 
-    // Create job
-    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, command,
-                                  ImmutableMap.of("FOO", "4711",
-                                                  "BAR", "deadbeef"));
+      // deploy
+      deployJob(jobId, testHost());
 
-    // deploy
-    deployJob(jobId, testHost());
+      final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
-    final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
+      final String log;
+      try (LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {
+        log = logs.readFully();
+      }
 
-    final String log;
-    try (LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {
-      log = logs.readFully();
+      // should be nothing in the docker output log, either error text or our message
+      assertEquals("", log);
     }
-
-    // should be nothing in the docker output log, either error text or our message
-    assertEquals("", log);
   }
 
 }

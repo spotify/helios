@@ -22,7 +22,6 @@
 package com.spotify.helios.system;
 
 import com.spotify.docker.client.DefaultDockerClient;
-import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Container;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -77,17 +76,18 @@ public class NamespaceTest extends SystemTestBase {
 
     awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
-    final DockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri());
-    final List<Container> containers = docker.listContainers();
-    Container jobContainer = null;
-    for (Container container : containers) {
-      for (String name : container.names()) {
-        if (name.startsWith("/" + namespace)) {
-          jobContainer = container;
+    try (final DefaultDockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri())) {
+      final List<Container> containers = docker.listContainers();
+      Container jobContainer = null;
+      for (Container container : containers) {
+        for (String name : container.names()) {
+          if (name.startsWith("/" + namespace)) {
+            jobContainer = container;
+          }
         }
       }
-    }
 
-    assertNotNull(jobContainer);
+      assertNotNull(jobContainer);
+    }
   }
 }

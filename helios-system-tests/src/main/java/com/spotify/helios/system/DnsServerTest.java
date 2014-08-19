@@ -23,7 +23,6 @@ package com.spotify.helios.system;
 
 
 import com.spotify.docker.client.DefaultDockerClient;
-import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -55,12 +54,13 @@ public class DnsServerTest extends SystemTestBase {
     deployJob(jobId, testHost());
 
     final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
-    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
-    final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
-    final String log = logs.readFully();
+    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+      final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
+      final String log = logs.readFully();
 
-    assertThat(log, containsString(server1));
-    assertThat(log, containsString(server2));
+      assertThat(log, containsString(server1));
+      assertThat(log, containsString(server2));
+    }
   }
 
   @Test
@@ -75,12 +75,13 @@ public class DnsServerTest extends SystemTestBase {
     deployJob(jobId, testHost());
 
     final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
-    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
-    final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
-    final String log = logs.readFully();
+    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+      final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
+      final String log = logs.readFully();
 
-    // Verify that a nameserver is set even if we don't specify the --dns param
-    assertThat(log, containsString("nameserver"));
+      // Verify that a nameserver is set even if we don't specify the --dns param
+      assertThat(log, containsString("nameserver"));
+    }
   }
 
 }
