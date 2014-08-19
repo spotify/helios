@@ -60,37 +60,8 @@ public class JobValidator {
   public Set<String> validate(final Job job) {
     final Set<String> errors = Sets.newHashSet();
 
-    // Check that the job name and version only contains allowed characters
-    if (!NAME_VERSION_PATTERN.matcher(job.getId().getName()).matches()) {
-      errors.add(format("Job name may only contain [0-9a-zA-Z-_.]."));
-    }
-    if (!NAME_VERSION_PATTERN.matcher(job.getId().getVersion()).matches()) {
-      errors.add(format("Job version may only contain [0-9a-zA-Z-_.]."));
-    }
-
-    if (job.getImage().endsWith(":latest")) {
-      errors.add("Cannot use images that are tagged with :latest, use the hex id instead");
-    }
-
-    // Validate image name
-    validateImageReference(job.getImage(), errors);
-
-    // Check that the job id is correct
-    final JobId jobId = job.getId();
-    final JobId recomputedId = job.toBuilder().build().getId();
-    if (!recomputedId.getName().equals(jobId.getName())) {
-      errors.add(format("Id name mismatch: %s != %s", jobId.getName(), recomputedId.getName()));
-    }
-
-    if (!recomputedId.getVersion().equals(jobId.getVersion())) {
-      errors.add(format("Id version mismatch: %s != %s", jobId.getVersion(),
-          recomputedId.getVersion()));
-    }
-
-    if (jobId.getHash() != null &&
-        (!recomputedId.getHash().equals(jobId.getHash()))) {
-      errors.add(format("Id hash mismatch: %s != %s", jobId.getHash(), recomputedId.getHash()));
-    }
+    errors.addAll(validateJobId(job));
+    errors.addAll(validateJobImage(job.getImage()));
 
     // Check that there's not external port collision
     final Set<Integer> externalPorts = Sets.newHashSet();
@@ -152,6 +123,118 @@ public class JobValidator {
           (parts.length > 1 && parts[1].isEmpty())) {
         errors.add(format("Invalid volume path: %s", path));
       }
+    }
+
+    return errors;
+  }
+
+  /**
+   * Validate the Job's image by checking it's not null or empty,
+   * isn't tagged with ":latest", and has the right format.
+   * @param image The image String
+   * @return A set of error Strings
+   */
+  private Set<String> validateJobImage(final String image) {
+    final Set<String> errors = Sets.newHashSet();
+
+    if (image == null) {
+      errors.add(format("Image was not specified."));
+    } else {
+      if (image.endsWith(":latest")) {
+        errors.add("Cannot use images that are tagged with :latest, use the hex id instead");
+      }
+
+      // Validate image name
+      validateImageReference(image, errors);
+    }
+
+    return errors;
+  }
+
+  /**
+   * Validate the Job's JobId by checking name, version, and hash are
+   * not null or empty, don't contain invalid characters.
+   * @param job The Job to check.
+   * @return A set of error Strings
+   */
+  private Set<String> validateJobId(final Job job) {
+    final Set<String> errors = Sets.newHashSet();
+    final JobId jobId = job.getId();
+    final String jobIdVersion = jobId.getVersion();
+    final String jobIdHash = jobId.getHash();
+    final JobId recomputedId = job.toBuilder().build().getId();
+
+    if (jobId == null) {
+      errors.add(format("Job id was not specified."));
+      return errors;
+    }
+
+    errors.addAll(validateJobName(jobId, recomputedId));
+    errors.addAll(validateJobVersion(jobIdVersion, recomputedId));
+    errors.addAll(validateJobHash(jobIdHash, recomputedId));
+
+    return errors;
+  }
+
+  private Set<String> validateJobName(final JobId jobId, final JobId recomputedId) {
+    final Set<String> errors = Sets.newHashSet();
+
+    final String jobIdName = jobId.getName();
+    if (jobIdName == null || jobIdName.isEmpty()) {
+      errors.add(format("Job name was not specified."));
+      return errors;
+    }
+
+    // Check that the job name contains only allowed characters
+    if (!NAME_VERSION_PATTERN.matcher(jobIdName).matches()) {
+      errors.add(format("Job name may only contain [0-9a-zA-Z-_.]."));
+    }
+
+    // Check that the job id is correct
+    if (!recomputedId.getName().equals(jobIdName)) {
+      errors.add(format("Id name mismatch: %s != %s", jobIdName, recomputedId.getName()));
+    }
+
+    return errors;
+  }
+
+  private Set<String> validateJobVersion(final String jobIdVersion, final JobId recomputedId) {
+    final Set<String> errors = Sets.newHashSet();
+
+    if (jobIdVersion == null || jobIdVersion.isEmpty()) {
+      errors.add(format("Job version was not specified."));
+      return errors;
+    }
+
+    if (!NAME_VERSION_PATTERN.matcher(jobIdVersion).matches()) {
+      // Check that the job version contains only allowed characters
+      errors.add(format("Job version may only contain [0-9a-zA-Z-_.]."));
+    }
+
+    // Check that the job version is correct
+    if (!recomputedId.getVersion().equals(jobIdVersion)) {
+      errors.add(format("Id version mismatch: %s != %s", jobIdVersion, recomputedId.getVersion()));
+    }
+
+    return errors;
+  }
+
+  private Set<String> validateJobHash(final String jobIdHash, final JobId recomputedId) {
+    final Set<String> errors = Sets.newHashSet();
+
+    if (jobIdHash == null || jobIdHash.isEmpty()) {
+      errors.add(format("Job hash was not specified."));
+      return errors;
+    }
+
+    if (jobIdHash.indexOf(':') != -1) {
+      // TODO (dxia) Are hashes allowed to have chars not in NAME_VERSION_PATTERN?
+      errors.add(format("Job hash contains colon."));
+    }
+
+    // Check that the job hash is correct
+    if (!recomputedId.getHash().equals(jobIdHash)) {
+      errors.add(format("Id hash mismatch: %s != %s", jobIdHash, recomputedId.getHash()));
     }
 
     return errors;

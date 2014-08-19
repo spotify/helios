@@ -77,8 +77,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
              @JsonProperty("expires") @Nullable final Date expires,
              @JsonProperty("registrationDomain") @Nullable String registrationDomain) {
-    this.id = checkNotNull(id, "id");
-    this.image = checkNotNull(image, "image");
+    this.id = id;
+    this.image = image;
 
     // Optional
     this.command = Optional.fromNullable(command).or(EMPTY_COMMAND);
@@ -92,8 +92,8 @@ public class Job extends Descriptor implements Comparable<Job> {
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
-    this.id = checkNotNull(id, "id");
-    this.image = checkNotNull(p.image, "image");
+    this.id = id;
+    this.image = p.image;
     this.command = ImmutableList.copyOf(checkNotNull(p.command, "command"));
     this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
     this.ports = ImmutableMap.copyOf(checkNotNull(p.ports, "ports"));
@@ -222,10 +222,14 @@ public class Job extends Descriptor implements Comparable<Job> {
   }
 
   public Builder toBuilder() {
-    return newBuilder()
-        .setName(id.getName())
-        .setVersion(id.getVersion())
-        .setImage(image)
+    final Builder builder = newBuilder();
+
+    if (id != null) {
+      builder.setName(id.getName())
+          .setVersion(id.getVersion());
+    }
+
+    return builder.setImage(image)
         .setCommand(command)
         .setEnv(env)
         .setPorts(ports)
@@ -419,11 +423,16 @@ public class Job extends Descriptor implements Comparable<Job> {
         throw propagate(e);
       }
 
-      final String input = String.format("%s:%s:%s", p.name, p.version, configHash);
-      final String hash = hex(sha1digest(input.getBytes(UTF_8)));
+      final String hash;
+      if (p.name != null && p.version != null) {
+        final String input = String.format("%s:%s:%s", p.name, p.version, configHash);
+        hash = hex(sha1digest(input.getBytes(UTF_8)));
 
-      if (this.hash != null) {
-        checkArgument(this.hash.equals(hash));
+        if (this.hash != null) {
+          checkArgument(this.hash.equals(hash));
+        }
+      } else {
+        hash = null;
       }
 
       final JobId id = new JobId(p.name, p.version, hash);
