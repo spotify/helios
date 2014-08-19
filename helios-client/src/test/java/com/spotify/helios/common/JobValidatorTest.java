@@ -31,6 +31,8 @@ import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.junit.Test;
 
+import java.util.Set;
+
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
@@ -144,6 +146,8 @@ public class JobValidatorTest {
   @Test
   public void testInvalidNamesFail() throws Exception {
     final Job.Builder b = Job.newBuilder().setVersion("1").setImage("foo");
+    assertEquals((Set) newHashSet("Job name was not specified.", "Job hash was not specified."),
+                 validator.validate(b.build()));
     assertThat(validator.validate(b.setName("foo@bar").build()),
                contains(equalTo("Job name may only contain [0-9a-zA-Z-_.].")));
     assertThat(validator.validate(b.setName("foo&bar").build()),
@@ -153,6 +157,8 @@ public class JobValidatorTest {
   @Test
   public void testInvalidVersionsFail() throws Exception {
     final Job.Builder b = Job.newBuilder().setName("foo").setImage("foo");
+    assertEquals((Set) newHashSet("Job version was not specified.", "Job hash was not specified."),
+                 validator.validate(b.build()));
     assertThat(validator.validate(b.setVersion("17@bar").build()),
                contains(equalTo("Job version may only contain [0-9a-zA-Z-_.].")));
     assertThat(validator.validate(b.setVersion("17&bar").build()),
