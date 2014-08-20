@@ -1,5 +1,7 @@
 ##Components
 
+* Docker >= 1.0 (the lxc-docker in Ubuntu LTS 14.04 works) 
+
 * Zookeeper >= 3.4.5 (the package in Ubuntu LTS 14.04 matches)
 
 * Master - (`helios-master` process) The API for the CLI and HTTP endpoints. Communicates with the agent through Zookeeper. Provided by the `helios-master` deb.
@@ -25,6 +27,26 @@ within the defaults files to actually start the process.
 If you are not using the provided init files then you can pass these arguments
 to the CLI directly. To set JVM options you must still use the corresponding
 JVM options for each process.
+
+### Docker
+
+For Helios to talk to Docker, Docker needs to be listening on a TCP port.  The docker
+server needs to be passed a `-H` argument.  In most cases, listening on `localhost` is what you want,
+so ensuring that docker is passed `-H 127.0.0.1:2375` is sufficient.  If you are on Ubuntu 14.04, or
+an upstart based system, there is a file `/etc/default/docker` in which you can specify these kinds
+of arguments.  In the minimal case, you can add a line:
+```
+DOCKER_OPTS="-H 127.0.0.1:2375"
+```
+Which would do the trick.  If you intend to use helios-standalone
+(not yet publicly released as of 2014-08-20) however, you should use
+`172.17.42.1:2375` instead, so the Helios executables that run in docker containers can connect to
+the docker on the machine via the `docker0` bridge.
+
+Wherever you wind up having docker listen to, if it's not `127.0.0.1:2375`, you'll have to let the
+Helios Agent know where to connect when talking to docker.  See below for details.
+
+If you're using boot2docker to run docker, you shouldn't need to do anything to make things work. 
 
 ### Master
 
