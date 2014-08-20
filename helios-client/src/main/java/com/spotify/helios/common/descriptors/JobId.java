@@ -43,15 +43,6 @@ public class JobId extends Descriptor implements Comparable<JobId> {
   public JobId(final String name,
                final String version,
                final String hash) {
-    checkNotNull(name, "name");
-    checkNotNull(version, "version");
-    checkNotNull(hash, "hash");
-    checkArgument(!name.isEmpty(), "name is empty");
-    checkArgument(!version.isEmpty(), "version is empty");
-    checkArgument(!hash.isEmpty(), "hash is empty");
-    checkArgument(name.indexOf(':') == -1, "name contains colon");
-    checkArgument(version.indexOf(':') == -1, "version contains colon");
-    checkArgument(hash.indexOf(':') == -1, "hash contains colon");
     this.name = name;
     this.version = version;
     this.hash = hash;
