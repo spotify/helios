@@ -134,6 +134,7 @@ Takes options:
                          not specified.
 
   `--state-dir STATE_DIR`  Directory for persisting agent state locally. (default: .)
+
   `--docker DOCKER`        docker endpoint (default: http://localhost:4160)
 
   `--env ENV [ENV ...]`    Specify environment variables that  will  pass  down to all
