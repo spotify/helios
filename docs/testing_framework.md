@@ -38,6 +38,8 @@ The framework integrates with standard JUnit tests, and provides a JUnit rule ca
 
 4. Create an integration test for your service following the examples below. The filename must end in “IT.java” so that maven's failsafe plugin will recognize it as an integration test.
 
+5. Run `mvn verify`
+
 This basic example shows how to deploy a single service called Wiggum.
 ```java
 package com.spotify.wiggum;
@@ -129,7 +131,7 @@ public class SystemIT {
 
     client = new Client("tcp://" + foobar.address("foobar"));
 
-    final HostAndPort address = cassandra.addresses("cassandra").get(0);
+    final HostAndPort address = cassandra.address("cassandra");
     final CassandraClient cassandraClient = new CassandraClient();
     cassandraClient.connect(address.getHostText(), address.getPort());
     cassandraClient.populateTestData();
@@ -142,6 +144,19 @@ public class SystemIT {
 }
 ```
 
+Note that cassandra and memcached register themselves using Helios's [service registration mechanism](service_registration.md).
+Foobar can then discover how to reach them at runtime. Another option would be to pass Foobar their
+endpoints via environment variables like this.
+
+    final TemporaryJob foobar = temporaryJobs.job()
+        .imageFromBuild()
+        .env("MEMCACHED_ADDRESS", memcached.address("memcached")
+        .env("CASSANDRA_ADDRESS", cassandra.addresses("cassandra")
+        .env("CASSANDRA_MAX_CONNS_PER_HOST", String.valueOf(1))
+        .env("CASSANDRA_MAX_CONNS_PER_HOST", String.valueOf(1))
+        .port("foobar", 9600)
+        .deploy();
+
 # Environment Configuration
 
 There are 3 environment variables you can use to configure the test to run in different environments.
@@ -153,32 +168,6 @@ There are 3 environment variables you can use to configure the test to run in di
    
    If neither `HELIOS_DOMAIN` nor `HELIOS_ENDPOINTS` is set, TemporaryJobs will connect to `tcp://localhost:5801` and set `HELIOS_HOST_FILTER` to `.+`. `HELIOS_HOST_FILTER` must be set if either `HELIOS_DOMAIN` or `HELIOS_ENDPOINTS` is set. 
   
-# Run Tests Locally
-
-1. Make sure Helios and Docker are running locally.
-
-2. If Helios is exposed on `localhost:5801`, there is no need to set any environment variables. 
-   By default it will connect to `localhost:5801` and will set HELIOS_HOST_FILTER to `.+`.
-    
-    If Helios is not exposed on `localhost:5801`, you will need to set these variables. This would be the
-    case if you are running helios in a VM and ports must be reached through the VM's IP address.
-
-    `HELIOS_ENDPOINTS=tcp://<host>:5801`
-    
-    `HELIOS_HOST_FILTER=.+`
-
-3. Run `mvn clean verify`. This will build the container, and run the integration test. You can also run the integration test in IntelliJ.
-
-# Run Tests From a Build Server
-
-1. In your build configuration
-
-    Set either `HELIOS_DOMAIN` or `HELIOS_ENDPOINTS` to connect to Helios. `HELIOS_DOMAIN` is preferred.
-    
-    Set `HELIOS_HOST_FILTER` to a regex or FQDN of the host you want to deploy to.
-
-2. Configure the build to run `mvn clean verify docker:push` which will build the docker image, run the integration test, and push it to the registry.
-
 # Job Cleanup
 
 When a test completes, the TemporaryJobs rule will undeploy and delete all jobs it created during the test. If the test process is killed before the test completes, the jobs will be left running. Helios handles this in two ways.
