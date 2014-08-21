@@ -25,6 +25,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * Basically, a pair of {@link Job} and {@link Goal}.  This is different than {@link Deployment}
+ * which has a {@link JobId} and not a {@link Job}
+ */
 public class Task extends Descriptor {
 
   private final Job job;

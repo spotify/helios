@@ -24,6 +24,10 @@ package com.spotify.helios.servicescommon;
 import com.aphyr.riemann.client.AbstractRiemannClient;
 import com.aphyr.riemann.client.EventDSL;
 
+/**
+ * A wrapper around the Riemann client, but can pre-supply client and host name and can be used
+ * to build up nested service names.
+ */
 public class RiemannFacade {
   private static final Integer EVENT_TIME_TO_LIVE = 600;
 

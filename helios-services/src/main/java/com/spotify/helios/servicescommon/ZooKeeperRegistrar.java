@@ -32,13 +32,17 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.util.concurrent.Service.State.STOPPING;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.zookeeper.KeeperException.ConnectionLossException;
 
+/**
+ * Common logic to have agents and masters register their "up" nodes in ZK, and to keep trying if
+ * ZK is down.
+ */
 public class ZooKeeperRegistrar extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperRegistrar.class);

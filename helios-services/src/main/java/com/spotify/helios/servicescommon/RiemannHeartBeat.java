@@ -30,6 +30,9 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.util.concurrent.MoreExecutors.getExitingScheduledExecutorService;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+/**
+ * Periodically sends heart beat messages to Riemann.
+ */
 public class RiemannHeartBeat implements Managed {
   private final ScheduledExecutorService scheduler;
   private final int interval;

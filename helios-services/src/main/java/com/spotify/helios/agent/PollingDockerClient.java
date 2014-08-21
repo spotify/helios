@@ -22,12 +22,17 @@
 package com.spotify.helios.agent;
 
 import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.messages.ContainerExit;
 import com.spotify.docker.client.messages.ContainerInfo;
 
 import java.net.URI;
 
+/**
+ * A {@link DockerClient} that overrides {@link #waitContainer} to poll instead of block
+ * indefinitely.  See the source code for details as to why this needs to exist.
+ */
 public class PollingDockerClient extends DefaultDockerClient {
 
   private static final long WAIT_INSPECT_INTERVAL_MILLIS =

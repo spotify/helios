@@ -23,6 +23,10 @@ package com.spotify.helios.common.descriptors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Basically, a pair of {@link JobId} and {@link Goal}.  This is different than {@link Task}
+ * which has a {@link Job} and not a {@link JobId}
+ */
 public class Deployment extends Descriptor {
 
   private final JobId jobId;

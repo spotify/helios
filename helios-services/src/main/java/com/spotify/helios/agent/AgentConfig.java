@@ -28,6 +28,9 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The configuration of the Helios agent.
+ */
 public class AgentConfig extends Configuration {
 
   private String domain;

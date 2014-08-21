@@ -46,6 +46,11 @@ import static com.spotify.helios.common.VersionCompatibility.getStatus;
 import static com.spotify.helios.common.VersionCompatibility.Status.INVALID;
 import static com.spotify.helios.common.VersionCompatibility.Status.MISSING;
 
+/**
+ * Checks if the client passed a Helios-Version: header, and does a version compatibility check
+ * against the server version, and sets a Helios-Version-Status: header with the status.  Also
+ * sets a Helios-Server-Version: header with the server version (what else really?).
+ */
 public class VersionResponseFilter implements Filter {
   private static final Logger log = LoggerFactory.getLogger(VersionResponseFilter.class);
 

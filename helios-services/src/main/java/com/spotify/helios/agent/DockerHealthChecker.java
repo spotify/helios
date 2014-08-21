@@ -38,6 +38,9 @@ import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * Health checker exposed by /healthcheck on the admin port (5804 by default).
+ */
 public class DockerHealthChecker extends HealthCheck implements Managed {
   private static final Logger log = LoggerFactory.getLogger(DockerHealthChecker.class);
 

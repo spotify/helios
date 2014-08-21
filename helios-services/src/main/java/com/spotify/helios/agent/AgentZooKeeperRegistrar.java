@@ -40,6 +40,9 @@ import static com.google.common.base.Optional.fromNullable;
 import static java.lang.String.format;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
+/**
+ * Persistently tries to register with ZK in the face of a ZK outage.
+ */
 public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener {
 
   private static final Logger log = LoggerFactory.getLogger(AgentZooKeeperRegistrar.class);

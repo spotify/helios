@@ -28,6 +28,9 @@ import java.lang.annotation.Target;
 
 import javax.ws.rs.HttpMethod;
 
+/**
+ * So we can do @PATCH, like we do @GET or @POST.
+ */
 @Target({ElementType.METHOD})
 @Retention(RetentionPolicy.RUNTIME)
 @HttpMethod("PATCH")

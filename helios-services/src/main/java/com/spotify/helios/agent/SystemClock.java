@@ -23,6 +23,9 @@ package com.spotify.helios.agent;
 
 import org.joda.time.Instant;
 
+/**
+ * An implementation of {@link Clock} that returns current system time.
+ */
 public class SystemClock implements Clock {
 
   @Override

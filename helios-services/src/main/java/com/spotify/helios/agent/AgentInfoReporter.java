@@ -24,8 +24,8 @@ package com.spotify.helios.agent;
 import com.spotify.helios.common.Version;
 import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.servicescommon.coordination.NodeUpdaterFactory;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 import com.spotify.helios.servicescommon.coordination.Paths;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 
 import java.lang.management.RuntimeMXBean;
 import java.util.concurrent.ScheduledExecutorService;
@@ -35,6 +35,9 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+/**
+ * Report various Agent runtime information via ZK so it can be visible to clients of Helios.
+ */
 public class AgentInfoReporter extends InterruptingScheduledService {
 
   public static final int DEFAULT_INTERVAL = 1;

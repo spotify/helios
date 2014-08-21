@@ -23,8 +23,8 @@ package com.spotify.helios.agent;
 
 import com.spotify.helios.common.Json;
 import com.spotify.helios.servicescommon.coordination.NodeUpdaterFactory;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 import com.spotify.helios.servicescommon.coordination.Paths;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -32,6 +32,10 @@ import java.util.concurrent.ScheduledFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+/**
+ * Puts the environment variables the Agent has been configured to set in all child containers
+ * into ZK so they can be visible to the master and via the API.
+ */
 public class EnvironmentVariableReporter extends InterruptingScheduledService {
 
   private static final int RETRY_INTERVAL_MILLIS = 1000;

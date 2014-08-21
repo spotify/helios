@@ -32,6 +32,9 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.StringTokenizer;
 
+/**
+ * Can read a resolv.conf file and tell you the domain.
+ */
 public class ResolverConfReader {
   private static final Logger log = LoggerFactory.getLogger(ResolverConfReader.class);
 

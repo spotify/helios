@@ -23,11 +23,6 @@ package com.spotify.helios.master.resources;
 
 import com.google.common.base.Optional;
 
-import com.spotify.helios.master.HostNotFoundException;
-import com.spotify.helios.master.JobAlreadyDeployedException;
-import com.spotify.helios.master.JobDoesNotExistException;
-import com.spotify.helios.master.JobNotDeployedException;
-import com.spotify.helios.master.JobPortAllocationConflictException;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -35,7 +30,12 @@ import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
+import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.master.HostStillInUseException;
+import com.spotify.helios.master.JobAlreadyDeployedException;
+import com.spotify.helios.master.JobDoesNotExistException;
+import com.spotify.helios.master.JobNotDeployedException;
+import com.spotify.helios.master.JobPortAllocationConflictException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.master.http.PATCH;
 import com.yammer.metrics.annotation.ExceptionMetered;
@@ -75,6 +75,9 @@ public class HostsResource {
     this.model = model;
   }
 
+  /**
+   * Returns the list of hostnames of known hosts/agents.
+   */
   @GET
   @Produces(APPLICATION_JSON)
   @Timed
@@ -83,6 +86,12 @@ public class HostsResource {
     return model.listHosts();
   }
 
+  /**
+   * Registers a host with the cluster.  The {@code host} is the name of the host.  It SHOULD be
+   * the hostname of the machine.  The {@code id} should be a persistent value for the host, but
+   * initially randomly generated.  This way we don't have two machines claiming to be the same
+   * host: at least by accident.
+   */
   @PUT
   @Path("{host}")
   @Produces(APPLICATION_JSON)
@@ -95,7 +104,10 @@ public class HostsResource {
     return Response.Status.OK;
   }
 
-
+  /**
+   * Deregisters the host from the cluster.  Will delete just about everything the cluster knows
+   * about it.
+   */
   @DELETE
   @Path("{id}")
   @Produces(APPLICATION_JSON)
@@ -113,6 +125,9 @@ public class HostsResource {
     }
   }
 
+  /**
+   * Returns various status information about the host.
+   */
   @GET
   @Path("{id}/status")
   @Produces(APPLICATION_JSON)
@@ -122,6 +137,11 @@ public class HostsResource {
     return Optional.fromNullable(model.getHostStatus(host));
   }
 
+  /**
+   * Sets the deployment of the job identified by its {@link JobId} on the host named by
+   * {@code host} to {@code deployment}
+   * @return
+   */
   @PUT
   @Path("/{host}/jobs/{job}")
   @Produces(APPLICATION_JSON)
@@ -149,6 +169,10 @@ public class HostsResource {
     }
   }
 
+  /**
+   * Causes the job identified by its {@link JobId} to be removed from the cluster.  If it is still
+   * deployed, this call will fail.
+   */
   @DELETE
   @Path("/{host}/jobs/{job}")
   @Produces(APPLICATION_JSON)
@@ -169,6 +193,10 @@ public class HostsResource {
     }
   }
 
+  /**
+   * Alters the current deployment of a deployed job identified by it's job id on the specified
+   * host.
+   */
   @PATCH
   @Path("/{host}/jobs/{job}")
   @Produces(APPLICATION_JSON)
@@ -191,6 +219,9 @@ public class HostsResource {
     return new SetGoalResponse(SetGoalResponse.Status.OK, host, jobId);
   }
 
+  /**
+   * Returns the current {@link Deployment} of {@code job} on {@code host} if it is deployed.
+   */
   @GET
   @Path("/{host}/jobs/{job}")
   @Produces(APPLICATION_JSON)
@@ -203,5 +234,4 @@ public class HostsResource {
     }
     return Optional.fromNullable(model.getDeployment(host, jobId));
   }
-
 }

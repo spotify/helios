@@ -37,6 +37,10 @@ import java.util.concurrent.ThreadFactory;
 import static java.util.concurrent.TimeUnit.DAYS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+/**
+ * Runs {@link #runOneIteration()} on a {@link ScheduledExecutorService} (see {@link #schedule})
+ * to do periodic operations.
+ */
 public abstract class InterruptingScheduledService extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(InterruptingScheduledService.class);

@@ -32,6 +32,9 @@ import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
+/**
+ * Makes it so you can view the status of tasks as the Agent sees things.
+ */
 @Path("/helios/taskstatus")
 @Produces(MediaType.APPLICATION_JSON)
 public class AgentModelTaskStatusResource {

@@ -26,6 +26,7 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
+import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode;
 import org.apache.zookeeper.KeeperException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,8 +34,11 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 
 import static com.google.common.base.Optional.fromNullable;
-import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode;
 
+/**
+ * Responsible for registering the Helios master with ZooKeeper.  Will continue to attempt to
+ * register in the background in the event that ZK is down when the master starts.
+ */
 public class MasterZooKeeperRegistrar implements ZooKeeperRegistrarEventListener {
 
   private static final Logger log = LoggerFactory.getLogger(MasterZooKeeperRegistrar.class);

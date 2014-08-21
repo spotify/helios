@@ -38,11 +38,19 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
+/**
+ * A class that is similar to {@link AtomicReference<T>} but is backed by a file, so can be
+ * persisted across a server restart.  Assumes the underlying type can be serialized by Jackson.
+ *
+ * Strangely, this is not actually atomic in the {@link AtomicReference} way; i.e. not threadsafe,
+ * nor does it do CAS.
+ */
 public class PersistentAtomicReference<T> {
 
   private static final Logger log = LoggerFactory.getLogger(PersistentAtomicReference.class);
@@ -75,6 +83,9 @@ public class PersistentAtomicReference<T> {
     }
   }
 
+  /**
+   * Set the reference to {@code newValue}.
+   */
   public void set(T newValue) throws IOException, InterruptedException {
     try {
       set0(newValue);
@@ -95,6 +106,10 @@ public class PersistentAtomicReference<T> {
     }
   }
 
+  /**
+   * Set the reference to {@code newValue}, and wraps {@link IOException}s in
+   * {@link RuntimeException}s.
+   */
   public void setUnchecked(T newValue) throws InterruptedException {
     try {
       set(newValue);
@@ -103,6 +118,9 @@ public class PersistentAtomicReference<T> {
     }
   }
 
+  /**
+   * Returns the value stored.
+   */
   public T get() {
     return value;
   }

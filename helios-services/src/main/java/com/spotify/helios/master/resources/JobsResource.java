@@ -79,12 +79,15 @@ public class JobsResource {
     this.metrics = metrics;
   }
 
+  /**
+   * Returns a {@link Map} of job id to job definition for all jobs known.  If the query
+   * parameter {@code q} is specified it will only return jobs whose job id contains the string.
+   */
   @GET
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Map<JobId, Job> list(@QueryParam("q") @DefaultValue("") final String q)
-      throws HeliosException {
+  public Map<JobId, Job> list(@QueryParam("q") @DefaultValue("") final String q) {
     final Map<JobId, Job> allJobs = model.getJobs();
 
     // Return all jobs if the query string is empty
@@ -106,24 +109,29 @@ public class JobsResource {
   }
 
 
+  /**
+   * Returns the {@link Job} with the given id.
+   */
   @Path("{id}")
   @GET
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Optional<Job> get(@InjectParam @PathParam("id") @Valid final JobId id)
-      throws HeliosException {
+  public Optional<Job> get(@InjectParam @PathParam("id") @Valid final JobId id) {
     if (!id.isFullyQualified()) {
       throw badRequest("Invalid id");
     }
     return Optional.fromNullable(model.getJob(id));
   }
 
+  /**
+   * Create a job given the definition in {@code job}.
+   */
   @POST
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public CreateJobResponse post(@Valid final Job job) throws HeliosException {
+  public CreateJobResponse post(@Valid final Job job) {
     final Collection<String> errors = JOB_VALIDATOR.validate(job);
     final String jobIdString = job.toBuilder().build().getId().toString();
     if (!errors.isEmpty()) {
@@ -141,6 +149,9 @@ public class JobsResource {
         jobIdString);
   }
 
+  /**
+   * Deletes the job specified by the given id.
+   */
   @Path("{id}")
   @DELETE
   @Produces(APPLICATION_JSON)
@@ -160,13 +171,16 @@ public class JobsResource {
     }
   }
 
+  /**
+   * Returns the job status for the given job id.  The job status includes things like where it's
+   * deployed, and the status of the jobs where it's deployed, etc.
+   */
   @Path("{id}/status")
   @GET
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Optional<JobStatus> statusGet(@PathParam("id") @Valid final JobId id)
-      throws HeliosException {
+  public Optional<JobStatus> statusGet(@PathParam("id") @Valid final JobId id) {
     if (!id.isFullyQualified()) {
       throw badRequest("Invalid id");
     }

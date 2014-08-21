@@ -45,6 +45,9 @@ import static com.google.common.net.InetAddresses.isInetAddress;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
+/**
+ * Parses and processes command-line arguments to produce the {@link AgentConfig}.
+ */
 public class AgentParser extends ServiceParser {
 
   private final AgentConfig agentConfig;

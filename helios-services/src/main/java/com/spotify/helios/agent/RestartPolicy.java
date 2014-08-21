@@ -25,6 +25,9 @@ import com.spotify.helios.common.descriptors.ThrottleState;
 
 import static java.lang.Math.max;
 
+/**
+ * Return the proper docker container restart delay based upon the throttle state of the task.
+ */
 public class RestartPolicy {
   private static final long DEFAULT_IMAGE_MISSING_THROTTLE_MILLIS = 2 * 60 * 1000; // 2 minutes
   private static final long DEFAULT_FLAPPING_RESTART_THROTTLE_MILLIS = 30 * 1000;  // 30 seconds

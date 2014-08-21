@@ -28,7 +28,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import java.util.Map;
 
 /**
- * Models the desired state of a host as provided by mastera and provides a way for an agent to
+ * Models the desired state of a host as provided by masters and provides a way for an agent to
  * indicate its current state.
  */
 public interface AgentModel {
