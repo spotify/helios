@@ -24,6 +24,7 @@ package com.spotify.helios.common.protocol;
 import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.Json;
 
 import java.util.List;
 
@@ -65,5 +66,9 @@ public class CreateJobResponse {
     return Objects.toStringHelper("JobDeployResponse")
         .add("status", status)
         .toString();
+  }
+
+  public String toJsonString() {
+    return Json.asStringUnchecked(this);
   }
 }

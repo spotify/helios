@@ -362,8 +362,10 @@ public class JobCreateCommand extends ControlCommand {
       }
       return 0;
     } else {
-      if (!quiet) {
+      if (!quiet && !json) {
         out.println("Failed: " + status);
+      } else if (json) {
+        out.println(status.toJsonString());
       }
       return 1;
     }
