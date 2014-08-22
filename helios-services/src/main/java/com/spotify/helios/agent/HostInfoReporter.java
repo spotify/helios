@@ -43,6 +43,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
+/**
+ * Reports various bits of system information to ZK so it can be viewed via the the API.
+ */
 public class HostInfoReporter extends InterruptingScheduledService {
 
   public static final int DEFAULT_INTERVAL = 1;

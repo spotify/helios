@@ -79,6 +79,9 @@ import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
+/**
+ * The Helios Master's view into ZooKeeper.
+ */
 public class ZooKeeperMasterModel implements MasterModel {
   private static final Comparator<TaskStatusEvent> EVENT_COMPARATOR =
       new Comparator<TaskStatusEvent>() {
@@ -113,6 +116,11 @@ public class ZooKeeperMasterModel implements MasterModel {
     this.provider = provider;
   }
 
+  /**
+   * Registers a host into ZooKeeper.  The {@code id} is initially generated randomly by the Agent
+   * and persisted on disk.  This way, in the event that you have two agents attempting to register
+   * with the same value of @{code host}, the first one will win.
+   */
   @Override
   public void registerHost(final String host, final String id) {
     log.info("registering host: {}", host);
@@ -136,6 +144,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Returns a list of the hosts/agents that have been registered.
+   */
   @Override
   public List<String> listHosts() {
     try {
@@ -148,6 +159,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Returns a list of the host names of the currently running masters.
+   */
   @Override
   public List<String> getRunningMasters() {
     final ZooKeeperClient client = provider.get("getRunningMasters");
@@ -165,6 +179,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Undoes the effect of {@link ZooKeeperMasterModel#registerHost(String, String)}.  Cleans up
+   * any leftover host-related things.
+   */
   @Override
   public void deregisterHost(final String host)
       throws HostNotFoundException, HostStillInUseException {
@@ -240,6 +258,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Adds a job into the configuration.
+   */
   @Override
   public void addJob(final Job job) throws JobExistsException {
     log.info("adding job: {}", job);
@@ -266,6 +287,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Given a jobId, returns the N most recent events in it's history in the cluster.
+   */
   @Override
   public List<TaskStatusEvent> getJobHistory(final JobId jobId) throws JobDoesNotExistException {
     final Job descriptor = getJob(jobId);
@@ -308,12 +332,17 @@ public class ZooKeeperMasterModel implements MasterModel {
     return Ordering.from(EVENT_COMPARATOR).sortedCopy(jsEvents);
   }
 
+  /**
+   * Returns the job configuration for the job specified by {@code id} as a
+   * {@link Job} object.
+   */
   @Override
   public Job getJob(final JobId id) {
     log.debug("getting job: {}", id);
     final ZooKeeperClient client = provider.get("getJob");
     return getJob(client, id);
   }
+
 
   private Job getJob(final ZooKeeperClient client, final JobId id) {
     final String path = Paths.configJob(id);
@@ -328,6 +357,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Returns a {@link Map} of {@link JobId} to {@link Job} objects for all of the jobs known.
+   */
   @Override
   public Map<JobId, Job> getJobs() {
     log.debug("getting jobs");
@@ -354,6 +386,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Returns the current job status as a {@link JobStatus} object.
+   */
   @Override
   public JobStatus getJobStatus(final JobId jobId) {
     final ZooKeeperClient client = provider.get("getJobStatus");
@@ -404,6 +439,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     return hosts;
   }
 
+  /**
+   * Deletes a job from ZooKeeper.  Ensures that job is not currently running anywhere.
+   */
   @Override
   public Job removeJob(final JobId id) throws JobDoesNotExistException, JobStillDeployedException {
     log.info("removing job: id={}", id);
@@ -446,6 +484,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     return null;
   }
 
+  /**
+   * Creates a config entry within the specified agent to un/deploy a job, or more generally, change
+   * the deployment status according to the {@link Goal} value in {@link Deployment}.
+   */
   @Override
   public void deployJob(final String host, final Deployment deployment)
       throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
@@ -454,10 +496,11 @@ public class ZooKeeperMasterModel implements MasterModel {
     deployJobRetry(client, host, deployment, 0);
   }
 
+  // TODO(drewc): this kinda screams "long method"
   private void deployJobRetry(final ZooKeeperClient client, final String host,
                               final Deployment deployment, int count)
-  throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
-             JobPortAllocationConflictException {
+      throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
+          JobPortAllocationConflictException {
     if (count == 3) {
       throw new HeliosRuntimeException("3 failures (possibly concurrent modifications) while " +
                                        "deploying. Giving up.");
@@ -581,6 +624,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     return staticPorts;
   }
 
+  /**
+   * Used to update the existing deployment of a job.
+   */
   @Override
   public void updateDeployment(final String host, final Deployment deployment)
       throws HostNotFoundException, JobNotDeployedException {
@@ -630,6 +676,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Returns the current deployment state of {@code jobId} on {@code host}.
+   */
   @Override
   public Deployment getDeployment(final String host, final JobId jobId) {
     final String path = Paths.configHostJob(host, jobId);
@@ -645,6 +694,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Returns the current status of the host named by {@code host}.
+   */
   @Override
   public HostStatus getHostStatus(final String host) {
     final Stat stat;
@@ -786,6 +838,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     return jobs;
   }
 
+  /**
+   * Undeploys the job specified by {@code jobId} on {@code host}.
+   */
   @Override
   public Deployment undeployJob(final String host, final JobId jobId)
       throws HostNotFoundException, JobNotDeployedException {

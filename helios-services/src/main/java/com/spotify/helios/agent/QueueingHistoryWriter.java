@@ -39,6 +39,7 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,9 +60,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.zookeeper.KeeperException.ConnectionLossException;
 
 /**
+ * Writes task history to ZK, and attempts to gracefully handle the case where ZK is down, and tries
+ * to lose the right things if it has to lose stuff.
+ *
  * Just some breadcrumbs so next time, the person that follows me can understand why things are
  * the way they are.
  *

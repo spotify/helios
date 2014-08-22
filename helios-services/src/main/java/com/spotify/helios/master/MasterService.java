@@ -28,6 +28,7 @@ import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
+import com.spotify.helios.master.resources.HistoryResource;
 import com.spotify.helios.master.resources.HostsResource;
 import com.spotify.helios.master.resources.JobsResource;
 import com.spotify.helios.master.resources.MastersResource;
@@ -149,7 +150,7 @@ public class MasterService extends AbstractIdleService {
     environment.addFilter(VersionResponseFilter.class, "/*");
     environment.addProvider(new ReportingResourceMethodDispatchAdapter(metrics.getMasterMetrics()));
     environment.addResource(new JobsResource(model, metrics.getMasterMetrics()));
-    environment.addResource(new HistoryResource(model));
+    environment.addResource(new HistoryResource(model, metrics.getMasterMetrics()));
     environment.addResource(new HostsResource(model));
     environment.addResource(new MastersResource(model));
     environment.addResource(new VersionResource());

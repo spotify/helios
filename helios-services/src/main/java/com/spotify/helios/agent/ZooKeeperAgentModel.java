@@ -27,6 +27,7 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -51,6 +52,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 
+/**
+ * The Helios Agent's view into ZooKeeper.
+ *
+ * This caches ZK state to local disk so the agent can continue to function in the face of a ZK
+ * outage.
+ */
 public class ZooKeeperAgentModel extends AbstractIdleService implements AgentModel {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperAgentModel.class);
@@ -115,6 +122,9 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     return JobId.fromString(path.replaceFirst(prefix, ""));
   }
 
+  /**
+   * Returns the tasks (basically, a pair of {@link Job} and {@Goal}) for the current agent.
+   */
   @Override
   public Map<JobId, Task> getTasks() {
     final Map<JobId, Task> tasks = Maps.newHashMap();
@@ -125,6 +135,9 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     return tasks;
   }
 
+  /**
+   * Returns the {@link TaskStatus}es for all tasks assigned to the current agent.
+   */
   @Override
   public Map<JobId, TaskStatus> getTaskStatuses() {
     final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
@@ -140,6 +153,9 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     return statuses;
   }
 
+  /**
+   * Set the {@link TaskStatus} for the job identified by {@code jobId}.
+   */
   @Override
   public void setTaskStatus(final JobId jobId, final TaskStatus status)
       throws InterruptedException {
@@ -148,6 +164,9 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     historyWriter.saveHistoryItem(jobId, status);
   }
 
+  /**
+   * Get the {@link TaskStatus} for the job identified by {@code jobId}.
+   */
   @Override
   public TaskStatus getTaskStatus(final JobId jobId) {
     final byte[] data = taskStatuses.get(jobId.toString());
@@ -161,23 +180,37 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     }
   }
 
+  /**
+   * Remove the {@link TaskStatus} for the job identified by {@code jobId}.
+   */
   @Override
   public void removeTaskStatus(final JobId jobId) throws InterruptedException {
     taskStatuses.remove(jobId.toString());
   }
 
+  /**
+   * Remove the tombstone for the job identified by {@code jobId}.  Tombstones are written by the
+   * master to tell the agent to undeploy, and these tombstones are removed by the agent after it
+   * has undeployed.
+   */
   @Override
   public void removeUndeployTombstone(final JobId jobId) throws InterruptedException {
     String path = Paths.configHostJob(agent, jobId);
     taskRemover.remove(path);
   }
 
+  /**
+   * Add a listener that will be notified when tasks are changed.
+   */
   @Override
   public void addListener(final AgentModel.Listener listener) {
     listeners.add(listener);
     listener.tasksChanged(this);
   }
 
+  /**
+   * Remove a listener that will be notified when tasks are changed.
+   */
   @Override
   public void removeListener(final AgentModel.Listener listener) {
     listeners.remove(listener);

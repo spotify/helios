@@ -31,6 +31,9 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.net.InetSocketAddress;
 
+/**
+ * Parses command-line arguments to produce the {@link MasterConfig}.
+ */
 public class MasterParser extends ServiceParser {
 
   private final MasterConfig masterConfig;

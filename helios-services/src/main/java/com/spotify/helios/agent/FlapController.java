@@ -27,6 +27,10 @@ import java.util.Deque;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * Tracks container starts and exits and determines if the task is "flapping", which is to say:
+ * it's exiting rapidly and repeatedly.
+ */
 public class FlapController {
 
   /**

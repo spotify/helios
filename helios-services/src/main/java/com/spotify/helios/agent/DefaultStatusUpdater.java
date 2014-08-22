@@ -25,6 +25,9 @@ import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 
+/**
+ * Plain boring status updater for tasks to report their status to the {@link AgentModel}.
+ */
 public class DefaultStatusUpdater implements StatusUpdater {
 
   private final TaskStatus.Builder builder;

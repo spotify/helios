@@ -21,7 +21,6 @@
 
 package com.spotify.helios.master.resources;
 
-import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.master.MasterModel;
 import com.yammer.metrics.annotation.ExceptionMetered;
 import com.yammer.metrics.annotation.Timed;
@@ -43,11 +42,14 @@ public class MastersResource {
     this.model = model;
   }
 
+  /**
+   * Returns a list of names of running Helios masters.
+   */
   @GET
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public List<String> list() throws HeliosException {
+  public List<String> list() {
     return model.getRunningMasters();
   }
 }

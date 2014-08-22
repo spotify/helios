@@ -26,6 +26,9 @@ import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.helios.common.descriptors.Job;
 
+/**
+ * A {@link ContainerDecorator} that does, as its name would imply, nothing.
+ */
 public class NoOpContainerDecorator implements ContainerDecorator {
 
   @Override

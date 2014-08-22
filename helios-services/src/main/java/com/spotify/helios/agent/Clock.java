@@ -23,6 +23,9 @@ package com.spotify.helios.agent;
 
 import org.joda.time.Instant;
 
+/**
+ * Mostly for testing, but an interface that represents the system clock.
+ */
 public interface Clock {
   public Instant now();
 }

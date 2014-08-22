@@ -48,6 +48,9 @@ import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
 import static net.sourceforge.argparse4j.impl.Arguments.fileType;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
+/**
+ * Handles parsing common commandline arguments for the agent and master.
+ */
 public class ServiceParser {
 
   private final Namespace options;

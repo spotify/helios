@@ -34,6 +34,10 @@ import org.slf4j.LoggerFactory;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * Find containers running in our namespace for which we don't have a record that we started, and
+ * kill them.
+ */
 public class Reaper {
 
   private final Logger log = LoggerFactory.getLogger(Reaper.class);

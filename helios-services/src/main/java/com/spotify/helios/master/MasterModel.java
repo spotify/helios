@@ -31,6 +31,10 @@ import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * The interface that describes the kinds of information the Helios master needs from it's
+ * configuration/coordination store.
+ */
 public interface MasterModel {
 
   void registerHost(String host, final String id);

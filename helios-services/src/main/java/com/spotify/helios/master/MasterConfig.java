@@ -25,6 +25,9 @@ import com.yammer.dropwizard.config.Configuration;
 
 import java.nio.file.Path;
 
+/**
+ * The collection of the configuration info of the master.
+ */
 public class MasterConfig extends Configuration {
 
   // TODO (dano): defaults

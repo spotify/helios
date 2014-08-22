@@ -39,6 +39,9 @@ import static javax.ws.rs.core.MediaType.TEXT_PLAIN;
 @Path("version")
 public class VersionResource {
 
+  /**
+   * Returns the server version string.
+   */
   @GET
   @Produces(TEXT_PLAIN)
   @Timed
@@ -48,6 +51,10 @@ public class VersionResource {
     return String.format("\"%s\"", Version.POM_VERSION);
   }
 
+  /**
+   * Given the client version, returns the version status, i.e. whether or not they should be
+   * compatible or not.
+   */
   @GET
   @Path("/check")
   @Produces(APPLICATION_JSON)

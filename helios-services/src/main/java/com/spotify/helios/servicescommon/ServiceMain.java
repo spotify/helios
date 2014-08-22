@@ -26,18 +26,21 @@ import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.logging.LoggingConfigurator;
+import com.spotify.logging.LoggingConfigurator.Level;
 
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.File;
 
 import static com.google.common.collect.Iterables.get;
-import static com.spotify.logging.LoggingConfigurator.Level;
 import static com.spotify.logging.LoggingConfigurator.Level.ALL;
 import static com.spotify.logging.LoggingConfigurator.Level.DEBUG;
 import static com.spotify.logging.LoggingConfigurator.Level.INFO;
 import static java.util.Arrays.asList;
 
+/**
+ * Handles setting up proper logging for our services.
+ */
 public abstract class ServiceMain extends AbstractIdleService {
 
   protected ServiceMain(LoggingConfig loggingConfig, String sentryDsn) {

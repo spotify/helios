@@ -25,6 +25,9 @@ import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 
+/**
+ * An interface used to abstract how task statuses are reported.
+ */
 public interface StatusUpdater {
 
   void setThrottleState(ThrottleState throttleState);

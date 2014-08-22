@@ -28,6 +28,9 @@ import com.aphyr.riemann.client.Promise;
 
 import java.io.IOException;
 
+/**
+ * A Riemann client that does nothing.
+ */
 public class NoOpRiemannClient extends AbstractRiemannClient {
   private static final Msg OK_MESSAGE = Msg.newBuilder().setOk(true).build();
   private static final IPromise<Msg> OK_PROMISE;

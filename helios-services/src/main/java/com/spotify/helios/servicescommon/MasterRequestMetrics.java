@@ -28,6 +28,9 @@ import com.yammer.metrics.core.MetricsRegistry;
 
 import java.util.concurrent.TimeUnit;
 
+/**
+ * Tracks API requests to the master to be tracked by the yammer metrics stuff.
+ */
 public class MasterRequestMetrics {
 
   private final Counter successCounter;

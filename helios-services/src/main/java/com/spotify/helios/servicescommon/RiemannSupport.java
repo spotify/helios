@@ -36,6 +36,10 @@ import java.io.IOException;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+/**
+ * Ties together construction of the Riemann client, metrics reporting via Riemann and exposing
+ * the facade.
+ */
 public class RiemannSupport implements Managed {
   private final String host;
   private final int port;
@@ -58,7 +62,7 @@ public class RiemannSupport implements Managed {
       proto = null;
       return;
     }
-    Iterable<String> parts = Splitter.on(":").split(hostPort);
+    final Iterable<String> parts = Splitter.on(":").split(hostPort);
     final int size = Iterables.size(parts);
     if (size > 3 || size < 2) {
       throw new RuntimeException(
@@ -76,7 +80,7 @@ public class RiemannSupport implements Managed {
   }
 
   public RiemannFacade getFacade() {
-    RiemannClient cli = getClient();
+    final RiemannClient cli = getClient();
     if (cli == null) {
       return new NoOpRiemannClient().facade();
     }
@@ -110,7 +114,7 @@ public class RiemannSupport implements Managed {
     if (host == null) {
       return null;
     }
-    Config c = Config.newBuilder()
+    final Config c = Config.newBuilder()
         .metricsRegistry(metricsRegistry)
         .name(serviceName)
         .localHost(hostName)

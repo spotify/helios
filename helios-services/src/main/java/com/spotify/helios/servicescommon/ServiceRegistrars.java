@@ -35,6 +35,10 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 
+/**
+ * Loads in the service registrar factory plugin (if specified) and returns an
+ * appropriate {@link ServiceRegistrar}.
+ */
 public class ServiceRegistrars {
 
   private static final Logger log = LoggerFactory.getLogger(ServiceRegistrars.class);

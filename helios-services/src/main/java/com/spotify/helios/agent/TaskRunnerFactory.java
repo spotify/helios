@@ -32,6 +32,9 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.concat;
 import static java.util.Arrays.asList;
 
+/**
+ * As you might guess, creates {@link TaskRunner}s
+ */
 public class TaskRunnerFactory {
 
   private final TaskConfig taskConfig;
@@ -107,6 +110,7 @@ public class TaskRunnerFactory {
       this.listeners = listeners;
     }
 
+    @Override
     public void failed(final Throwable t) {
       for (TaskRunner.Listener l : listeners) {
         l.failed(t);
