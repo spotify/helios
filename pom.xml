@@ -7,7 +7,7 @@
   <url>https://github.com/spotify/helios</url>
   <groupId>com.spotify</groupId>
   <artifactId>helios-parent</artifactId>
-  <version>0.8.25-SNAPSHOT</version>
+  <version>0.8.${revision}</version>
   <packaging>pom</packaging>
 
   <licenses>
@@ -101,6 +101,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <autoReleaseAfterClose>true</autoReleaseAfterClose>
   </properties>
 
   <modules>
@@ -121,6 +122,9 @@
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
+      <properties>
+        <revision>0-SNAPSHOT</revision>
+      </properties>
       <build>
         <plugins>
           <plugin>
@@ -201,6 +205,37 @@
               <environmentVariables>
                 <HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>2</HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>
               </environmentVariables>
+              <systemPropertyVariables>
+                <junit.parallel.threads>1</junit.parallel.threads>
+                <logToFile>false</logToFile>
+                <heliosLoggingLevel>WARN</heliosLoggingLevel>
+                <externalLoggingLevel>OFF</externalLoggingLevel>
+                <rootLoggingLevel>WARN</rootLoggingLevel>
+              </systemPropertyVariables>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>jenkins</id>
+      <activation>
+        <property>
+          <name>env.JENKINS</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <version>2.16</version>
+            <configuration>
+              <enableAssertions>false</enableAssertions>
+              <forkCount>1C</forkCount>
+              <reuseForks>false</reuseForks>
+              <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
               <systemPropertyVariables>
                 <junit.parallel.threads>1</junit.parallel.threads>
                 <logToFile>false</logToFile>
@@ -357,12 +392,13 @@
       <plugin>
         <groupId>org.sonatype.plugins</groupId>
         <artifactId>nexus-staging-maven-plugin</artifactId>
-        <version>1.6.2</version>
+        <version>1.6.4</version>
         <extensions>true</extensions>
         <configuration>
           <serverId>ossrh</serverId>
           <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-          <autoReleaseAfterClose>true</autoReleaseAfterClose>
+          <autoReleaseAfterClose>${autoReleaseAfterClose}</autoReleaseAfterClose>
+          <skipRemoteStaging>true</skipRemoteStaging>
         </configuration>
       </plugin>
       <plugin>
