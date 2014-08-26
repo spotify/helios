@@ -27,10 +27,28 @@ import com.google.common.collect.Ordering;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * Uniquely Identifies Jobs
+ *
+ * Has a string representation in JSON of:
+ * <pre>
+ * name:version:hashvalue
+ * </pre>
+ *
+ * The hash value is so that if you are talking to multiple clusters, and the job definitions
+ * are slightly different, even though they have the same name and version, they will still
+ * be uniquely identifiable.  This is most important when executing commands against multiple
+ * clusters.
+ *
+ * Many endpoints taking JobId can take an abbreviated JobId.  That is, one without a the final
+ * colon and hash value.
+ */
+@JsonSerialize
 public class JobId extends Descriptor implements Comparable<JobId> {
 
   private final String name;
@@ -131,6 +149,7 @@ public class JobId extends Descriptor implements Comparable<JobId> {
     }
   }
 
+  @Override
   @JsonValue
   public String toString() {
     if (hash == null) {
