@@ -73,6 +73,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument argsArg;
   private final Argument portArg;
   private final Argument registrationArg;
+  private final Argument gracePeriodArg;
   private final Argument fileArg;
   private final Argument templateArg;
   private final Argument volumeArg;
@@ -130,6 +131,11 @@ public class JobCreateCommand extends ControlCommand {
               "default is http. If there is only one port mapping this will be used by " +
               "default and it will be enough to specify only the service name, e.g. " +
               "-r wordpress.");
+
+    gracePeriodArg = parser.addArgument("--grace-period")
+        .setDefault(0)
+        .help("if --grace-period is specified, helios will unregister from service discovery and " +
+              "wait the specified number of seconds before undeploying, default 0 seconds");
 
     volumeArg = parser.addArgument("--volume")
         .action(append())
@@ -310,6 +316,9 @@ public class JobCreateCommand extends ControlCommand {
     registration.putAll(builder.getRegistration());
     registration.putAll(explicitRegistration);
     builder.setRegistration(registration);
+
+    // Get grace period interval
+    Integer gracePeriod = options.getInt(gracePeriodArg.getDest());
 
     // Parse volumes
     final List<String> volumeSpecs = options.getList(volumeArg.getDest());
