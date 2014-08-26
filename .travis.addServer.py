@@ -87,8 +87,7 @@ def make_active_profile_node(activeProfilesNodes):
   activeProfileNode.appendChild(profileName)
   activeProfilesNodes.appendChild(activeProfileNode)
 
-make_server_node("sonatype-nexus-snapshots", serversNode)
-make_server_node("sonatype-nexus-staging", serversNode)
+make_server_node("ossrh", serversNode)
 make_profile_node(profilesNode)
 make_active_profile_node(activeProfilesNode)
 m2Str = m2.toprettyxml()
