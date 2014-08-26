@@ -170,8 +170,8 @@ public class HostsResource {
   }
 
   /**
-   * Causes the job identified by its {@link JobId} to be removed from the cluster.  If it is still
-   * deployed, this call will fail.
+   * Causes the job identified by its {@link JobId} to be undeployed from the specified host.
+   * This call will fail if the host is not found or the job is not deployed on the host.
    */
   @DELETE
   @Path("/{host}/jobs/{job}")
