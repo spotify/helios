@@ -52,7 +52,7 @@ public class ConfigFileJobCreationTest extends SystemTestBase {
 
     final String name = testJobName;
     final String version = "17";
-    final String image = "busybox";
+    final String image = BUSYBOX;
     final Map<String, PortMapping> ports = ImmutableMap.of(
         "foo", PortMapping.of(4711),
         "bar", PortMapping.of(5000, externalPort));
