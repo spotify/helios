@@ -138,9 +138,9 @@ public class CliParser {
 
     // Order of target precedence:
     // 1. endpoints from command line
-    // 2. sites from command line
+    // 2. domains from command line
     // 3. endpoints from config file
-    // 4. sites from config file
+    // 4. domains from config file
 
     // TODO (dano): complex, refactor and unit test it
     final List<String> domains = ImmutableList.copyOf(concat(domainsArguments, sitesArguments));
@@ -149,19 +149,25 @@ public class CliParser {
 
   private List<Target> computeTargets(final ArgumentParser parser,
                                       final List<String> explicitEndpoints,
-                                      final List<String> domainsArguments, final String srvName) {
+                                      final List<String> domainsArguments,
+                                      final String srvName) {
 
     if (explicitEndpoints != null && !explicitEndpoints.isEmpty()) {
-      final List<URI> explicitEndpointURIs = Lists.newArrayList();
+      final List<Target> targets = Lists.newArrayListWithExpectedSize(explicitEndpoints.size());
       for (final String endpoint : explicitEndpoints) {
-        explicitEndpointURIs.add(URI.create(endpoint));
+        targets.add(Target.from(URI.create(endpoint)));
       }
-      return asList(Target.from(explicitEndpointURIs));
+      return targets;
     } else if (domainsArguments != null && !domainsArguments.isEmpty()) {
       final Iterable<String> sites = parseDomains(domainsArguments);
       return Target.from(srvName, sites);
     } else if (!cliConfig.getMasterEndpoints().isEmpty()) {
-      return asList(Target.from(cliConfig.getMasterEndpoints()));
+      final List<URI> cliConfigMasterEndpoints = cliConfig.getMasterEndpoints();
+      List<Target> targets = Lists.newArrayListWithExpectedSize(cliConfigMasterEndpoints.size());
+      for (final URI endpoint : cliConfigMasterEndpoints) {
+        targets.add(Target.from(endpoint));
+      }
+      return targets;
     } else if (!cliConfig.getSitesString().isEmpty()) {
       final Iterable<String> sites = parseDomainsString(cliConfig.getSitesString());
       return Target.from(srvName, sites);

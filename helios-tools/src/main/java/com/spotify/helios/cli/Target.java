@@ -21,7 +21,6 @@
 
 package com.spotify.helios.cli;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
@@ -53,9 +52,17 @@ public abstract class Target {
     private final String domain;
 
     private SrvTarget(final String srv, final String domain) {
-      super(srv);
+      super(domain);
       this.srv = srv;
       this.domain = domain;
+    }
+
+    public String getSrv() {
+      return srv;
+    }
+
+    public String getDomain() {
+      return domain;
     }
 
     @Override
@@ -67,32 +74,85 @@ public abstract class Target {
     public String toString() {
       return domain + " (srv: " + srv + ")";
     }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      final SrvTarget srvTarget = (SrvTarget) o;
+
+      if (!srv.equals(srvTarget.getSrv())) {
+        return false;
+      }
+      if (!domain.equals(srvTarget.getDomain())) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = srv != null ? srv.hashCode() : 0;
+      result = 31 * result + (domain != null ? domain.hashCode() : 0);
+      return result;
+    }
   }
 
   private static class ExplicitTarget extends Target {
-    private final List<URI> endpoints;
+    private final URI endpoint;
 
-    private ExplicitTarget(final Iterable<URI> endpoints) {
-      super(Joiner.on(',').join(endpoints));
-      this.endpoints = ImmutableList.copyOf(endpoints);
+    private ExplicitTarget(final URI endpoint) {
+      super(endpoint.toString());
+      this.endpoint = endpoint;
+    }
+
+    public URI getEndpoint() {
+      return endpoint;
     }
 
     @Override
     public Supplier<List<URI>> getEndpointSupplier() {
+      List<URI> endpoints = ImmutableList.of(endpoint);
       return Suppliers.ofInstance(endpoints);
     }
 
     @Override
     public String toString() {
-      return Joiner.on(',').join(endpoints);
+      return endpoint.toString();
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      final ExplicitTarget explicitTarget = (ExplicitTarget) o;
+
+      return endpoint.equals(explicitTarget.getEndpoint());
+
+    }
+
+    @Override
+    public int hashCode() {
+      return endpoint != null ? endpoint.hashCode() : 0;
     }
   }
 
   /**
-   * Create a target from a list of explicit endpoints
+   * Create a target from an explicit endpoint
    */
-  public static Target from(final Iterable<URI> endpoints) {
-    return new ExplicitTarget(endpoints);
+  public static Target from(final URI endpoint) {
+    return new ExplicitTarget(endpoint);
   }
 
   /**
