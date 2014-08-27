@@ -57,7 +57,7 @@ public class ContainerHostNameTest extends SystemTestBase {
     final List<String> command = asList("hostname", "-f");
 
     // Create job
-    final JobId jobId = createJob(testJobName, testJobVersion, "busybox", command);
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, command);
 
     // deploy
     deployJob(jobId, testHost());
@@ -87,7 +87,7 @@ public class ContainerHostNameTest extends SystemTestBase {
           + "01234567890123456789012345678901234567890123456789012345678901234567890";
 
       // Create job
-      final JobId jobId = createJob(jobName, testJobVersion, "busybox", command);
+      final JobId jobId = createJob(jobName, testJobVersion, BUSYBOX, command);
 
       // deploy
       deployJob(jobId, testHost());

@@ -22,17 +22,13 @@
 package com.spotify.helios.system;
 
 import com.google.common.base.Charsets;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
@@ -49,13 +45,6 @@ import static org.junit.Assert.assertEquals;
 
 public class CliJobCreationTest extends SystemTestBase {
 
-  private static final JobId BOGUS_JOB = new JobId("bogus", "job", Strings.repeat("0", 40));
-  private static final String BOGUS_HOST = "BOGUS_HOST";
-
-
-  private static final TypeReference<Map<JobId, JobStatus>> STATUSES_TYPE =
-      new TypeReference<Map<JobId, JobStatus>>() {};
-
   private final Integer externalPort = temporaryPorts().localPort("external");
 
   @Test
@@ -71,7 +60,7 @@ public class CliJobCreationTest extends SystemTestBase {
       }
     });
 
-    final String image = "busybox";
+    final String image = BUSYBOX;
     final Map<String, PortMapping> ports = ImmutableMap.of(
         "foo", PortMapping.of(4711),
         "bar", PortMapping.of(5000, externalPort));

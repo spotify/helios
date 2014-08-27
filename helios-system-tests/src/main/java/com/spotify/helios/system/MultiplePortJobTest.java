@@ -81,7 +81,7 @@ public class MultiplePortJobTest extends SystemTestBase {
           ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint() + 1),
                           "bar", PortMapping.of(4712, externalPort2));
 
-      final JobId jobId1 = createJob(testJobName + 1, testJobVersion, "busybox", IDLE_COMMAND,
+      final JobId jobId1 = createJob(testJobName + 1, testJobVersion, BUSYBOX, IDLE_COMMAND,
                                      EMPTY_ENV, ports1);
 
       assertNotNull(jobId1);
@@ -89,7 +89,7 @@ public class MultiplePortJobTest extends SystemTestBase {
       final TaskStatus firstTaskStatus1 = awaitJobState(client, testHost(), jobId1, RUNNING,
                                                         LONG_WAIT_MINUTES, MINUTES);
 
-      final JobId jobId2 = createJob(testJobName + 2, testJobVersion, "busybox", IDLE_COMMAND,
+      final JobId jobId2 = createJob(testJobName + 2, testJobVersion, BUSYBOX, IDLE_COMMAND,
                                      EMPTY_ENV, ports2);
 
       assertNotNull(jobId2);

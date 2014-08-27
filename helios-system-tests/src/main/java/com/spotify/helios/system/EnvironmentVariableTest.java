@@ -79,7 +79,7 @@ public class EnvironmentVariableTest extends SystemTestBase {
                                           "echo bar: $BAR");
 
       // Create job
-      final JobId jobId = createJob(testJobName, testJobVersion, "busybox", command,
+      final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, command,
                                     ImmutableMap.of("FOO", "4711",
                                                     "BAR", "deadbeef"));
 

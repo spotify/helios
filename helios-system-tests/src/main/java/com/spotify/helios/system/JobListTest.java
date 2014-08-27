@@ -50,7 +50,7 @@ public class JobListTest extends SystemTestBase {
     awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
     // Create job
-    final JobId jobId = createJob(testJobName, testJobVersion, "busybox", IDLE_COMMAND);
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
     // Test successful find
     // testJobName is of the form job_test_hexstring:vhexstring
