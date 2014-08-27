@@ -342,14 +342,14 @@ public class JobValidator {
       repo = nameParts[0];
       name = nameParts[1];
     }
-    if (!NAMESPACE_PATTERN.matcher(repo).matches()) {
+    if (!NAMESPACE_PATTERN.matcher(name).matches()) {
       errors.add(
           format("Invalid namespace name (%s), only [a-z0-9_] are allowed, size between 4 and 30",
-                 repo));
+                 name));
       valid = false;
     }
-    if (!REPO_PATTERN.matcher(name).matches()) {
-      errors.add(format("Invalid repository name (%s), only [a-z0-9-_.] are allowed", name));
+    if (!REPO_PATTERN.matcher(repo).matches()) {
+      errors.add(format("Invalid repository name (%s), only [a-z0-9-_.] are allowed", repo));
       valid = false;
     }
     return valid;
