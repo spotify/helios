@@ -98,7 +98,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Before
     public void setup() {
       job1 = temporaryJobs.job()
-          .image("busybox")
+          .image(BUSYBOX)
           .command("nc", "-p", "4711", "-lle", "cat")
           .port("echo", 4711)
           .deploy(testHost1);
@@ -108,7 +108,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     public void testDeployment() throws Exception {
       // Verify that it is possible to deploy additional jobs during test
       temporaryJobs.job()
-          .image("busybox")
+          .image(BUSYBOX)
           .command(IDLE_COMMAND)
           .host(testHost1)
           .deploy();
@@ -116,7 +116,7 @@ public class TemporaryJobsTest extends SystemTestBase {
       final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 2, jobs.size());
       for (Job job : jobs.values()) {
-        assertEquals("wrong job running", "busybox", job.getImage());
+        assertEquals("wrong job running", BUSYBOX, job.getImage());
       }
 
       //verify address and addresses return valid HostAndPort objects
@@ -129,7 +129,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Test
     public void testRandomHost() throws Exception {
       temporaryJobs.job()
-          .image("busybox")
+          .image(BUSYBOX)
           .command("sh", "-c", "while :; do sleep 5; done")
           .hostFilter(".+")
           .deploy();
@@ -137,7 +137,7 @@ public class TemporaryJobsTest extends SystemTestBase {
       final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 2, jobs.size());
       for (Job job : jobs.values()) {
-        assertEquals("wrong job running", "busybox", job.getImage());
+        assertEquals("wrong job running", BUSYBOX, job.getImage());
       }
 
       ping(DOCKER_HOST.address(), job1.port(testHost1, "echo"));
@@ -146,7 +146,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Test
     public void testSpecificHost() throws Exception {
       final TemporaryJob job = temporaryJobs.job()
-          .image("busybox")
+          .image(BUSYBOX)
           .command(IDLE_COMMAND)
           .hostFilter(testHost2)
           .deploy();
@@ -158,7 +158,7 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     public void testDefaultLocalHostFilter() throws Exception {
       temporaryJobs.job()
-          .image("busybox")
+          .image(BUSYBOX)
           .command("sh", "-c", "while :; do sleep 5; done")
           .deploy();
     }
@@ -167,7 +167,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     public void testExceptionWithBadHostFilter() throws Exception {
       // Shouldn't be able to deploy if filter doesn't match any hosts
       temporaryJobs.job()
-          .image("busybox")
+          .image(BUSYBOX)
           .command("sh", "-c", "while :; do sleep 5; done")
           .hostFilter("THIS_FILTER_SHOULDNT_MATCH_ANY_HOST")
           .deploy();

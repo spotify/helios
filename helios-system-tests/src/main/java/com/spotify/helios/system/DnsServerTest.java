@@ -48,7 +48,7 @@ public class DnsServerTest extends SystemTestBase {
     startDefaultAgent(testHost(), "--dns", server1, "--dns", server2);
     awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
-    final JobId jobId = createJob(testJobName, testJobVersion, "busybox",
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX,
                                   asList("cat", "/etc/resolv.conf"));
 
     deployJob(jobId, testHost());
@@ -69,7 +69,7 @@ public class DnsServerTest extends SystemTestBase {
     startDefaultAgent(testHost());
     awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
-    final JobId jobId = createJob(testJobName, testJobVersion, "busybox",
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX,
                                   asList("cat", "/etc/resolv.conf"));
 
     deployJob(jobId, testHost());
