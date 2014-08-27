@@ -24,6 +24,7 @@ package com.spotify.helios.common.protocol;
 import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 
 import java.util.List;
@@ -50,9 +51,13 @@ public class TaskStatusEvents {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(TaskStatusEvents.class)
+    return Objects.toStringHelper(getClass())
         .add("status", status)
         .add("events", events)
         .toString();
+  }
+
+  public String toJsonString() {
+    return Json.asStringUnchecked(this);
   }
 }

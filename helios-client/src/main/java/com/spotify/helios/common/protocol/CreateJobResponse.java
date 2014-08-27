@@ -63,8 +63,10 @@ public class CreateJobResponse {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper("JobDeployResponse")
+    return Objects.toStringHelper(getClass())
         .add("status", status)
+        .add("errors", errors)
+        .add("id", id)
         .toString();
   }
 

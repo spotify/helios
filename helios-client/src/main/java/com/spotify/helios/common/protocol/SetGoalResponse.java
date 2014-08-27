@@ -24,6 +24,7 @@ package com.spotify.helios.common.protocol;
 import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 
 public class SetGoalResponse {
@@ -63,10 +64,14 @@ public class SetGoalResponse {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper("JobDeployResponse")
+    return Objects.toStringHelper(getClass())
         .add("status", status)
         .add("host", host)
         .add("job", job)
         .toString();
+  }
+
+  public String toJsonString() {
+    return Json.asStringUnchecked(this);
   }
 }
