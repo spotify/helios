@@ -100,7 +100,9 @@ public class JobUndeployCommand extends WildcardJobCommand {
       }
     }
 
-    out.printf("Undeploying %s from %s%n", jobId, hosts);
+    if (!json) {
+      out.printf("Undeploying %s from %s%n", jobId, hosts);
+    }
 
     int code = 0;
     final HostResolver resolver = HostResolver.create(client);
@@ -108,12 +110,23 @@ public class JobUndeployCommand extends WildcardJobCommand {
     for (final String candidateHost : hosts) {
       final String host = resolver.resolveName(candidateHost);
 
-      out.printf("%s: ", host);
+      if (!json) {
+        out.printf("%s: ", host);
+      }
+
       final JobUndeployResponse response = client.undeploy(jobId, host).get();
       if (response.getStatus() == JobUndeployResponse.Status.OK) {
-        out.println("done");
+        if (!json) {
+          out.println("done");
+        } else {
+          out.printf(response.toJsonString());
+        }
       } else {
-        out.println("failed: " + response);
+        if (!json) {
+          out.println("failed: " + response);
+        } else {
+          out.printf(response.toJsonString());
+        }
         code = -1;
       }
     }

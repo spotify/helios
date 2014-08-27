@@ -36,7 +36,8 @@ public class JobDeployResponse {
     HOST_NOT_FOUND,
     JOB_ALREADY_DEPLOYED,
     ID_MISMATCH,
-    INVALID_ID
+    INVALID_ID,
+    AMBIGUOUS_JOB_REFERENCE
   }
 
   private final Status status;

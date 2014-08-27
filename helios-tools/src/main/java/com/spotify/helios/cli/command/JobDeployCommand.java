@@ -78,7 +78,9 @@ public class JobDeployCommand extends WildcardJobCommand {
     final Deployment job = Deployment.of(jobId,
                                          options.getBoolean(noStartArg.getDest()) ? STOP : START);
 
-    out.printf("Deploying %s on %s%n", job, hosts);
+    if (!json) {
+      out.printf("Deploying %s on %s%n", job, hosts);
+    }
 
     int code = 0;
 
@@ -88,12 +90,22 @@ public class JobDeployCommand extends WildcardJobCommand {
     for (final String candidateHost : hosts) {
       final String host = resolver.resolveName(candidateHost);
       resolvedHosts.add(host);
-      out.printf("%s: ", host);
+      if (!json) {
+        out.printf("%s: ", host);
+      }
       final JobDeployResponse result = client.deploy(job, host).get();
       if (result.getStatus() == JobDeployResponse.Status.OK) {
-        out.printf("done%n");
+        if (!json) {
+          out.printf("done%n");
+        } else {
+          out.printf(result.toJsonString());
+        }
       } else {
-        out.printf("failed: %s%n", result);
+        if (!json) {
+          out.printf("failed: %s%n", result);
+        } else {
+          out.printf(result.toJsonString());
+        }
         code = 1;
       }
     }

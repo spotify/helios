@@ -706,8 +706,6 @@ public abstract class SystemTestBase {
     final String createOutput = cli("create", args);
     final String jobId = WHITESPACE.trimFrom(createOutput);
 
-    final String listOutput = cli("jobs", "-q");
-    assertThat(listOutput, containsString(jobId));
     return JobId.fromString(jobId);
   }
 

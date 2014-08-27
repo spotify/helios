@@ -35,6 +35,8 @@ public class CreateJobResponse {
     ID_MISMATCH,
     JOB_ALREADY_EXISTS,
     INVALID_JOB_DEFINITION,
+    UNKNOWN_JOB,
+    AMBIGUOUS_JOB_REFERENCE,
   }
 
   private final Status status;

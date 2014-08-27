@@ -182,10 +182,22 @@ public class JobCreateCommand extends ControlCommand {
      } else if (templateJobId != null) {
       final Map<JobId, Job> jobs = client.jobs(templateJobId).get();
       if (jobs.size() == 0) {
-        out.printf("Unknown job: %s%n", templateJobId);
+        if (!json) {
+          out.printf("Unknown job: %s%n", templateJobId);
+        } else {
+          CreateJobResponse createJobResponse =
+              new CreateJobResponse(CreateJobResponse.Status.UNKNOWN_JOB, null, null);
+          out.printf(createJobResponse.toJsonString());
+        }
         return 1;
       } else if (jobs.size() > 1) {
-        out.printf("Ambiguous job reference: %s%n", templateJobId);
+        if (!json) {
+          out.printf("Ambiguous job reference: %s%n", templateJobId);
+        } else {
+          CreateJobResponse createJobResponse =
+              new CreateJobResponse(CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, null, null);
+          out.printf(createJobResponse.toJsonString());
+        }
         return 1;
       }
       final Job template = Iterables.getOnlyElement(jobs.values());
@@ -342,8 +354,17 @@ public class JobCreateCommand extends ControlCommand {
 
     final Collection<String> errors = JOB_VALIDATOR.validate(job);
     if (!errors.isEmpty()) {
-      // TODO: nicer output
-      throw new IllegalArgumentException("Bad job definition: " + errors);
+      if (!json) {
+        for (String error : errors) {
+          out.println(error);
+        }
+      } else {
+        CreateJobResponse createJobResponse = new CreateJobResponse(
+            CreateJobResponse.Status.INVALID_JOB_DEFINITION, null, job.getId().toString());
+        out.println(createJobResponse.toJsonString());
+      }
+
+      return 1;
     }
 
     if (!quiet && !json) {
@@ -356,7 +377,7 @@ public class JobCreateCommand extends ControlCommand {
         out.println("Done.");
       }
       if (json) {
-        out.println("\"" + job.getId() + "\"");
+        out.println(status.toJsonString());
       } else {
         out.println(job.getId());
       }

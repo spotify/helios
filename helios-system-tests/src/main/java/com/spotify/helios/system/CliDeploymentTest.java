@@ -33,6 +33,7 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
+import com.spotify.helios.common.protocol.JobDeployResponse;
 
 import org.junit.Test;
 
@@ -58,7 +59,7 @@ public class CliDeploymentTest extends SystemTestBase {
   private final Integer externalPort = temporaryPorts().localPort("external");
 
   @Test
-  public void test() throws Exception {
+  public void testDeployAndUndeployJob() throws Exception {
     startDefaultMaster();
 
     // Wait for master to come up
@@ -157,5 +158,87 @@ public class CliDeploymentTest extends SystemTestBase {
 
     // Undeploy job
     undeployJob(jobId, testHost());
+  }
+
+  @Test
+  public void testDeployingNonexistantJobJson() throws Exception {
+    startDefaultMaster();
+
+    // Wait for master to come up
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        final String output = cli("masters");
+        return output.contains(masterName()) ? output : null;
+      }
+    });
+
+    // Verify that deploying a nonexistent job to the host fails
+    String output = cli("deploy", "--json", BOGUS_JOB.toString(), testHost());
+    JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
+    assertEquals(JobDeployResponse.Status.JOB_NOT_FOUND, jobDeployResponse.getStatus());
+  }
+
+  @Test
+  public void testDeployingNonexistantHostJson() throws Exception {
+    startDefaultMaster();
+
+    // Wait for master to come up
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        final String output = cli("masters");
+        return output.contains(masterName()) ? output : null;
+      }
+    });
+
+    // Create job
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    // Verify that deploying a job to a nonexistent host fails
+    String output = cli("deploy", "--json", jobId.toString(), BOGUS_HOST);
+    JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
+    assertEquals(JobDeployResponse.Status.HOST_NOT_FOUND, jobDeployResponse.getStatus());
+  }
+
+  @Test
+  public void testUndeployingNonexistantJobJson() throws Exception {
+    startDefaultMaster();
+
+    // Wait for master to come up
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        final String output = cli("masters");
+        return output.contains(masterName()) ? output : null;
+      }
+    });
+
+    // Verify that undeploying a nonexistent job from a host fails
+    String output = cli("undeploy", "--json", BOGUS_JOB.toString(), testHost());
+    JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
+    assertEquals(JobDeployResponse.Status.JOB_NOT_FOUND, jobDeployResponse.getStatus());
+  }
+
+  @Test
+  public void testUndeployingNonexistantHostJson() throws Exception {
+    startDefaultMaster();
+
+    // Wait for master to come up
+    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        final String output = cli("masters");
+        return output.contains(masterName()) ? output : null;
+      }
+    });
+
+    // Create job
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    // Verify that undeploying a nonexistent job from a host fails
+    String output = cli("undeploy", "--json", jobId.toString(), BOGUS_HOST);
+    JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
+    assertEquals(JobDeployResponse.Status.HOST_NOT_FOUND, jobDeployResponse.getStatus());
   }
 }
