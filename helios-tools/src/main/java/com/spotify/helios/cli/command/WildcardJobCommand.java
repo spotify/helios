@@ -26,6 +26,7 @@ import com.google.common.collect.Iterables;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.protocol.JobDeployResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -55,10 +56,22 @@ abstract class WildcardJobCommand extends ControlCommand {
     final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
 
     if (jobs.size() == 0) {
-      out.printf("Unknown job: %s%n", jobIdString);
+      if (!json) {
+        out.printf("Unknown job: %s%n", jobIdString);
+      } else {
+        JobDeployResponse jobDeployResponse =
+            new JobDeployResponse(JobDeployResponse.Status.JOB_NOT_FOUND, null, null);
+        out.printf(jobDeployResponse.toJsonString());
+      }
       return 1;
     } else if (jobs.size() > 1) {
-      out.printf("Ambiguous job reference: %s%n", jobIdString);
+      if (!json) {
+        out.printf("Ambiguous job reference: %s%n", jobIdString);
+      } else {
+        JobDeployResponse jobDeployResponse =
+            new JobDeployResponse(JobDeployResponse.Status.AMBIGUOUS_JOB_REFERENCE, null, null);
+        out.printf(jobDeployResponse.toJsonString());
+      }
       return 1;
     }
 

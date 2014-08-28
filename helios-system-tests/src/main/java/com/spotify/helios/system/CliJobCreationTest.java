@@ -32,23 +32,28 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
+import com.spotify.helios.common.protocol.CreateJobResponse;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import java.io.File;
 import java.io.FileOutputStream;
+import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CliJobCreationTest extends SystemTestBase {
 
   private final Integer externalPort = temporaryPorts().localPort("external");
+  private final String testJobNameAndVersion = testJobName + ":" + testJobVersion;
 
-  @Test
-  public void testMergeFileAndCliArgs() throws Exception {
+  @Before
+  public void initialize() throws Exception {
     startDefaultMaster();
 
     // Wait for master to come up
@@ -59,8 +64,10 @@ public class CliJobCreationTest extends SystemTestBase {
         return output.contains(masterName()) ? output : null;
       }
     });
+  }
 
-    final String image = BUSYBOX;
+  @Test
+  public void testMergeFileAndCliArgs() throws Exception {
     final Map<String, PortMapping> ports = ImmutableMap.of(
         "foo", PortMapping.of(4711),
         "bar", PortMapping.of(5000, externalPort));
@@ -90,18 +97,61 @@ public class CliJobCreationTest extends SystemTestBase {
       outFile.write(Charsets.UTF_8.encode(jobConfigJsonString).array());
 
       // Create job and specify the temp file.
-      cli("create", "--file", absolutePath, testJobName + ":" + testJobVersion, image);
+      cli("create", "--file", absolutePath, testJobNameAndVersion, BUSYBOX);
 
       // Inspect the job.
-      final String actualJobConfigJson = cli("inspect", testJobName + ":" + testJobVersion,
-                                             "--json");
+      final String actualJobConfigJson = cli("inspect", testJobNameAndVersion, "--json");
 
       // Compare to make sure the created job has the expected configuration,
       // i.e. the configuration resulting from a merge of the JSON file and CLI args.
       final Job actualJob = Json.read(actualJobConfigJson, Job.class);
       Job.Builder actualJobBuilder = actualJob.toBuilder();
-      builder.setName(testJobName).setVersion(testJobVersion).setImage(image);
+      builder.setName(testJobName).setVersion(testJobVersion).setImage(BUSYBOX);
       assertEquals(builder.build(), actualJobBuilder.build());
     }
+  }
+
+  @Test
+  public void testSuccessJsonOutput() throws Exception {
+    // Creating a valid job should return JSON with status OK
+    String output = cli("create", "--json", testJobNameAndVersion, BUSYBOX);
+    CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
+    assertEquals(CreateJobResponse.Status.OK, createJobResponse.getStatus());
+    assertEquals(new ArrayList<String>(), createJobResponse.getErrors());
+    assertTrue(createJobResponse.getId().startsWith(testJobNameAndVersion));
+  }
+
+  @Test
+  public void testInvalidJobJsonOutput() throws Exception {
+    // Trying to create a job with an invalid image name should return JSON with
+    // INVALID_JOB_DEFINITION
+    String output = cli("create", "--json", testJobNameAndVersion, "DOES_NOT_LIKE_AT_ALL-CAPITALS");
+    CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
+    assertEquals(CreateJobResponse.Status.INVALID_JOB_DEFINITION, createJobResponse.getStatus());
+    assertTrue(createJobResponse.getId().startsWith(testJobNameAndVersion));
+  }
+
+  @Test
+  public void testTemplateUnknownJobJsonOutput() throws Exception {
+    // Trying to create a job with a non-existant job as a template should return JSON with
+    // UNKNOWN_JOB
+    String output =
+        cli("create", "--json", "--template", "non-existant-job", testJobNameAndVersion, BUSYBOX);
+    CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
+    assertEquals(CreateJobResponse.Status.UNKNOWN_JOB, createJobResponse.getStatus());
+  }
+
+  @Test
+  public void testTemplateAmbiguousJobJsonOutput() throws Exception {
+    // Create two jobs
+    cli("create", testJobNameAndVersion, BUSYBOX);
+    cli("create", testJobNameAndVersion + "1", BUSYBOX);
+
+    // Trying to create a job with an ambiguous template reference should return JSON with
+    // AMBIGUOUS_JOB_REFERENCE
+    String output = cli("create", "--json", "--template", testJobNameAndVersion,
+                        testJobNameAndVersion, BUSYBOX);
+    CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
+    assertEquals(CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, createJobResponse.getStatus());
   }
 }
