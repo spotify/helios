@@ -122,7 +122,7 @@ public class HostListCommand extends ControlCommand {
       } else {
         final Table table = table(out);
         table.row("HOST", "STATUS", "DEPLOYED", "RUNNING",
-                  "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS", "VERSION", "DOCKER");
+                  "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS", "HELIOS", "DOCKER");
 
         for (final Map.Entry<String, ListenableFuture<HostStatus>> e : statuses.entrySet()) {
 
