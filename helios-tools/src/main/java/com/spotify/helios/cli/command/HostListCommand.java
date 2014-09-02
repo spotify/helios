@@ -25,7 +25,6 @@ import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.Table;
@@ -34,7 +33,6 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DockerVersion;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -44,7 +42,6 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Predicates.containsPattern;
@@ -54,6 +51,7 @@ import static com.spotify.helios.cli.Output.humanDuration;
 import static com.spotify.helios.cli.Output.table;
 import static com.spotify.helios.cli.Utils.allAsMap;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
@@ -121,7 +119,7 @@ public class HostListCommand extends ControlCommand {
         out.println(Json.asPrettyStringUnchecked(sorted));
       } else {
         final Table table = table(out);
-        table.row("HOST", "STATUS", "DEPLOYED", "RUNNING",
+        table.row("HOST", "STATUS", "JOBS",
                   "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS", "HELIOS", "DOCKER");
 
         for (final Map.Entry<String, ListenableFuture<HostStatus>> e : statuses.entrySet()) {
@@ -133,16 +131,9 @@ public class HostListCommand extends ControlCommand {
             continue;
           }
 
-          final Set<TaskStatus> runningDeployedJobs = Sets.newHashSet();
-          for (final JobId jobId : s.getJobs().keySet()) {
-            final TaskStatus taskStatus = s.getStatuses().get(jobId);
-            if (taskStatus == null) {
-              continue;
-            }
-            if (taskStatus.getState() == TaskStatus.State.RUNNING) {
-              runningDeployedJobs.add(taskStatus);
-            }
-          }
+          final int deployed = s.getJobs().size();
+          final int running = countRunning(s.getStatuses().values());
+          final String runningString = running + "/" + deployed;
 
           final HostInfo hi = s.getHostInfo();
           final String memUsage;
@@ -183,13 +174,23 @@ public class HostListCommand extends ControlCommand {
             }
           }
 
-          table.row(formatHostname(full, host), status, s.getJobs().size(),
-                    runningDeployedJobs.size(), cpus, mem, loadAvg, memUsage, os, version, docker);
+          table.row(formatHostname(full, host), status, runningString,
+                    cpus, mem, loadAvg, memUsage, os, version, docker);
         }
 
         table.print();
       }
     }
     return 0;
+  }
+
+  private int countRunning(final Iterable<TaskStatus> statuses) {
+    int n = 0;
+    for (TaskStatus status : statuses) {
+      if (status.getState() == RUNNING) {
+        n++;
+      }
+    }
+    return n;
   }
 }
