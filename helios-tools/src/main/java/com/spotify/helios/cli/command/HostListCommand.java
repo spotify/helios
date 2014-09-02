@@ -120,7 +120,7 @@ public class HostListCommand extends ControlCommand {
       } else {
         final Table table = table(out);
         table.row("HOST", "STATUS", "JOBS",
-                  "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS", "HELIOS", "DOCKER");
+                  "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "HELIOS", "DOCKER");
 
         for (final Map.Entry<String, ListenableFuture<HostStatus>> e : statuses.entrySet()) {
 
@@ -140,7 +140,6 @@ public class HostListCommand extends ControlCommand {
           final String cpus;
           final String mem;
           final String loadAvg;
-          final String os;
           final String docker;
           if (hi != null) {
             final long free = hi.getMemoryFreeBytes();
@@ -149,11 +148,10 @@ public class HostListCommand extends ControlCommand {
             cpus = String.valueOf(hi.getCpus());
             mem = hi.getMemoryTotalBytes() / (1024 * 1024 * 1024) + " gb";
             loadAvg = format("%.2f", hi.getLoadAvg());
-            os = hi.getOsName() + " " + hi.getOsVersion();
             final DockerVersion dv = hi.getDockerVersion();
             docker = (dv != null) ? format("%s (%s)", dv.getVersion(), dv.getApiVersion()) : "";
           } else {
-            memUsage = cpus = mem = loadAvg = os = docker = "";
+            memUsage = cpus = mem = loadAvg = docker = "";
           }
 
           final String version;
@@ -175,7 +173,7 @@ public class HostListCommand extends ControlCommand {
           }
 
           table.row(formatHostname(full, host), status, runningString,
-                    cpus, mem, loadAvg, memUsage, os, version, docker);
+                    cpus, mem, loadAvg, memUsage, version, docker);
         }
 
         table.print();
