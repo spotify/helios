@@ -6,6 +6,18 @@ This guide gives an overview of Helios, and what you need to know to deploy and 
 
 Note that this guide assumes that you are familiar with [Docker](http://docker.io) and concepts like images and containers. If you aren't familiar with Docker, see the [getting started page](https://www.docker.io/gettingstarted/).
 
+
+* [Basic Concepts in Helios](#basic-concepts-in-helios)
+* [Using the Helios CLI](#using-the-helios-cli)
+* [Creating Your Job](#creating-your-job)
+  * [A basic job](#a-basic-job)
+  * [Specifying a command to run](#specifying-a-command-to-run)
+  * [Passing environment variables](#passing-environment-variables)
+* [Deploying Your Job](#deploying-your-job)
+  * [Checking deployment status and history](#checking-deployment-status-and-history)
+  * [Undeploying](#undeploying)
+
+
 Basic Concepts in Helios
 ---
 
@@ -75,7 +87,44 @@ For some use cases, you may want to pass some environment variables to the job t
 
 The last line of output in the command output is the canonical job ID. Most times, you will only need the `jobName:jobVersion` parts, but in the event that you create two jobs with the same name and version, you can unambiguously choose which one you intend to operate on by supplying the full ID.
 
-As a current best practice, it is advised to put your `create` command lines into version-controlled files in your project directory, one file per create statement. This way, when you go to do subsequent job creations and deployments, you've got a record of what you did the last time.
+As a current best practice, it is advised to put your `create` command lines into
+version-controlled files in your project directory, one file per create statement. This way,
+when you go to do subsequent job creations and deployments, you've got a record of what you did the
+last time.
+
+`helios create -d <DOMAINS> -f <HELIOS_JOB_CONFIG_FILE_PATH> JOB_NAME IMAGE_NAME` will merge
+job parameters in the file `<HELIOS_JOB_CONFIG_FILE_PATH>` with other command line arguments. CLI
+args take precedence. The job configuration file should be valid JSON with a schema that matches the
+output of `helios inspect -d <DOMAINS> <EXISTING_JOB_NAME> --json`. Here's an example:
+
+```
+{
+  "command" : [ "foo", "bar" ],
+  "ports" : {
+    "http" : {
+      "externalPort" : 8080,
+      "internalPort" : 8080,
+      "protocol" : "tcp"
+    },
+    "http-admin" : {
+      "externalPort" : 8081,
+      "internalPort" : 8081,
+      "protocol" : "tcp"
+    }
+  },
+  "registration" : {
+    "fooservice/http" : {
+      "ports" : {
+        "http" : { }
+      }
+    }
+  },
+  "registrationDomain" : "",
+  "volumes" : {
+    "/etc/foo/moar-config.yaml:ro" : "/etc/bar/moar-config.yaml"
+  }
+}
+```
 
 Deploying Your Job
 ---
