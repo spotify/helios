@@ -289,6 +289,9 @@
         <artifactId>jdeb</artifactId>
         <groupId>org.vafer</groupId>
         <version>1.1.1</version>
+        <configuration>
+          <attach>false</attach>
+        </configuration>
         <executions>
 
           <!--helios-master-->
