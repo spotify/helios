@@ -16,6 +16,11 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.spotify.docgenerator</groupId>
+      <artifactId>scanner</artifactId>
+      <version>0.0.1</version>
+    </dependency>
     <!--compile deps-->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>

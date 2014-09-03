@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.spotify</groupId>
+    <artifactId>helios-parent</artifactId>
+    <version>0.8.8-SNAPSHOT</version>
+  </parent>
+
+  <name>Helios API Documentation</name>
+  <artifactId>helios-api-documentation</artifactId>
+  <packaging>jar</packaging>
+
+  <dependencies>
+    <!-- depend on these to ensure they get built first -->
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>helios-services</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>helios-client</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+  </dependencies>
+
+  <reporting>
+    <plugins>
+      <plugin>
+        <groupId>com.spotify.docgenerator</groupId>
+        <artifactId>docgenerator-maven-plugin</artifactId>
+        <version>0.0.1</version>
+        <configuration>
+          <jsonClassesFiles>
+            <jsonClassesFile>${project.basedir}/../helios-client/target/classes/JSONClasses</jsonClassesFile>
+          </jsonClassesFiles>
+          <restEndpointsFiles>
+            <restEndpointsFile>${project.basedir}/../helios-services/target/classes/RESTEndpoints</restEndpointsFile>
+          </restEndpointsFiles>
+          <jarFiles>
+            <jarFile>${project.basedir}/../helios-client/target/helios-client-${project.version}.jar</jarFile>
+          </jarFiles>
+        </configuration>
+      </plugin>
+    </plugins>
+  </reporting>
+</project>

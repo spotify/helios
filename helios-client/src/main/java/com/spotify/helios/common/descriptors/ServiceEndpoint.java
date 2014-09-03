@@ -28,6 +28,9 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+/**
+ * Note: When this is used as a map key, it shows up as <pre>name/protocol</pre> instead.
+ */
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class ServiceEndpoint extends Descriptor implements Comparable<ServiceEndpoint> {
 

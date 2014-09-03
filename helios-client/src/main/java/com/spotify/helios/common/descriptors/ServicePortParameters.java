@@ -23,6 +23,10 @@ package com.spotify.helios.common.descriptors;
 
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
+/**
+ * A class that used to do something, but now is just effectively a placeholder in a Map
+ * that is treated as a Set.  It is represented by the empty map in JSON.
+ */
 @JsonSerialize
 public class ServicePortParameters extends Descriptor {
 
