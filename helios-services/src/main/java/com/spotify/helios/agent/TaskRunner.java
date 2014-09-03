@@ -21,6 +21,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -58,6 +59,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private final String existingContainerId;
   private final Listener listener;
   private final ServiceRegistrar registrar;
+  private Optional<ServiceRegistrationHandle> serviceRegistrationHandle;
 
   private TaskRunner(final Builder builder) {
     super("TaskRunner(" + builder.taskConfig.name() + ")");
@@ -67,6 +69,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.listener = checkNotNull(builder.listener, "listener");
     this.existingContainerId = builder.existingContainerId;
     this.registrar = checkNotNull(builder.registrar, "registrar");
+    this.serviceRegistrationHandle = Optional.absent();
   }
 
   public Result<Integer> result() {
@@ -75,6 +78,20 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
   public ListenableFuture<Integer> resultFuture() {
     return result;
+  }
+
+  /**
+   * Unregister a set of service endpoints previously registered.
+   *
+   * @return boolean true if service registration handle was present, false otherwise
+   */
+  public boolean unregister() {
+    if (serviceRegistrationHandle.isPresent()) {
+      registrar.unregister(serviceRegistrationHandle.get());
+      serviceRegistrationHandle = Optional.absent();
+      return true;
+    }
+    return false;
   }
 
   @Override
@@ -97,12 +114,12 @@ class TaskRunner extends InterruptingExecutionThreadService {
     listener.running();
 
     // Register and wait for container to exit
-    final ServiceRegistrationHandle handle = registrar.register(config.registration());
+    serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
     final ContainerExit exit;
     try {
       exit = docker.waitContainer(containerId);
     } finally {
-      registrar.unregister(handle);
+      unregister();
     }
 
     log.info("container exited: {}: {}: {}", config, containerId, exit.statusCode());

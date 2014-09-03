@@ -52,6 +52,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
   public static final List<String> EMPTY_COMMAND = emptyList();
   public static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
+  public static final Integer EMPTY_GRACE_PERIOD = null;
   public static final Map<String, String> EMPTY_VOLUMES = emptyMap();
   public static final String EMPTY_MOUNT = "";
   public static final Date EMPTY_EXPIRES = null;
@@ -63,6 +64,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Map<String, String> env;
   private final Map<String, PortMapping> ports;
   private final Map<ServiceEndpoint, ServicePorts> registration;
+  private final Integer gracePeriod;
   private final Map<String, String> volumes;
   private final Date expires;
   private final String registrationDomain;
@@ -74,6 +76,7 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("ports") @Nullable final Map<String, PortMapping> ports,
              @JsonProperty("registration") @Nullable
              final Map<ServiceEndpoint, ServicePorts> registration,
+             @JsonProperty("gracePeriod") @Nullable final Integer gracePeriod,
              @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
              @JsonProperty("expires") @Nullable final Date expires,
              @JsonProperty("registrationDomain") @Nullable String registrationDomain) {
@@ -85,6 +88,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.env = Optional.fromNullable(env).or(EMPTY_ENV);
     this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
     this.registration = Optional.fromNullable(registration).or(EMPTY_REGISTRATION);
+    this.gracePeriod = Optional.fromNullable(gracePeriod).orNull();
     this.volumes = Optional.fromNullable(volumes).or(EMPTY_VOLUMES);
     this.expires = expires;
     this.registrationDomain = Optional.fromNullable(registrationDomain)
@@ -98,6 +102,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
     this.ports = ImmutableMap.copyOf(checkNotNull(p.ports, "ports"));
     this.registration = ImmutableMap.copyOf(checkNotNull(p.registration, "registration"));
+    this.gracePeriod = p.gracePeriod;
     this.volumes = ImmutableMap.copyOf(checkNotNull(p.volumes, "volumes"));
     this.expires = p.expires;
     this.registrationDomain = Optional.fromNullable(p.registrationDomain)
@@ -130,6 +135,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public String getRegistrationDomain() {
     return registrationDomain;
+  }
+
+  public Integer getGracePeriod() {
+    return gracePeriod;
   }
 
   public Map<String, String> getVolumes() {
@@ -186,6 +195,9 @@ public class Job extends Descriptor implements Comparable<Job> {
         : job.registrationDomain != null) {
       return false;
     }
+    if (gracePeriod != null ? !gracePeriod.equals(job.gracePeriod) : job.gracePeriod != null) {
+      return false;
+    }
     if (volumes != null ? !volumes.equals(job.volumes) : job.volumes != null) {
       return false;
     }
@@ -203,6 +215,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (ports != null ? ports.hashCode() : 0);
     result = 31 * result + (registration != null ? registration.hashCode() : 0);
     result = 31 * result + (registrationDomain != null ? registrationDomain.hashCode() : 0);
+    result = 31 * result + (gracePeriod != null ? gracePeriod.hashCode() : 0);
     result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
     return result;
   }
@@ -216,6 +229,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("env", env)
         .add("ports", ports)
         .add("registration", registration)
+        .add("gracePeriod", gracePeriod)
         .add("expires", expires)
         .add("registrationDomain", registrationDomain)
         .toString();
@@ -234,6 +248,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setEnv(env)
         .setPorts(ports)
         .setRegistration(registration)
+        .setGracePeriod(gracePeriod)
         .setVolumes(volumes)
         .setExpires(expires)
         .setRegistrationDomain(registrationDomain);
@@ -263,6 +278,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Map<String, String> env;
       public Map<String, PortMapping> ports;
       public Map<ServiceEndpoint, ServicePorts> registration;
+      public Integer gracePeriod;
       public Map<String, String> volumes;
       public Date expires;
 
@@ -271,6 +287,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.env = Maps.newHashMap(EMPTY_ENV);
         this.ports = Maps.newHashMap(EMPTY_PORTS);
         this.registration = Maps.newHashMap(EMPTY_REGISTRATION);
+        this.gracePeriod = EMPTY_GRACE_PERIOD;
         this.volumes = Maps.newHashMap(EMPTY_VOLUMES);
         this.registrationDomain = EMPTY_REGISTRATION_DOMAIN;
       }
@@ -283,6 +300,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.env = Maps.newHashMap(p.env);
         this.ports = Maps.newHashMap(p.ports);
         this.registration = Maps.newHashMap(p.registration);
+        this.gracePeriod = p.gracePeriod;
         this.volumes = Maps.newHashMap(p.volumes);
         this.expires = p.expires;
         this.registrationDomain = p.registrationDomain;
@@ -349,6 +367,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setGracePeriod(final Integer gracePeriod) {
+      p.gracePeriod = gracePeriod;
+      return this;
+    }
+
     public Builder setVolumes(final Map<String, String> volumes) {
       p.volumes = Maps.newHashMap(volumes);
       return this;
@@ -399,6 +422,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public String getRegistrationDomain() {
       return p.registrationDomain;
+    }
+
+    public Integer getGracePeriod() {
+      return p.gracePeriod;
     }
 
     public Map<String, String> getVolumes() {

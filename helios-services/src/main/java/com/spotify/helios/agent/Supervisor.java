@@ -36,6 +36,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InterruptedIOException;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
@@ -63,6 +64,7 @@ public class Supervisor {
   private final TaskRunnerFactory runnerFactory;
   private final StatusUpdater statusUpdater;
   private final TaskMonitor monitor;
+  private final Sleeper sleeper;
 
   private volatile Goal goal;
   private volatile String containerId;
@@ -85,6 +87,7 @@ public class Supervisor {
                                       SECONDS.toMillis(30));
     this.reactor.startAsync();
     statusUpdater.setContainerId(containerId);
+    this.sleeper = builder.sleeper;
   }
 
   public void setGoal(final Goal goal) {
@@ -206,6 +209,7 @@ public class Supervisor {
     private TaskRunnerFactory runnerFactory;
     private StatusUpdater statusUpdater;
     private TaskMonitor monitor;
+    private Sleeper sleeper = new ThreadSleeper();
 
 
     public Builder setJob(final Job job) {
@@ -250,6 +254,11 @@ public class Supervisor {
 
     public Builder setMonitor(final TaskMonitor monitor) {
       this.monitor = monitor;
+      return this;
+    }
+
+    public Builder setSleeper(final Sleeper sleeper) {
+      this.sleeper = sleeper;
       return this;
     }
 
@@ -334,6 +343,16 @@ public class Supervisor {
     public void perform(final boolean done) throws InterruptedException {
       if (done) {
         return;
+      }
+
+      final Integer gracePeriod = job.getGracePeriod();
+      if (gracePeriod != null && gracePeriod > 0) {
+        log.info("Unregistering from service discovery for {} seconds before stopping",
+                 gracePeriod);
+
+        if (runner.unregister()) {
+          sleeper.sleep(TimeUnit.MILLISECONDS.convert(gracePeriod, TimeUnit.SECONDS));
+        }
       }
 
       log.debug("stopping job: {}", job);
