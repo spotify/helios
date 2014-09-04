@@ -72,6 +72,11 @@
       <name>Simon Cohen</name>
       <email>snc@spotify.com</email>
     </developer>
+    <developer>
+      <id>davidxia</id>
+      <name>David Xia</name>
+      <email>dxia@spotify.com</email>
+    </developer>
   </developers>
 
   <repositories>
