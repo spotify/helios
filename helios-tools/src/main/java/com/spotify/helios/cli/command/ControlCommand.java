@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -55,20 +56,45 @@ public abstract class ControlCommand {
       throws IOException, InterruptedException {
     boolean successful = true;
 
+    boolean isFirst = true;
+
+    // TODO (dxia) The json = true branches below are a hack to get valid JSON for multiple domains.
+    // Refactor concrete command implementations later to return an Object that can then be put into
+    // a {"$DOMAIN": $VALUE} dict before json serializing and returning it.
+
     // Execute the control command over each target cluster
-    for (final Target target : targets) {
+    Iterator<Target> targetIterator = targets.iterator();
+    while (targetIterator.hasNext()) {
+      Target target = targetIterator.next();
+
       if (targets.size() > 1) {
-        final List<URI> endpoints = target.getEndpointSupplier().get();
-        final String header = format("%s (%s)", target.getName(), endpoints);
-        out.println(header);
-        out.println(repeat("-", header.length()));
-        out.flush();
+        if (!json) {
+          final List<URI> endpoints = target.getEndpointSupplier().get();
+          final String header = format("%s (%s)", target.getName(), endpoints);
+          out.println(header);
+          out.println(repeat("-", header.length()));
+          out.flush();
+        } else {
+          if (isFirst) {
+            out.println("{");
+            isFirst = false;
+          }
+          out.println("\"" + target.getName() + "\": ");
+        }
       }
 
       successful &= run(options, target, out, err, username, json);
 
       if (targets.size() > 1) {
-        out.println();
+        if (!json) {
+          out.println();
+        } else {
+          if (targetIterator.hasNext()) {
+            out.println(",\n");
+          } else {
+            out.println("}");
+          }
+        }
       }
     }
 
