@@ -103,7 +103,7 @@ public abstract class ControlCommand {
       return result == 0;
     } catch (ExecutionException e) {
       final Throwable cause = e.getCause();
-      // if target is a site, print message like
+      // if target is a domain, print message like
       // "Request timed out to master in ash.spotify.net (http://ash2-helios-a4.ash2.spotify.net)",
       // otherwise "Request timed out to master http://ash2-helios-a4.ash2.spotify.net:5800"
       if (cause instanceof TimeoutException) {
