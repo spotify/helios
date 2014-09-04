@@ -21,10 +21,14 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import com.spotify.helios.cli.Target;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -41,14 +45,17 @@ import org.joda.time.format.DateTimeFormatter;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.spotify.helios.cli.Utils.allAsMap;
+import static java.lang.String.format;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
-public class JobWatchCommand extends ControlCommand {
+public class JobWatchCommand extends MultiTargetControlCommand {
 
   private final Argument prefixesArg;
   private final Argument jobsArg;
@@ -77,64 +84,101 @@ public class JobWatchCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, HeliosClient client, PrintStream out, boolean json)
-      throws ExecutionException, InterruptedException, IOException {
-    boolean exact = options.getBoolean(exactArg.getDest());
+  int run(final Namespace options, final List<TargetAndClient> clients,
+          final PrintStream out, final boolean json)
+              throws ExecutionException, InterruptedException, IOException {
+    final boolean exact = options.getBoolean(exactArg.getDest());
     final List<String> prefixes = options.getList(prefixesArg.getDest());
     final String jobIdString = options.getString(jobsArg.getDest());
     final List<ListenableFuture<Map<JobId, Job>>> jobIdFutures = Lists.newArrayList();
-    jobIdFutures.add(client.jobs(jobIdString));
+    for (final TargetAndClient cc : clients) {
+      jobIdFutures.add(cc.getClient().jobs(jobIdString));
+    }
 
-    final List<JobId> jobIds = Lists.newArrayList();
-    for (ListenableFuture<Map<JobId, Job>> future : jobIdFutures) {
+    final Set<JobId> jobIds = Sets.newHashSet();
+    for (final ListenableFuture<Map<JobId, Job>> future : jobIdFutures) {
       jobIds.addAll(future.get().keySet());
     }
 
     watchJobsOnHosts(out, exact, prefixes, jobIds, options.getInt(intervalArg.getDest()),
-        client);
+        clients);
     return 0;
   }
 
-  static void watchJobsOnHosts(PrintStream out, boolean exact, final List<String> prefixes,
-      final List<JobId> jobIds, final int interval, final HeliosClient client)
+
+
+  public static void watchJobsOnHosts(final PrintStream out, final boolean exact,
+                                      final List<String> resolvedHosts, final List<JobId> jobIds,
+                                      final Integer interval, final HeliosClient client)
+                                          throws InterruptedException, ExecutionException {
+    watchJobsOnHosts(out, exact, resolvedHosts, Sets.newHashSet(jobIds), interval,
+        ImmutableList.of(new TargetAndClient(client)));
+  }
+
+  static void watchJobsOnHosts(final PrintStream out, final boolean exact,
+                               final List<String> prefixes, final Set<JobId> jobIds,
+                               final int interval, final List<TargetAndClient> clients)
       throws InterruptedException, ExecutionException {
     out.println("Control-C to stop");
     out.println("JOB                  HOST                           STATE    THROTTLED?");
     final DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss");
     while (true) {
-      final Map<JobId, JobStatus> statuses = getStatuses(client, jobIds);
 
       final Instant now = new Instant();
       out.printf("-------------------- ------------------------------ -------- "
           + "---------- [%s UTC]%n", now.toString(formatter));
-      for (final JobId jobId : jobIds) {
-        final JobStatus jobStatus = statuses.get(jobId);
-        final Map<String, TaskStatus> taskStatuses = jobStatus.getTaskStatuses();
-        if (exact) {
-          for (final String host : prefixes) {
-            final TaskStatus ts = taskStatuses.get(host);
-            out.printf("%-20s %-30s %-8s %s%n",
-                chop(jobId.toShortString(), 20),
-                chop(host, 30),
-                ts != null ? ts.getState() : "UNKNOWN",
-                ts != null ? ts.getThrottled() : "UNKNOWN");
+      for (TargetAndClient cc : clients) {
+        final Optional<Target> target = cc.getTarget();
+        if (clients.size() > 1) {
+          final String header;
+          if (target.isPresent()) {
+            final List<URI> endpoints = target.get().getEndpointSupplier().get();
+            header = format(" %s (%s)", target.get().getName(), endpoints);
+          } else {
+            header = "";
           }
-        } else {
-          for (final String host : taskStatuses.keySet()) {
-            if (!hostMatches(prefixes, host)) {
-              continue;
-            }
-            final TaskStatus ts = taskStatuses.get(host);
-            out.printf("%-20s %-30s %-8s %s%n",
-              chop(jobId.toShortString(), 20),
-              chop(host, 30), ts.getState(), ts.getThrottled());
-          }
+          out.printf("---%s%n", header);
         }
+        showReport(out, exact, prefixes, jobIds, formatter, cc.getClient());
       }
       if (out.checkError()) {
         break;
       }
       Thread.sleep(1000 * interval);
+    }
+  }
+
+  private static void showReport(PrintStream out, boolean exact, final List<String> prefixes,
+      final Set<JobId> jobIds, final DateTimeFormatter formatter, final HeliosClient client)
+      throws ExecutionException, InterruptedException {
+    final Map<JobId, JobStatus> statuses = getStatuses(client, jobIds);
+
+    for (final JobId jobId : jobIds) {
+      final JobStatus jobStatus = statuses.get(jobId);
+      if (jobStatus == null) {
+        continue;
+      }
+      final Map<String, TaskStatus> taskStatuses = jobStatus.getTaskStatuses();
+      if (exact) {
+        for (final String host : prefixes) {
+          final TaskStatus ts = taskStatuses.get(host);
+          out.printf("%-20s %-30s %-8s %s%n",
+              chop(jobId.toShortString(), 20),
+              chop(host, 30),
+              ts != null ? ts.getState() : "UNKNOWN",
+              ts != null ? ts.getThrottled() : "UNKNOWN");
+        }
+      } else {
+        for (final String host : taskStatuses.keySet()) {
+          if (!hostMatches(prefixes, host)) {
+            continue;
+          }
+          final TaskStatus ts = taskStatuses.get(host);
+          out.printf("%-20s %-30s %-8s %s%n",
+            chop(jobId.toShortString(), 20),
+            chop(host, 30), ts.getState(), ts.getThrottled());
+        }
+      }
     }
   }
 
@@ -157,9 +201,11 @@ public class JobWatchCommand extends ControlCommand {
     return s.substring(0, len);
   }
 
-  private static Map<JobId, JobStatus> getStatuses(HeliosClient client, final List<JobId> jobIds)
+  private static Map<JobId, JobStatus> getStatuses(final HeliosClient client,
+                                                   final Set<JobId> jobIds)
       throws ExecutionException, InterruptedException {
     final Map<JobId, ListenableFuture<JobStatus>> futures = Maps.newTreeMap();
+
     for (final JobId jobId : jobIds) {
       futures.put(jobId, client.jobStatus(jobId));
     }

@@ -24,6 +24,12 @@ package com.spotify.helios.cli;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import com.spotify.helios.client.HeliosClient;
+
+import java.io.PrintStream;
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
@@ -36,5 +42,25 @@ public class Utils {
       result.put(e.getKey(), e.getValue().get());
     }
     return result;
+  }
+
+  public static HeliosClient getClient(final Target target, final PrintStream err,
+                                 final String username) {
+
+    List<URI> endpoints = Collections.emptyList();
+    try {
+      endpoints = target.getEndpointSupplier().get();
+    } catch (Exception ignore) {
+      // TODO (dano): Nasty. Refactor target to propagate resolution failure in a checked manner.
+    }
+    if (endpoints.size() == 0) {
+      err.println("Failed to resolve helios master in " + target);
+      return null;
+    }
+
+    return HeliosClient.newBuilder()
+        .setEndpointSupplier(target.getEndpointSupplier())
+        .setUser(username)
+        .build();
   }
 }
