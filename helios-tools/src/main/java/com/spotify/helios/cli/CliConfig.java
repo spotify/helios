@@ -49,7 +49,9 @@ public class CliConfig {
   private static final String MASTER_ENDPOINTS_KEY = "masterEndpoints";
   private static final String SITES_KEY = "sites";
   private static final String SRV_NAME_KEY = "srvName";
-  private static final String CONFIG_PATH = ".helios" + File.separator + "config";
+  private static final String CONFIG_DIR = ".helios";
+  private static final String CONFIG_FILE = "config";
+  private static final String CONFIG_PATH = CONFIG_DIR + File.separator + CONFIG_FILE;
   public static final List<String> EMPTY_STRING_LIST = Collections.emptyList();
   public static final TypeReference<Map<String, Object>> OBJECT_TYPE =
       new TypeReference<Map<String, Object>>() {};
@@ -86,6 +88,14 @@ public class CliConfig {
 
   public List<URI> getMasterEndpoints() {
     return masterEndpoints;
+  }
+
+  public static String getConfigDirName() {
+    return CONFIG_DIR;
+  }
+
+  public static String getConfigFileName() {
+    return CONFIG_FILE;
   }
 
   /**
