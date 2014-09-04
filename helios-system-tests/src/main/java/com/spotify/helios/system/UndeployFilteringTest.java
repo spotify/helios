@@ -44,12 +44,13 @@ import org.junit.Test;
 import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 public class UndeployFilteringTest extends SystemTestBase {
 
@@ -93,12 +94,12 @@ public class UndeployFilteringTest extends SystemTestBase {
     assertFalse(zkMasterModel.getJobs().isEmpty());
     assertEquals(START, zkMasterModel.getDeployment(TEST_HOST, jobId).getGoal());
 
-    // create tombstone
+    // undeploy job
     client.undeploy(jobId, TEST_HOST).get();
 
     // These used to be filtered away
-    assertEquals(UNDEPLOY, zkMasterModel.getDeployment(TEST_HOST, jobId).getGoal());
-    assertFalse(zkMasterModel.getHostStatus(TEST_HOST).getJobs().isEmpty());
+    assertNull(zkMasterModel.getDeployment(TEST_HOST, jobId));
+    assertTrue(zkMasterModel.getHostStatus(TEST_HOST).getJobs().isEmpty());
   }
 
   @Test

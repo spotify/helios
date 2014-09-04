@@ -112,7 +112,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
-import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
@@ -735,8 +734,7 @@ public abstract class SystemTestBase {
         Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {});
     final JobStatus status = statuses.get(jobId);
     assertTrue(status == null ||
-               status.getDeployments().get(host) == null ||
-               status.getDeployments().get(host).getGoal() == UNDEPLOY);
+               status.getDeployments().get(host) == null);
   }
 
   protected String startJob(final JobId jobId, final String host) throws Exception {

@@ -142,7 +142,7 @@ public class DeploymentTest extends SystemTestBase {
 
     // Make sure that it is no longer in the desired state
     final Deployment undeployedJob = client.deployment(testHost(), jobId).get();
-    assertTrue(undeployedJob == null || undeployedJob.getGoal() == Goal.UNDEPLOY);
+    assertTrue(undeployedJob == null);
 
     // Wait for the task to disappear
     awaitTaskGone(client, testHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
