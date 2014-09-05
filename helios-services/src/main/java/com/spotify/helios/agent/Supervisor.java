@@ -23,6 +23,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Objects;
 
+import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.messages.ContainerInfo;
@@ -397,11 +398,13 @@ public class Supervisor {
       final ContainerInfo containerInfo;
       try {
         containerInfo = docker.inspectContainer(containerId);
+      } catch (ContainerNotFoundException e) {
+        return true;
       } catch (DockerException e) {
         log.error("failed to query container {}", containerId, e);
         return false;
       }
-      return containerInfo == null || !containerInfo.state().running();
+      return !containerInfo.state().running();
     }
   }
 
