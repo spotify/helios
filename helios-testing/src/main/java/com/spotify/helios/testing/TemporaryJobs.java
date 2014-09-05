@@ -210,7 +210,9 @@ public class TemporaryJobs implements TestRule {
   public TemporaryJobBuilder job() {
     return new TemporaryJobBuilder(deployer, jobPrefixFile.prefix())
         .hostFilter(defaultHostFilter)
-        .env("SPOTIFY_POD", prefix() + ".local");
+        // TODO (dano): these spotify specific environment variables should go somewhere else
+        .env("SPOTIFY_POD", prefix() + ".local")
+        .env("SPOTIFY_DOMAIN", prefix() + ".local");
   }
 
   /**
