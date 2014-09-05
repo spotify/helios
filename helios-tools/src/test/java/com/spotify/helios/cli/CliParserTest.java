@@ -37,7 +37,7 @@ public class CliParserTest {
   public void init() {
     // TODO (dxia) For some reason CliConfig.java:59 never gets called here, but it's called when
     // running CliConfigTest. If I don't clear the environment attribute, there's a stray key -> val
-    // of "HELIOS_MASTER" -> "site://foo" left behind from somewhere that screws up the tests.
+    // of "HELIOS_MASTER" -> "domain://foo" left behind from somewhere that screws up the tests.
     CliConfig.environment = ImmutableMap.of();
   }
 
@@ -111,7 +111,7 @@ public class CliParserTest {
     try (final FileOutputStream outFile = new FileOutputStream(configFile)) {
       outFile.write(Charsets.UTF_8.encode(
           "{\"masterEndpoints\":[\"" + ENDPOINTS[0] + "\", \"" +ENDPOINTS[1] + "\", \"" +
-          ENDPOINTS[2] + "\"], \"sites\":[\"" + DOMAINS[0] + "\"]}").array());
+          ENDPOINTS[2] + "\"], \"domains\":[\"" + DOMAINS[0] + "\"]}").array());
 
       // Set user's home directory to this temporary folder
       System.setProperty("user.home", temporaryFolder.getRoot().getAbsolutePath());
@@ -142,7 +142,7 @@ public class CliParserTest {
     // Write configuration to that file
     try (final FileOutputStream outFile = new FileOutputStream(configFile)) {
       outFile.write(Charsets.UTF_8.encode(
-          "{\"sites\":[\"" + DOMAINS[0] + "\", \"" + DOMAINS[1] + "\", \"" + DOMAINS[2] + "\"]}")
+          "{\"domains\":[\"" + DOMAINS[0] + "\", \"" + DOMAINS[1] + "\", \"" + DOMAINS[2] + "\"]}")
                         .array());
 
       // Set user's home directory to this temporary folder
@@ -151,7 +151,7 @@ public class CliParserTest {
       final CliParser cliParser = new CliParser(args);
       final List<Target> targets = cliParser.getTargets();
 
-      // We expect the specified sites
+      // We expect the specified domains
       final List<Target> expectedTargets = Target.from(
           SRV, ImmutableList.of(DOMAINS[0], DOMAINS[1], DOMAINS[2]));
       assertEquals(expectedTargets, targets);

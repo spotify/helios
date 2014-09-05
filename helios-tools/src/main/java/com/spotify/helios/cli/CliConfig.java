@@ -45,9 +45,10 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class CliConfig {
 
   private static final String HTTP_SCHEME = "http";
-  private static final String SITE_SCHEME = "site";
+  private static final String DOMAIN_SCHEME = "domain";
+  private static final String DEPRECATED_SITE_SCHEME = "site";
   private static final String MASTER_ENDPOINTS_KEY = "masterEndpoints";
-  private static final String SITES_KEY = "sites";
+  private static final String DOMAINS_KEY = "domains";
   private static final String SRV_NAME_KEY = "srvName";
   private static final String CONFIG_DIR = ".helios";
   private static final String CONFIG_FILE = "config";
@@ -59,13 +60,13 @@ public class CliConfig {
   static Map<String, String> environment = System.getenv();
 
   private final String username;
-  private final List<String> sites;
+  private final List<String> domains;
   private final String srvName;
   private final List<URI> masterEndpoints;
 
-  public CliConfig(List<String> sites, String srvName, List<URI> masterEndpoints) {
+  public CliConfig(List<String> domains, String srvName, List<URI> masterEndpoints) {
     this.username = System.getProperty("user.name");
-    this.sites = checkNotNull(sites);
+    this.domains = checkNotNull(domains);
     this.srvName = checkNotNull(srvName);
     this.masterEndpoints = checkNotNull(masterEndpoints);
   }
@@ -74,12 +75,12 @@ public class CliConfig {
     return username;
   }
 
-  public List<String> getSites() {
-    return sites;
+  public List<String> getDomains() {
+    return domains;
   }
 
-  public String getSitesString() {
-    return Joiner.on(",").join(sites);
+  public String getDomainsString() {
+    return Joiner.on(",").join(domains);
   }
 
   public String getSrvName() {
@@ -144,25 +145,31 @@ public class CliConfig {
 
     // Specifically only include relevant bits according to the env var setting, rather than
     // strictly overlaying config so that if the config file has a setting for master endpoints, the
-    // file doesn't override the env var if it's a site:// as masterEndpoints takes precedence over
-    // sites.
+    // file doesn't override the env var if it's a domain:// as masterEndpoints takes precedence
+    // over domains.
     final URI uri = new URI(master);
     final Builder<String, Object> builder = ImmutableMap.<String, Object>builder();
     // Always include the srvName bit if it's specified, so it can be specified in the file and
-    // a site flag could be passed on the command line, and it would work as you'd hope.
+    // a domain flag could be passed on the command line, and it would work as you'd hope.
     if (config.containsKey(SRV_NAME_KEY)) {
       builder.put(SRV_NAME_KEY, config.get(SRV_NAME_KEY));
     }
 
+    // TODO (dxia) Remove DEPRECATED_SITE_SCHEME after a period of time
     final String scheme = uri.getScheme();
-    if (SITE_SCHEME.equals(scheme)) {
-      builder.put(SITES_KEY, ImmutableList.of(uri.getHost())).build();
-    } else if (HTTP_SCHEME.equals(scheme)) {
-      builder.put(MASTER_ENDPOINTS_KEY, ImmutableList.of(master));
-    } else {
-      throw new RuntimeException("Unknown Scheme " + scheme
-          + " in HELIOS_MASTER env variable setting of [" + master + "]");
+    switch (scheme) {
+      case DOMAIN_SCHEME:
+      case DEPRECATED_SITE_SCHEME:
+        builder.put(DOMAINS_KEY, ImmutableList.of(uri.getHost())).build();
+        break;
+      case HTTP_SCHEME:
+        builder.put(MASTER_ENDPOINTS_KEY, ImmutableList.of(master));
+        break;
+      default:
+        throw new RuntimeException("Unknown Scheme " + scheme
+                                   + " in HELIOS_MASTER env variable setting of [" + master + "]");
     }
+
     return fromMap(builder.build());
   }
 
@@ -173,13 +180,13 @@ public class CliConfig {
    */
   public static CliConfig fromMap(Map<String, Object> config) {
     checkNotNull(config);
-    final List<String> sites = getList(config, SITES_KEY, EMPTY_STRING_LIST);
+    final List<String> domains = getList(config, DOMAINS_KEY, EMPTY_STRING_LIST);
     final String srvName = getString(config, SRV_NAME_KEY, "helios");
     final List<URI> masterEndpoints = Lists.newArrayList();
     for (final String endpoint : getList(config, MASTER_ENDPOINTS_KEY, EMPTY_STRING_LIST)) {
       masterEndpoints.add(URI.create(endpoint));
     }
-    return new CliConfig(sites, srvName, masterEndpoints);
+    return new CliConfig(domains, srvName, masterEndpoints);
   }
 
   private static String getString(final Map<String, Object> config, final String key,

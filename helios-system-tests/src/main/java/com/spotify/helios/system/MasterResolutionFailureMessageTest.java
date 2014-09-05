@@ -34,11 +34,12 @@ public class MasterResolutionFailureMessageTest {
 
   @Test
   public void test() throws Exception {
-    final String[] commands = {"jobs", "--no-log-setup", "-s", "bogussite"};
+    final String[] commands = {"jobs", "--no-log-setup", "-d", "bogusdomain"};
     final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
     final ByteArrayOutputStream stderr = new ByteArrayOutputStream();
     new CliMain(new PrintStream(stdout), new PrintStream(stderr), commands).run();
     final String string = stderr.toString();
-    assertTrue(string.trim().equals("Failed to resolve helios master in bogussite (srv: helios)"));
+    assertTrue(string.trim().equals(
+        "Failed to resolve helios master in bogusdomain (srv: helios)"));
   }
 }

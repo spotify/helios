@@ -130,7 +130,7 @@ public class CliParser {
                                            false, null,
                                            options.getBoolean(globalArgs.noLogSetup.getDest()));
 
-    // Merge sites and explicit endpoints into master endpoints
+    // Merge domains and explicit endpoints into master endpoints
     final List<String> explicitEndpoints = options.getList(globalArgs.masterArg.getDest());
     final List<String> sitesArguments = options.getList(globalArgs.sitesArg.getDest());
     final List<String> domainsArguments = options.getList(globalArgs.domainsArg.getDest());
@@ -159,8 +159,8 @@ public class CliParser {
       }
       return targets;
     } else if (domainsArguments != null && !domainsArguments.isEmpty()) {
-      final Iterable<String> sites = parseDomains(domainsArguments);
-      return Target.from(srvName, sites);
+      final Iterable<String> domains = parseDomains(domainsArguments);
+      return Target.from(srvName, domains);
     } else if (!cliConfig.getMasterEndpoints().isEmpty()) {
       final List<URI> cliConfigMasterEndpoints = cliConfig.getMasterEndpoints();
       List<Target> targets = Lists.newArrayListWithExpectedSize(cliConfigMasterEndpoints.size());
@@ -168,9 +168,9 @@ public class CliParser {
         targets.add(Target.from(endpoint));
       }
       return targets;
-    } else if (!cliConfig.getSitesString().isEmpty()) {
-      final Iterable<String> sites = parseDomainsString(cliConfig.getSitesString());
-      return Target.from(srvName, sites);
+    } else if (!cliConfig.getDomainsString().isEmpty()) {
+      final Iterable<String> domains = parseDomainsString(cliConfig.getDomainsString());
+      return Target.from(srvName, domains);
     }
 
     handleError(parser, new ArgumentParserException(
@@ -180,11 +180,11 @@ public class CliParser {
   }
 
   private Iterable<String> parseDomains(final List<String> domainStrings) {
-    final Set<String> sites = Sets.newLinkedHashSet();
+    final Set<String> domains = Sets.newLinkedHashSet();
     for (final String s : domainStrings) {
-      addAll(sites, parseDomainsString(s));
+      addAll(domains, parseDomainsString(s));
     }
-    return sites;
+    return domains;
   }
 
   private Iterable<String> parseDomainsString(final String domainsString) {

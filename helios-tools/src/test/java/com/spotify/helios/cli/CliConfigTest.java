@@ -28,9 +28,9 @@ public class CliConfigTest {
 
   @Test
   public void testSite() throws Exception {
-    CliConfig.environment = ImmutableMap.of("HELIOS_MASTER", "site://" + SITE1);
+    CliConfig.environment = ImmutableMap.of("HELIOS_MASTER", "domain://" + SITE1);
     final CliConfig config = CliConfig.fromUserConfig();
-    assertEquals(ImmutableList.of(SITE1), config.getSites());
+    assertEquals(ImmutableList.of(SITE1), config.getDomains());
     assertTrue(config.getMasterEndpoints().isEmpty());
   }
 
@@ -40,7 +40,7 @@ public class CliConfigTest {
     CliConfig.environment = ImmutableMap.of("HELIOS_MASTER", uri);
     final CliConfig config = CliConfig.fromUserConfig();
     assertEquals(ImmutableList.of(new URI(uri)), config.getMasterEndpoints());
-    assertTrue(config.getSites().isEmpty());
+    assertTrue(config.getDomains().isEmpty());
   }
 
   @Test
@@ -49,14 +49,14 @@ public class CliConfigTest {
     try (final FileOutputStream outFile = new FileOutputStream(file)) {
       outFile.write(Charsets.UTF_8.encode(
           "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2+ "\", \"" + ENDPOINT3 +
-          "\"], \"sites\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3 +
+          "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3 +
           "\"], \"srvName\":\"foo\"}").array());
       final CliConfig config = CliConfig.fromFile(file);
 
       assertEquals(
           ImmutableList.of(URI.create(ENDPOINT1), URI.create(ENDPOINT2), URI.create(ENDPOINT3)),
           config.getMasterEndpoints());
-      assertEquals(ImmutableList.of(SITE1, SITE2, SITE3), config.getSites());
+      assertEquals(ImmutableList.of(SITE1, SITE2, SITE3), config.getDomains());
       assertEquals("foo", config.getSrvName());
     }
   }
@@ -67,10 +67,10 @@ public class CliConfigTest {
     try (final FileOutputStream outFile = new FileOutputStream(file)) {
       outFile.write(Charsets.UTF_8.encode(
           "{\"masterEndpoints\":[\"http://localhost:5801\"], \"srvName\":\"foo\"}").array());
-      CliConfig.environment = ImmutableMap.of("HELIOS_MASTER", "site://" + SITE1);
+      CliConfig.environment = ImmutableMap.of("HELIOS_MASTER", "domain://" + SITE1);
       final CliConfig config = CliConfig.fromFile(file);
 
-      assertEquals(ImmutableList.of(SITE1), config.getSites());
+      assertEquals(ImmutableList.of(SITE1), config.getDomains());
       assertTrue(config.getMasterEndpoints().isEmpty());
       assertEquals("foo", config.getSrvName());
     }

@@ -156,12 +156,12 @@ public abstract class Target {
   }
 
   /**
-   * Create targets for a list of sites
+   * Create targets for a list of domains
    */
-  public static List<Target> from(final String srvName, final Iterable<String> sites) {
+  public static List<Target> from(final String srvName, final Iterable<String> domains) {
     final ImmutableList.Builder<Target> builder = ImmutableList.builder();
-    for (final String site : sites) {
-      builder.add(new SrvTarget(srvName, site));
+    for (final String domain : domains) {
+      builder.add(new SrvTarget(srvName, domain));
     }
     return builder.build();
   }
