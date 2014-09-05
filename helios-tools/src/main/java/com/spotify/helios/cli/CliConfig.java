@@ -46,6 +46,7 @@ public class CliConfig {
 
   private static final String HTTP_SCHEME = "http";
   private static final String DOMAIN_SCHEME = "domain";
+  private static final String DEPRECATED_SITE_SCHEME = "site";
   private static final String MASTER_ENDPOINTS_KEY = "masterEndpoints";
   private static final String DOMAINS_KEY = "domains";
   private static final String SRV_NAME_KEY = "srvName";
@@ -154,15 +155,21 @@ public class CliConfig {
       builder.put(SRV_NAME_KEY, config.get(SRV_NAME_KEY));
     }
 
+    // TODO (dxia) Remove DEPRECATED_SITE_SCHEME after a period of time
     final String scheme = uri.getScheme();
-    if (DOMAIN_SCHEME.equals(scheme)) {
-      builder.put(DOMAINS_KEY, ImmutableList.of(uri.getHost())).build();
-    } else if (HTTP_SCHEME.equals(scheme)) {
-      builder.put(MASTER_ENDPOINTS_KEY, ImmutableList.of(master));
-    } else {
-      throw new RuntimeException("Unknown Scheme " + scheme
-          + " in HELIOS_MASTER env variable setting of [" + master + "]");
+    switch (scheme) {
+      case DOMAIN_SCHEME:
+      case DEPRECATED_SITE_SCHEME:
+        builder.put(DOMAINS_KEY, ImmutableList.of(uri.getHost())).build();
+        break;
+      case HTTP_SCHEME:
+        builder.put(MASTER_ENDPOINTS_KEY, ImmutableList.of(master));
+        break;
+      default:
+        throw new RuntimeException("Unknown Scheme " + scheme
+                                   + " in HELIOS_MASTER env variable setting of [" + master + "]");
     }
+
     return fromMap(builder.build());
   }
 
