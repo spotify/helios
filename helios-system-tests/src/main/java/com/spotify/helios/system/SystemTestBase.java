@@ -191,7 +191,7 @@ public abstract class SystemTestBase {
       masterEndpoint = "http://localhost:" + masterPort();
       // unit test
     } else {
-      throw new RuntimeException("testClass neither ends in Test or ITCase");
+      throw new RuntimeException("Test class' name must end in either 'Test' or 'ITCase'.");
     }
 
     zk = zooKeeperTestManager();
