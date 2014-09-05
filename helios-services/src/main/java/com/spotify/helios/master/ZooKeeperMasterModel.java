@@ -207,7 +207,9 @@ public class ZooKeeperMasterModel implements MasterModel {
         for (final String node : reverse(nodes)) {
           operations.add(delete(node));
         }
-        operations.add(delete(Paths.configJobHost(job, host)));
+        if (client.exists(Paths.configJobHost(job, host)) != null) {
+          operations.add(delete(Paths.configJobHost(job, host)));
+        }
         // Clean out the history for each job
         try {
           final List<String> history = client.listRecursive(Paths.historyJobHost(job, host));
@@ -229,11 +231,14 @@ public class ZooKeeperMasterModel implements MasterModel {
       }
 
       // Remove port allocations
-      final List<String> ports = client.getChildren(Paths.configHostPorts(host));
-      for (final String port : ports) {
-        operations.add(delete(Paths.configHostPort(host, Integer.valueOf(port))));
+      try {
+        final List<String> ports = client.getChildren(Paths.configHostPorts(host));
+        for (final String port : ports) {
+          operations.add(delete(Paths.configHostPort(host, Integer.valueOf(port))));
+        }
+        operations.add(delete(Paths.configHostPorts(host)));
+      } catch (NoNodeException ignore) {
       }
-      operations.add(delete(Paths.configHostPorts(host)));
 
       // Remove host id
       String idPath = Paths.configHostId(host);
