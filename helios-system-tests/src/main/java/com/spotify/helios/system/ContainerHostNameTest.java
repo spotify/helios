@@ -24,7 +24,6 @@ package com.spotify.helios.system;
 import com.google.common.base.Splitter;
 
 import com.spotify.docker.client.DefaultDockerClient;
-import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -52,25 +51,26 @@ public class ContainerHostNameTest extends SystemTestBase {
     startDefaultAgent(testHost());
     awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
-    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
+    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
 
-    final List<String> command = asList("hostname", "-f");
+      final List<String> command = asList("hostname", "-f");
 
-    // Create job
-    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, command);
+      // Create job
+      final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, command);
 
-    // deploy
-    deployJob(jobId, testHost());
+      // deploy
+      deployJob(jobId, testHost());
 
-    final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
+      final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
-    final String log;
-    try (final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {
-      log = logs.readFully();
+      final String log;
+      try (final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {
+        log = logs.readFully();
+      }
+
+      final String needle = testJobName + "_" + testJobVersion + "." + testHost();
+      assertThat(log, containsString(needle));
     }
-
-    final String needle = testJobName + "_" + testJobVersion + "." + testHost();
-    assertThat(log, containsString(needle));
   }
 
   @Test
@@ -101,8 +101,8 @@ public class ContainerHostNameTest extends SystemTestBase {
 
       final List<String> hostnameParts = Splitter.on(".").splitToList(log.trim());
       final int firstPartLen = hostnameParts.get(0).length();
-      assertTrue(format("first part of host name should be <= 63 long, was %s", firstPartLen),
-          firstPartLen <= 63);
+      assertTrue(format("first part of host name should be <= 32 long, was %s", firstPartLen),
+          firstPartLen <= 32);
     }
   }
 }

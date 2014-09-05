@@ -21,7 +21,6 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Ascii;
 import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -62,7 +61,7 @@ public class TaskConfig {
   private static final Logger log = LoggerFactory.getLogger(TaskConfig.class);
 
   private static final Pattern CONTAINER_NAME_FORBIDDEN = Pattern.compile("[^a-zA-Z0-9_-]");
-  private static final int HOST_NAME_MAX = 63;
+  private static final int HOST_NAME_MAX = 32;
 
   private final String host;
   private final Map<String, Integer> ports;
@@ -211,7 +210,17 @@ public class TaskConfig {
         sb.append('_');
       }
     }
-    return Ascii.truncate(sb.toString(), HOST_NAME_MAX, "");
+
+    final String hostname = sb.toString();
+    if (hostname.length() <= HOST_NAME_MAX) {
+      return hostname;
+    }
+
+    // If the hostname is too long, concatenate first and last 16 chars of it, so as to get
+    // an "ideal" sample of significant bits of version, id and name
+    final String tail = hostname.substring(hostname.length() - 16);
+    final String head = hostname.substring(0, 16);
+    return head + tail;
   }
 
   /**
