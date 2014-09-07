@@ -21,7 +21,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
@@ -90,7 +89,7 @@ public class TemporaryJobs implements TestRule {
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
           1, new ThreadFactoryBuilder()
-              .setNameFormat("helios-temporary-jobs-test-runner-%d")
+              .setNameFormat("helios-test-runner-%d")
               .setDaemon(true)
               .build()),
       0, SECONDS);
@@ -106,8 +105,7 @@ public class TemporaryJobs implements TestRule {
 
       final List<String> hosts;
       try {
-        log.info("Getting list of hosts");
-
+        log.debug("Getting list of hosts");
         hosts = client.listHosts().get();
       } catch (InterruptedException | ExecutionException e) {
         throw new AssertionError("Failed to get list of Helios hosts", e);
@@ -138,7 +136,6 @@ public class TemporaryJobs implements TestRule {
              "no arguments to automatically select a host");
       }
 
-      log.info("Deploying {} to {}", job.getImage(), Joiner.on(", ").skipNulls().join(hosts));
       final TemporaryJob temporaryJob = new TemporaryJob(client, prober, job, hosts, waitPorts);
       jobs.add(temporaryJob);
       temporaryJob.deploy();
@@ -189,8 +186,6 @@ public class TemporaryJobs implements TestRule {
     }
 
     final List<AssertionError> errors = newArrayList();
-
-    log.info("Undeploying temporary jobs");
 
     for (TemporaryJob job : jobs) {
       job.undeploy(errors);
@@ -318,7 +313,7 @@ public class TemporaryJobs implements TestRule {
   private void removeOldJobs(final Path prefixDirectory)
       throws ExecutionException, InterruptedException, IOException {
     final File[] files = prefixDirectory.toFile().listFiles();
-    if (files == null) {
+    if (files == null || files.length == 0) {
       return;
     }
 
@@ -352,16 +347,10 @@ public class TemporaryJobs implements TestRule {
             continue;
           }
           // Get list of all hosts where this job is deployed, and undeploy
-          log.info("Getting status for job {}", jobId);
           final JobStatus status = client.jobStatus(entry.getKey()).get();
           final List<String> hosts = ImmutableList.copyOf(status.getDeployments().keySet());
-
-          log.info("Undeploying job {} from hosts {}",
-                   jobId,
-                   Joiner.on(", ").skipNulls().join(hosts));
-
           final List<AssertionError> errors =
-              undeploy(client, jobId, hosts, new ArrayList<AssertionError>());
+              undeploy(client, entry.getValue(), hosts, new ArrayList<AssertionError>());
 
           // Set flag indicating if any errors occur
           if (!errors.isEmpty()) {

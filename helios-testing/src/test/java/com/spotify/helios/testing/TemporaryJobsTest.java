@@ -42,14 +42,18 @@ import java.util.Map;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.testing.Jobs.getJobDescription;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.both;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -396,6 +400,20 @@ public class TemporaryJobsTest extends SystemTestBase {
     assertThat(testResult(TempJobFailureTest.class), hasSingleFailureContaining("AssertionError: Unexpected job state"));
     final long end = System.currentTimeMillis();
     assertTrue("Test should not time out", (end-start) < Jobs.TIMEOUT_MILLIS);
+  }
+
+  @Test
+  public void testGetJobDescription() {
+    final Job job = Job.newBuilder()
+        .setImage(BUSYBOX)
+        .setName("testGetJobDescription")
+        .setVersion("1")
+        .build();
+    final String shortHash = job.getId().getHash().substring(0, 7);
+
+    // Simple test to verify the job description contains the image name and a shortened job hash.
+    assertThat(getJobDescription(job),
+               both(startsWith(BUSYBOX)).and(containsString(shortHash)));
   }
 
   private static boolean fileExists(final Path path, final String prefix) {
