@@ -61,7 +61,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
     this.operatingSystemMXBean = checkNotNull(builder.operatingSystemMXBean,
                                               "operatingSystemMXBean");
     this.nodeUpdater = builder.nodeUpdaterFactory.create(
-        Paths.statusHostInfo(checkNotNull(builder.host, "host")));
+        builder.paths.statusHostInfo(checkNotNull(builder.host, "host")));
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
     this.interval = builder.interval;
     this.timeUnit = checkNotNull(builder.timeUnit, "timeUnit");
@@ -141,6 +141,12 @@ public class HostInfoReporter extends InterruptingScheduledService {
     private DockerClient dockerClient;
     private int interval = DEFAULT_INTERVAL;
     private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
+    private Paths paths;
+
+    public Builder setPaths(final Paths paths) {
+      this.paths = paths;
+      return this;
+    }
 
     public Builder setNodeUpdaterFactory(final NodeUpdaterFactory nodeUpdaterFactory) {
       this.nodeUpdaterFactory = nodeUpdaterFactory;

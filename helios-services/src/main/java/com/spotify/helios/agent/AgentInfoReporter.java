@@ -50,7 +50,8 @@ public class AgentInfoReporter extends InterruptingScheduledService {
 
   AgentInfoReporter(final Builder builder) {
     this.runtimeMXBean = checkNotNull(builder.runtimeMXBean);
-    this.nodeUpdater = builder.nodeUpdaterFactory.create(Paths.statusHostAgentInfo(builder.host));
+    this.nodeUpdater = builder.nodeUpdaterFactory.create(
+        builder.paths.statusHostAgentInfo(builder.host));
     this.interval = builder.interval;
     this.timeUnit = checkNotNull(builder.timeUnit);
   }
@@ -94,6 +95,12 @@ public class AgentInfoReporter extends InterruptingScheduledService {
     private String host;
     private int interval = DEFAULT_INTERVAL;
     private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
+    private Paths paths;
+
+    public Builder setPaths(final Paths paths) {
+      this.paths = paths;
+      return this;
+    }
 
     public Builder setNodeUpdaterFactory(final NodeUpdaterFactory nodeUpdaterFactory) {
       this.nodeUpdaterFactory = nodeUpdaterFactory;

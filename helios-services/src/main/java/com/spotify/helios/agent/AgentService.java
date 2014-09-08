@@ -103,6 +103,7 @@ public class AgentService extends AbstractIdleService {
   private final Metrics metrics;
   private final ServiceRegistrar serviceRegistrar;
   private final Environment environment;
+  private final Paths paths;
 
   private ZooKeeperRegistrar zkRegistrar;
 
@@ -170,6 +171,7 @@ public class AgentService extends AbstractIdleService {
       environment.manage(riemannSupport);
     }
 
+    this.paths = new Paths(config.getZooKeeperPathPrefix());
     this.zooKeeperClient = setupZookeeperClient(config, id);
     final DockerHealthChecker dockerHealthChecker = new DockerHealthChecker(
         metrics.getSupervisorMetrics(), TimeUnit.SECONDS, 30, riemannFacade);
@@ -182,7 +184,8 @@ public class AgentService extends AbstractIdleService {
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
     try {
-      this.model = new ZooKeeperAgentModel(zkClientProvider, config.getName(), stateDirectory);
+      this.model = new ZooKeeperAgentModel(zkClientProvider, config.getName(), stateDirectory,
+          paths);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
@@ -200,6 +203,7 @@ public class AgentService extends AbstractIdleService {
                                                                           dockerClient);
 
     this.hostInfoReporter = HostInfoReporter.newBuilder()
+        .setPaths(paths)
         .setNodeUpdaterFactory(nodeUpdaterFactory)
         .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
         .setHost(config.getName())
@@ -207,6 +211,7 @@ public class AgentService extends AbstractIdleService {
         .build();
 
     this.agentInfoReporter = AgentInfoReporter.newBuilder()
+        .setPaths(paths)
         .setNodeUpdaterFactory(nodeUpdaterFactory)
         .setRuntimeMXBean(getRuntimeMXBean())
         .setHost(config.getName())
@@ -214,7 +219,8 @@ public class AgentService extends AbstractIdleService {
 
     this.environmentVariableReporter = new EnvironmentVariableReporter(config.getName(),
                                                                        config.getEnvVars(),
-                                                                       nodeUpdaterFactory);
+                                                                       nodeUpdaterFactory,
+                                                                       paths);
 
     final String namespace = "helios-" + id;
 
@@ -249,7 +255,7 @@ public class AgentService extends AbstractIdleService {
                            reaper);
 
     final ZooKeeperHealthChecker zkHealthChecker = new ZooKeeperHealthChecker(zooKeeperClient,
-                                                                              Paths.statusHosts(),
+                                                                              paths.statusHosts(),
                                                                               riemannFacade,
                                                                               TimeUnit.MINUTES, 2);
     environment.manage(zkHealthChecker);
@@ -284,7 +290,8 @@ public class AgentService extends AbstractIdleService {
 
     // Register the agent
     zkRegistrar =
-        new ZooKeeperRegistrar(client, new AgentZooKeeperRegistrar(this, config.getName(), id));
+        new ZooKeeperRegistrar(client,
+            new AgentZooKeeperRegistrar(this, config.getName(), id, paths));
 
     return client;
   }

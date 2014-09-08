@@ -29,7 +29,6 @@ import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
-import com.spotify.helios.servicescommon.coordination.Paths;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
@@ -131,6 +130,6 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     awaitJobState(client, testHost(), fooJob.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
 
     // Remove task status
-    zkc.curator().delete().forPath(Paths.statusHostJob(testHost(), fooJob.getId()));
+    zkc.curator().delete().forPath(paths().statusHostJob(testHost(), fooJob.getId()));
   }
 }

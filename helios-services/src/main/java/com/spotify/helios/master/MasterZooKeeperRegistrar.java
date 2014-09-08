@@ -44,10 +44,12 @@ public class MasterZooKeeperRegistrar implements ZooKeeperRegistrarEventListener
   private static final Logger log = LoggerFactory.getLogger(MasterZooKeeperRegistrar.class);
 
   private final String name;
+  private final Paths paths;
   private PersistentEphemeralNode upNode;
 
-  public MasterZooKeeperRegistrar(String name) {
+  public MasterZooKeeperRegistrar(String name, final Paths paths) {
     this.name = name;
+    this.paths = paths;
   }
 
   @Override
@@ -70,15 +72,15 @@ public class MasterZooKeeperRegistrar implements ZooKeeperRegistrarEventListener
   @Override
   public void tryToRegister(final ZooKeeperClient client) throws KeeperException {
 
-    client.ensurePath(Paths.configHosts());
-    client.ensurePath(Paths.configJobs());
-    client.ensurePath(Paths.configJobRefs());
-    client.ensurePath(Paths.statusHosts());
-    client.ensurePath(Paths.statusMasters());
-    client.ensurePath(Paths.historyJobs());
+    client.ensurePath(paths.configHosts());
+    client.ensurePath(paths.configJobs());
+    client.ensurePath(paths.configJobRefs());
+    client.ensurePath(paths.statusHosts());
+    client.ensurePath(paths.statusMasters());
+    client.ensurePath(paths.historyJobs());
 
     if (upNode == null) {
-      final String upPath = Paths.statusMasterUp(name);
+      final String upPath = paths.statusMasterUp(name);
       upNode = client.persistentEphemeralNode(upPath, Mode.EPHEMERAL, new byte[]{});
       upNode.start();
     }

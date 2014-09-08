@@ -39,6 +39,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,7 +55,6 @@ import java.util.concurrent.TimeUnit;
 import static com.spotify.helios.Polling.await;
 import static com.spotify.helios.agent.QueueingHistoryWriter.MAX_NUMBER_STATUS_EVENTS_TO_RETAIN;
 import static com.spotify.helios.common.descriptors.Goal.START;
-import static org.apache.zookeeper.KeeperException.ConnectionLossException;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
@@ -85,19 +85,21 @@ public class QueueingHistoryWriterTest {
   private QueueingHistoryWriter writer;
   private ZooKeeperMasterModel masterModel;
   private Path agentStateDirs;
+  private Paths paths;
 
   @Before
   public void setUp() throws Exception {
+    paths = new Paths("/");
     zk = new ZooKeeperStandaloneServerManager();
     agentStateDirs = Files.createTempDirectory("helios-agents");
 
     client = new DefaultZooKeeperClient(zk.curator());
     makeWriter(client);
     masterModel = new ZooKeeperMasterModel(new ZooKeeperClientProvider(client,
-        ZooKeeperModelReporter.noop()));
-    client.ensurePath(Paths.configJobs());
-    client.ensurePath(Paths.configJobRefs());
-    client.ensurePath(Paths.historyJobHostEvents(JOB_ID, HOSTNAME));
+        ZooKeeperModelReporter.noop()), paths);
+    client.ensurePath(paths.configJobs());
+    client.ensurePath(paths.configJobRefs());
+    client.ensurePath(paths.historyJobHostEvents(JOB_ID, HOSTNAME));
     masterModel.registerHost(HOSTNAME, "foo");
     masterModel.addJob(JOB);
   }
@@ -110,7 +112,7 @@ public class QueueingHistoryWriterTest {
 
   private void makeWriter(ZooKeeperClient client) throws Exception {
     writer = new QueueingHistoryWriter(HOSTNAME,
-        client, agentStateDirs.resolve("task-history.json"));
+        client, agentStateDirs.resolve("task-history.json"), paths);
     writer.startUp();
   }
 
@@ -118,7 +120,7 @@ public class QueueingHistoryWriterTest {
   public void testZooKeeperErrorDoesntLoseItemsReally() throws Exception {
     final ZooKeeperClient mockClient = mock(ZooKeeperClient.class);
     makeWriter(mockClient);
-    final String path = Paths.historyJobHostEventsTimestamp(JOB_ID, HOSTNAME, TIMESTAMP);
+    final String path = paths.historyJobHostEventsTimestamp(JOB_ID, HOSTNAME, TIMESTAMP);
     final KeeperException exc = new ConnectionLossException();
     // make save operations fail
     doThrow(exc).when(mockClient).createAndSetData(path, TASK_STATUS.toJsonBytes());

@@ -75,7 +75,6 @@ import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.jersey.api.client.ClientResponse;
 
-import org.apache.curator.framework.CuratorFramework;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -167,8 +166,10 @@ public abstract class SystemTestBase {
   private String testHost;
   private Path agentStateDirs;
   private String masterName;
+  private Paths paths;
 
   private ZooKeeperTestManager zk;
+  protected static String zkPathPrefix = "";
 
   @BeforeClass
   public static void staticSetup() {
@@ -178,6 +179,8 @@ public abstract class SystemTestBase {
 
   @Before
   public void baseSetup() throws Exception {
+    // Prefix cannot end with / unless it's only "/"
+    paths = new Paths(zkPathPrefix == "" ? "/" : zkPathPrefix);
     masterPort = temporaryPorts.localPort("helios master");
     masterAdminPort = temporaryPorts.localPort("helios master admin");
 
@@ -290,7 +293,7 @@ public abstract class SystemTestBase {
   }
 
   protected ZooKeeperTestManager zooKeeperTestManager() {
-    return new ZooKeeperStandaloneServerManager();
+    return new ZooKeeperStandaloneServerManager(zkPathPrefix);
   }
 
   @After
@@ -410,6 +413,10 @@ public abstract class SystemTestBase {
     return zk;
   }
 
+  protected Paths paths() {
+    return paths;
+  }
+
   protected String masterEndpoint() {
     return masterEndpoint;
   }
@@ -469,14 +476,13 @@ public abstract class SystemTestBase {
       return null;
     }
 
-    // TODO (dano): Move this bootstrapping to something reusable
-    final CuratorFramework curator = zk.curator();
-    curator.newNamespaceAwareEnsurePath(Paths.configHosts()).ensure(curator.getZookeeperClient());
-    curator.newNamespaceAwareEnsurePath(Paths.configJobs()).ensure(curator.getZookeeperClient());
-    curator.newNamespaceAwareEnsurePath(Paths.configJobRefs()).ensure(curator.getZookeeperClient());
-    curator.newNamespaceAwareEnsurePath(Paths.statusHosts()).ensure(curator.getZookeeperClient());
-    curator.newNamespaceAwareEnsurePath(Paths.statusMasters()).ensure(curator.getZookeeperClient());
-    curator.newNamespaceAwareEnsurePath(Paths.historyJobs()).ensure(curator.getZookeeperClient());
+//    // TODO (dano): Move this bootstrapping to something reusable
+//    zk.ensure(paths.configHosts());
+//    zk.ensure(paths.configJobs());
+//    zk.ensure(paths.configJobRefs());
+//    zk.ensure(paths.statusHosts());
+//    zk.ensure(paths.statusMasters());
+//    zk.ensure(paths.historyJobs());
 
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",

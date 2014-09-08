@@ -26,7 +26,6 @@ import com.spotify.helios.common.descriptors.JobId;
 import java.util.UUID;
 
 public class Paths {
-
   private static final String UP = "up";
   private static final String CONFIG = "config";
   private static final String STATUS = "status";
@@ -41,157 +40,166 @@ public class Paths {
   private static final String PORTS = "ports";
   private static final String ENVIRONMENT = "environment";
   private static final String ID = "id";
-
-  private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
-  private static final PathFactory CONFIG_JOBREFS = new PathFactory("/", CONFIG, JOBREFS);
-  private static final PathFactory CONFIG_HOSTS = new PathFactory("/", CONFIG, HOSTS);
-  private static final PathFactory STATUS_HOSTS = new PathFactory("/", STATUS, HOSTS);
-  private static final PathFactory STATUS_MASTERS = new PathFactory("/", STATUS, MASTERS);
-  private static final PathFactory HISTORY_JOBS = new PathFactory("/", HISTORY, JOBS);
   private static final String CREATION_PREFIX = "creation-";
 
-  public static String configHosts() {
-    return CONFIG_HOSTS.path();
+  private final PathFactory configJobs;
+  private final PathFactory configJobRefs;
+  private final PathFactory configHosts;
+  private final PathFactory statusHosts;
+  private final PathFactory statusMasters;
+  private final PathFactory historyJobs;
+
+  public Paths(final String prefix) {
+    configJobs = new PathFactory(prefix, CONFIG, JOBS);
+    configJobRefs = new PathFactory(prefix, CONFIG, JOBREFS);
+    configHosts = new PathFactory(prefix, CONFIG, HOSTS);
+    statusHosts = new PathFactory(prefix, STATUS, HOSTS);
+    statusMasters = new PathFactory(prefix, STATUS, MASTERS);
+    historyJobs = new PathFactory(prefix, HISTORY, JOBS);
   }
 
-  public static String configJobs() {
-    return CONFIG_JOBS.path();
+  public String configHosts() {
+    return configHosts.path();
   }
 
-  public static String configJobRefs() {
-    return CONFIG_JOBREFS.path();
+  public String configJobs() {
+    return configJobs.path();
   }
 
-  public static String configJob(final JobId id) {
-    return CONFIG_JOBS.path(id.toString());
+  public String configJobRefs() {
+    return configJobRefs.path();
   }
 
-  public static boolean isConfigJobCreation(final JobId id, final String parent,
-                                            final String child) {
+  public String configJob(final JobId id) {
+    return configJobs.path(id.toString());
+  }
+
+  public boolean isConfigJobCreation(final JobId id, final String parent,
+                                     final String child) {
     return child.startsWith(CREATION_PREFIX);
   }
 
-  public static UUID configJobCreationId(final JobId id, final String parent, final String child) {
+  public UUID configJobCreationId(final JobId id, final String parent, final String child) {
     return UUID.fromString(child.substring(CREATION_PREFIX.length()));
   }
 
-  public static String configHostJobCreationParent(final JobId id) {
+  public String configHostJobCreationParent(final JobId id) {
     return configJob(id);
   }
 
-  public static String configJobCreation(final JobId id, final UUID operationId) {
+  public String configJobCreation(final JobId id, final UUID operationId) {
     final String name = CREATION_PREFIX + operationId;
-    return CONFIG_JOBS.path(id.toString(), name);
+    return configJobs.path(id.toString(), name);
   }
 
-  public static String configJobRefShort(final JobId id) {
-    return CONFIG_JOBREFS.path(id.getName() + ":" + id.getVersion());
+  public String configJobRefShort(final JobId id) {
+    return configJobRefs.path(id.getName() + ":" + id.getVersion());
   }
 
-  public static String configJobHosts(final JobId jobId) {
-    return CONFIG_JOBS.path(jobId.toString(), HOSTS);
+  public String configJobHosts(final JobId jobId) {
+    return configJobs.path(jobId.toString(), HOSTS);
   }
 
-  public static String configJobHost(final JobId jobId, final String host) {
-    return CONFIG_JOBS.path(jobId.toString(), HOSTS, host);
+  public String configJobHost(final JobId jobId, final String host) {
+    return configJobs.path(jobId.toString(), HOSTS, host);
   }
 
-  public static String configHost(final String host) {
-    return CONFIG_HOSTS.path(host);
+  public String configHost(final String host) {
+    return configHosts.path(host);
   }
 
-  public static String configHostId(final String host) {
-    return CONFIG_HOSTS.path(host, ID);
+  public String configHostId(final String host) {
+    return configHosts.path(host, ID);
   }
 
-  public static String configHostJobs(final String host) {
-    return CONFIG_HOSTS.path(host, JOBS);
+  public String configHostJobs(final String host) {
+    return configHosts.path(host, JOBS);
   }
 
-  public static String configHostJob(final String host, final JobId jobId) {
-    return CONFIG_HOSTS.path(host, JOBS, jobId.toString());
+  public String configHostJob(final String host, final JobId jobId) {
+    return configHosts.path(host, JOBS, jobId.toString());
   }
 
-  public static String configHostJobCreation(final String host, final JobId id,
+  public String configHostJobCreation(final String host, final JobId id,
                                              final UUID operationId) {
-    return CONFIG_HOSTS.path(host, JOBS, id.toString(), CREATION_PREFIX + operationId);
+    return configHosts.path(host, JOBS, id.toString(), CREATION_PREFIX + operationId);
   }
 
-  public static String configHostPorts(final String host) {
-    return CONFIG_HOSTS.path(host, PORTS);
+  public String configHostPorts(final String host) {
+    return configHosts.path(host, PORTS);
   }
 
-  public static String configHostPort(final String host, final int port) {
-    return CONFIG_HOSTS.path(host, PORTS, String.valueOf(port));
+  public String configHostPort(final String host, final int port) {
+    return configHosts.path(host, PORTS, String.valueOf(port));
   }
 
-  public static String statusHosts() {
-    return STATUS_HOSTS.path();
+  public String statusHosts() {
+    return statusHosts.path();
   }
 
-  public static String statusHost(final String host) {
-    return STATUS_HOSTS.path(host);
+  public String statusHost(final String host) {
+    return statusHosts.path(host);
   }
 
-  public static String statusHostJobs(final String host) {
-    return STATUS_HOSTS.path(host, JOBS);
+  public String statusHostJobs(final String host) {
+    return statusHosts.path(host, JOBS);
   }
 
-  public static String statusHostJob(final String host, final JobId jobId) {
-    return STATUS_HOSTS.path(host, JOBS, jobId.toString());
+  public String statusHostJob(final String host, final JobId jobId) {
+    return statusHosts.path(host, JOBS, jobId.toString());
   }
 
-  public static String statusHostUp(final String host) {
-    return STATUS_HOSTS.path(host, UP);
+  public String statusHostUp(final String host) {
+    return statusHosts.path(host, UP);
   }
 
-  public static String statusMasterUp(final String master) {
-    return STATUS_MASTERS.path(master, UP);
+  public String statusMasterUp(final String master) {
+    return statusMasters.path(master, UP);
   }
 
-  public static String statusMasters() {
-    return STATUS_MASTERS.path();
+  public String statusMasters() {
+    return statusMasters.path();
   }
 
-  public static String statusMaster() {
-    return STATUS_MASTERS.path();
+  public String statusMaster() {
+    return statusMasters.path();
   }
 
-  public static String statusHostInfo(final String host) {
-    return STATUS_HOSTS.path(host, HOSTINFO);
+  public String statusHostInfo(final String host) {
+    return statusHosts.path(host, HOSTINFO);
   }
 
-  public static String statusHostAgentInfo(final String host) {
-    return STATUS_HOSTS.path(host, AGENTINFO);
+  public String statusHostAgentInfo(final String host) {
+    return statusHosts.path(host, AGENTINFO);
   }
 
-  public static String statusHostEnvVars(final String host) {
-    return STATUS_HOSTS.path(host, ENVIRONMENT);
+  public String statusHostEnvVars(final String host) {
+    return statusHosts.path(host, ENVIRONMENT);
   }
 
-  public static String historyJobHostEventsTimestamp(final JobId jobId,
+  public String historyJobHostEventsTimestamp(final JobId jobId,
                                                      final String host,
                                                      final long timestamp) {
-    return HISTORY_JOBS.path(jobId.toString(), HOSTS, host, EVENTS, String.valueOf(timestamp));
+    return historyJobs.path(jobId.toString(), HOSTS, host, EVENTS, String.valueOf(timestamp));
   }
 
-  public static String historyJobHostEvents(final JobId jobId, final String host) {
-    return HISTORY_JOBS.path(jobId.toString(), HOSTS, host, EVENTS);
+  public String historyJobHostEvents(final JobId jobId, final String host) {
+    return historyJobs.path(jobId.toString(), HOSTS, host, EVENTS);
   }
 
-  public static String historyJobHosts(final JobId jobId) {
-    return HISTORY_JOBS.path(jobId.toString(), HOSTS);
+  public String historyJobHosts(final JobId jobId) {
+    return historyJobs.path(jobId.toString(), HOSTS);
   }
 
-  public static String historyJobHost(final JobId jobId, final String host) {
-    return HISTORY_JOBS.path(jobId.toString(), HOSTS, host);
+  public String historyJobHost(final JobId jobId, final String host) {
+    return historyJobs.path(jobId.toString(), HOSTS, host);
   }
 
-  public static String historyJob(final JobId jobId) {
-    return HISTORY_JOBS.path(jobId.toString());
+  public String historyJob(final JobId jobId) {
+    return historyJobs.path(jobId.toString());
   }
 
-  public static String historyJobs() {
-    return HISTORY_JOBS.path();
+  public String historyJobs() {
+    return historyJobs.path();
   }
 }

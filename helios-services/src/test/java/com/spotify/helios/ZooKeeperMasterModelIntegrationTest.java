@@ -24,14 +24,14 @@ package com.spotify.helios;
 import com.google.common.collect.ImmutableList;
 
 import com.spotify.helios.common.HeliosException;
-import com.spotify.helios.master.HostNotFoundException;
-import com.spotify.helios.master.JobDoesNotExistException;
-import com.spotify.helios.master.JobNotDeployedException;
-import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.master.HostNotFoundException;
+import com.spotify.helios.master.JobDoesNotExistException;
+import com.spotify.helios.master.JobNotDeployedException;
+import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.master.ZooKeeperMasterModel;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -80,6 +80,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   private ZooKeeperMasterModel model;
 
   private ZooKeeperStandaloneServerManager zk = new ZooKeeperStandaloneServerManager();
+  private Paths paths;
 
   @Before
   public void setup() throws Exception {
@@ -89,16 +90,17 @@ public class ZooKeeperMasterModelIntegrationTest {
     curator.start();
     client = new DefaultZooKeeperClient(curator);
 
+    paths = new Paths("/");
     // TODO (dano): this bootstrapping is essentially duplicated from MasterService, should be moved into ZooKeeperMasterModel?
-    client.ensurePath(Paths.configHosts());
-    client.ensurePath(Paths.configJobs());
-    client.ensurePath(Paths.configJobRefs());
-    client.ensurePath(Paths.statusHosts());
-    client.ensurePath(Paths.statusMasters());
-    client.ensurePath(Paths.historyJobs());
+    client.ensurePath(paths.configHosts());
+    client.ensurePath(paths.configJobs());
+    client.ensurePath(paths.configJobRefs());
+    client.ensurePath(paths.statusHosts());
+    client.ensurePath(paths.statusMasters());
+    client.ensurePath(paths.historyJobs());
 
     model = new ZooKeeperMasterModel(
-        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()));
+        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()), paths);
   }
 
   @Test

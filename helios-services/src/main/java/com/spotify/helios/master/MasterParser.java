@@ -51,6 +51,7 @@ public class MasterParser extends ServiceParser {
         .setZooKeeperConnectString(getZooKeeperConnectString())
         .setZooKeeperSessionTimeoutMillis(getZooKeeperSessionTimeoutMillis())
         .setZooKeeperConnectionTimeoutMillis(getZooKeeperConnectionTimeoutMillis())
+        .setZooKeeperPathPrefix(getZooKeeperPathPrefix())
         .setDomain(getDomain())
         .setName(getName())
         .setStatsdHostPort(getStatsdHostPort())
