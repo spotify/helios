@@ -150,7 +150,7 @@ public class TemporaryJob {
   void deploy() {
     try {
       // Create job
-      log.debug("Creating job {}", job.getId());
+      log.info("Creating job {}", job.getId().toShortString());
       final CreateJobResponse createResponse = get(client.createJob(job));
       if (createResponse.getStatus() != CreateJobResponse.Status.OK) {
         fail(format("Failed to create job %s - %s", job.getId(),
