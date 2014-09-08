@@ -29,6 +29,7 @@ public interface CuratorClientFactory {
     public CuratorFramework newClient(String connectString,
                                       int sessionTimeoutMs,
                                       int connectionTimeoutMs,
-                                      RetryPolicy retryPolicy);
+                                      RetryPolicy retryPolicy,
+                                      String namespace);
 
 }

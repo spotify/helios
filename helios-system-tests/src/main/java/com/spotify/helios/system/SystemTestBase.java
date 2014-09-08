@@ -169,6 +169,7 @@ public abstract class SystemTestBase {
   private String masterName;
 
   private ZooKeeperTestManager zk;
+  protected static String zooKeeperNamespace = null;
 
   @BeforeClass
   public static void staticSetup() {
@@ -290,7 +291,7 @@ public abstract class SystemTestBase {
   }
 
   protected ZooKeeperTestManager zooKeeperTestManager() {
-    return new ZooKeeperStandaloneServerManager();
+    return new ZooKeeperStandaloneServerManager(zooKeeperNamespace);
   }
 
   @After

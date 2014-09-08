@@ -176,7 +176,6 @@ public class MasterService extends AbstractIdleService {
   @Override
   protected void startUp() throws Exception {
     logBanner();
-    zooKeeperClient.start();
     zkRegistrar.startAsync().awaitRunning();
     expiredJobReaper.startAsync().awaitRunning();
     try {
@@ -223,12 +222,13 @@ public class MasterService extends AbstractIdleService {
   private ZooKeeperClient setupZookeeperClient(final MasterConfig config) {
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
     final CuratorFramework curator = curatorClientFactory.newClient(
-        config.getZooKeeperConnectString(),
+        config.getZooKeeperConnectionString(),
         config.getZooKeeperSessionTimeoutMillis(),
         config.getZooKeeperConnectionTimeoutMillis(),
-        zooKeeperRetryPolicy);
+        zooKeeperRetryPolicy,
+        config.getZooKeeperNamespace());
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
-
+    client.start();
     zkRegistrar = new ZooKeeperRegistrar(client, new MasterZooKeeperRegistrar(config.getName()));
 
     return client;

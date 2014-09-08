@@ -43,6 +43,7 @@ public class MasterConfig extends Configuration {
   private Path serviceRegistrarPlugin;
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
+  private String zooKeeperNamespace;
 
   public String getDomain() {
     return domain;
@@ -62,7 +63,7 @@ public class MasterConfig extends Configuration {
     return name;
   }
 
-  public String getZooKeeperConnectString() {
+  public String getZooKeeperConnectionString() {
     return zooKeeperConnectString;
   }
 
@@ -87,6 +88,15 @@ public class MasterConfig extends Configuration {
 
   public int getZooKeeperConnectionTimeoutMillis() {
     return zooKeeperConnectionTimeoutMillis;
+  }
+
+  public String getZooKeeperNamespace() {
+    return this.zooKeeperNamespace;
+  }
+
+  public MasterConfig setZooKeeperNamespace(String zooKeeperNamespace) {
+    this.zooKeeperNamespace = zooKeeperNamespace;
+    return this;
   }
 
   public MasterConfig setInhibitMetrics(boolean inhibit) {

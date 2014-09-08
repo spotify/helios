@@ -54,7 +54,7 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
   protected ZooKeeperTestManager zooKeeperTestManager() {
     final ZooKeeperTestManager testManager = mock(ZooKeeperTestManager.class);
     final MockCuratorClientFactory mockCuratorClientFactory = new MockCuratorClientFactory();
-    final CuratorFramework curator = mockCuratorClientFactory.newClient(null, 0, 0, null);
+    final CuratorFramework curator = mockCuratorClientFactory.newClient(null, 0, 0, null, null);
     when(testManager.curator()).thenReturn(curator);
 
     when(testManager.connectString()).thenReturn("127.0.0.1");
@@ -72,9 +72,9 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
     final HeliosClient client = defaultClient();
 
     try {
-      client.listMasters().get().get(0);
+      final String result = client.listMasters().get().get(0);
 
-      fail("Exception should have been thrown, as ZK doesnt exist");
+      fail("Exception should have been thrown, as ZK doesnt exist - got " + result);
 
     } catch (ExecutionException e) {
       assertTrue(e.getCause() instanceof HeliosException);
@@ -88,7 +88,8 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
     public CuratorFramework newClient(String connectString,
                                       int sessionTimeoutMs,
                                       int connectionTimeoutMs,
-                                      RetryPolicy retryPolicy) {
+                                      RetryPolicy retryPolicy,
+                                      String namespace) {
       final CuratorFramework curator = mock(CuratorFramework.class);
 
       final RetryLoop retryLoop = mock(RetryLoop.class);

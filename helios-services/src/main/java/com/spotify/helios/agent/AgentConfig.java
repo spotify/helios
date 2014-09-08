@@ -39,6 +39,7 @@ public class AgentConfig extends Configuration {
   private DockerHost dockerHost;
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
+  private String zooKeeperNamespace;
   private Map<String, String> envVars;
   private String redirectToSyslog;
   private boolean inhibitMetrics;
@@ -123,6 +124,15 @@ public class AgentConfig extends Configuration {
 
   public int getZooKeeperConnectionTimeoutMillis() {
     return zooKeeperConnectionTimeoutMillis;
+  }
+
+  public AgentConfig setZooKeeperNamespace(String zooKeeperPathPrefix) {
+    this.zooKeeperNamespace = zooKeeperPathPrefix;
+    return this;
+  }
+
+  public String getZooKeeperNamespace() {
+    return this.zooKeeperNamespace;
   }
 
   public AgentConfig setEnvVars(final Map<String, String> envVars) {
