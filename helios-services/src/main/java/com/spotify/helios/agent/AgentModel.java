@@ -93,11 +93,4 @@ public interface AgentModel {
      */
     void tasksChanged(AgentModel model);
   }
-
-  /**
-   * Safely (transactionally speaking) removes an UNDEPLOY tombstone.
-   *
-   * @param jobId The {@link JobId} of the job that is tombstoned.
-   */
-  void removeUndeployTombstone(JobId jobId) throws InterruptedException;
 }
