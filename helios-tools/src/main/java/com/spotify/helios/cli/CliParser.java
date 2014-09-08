@@ -25,7 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import com.spotify.helios.cli.command.ControlCommand;
+import com.spotify.helios.cli.command.CliCommand;
 import com.spotify.helios.cli.command.HostDeregisterCommand;
 import com.spotify.helios.cli.command.HostListCommand;
 import com.spotify.helios.cli.command.HostRegisterCommand;
@@ -84,7 +84,7 @@ public class CliParser {
       "For documentation see https://github.com/spotify/helios/tree/master/docs";
 
   private final Namespace options;
-  private final ControlCommand command;
+  private final CliCommand command;
   private final LoggingConfig loggingConfig;
   private final Subparsers commandParsers;
   private final CliConfig cliConfig;
@@ -122,7 +122,7 @@ public class CliParser {
       throw e;
     }
 
-    this.command = (ControlCommand) options.get("command");
+    this.command = (CliCommand) options.get("command");
     final String username = options.getString(globalArgs.usernameArg.getDest());
     this.username = (username == null) ? cliConfig.getUsername() : username;
     this.json = equal(options.getBoolean(globalArgs.jsonArg.getDest()), true);
@@ -324,7 +324,7 @@ public class CliParser {
     return options;
   }
 
-  public ControlCommand getCommand() {
+  public CliCommand getCommand() {
     return command;
   }
 
