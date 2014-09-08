@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 
 import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.LogStream;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
@@ -39,9 +40,13 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
+import static com.spotify.docker.client.DockerClient.LogsParameter.STDERR;
+import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -133,6 +138,31 @@ public class MultiplePortJobTest extends SystemTestBase {
         }
       });
       assertEquals(expectedMapping2, restartedTaskStatus2.getPorts());
+    }
+  }
+
+  @Test
+  public void testPortEnvVars() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(testHost());
+    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+
+    final Map<String, PortMapping> ports =
+        ImmutableMap.of("bar", PortMapping.of(4712, externalPort1));
+
+    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+      final JobId jobId = createJob(testJobName + 1, testJobVersion, BUSYBOX,
+        asList("sh", "-c", "echo $HELIOS_PORT_bar"), EMPTY_ENV, ports);
+
+      deployJob(jobId, testHost());
+
+      final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
+
+      final String log;
+      try (final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {
+        log = logs.readFully();
+      }
+      assertEquals(testHost() + ":" + externalPort1, log.trim());
     }
   }
 }

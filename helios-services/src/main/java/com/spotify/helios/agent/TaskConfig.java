@@ -47,6 +47,7 @@ import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -130,6 +131,11 @@ public class TaskConfig {
    */
   public Map<String, String> containerEnv() {
     final Map<String, String> env = Maps.newHashMap(envVars);
+
+    // Put in variables that tell the container where it's exposed
+    for (Entry<String, Integer> entry : ports.entrySet()) {
+      env.put("HELIOS_PORT_" + entry.getKey(), host + ":" + entry.getValue());
+    }
     // Job environment variables take precedence.
     env.putAll(job.getEnv());
     return env;

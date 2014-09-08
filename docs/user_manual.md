@@ -16,7 +16,7 @@ Note that this guide assumes that you are familiar with [Docker](http://docker.i
 * [Deploying Your Job](#deploying-your-job)
   * [Checking deployment status and history](#checking-deployment-status-and-history)
   * [Undeploying](#undeploying)
-
+* [Once Inside The Container](#once-inside-the-container)
 
 Basic Concepts in Helios
 ---
@@ -178,3 +178,16 @@ If we view the history again, it should show something like this:
     192.168.33.10    2014-08-11 14:42:14.403    STOPPED     NO           60671498ae98
 
 We can see that the job stopped. Additionally, checking job status will show again, that the job is stopped.
+
+Once Inside The Container
+---
+
+Now once you are inside your container, if you have exposed ports,
+you'll find a few environment variables set that you may need.  If you
+have a port named `foo`, there will be an environment variable named
+`HELIOS_PORT_foo` set to the host and port of the port named `foo` as
+it is seen *from outside the container*.  So if you had `-p foo=2121`
+in your job creation commmand, once deployed on a host named
+`foo.example.com`, from inside the container you would see
+`HELIOS_PORT_foo` set to something like `foo.example.com:23238`
+depending on what port was allocated when it was deployed.
