@@ -92,6 +92,11 @@ public class TemporaryJobBuilder {
     return this;
   }
 
+  public TemporaryJobBuilder registrationDomain(final String domain) {
+    this.builder.setRegistrationDomain(domain);
+    return this;
+  }
+
   public TemporaryJobBuilder command(final List<String> command) {
     this.builder.setCommand(command);
     return this;
