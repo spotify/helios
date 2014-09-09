@@ -66,6 +66,8 @@ public class HostListCommand extends ControlCommand {
     super(parser);
 
     parser.help("list hosts");
+    parser.description("The \"JOBS\" column in the output shows \"X/Y\" where X is jobs running " +
+                       "on the host and Y is jobs deployed on the host.");
 
     patternArg = parser.addArgument("pattern")
         .nargs("?")
