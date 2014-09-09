@@ -54,6 +54,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Maps.newHashMap;
 import static com.spotify.helios.testing.Jobs.TIMEOUT_MILLIS;
 import static com.spotify.helios.testing.Jobs.get;
+import static com.spotify.helios.testing.Jobs.getJobDescription;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.fail;
@@ -148,9 +149,8 @@ public class TemporaryJob {
 
   void deploy() {
     try {
-      log.info("Deploying job {} with image {}", job.getId(), job.getImage());
-
       // Create job
+      log.info("Creating job {}", job.getId().toShortString());
       final CreateJobResponse createResponse = get(client.createJob(job));
       if (createResponse.getStatus() != CreateJobResponse.Status.OK) {
         fail(format("Failed to create job %s - %s", job.getId(),
@@ -170,7 +170,7 @@ public class TemporaryJob {
           hostToIp.put(host, hostAddress);
         }
 
-        log.info("Waiting for Helios job deploy of {} on host {}", deployment.getJobId(), host);
+        log.info("Deploying {} to {}", getJobDescription(job), host);
         final JobDeployResponse deployResponse = get(client.deploy(deployment, host));
         if (deployResponse.getStatus() != JobDeployResponse.Status.OK) {
           fail(format("Failed to deploy job %s %s - %s",
@@ -189,32 +189,30 @@ public class TemporaryJob {
   }
 
   void undeploy(final List<AssertionError> errors) {
-    log.info("Undeploying job {}", job.getId());
-
-    Jobs.undeploy(client, job.getId(), hosts, errors);
+    Jobs.undeploy(client, job, hosts, errors);
   }
 
   private void awaitUp(final String host) throws TimeoutException {
-    log.info("Waiting for job {} to be up on host {}", job.getId(), host);
 
     final TaskStatus status = Polling.awaitUnchecked(
         TIMEOUT_MILLIS, MILLISECONDS, new Callable<TaskStatus>() {
           @Override
           public TaskStatus call() throws Exception {
-            log.debug("Getting job status for job {}", job.getId());
-
             final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
             if (status == null) {
+              log.debug("Job status not available");
               return null;
             }
             final TaskStatus taskStatus = status.getTaskStatuses().get(host);
             if (taskStatus == null) {
+              log.debug("Task status not available on {}", host);
               return null;
             }
 
             verifyHealthy(host, taskStatus);
 
             final TaskStatus.State state = taskStatus.getState();
+            log.info("Job state: {}", state);
 
             if (state == TaskStatus.State.RUNNING) {
               return taskStatus;
@@ -233,7 +231,7 @@ public class TemporaryJob {
   }
 
   void verifyHealthy() throws AssertionError {
-    log.debug("Checking health of {}", job.getId());
+    log.debug("Checking health of {}", job.getImage());
     final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
     if (status == null) {
       return;
@@ -244,7 +242,7 @@ public class TemporaryJob {
   }
 
   private void verifyHealthy(final String host, final TaskStatus status) {
-    log.debug("Checking health of {} on {}", job.getId(), host);
+    log.debug("Checking health of {} on {}", job.getImage(), host);
     final TaskStatus.State state = status.getState();
     if (state == TaskStatus.State.FAILED ||
         state == TaskStatus.State.EXITED ||
@@ -256,15 +254,11 @@ public class TemporaryJob {
       }
       throw new AssertionError(format(
           "Unexpected job state %s. Check helios agent logs for details.", stateString));
-    } else if (state == TaskStatus.State.PULLING_IMAGE) {
-        log.info("Pulling image for {} on {}", job.getId(), host);
     }
   }
 
   private void awaitPort(final String port, final String host) throws TimeoutException {
     final String endpoint = endpointFromHost(host);
-    log.info("Awaiting port availability on {}:{}", endpoint, port);
-
     final TaskStatus taskStatus = statuses.get(host);
     assert taskStatus != null;
     final Integer externalPort = taskStatus.getPorts().get(port).getExternalPort();

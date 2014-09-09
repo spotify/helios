@@ -24,9 +24,13 @@ package com.spotify.helios.testing;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -37,6 +41,8 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 class Jobs {
+
+  private static final Logger log = LoggerFactory.getLogger(Jobs.class);
 
   static final long TIMEOUT_MILLIS = TimeUnit.MINUTES.toMillis(5);
 
@@ -50,27 +56,34 @@ class Jobs {
     return future.get(timeout, MILLISECONDS);
   }
 
+  static String getJobDescription(final Job job) {
+    final String shortHash = job.getId().getHash().substring(0, 7);
+    return String.format("%s (Job %s)", job.getImage(), shortHash);
+  }
+
   /**
    * Undeploy the job from all specified hosts, and delete the job. Any failures will be ignored,
    * and we will keep trying each host. A list of errors encountered along the way will be returned
    * to the caller.
    * @param client the HeliosClient to use
-   * @param jobId the JobId to undeploy and delete
+   * @param job the job to undeploy and delete
    * @param hosts the hosts to undeploy from
    * @param errors errors encountered during the undeploy will be added to this list
    * @return the list of errors
    */
-  static List<AssertionError> undeploy(final HeliosClient client, final JobId jobId,
+  static List<AssertionError> undeploy(final HeliosClient client, final Job job,
                                               final List<String> hosts,
                                               final List<AssertionError> errors) {
+    final JobId id = job.getId();
     for (String host : hosts) {
+      log.info("Undeploying {} from {}", getJobDescription(job), host);
       final JobUndeployResponse response;
       try {
-        response = get(client.undeploy(jobId, host));
+        response = get(client.undeploy(id, host));
         if (response.getStatus() != JobUndeployResponse.Status.OK &&
             response.getStatus() != JobUndeployResponse.Status.JOB_NOT_FOUND) {
           errors.add(new AssertionError(format("Failed to undeploy job %s - %s",
-                                               jobId, response)));
+                                               id, response)));
         }
       } catch (InterruptedException | ExecutionException | TimeoutException e) {
         errors.add(new AssertionError(e));
@@ -78,11 +91,12 @@ class Jobs {
     }
 
     try {
-      final JobDeleteResponse response = get(client.deleteJob(jobId));
+      log.debug("Deleting job {}", id);
+      final JobDeleteResponse response = get(client.deleteJob(id));
       if (response.getStatus() != JobDeleteResponse.Status.OK &&
           response.getStatus() != JobDeleteResponse.Status.JOB_NOT_FOUND) {
         errors.add(new AssertionError(format("Failed to delete job %s - %s",
-                                             jobId.toString(), response.toString())));
+                                             id.toString(), response.toString())));
       }
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       errors.add(new AssertionError(e));
