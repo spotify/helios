@@ -1,4 +1,4 @@
-Reviewed by [rculbertson](https://github.com/rculbertson) on 2014-08-11
+Reviewed by [dxia](https://github.com/rculbertson) on 2014-09-09
 
 ***
 
@@ -13,6 +13,7 @@ Note that this guide assumes that you are familiar with [Docker](http://docker.i
   * [A basic job](#a-basic-job)
   * [Specifying a command to run](#specifying-a-command-to-run)
   * [Passing environment variables](#passing-environment-variables)
+  * [Using a helios job config file](#using-a-helios-job-config-file)
 * [Deploying Your Job](#deploying-your-job)
   * [Checking deployment status and history](#checking-deployment-status-and-history)
   * [Undeploying](#undeploying)
@@ -87,12 +88,9 @@ For some use cases, you may want to pass some environment variables to the job t
 
 The last line of output in the command output is the canonical job ID. Most times, you will only need the `jobName:jobVersion` parts, but in the event that you create two jobs with the same name and version, you can unambiguously choose which one you intend to operate on by supplying the full ID.
 
-As a current best practice, it is advised to put your `create` command lines into
-version-controlled files in your project directory, one file per create statement. This way,
-when you go to do subsequent job creations and deployments, you've got a record of what you did the
-last time.
+### Using a Helios job config file
 
-`helios create -d <DOMAINS> -f <HELIOS_JOB_CONFIG_FILE_PATH> JOB_NAME IMAGE_NAME` will merge
+`helios create -d <DOMAINS> -f <HELIOS_JOB_CONFIG_FILE_PATH> <MORE> <CLI> <ARGS>` will merge
 job parameters in the file `<HELIOS_JOB_CONFIG_FILE_PATH>` with other command line arguments. CLI
 args take precedence. The job configuration file should be valid JSON with a schema that matches the
 output of `helios inspect -d <DOMAINS> <EXISTING_JOB_NAME> --json`. Here's an example:
@@ -125,6 +123,11 @@ output of `helios inspect -d <DOMAINS> <EXISTING_JOB_NAME> --json`. Here's an ex
   }
 }
 ```
+
+A current best practice is to save all your job creation parameters in
+version-controlled files in your project directory. This allows you to tie
+your helios job params to changes in your application code.
+
 
 Deploying Your Job
 ---
