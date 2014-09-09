@@ -244,8 +244,7 @@ public class TemporaryJob {
   private void verifyHealthy(final String host, final TaskStatus status) {
     log.debug("Checking health of {} on {}", job.getImage(), host);
     final TaskStatus.State state = status.getState();
-    if (state == TaskStatus.State.UNKNOWN ||
-        state == TaskStatus.State.FAILED ||
+    if (state == TaskStatus.State.FAILED ||
         state == TaskStatus.State.EXITED ||
         state == TaskStatus.State.STOPPED) {
       // Throw exception which should stop the test dead in it's tracks
