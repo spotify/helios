@@ -262,7 +262,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
                                                               final Path snapshotFile,
                                                               final JavaType valueType)
       throws IOException, InterruptedException {
-    return new PersistentPathChildrenCache<T>(client, path, snapshotFile, valueType);
+    return new PersistentPathChildrenCache<T>(client, path, clusterId, snapshotFile, valueType);
   }
 
   @Override
