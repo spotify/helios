@@ -154,4 +154,52 @@ public class CliJobCreationTest extends SystemTestBase {
     CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
     assertEquals(CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, createJobResponse.getStatus());
   }
+
+  @Test
+  public void testMergeFileAndCliArgsEnvPrecedence() throws Exception {
+    final String redundantEnvKey = "BAD";
+    final Map<String, PortMapping> ports = ImmutableMap.of(
+        "foo", PortMapping.of(4711),
+        "bar", PortMapping.of(5000, externalPort));
+    final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
+        ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
+        ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
+    final Map<String, String> env = ImmutableMap.of(redundantEnvKey, "f00d");
+    final Map<String, String> volumes = Maps.newHashMap();
+    volumes.put("/etc/spotify/secret-keys.yaml:ro", "/etc/spotify/secret-keys.yaml");
+
+    // Create a new job, serialize it to JSON
+    final Job.Builder builder = Job.newBuilder()
+        .setCommand(Lists.newArrayList("server", "foo-service.yaml"))
+        .setEnv(env)
+        .setPorts(ports)
+        .setRegistration(registration)
+        .setVolumes(volumes);
+    final Job job = builder.build();
+    final String jobConfigJsonString = job.toJsonString();
+
+    // Create temporary job config file
+    final File file = temporaryFolder.newFile();
+    final String absolutePath = file.getAbsolutePath();
+
+    // Write JSON config to temp file
+    try (final FileOutputStream outFile = new FileOutputStream(file)) {
+      outFile.write(Charsets.UTF_8.encode(jobConfigJsonString).array());
+
+      // Create job and specify the temp file.
+      cli("create", "--file", absolutePath, testJobNameAndVersion, BUSYBOX, "--env",
+          redundantEnvKey + "=FOOD");
+
+      // Inspect the job.
+      final String actualJobConfigJson = cli("inspect", testJobNameAndVersion, "--json");
+
+      // Compare to make sure the created job has the expected configuration,
+      // i.e. the configuration resulting from a merge of the JSON file and CLI args.
+      final Job actualJob = Json.read(actualJobConfigJson, Job.class);
+      Job.Builder actualJobBuilder = actualJob.toBuilder();
+      builder.setName(testJobName).setVersion(testJobVersion).setImage(BUSYBOX)
+          .setEnv(ImmutableMap.of(redundantEnvKey, "FOOD"));
+      assertEquals(builder.build(), actualJobBuilder.build());
+    }
+  }
 }
