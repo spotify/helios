@@ -398,12 +398,11 @@ public class TemporaryJobs implements TestRule {
 
   public static class Builder {
     Builder(final String profile) {
-      this(profile, ConfigFactory.load());
+      this(profile, loadConfig());
     }
 
     Builder() {
-      this(ConfigFactory.load(Thread.currentThread().getContextClassLoader(),
-        ConfigResolveOptions.defaults().setAllowUnresolved(true)));
+      this(loadConfig());
     }
 
     // I feel like I'm building the y-combinator here because Java insists on the call to this
@@ -430,11 +429,11 @@ public class TemporaryJobs implements TestRule {
       if (this.config.hasPath("hostFilter")) {
         hostFilter(this.config.getString("hostFilter"));
       }
-      if (this.config.hasPath("domain")) {
-        domain(this.config.getString("domain"));
-      }
       if (this.config.hasPath("endpoints")) {
         endpointStrings(getListByKey("endpoints", config));
+      }
+      if (this.config.hasPath("domain")) {
+        domain(this.config.getString("domain"));
       }
     }
 
@@ -443,6 +442,11 @@ public class TemporaryJobs implements TestRule {
         return preConfig.getString("helios.testing.defaultProfile");
       }
       return null;
+    }
+
+    private static Config loadConfig() {
+      return ConfigFactory.load(Thread.currentThread().getContextClassLoader(),
+                                ConfigResolveOptions.defaults().setAllowUnresolved(true));
     }
 
     private final Config config;

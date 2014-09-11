@@ -21,6 +21,7 @@ import java.util.Set;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
@@ -30,22 +31,25 @@ import static org.mockito.Mockito.when;
 @RunWith(MockitoJUnitRunner.class)
 public class ConfigTest {
 
+  private static TestParameters parameters;
+
   @Mock
   private static HeliosClient client;
 
   @Before
   public void setup() {
     final ListenableFuture<Map<JobId, Job>> future =
-        immediateFuture((Map<JobId, Job>)new HashMap<JobId, Job>());
+        immediateFuture((Map<JobId, Job>) new HashMap<JobId, Job>());
 
     // Return an empty job list to skip trying to remove old jobs
     when(client.jobs()).thenReturn(future);
   }
 
-  public static class ValuesTest implements TemporaryJob.Deployer {
+  public static class ProfileTest implements TemporaryJob.Deployer {
 
+    // Local is the default profile, so don't specify it explicitly to test default loading
     @Rule
-    public final TemporaryJobs temporaryJobs = TemporaryJobs.builder("valuesTest")
+    public final TemporaryJobs temporaryJobs = parameters.builder
         .client(client)
         .deployer(this)
         .build();
@@ -67,25 +71,17 @@ public class ConfigTest {
     @Override
     public TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts) {
       // This is called when the first job is deployed
-      assertThat(hosts, equalTo((List)newArrayList("test-host")));
-      assertJobCorrect(job);
+      assertThat(hosts, equalTo((List<String>) newArrayList("test-host")));
+      parameters.validate(job, temporaryJobs.prefix());
       return null;
     }
 
     @Override
     public TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts) {
       // This is called when the second job is deployed
-      assertThat(hostFilter, equalTo(".+.shared.cloud"));
-      assertJobCorrect(job);
+      assertThat(hostFilter, equalTo(parameters.hostFilter));
+      parameters.validate(job, temporaryJobs.prefix());
       return null;
-    }
-
-    private void assertJobCorrect(final Job job) {
-      // This tests that the fields in conf file are transformed into a job correctly
-      final Map<String, String> map = ImmutableMap.of("SPOTIFY_DOMAIN", "shared.cloud.spotify.net",
-                                                      "SPOTIFY_SYSLOG_HOST", "10.99.0.1");
-      assertThat(job.getEnv(), equalTo(map));
-      assertThat(job.getImage(), equalTo("busybox"));
     }
 
     @Override
@@ -94,7 +90,72 @@ public class ConfigTest {
   }
 
   @Test
-  public void testValues() throws Exception {
-    assertThat(testResult(ValuesTest.class), isSuccessful());
+  public void testLocalProfile() throws Exception {
+    final TestParameters.JobValidator validator = new TestParameters.JobValidator() {
+      @Override
+      public void validate(Job job, String prefix) {
+        final String local = prefix + ".local.";
+        final Map<String, String> map = ImmutableMap.of(
+            "SPOTIFY_TEST_THING", format("See, we used the prefix here -->%s<--", prefix),
+            "SPOTIFY_DOMAIN", local,
+            "SPOTIFY_POD", local);
+
+        assertThat(job.getEnv(), equalTo(map));
+        assertThat(job.getImage(), equalTo("busybox"));
+      }
+    };
+
+    // The local profile is the default, so we don't specify it explicitly so we can test
+    // the default loading mechanism.
+    parameters = new TestParameters(TemporaryJobs.builder(), ".*", validator);
+    assertThat(testResult(ProfileTest.class), isSuccessful());
+  }
+
+  @Test
+  public void testHeliosCiProfile() throws Exception {
+    final TestParameters.JobValidator validator = new TestParameters.JobValidator() {
+      @Override
+      public void validate(Job job, String prefix) {
+        final String domain = prefix + ".services.heliosci.cloud.spotify.net";
+        final Map<String, String> map = ImmutableMap.of(
+            "SPOTIFY_DOMAIN", domain,
+            "SPOTIFY_POD", domain,
+            "SPOTIFY_SYSLOG_HOST", "10.99.0.1");
+        assertThat(job.getEnv(), equalTo(map));
+        assertThat(job.getImage(), equalTo("busybox"));
+
+      }
+    };
+
+    // Specify the helios-ci profile explicitly
+    parameters = new TestParameters(TemporaryJobs.builder("helios-ci"),
+                                ".+\\.heliosci\\.cloud",
+                                validator);
+    assertThat(testResult(ProfileTest.class), isSuccessful());
+  }
+
+  /**
+   * Helper class allows us to inject different test parameters into ProfileTest so we can
+   * reuse it to test multiple profiles.
+   */
+  private static class TestParameters {
+    private final TemporaryJobs.Builder builder;
+    private final String hostFilter;
+    private final JobValidator jobValidator;
+
+    private TestParameters(TemporaryJobs.Builder builder, String hostFilter,
+                           JobValidator jobValidator) {
+      this.builder = builder;
+      this.hostFilter = hostFilter;
+      this.jobValidator = jobValidator;
+    }
+
+    private void validate(final Job job, final String prefix) {
+      jobValidator.validate(job, prefix);
+    }
+
+    private interface JobValidator {
+      void validate(Job job, String prefix);
+    }
   }
 }
