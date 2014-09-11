@@ -21,7 +21,6 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Maps;
 
@@ -250,8 +249,11 @@ public class JobCreateCommand extends ControlCommand {
 
     final List<String> envList = options.getList(envArg.getDest());
     if (!envList.isEmpty()) {
-      final ImmutableMap.Builder<String, String> env = ImmutableMap.builder();
+      final Map<String, String> env = Maps.newHashMap();
+      // Add environmental variables from helios job configuration file
       env.putAll(builder.getEnv());
+      // Add environmental variables passed in via CLI
+      // Overwrite any redundant keys to make CLI args take precedence
       for (final String s : envList) {
         final String[] parts = s.split("=", 2);
         if (parts.length != 2) {
@@ -259,7 +261,7 @@ public class JobCreateCommand extends ControlCommand {
         }
         env.put(parts[0], parts[1]);
       }
-      builder.setEnv(env.build());
+      builder.setEnv(env);
     }
 
     // Parse port mappings
