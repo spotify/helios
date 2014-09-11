@@ -107,6 +107,7 @@ public class AgentParser extends ServiceParser {
         .setZooKeeperConnectionString(getZooKeeperConnectString())
         .setZooKeeperSessionTimeoutMillis(getZooKeeperSessionTimeoutMillis())
         .setZooKeeperConnectionTimeoutMillis(getZooKeeperConnectionTimeoutMillis())
+        .setZooKeeperPathPrefix(getZooKeeperPathPrefix())
         .setDomain(getDomain())
         .setEnvVars(envVars)
         .setDockerHost(dockerHost)

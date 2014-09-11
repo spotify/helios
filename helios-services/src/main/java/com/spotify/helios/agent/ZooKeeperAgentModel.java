@@ -72,19 +72,23 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private final ZooKeeperUpdatingPersistentDirectory taskStatuses;
   private final ZooKeeperPersistentNodeRemover taskRemover;
   private final QueueingHistoryWriter historyWriter;
+  private final Paths paths;
 
   private final String agent;
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
 
+
   public ZooKeeperAgentModel(final ZooKeeperClientProvider provider, final String host,
-                             final Path stateDirectory) throws IOException, InterruptedException {
+                             final Path stateDirectory, final Paths paths)
+                                 throws IOException, InterruptedException {
+    this.paths = paths;
     // TODO(drewc): we're constructing too many heavyweight things in the ctor, these kinds of
     // things should be passed in/provider'd/etc.
     final ZooKeeperClient client = provider.get("ZooKeeperAgentModel_ctor");
     this.agent = checkNotNull(host);
     final Path taskConfigFile = stateDirectory.resolve(TASK_CONFIG_FILENAME);
 
-    this.tasks = client.pathChildrenCache(Paths.configHostJobs(host), taskConfigFile,
+    this.tasks = client.pathChildrenCache(paths.configHostJobs(host), taskConfigFile,
                                           Json.type(Task.class));
     tasks.addListener(new JobsListener());
     final Path taskStatusFile = stateDirectory.resolve(TASK_STATUS_FILENAME);
@@ -92,13 +96,13 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     this.taskStatuses = ZooKeeperUpdatingPersistentDirectory.create("agent-model-task-statuses",
                                                                     provider,
                                                                     taskStatusFile,
-                                                                    Paths.statusHostJobs(host));
+                                                                    paths.statusHostJobs(host));
     final Path removerFile = stateDirectory.resolve(TASK_REMOVER_FILENAME);
     this.taskRemover = ZooKeeperPersistentNodeRemover.create("agent-model-task-remover", provider,
                                                              removerFile, TASK_GOAL_IS_UNDEPLOY,
                                                              true);
     this.historyWriter = new QueueingHistoryWriter(host, client,
-        stateDirectory.resolve(TASK_HISTORY_FILENAME));
+        stateDirectory.resolve(TASK_HISTORY_FILENAME), paths);
   }
 
   @Override
@@ -118,7 +122,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   }
 
   private JobId jobIdFromTaskPath(final String path) {
-    final String prefix = Paths.configHostJobs(agent) + "/";
+    final String prefix = paths.configHostJobs(agent) + "/";
     return JobId.fromString(path.replaceFirst(prefix, ""));
   }
 
@@ -195,7 +199,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
    */
   @Override
   public void removeUndeployTombstone(final JobId jobId) throws InterruptedException {
-    String path = Paths.configHostJob(agent, jobId);
+    String path = paths.configHostJob(agent, jobId);
     taskRemover.remove(path);
   }
 

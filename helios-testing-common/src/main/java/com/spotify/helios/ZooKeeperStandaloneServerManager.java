@@ -24,10 +24,13 @@ package com.spotify.helios;
 import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 
+import com.spotify.helios.ChildProcesses.Subprocess;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.curator.utils.EnsurePath;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
 import org.apache.zookeeper.server.ZooKeeperServer;
@@ -42,7 +45,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.spotify.helios.ChildProcesses.Subprocess;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 
@@ -57,17 +59,24 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   private CuratorFramework curator;
   private Subprocess serverProcess;
 
+  private String prefix;
+
   public ZooKeeperStandaloneServerManager() {
+    this("");
+  }
+
+  public ZooKeeperStandaloneServerManager(final String prefix) {
     this.dataDir = Files.createTempDir();
     final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
     curator = CuratorFrameworkFactory.newClient(endpoint, retryPolicy);
     curator.start();
     start();
+    this.prefix = prefix;
   }
 
   @Override
   public void ensure(String path) throws Exception {
-    curator.newNamespaceAwareEnsurePath(path).ensure(curator.getZookeeperClient());
+    new EnsurePath(prefix + path).ensure(curator.getZookeeperClient());
   }
 
   @Override

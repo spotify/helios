@@ -70,6 +70,8 @@ Takes options:
 
   `--zk-connection-timeout ZK_CONNECTION_TIMEOUT` Optional.  Zookeeper connection timeout (default: 15000)
 
+  `--zk-path-prefix`  ZooKeeper path prefix (default '/').  All paths Helios uses in zookeeper will be prefixed with this.
+
   `--no-metrics` Turn off all collection and reporting of metrics (default: false)
 
   `--statsd-host-port STATSD_HOST_PORT` Optional.  The host:port of where to send statsd metrics (to be useful, --no-metrics must *NOT* be specified)
@@ -126,6 +128,8 @@ Takes options:
 
   `--zk-connection-timeout ZK_CONNECTION_TIMEOUT`
                          zookeeper connection timeout (default: 15000)
+
+  `--zk-path-prefix`  ZooKeeper path prefix (default '/').  All paths Helios uses in zookeeper will be prefixed with this.
 
   `--no-metrics`           Turn off all collection and  reporting of metrics (default:
                          false)

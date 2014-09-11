@@ -91,9 +91,12 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
   private final ZooKeeperClient client;
   private final PersistentAtomicReference<ConcurrentMap<JobId, Deque<TaskStatusEvent>>>
       backingStore;
+  private final Paths paths;
 
   public QueueingHistoryWriter(final String hostname, final ZooKeeperClient client,
-                               final Path backingFile) throws IOException, InterruptedException {
+                               final Path backingFile, final Paths paths)
+                                   throws IOException, InterruptedException {
+    this.paths = paths;
     this.hostname = hostname;
     this.client = client;
     this.backingStore = PersistentAtomicReference.create(backingFile,
@@ -274,7 +277,7 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
 
       try {
         final JobId jobId = item.getStatus().getJob().getId();
-        final String historyPath = Paths.historyJobHostEventsTimestamp(
+        final String historyPath = paths.historyJobHostEventsTimestamp(
             jobId, hostname, item.getTimestamp());
         log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
             item.getTimestamp());
@@ -282,7 +285,7 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         client.createAndSetData(historyPath, item.getStatus().toJsonBytes());
 
         // See if too many
-        final List<String> events = client.getChildren(Paths.historyJobHostEvents(jobId, hostname));
+        final List<String> events = client.getChildren(paths.historyJobHostEvents(jobId, hostname));
         if (events.size() > MAX_NUMBER_STATUS_EVENTS_TO_RETAIN) {
           trimStatusEvents(events, jobId);
         }
@@ -316,7 +319,7 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
 
     for (int i = 0; i < (eventsAsLongs.size() - MAX_NUMBER_STATUS_EVENTS_TO_RETAIN); i++) {
       try {
-        client.delete(Paths.historyJobHostEventsTimestamp(jobId, hostname, eventsAsLongs.get(i)));
+        client.delete(paths.historyJobHostEventsTimestamp(jobId, hostname, eventsAsLongs.get(i)));
       } catch (KeeperException e) {
         log.warn("failure deleting overflow of status items - we're hoping a later"
             + " execution will fix", e);

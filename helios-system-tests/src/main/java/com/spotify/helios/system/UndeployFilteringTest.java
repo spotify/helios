@@ -33,7 +33,6 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.master.ZooKeeperMasterModel;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
-import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 
@@ -75,7 +74,7 @@ public class UndeployFilteringTest extends SystemTestBase {
     curator = zk().curator();
     zkcp = new ZooKeeperClientProvider(
         new DefaultZooKeeperClient(curator), ZooKeeperModelReporter.noop());
-    zkMasterModel = new ZooKeeperMasterModel(zkcp);
+    zkMasterModel = new ZooKeeperMasterModel(zkcp, paths());
     startDefaultMaster();
     agent = startDefaultAgent(TEST_HOST);
     client = defaultClient();
@@ -105,7 +104,7 @@ public class UndeployFilteringTest extends SystemTestBase {
   public void testAgent() throws Exception {
     final JobId jobId = createAndAwaitJobRunning();
 
-    final byte[] data1 = curator.getData().forPath(Paths.statusHostJob(TEST_HOST, jobId));
+    final byte[] data1 = curator.getData().forPath(paths().statusHostJob(TEST_HOST, jobId));
     assertNotNull(data1);
     final TaskStatus status = Json.read(data1, TaskStatus.class);
     assertNotNull(status);
@@ -118,7 +117,7 @@ public class UndeployFilteringTest extends SystemTestBase {
     // create tombstone
     client.undeploy(jobId, TEST_HOST).get();
 
-    final byte[] data2 = curator.getData().forPath(Paths.statusHostJob(TEST_HOST, jobId));
+    final byte[] data2 = curator.getData().forPath(paths().statusHostJob(TEST_HOST, jobId));
     assertNotNull(data2);
     final TaskStatus status2 = Json.read(data2, TaskStatus.class);
     assertNotNull(status2);

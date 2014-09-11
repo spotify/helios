@@ -44,9 +44,10 @@ public class EnvironmentVariableReporter extends InterruptingScheduledService {
   private final ZooKeeperNodeUpdater nodeUpdater;
 
   public EnvironmentVariableReporter(final String host, final Map<String, String> envVars,
-                                     final NodeUpdaterFactory nodeUpdaterFactory) {
+                                     final NodeUpdaterFactory nodeUpdaterFactory,
+                                     final Paths paths) {
     this.envVars = envVars;
-    this.nodeUpdater = nodeUpdaterFactory.create(Paths.statusHostEnvVars(host));
+    this.nodeUpdater = nodeUpdaterFactory.create(paths.statusHostEnvVars(host));
   }
 
 

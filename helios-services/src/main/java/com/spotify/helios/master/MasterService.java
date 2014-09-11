@@ -87,6 +87,7 @@ public class MasterService extends AbstractIdleService {
   private final ZooKeeperClient zooKeeperClient;
   private final ExpiredJobReaper expiredJobReaper;
   private final CuratorClientFactory curatorClientFactory;
+  private final Paths paths;
 
   private ZooKeeperRegistrar zkRegistrar;
 
@@ -121,16 +122,17 @@ public class MasterService extends AbstractIdleService {
                                                    metricsRegistry));
     }
 
-    // Set up the master model
+    paths = new Paths(config.getZooKeeperPathPrefix());
+
     this.zooKeeperClient = setupZookeeperClient(config);
     final ZooKeeperModelReporter modelReporter = new ZooKeeperModelReporter(
         riemannFacade, metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
-    final MasterModel model = new ZooKeeperMasterModel(zkClientProvider);
+    final MasterModel model = new ZooKeeperMasterModel(zkClientProvider, paths);
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
-        zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);
+        zooKeeperClient, paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);
 
     environment.manage(zooKeeperHealthChecker);
     environment.addHealthCheck(zooKeeperHealthChecker);
@@ -229,7 +231,8 @@ public class MasterService extends AbstractIdleService {
         zooKeeperRetryPolicy);
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
 
-    zkRegistrar = new ZooKeeperRegistrar(client, new MasterZooKeeperRegistrar(config.getName()));
+    zkRegistrar = new ZooKeeperRegistrar(client,
+        new MasterZooKeeperRegistrar(config.getName(), paths));
 
     return client;
   }

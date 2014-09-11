@@ -52,13 +52,16 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
   private final Service agentService;
   private final String name;
   private final String id;
+  private final Paths paths;
 
   private PersistentEphemeralNode upNode;
 
-  public AgentZooKeeperRegistrar(final Service agentService, final String name, final String id) {
+  public AgentZooKeeperRegistrar(final Service agentService, final String name, final String id,
+                                 final Paths paths) {
     this.agentService = agentService;
     this.name = name;
     this.id = id;
+    this.paths = paths;
   }
 
   @Override
@@ -80,7 +83,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
 
   @Override
   public void tryToRegister(ZooKeeperClient client) throws KeeperException {
-    final String idPath = Paths.configHostId(name);
+    final String idPath = paths.configHostId(name);
 
     final Stat stat = client.exists(idPath);
     if (stat == null) {
@@ -89,12 +92,12 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
       // This would've been nice to do in a transaction but PathChildrenCache ensures paths
       // so we can't know what paths already exist so assembling a suitable transaction is too
       // painful.
-      client.ensurePath(Paths.configHost(name));
-      client.ensurePath(Paths.configHost(name));
-      client.ensurePath(Paths.configHostJobs(name));
-      client.ensurePath(Paths.configHostPorts(name));
-      client.ensurePath(Paths.statusHost(name));
-      client.ensurePath(Paths.statusHostJobs(name));
+      client.ensurePath(paths.configHost(name));
+      client.ensurePath(paths.configHost(name));
+      client.ensurePath(paths.configHostJobs(name));
+      client.ensurePath(paths.configHostPorts(name));
+      client.ensurePath(paths.statusHost(name));
+      client.ensurePath(paths.statusHostJobs(name));
 
       // Finish registration by creating the id node last
       client.createAndSetData(idPath, id.getBytes(UTF_8));
@@ -114,7 +117,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
 
     // Start the up node
     if (upNode == null) {
-      final String upPath = Paths.statusHostUp(name);
+      final String upPath = paths.statusHostUp(name);
       log.debug("Creating up node: {}", upPath);
       upNode = client.persistentEphemeralNode(upPath, EPHEMERAL, EMPTY_BYTES);
       upNode.start();

@@ -111,9 +111,11 @@ public class ZooKeeperMasterModel implements MasterModel {
       new TypeReference<Map<String, String>>() {};
 
   private final ZooKeeperClientProvider provider;
+  private final Paths paths;
 
-  public ZooKeeperMasterModel(final ZooKeeperClientProvider provider) {
+  public ZooKeeperMasterModel(final ZooKeeperClientProvider provider, final Paths paths) {
     this.provider = provider;
+    this.paths = paths;
   }
 
   /**
@@ -131,14 +133,14 @@ public class ZooKeeperMasterModel implements MasterModel {
       // This would've been nice to do in a transaction but PathChildrenCache ensures paths
       // so we can't know what paths already exist so assembling a suitable transaction is too
       // painful.
-      client.ensurePath(Paths.configHost(host));
-      client.ensurePath(Paths.configHostJobs(host));
-      client.ensurePath(Paths.configHostPorts(host));
-      client.ensurePath(Paths.statusHost(host));
-      client.ensurePath(Paths.statusHostJobs(host));
+      client.ensurePath(paths.configHost(host));
+      client.ensurePath(paths.configHostJobs(host));
+      client.ensurePath(paths.configHostPorts(host));
+      client.ensurePath(paths.statusHost(host));
+      client.ensurePath(paths.statusHostJobs(host));
 
       // Finish registration by creating the id node last
-      client.createAndSetData(Paths.configHostId(host), id.getBytes(UTF_8));
+      client.createAndSetData(paths.configHostId(host), id.getBytes(UTF_8));
     } catch (Exception e) {
       throw new HeliosRuntimeException("registering host " + host + " failed", e);
     }
@@ -151,7 +153,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public List<String> listHosts() {
     try {
       // TODO (dano): only return hosts whose agents completed registration (i.e. has id nodes)
-      return provider.get("listHosts").getChildren(Paths.configHosts());
+      return provider.get("listHosts").getChildren(paths.configHosts());
     } catch (KeeperException.NoNodeException e) {
       return emptyList();
     } catch (KeeperException e) {
@@ -166,10 +168,10 @@ public class ZooKeeperMasterModel implements MasterModel {
   public List<String> getRunningMasters() {
     final ZooKeeperClient client = provider.get("getRunningMasters");
     try {
-      final List<String> masters = client.getChildren(Paths.statusMaster());
+      final List<String> masters = client.getChildren(paths.statusMaster());
       final ImmutableList.Builder<String> upMasters = ImmutableList.builder();
       for (final String master : masters) {
-        if (client.exists(Paths.statusMasterUp(master)) != null) {
+        if (client.exists(paths.statusMasterUp(master)) != null) {
           upMasters.add(master);
         }
       }
@@ -196,34 +198,34 @@ public class ZooKeeperMasterModel implements MasterModel {
       final List<JobId> jobs = listHostJobs(client, host);
 
       if (jobs == null) {
-        if (client.exists(Paths.configHost(host)) == null) {
+        if (client.exists(paths.configHost(host)) == null) {
           throw new HostNotFoundException("host [" + host + "] does not exist");
         }
       }
 
       for (JobId job : jobs) {
-        final String hostJobPath = Paths.configHostJob(host, job);
+        final String hostJobPath = paths.configHostJob(host, job);
         final List<String> nodes = client.listRecursive(hostJobPath);
         for (final String node : reverse(nodes)) {
           operations.add(delete(node));
         }
-        if (client.exists(Paths.configJobHost(job, host)) != null) {
-          operations.add(delete(Paths.configJobHost(job, host)));
+        if (client.exists(paths.configJobHost(job, host)) != null) {
+          operations.add(delete(paths.configJobHost(job, host)));
         }
         // Clean out the history for each job
         try {
-          final List<String> history = client.listRecursive(Paths.historyJobHost(job, host));
+          final List<String> history = client.listRecursive(paths.historyJobHost(job, host));
           for (String s : reverse(history)) {
             operations.add(delete(s));
           }
         } catch (NoNodeException ignore) {
         }
       }
-      operations.add(delete(Paths.configHostJobs(host)));
+      operations.add(delete(paths.configHostJobs(host)));
 
       // Remove the host status
       try {
-        final List<String> nodes = client.listRecursive(Paths.statusHost(host));
+        final List<String> nodes = client.listRecursive(paths.statusHost(host));
         for (final String node : reverse(nodes)) {
           operations.add(delete(node));
         }
@@ -232,22 +234,22 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       // Remove port allocations
       try {
-        final List<String> ports = client.getChildren(Paths.configHostPorts(host));
+        final List<String> ports = client.getChildren(paths.configHostPorts(host));
         for (final String port : ports) {
-          operations.add(delete(Paths.configHostPort(host, Integer.valueOf(port))));
+          operations.add(delete(paths.configHostPort(host, Integer.valueOf(port))));
         }
-        operations.add(delete(Paths.configHostPorts(host)));
+        operations.add(delete(paths.configHostPorts(host)));
       } catch (NoNodeException ignore) {
       }
 
       // Remove host id
-      String idPath = Paths.configHostId(host);
+      String idPath = paths.configHostId(host);
       if (client.exists(idPath) != null) {
         operations.add(delete(idPath));
       }
 
       // Remove host config root
-      operations.add(delete(Paths.configHost(host)));
+      operations.add(delete(paths.configHost(host)));
 
       client.transaction(operations);
     } catch (NotEmptyException e) {
@@ -271,14 +273,14 @@ public class ZooKeeperMasterModel implements MasterModel {
     log.info("adding job: {}", job);
     final JobId id = job.getId();
     final UUID operationId = UUID.randomUUID();
-    final String creationPath = Paths.configJobCreation(id, operationId);
+    final String creationPath = paths.configJobCreation(id, operationId);
     final ZooKeeperClient client = provider.get("addJob");
     try {
       try {
-        client.ensurePath(Paths.historyJob(id));
-        client.transaction(create(Paths.configJob(id), job),
-                           create(Paths.configJobRefShort(id), id),
-                           create(Paths.configJobHosts(id)),
+        client.ensurePath(paths.historyJob(id));
+        client.transaction(create(paths.configJob(id), job),
+                           create(paths.configJobRefShort(id), id),
+                           create(paths.configJobHosts(id)),
                            create(creationPath));
       } catch (final NodeExistsException e) {
         if (client.exists(creationPath) != null) {
@@ -304,7 +306,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("getJobHistory");
     final List<String> hosts;
     try {
-      hosts = client.getChildren(Paths.historyJobHosts(jobId));
+      hosts = client.getChildren(paths.historyJobHosts(jobId));
     } catch (NoNodeException e) {
       return emptyList();
     } catch (KeeperException e) {
@@ -316,14 +318,14 @@ public class ZooKeeperMasterModel implements MasterModel {
     for (String host : hosts) {
       final List<String> events;
       try {
-        events = client.getChildren(Paths.historyJobHostEvents(jobId, host));
+        events = client.getChildren(paths.historyJobHostEvents(jobId, host));
       } catch (KeeperException e) {
         throw Throwables.propagate(e);
       }
 
       for (String event : events) {
         try {
-          byte[] data = client.getData(Paths.historyJobHostEventsTimestamp(
+          byte[] data = client.getData(paths.historyJobHostEventsTimestamp(
               jobId, host, Long.valueOf(event)));
           final TaskStatus status = Json.read(data, TaskStatus.class);
           jsEvents.add(new TaskStatusEvent(status, Long.valueOf(event), host));
@@ -350,7 +352,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
 
   private Job getJob(final ZooKeeperClient client, final JobId id) {
-    final String path = Paths.configJob(id);
+    final String path = paths.configJob(id);
     try {
       final byte[] data = client.getData(path);
       return Json.read(data, Job.class);
@@ -368,7 +370,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public Map<JobId, Job> getJobs() {
     log.debug("getting jobs");
-    final String folder = Paths.configJobs();
+    final String folder = paths.configJobs();
     final ZooKeeperClient client = provider.get("getJobs");
     try {
       final List<String> ids;
@@ -380,7 +382,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       final Map<JobId, Job> descriptors = Maps.newHashMap();
       for (final String id : ids) {
         final JobId jobId = JobId.fromString(id);
-        final String path = Paths.configJob(jobId);
+        final String path = paths.configJob(jobId);
         final byte[] data = client.getData(path);
         final Job descriptor = parse(data, Job.class);
         descriptors.put(descriptor.getId(), descriptor);
@@ -435,7 +437,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws JobDoesNotExistException {
     final List<String> hosts;
     try {
-      hosts = client.getChildren(Paths.configJobHosts(jobId));
+      hosts = client.getChildren(paths.configJobHosts(jobId));
     } catch (NoNodeException e) {
       throw new JobDoesNotExistException(jobId);
     } catch (KeeperException e) {
@@ -460,11 +462,11 @@ public class ZooKeeperMasterModel implements MasterModel {
       final ImmutableList.Builder<ZooKeeperOperation> operations = ImmutableList.builder();
       final UUID jobCreationOperationId = getJobCreation(client, id);
       if (jobCreationOperationId != null) {
-        operations.add(delete(Paths.configJobCreation(id, jobCreationOperationId)));
+        operations.add(delete(paths.configJobCreation(id, jobCreationOperationId)));
       }
-      operations.add(delete(Paths.configJobHosts(id)),
-                     delete(Paths.configJobRefShort(id)),
-                     delete(Paths.configJob(id)));
+      operations.add(delete(paths.configJobHosts(id)),
+                     delete(paths.configJobRefShort(id)),
+                     delete(paths.configJob(id)));
       client.transaction(operations.build());
     } catch (final NoNodeException e) {
       throw new JobDoesNotExistException(id);
@@ -479,11 +481,11 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private UUID getJobCreation(final ZooKeeperClient client, final JobId id)
       throws KeeperException {
-    final String parent = Paths.configHostJobCreationParent(id);
+    final String parent = paths.configHostJobCreationParent(id);
     final List<String> children = client.getChildren(parent);
     for (final String child : children) {
-      if (Paths.isConfigJobCreation(id, parent, child)) {
-        return Paths.configJobCreationId(id, parent, child);
+      if (paths.isConfigJobCreation(id, parent, child)) {
+        return paths.configJobCreationId(id, parent, child);
       }
     }
     return null;
@@ -520,15 +522,15 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     final UUID operationId = UUID.randomUUID();
-    final String jobPath = Paths.configJob(id);
-    final String taskPath = Paths.configHostJob(host, id);
-    final String taskCreationPath = Paths.configHostJobCreation(host, id, operationId);
+    final String jobPath = paths.configJob(id);
+    final String taskPath = paths.configHostJob(host, id);
+    final String taskCreationPath = paths.configHostJobCreation(host, id, operationId);
 
     final List<Integer> staticPorts = staticPorts(job);
     final Map<String, byte[]> portNodes = Maps.newHashMap();
     final byte[] idJson = id.toJsonBytes();
     for (final int port : staticPorts) {
-      final String path = Paths.configHostPort(host, port);
+      final String path = paths.configHostPort(host, port);
       portNodes.put(path, idJson);
     }
 
@@ -536,7 +538,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final List<ZooKeeperOperation> operations = Lists.newArrayList(
         check(jobPath),
         create(portNodes),
-        create(Paths.configJobHost(id, host)));
+        create(paths.configJobHost(id, host)));
 
     // Attempt to read a task here.  If it's goal is UNDEPLOY, it's as good as not existing
     try {
@@ -587,7 +589,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       // Check for static port collisions
       for (final int port : staticPorts) {
-        final String path = Paths.configHostPort(host, port);
+        final String path = paths.configHostPort(host, port);
         try {
           if (client.stat(path) == null) {
             continue;
@@ -610,7 +612,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   private void assertJobExists(final ZooKeeperClient client, final JobId id)
       throws JobDoesNotExistException {
     try {
-      final String path = Paths.configJob(id);
+      final String path = paths.configJob(id);
       if (client.stat(path) == null) {
         throw new JobDoesNotExistException(id);
       }
@@ -649,7 +651,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     assertHostExists(client, host);
     assertTaskExists(client, host, deployment.getJobId());
 
-    final String path = Paths.configHostJob(host, jobId);
+    final String path = paths.configHostJob(host, jobId);
     final Task task = new Task(job, deployment.getGoal());
     try {
       client.setData(path, task.toJsonBytes());
@@ -662,7 +664,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   private void assertHostExists(final ZooKeeperClient client, final String host)
   throws HostNotFoundException {
     try {
-      client.getData(Paths.configHost(host));
+      client.getData(paths.configHost(host));
     } catch (NoNodeException e) {
       throw new HostNotFoundException(host, e);
     } catch (KeeperException e) {
@@ -673,7 +675,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   private void assertTaskExists(final ZooKeeperClient client, final String host, final JobId jobId)
   throws JobNotDeployedException {
     try {
-      client.getData(Paths.configHostJob(host, jobId));
+      client.getData(paths.configHostJob(host, jobId));
     } catch (NoNodeException e) {
       throw new JobNotDeployedException(host, jobId);
     } catch (KeeperException e) {
@@ -686,7 +688,7 @@ public class ZooKeeperMasterModel implements MasterModel {
    */
   @Override
   public Deployment getDeployment(final String host, final JobId jobId) {
-    final String path = Paths.configHostJob(host, jobId);
+    final String path = paths.configHostJob(host, jobId);
     final ZooKeeperClient client = provider.get("getDeployment");
     try {
       final byte[] data = client.getData(path);
@@ -708,7 +710,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("getHostStatus");
 
     try {
-      stat = client.exists(Paths.configHostId(host));
+      stat = client.exists(paths.configHostId(host));
     } catch (KeeperException e) {
       throw new HeliosRuntimeException("Failed to check host status", e);
     }
@@ -747,20 +749,20 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private Map<String, String> getEnvironment(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostEnvVars(host), STRING_MAP_TYPE, "environment");
+    return tryGetEntity(client, paths.statusHostEnvVars(host), STRING_MAP_TYPE, "environment");
   }
 
   private AgentInfo getAgentInfo(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostAgentInfo(host), AGENT_INFO_TYPE, "agent info");
+    return tryGetEntity(client, paths.statusHostAgentInfo(host), AGENT_INFO_TYPE, "agent info");
   }
 
   private HostInfo getHostInfo(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostInfo(host), HOST_INFO_TYPE, "host info");
+    return tryGetEntity(client, paths.statusHostInfo(host), HOST_INFO_TYPE, "host info");
   }
 
   private boolean checkHostUp(final ZooKeeperClient client, final String host) {
     try {
-      final Stat stat = client.exists(Paths.statusHostUp(host));
+      final Stat stat = client.exists(paths.statusHostUp(host));
       return stat != null;
     } catch (KeeperException e) {
       throw new HeliosRuntimeException("getting host " + host + " up status failed", e);
@@ -784,7 +786,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private List<JobId> listHostJobs(final ZooKeeperClient client, final String host) {
     final List<String> jobIdStrings;
-    final String folder = Paths.statusHostJobs(host);
+    final String folder = paths.statusHostJobs(host);
     try {
       jobIdStrings = client.getChildren(folder);
     } catch (KeeperException.NoNodeException e) {
@@ -802,7 +804,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Nullable
   private TaskStatus getTaskStatus(final ZooKeeperClient client, final String host,
                                    final JobId jobId) {
-    final String containerPath = Paths.statusHostJob(host, jobId);
+    final String containerPath = paths.statusHostJob(host, jobId);
     try {
       final byte[] data = client.getData(containerPath);
       return parse(data, TaskStatus.class);
@@ -817,7 +819,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   private Map<JobId, Deployment> getTasks(final ZooKeeperClient client, final String host) {
     final Map<JobId, Deployment> jobs = Maps.newHashMap();
     try {
-      final String folder = Paths.configHostJobs(host);
+      final String folder = paths.configHostJobs(host);
       final List<String> jobIds;
       try {
         jobIds = client.getChildren(folder);
@@ -827,7 +829,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       for (final String jobIdString : jobIds) {
         final JobId jobId = JobId.fromString(jobIdString);
-        final String containerPath = Paths.configHostJob(host, jobId);
+        final String containerPath = paths.configHostJob(host, jobId);
         try {
           final byte[] data = client.getData(containerPath);
           final Task task = parse(data, Task.class);
@@ -872,15 +874,15 @@ public class ZooKeeperMasterModel implements MasterModel {
     //    need to deal with seeing the new job before the UNDEPLOY.
 
     final Job job = getJob(client, jobId);
-    final String path = Paths.configHostJob(host, jobId);
+    final String path = paths.configHostJob(host, jobId);
     final Task task = new Task(job, UNDEPLOY);
     final List<ZooKeeperOperation> operations = Lists.newArrayList(
         set(path, task.toJsonBytes()),
-        delete(Paths.configJobHost(jobId, host)));
+        delete(paths.configJobHost(jobId, host)));
 
     final List<Integer> staticPorts = staticPorts(job);
     for (int port : staticPorts) {
-        operations.add(delete(Paths.configHostPort(host, port)));
+        operations.add(delete(paths.configHostPort(host, port)));
     }
 
     try {
