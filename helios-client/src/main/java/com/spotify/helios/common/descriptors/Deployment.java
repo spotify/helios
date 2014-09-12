@@ -25,13 +25,27 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * Basically, a pair of {@link JobId} and {@link Goal}.  This is different than {@link Task}
- * which has a {@link Job} and not a {@link JobId}
+ * which has a {@link Job} and not a {@link JobId}.
+ *
+ * A typical JSON representation might be:
+ * <pre>
+ * {
+ *   "job": "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
+ *   "goal": "START",
+ * }
+ * </pre>
  */
 public class Deployment extends Descriptor {
 
   private final JobId jobId;
   private final Goal goal;
 
+  /**
+   * Constructor
+   *
+   * @param jobId The id of the job.
+   * @param goal The desired state (i.e. goal) of the task/deployment.
+   */
   public Deployment(@JsonProperty("job") final JobId jobId,
                     @JsonProperty("goal") final Goal goal) {
     this.jobId  = jobId;

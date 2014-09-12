@@ -34,6 +34,35 @@ import java.util.Map;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.Collections.emptyMap;
 
+/**
+ * The state of the deployed job (aka a task).
+ *
+ * A typical JSON representation might be:
+ * <pre>
+ * {
+ *   "containerId" : "e890d827e802934a29c97d7e9e3c96a55ca049e519ab0c28be8020621a0a3750",
+ *   "env" : {
+ *     "SYSLOG_HOST_PORT" : "10.99.0.1:514"
+ *   },
+ *   "goal" : "START",
+ *   "job" : { #... see the definition of Job },
+ *   "ports" : {
+ *     "http" : {
+ *       "externalPort" : 8080,
+ *       "internalPort" : 8080,
+ *       "protocol" : "tcp"
+ *     },
+ *     "http-admin" : {
+ *       "externalPort" : 8081,
+ *       "internalPort" : 8081,
+ *       "protocol" : "tcp"
+ *     }
+ *   },
+ *   "state" : "RUNNING",
+ *   "throttled" : "NO"
+ * },
+ * </pre>
+ */
 public class TaskStatus extends Descriptor {
 
   private static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
@@ -57,6 +86,15 @@ public class TaskStatus extends Descriptor {
   private final Map<String, PortMapping> ports;
   private final Map<String, String> env;
 
+  /**
+   * @param job The job the task is running.
+   * @param goal The desired state of the task.
+   * @param state The state of the task.
+   * @param containerId The containerId, if the task has one (yet).
+   * @param throttled The throttle state of the task.
+   * @param ports The ports actually assigned to the task.
+   * @param env The environment passed to the container.
+   */
   public TaskStatus(@JsonProperty("job") final Job job,
                     @Nullable @JsonProperty("goal") final Goal goal,
                     @JsonProperty("state") final State state,

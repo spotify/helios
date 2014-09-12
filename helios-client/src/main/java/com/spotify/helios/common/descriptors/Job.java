@@ -46,6 +46,45 @@ import static com.spotify.helios.common.Hash.sha1digest;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
+/**
+ * Represents a Helios job.
+ *
+ * An sample expression of it in JSON might be:
+ * <pre>
+ * {
+ *   "command" : [ "server", "serverconfig.yaml" ],
+ *   "env" : {
+ *     "JVM_ARGS" : "-Ddw.feature.randomFeatureFlagEnabled=true"
+ *   },
+ *   "expires" : null,
+ *   "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
+ *   "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
+ *   "ports" : {
+ *     "http" : {
+ *       "externalPort" : 8060,
+ *       "internalPort" : 8080,
+ *       "protocol" : "tcp"
+ *     },
+ *     "http-admin" : {
+ *       "externalPort" : 8061,
+ *       "internalPort" : 8081,
+ *       "protocol" : "tcp"
+ *     }
+ *   },
+ *   "registration" : {
+ *     "service/http" : {
+ *       "ports" : {
+ *         "http" : { }
+ *       }
+ *     }
+ *   },
+ *   "registrationDomain" : "",
+ *   "volumes" : {
+ *     "/path/to/mysecretconfig.yaml:ro:ro" : "/path/to/mysecretconfig.yaml"
+ *   }
+ * }
+ * </pre>
+ */
 public class Job extends Descriptor implements Comparable<Job> {
 
   public static final Map<String, String> EMPTY_ENV = emptyMap();
@@ -69,13 +108,30 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Date expires;
   private final String registrationDomain;
 
+  /**
+   * Create a Job.
+   *
+   * @param id The id if the job.
+   * @param image The docker image to use.
+   * @param command The command to pass to the container.
+   * @param env Environment variables to set
+   * @param ports The ports you wish to expose from the container.
+   * @param registration Configuration information for the discovery service (if applicable)
+   * @param gracePeriod How long to let the container run after deregistering with the discovery
+   *    service.  If nothing is configured in registration, this option is ignored.
+   * @param volumes Docker volumes to mount.
+   * @param expires If set, a timestamp at which the job and any deployments will be removed.
+   * @param registrationDomain If set, override the default domain in which discovery service
+   *    registration occurs.  What is allowed here will vary based upon the discovery service
+   *    plugin used.
+   */
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
              @JsonProperty("command") @Nullable final List<String> command,
              @JsonProperty("env") @Nullable final Map<String, String> env,
              @JsonProperty("ports") @Nullable final Map<String, PortMapping> ports,
              @JsonProperty("registration") @Nullable
-             final Map<ServiceEndpoint, ServicePorts> registration,
+                 final Map<ServiceEndpoint, ServicePorts> registration,
              @JsonProperty("gracePeriod") @Nullable final Integer gracePeriod,
              @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
              @JsonProperty("expires") @Nullable final Date expires,

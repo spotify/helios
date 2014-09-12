@@ -36,6 +36,38 @@ import java.util.Map.Entry;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 
+/**
+ * Gives the Helios host status for the agent, which includes all jobs, their statuses, as well
+ * as host and agent information.
+ * <pre>
+ * {
+ *   "agentInfo" : { #... see the description of AgentInfo },
+ *   "environment" : {
+ *     "SYSLOG_HOST_PORT" : "10.99.0.1:514",
+ *   },
+ *   "hostInfo" : { #... see the description of HostInfo },
+ *   "jobs" : {
+ *     "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265" : {
+ *       "goal" : "START",
+ *       "jobId" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
+ *     }
+ *   },
+ *   "status" : "UP",
+ *   "statuses" : {
+ *     "elva:0.0.4:9f64cf43353c55c36276b7df76b066584f9c49aa" : {
+ *       "containerId" : "5a31d4fd48b5b4349980175e2f865494146704e684d89b6a95a9a766cc2f43a3",
+ *       "env" : {
+ *         "SYSLOG_HOST_PORT" : "10.99.0.1:514",
+ *       },
+ *       "goal" : "START",
+ *       "job" : { #... See definition of Job },
+ *       "state" : "RUNNING",
+ *       "throttled" : "NO"
+ *     }
+ *   }
+ * }
+ * </pre>
+ */
 public class HostStatus extends Descriptor {
 
   public static enum Status {
@@ -50,6 +82,16 @@ public class HostStatus extends Descriptor {
   private final Map<JobId, TaskStatus> statuses;
   private final Map<String, String> environment;
 
+  /**
+   * Constructor.
+   * 
+   * @param jobs  Map of jobs and their deployments for this host.
+   * @param statuses the statuses of jobs on this host.
+   * @param status The up/down status of this host.
+   * @param hostInfo The host information.
+   * @param agentInfo The agent information.
+   * @param environment The environment provided to the agent on it's command line.
+   */
   public HostStatus(@JsonProperty("jobs") final Map<JobId, Deployment> jobs,
                     @JsonProperty("statuses") final Map<JobId, TaskStatus> statuses,
                     @JsonProperty("status") final Status status,

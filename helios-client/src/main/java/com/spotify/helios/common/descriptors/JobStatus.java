@@ -29,6 +29,35 @@ import java.util.Map;
 
 import static com.google.common.collect.ImmutableMap.copyOf;
 
+/**
+ * Represents the status of a job.
+ *
+ * A typical JSON representation might be:
+ * <pre>
+ * {
+ *   "deployments" : {
+ *     "host1" : {
+ *       "goal" : "START",
+ *       "jobId" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265"
+ *     },
+ *     "host2" : {
+ *       "goal" : "START",
+ *       "jobId" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265"
+ *     },
+ *     "host3" : {
+ *       "goal" : "START",
+ *       "jobId" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265"
+ *     },
+ *   },
+ *   "job" : { #... see definition of Job },
+ *   "taskStatuses" : {
+ *     "host1" : { #... see definition of TaskStatus }
+ *     "host2" : { #... see definition of TaskStatus }
+ *     "host3" : { #... see definition of TaskStatus }
+ *   }
+ * }
+ * </pre>
+ */
 public class JobStatus {
 
   private final Job job;

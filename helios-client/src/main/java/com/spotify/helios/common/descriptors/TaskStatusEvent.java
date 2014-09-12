@@ -25,11 +25,30 @@ import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents something that has happened to a Task.
+ *
+ * A typical JSON representation of a task might be:
+ * <pre>
+ * {
+ *   "status" : { #... see definition of TaskStatus },
+ *   "timestamp" : 1410308461448,
+ *   "host": "myhost"
+ * }
+ * </pre>
+ */
 public class TaskStatusEvent {
   private final TaskStatus status;
   private final long timestamp;
   private final String host;
 
+  /**
+   * Constructor.
+   *
+   * @param status  The status of the task at the point of the event.
+   * @param timestamp The timestamp of the event.
+   * @param host The host on which the event occurred.
+   */
   public TaskStatusEvent(@JsonProperty("status") final TaskStatus status,
                          @JsonProperty("timestamp") final long timestamp,
                          @JsonProperty("host") final String host) {
