@@ -27,6 +27,19 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
 
+
+/**
+ * Represents a mapping from a port inside the container to be exposed on the agent.
+ *
+ * A typical JSON representation might be:
+ * <pre>
+ * {
+ *   "externalPort" : 8061,
+ *   "internalPort" : 8081,
+ *   "protocol" : "tcp"
+ * }
+ * </pre>
+ */
 public class PortMapping extends Descriptor {
 
   public static final String TCP = "tcp";

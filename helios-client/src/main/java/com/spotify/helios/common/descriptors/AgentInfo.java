@@ -25,8 +25,30 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
+/**
+ * Information about the Helios Agent (aka "host").
+ *
+ * A typical JSON representation might look like this:
+ * <pre>
+ * {
+ *   "inputArguments" : [ "-Xmx256m", "-Dcom.sun.management.jmxremote.port=9203",
+ *       "-Dcom.sun.management.jmxremote.ssl=false",
+ *       "-Dcom.sun.management.jmxremote.authenticate=false", "-Djava.net.preferIPv4Stack=true",
+ *       "-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5006" ],
+ *   "name" : "agent-name",
+ *   "specName" : "Java Virtual Machine Specification",
+ *   "specVendor" : "Oracle Corporation",
+ *   "specVersion" : "1.7",
+ *   "startTime" : 1410308461448,
+ *   "uptime" : 231779308,
+ *   "version" : "0.8.10",
+ *   "vmName" : "Java HotSpot(TM) 64-Bit Server VM",
+ *   "vmVendor" : "Oracle Corporation",
+ *   "vmVersion" : "24.45-b08"
+ * }
+ * </pre>
+ */
 public class AgentInfo extends Descriptor {
-
   private final String name;
   private final String vmName;
   private final String vmVendor;
@@ -39,6 +61,21 @@ public class AgentInfo extends Descriptor {
   private final long startTime;
   private final String version;
 
+  /**
+   * Constructor.
+   *
+   * @param name  The name of the agent.
+   * @param vmName The name of the JVM.
+   * @param vmVendor The vendor of the JVM.
+   * @param vmVersion The version of the JVM.
+   * @param specName  The specification of the JVM.
+   * @param specVendor The specification vendor of the JVM.
+   * @param specVersion The specification version of the JVM.
+   * @param inputArguments JVM arguments passed when starting the agent.
+   * @param uptime How long the Agent has been running.
+   * @param startTime The clock time at which the Agent started.
+   * @param version The Helios version of the running Agent.
+   */
   public AgentInfo(@JsonProperty("name") final String name,
                    @JsonProperty("vmName") final String vmName,
                    @JsonProperty("vmVendor") final String vmVendor,

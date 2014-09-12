@@ -30,6 +30,17 @@ import java.util.Map;
 
 import static java.util.Arrays.asList;
 
+/**
+ * Effectively a set of port names, that is the map keys, as ServicePortParameters is just
+ * an empty JSON object.
+ *
+ * A typical JSON representation might be:
+ * <pre>
+ * {
+ *   "http" : { }
+ * }
+ * </pre>
+ */
 public class ServicePorts extends Descriptor {
 
   private final Map<String, ServicePortParameters> ports;

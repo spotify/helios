@@ -25,6 +25,35 @@ import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Represents the Agent system information.
+ *
+ * A typical JSON representation might look like:
+ * <pre>
+ * {
+ *   "architecture" : "amd64",
+ *   "cpus" : 24,
+ *   "dockerVersion" : {
+ *     "apiVersion" : "1.12",
+ *     "arch" : "amd64",
+ *     "gitCommit" : "688b5cf-dirty",
+ *     "goVersion" : "go1.2.1",
+ *     "kernelVersion" : "3.13.0-19-generic",
+ *     "os" : "linux",
+ *     "version" : "1.0.0"
+ *   },
+ *   "hostname" : "agenthostname",
+ *   "loadAvg" : 0.28,
+ *   "memoryFreeBytes" : 26494124032,
+ *   "memoryTotalBytes" : 33421123584,
+ *   "osName" : "Linux",
+ *   "osVersion" : "3.13.0-19-generic",
+ *   "swapFreeBytes" : 10737414144,
+ *   "swapTotalBytes" : 10737414144,
+ *   "uname" : "Linux agenthostname 3.13.0-19-generic #40-Ubuntu SMP Mon Mar 24 02:36:06 UTC ..."
+ * },
+ * </pre>
+ */
 public class HostInfo extends Descriptor {
 
   private final String hostname;
@@ -40,6 +69,20 @@ public class HostInfo extends Descriptor {
   private final long swapFreeBytes;
   private final DockerVersion dockerVersion;
 
+  /**
+   * @param hostname The hostname of the agent.
+   * @param uname The output of the uname command.
+   * @param architecture The architecture of the Agent.
+   * @param osName  The name of the operating system on the Agent.
+   * @param osVersion The version of the operating system (or kernel version).
+   * @param cpus The number of CPUS on the machine.
+   * @param loadAvg The current load average on the host.
+   * @param memoryTotalBytes Total memory on the host.
+   * @param memoryFreeBytes Total memory free on the host.
+   * @param swapTotalBytes
+   * @param swapFreeBytes
+   * @param dockerVersion
+   */
   public HostInfo(@JsonProperty("hostname") final String hostname,
                   @JsonProperty("uname") final String uname,
                   @JsonProperty("architecture") final String architecture,

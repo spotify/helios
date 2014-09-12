@@ -37,7 +37,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *
  * Has a string representation in JSON of:
  * <pre>
- * name:version:hashvalue
+ * "name:version:hashvalue"
  * </pre>
  *
  * The hash value is so that if you are talking to multiple clusters, and the job definitions

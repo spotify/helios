@@ -25,6 +25,23 @@ import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+/**
+ * Structure representing the version and system details of the Docker daemon running on the
+ * Agent.
+ *
+ * A typical JSON representation of this might be:
+ * <pre>
+ * {
+ *   "apiVersion" : "1.12",
+ *   "arch" : "amd64",
+ *   "gitCommit" : "688b5cf-dirty",
+ *   "goVersion" : "go1.2.1",
+ *   "kernelVersion" : "3.13.0-19-generic",
+ *   "os" : "linux",
+ *   "version" : "1.0.0"
+ * }
+ * </pre>
+ */
 public class DockerVersion {
 
   private final String apiVersion;
@@ -35,6 +52,15 @@ public class DockerVersion {
   private final String os;
   private final String version;
 
+  /**
+   * @param apiVersion  The Docker api version supported.
+   * @param arch The architecture of the machine.
+   * @param gitCommit The git commit from which Docker was built.
+   * @param goVersion The version of the Go compiler used to build Docker.
+   * @param kernelVersion The kernel version of the Agent.
+   * @param os The operating system of the Agent.
+   * @param version The Docker version.
+   */
   public DockerVersion(@JsonProperty("apiVersion") final String apiVersion,
                        @JsonProperty("arch") final String arch,
                        @JsonProperty("gitCommit") final String gitCommit,
