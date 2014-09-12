@@ -24,7 +24,6 @@ package com.spotify.helios.testing;
 import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -34,6 +33,13 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigList;
+import com.typesafe.config.ConfigResolveOptions;
+import com.typesafe.config.ConfigValue;
+import com.typesafe.config.ConfigValueFactory;
+import com.typesafe.config.ConfigValueType;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
@@ -49,8 +55,7 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.Map.Entry;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -59,14 +64,11 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Predicates.containsPattern;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.testing.Jobs.undeploy;
-import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.fail;
 
 public class TemporaryJobs implements TestRule {
 
@@ -83,8 +85,9 @@ public class TemporaryJobs implements TestRule {
   private final Prober prober;
   private final String defaultHostFilter;
   private final JobPrefixFile jobPrefixFile;
-
+  private final Config config;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
+  private TemporaryJob.Deployer deployer;
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
@@ -94,61 +97,12 @@ public class TemporaryJobs implements TestRule {
               .build()),
       0, SECONDS);
 
-  private final TemporaryJob.Deployer deployer = new TemporaryJob.Deployer() {
-    @Override
-    public TemporaryJob deploy(final Job job, final String hostFilter,
-                               final Set<String> waitPorts) {
-      if (isNullOrEmpty(hostFilter)) {
-        fail("a host filter pattern must be passed to hostFilter(), " +
-             "or one must be specified in HELIOS_HOST_FILTER");
-      }
-
-      final List<String> hosts;
-      try {
-        log.debug("Getting list of hosts");
-        hosts = client.listHosts().get();
-      } catch (InterruptedException | ExecutionException e) {
-        throw new AssertionError("Failed to get list of Helios hosts", e);
-      }
-
-      final List<String> filteredHosts = FluentIterable.from(hosts)
-          .filter(containsPattern(hostFilter))
-          .toList();
-
-      if (filteredHosts.isEmpty()) {
-        fail(format("no hosts matched the filter pattern - %s", hostFilter));
-      }
-
-      final String chosenHost = filteredHosts.get(new Random().nextInt(filteredHosts.size()));
-      return deploy(job, asList(chosenHost), waitPorts);
-    }
-
-    @Override
-    public TemporaryJob deploy(final Job job, final List<String> hosts,
-                               final Set<String> waitPorts) {
-      if (!started) {
-        fail("deploy() must be called in a @Before or in the test method, or perhaps you forgot"
-            + " to put @Rule before TemporaryJobs");
-      }
-
-      if (hosts.isEmpty()) {
-        fail("at least one host must be explicitly specified, or deploy() must be called with " +
-             "no arguments to automatically select a host");
-      }
-
-      final TemporaryJob temporaryJob = new TemporaryJob(client, prober, job, hosts, waitPorts);
-      jobs.add(temporaryJob);
-      temporaryJob.deploy();
-      return temporaryJob;
-    }
-  };
-
-  private boolean started;
-
-  TemporaryJobs(final Builder builder) {
+  TemporaryJobs(final Builder builder, final Config config) {
     this.client = checkNotNull(builder.client, "client");
     this.prober = checkNotNull(builder.prober, "prober");
     this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
+    this.deployer = Optional.fromNullable(builder.deployer)
+        .or(new DefaultDeployer(client, jobs, prober));
     final Path prefixDirectory = Paths.get(Optional.fromNullable(builder.prefixDirectory)
         .or(DEFAULT_PREFIX_DIRECTORY));
 
@@ -158,6 +112,12 @@ public class TemporaryJobs implements TestRule {
     } catch (IOException | ExecutionException | InterruptedException e) {
       throw Throwables.propagate(e);
     }
+
+    // Load in the prefix so it can be used in the config
+    final Config configWithPrefix = ConfigFactory.empty()
+        .withValue("prefix", ConfigValueFactory.fromAnyRef(prefix()));
+
+    this.config = config.withFallback(configWithPrefix).resolve();
   }
 
   /**
@@ -167,7 +127,7 @@ public class TemporaryJobs implements TestRule {
    * Note: When not being used as a @Rule, jobs will not be monitored during test runs.
    */
   public void before() {
-    started = true;
+    deployer.readyToDeploy();
   }
 
   /**
@@ -203,11 +163,57 @@ public class TemporaryJobs implements TestRule {
   }
 
   public TemporaryJobBuilder job() {
-    return new TemporaryJobBuilder(deployer, jobPrefixFile.prefix())
-        .hostFilter(defaultHostFilter)
-        // TODO (dano): these spotify specific environment variables should go somewhere else
-        .env("SPOTIFY_POD", prefix() + ".local.")
-        .env("SPOTIFY_DOMAIN", prefix() + ".local.");
+    final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix());
+
+    if (config.hasPath("env")) {
+      final Config env = config.getConfig("env");
+
+      for (final Entry<String, ConfigValue> entry : env.entrySet()) {
+        builder.env(entry.getKey(), entry.getValue().unwrapped());
+      }
+    }
+
+    if (config.hasPath("name")) {
+      builder.name(config.getString("name"));
+    }
+    if (config.hasPath("version")) {
+      builder.version(config.getString("version"));
+    }
+    if (config.hasPath("image")) {
+      builder.image(config.getString("image"));
+    }
+    if (config.hasPath("command")) {
+      builder.command(getListByKey("command", config));
+    }
+    if (config.hasPath("host")) {
+      builder.host(config.getString("host"));
+    }
+    if (config.hasPath("deploy")) {
+      builder.deploy(getListByKey("deploy", config));
+    }
+    if (config.hasPath("imageInfoFile")) {
+      builder.imageFromInfoFile(config.getString("imageInfoFile"));
+    }
+    if (config.hasPath("registrationDomain")) {
+      builder.registrationDomain(config.getString("registrationDomain"));
+    }
+    // port and expires intentionally left out -- since expires is a specific point in time, I
+    // cannot imagine a config-file use for it, additionally for ports, I'm thinking that port
+    // allocations are not likely to be common -- but PR's welcome if I'm wrong. - drewc@spotify.com
+    builder.hostFilter(defaultHostFilter);
+    return builder;
+  }
+
+  private static List<String> getListByKey(final String key, final Config config) {
+    final ConfigList endpointList = config.getList(key);
+    final List<String> stringList = Lists.newArrayList();
+    for (final ConfigValue v : endpointList) {
+      if (v.valueType() != ConfigValueType.STRING) {
+        throw new RuntimeException("Item in " + key + " list [" + v + "] is not a string");
+      }
+      stringList.add((String) v.unwrapped());
+    }
+    return stringList;
   }
 
   /**
@@ -245,6 +251,10 @@ public class TemporaryJobs implements TestRule {
 
   public static TemporaryJobs create(final String domain) {
     return builder().domain(domain).build();
+  }
+
+  public static TemporaryJobs createFromProfile(final String profile) {
+    return builder(profile).build();
   }
 
   @Override
@@ -382,13 +392,67 @@ public class TemporaryJobs implements TestRule {
     return new Builder();
   }
 
-  public static class Builder {
+  public static Builder builder(final String profile) {
+    return new Builder(profile);
+  }
 
-    Builder() {
+  public static class Builder {
+    Builder(final String profile) {
+      this(profile, loadConfig());
     }
 
+    Builder() {
+      this(loadConfig());
+    }
+
+    // I feel like I'm building the y-combinator here because Java insists on the call to this
+    // being first.
+    private Builder(final Config preConfig) {
+      this(getProfileFromConfig(preConfig), preConfig);
+    }
+
+    private Builder(final String profile, final Config preConfig) {
+      if (profile != null) {
+        final String key = "helios.testing.profiles." + profile;
+        if (preConfig.hasPath(key)) {
+          this.config = preConfig.getConfig(key);
+        } else {
+          throw new RuntimeException("The configuration profile " + profile + " does not exist");
+        }
+      } else {
+        this.config = ConfigFactory.empty();
+      }
+
+      if (this.config.hasPath("user")) {
+        user(this.config.getString("user"));
+      }
+      if (this.config.hasPath("hostFilter")) {
+        hostFilter(this.config.getString("hostFilter"));
+      }
+      if (this.config.hasPath("endpoints")) {
+        endpointStrings(getListByKey("endpoints", config));
+      }
+      if (this.config.hasPath("domain")) {
+        domain(this.config.getString("domain"));
+      }
+    }
+
+    private static String getProfileFromConfig(final Config preConfig) {
+      if (preConfig.hasPath("helios.testing.defaultProfile")) {
+        return preConfig.getString("helios.testing.defaultProfile");
+      }
+      return null;
+    }
+
+    private static Config loadConfig() {
+      return ConfigFactory.load(Thread.currentThread().getContextClassLoader(),
+                                ConfigResolveOptions.defaults().setAllowUnresolved(true));
+    }
+
+    private final Config config;
     private String user = DEFAULT_USER;
     private Prober prober = DEFAULT_PROBER;
+    private TemporaryJob.Deployer deployer;
     private String hostFilter = DEFAULT_HOST_FILTER;
     private HeliosClient client;
     private String prefixDirectory;
@@ -432,6 +496,11 @@ public class TemporaryJobs implements TestRule {
       return this;
     }
 
+    public Builder deployer(final TemporaryJob.Deployer deployer) {
+      this.deployer = deployer;
+      return this;
+    }
+
     public Builder client(final HeliosClient client) {
       this.client = client;
       return this;
@@ -448,7 +517,7 @@ public class TemporaryJobs implements TestRule {
     }
 
     public TemporaryJobs build() {
-      return new TemporaryJobs(this);
+      return new TemporaryJobs(this, config);
     }
   }
 }

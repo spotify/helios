@@ -92,7 +92,7 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-        .hostFilter(".*")
+//        .hostFilter(".*")
         .client(client)
         .prober(new TestProber())
         .build();
@@ -102,7 +102,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Before
     public void setup() {
       job1 = temporaryJobs.job()
-          .image(BUSYBOX)
+//          .image(BUSYBOX)
           .command("nc", "-p", "4711", "-lle", "cat")
           .port("echo", 4711)
           .deploy(testHost1);
@@ -397,7 +397,8 @@ public class TemporaryJobsTest extends SystemTestBase {
     awaitHostStatus(client, testHost1, UP, LONG_WAIT_MINUTES, MINUTES);
 
     final long start = System.currentTimeMillis();
-    assertThat(testResult(TempJobFailureTest.class), hasSingleFailureContaining("AssertionError: Unexpected job state"));
+    assertThat(testResult(TempJobFailureTest.class),
+        hasSingleFailureContaining("AssertionError: Unexpected job state"));
     final long end = System.currentTimeMillis();
     assertTrue("Test should not time out", (end-start) < Jobs.TIMEOUT_MILLIS);
   }

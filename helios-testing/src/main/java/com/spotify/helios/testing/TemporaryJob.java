@@ -294,5 +294,7 @@ public class TemporaryJob {
     TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts);
 
     TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts);
+
+    void readyToDeploy();
   }
 }
