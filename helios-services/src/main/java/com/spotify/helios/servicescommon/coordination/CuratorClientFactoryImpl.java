@@ -24,19 +24,30 @@ package com.spotify.helios.servicescommon.coordination;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class CuratorClientFactoryImpl implements CuratorClientFactory {
+  private static final Logger log = LoggerFactory.getLogger(CuratorClientFactoryImpl.class);
 
     @Override
     public CuratorFramework newClient(String connectString,
                                       int sessionTimeoutMs,
                                       int connectionTimeoutMs,
-                                      RetryPolicy retryPolicy) {
-        return CuratorFrameworkFactory.newClient(
-                connectString,
-                sessionTimeoutMs,
-                connectionTimeoutMs,
-                retryPolicy);
-    }
+                                      RetryPolicy retryPolicy,
+                                      String namespace) {
+      Builder builder = CuratorFrameworkFactory.builder()
+          .connectString(connectString)
+          .sessionTimeoutMs(sessionTimeoutMs)
+          .connectionTimeoutMs(connectionTimeoutMs)
+          .retryPolicy(retryPolicy);
 
+      if (namespace != null) {
+        log.info("Setting ZooKeeper namespace to " + namespace);
+        builder = builder.namespace(namespace);
+      }
+
+      return builder.build();
+    }
 }

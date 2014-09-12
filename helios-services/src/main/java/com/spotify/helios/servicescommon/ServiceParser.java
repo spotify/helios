@@ -63,6 +63,7 @@ public class ServiceParser {
   private final Argument zooKeeperConnectStringArg;
   private final Argument zooKeeperSessiontimeoutArg;
   private final Argument zooKeeperConnectiontimeoutArg;
+  private final Argument zooKeeperNamespace;
   private final Argument noMetricsArg;
   private final Argument statsdHostPortArg;
   private final Argument riemannHostPortArg;
@@ -106,6 +107,11 @@ public class ServiceParser {
         .type(Integer.class)
         .setDefault((int) SECONDS.toMillis(15))
         .help("zookeeper connection timeout");
+
+    zooKeeperNamespace = parser.addArgument("--zk-namespace")
+        .type(String.class)
+        .setDefault((String) null)
+        .help("Prefix for helios zookeeper namespace");
 
     noMetricsArg = parser.addArgument("--no-metrics")
         .setDefault(SUPPRESS)
@@ -208,6 +214,10 @@ public class ServiceParser {
 
   public int getZooKeeperSessionTimeoutMillis() {
     return options.getInt(zooKeeperSessiontimeoutArg.getDest());
+  }
+
+  public String getZooKeeperNamespace() {
+    return options.getString(zooKeeperNamespace.getDest());
   }
 
   private static String getHostName() {

@@ -73,7 +73,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   /** {@inheritDoc} */
   public void ensurePath(final String path, final boolean excludingLast) throws KeeperException {
-    EnsurePath ensurePath = new EnsurePath(path);
+    EnsurePath ensurePath = client.newNamespaceAwareEnsurePath(path);
     if (excludingLast) {
       ensurePath = ensurePath.excludingLast();
     }

@@ -24,9 +24,12 @@ package com.spotify.helios;
 import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 
+import com.spotify.helios.ChildProcesses.Subprocess;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.server.ServerCnxnFactory;
@@ -42,7 +45,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import static com.spotify.helios.ChildProcesses.Subprocess;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.apache.commons.io.FileUtils.deleteQuietly;
 
@@ -58,9 +60,22 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
   private Subprocess serverProcess;
 
   public ZooKeeperStandaloneServerManager() {
+    this(null);
+  }
+
+  public ZooKeeperStandaloneServerManager(final String namespace) {
     this.dataDir = Files.createTempDir();
     final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
-    curator = CuratorFrameworkFactory.newClient(endpoint, retryPolicy);
+
+    Builder builder = CuratorFrameworkFactory.builder()
+        .connectString(endpoint)
+        .retryPolicy(retryPolicy);
+
+    if (namespace != null) {
+      builder = builder.namespace(namespace);
+    }
+
+    curator = builder.build();
     curator.start();
     start();
   }
@@ -93,7 +108,7 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
       @Override
       public Object call() throws Exception {
         try {
-          return curator().getChildren().forPath("/");
+          return curator().usingNamespace(null).getChildren().forPath("/");
         } catch (Exception e) {
           return null;
         }
@@ -107,7 +122,7 @@ public class ZooKeeperStandaloneServerManager implements ZooKeeperTestManager {
       @Override
       public Object call() throws Exception {
         try {
-          curator().getChildren().forPath("/");
+          curator().usingNamespace(null).getChildren().forPath("/");
           return null;
         } catch (KeeperException.ConnectionLossException e) {
           return true;

@@ -37,6 +37,7 @@ import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
+import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -56,7 +57,6 @@ import com.yammer.metrics.core.MetricsRegistry;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
@@ -274,13 +274,15 @@ public class AgentService extends AbstractIdleService {
    */
   private ZooKeeperClient setupZookeeperClient(final AgentConfig config, final String id) {
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
-    final CuratorFramework curator = CuratorFrameworkFactory.newClient(
+    final CuratorFramework curator = new CuratorClientFactoryImpl().newClient(
         config.getZooKeeperConnectionString(),
         config.getZooKeeperSessionTimeoutMillis(),
         config.getZooKeeperConnectionTimeoutMillis(),
-        zooKeeperRetryPolicy);
+        zooKeeperRetryPolicy,
+        config.getZooKeeperNamespace());
 
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
+    client.start();
 
     // Register the agent
     zkRegistrar =
@@ -292,7 +294,6 @@ public class AgentService extends AbstractIdleService {
   @Override
   protected void startUp() throws Exception {
     logBanner();
-    zooKeeperClient.start();
     zkRegistrar.startAsync().awaitRunning();
     model.startAsync().awaitRunning();
     agent.startAsync().awaitRunning();
