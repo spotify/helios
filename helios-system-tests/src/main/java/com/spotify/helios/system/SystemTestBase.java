@@ -115,6 +115,7 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
@@ -589,7 +590,7 @@ public abstract class SystemTestBase {
                             final List<String> command,
                             final Date expires) throws Exception {
     return createJob(name, version, image, command, EMPTY_ENV, EMPTY_PORTS, EMPTY_REGISTRATION,
-      EMPTY_VOLUMES, expires);
+                     EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, expires);
   }
 
   protected JobId createJob(final String name,
@@ -618,7 +619,8 @@ public abstract class SystemTestBase {
                             final Map<String, PortMapping> ports,
                             final Map<ServiceEndpoint, ServicePorts> registration)
       throws Exception {
-    return createJob(name, version, image, command, env, ports, registration, EMPTY_VOLUMES);
+    return createJob(name, version, image, command, env, ports, registration, EMPTY_GRACE_PERIOD,
+                     EMPTY_VOLUMES);
   }
 
   protected JobId createJob(final String name,
@@ -628,8 +630,9 @@ public abstract class SystemTestBase {
                             final Map<String, String> env,
                             final Map<String, PortMapping> ports,
                             final Map<ServiceEndpoint, ServicePorts> registration,
+                            final Integer gracePeriod,
                             final Map<String, String> volumes) throws Exception {
-    return createJob(name, version, image, command, env, ports, registration, volumes,
+    return createJob(name, version, image, command, env, ports, registration, gracePeriod, volumes,
         EMPTY_EXPIRES);
   }
 
@@ -640,19 +643,21 @@ public abstract class SystemTestBase {
                             final Map<String, String> env,
                             final Map<String, PortMapping> ports,
                             final Map<ServiceEndpoint, ServicePorts> registration,
+                            final Integer gracePeriod,
                             final Map<String, String> volumes,
                             final Date expires) throws Exception {
     return createJob(Job.newBuilder()
-        .setName(name)
-        .setVersion(version)
-        .setImage(image)
-        .setCommand(command)
-        .setEnv(env)
-        .setPorts(ports)
-        .setRegistration(registration)
-        .setVolumes(volumes)
-        .setExpires(expires)
-        .build());
+                         .setName(name)
+                         .setVersion(version)
+                         .setImage(image)
+                         .setCommand(command)
+                         .setEnv(env)
+                         .setPorts(ports)
+                         .setRegistration(registration)
+                         .setGracePeriod(gracePeriod)
+                         .setVolumes(volumes)
+                         .setExpires(expires)
+                         .build());
   }
 
   protected JobId createJob(final Job job) throws Exception {

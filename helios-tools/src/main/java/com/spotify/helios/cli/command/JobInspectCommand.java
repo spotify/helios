@@ -106,6 +106,7 @@ public class JobInspectCommand extends WildcardJobCommand {
       printMap(out, "Env:   ", QUOTE, job.getEnv());
       printMap(out, "Ports: ", FORMAT_PORTMAPPING, job.getPorts());
       printMap(out, "Reg: ", FORMAT_SERVICE_PORTS, job.getRegistration());
+      out.printf("Grace period (seconds): %s%n", job.getGracePeriod());
       printVolumes(out, job.getVolumes());
     }
 

@@ -352,6 +352,7 @@ public class Supervisor {
                  gracePeriod);
 
         if (runner.unregister()) {
+          log.info("Unregisterd. Now sleeping for {} seconds.", gracePeriod);
           sleeper.sleep(TimeUnit.MILLISECONDS.convert(gracePeriod, TimeUnit.SECONDS));
         }
       }

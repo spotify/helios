@@ -132,7 +132,8 @@ public class JobCreateCommand extends ControlCommand {
               "-r wordpress.");
 
     gracePeriodArg = parser.addArgument("--grace-period")
-        .setDefault(0)
+        .type(Integer.class)
+        .setDefault((Object) null)
         .help("if --grace-period is specified, helios will unregister from service discovery and " +
               "wait the specified number of seconds before undeploying, default 0 seconds");
 
@@ -333,6 +334,7 @@ public class JobCreateCommand extends ControlCommand {
 
     // Get grace period interval
     Integer gracePeriod = options.getInt(gracePeriodArg.getDest());
+    builder.setGracePeriod(gracePeriod);
 
     // Parse volumes
     final List<String> volumeSpecs = options.getList(volumeArg.getDest());
