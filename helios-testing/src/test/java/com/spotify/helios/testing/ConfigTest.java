@@ -116,7 +116,7 @@ public class ConfigTest {
     final TestParameters.JobValidator validator = new TestParameters.JobValidator() {
       @Override
       public void validate(Job job, String prefix) {
-        final String domain = prefix + ".services.heliosci.cloud.spotify.net";
+        final String domain = prefix + ".services.helios-ci.cloud.spotify.net";
         final Map<String, String> map = ImmutableMap.of(
             "SPOTIFY_DOMAIN", domain,
             "SPOTIFY_POD", domain,
@@ -129,7 +129,7 @@ public class ConfigTest {
 
     // Specify the helios-ci profile explicitly
     parameters = new TestParameters(TemporaryJobs.builder("helios-ci"),
-                                ".+\\.heliosci\\.cloud",
+                                ".+\\.helios-ci\\.cloud",
                                 validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }

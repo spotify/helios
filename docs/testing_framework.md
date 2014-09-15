@@ -208,7 +208,7 @@ files) you could put in your projects
 `src/test/resources/application.conf` file might be:
 
 ```
-helios.testing.defaultProfile : foo
+helios.testing.profile : foo
 helios.testing.profiles {
   foo : {
     env : {
@@ -236,10 +236,11 @@ Also, any settings on the builders in code will override what's in the
 file.
 
 If the profile specified either to the builder directly, or by the
-`defaultProfile` setting does not exist, you'll get a failure.  Since
-we're using the Typesafe Library, you can then make the default
-profile settable by java property or environment variable, which can
-then be configured via Maven (if you're using it) profiles.
+`profile` setting does not exist, you'll get a failure.  If there is
+no profile set, this is still ok.  Since we're using the Typesafe
+Library, you can then make the default profile settable by java
+property or environment variable, which can then be configured via
+Maven (if you're using it) profiles.
 
 # Job Cleanup
 

@@ -36,6 +36,7 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigList;
+import com.typesafe.config.ConfigParseOptions;
 import com.typesafe.config.ConfigResolveOptions;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueFactory;
@@ -71,9 +72,10 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TemporaryJobs implements TestRule {
-
   private static final Logger log = LoggerFactory.getLogger(TemporaryJob.class);
 
+  static final String HELIOS_TESTING_PROFILE = "helios.testing.profile";
+  private static final String HELIOS_TESTING_PROFILES = "helios.testing.profiles.";
   private static final String DEFAULT_USER = System.getProperty("user.name");
   private static final Prober DEFAULT_PROBER = new DefaultProber();
   private static final String DEFAULT_LOCAL_HOST_FILTER = ".*";
@@ -233,14 +235,25 @@ public class TemporaryJobs implements TestRule {
     if (!isNullOrEmpty(domain)) {
       return create(domain);
     }
+
     final String endpoints = System.getenv("HELIOS_ENDPOINTS");
     final Builder builder = builder();
+
+    if (DEFAULT_HOST_FILTER != null) {
+      builder.hostFilter(DEFAULT_HOST_FILTER);
+    }
+
     if (!isNullOrEmpty(endpoints)) {
       builder.endpointStrings(Splitter.on(',').splitToList(endpoints));
     } else {
-      // We're running locally
-      builder.hostFilter(Optional.fromNullable(DEFAULT_HOST_FILTER).or(DEFAULT_LOCAL_HOST_FILTER));
-      builder.endpoints("http://localhost:5801");
+      // if nothing specified in file or env vars, i.e. no client has been built
+      if (builder.client == null) {
+        // We're running locally
+        builder.hostFilter(Optional
+            .fromNullable(DEFAULT_HOST_FILTER)
+            .or(DEFAULT_LOCAL_HOST_FILTER));
+        builder.endpoints("http://localhost:5801");
+      }
     }
     return builder.build();
   }
@@ -388,6 +401,31 @@ public class TemporaryJobs implements TestRule {
     return jobPrefixFile.prefix();
   }
 
+  static Config loadConfig() {
+    final ConfigResolveOptions resolveOptions =
+        ConfigResolveOptions.defaults().setAllowUnresolved(true);
+
+    final Config baseConfig = ConfigFactory.load(
+        "helios-base.conf", ConfigParseOptions.defaults(), resolveOptions);
+    log.debug("base config: " + baseConfig);
+
+    final Config appConfig = ConfigFactory.load(
+        "helios.conf", ConfigParseOptions.defaults(), resolveOptions);
+    log.debug("app config: " + appConfig);
+
+    final Config returnConfig = appConfig.withFallback(baseConfig);
+    log.debug("result config: " + returnConfig);
+
+    return returnConfig;
+  }
+
+  static String getProfileFromConfig(final Config preConfig) {
+    if (preConfig.hasPath(HELIOS_TESTING_PROFILE)) {
+      return preConfig.getString(HELIOS_TESTING_PROFILE);
+    }
+    return null;
+  }
+
   public static Builder builder() {
     return new Builder();
   }
@@ -397,23 +435,25 @@ public class TemporaryJobs implements TestRule {
   }
 
   public static class Builder {
+
     Builder(final String profile) {
-      this(profile, loadConfig());
+      this(profile, TemporaryJobs.loadConfig());
     }
 
     Builder() {
-      this(loadConfig());
+      this(TemporaryJobs.loadConfig());
     }
 
-    // I feel like I'm building the y-combinator here because Java insists on the call to this
-    // being first.
+    // I feel like I'm building the y-combinator here because Java insists on the calls to this()
+    // in a constructor being the first thing in the method.
     private Builder(final Config preConfig) {
-      this(getProfileFromConfig(preConfig), preConfig);
+      this(TemporaryJobs.getProfileFromConfig(preConfig), preConfig);
     }
 
     private Builder(final String profile, final Config preConfig) {
+      log.debug("Using profile: " + profile);
       if (profile != null) {
-        final String key = "helios.testing.profiles." + profile;
+        final String key = HELIOS_TESTING_PROFILES + profile;
         if (preConfig.hasPath(key)) {
           this.config = preConfig.getConfig(key);
         } else {
@@ -435,18 +475,6 @@ public class TemporaryJobs implements TestRule {
       if (this.config.hasPath("domain")) {
         domain(this.config.getString("domain"));
       }
-    }
-
-    private static String getProfileFromConfig(final Config preConfig) {
-      if (preConfig.hasPath("helios.testing.defaultProfile")) {
-        return preConfig.getString("helios.testing.defaultProfile");
-      }
-      return null;
-    }
-
-    private static Config loadConfig() {
-      return ConfigFactory.load(Thread.currentThread().getContextClassLoader(),
-                                ConfigResolveOptions.defaults().setAllowUnresolved(true));
     }
 
     private final Config config;
