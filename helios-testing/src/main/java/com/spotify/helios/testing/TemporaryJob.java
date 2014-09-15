@@ -212,7 +212,7 @@ public class TemporaryJob {
             verifyHealthy(host, taskStatus);
 
             final TaskStatus.State state = taskStatus.getState();
-            log.info("Job state: {}", state);
+            log.info("Job state of {}: {}", job.getImage(), state);
 
             if (state == TaskStatus.State.RUNNING) {
               return taskStatus;
@@ -253,7 +253,8 @@ public class TemporaryJob {
         stateString += format("(%s)", status.getThrottled());
       }
       throw new AssertionError(format(
-          "Unexpected job state %s. Check helios agent logs for details.", stateString));
+          "Unexpected job state %s for job %s with image %s on host %s. Check helios agent "
+          + "logs for details.", stateString, job.getId().toShortString(), job.getImage(), host));
     }
   }
 
