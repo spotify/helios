@@ -187,7 +187,8 @@ public class JobValidator {
 
     // Check that the job name contains only allowed characters
     if (!NAME_VERSION_PATTERN.matcher(jobIdName).matches()) {
-      errors.add(format("Job name may only contain [0-9a-zA-Z-_.]."));
+      errors.add(format("Job name may only contain [0-9a-zA-Z-_.] in job name [%s].",
+        recomputedId.getName()));
     }
 
     // Check that the job id is correct
@@ -202,13 +203,14 @@ public class JobValidator {
     final Set<String> errors = Sets.newHashSet();
 
     if (jobIdVersion == null || jobIdVersion.isEmpty()) {
-      errors.add(format("Job version was not specified."));
+      errors.add(format("Job version was not specified in job id [%s].", recomputedId));
       return errors;
     }
 
     if (!NAME_VERSION_PATTERN.matcher(jobIdVersion).matches()) {
       // Check that the job version contains only allowed characters
-      errors.add(format("Job version may only contain [0-9a-zA-Z-_.]."));
+      errors.add(format("Job version may only contain [0-9a-zA-Z-_.] in job version [%s].",
+          recomputedId.getVersion()));
     }
 
     // Check that the job version is correct
@@ -223,13 +225,13 @@ public class JobValidator {
     final Set<String> errors = Sets.newHashSet();
 
     if (jobIdHash == null || jobIdHash.isEmpty()) {
-      errors.add(format("Job hash was not specified."));
+      errors.add(format("Job hash was not specified in job id [%s].", recomputedId));
       return errors;
     }
 
     if (jobIdHash.indexOf(':') != -1) {
       // TODO (dxia) Are hashes allowed to have chars not in NAME_VERSION_PATTERN?
-      errors.add(format("Job hash contains colon."));
+      errors.add(format("Job hash contains colon in job id [%s].", recomputedId));
     }
 
     // Check that the job hash is correct
