@@ -84,6 +84,6 @@ public class QueryFailureTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     final String result = cli("status", "--host", "framazama");
-    assertThat(result, containsString("matched no hosts"));
+    assertThat(result, containsString("matched no jobs"));
   }
 }
