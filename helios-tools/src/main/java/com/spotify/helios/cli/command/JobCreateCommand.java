@@ -334,7 +334,9 @@ public class JobCreateCommand extends ControlCommand {
 
     // Get grace period interval
     Integer gracePeriod = options.getInt(gracePeriodArg.getDest());
-    builder.setGracePeriod(gracePeriod);
+    if (gracePeriod != null) {
+      builder.setGracePeriod(gracePeriod);
+    }
 
     // Parse volumes
     final List<String> volumeSpecs = options.getList(volumeArg.getDest());

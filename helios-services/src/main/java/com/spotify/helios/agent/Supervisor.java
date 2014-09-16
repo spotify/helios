@@ -352,12 +352,12 @@ public class Supervisor {
                  gracePeriod);
 
         if (runner.unregister()) {
-          log.info("Unregisterd. Now sleeping for {} seconds.", gracePeriod);
+          log.info("Unregistered. Now sleeping for {} seconds.", gracePeriod);
           sleeper.sleep(TimeUnit.MILLISECONDS.convert(gracePeriod, TimeUnit.SECONDS));
         }
       }
 
-      log.debug("stopping job: {}", job);
+      log.info("stopping job: {}", job);
 
       final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
           .setMinIntervalMillis(SECONDS.toMillis(1))
