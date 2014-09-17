@@ -92,7 +92,6 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-//        .hostFilter(".*")
         .client(client)
         .prober(new TestProber())
         .build();
@@ -102,7 +101,6 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Before
     public void setup() {
       job1 = temporaryJobs.job()
-//          .image(BUSYBOX)
           .command("nc", "-p", "4711", "-lle", "cat")
           .port("echo", 4711)
           .deploy(testHost1);
@@ -112,7 +110,6 @@ public class TemporaryJobsTest extends SystemTestBase {
     public void testDeployment() throws Exception {
       // Verify that it is possible to deploy additional jobs during test
       temporaryJobs.job()
-          .image(BUSYBOX)
           .command(IDLE_COMMAND)
           .host(testHost1)
           .deploy();
@@ -133,9 +130,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Test
     public void testRandomHost() throws Exception {
       temporaryJobs.job()
-          .image(BUSYBOX)
           .command("sh", "-c", "while :; do sleep 5; done")
-          .hostFilter(".+")
           .deploy();
 
       final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
@@ -150,7 +145,6 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Test
     public void testSpecificHost() throws Exception {
       final TemporaryJob job = temporaryJobs.job()
-          .image(BUSYBOX)
           .command(IDLE_COMMAND)
           .hostFilter(testHost2)
           .deploy();
@@ -162,7 +156,6 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     public void testDefaultLocalHostFilter() throws Exception {
       temporaryJobs.job()
-          .image(BUSYBOX)
           .command("sh", "-c", "while :; do sleep 5; done")
           .deploy();
     }
@@ -171,7 +164,6 @@ public class TemporaryJobsTest extends SystemTestBase {
     public void testExceptionWithBadHostFilter() throws Exception {
       // Shouldn't be able to deploy if filter doesn't match any hosts
       temporaryJobs.job()
-          .image(BUSYBOX)
           .command("sh", "-c", "while :; do sleep 5; done")
           .hostFilter("THIS_FILTER_SHOULDNT_MATCH_ANY_HOST")
           .deploy();
@@ -201,7 +193,6 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-        .hostFilter(".*")
         .client(client)
         .prober(new TestProber())
         .build();
@@ -221,7 +212,6 @@ public class TemporaryJobsTest extends SystemTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-        .hostFilter(".*")
         .client(client)
         .prober(new TestProber())
         .prefixDirectory(prefixDirectory.toString())
@@ -235,12 +225,10 @@ public class TemporaryJobsTest extends SystemTestBase {
     @Before
     public void setup() {
       job1 = temporaryJobs.job()
-          .image(BUSYBOX)
           .command(IDLE_COMMAND)
           .deploy(testHost1);
 
       job2 = temporaryJobs.job()
-          .image(BUSYBOX)
           .command(IDLE_COMMAND)
           .expires(expires)
           .deploy(testHost1);

@@ -277,12 +277,14 @@ public class HeliosClient {
       if (endpoints.isEmpty()) {
         throw new RuntimeException("failed to resolve master");
       }
+      log.debug("endpoint uris are {}", endpoints);
       for (int i = 0; i < endpoints.size() && currentTimeMillis() < deadline; i++) {
         final URI endpoint = endpoints.get(positive(offset + i) % endpoints.size());
         final String fullpath = endpoint.getPath() + uri.getPath();
         final URI realUri = new URI("http", endpoint.getHost() + ":" + endpoint.getPort(),
                                     fullpath, uri.getQuery(), null);
         try {
+          log.debug("connecting to {}", realUri);
           return connect0(realUri, method, entity, headers);
         } catch (ConnectException e) {
           // Connecting failed, sleep a bit to avoid hammering and then try another endpoint
