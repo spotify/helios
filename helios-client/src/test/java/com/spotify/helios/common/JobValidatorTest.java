@@ -148,23 +148,29 @@ public class JobValidatorTest {
   @Test
   public void testInvalidNamesFail() throws Exception {
     final Job.Builder b = Job.newBuilder().setVersion("1").setImage("foo");
-    assertEquals((Set) newHashSet("Job name was not specified.", "Job hash was not specified."),
+    assertEquals((Set<String>) newHashSet("Job name was not specified.",
+        "Job hash was not specified in job id [null:1]."),
                  validator.validate(b.build()));
     assertThat(validator.validate(b.setName("foo@bar").build()),
-               contains(equalTo("Job name may only contain [0-9a-zA-Z-_.].")));
+               contains(
+                   equalTo("Job name may only contain [0-9a-zA-Z-_.] in job name [foo@bar].")));
     assertThat(validator.validate(b.setName("foo&bar").build()),
-               contains(equalTo("Job name may only contain [0-9a-zA-Z-_.].")));
+               contains(
+                   equalTo("Job name may only contain [0-9a-zA-Z-_.] in job name [foo&bar].")));
   }
 
   @Test
   public void testInvalidVersionsFail() throws Exception {
     final Job.Builder b = Job.newBuilder().setName("foo").setImage("foo");
-    assertEquals((Set) newHashSet("Job version was not specified.", "Job hash was not specified."),
+    assertEquals((Set<String>) newHashSet("Job version was not specified in job id [foo:null].",
+        "Job hash was not specified in job id [foo:null]."),
                  validator.validate(b.build()));
     assertThat(validator.validate(b.setVersion("17@bar").build()),
-               contains(equalTo("Job version may only contain [0-9a-zA-Z-_.].")));
+               contains(equalTo("Job version may only contain [0-9a-zA-Z-_.] "
+                   + "in job version [17@bar].")));
     assertThat(validator.validate(b.setVersion("17&bar").build()),
-               contains(equalTo("Job version may only contain [0-9a-zA-Z-_.].")));
+               contains(equalTo("Job version may only contain [0-9a-zA-Z-_.] "
+                   + "in job version [17&bar].")));
   }
 
 
