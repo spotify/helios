@@ -73,6 +73,11 @@ public class JobStatusCommand extends ControlCommand {
         .help("Print full hostnames, job and container id's.");
   }
 
+  interface HostStatusDisplayer {
+    void matchedStatus(final JobStatus jobStatus, final Iterable<String> matchingHosts,
+                       final Map<String, TaskStatus> taskStatuses);
+  }
+
   @Override
   int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
       throws ExecutionException, InterruptedException {
@@ -103,12 +108,58 @@ public class JobStatusCommand extends ControlCommand {
     statuses.putAll(allAsMap(futures));
 
     if (json) {
-      out.println(Json.asPrettyStringUnchecked(statuses));
+      showJsonStatuses(out, hostPattern, jobIds, statuses);
       return 0;
     }
 
     final JobStatusTable table = jobStatusTable(out, full);
 
+    final boolean noHostMatchedEver = showStatusesForHosts(hostPattern, jobIds, statuses,
+      new HostStatusDisplayer() {
+        @Override
+        public void matchedStatus(JobStatus jobStatus, Iterable<String> matchingHosts,
+                                  Map<String, TaskStatus> taskStatuses) {
+          displayTask(full, table, jobStatus.getJob().getId(), jobStatus, taskStatuses,
+              matchingHosts);
+        }
+    });
+
+    if (noHostMatchedEver) {
+      out.printf("host pattern %s matched no jobs%n", hostPattern);
+      return 1;
+    }
+
+    table.print();
+
+    return 0;
+  }
+
+  private void showJsonStatuses(PrintStream out, final String hostPattern, final Set<JobId> jobIds,
+      final Map<JobId, JobStatus> statuses) {
+    if (Strings.isNullOrEmpty(hostPattern)) {
+      out.println(Json.asPrettyStringUnchecked(statuses));
+      return;
+    }
+
+    final Map<JobId, JobStatus> returnStatuses = Maps.newTreeMap();
+    showStatusesForHosts(hostPattern, jobIds, statuses, new HostStatusDisplayer() {
+      @Override
+      public void matchedStatus(JobStatus jobStatus, Iterable<String> matchingHosts,
+                                Map<String, TaskStatus> taskStatuses) {
+        for (final String host : matchingHosts) {
+          final Map<String, Deployment> deployments = jobStatus.getDeployments();
+          final Deployment deployment = (deployments == null) ? null : deployments.get(host);
+          if (deployment != null) {
+            returnStatuses.put(jobStatus.getJob().getId(), jobStatus);
+          }
+        }
+      }
+    });
+    out.println(Json.asPrettyStringUnchecked(returnStatuses));
+  }
+
+  private boolean showStatusesForHosts(final String hostPattern, final Set<JobId> jobIds,
+      final Map<JobId, JobStatus> statuses, final HostStatusDisplayer statusDisplayer) {
     boolean noHostMatchedEver = true;
 
     for (final JobId jobId : Ordering.natural().sortedCopy(jobIds)) {
@@ -133,21 +184,20 @@ public class JobStatusCommand extends ControlCommand {
         noHostMatchedEver = false;
       }
 
-      for (final String host : matchingHosts) {
-        final Map<String, Deployment> deployments = jobStatus.getDeployments();
-        final TaskStatus ts = taskStatuses.get(host);
-        final Deployment deployment = (deployments == null) ? null : deployments.get(host);
-        table.task(jobId, formatHostname(full, host), ts, deployment);
-      }
+      statusDisplayer.matchedStatus(jobStatus, matchingHosts, taskStatuses);
+
     }
+    return noHostMatchedEver;
+  }
 
-    if (noHostMatchedEver) {
-      out.printf("host pattern %s matched no hosts%n", hostPattern);
-      return 1;
+  private void displayTask(final boolean full, final JobStatusTable table, final JobId jobId,
+      final JobStatus jobStatus, final Map<String, TaskStatus> taskStatuses,
+      final Iterable<String> matchingHosts) {
+    for (final String host : matchingHosts) {
+      final Map<String, Deployment> deployments = jobStatus.getDeployments();
+      final TaskStatus ts = taskStatuses.get(host);
+      final Deployment deployment = (deployments == null) ? null : deployments.get(host);
+      table.task(jobId, formatHostname(full, host), ts, deployment);
     }
-
-    table.print();
-
-    return 0;
   }
 }
