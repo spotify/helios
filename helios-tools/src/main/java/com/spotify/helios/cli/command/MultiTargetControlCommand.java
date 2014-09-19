@@ -32,6 +32,7 @@ import com.spotify.helios.client.HeliosClient;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
@@ -45,7 +46,8 @@ public abstract class MultiTargetControlCommand implements CliCommand {
 
   @Override
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
-                 final PrintStream err, final String username, final boolean json)
+                 final PrintStream err, final String username, final boolean json,
+                 final BufferedReader stdin)
                      throws IOException, InterruptedException {
 
     final Builder<TargetAndClient> clientBuilder = ImmutableList.<TargetAndClient>builder();
@@ -61,7 +63,7 @@ public abstract class MultiTargetControlCommand implements CliCommand {
 
     final int result;
     try {
-      result = run(options, clients, out, json);
+      result = run(options, clients, out, json, stdin);
     } catch (ExecutionException e) {
       final Throwable cause = e.getCause();
       // if target is a site, print message like
@@ -81,6 +83,7 @@ public abstract class MultiTargetControlCommand implements CliCommand {
     return result;
   }
 
-  abstract int run(Namespace options, List<TargetAndClient> clients, PrintStream out, boolean json)
+  abstract int run(final Namespace options, final List<TargetAndClient> clients,
+                   final PrintStream out, final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException;
 }

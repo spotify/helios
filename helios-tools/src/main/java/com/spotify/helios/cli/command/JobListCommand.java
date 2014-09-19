@@ -39,6 +39,7 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
@@ -75,7 +76,8 @@ public class JobListCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
+  int run(final Namespace options, final HeliosClient client, final PrintStream out,
+          final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException {
     final boolean full = options.getBoolean(fullArg.getDest());
     final boolean quiet = options.getBoolean(quietArg.getDest());

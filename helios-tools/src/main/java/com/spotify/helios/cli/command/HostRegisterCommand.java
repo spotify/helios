@@ -27,6 +27,7 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 
@@ -46,8 +47,9 @@ public class HostRegisterCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
-      throws ExecutionException, InterruptedException {
+  int run(final Namespace options, final HeliosClient client, PrintStream out, final boolean json,
+      final BufferedReader stdin)
+          throws ExecutionException, InterruptedException {
     final String host = options.getString(hostArg.getDest());
     final String id = options.getString(idArg.getDest());
 

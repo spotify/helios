@@ -21,16 +21,18 @@
 
 package com.spotify.helios.cli;
 
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
+
 import com.spotify.helios.common.LoggingConfig;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
 import java.io.PrintStream;
-
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
 
 import static ch.qos.logback.classic.Level.ALL;
 import static ch.qos.logback.classic.Level.DEBUG;
@@ -73,8 +75,9 @@ public class CliMain {
 
   public int run() {
     try {
+      final BufferedReader stdin = new BufferedReader(new InputStreamReader(System.in));
       return parser.getCommand().run(parser.getNamespace(), parser.getTargets(), out, err,
-                                     parser.getUsername(), parser.getJson());
+                                     parser.getUsername(), parser.getJson(), stdin);
     } catch (Exception e) {
       // print entire stack trace in verbose mode, otherwise just the exception message
       if (parser.getNamespace().getInt("verbose") > 0) {

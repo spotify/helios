@@ -30,10 +30,10 @@ import com.spotify.helios.client.HeliosClient;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -54,7 +54,8 @@ public abstract class ControlCommand implements CliCommand {
 
   @Override
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
-                 final PrintStream err, final String username, final boolean json)
+                 final PrintStream err, final String username, final boolean json,
+                 final BufferedReader stdin)
       throws IOException, InterruptedException {
     boolean successful = true;
 
@@ -85,7 +86,7 @@ public abstract class ControlCommand implements CliCommand {
         }
       }
 
-      successful &= run(options, target, out, err, username, json);
+      successful &= run(options, target, out, err, username, json, stdin);
 
       if (targets.size() > 1) {
         if (!json) {
@@ -105,9 +106,11 @@ public abstract class ControlCommand implements CliCommand {
 
   /**
    * Execute against a cluster at a specific endpoint
+   * @param stdin TODO
    */
   private boolean run(final Namespace options, final Target target, final PrintStream out,
-                      final PrintStream err, final String username, final boolean json)
+                      final PrintStream err, final String username, final boolean json,
+                      final BufferedReader stdin)
       throws InterruptedException, IOException {
 
     final HeliosClient client = Utils.getClient(target, err, username);
@@ -116,7 +119,7 @@ public abstract class ControlCommand implements CliCommand {
     }
 
     try {
-      final int result = run(options, client, out, json);
+      final int result = run(options, client, out, json, stdin);
       return result == 0;
     } catch (ExecutionException e) {
       final Throwable cause = e.getCause();
@@ -135,6 +138,6 @@ public abstract class ControlCommand implements CliCommand {
   }
 
   abstract int run(final Namespace options, final HeliosClient client, PrintStream out,
-                   final boolean json)
+                   final boolean json, BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException;
 }

@@ -38,6 +38,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
@@ -61,7 +62,8 @@ public class JobHistoryCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, HeliosClient client, PrintStream out, boolean json)
+  int run(final Namespace options, final HeliosClient client, final PrintStream out,
+          final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException {
 
     String jobIdString = options.getString(jobIdArg.getDest());

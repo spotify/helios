@@ -31,6 +31,7 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
@@ -55,7 +56,8 @@ public class HostDeregisterCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
+  int run(final Namespace options, final HeliosClient client, final PrintStream out,
+          final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
     final String host = options.getString(hostArg.getDest());
     final boolean force = options.getBoolean(forceArg.getDest());
@@ -64,8 +66,12 @@ public class HostDeregisterCommand extends ControlCommand {
       out.printf("This will deregister the host %s%n", host);
       out.printf("Do you want to continue? [y/N]%n");
 
-      // TODO (dano): pass in stdin instead using System.in
-      final int c = System.in.read();
+      final String line = stdin.readLine().trim();
+
+      if (line.length() < 1) {
+        return 1;
+      }
+      final char c = line.charAt(0);
 
       if (c != 'Y' && c != 'y') {
         return 1;

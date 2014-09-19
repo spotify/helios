@@ -32,6 +32,7 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Map;
@@ -49,7 +50,8 @@ abstract class WildcardJobCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
+  int run(final Namespace options, final HeliosClient client, final PrintStream out,
+          final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
 
     final String jobIdString = options.getString(jobArg.getDest());
@@ -77,10 +79,11 @@ abstract class WildcardJobCommand extends ControlCommand {
 
     final JobId jobId = Iterables.getOnlyElement(jobs.keySet());
 
-    return runWithJobId(options, client, out, json, jobId);
+    return runWithJobId(options, client, out, json, jobId, stdin);
   }
 
   protected abstract int runWithJobId(final Namespace options, final HeliosClient client,
-                                      final PrintStream out, final boolean json, final JobId jobId)
+                                      final PrintStream out, final boolean json, final JobId jobId,
+                                      final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException;
 }
