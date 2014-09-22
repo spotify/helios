@@ -40,6 +40,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 import org.joda.time.DateTime;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -156,7 +157,8 @@ public class JobCreateCommand extends ControlCommand {
   }
 
   @Override
-  int run(Namespace options, HeliosClient client, PrintStream out, final boolean json)
+  int run(final Namespace options, final HeliosClient client, final PrintStream out,
+          final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
 
     final boolean quiet = options.getBoolean(quietArg.getDest());

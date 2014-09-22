@@ -28,6 +28,7 @@ import com.spotify.helios.common.protocol.VersionResponse;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 
@@ -39,7 +40,7 @@ public class VersionCommand extends ControlCommand {
 
   @Override
   int run(final Namespace options, final HeliosClient client, final PrintStream out,
-          final boolean json)
+          final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException {
 
     final VersionResponse response = client.version().get();

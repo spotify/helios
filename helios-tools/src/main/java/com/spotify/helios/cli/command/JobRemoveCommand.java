@@ -30,6 +30,7 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
@@ -50,7 +51,8 @@ public class JobRemoveCommand extends WildcardJobCommand {
 
   @Override
   protected int runWithJobId(final Namespace options, final HeliosClient client,
-                             final PrintStream out, final boolean json, final JobId jobId)
+                             final PrintStream out, final boolean json, final JobId jobId,
+                             final BufferedReader stdin)
       throws IOException, ExecutionException, InterruptedException {
     final boolean force = options.getBoolean(forceArg.getDest());
 
@@ -58,8 +60,12 @@ public class JobRemoveCommand extends WildcardJobCommand {
       out.printf("This will remove the job %s%n", jobId);
       out.printf("Do you want to continue? [y/N]%n");
 
-      // TODO (dano): pass in stdin instead using System.in
-      final int c = System.in.read();
+      final String line = stdin.readLine().trim();
+
+      if (line.length() < 1) {
+        return 1;
+      }
+      final char c = line.charAt(0);
 
       if (c != 'Y' && c != 'y') {
         return 1;

@@ -32,6 +32,7 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.List;
@@ -66,7 +67,8 @@ public class JobUndeployCommand extends WildcardJobCommand {
 
   @Override
   protected int runWithJobId(final Namespace options, final HeliosClient client,
-                             final PrintStream out, final boolean json, final JobId jobId)
+                             final PrintStream out, final boolean json, final JobId jobId,
+                             final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
 
     final boolean all = options.getBoolean(allArg.getDest());

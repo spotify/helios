@@ -43,6 +43,7 @@ import org.joda.time.Instant;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
@@ -85,7 +86,7 @@ public class JobWatchCommand extends MultiTargetControlCommand {
 
   @Override
   int run(final Namespace options, final List<TargetAndClient> clients,
-          final PrintStream out, final boolean json)
+          final PrintStream out, final boolean json, final BufferedReader stdin)
               throws ExecutionException, InterruptedException, IOException {
     final boolean exact = options.getBoolean(exactArg.getDest());
     final List<String> prefixes = options.getList(prefixesArg.getDest());
