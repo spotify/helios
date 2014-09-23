@@ -32,6 +32,8 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static java.lang.Integer.toHexString;
@@ -122,7 +124,8 @@ class JobPrefixFile implements AutoCloseable {
   private JobPrefixFile(final String prefix, final Path directory) throws IOException {
     Preconditions.checkNotNull(directory);
     this.prefix = prefix == null
-                     ? "tmp_" + toHexString(ThreadLocalRandom.current().nextInt())
+                     ? "tmp_" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + "_"
+                       + toHexString(ThreadLocalRandom.current().nextInt())
                      : prefix;
 
     // Make sure directory exists, then create prefix file
