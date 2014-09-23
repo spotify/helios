@@ -57,6 +57,7 @@ import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -152,6 +153,18 @@ public class TemporaryJobsTest extends SystemTestBase {
       final JobStatus status = client.jobStatus(job.job().getId()).get(15, SECONDS);
       final Map<String, Deployment> deployments = status.getDeployments();
       assertThat(deployments.keySet(), contains(testHost2));
+    }
+
+    @Test
+    public void testManualUndeploy() throws Exception {
+      final TemporaryJob job = temporaryJobs.job()
+          .command(IDLE_COMMAND)
+          .deploy();
+
+      job.undeploy();
+
+      final JobStatus status = client.jobStatus(job.job().getId()).get(15, SECONDS);
+      assertNull("job still exists", status);
     }
 
     public void testDefaultLocalHostFilter() throws Exception {
