@@ -192,6 +192,21 @@ public class TemporaryJob {
     Jobs.undeploy(client, job, hosts, errors);
   }
 
+  /**
+   * Undeploys and removes this TemporaryJob from the Helios cluster. This is normally done
+   * automatically by TemporaryJObs at the end of the test run. Use this method if you need to
+   * manually undeploy a job prior to the end of the test run.
+   */
+  public void undeploy() {
+    final List<AssertionError> errors = Lists.newArrayList();
+    undeploy(errors);
+
+    if (errors.size() > 0) {
+      fail(format("Failed to undeploy job %s - %s",
+                  getJobDescription(job), errors.get(0)));
+    }
+  }
+
   private void awaitUp(final String host) throws TimeoutException {
 
     final TaskStatus status = Polling.awaitUnchecked(
