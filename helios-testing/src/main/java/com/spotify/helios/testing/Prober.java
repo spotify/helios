@@ -21,7 +21,6 @@
 
 package com.spotify.helios.testing;
 
-interface Prober {
-
+public interface Prober {
   boolean probe(String host, int port);
 }
