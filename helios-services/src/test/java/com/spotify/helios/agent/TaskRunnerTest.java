@@ -22,6 +22,9 @@
 package com.spotify.helios.agent;
 
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.DockerTimeoutException;
+import com.spotify.docker.client.ImageNotFoundException;
+import com.spotify.docker.client.ImagePullFailedException;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
 
@@ -30,12 +33,14 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.net.URI;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.doThrow;
 
 @RunWith(MockitoJUnitRunner.class)
 public class TaskRunnerTest {
@@ -76,6 +81,37 @@ public class TaskRunnerTest {
     } catch (Exception t) {
       assertTrue(t instanceof ExecutionException);
       assertEquals(HeliosRuntimeException.class, t.getCause().getClass());
+    }
+  }
+
+  @Test
+  public void testPullTimeoutVariation() throws Throwable {
+    doThrow(new DockerTimeoutException("x", new URI("http://example.com"), null))
+        .when(mockDocker).pull(IMAGE);
+
+    doThrow(new ImageNotFoundException("not found"))
+        .when(mockDocker).inspectImage(IMAGE);
+
+    final TaskRunner tr = TaskRunner.builder()
+        .delayMillis(0)
+        .config(TaskConfig.builder()
+                    .namespace("test")
+                    .host(HOST)
+                    .job(JOB)
+                    .containerDecorator(containerDecorator)
+                    .build())
+        .docker(mockDocker)
+        .listener(new TaskRunner.NopListener())
+        .build();
+
+    tr.run();
+
+    try {
+      tr.resultFuture().get();
+      fail("this should throw");
+    } catch (Exception t) {
+      assertTrue(t instanceof ExecutionException);
+      assertEquals(ImagePullFailedException.class, t.getCause().getClass());
     }
   }
 }
