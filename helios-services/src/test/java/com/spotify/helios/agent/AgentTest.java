@@ -271,38 +271,6 @@ public class AgentTest {
 
   @SuppressWarnings("unchecked")
   @Test
-  public void verifyAgentRecoversStateAndStartsSupervisorsWithNoInstructions() throws Exception {
-
-    final Map<JobId, Execution> newExecutions = Maps.newHashMap();
-
-    newExecutions.put(FOO_JOB.getId(), Execution.of(FOO_JOB)
-        .withGoal(START)
-        .withPorts(EMPTY_PORT_ALLOCATION));
-
-    executions.setUnchecked(newExecutions);
-
-    startAgent();
-
-    // Verify that the undesired supervisor was created and started
-    verify(portAllocator, never()).allocate(anyMap(), anySet());
-    verify(supervisorFactory).create(eq(FOO_JOB), anyString(),
-                                     eq(EMPTY_PORT_ALLOCATION), any(Supervisor.Listener.class));
-
-    // ... and then started
-    callback.run(false);
-    verify(fooSupervisor).setGoal(START);
-
-    when(fooSupervisor.isStarting()).thenReturn(true);
-    when(fooSupervisor.isStopping()).thenReturn(false);
-    when(fooSupervisor.isDone()).thenReturn(true);
-
-    // And not stopped
-    callback.run(false);
-    verify(fooSupervisor, never()).setGoal(STOP);
-  }
-
-  @SuppressWarnings("unchecked")
-  @Test
   public void verifyAgentRecoversStateAndStopsUndesiredSupervisors() throws Exception {
 
     final Map<JobId, Execution> newExecutions = Maps.newHashMap();

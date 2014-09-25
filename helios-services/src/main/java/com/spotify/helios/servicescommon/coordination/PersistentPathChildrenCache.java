@@ -248,6 +248,12 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
                   .usingWatcher(childrenWatcher)
                   .forPath(path);
 
+          if (clusterId == null) {
+              // Do not do any checks if the clusterId is not specified on the command line.
+              children = possibleChildren;
+              continue;
+          }
+
           try {
               curator.inTransaction()
                      .check().forPath(String.format("/config/id/%s", clusterId)).and()
