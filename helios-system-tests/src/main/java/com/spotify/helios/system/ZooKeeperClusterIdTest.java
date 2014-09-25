@@ -21,6 +21,7 @@
 
 package com.spotify.helios.system;
 
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -30,12 +31,16 @@ import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.junit.Test;
 
+import java.util.concurrent.ExecutionException;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class ZooKeeperClusterIdTest extends SystemTestBase {
 
   @Test
-  public void testClusterId() throws Exception {
+  public void testZooKeeperClient() throws Exception {
     // Create the cluster ID node
     zk().curator().newNamespaceAwareEnsurePath(Paths.configId(zkClusterId))
           .ensure(zk().curator().getZookeeperClient());
@@ -48,7 +53,7 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
         .connectString(zk().connectString())
         .build();
 
-    ZooKeeperClient client = new DefaultZooKeeperClient(curator, zkClusterId);
+    final ZooKeeperClient client = new DefaultZooKeeperClient(curator, zkClusterId);
     client.start();
 
     // This should work since the cluster ID exists
@@ -65,6 +70,26 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
       client.ensurePath(Paths.configJobs());
       fail("ZooKeeper operation should have failed because cluster ID was removed");
     } catch (IllegalStateException ignore) {
+    }
+  }
+
+  @Test
+  public void testMaster() throws Exception {
+    startDefaultMaster("--zk-cluster-id=" + zkClusterId);
+
+    final HeliosClient client = defaultClient();
+
+    // This should succeed since the cluster ID was created by SystemTestBase
+    client.jobs().get();
+
+    // Delete the cluster ID
+    zk().curator().delete().forPath(Paths.configId(zkClusterId));
+
+    // Call jobs again, and this time it should throw an exception because the cluster ID is gone
+    try {
+      client.jobs().get();
+    } catch (ExecutionException e) {
+      assertThat(e.getMessage(), containsString("500"));
     }
   }
 

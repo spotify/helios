@@ -40,6 +40,7 @@ public class AgentConfig extends Configuration {
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
   private String zooKeeperNamespace;
+  private String zooKeeperClusterId;
   private Map<String, String> envVars;
   private String redirectToSyslog;
   private boolean inhibitMetrics;
@@ -133,6 +134,15 @@ public class AgentConfig extends Configuration {
 
   public String getZooKeeperNamespace() {
     return this.zooKeeperNamespace;
+  }
+
+  public AgentConfig setZooKeeperClusterId(String zooKeeperClusterId) {
+    this.zooKeeperClusterId = zooKeeperClusterId;
+    return this;
+  }
+
+  public String getZooKeeperClusterId() {
+    return zooKeeperClusterId;
   }
 
   public AgentConfig setEnvVars(final Map<String, String> envVars) {

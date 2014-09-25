@@ -227,7 +227,8 @@ public class MasterService extends AbstractIdleService {
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy,
         config.getZooKeeperNamespace());
-    final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
+    final ZooKeeperClient client = new DefaultZooKeeperClient(curator,
+                                                              config.getZooKeeperClusterId());
     client.start();
     zkRegistrar = new ZooKeeperRegistrar(client, new MasterZooKeeperRegistrar(config.getName()));
 

@@ -479,7 +479,8 @@ public abstract class SystemTestBase {
     curator.newNamespaceAwareEnsurePath(Paths.statusHosts()).ensure(curator.getZookeeperClient());
     curator.newNamespaceAwareEnsurePath(Paths.statusMasters()).ensure(curator.getZookeeperClient());
     curator.newNamespaceAwareEnsurePath(Paths.historyJobs()).ensure(curator.getZookeeperClient());
-    curator.newNamespaceAwareEnsurePath(Paths.configId(zkClusterId));
+    curator.newNamespaceAwareEnsurePath(Paths.configId(zkClusterId))
+        .ensure(curator.getZookeeperClient());
 
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",
