@@ -28,6 +28,9 @@ import com.google.common.util.concurrent.SettableFuture;
 import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.DockerTimeoutException;
+import com.spotify.docker.client.ImageNotFoundException;
+import com.spotify.docker.client.ImagePullFailedException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
@@ -188,15 +191,29 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private void pullImage(final String image) throws DockerException, InterruptedException {
     listener.pulling();
 
+    DockerTimeoutException wasTimeout = null;
     // Attempt to pull.  Failure, while less than ideal, is ok.
     try {
       docker.pull(image);
+    } catch (DockerTimeoutException e) {
+      log.warn("Pulling image {} failed with timeout", image, e);
+      wasTimeout = e;
     } catch (DockerException e) {
       log.warn("Pulling image {} failed", image, e);
     }
 
-    // If we don't have the image by now, fail.
-    docker.inspectImage(image);
+    try {
+      // If we don't have the image by now, fail.
+      docker.inspectImage(image);
+    } catch (ImageNotFoundException e) {
+      // If we get not found, see if we timed out above, since that's what we actually care
+      // to know, as the pull should have fixed the not found-ness.
+      if (wasTimeout != null) {
+        throw new ImagePullFailedException("Failed pulling image " + image + " because of timeout",
+            wasTimeout);
+      }
+      throw e;
+    }
   }
 
   public static interface Listener {
