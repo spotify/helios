@@ -28,6 +28,11 @@ import com.yammer.dropwizard.json.ObjectMapperFactory;
 import com.yammer.dropwizard.validation.Validator;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
+import sun.misc.Signal;
+import sun.misc.SignalHandler;
+
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Instantiates and runs helios agent.
@@ -66,11 +71,47 @@ public class AgentMain extends ServiceMain {
   }
 
   public static void main(final String... args) {
+    final AgentMain main;
+    final AtomicBoolean exitSignalTriggered = new AtomicBoolean(false);
+
+    final AtomicReference<SignalHandler> existingIntHandler =
+        new AtomicReference<SignalHandler>(null);
+
+    final SignalHandler handler = new SignalHandler() {
+      @Override
+      public void handle(Signal signal) {
+        if (exitSignalTriggered.get()) {
+          System.err.println("Exiting with extreme prejudice due to " + signal);
+          // Really exit
+          Runtime.getRuntime().halt(0);
+        } else {
+          System.err.println("Attempting gentle exit on " + signal);
+          exitSignalTriggered.set(true);
+          existingIntHandler.get().handle(signal);
+        }
+      }
+    };
+    existingIntHandler.set(Signal.handle(new Signal("INT"), handler));
+    Signal.handle(new Signal("TERM"), handler);
+
     try {
-      final AgentMain main = new AgentMain(args);
+      main = new AgentMain(args);
+    } catch (ArgumentParserException e) {
+      e.printStackTrace();
+      System.exit(1);
+      return; // never get here, but this lets java know for sure we won't continue
+    }
+    try {
       main.startAsync().awaitRunning();
       main.awaitTerminated();
     } catch (Throwable e) {
+      try {
+        main.shutDown();
+      } catch (Exception e1) {
+        System.err.println("Error shutting down");
+        e1.printStackTrace();
+        System.err.println("Originating exception follows");
+      }
       e.printStackTrace();
       System.exit(1);
     }

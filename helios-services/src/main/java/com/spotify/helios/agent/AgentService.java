@@ -52,6 +52,7 @@ import com.sun.management.OperatingSystemMXBean;
 import com.yammer.dropwizard.config.ConfigurationException;
 import com.yammer.dropwizard.config.Environment;
 import com.yammer.dropwizard.config.ServerFactory;
+import com.yammer.dropwizard.lifecycle.Managed;
 import com.yammer.dropwizard.lifecycle.ServerLifecycleListener;
 import com.yammer.metrics.core.MetricsRegistry;
 
@@ -82,7 +83,7 @@ import static java.nio.file.StandardOpenOption.WRITE;
 /**
  * The Helios agent.
  */
-public class AgentService extends AbstractIdleService {
+public class AgentService extends AbstractIdleService implements Managed {
 
   private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
@@ -264,6 +265,7 @@ public class AgentService extends AbstractIdleService {
     } else {
       this.server = null;
     }
+    environment.manage(this);
   }
 
   /**
@@ -326,12 +328,12 @@ public class AgentService extends AbstractIdleService {
   protected void shutDown() throws Exception {
     if (server != null) {
       server.stop();
-      server.join();
     }
     hostInfoReporter.stopAsync().awaitTerminated();
     agentInfoReporter.stopAsync().awaitTerminated();
     environmentVariableReporter.stopAsync().awaitTerminated();
     agent.stopAsync().awaitTerminated();
+
     if (serviceRegistrar != null) {
       serviceRegistrar.close();
     }
@@ -349,6 +351,15 @@ public class AgentService extends AbstractIdleService {
     } catch (IOException e) {
       log.error("Failed to close state lock file", e);
     }
+  }
+
+  @Override
+  public void start() throws Exception {
+  }
+
+  @Override
+  public void stop() throws Exception {
+    shutDown();
   }
 }
 
