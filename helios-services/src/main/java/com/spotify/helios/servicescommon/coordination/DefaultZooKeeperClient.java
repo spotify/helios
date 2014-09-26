@@ -83,7 +83,6 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     this.watcher = new Watcher() {
       @Override
       public void process(WatchedEvent event) {
-        log.error("*** WATCH EVENT - " + event.toString());
         checkClusterIdExists(clusterId);
       }
     };
@@ -164,13 +163,17 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   public void start() {
     client.start();
-    client.getConnectionStateListenable().addListener(connectionStateListener);
-    checkClusterIdExists(clusterId);
+    if (clusterId != null) {
+      client.getConnectionStateListenable().addListener(connectionStateListener);
+      checkClusterIdExists(clusterId);
+    }
   }
 
   @Override
   public void close() {
-    client.getConnectionStateListenable().removeListener(connectionStateListener);
+    if (clusterId != null) {
+      client.getConnectionStateListenable().removeListener(connectionStateListener);
+    }
     client.close();
   }
 
@@ -368,8 +371,9 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   private void checkClusterIdExists(final String id) {
     try {
       final Stat stat = client.checkExists().usingWatcher(watcher).forPath(Paths.configId(id));
-      log.error("*** STAT {}", stat);
-      clusterIdExists.set(stat != null);
+      final boolean exists = stat != null;
+      clusterIdExists.set(exists);
+      log.debug("Cluster ID {} {}", id, exists ? "exists" : "does not exist");
     } catch (Exception e) {
       clusterIdExists.set(false);
       log.error("Exception while checking ZooKeeper cluster ID {}", clusterId, e);

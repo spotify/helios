@@ -21,7 +21,12 @@
 
 package com.spotify.helios.system;
 
+import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.messages.Container;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -29,15 +34,26 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.Test;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 
 public class ZooKeeperClusterIdTest extends SystemTestBase {
+
+  @Override
+  public void baseSetup() throws Exception {
+    super.baseSetup();
+  }
 
   @Test
   public void testZooKeeperClient() throws Exception {
@@ -91,6 +107,38 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
     } catch (ExecutionException e) {
       assertThat(e.getMessage(), containsString("500"));
     }
+  }
+
+  @Test
+  public void testAgent() throws Exception {
+    startDefaultMaster("--zk-cluster-id=" + zkClusterId);
+    startDefaultAgent(testHost(), "--zk-cluster-id=" + zkClusterId);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+
+    // Create job and deploy it
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    deployJob(jobId, testHost());
+    final TaskStatus runningStatus = awaitTaskState(jobId, testHost(), RUNNING);
+    final String containerId = runningStatus.getContainerId();
+
+    // Delete the config node which contains the cluster ID and all the job definitions
+    zk().curator().delete().deletingChildrenIfNeeded().forPath("/config");
+
+    // Sleep for a second so agent has a chance to react to deletion
+    Thread.sleep(1000);
+
+    // Make sure the agent didn't stop the job
+    final DockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri());
+    final List<Container> containers = docker.listContainers();
+    final CustomTypeSafeMatcher<Container> containerIdMatcher =
+        new CustomTypeSafeMatcher<Container>("Container with id " + containerId) {
+      @Override
+      protected boolean matchesSafely(Container container) {
+        return container.id().equals(containerId);
+      }
+    };
+
+    assertThat(containers, hasItems(new CustomTypeSafeMatcher[]{containerIdMatcher}));
   }
 
 }
