@@ -279,7 +279,8 @@ public class ZooKeeperMasterModel implements MasterModel {
         client.transaction(create(Paths.configJob(id), job),
                            create(Paths.configJobRefShort(id), id),
                            create(Paths.configJobHosts(id)),
-                           create(creationPath));
+                           create(creationPath),
+                           set(Paths.configJobs(), UUID.randomUUID().toString().getBytes()));
       } catch (final NodeExistsException e) {
         if (client.exists(creationPath) != null) {
           // The job was created, we're done here
@@ -464,7 +465,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       }
       operations.add(delete(Paths.configJobHosts(id)),
                      delete(Paths.configJobRefShort(id)),
-                     delete(Paths.configJob(id)));
+                     delete(Paths.configJob(id)),
+                     set(Paths.configJobs(), UUID.randomUUID().toString().getBytes()));
       client.transaction(operations.build());
     } catch (final NoNodeException e) {
       throw new JobDoesNotExistException(id);
