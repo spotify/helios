@@ -236,37 +236,9 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
 
     final Map<String, T> newSnapshot = Maps.newHashMap();
 
-    List<String> children = null;
-    Stat childrenStat = new Stat();
-
     // Fetch new snapshot and register watchers
     try {
-      List<String> possibleChildren;
-
-      while (children == null) {
-          possibleChildren = curator.getChildren().storingStatIn(childrenStat)
-                  .usingWatcher(childrenWatcher)
-                  .forPath(path);
-
-          if (clusterId == null) {
-              // Do not do any checks if the clusterId is not specified on the command line.
-              children = possibleChildren;
-              continue;
-          }
-
-          try {
-              curator.inTransaction()
-                     .check().forPath(String.format("/config/id/%s", clusterId)).and()
-                     .check().withVersion(childrenStat.getVersion()).forPath(path).and()
-                     .commit();
-          } catch (KeeperException.BadVersionException e) {
-              // Jobs have somehow changed while we were creating the transaction, retry.
-              continue;
-          }
-
-          children = possibleChildren;
-      }
-
+      final List<String> children = getChildren();
       log.debug("children: {}", children);
       for (final String child : children) {
         final String node = ZKPaths.makePath(path, child);
@@ -292,6 +264,34 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
     }
 
     return newSnapshot;
+  }
+
+  private List<String> getChildren() throws Exception {
+    Stat childrenStat = new Stat();
+
+    while (true) {
+      final List<String> possibleChildren = curator.getChildren()
+              .storingStatIn(childrenStat)
+              .usingWatcher(childrenWatcher)
+              .forPath(path);
+
+      if (clusterId == null) {
+        // Do not do any checks if the clusterId is not specified on the command line.
+        return possibleChildren;
+      }
+
+      try {
+        curator.inTransaction()
+              .check().forPath(Paths.configId(clusterId)).and()
+              .check().withVersion(childrenStat.getVersion()).forPath(path).and()
+              .commit();
+      } catch (KeeperException.BadVersionException e) {
+        // Jobs have somehow changed while we were creating the transaction, retry.
+        continue;
+      }
+
+      return possibleChildren;
+    }
   }
 
   private class ChildrenWatcher implements CuratorWatcher {

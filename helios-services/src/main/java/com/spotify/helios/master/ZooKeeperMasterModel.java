@@ -280,6 +280,8 @@ public class ZooKeeperMasterModel implements MasterModel {
                            create(Paths.configJobRefShort(id), id),
                            create(Paths.configJobHosts(id)),
                            create(creationPath),
+                           // Touch the jobs root node so that its version is bumped on every job
+                           // change down the tree. Effectively, make it that version == cVersion.
                            set(Paths.configJobs(), UUID.randomUUID().toString().getBytes()));
       } catch (final NodeExistsException e) {
         if (client.exists(creationPath) != null) {
@@ -466,6 +468,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       operations.add(delete(Paths.configJobHosts(id)),
                      delete(Paths.configJobRefShort(id)),
                      delete(Paths.configJob(id)),
+                     // Touch the jobs root node so that its version is bumped on every job
+                     // change down the tree. Effectively, make it that version == cVersion.
                      set(Paths.configJobs(), UUID.randomUUID().toString().getBytes()));
       client.transaction(operations.build());
     } catch (final NoNodeException e) {
