@@ -359,16 +359,16 @@ public class Supervisor {
 
       log.info("stopping job: {}", job);
 
+      // Stop the runner
+      if (runner != null) {
+        runner.stop();
+        runner = null;
+      }
+
       final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
           .setMinIntervalMillis(SECONDS.toMillis(1))
           .setMaxIntervalMillis(SECONDS.toMillis(30))
           .build().newScheduler();
-
-      // Stop the runner
-      if (runner != null) {
-        runner.stopAsync().awaitTerminated();
-        runner = null;
-      }
 
       // Kill the container after stopping the runner
       while (!containerNotRunning()) {
