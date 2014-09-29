@@ -29,10 +29,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
 
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.Task;
-import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.*;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -225,6 +222,17 @@ public class Agent extends AbstractIdleService {
         }
       }
 
+      // Create undeploy goals for removed tasks
+      for (Entry<JobId, Execution> entry : newExecutions.entrySet()) {
+        final JobId jobId = entry.getKey();
+        final Execution execution = entry.getValue();
+
+        if (!tasks.containsKey(jobId)) {
+          log.debug("Setting UNDEPLOY goal for removed job: {}", execution.getJob());
+          entry.setValue(execution.withGoal(Goal.UNDEPLOY));
+        }
+      }
+
       // Allocate ports
       final Map<JobId, Execution> pending = ImmutableMap.copyOf(
           Maps.filterValues(newExecutions, PORT_ALLOCATION_PENDING));
@@ -297,8 +305,7 @@ public class Agent extends AbstractIdleService {
           final Supervisor supervisor = supervisors.get(jobId);
           if (supervisor == null) {
             reapedTasks.add(jobId);
-            log.debug("Removing tombstoned task: {}", jobId);
-            model.removeUndeployTombstone(jobId);
+            log.debug("Removing task: {}", jobId);
             model.removeTaskStatus(jobId);
           }
         }

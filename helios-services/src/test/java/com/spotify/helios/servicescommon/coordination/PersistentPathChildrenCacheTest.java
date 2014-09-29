@@ -270,7 +270,7 @@ public class PersistentPathChildrenCacheTest {
 
   private void startCache() throws IOException, InterruptedException {
     reset(listener);
-    cache = new PersistentPathChildrenCache<>(zk.curator(), PATH, stateFile, Json.type(DataPojo.class));
+    cache = new PersistentPathChildrenCache<>(zk.curator(), PATH, null, stateFile, Json.type(DataPojo.class));
     cache.addListener(listener);
     cache.startAsync().awaitRunning();
   }

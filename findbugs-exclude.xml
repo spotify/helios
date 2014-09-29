@@ -19,7 +19,6 @@
     <Bug pattern="SIC_INNER_SHOULD_BE_STATIC_ANON"/>
     <Or>
       <Class name="com.spotify.helios.servicescommon.coordination.RetryingZooKeeperNodeWriter$1"/>
-      <Class name="com.spotify.helios.servicescommon.coordination.ZooKeeperPersistentNodeRemover$2"/>
       <Class name="com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory$3"/>
     </Or>
   </Match>

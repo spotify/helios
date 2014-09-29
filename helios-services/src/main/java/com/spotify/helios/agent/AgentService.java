@@ -281,7 +281,8 @@ public class AgentService extends AbstractIdleService {
         zooKeeperRetryPolicy,
         config.getZooKeeperNamespace());
 
-    final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
+    final ZooKeeperClient client = new DefaultZooKeeperClient(curator,
+                                                              config.getZooKeeperClusterId());
     client.start();
 
     // Register the agent

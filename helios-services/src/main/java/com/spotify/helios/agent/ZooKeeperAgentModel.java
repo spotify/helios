@@ -21,7 +21,6 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Predicate;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
@@ -31,12 +30,10 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.PersistentPathChildrenCache;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperPersistentNodeRemover;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory;
 
 import org.apache.curator.framework.state.ConnectionState;
@@ -50,7 +47,6 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
-import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 
 /**
  * The Helios Agent's view into ZooKeeper.
@@ -65,12 +61,9 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private static final String TASK_CONFIG_FILENAME = "task-config.json";
   private static final String TASK_HISTORY_FILENAME = "task-history.json";
   private static final String TASK_STATUS_FILENAME = "task-status.json";
-  private static final String TASK_REMOVER_FILENAME = "remove.json";
-  private static final Predicate<Node> TASK_GOAL_IS_UNDEPLOY = new TaskGoalIsUndeployPredicate();
 
   private final PersistentPathChildrenCache<Task> tasks;
   private final ZooKeeperUpdatingPersistentDirectory taskStatuses;
-  private final ZooKeeperPersistentNodeRemover taskRemover;
   private final QueueingHistoryWriter historyWriter;
 
   private final String agent;
@@ -93,10 +86,6 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
                                                                     provider,
                                                                     taskStatusFile,
                                                                     Paths.statusHostJobs(host));
-    final Path removerFile = stateDirectory.resolve(TASK_REMOVER_FILENAME);
-    this.taskRemover = ZooKeeperPersistentNodeRemover.create("agent-model-task-remover", provider,
-                                                             removerFile, TASK_GOAL_IS_UNDEPLOY,
-                                                             true);
     this.historyWriter = new QueueingHistoryWriter(host, client,
         stateDirectory.resolve(TASK_HISTORY_FILENAME));
   }
@@ -105,7 +94,6 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   protected void startUp() throws Exception {
     tasks.startAsync().awaitRunning();
     taskStatuses.startAsync().awaitRunning();
-    taskRemover.startAsync().awaitRunning();
     historyWriter.startAsync().awaitRunning();
   }
 
@@ -113,7 +101,6 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   protected void shutDown() throws Exception {
     tasks.stopAsync().awaitTerminated();
     taskStatuses.stopAsync().awaitTerminated();
-    taskRemover.stopAsync().awaitTerminated();
     historyWriter.stopAsync().awaitTerminated();
   }
 
@@ -189,17 +176,6 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   }
 
   /**
-   * Remove the tombstone for the job identified by {@code jobId}.  Tombstones are written by the
-   * master to tell the agent to undeploy, and these tombstones are removed by the agent after it
-   * has undeployed.
-   */
-  @Override
-  public void removeUndeployTombstone(final JobId jobId) throws InterruptedException {
-    String path = Paths.configHostJob(agent, jobId);
-    taskRemover.remove(path);
-  }
-
-  /**
    * Add a listener that will be notified when tasks are changed.
    */
   @Override
@@ -236,20 +212,6 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     @Override
     public void connectionStateChanged(final ConnectionState state) {
       // ignore
-    }
-  }
-
-  private static class TaskGoalIsUndeployPredicate implements Predicate<Node> {
-
-    @Override
-    public boolean apply(final Node node) {
-      assert node != null;
-      try {
-        final Task task = parse(node.getBytes(), Task.class);
-        return task.getGoal() == UNDEPLOY;
-      } catch (IOException e) {
-        throw Throwables.propagate(e);
-      }
     }
   }
 }

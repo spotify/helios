@@ -45,6 +45,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -80,6 +81,7 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
   private final PersistentAtomicReference<Map<String, T>> snapshot;
   private final CuratorFramework curator;
   private final String path;
+  private final String clusterId;
   private final JavaType valueType;
 
   private final CopyOnWriteArrayList<Listener> listeners = new CopyOnWriteArrayList<>();
@@ -91,10 +93,12 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
   private volatile boolean synced;
 
   public PersistentPathChildrenCache(final CuratorFramework curator, final String path,
-                                     final Path snapshotFile, final JavaType valueType)
+                                     final String clusterId, final Path snapshotFile,
+                                     final JavaType valueType)
       throws IOException, InterruptedException {
     this.curator = curator;
     this.path = path;
+    this.clusterId = clusterId;
     this.valueType = valueType;
 
     final MapType mapType = Json.typeFactory().constructMapType(HashMap.class,
@@ -230,12 +234,11 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
   private Map<String, T> sync() throws KeeperException {
     log.debug("syncing: {}", path);
 
-    final List<String> children;
     final Map<String, T> newSnapshot = Maps.newHashMap();
 
     // Fetch new snapshot and register watchers
     try {
-      children = curator.getChildren().usingWatcher(childrenWatcher).forPath(path);
+      final List<String> children = getChildren();
       log.debug("children: {}", children);
       for (final String child : children) {
         final String node = ZKPaths.makePath(path, child);
@@ -261,6 +264,34 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
     }
 
     return newSnapshot;
+  }
+
+  private List<String> getChildren() throws Exception {
+    Stat childrenStat = new Stat();
+
+    while (true) {
+      final List<String> possibleChildren = curator.getChildren()
+              .storingStatIn(childrenStat)
+              .usingWatcher(childrenWatcher)
+              .forPath(path);
+
+      if (clusterId == null) {
+        // Do not do any checks if the clusterId is not specified on the command line.
+        return possibleChildren;
+      }
+
+      try {
+        curator.inTransaction()
+              .check().forPath(Paths.configId(clusterId)).and()
+              .check().withVersion(childrenStat.getVersion()).forPath(path).and()
+              .commit();
+      } catch (KeeperException.BadVersionException e) {
+        // Jobs have somehow changed while we were creating the transaction, retry.
+        continue;
+      }
+
+      return possibleChildren;
+    }
   }
 
   private class ChildrenWatcher implements CuratorWatcher {

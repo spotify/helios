@@ -44,6 +44,7 @@ public class MasterConfig extends Configuration {
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
   private String zooKeeperNamespace;
+  private String zooKeeperClusterId;
 
   public String getDomain() {
     return domain;
@@ -96,6 +97,15 @@ public class MasterConfig extends Configuration {
 
   public MasterConfig setZooKeeperNamespace(String zooKeeperNamespace) {
     this.zooKeeperNamespace = zooKeeperNamespace;
+    return this;
+  }
+
+  public String getZooKeeperClusterId() {
+    return zooKeeperClusterId;
+  }
+
+  public MasterConfig setZooKeeperClusterId(String zooKeeperClusterId) {
+    this.zooKeeperClusterId = zooKeeperClusterId;
     return this;
   }
 

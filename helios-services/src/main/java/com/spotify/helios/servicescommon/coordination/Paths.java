@@ -42,6 +42,7 @@ public class Paths {
   private static final String ENVIRONMENT = "environment";
   private static final String ID = "id";
 
+  private static final PathFactory CONFIG_ID = new PathFactory("/", CONFIG, ID);
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
   private static final PathFactory CONFIG_JOBREFS = new PathFactory("/", CONFIG, JOBREFS);
   private static final PathFactory CONFIG_HOSTS = new PathFactory("/", CONFIG, HOSTS);
@@ -123,6 +124,10 @@ public class Paths {
 
   public static String configHostPort(final String host, final int port) {
     return CONFIG_HOSTS.path(host, PORTS, String.valueOf(port));
+  }
+
+  public static String configId(final String id) {
+    return CONFIG_ID.path(id);
   }
 
   public static String statusHosts() {
