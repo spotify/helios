@@ -335,6 +335,15 @@
                     <filemode>755</filemode>
                   </mapper>
                 </data>
+                <data>
+                  <src>${basedir}/../bin/bootstrap.py</src>
+                  <type>file</type>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/share/helios/bin</prefix>
+                    <filemode>755</filemode>
+                  </mapper>
+                </data>
               </dataSet>
             </configuration>
           </execution>
