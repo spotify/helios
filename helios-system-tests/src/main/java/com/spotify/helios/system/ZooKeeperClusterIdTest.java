@@ -22,7 +22,6 @@
 package com.spotify.helios.system;
 
 import com.spotify.docker.client.DefaultDockerClient;
-import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Container;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
@@ -128,16 +127,23 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
     Thread.sleep(1000);
 
     // Make sure the agent didn't stop the job
-    final DockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri());
-    final List<Container> containers = docker.listContainers();
-    final CustomTypeSafeMatcher<Container> containerIdMatcher =
-        new CustomTypeSafeMatcher<Container>("Container with id " + containerId) {
-      @Override
-      protected boolean matchesSafely(Container container) {
-        return container.id().equals(containerId);
-      }
-    };
+    try (final DefaultDockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri())) {
+      final List<Container> containers = docker.listContainers();
+      final CustomTypeSafeMatcher<Container> containerIdMatcher =
+          new CustomTypeSafeMatcher<Container>("Container with id " + containerId) {
+        @Override
+        protected boolean matchesSafely(Container container) {
+          return container.id().equals(containerId);
+        }
+      };
 
+      assertContainersMatch(containers, containerIdMatcher);
+    }
+  }
+
+  @SuppressWarnings("unchecked")
+  private void assertContainersMatch(final List<Container> containers,
+      final CustomTypeSafeMatcher<Container> containerIdMatcher) {
     assertThat(containers, hasItems(new CustomTypeSafeMatcher[]{containerIdMatcher}));
   }
 

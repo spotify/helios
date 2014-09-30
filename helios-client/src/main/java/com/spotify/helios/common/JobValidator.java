@@ -160,14 +160,16 @@ public class JobValidator {
   private Set<String> validateJobId(final Job job) {
     final Set<String> errors = Sets.newHashSet();
     final JobId jobId = job.getId();
-    final String jobIdVersion = jobId.getVersion();
-    final String jobIdHash = jobId.getHash();
-    final JobId recomputedId = job.toBuilder().build().getId();
 
     if (jobId == null) {
       errors.add(format("Job id was not specified."));
       return errors;
     }
+
+    final String jobIdVersion = jobId.getVersion();
+    final String jobIdHash = jobId.getHash();
+    final JobId recomputedId = job.toBuilder().build().getId();
+
 
     errors.addAll(validateJobName(jobId, recomputedId));
     errors.addAll(validateJobVersion(jobIdVersion, recomputedId));

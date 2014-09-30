@@ -74,7 +74,7 @@ public class AgentMain extends ServiceMain {
     final AgentMain main;
     final AtomicBoolean exitSignalTriggered = new AtomicBoolean(false);
 
-    final AtomicReference<SignalHandler> existingIntHandler =
+    final AtomicReference<SignalHandler> existingExitHandler =
         new AtomicReference<SignalHandler>(null);
 
     final SignalHandler handler = new SignalHandler() {
@@ -87,11 +87,11 @@ public class AgentMain extends ServiceMain {
         } else {
           System.err.println("Attempting gentle exit on " + signal);
           exitSignalTriggered.set(true);
-          existingIntHandler.get().handle(signal);
+          existingExitHandler.get().handle(signal);
         }
       }
     };
-    existingIntHandler.set(Signal.handle(new Signal("INT"), handler));
+    existingExitHandler.set(Signal.handle(new Signal("INT"), handler));
     Signal.handle(new Signal("TERM"), handler);
 
     try {

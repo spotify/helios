@@ -26,6 +26,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.MapDifference;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
@@ -339,7 +340,8 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
       }
 
       // Remove undesired nodes
-      for (final String node : remote.keySet()) {
+      final ImmutableSet<String> keySet = ImmutableSet.copyOf(remote.keySet());
+      for (final String node : keySet) {
         if (!snapshot.containsKey(node)) {
           final String nodePath = ZKPaths.makePath(path, node);
           log.debug("sync: deleting node {}", nodePath);
