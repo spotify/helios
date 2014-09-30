@@ -236,6 +236,7 @@ public class GracePeriodTest {
       sut.close();
       sut.join();
     }
+    DateTimeUtils.setCurrentMillisSystem();
   }
 
   @Test
