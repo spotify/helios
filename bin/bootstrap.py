@@ -55,6 +55,8 @@ def main():
         nargs = "+", help = "Zookeeper node endpoints to connect to")
     parser.add_argument("--timeout", dest = "timeout", action = "store", type = int,
         default = 30, help = "Zookeeper connection timeout")
+    parser.add_argument("--force", dest = "force", action = "store_true",
+        help = "Bootstrap even when Zookeeper is not empty")
 
     option = parser.parse_args()
 
@@ -68,15 +70,15 @@ def main():
         logging.error("Timed out while connecting to Zookeeper")
         return 1
 
-    status = bootstrap(client, str(uuid.uuid4()))
+    status = bootstrap(client, str(uuid.uuid4()), option.force)
 
     # If the client is not stopped, it will hang forever maintaining the connection.
     client.stop()
 
     return status
 
-def bootstrap(client, cluster_id):
-    node_list = [
+def bootstrap(client, cluster_id, force):
+    nodes = [
         "/config",
         "/config/id",
         "/config/id/%s" % cluster_id
@@ -86,7 +88,7 @@ def bootstrap(client, cluster_id):
 
     # Version is not important here. If any of these nodes exist, just stop doing anything and
     # report the error to avoid messing things up.
-    [transaction.check(node, version = -1) for node in node_list]
+    [transaction.check(node, version = -1) for node in nodes]
 
     # Operation results are either True if the given node exists or an exception of NoNodeError or
     # RuntimeIncosistency and RolledBackError types if the previous (1) or following (2) operation
@@ -95,26 +97,29 @@ def bootstrap(client, cluster_id):
     types = NoNodeError, RuntimeInconsistency
     nodes_missing = [isinstance(result, types) for result in transaction.commit()]
 
-    if not all(nodes_missing):
+    if not force and not all(nodes_missing):
         logging.error("Aborting, some nodes already exist: %s" %
-            ", ".join(node_list[idx] for idx, missing in enumerate(nodes_missing) if not missing)
+            ", ".join(nodes[idx] for idx, missing in enumerate(nodes_missing) if not missing)
         )
 
         return 1
 
     transaction = client.transaction()
 
+    # Filter the node list so that only the missing nodes are in it.
+    nodes = [node for idx, node in enumerate(nodes) if nodes_missing[idx]]
+
     # TODO: Might be a good idea to set ACLs here so that these structural nodes are protected from
     # accidental deletions, but allow children modifications.
-    [transaction.create(node) for node in node_list]
+    [transaction.create(node) for node in nodes]
 
     # Operation results are either a string representing the created path or an exception object we
     # don't really care about.
-    nodes_created = [result == node_list[idx] for idx, result in enumerate(transaction.commit())]
+    nodes_created = [result == nodes[idx] for idx, result in enumerate(transaction.commit())]
 
     if not all(nodes_created):
         logging.error("Aborting, couldn't create some nodes: %s" %
-            ", ".join(node_list[idx] for idx, created in enumerate(nodes_created) if not created)
+            ", ".join(nodes[idx] for idx, created in enumerate(nodes_created) if not created)
         )
 
         return 1
