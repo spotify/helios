@@ -26,7 +26,6 @@ import com.google.common.collect.Maps;
 
 import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.ServiceParser;
-import com.yammer.dropwizard.config.HttpConfiguration;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -120,7 +119,10 @@ public class AgentParser extends ServiceParser {
         .setPortRange(start, end)
         .setSentryDsn(getSentryDsn())
         .setServiceRegistryAddress(getServiceRegistryAddress())
-        .setServiceRegistrarPlugin(getServiceRegistrarPlugin());
+        .setServiceRegistrarPlugin(getServiceRegistrarPlugin())
+        .setAdminPort(options.getInt(adminArg.getDest()))
+        .setHttpEndpoint(httpAddress)
+        .setNoHttp(options.getBoolean(noHttpArg.getDest()));
 
     final String explicitId = options.getString(agentIdArg.getDest());
     if (explicitId != null) {
@@ -129,17 +131,6 @@ public class AgentParser extends ServiceParser {
       final byte[] idBytes = new byte[20];
       new SecureRandom().nextBytes(idBytes);
       agentConfig.setId(base16().encode(idBytes));
-    }
-
-    final boolean noHttp = options.getBoolean(noHttpArg.getDest());
-
-    if (noHttp) {
-      agentConfig.setHttpConfiguration(null);
-    } else {
-      final HttpConfiguration http = agentConfig.getHttpConfiguration();
-      http.setPort(httpAddress.getPort());
-      http.setBindHost(httpAddress.getHostString());
-      http.setAdminPort(options.getInt(adminArg.getDest()));
     }
 
     final List<String> dns = options.getList(dnsArg.getDest());

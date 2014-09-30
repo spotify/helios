@@ -22,8 +22,10 @@
 package com.spotify.helios.agent;
 
 import com.spotify.helios.servicescommon.DockerHost;
-import com.yammer.dropwizard.config.Configuration;
 
+import io.dropwizard.Configuration;
+
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +56,9 @@ public class AgentConfig extends Configuration {
   private Path serviceRegistrarPlugin;
   private String id;
   private List<String> dns;
+  private int adminPort;
+  private InetSocketAddress httpEndpoint;
+  private boolean noHttp;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -237,5 +242,32 @@ public class AgentConfig extends Configuration {
   public AgentConfig setDns(List<String> dns) {
     this.dns = dns;
     return this;
+  }
+
+  public AgentConfig setAdminPort(int adminPort) {
+    this.adminPort = adminPort;
+    return this;
+  }
+
+  public AgentConfig setHttpEndpoint(InetSocketAddress httpEndpoint) {
+    this.httpEndpoint = httpEndpoint;
+    return this;
+  }
+
+  public int getAdminPort() {
+    return adminPort;
+  }
+
+  public InetSocketAddress getHttpEndpoint() {
+    return httpEndpoint;
+  }
+
+  public AgentConfig setNoHttp(boolean noHttp) {
+    this.noHttp = noHttp;
+    return this;
+  }
+
+  public boolean getNoHttp() {
+    return noHttp;
   }
 }

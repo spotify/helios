@@ -22,14 +22,13 @@
 package com.spotify.helios.master;
 
 import com.spotify.helios.servicescommon.ServiceParser;
-import com.yammer.dropwizard.config.HttpConfiguration;
+
+import java.net.InetSocketAddress;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
-
-import java.net.InetSocketAddress;
 
 /**
  * Parses command-line arguments to produce the {@link MasterConfig}.
@@ -60,12 +59,9 @@ public class MasterParser extends ServiceParser {
         .setInhibitMetrics(getInhibitMetrics())
         .setSentryDsn(getSentryDsn())
         .setServiceRegistryAddress(getServiceRegistryAddress())
-        .setServiceRegistrarPlugin(getServiceRegistrarPlugin());
-
-    final HttpConfiguration http = config.getHttpConfiguration();
-    http.setPort(httpAddress.getPort());
-    http.setBindHost(httpAddress.getHostString());
-    http.setAdminPort(options.getInt(adminArg.getDest()));
+        .setServiceRegistrarPlugin(getServiceRegistrarPlugin())
+        .setAdminPort(options.getInt(adminArg.getDest()))
+        .setHttpEndpoint(httpAddress);
 
     this.masterConfig = config;
   }

@@ -21,8 +21,9 @@
 
 package com.spotify.helios.master;
 
-import com.yammer.dropwizard.config.Configuration;
+import io.dropwizard.Configuration;
 
+import java.net.InetSocketAddress;
 import java.nio.file.Path;
 
 /**
@@ -45,6 +46,8 @@ public class MasterConfig extends Configuration {
   private int zooKeeperConnectionTimeoutMillis;
   private String zooKeeperNamespace;
   private String zooKeeperClusterId;
+  private int adminPort;
+  private InetSocketAddress httpEndpoint;
 
   public String getDomain() {
     return domain;
@@ -161,5 +164,23 @@ public class MasterConfig extends Configuration {
   public MasterConfig setServiceRegistrarPlugin(final Path serviceRegistrarPlugin) {
     this.serviceRegistrarPlugin = serviceRegistrarPlugin;
     return this;
+  }
+
+  public MasterConfig setAdminPort(int adminPort) {
+    this.adminPort = adminPort;
+    return this;
+  }
+
+  public MasterConfig setHttpEndpoint(InetSocketAddress httpEndpoint) {
+    this.httpEndpoint = httpEndpoint;
+    return this;
+  }
+
+  public int getAdminPort() {
+    return adminPort;
+  }
+
+  public InetSocketAddress getHttpEndpoint() {
+    return httpEndpoint;
   }
 }

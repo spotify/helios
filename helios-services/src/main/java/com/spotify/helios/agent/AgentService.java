@@ -36,6 +36,7 @@ import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
+import com.spotify.helios.servicescommon.ServiceUtil;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
@@ -49,11 +50,6 @@ import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 import com.sun.management.OperatingSystemMXBean;
-import com.yammer.dropwizard.config.ConfigurationException;
-import com.yammer.dropwizard.config.Environment;
-import com.yammer.dropwizard.config.ServerFactory;
-import com.yammer.dropwizard.lifecycle.Managed;
-import com.yammer.dropwizard.lifecycle.ServerLifecycleListener;
 import com.yammer.metrics.core.MetricsRegistry;
 
 import org.apache.curator.RetryPolicy;
@@ -62,6 +58,10 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import io.dropwizard.configuration.ConfigurationException;
+import io.dropwizard.lifecycle.Managed;
+import io.dropwizard.setup.Environment;
 
 import java.io.IOException;
 import java.nio.channels.FileChannel;
@@ -103,7 +103,6 @@ public class AgentService extends AbstractIdleService implements Managed {
   private final ZooKeeperAgentModel model;
   private final Metrics metrics;
   private final ServiceRegistrar serviceRegistrar;
-  private final Environment environment;
 
   private ZooKeeperRegistrar zkRegistrar;
 
@@ -114,7 +113,6 @@ public class AgentService extends AbstractIdleService implements Managed {
    */
   public AgentService(final AgentConfig config, final Environment environment)
       throws ConfigurationException, InterruptedException {
-    this.environment = environment;
     // Create state directory, if necessary
     final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
     if (!Files.exists(stateDirectory)) {
@@ -166,16 +164,17 @@ public class AgentService extends AbstractIdleService implements Managed {
     } else {
       log.info("Starting metrics");
       metrics = new MetricsImpl(metricsRegistry);
-      environment.manage(new ManagedStatsdReporter(config.getStatsdHostPort(), "helios-agent",
+      environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
+        "helios-agent",
                                                    metricsRegistry));
-      environment.manage(riemannSupport);
+      environment.lifecycle().manage(riemannSupport);
     }
 
     this.zooKeeperClient = setupZookeeperClient(config, id);
     final DockerHealthChecker dockerHealthChecker = new DockerHealthChecker(
         metrics.getSupervisorMetrics(), TimeUnit.SECONDS, 30, riemannFacade);
-    environment.manage(dockerHealthChecker);
-    environment.manage(new RiemannHeartBeat(TimeUnit.MINUTES, 2, riemannFacade));
+    environment.lifecycle().manage(dockerHealthChecker);
+    environment.lifecycle().manage(new RiemannHeartBeat(TimeUnit.MINUTES, 2, riemannFacade));
 
     // Set up model
     final ZooKeeperModelReporter modelReporter =
@@ -253,19 +252,23 @@ public class AgentService extends AbstractIdleService implements Managed {
                                                                               Paths.statusHosts(),
                                                                               riemannFacade,
                                                                               TimeUnit.MINUTES, 2);
-    environment.manage(zkHealthChecker);
+    environment.lifecycle().manage(zkHealthChecker);
 
-    if (config.getHttpConfiguration() != null) {
-      environment.addHealthCheck(dockerHealthChecker);
-      environment.addResource(new AgentModelTaskResource(model));
-      environment.addResource(new AgentModelTaskStatusResource(model));
-      environment.addHealthCheck(zkHealthChecker);
-      this.server = new ServerFactory(config.getHttpConfiguration(), environment.getName())
-          .buildServer(environment);
+    if (!config.getNoHttp()) {
+
+      environment.healthChecks().register("docker", dockerHealthChecker);
+      environment.jersey().register(new AgentModelTaskResource(model));
+      environment.jersey().register(new AgentModelTaskStatusResource(model));
+      environment.healthChecks().register("zookeeper", zkHealthChecker);
+      environment.lifecycle().manage(this);
+
+      this.server = ServiceUtil.createServerFactory(config.getHttpEndpoint(), config.getAdminPort(),
+          config.getNoHttp())
+          .build(environment);
     } else {
       this.server = null;
     }
-    environment.manage(this);
+    environment.lifecycle().manage(this);
   }
 
   /**
@@ -307,9 +310,6 @@ public class AgentService extends AbstractIdleService implements Managed {
     if (server != null) {
       try {
         server.start();
-        for (ServerLifecycleListener listener : environment.getServerListeners()) {
-          listener.serverStarted(server);
-        }
       } catch (Exception e) {
         log.error("Unable to start server, shutting down", e);
         server.stop();
