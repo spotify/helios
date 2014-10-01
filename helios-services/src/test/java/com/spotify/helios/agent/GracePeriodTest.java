@@ -49,7 +49,6 @@ import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
 
-import org.joda.time.DateTime;
 import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
@@ -167,14 +166,6 @@ public class GracePeriodTest {
     when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
     when(registrar.register(any(ServiceRegistration.class)))
         .thenReturn(new NopServiceRegistrationHandle());
-    doAnswer(new Answer<Void>(){
-      public Void answer(InvocationOnMock invocation) throws Throwable {
-        final Long sleepMillis = (Long) invocation.getArguments()[0];
-        DateTimeUtils.setCurrentMillisFixed(DateTime.now().getMillis() + sleepMillis);
-        return null;
-      }
-    }).when(sleeper).sleep(eq(GRACE_PERIOD_MILLIS));
-
 
     final TaskConfig config = TaskConfig.builder()
         .namespace(NAMESPACE)
@@ -331,7 +322,6 @@ public class GracePeriodTest {
     // Verify that Sleeper has been called and that datetime has increased by
     // GRACE_PERIOD number of milliseconds
     verify(sleeper).sleep(GRACE_PERIOD_MILLIS);
-    assertEquals(DateTimeUtils.currentTimeMillis(), GRACE_PERIOD_MILLIS);
 
     // Change docker container state to stopped when it's killed
     when(docker.inspectContainer(eq(containerId))).thenReturn(STOPPED_RESPONSE);

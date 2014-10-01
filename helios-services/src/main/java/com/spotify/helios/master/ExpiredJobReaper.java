@@ -22,10 +22,14 @@
 package com.spotify.helios.master;
 
 import com.google.common.collect.ImmutableList;
+
 import com.spotify.helios.agent.InterruptingScheduledService;
+import com.spotify.helios.agent.Clock;
+import com.spotify.helios.agent.SystemClock;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,11 +57,13 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
   private final MasterModel masterModel;
   private final int interval;
   private final TimeUnit timeUnit;
+  private final Clock clock;
 
   private ExpiredJobReaper(final Builder builder) {
     this.masterModel = builder.masterModel;
     this.interval = builder.interval;
     this.timeUnit = checkNotNull(builder.timeUnit);
+    this.clock = checkNotNull(builder.clock);
   }
 
   @Override
@@ -68,8 +74,7 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
 
       if (job.getExpires() == null) {
         continue;
-      }
-      if (job.getExpires().getTime() <= System.currentTimeMillis()) {
+      } else if (job.getExpires().getTime() <= clock.now().getMillis()) {
         final JobStatus status = masterModel.getJobStatus(jobId);
         final List<String> hosts = ImmutableList.copyOf(status.getDeployments().keySet());
 
@@ -112,6 +117,12 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
     private MasterModel masterModel;
     private int interval = DEFAULT_INTERVAL;
     private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
+    private Clock clock = new SystemClock();
+
+    public Builder setClock(final Clock clock) {
+      this.clock = clock;
+      return this;
+    }
 
     public Builder setMasterModel(final MasterModel masterModel) {
       this.masterModel = masterModel;
