@@ -54,7 +54,7 @@ public class CliMasterListTest extends SystemTestBase {
   @Test
   public void testMasterListJson() throws Exception {
     final String jsonOutput = cli("masters", "-f", "--json");
-    final List masterList = Json.read(jsonOutput, List.class);
+    final List<?> masterList = Json.read(jsonOutput, List.class);
     final List<String> expectedList = Lists.newArrayList(TEST_MASTER);
     assertEquals(expectedList, masterList);
   }
