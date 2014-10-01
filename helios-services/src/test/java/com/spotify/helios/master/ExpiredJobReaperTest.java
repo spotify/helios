@@ -2,13 +2,14 @@ package com.spotify.helios.master;
 
 import com.google.common.collect.ImmutableMap;
 
+import com.spotify.helios.agent.Clock;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 
-import org.joda.time.DateTime;
+import org.joda.time.Instant;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
@@ -31,6 +32,7 @@ import static org.mockito.Mockito.when;
 public class ExpiredJobReaperTest {
 
   @Mock private MasterModel masterModel;
+  @Mock private Clock mockClock;
 
   private static final JobId NON_EXPIRING_JOB_ID = JobId.fromString("non_expiring");
   private static final Job NON_EXPIRING_JOB = Job.newBuilder()
@@ -41,12 +43,17 @@ public class ExpiredJobReaperTest {
       .build();
 
   private static final JobId EXPIRING_JOB_ID = JobId.fromString("expiring");
+
+  private static final long EXPIRED_TS = 0;
+  private static final long CURRENT_TS = 1;
+  private static final long FUTURE_TS = 2;
+
   private static final Job EXPIRING_JOB = Job.newBuilder()
       .setCommand(asList("foo", "foo"))
       .setImage("foo:4711")
       .setName("foo")
       .setVersion("17")
-      .setExpires(new Date())
+      .setExpires(new Date(EXPIRED_TS))
       .build();
 
   private static final JobId FAR_FUTURE_EXPIRING_JOB_ID = JobId.fromString("far_future_expiring");
@@ -55,7 +62,7 @@ public class ExpiredJobReaperTest {
       .setImage("foo:4711")
       .setName("foo")
       .setVersion("17")
-      .setExpires(DateTime.now().plusYears(1).toDate())
+      .setExpires(new Date(FUTURE_TS))
       .build();
 
   private static final Map<JobId, Job> JOBS = ImmutableMap.of(
@@ -66,6 +73,7 @@ public class ExpiredJobReaperTest {
 
   @Test
   public void testExpiredJobReaper() throws Exception {
+    when(mockClock.now()).thenReturn(new Instant(CURRENT_TS));
     when(masterModel.getJobs()).thenReturn(JOBS);
 
     when(masterModel.getJobStatus(any(JobId.class)))
@@ -86,6 +94,7 @@ public class ExpiredJobReaperTest {
       });
 
     ExpiredJobReaper.newBuilder()
+        .setClock(mockClock)
         .setMasterModel(masterModel)
         .build()
         .runOneIteration();
@@ -98,5 +107,4 @@ public class ExpiredJobReaperTest {
 
     verifyNoMoreInteractions(ignoreStubs(masterModel));
   }
-
 }
