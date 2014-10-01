@@ -22,6 +22,8 @@
 package com.spotify.helios.system;
 
 import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -30,6 +32,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
+import org.junit.Before;
 import org.junit.Test;
 
 import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
@@ -38,9 +41,20 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeThat;
 
 public class TerminationTest extends SystemTestBase {
+
+  @Before
+  public void setup() throws DockerException, InterruptedException {
+    // LXC has a bug where the TERM signal isn't sent to containers, so we can only run this test
+    // if docker runs with the native driver.
+    // See: https://github.com/docker/docker/issues/2436
+    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
+    assumeThat(dockerClient.info().executionDriver(), startsWith("native"));
+  }
 
   @Test
   public void testNoIntOnExit() throws Exception {
