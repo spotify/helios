@@ -38,8 +38,8 @@ import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.sun.jersey.api.core.InjectParam;
-import com.yammer.metrics.annotation.ExceptionMetered;
-import com.yammer.metrics.annotation.Timed;
+import com.codahale.metrics.annotation.ExceptionMetered;
+import com.codahale.metrics.annotation.Timed;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

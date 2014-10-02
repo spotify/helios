@@ -26,7 +26,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
 import com.aphyr.riemann.client.RiemannClient;
-import com.yammer.dropwizard.lifecycle.Managed;
+import io.dropwizard.lifecycle.Managed;
 import com.yammer.metrics.core.MetricsRegistry;
 import com.yammer.metrics.reporting.RiemannReporter;
 import com.yammer.metrics.reporting.RiemannReporter.Config;

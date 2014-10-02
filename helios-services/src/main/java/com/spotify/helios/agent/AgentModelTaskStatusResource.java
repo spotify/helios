@@ -23,7 +23,7 @@ package com.spotify.helios.agent;
 
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.yammer.metrics.annotation.Timed;
+import com.codahale.metrics.annotation.Timed;
 
 import java.util.Map;
 

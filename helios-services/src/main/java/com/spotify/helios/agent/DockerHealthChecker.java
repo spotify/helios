@@ -26,8 +26,9 @@ import com.google.common.annotations.VisibleForTesting;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.MeterRates;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
-import com.yammer.dropwizard.lifecycle.Managed;
-import com.yammer.metrics.core.HealthCheck;
+import com.codahale.metrics.health.HealthCheck;
+
+import io.dropwizard.lifecycle.Managed;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,7 +60,7 @@ public class DockerHealthChecker extends HealthCheck implements Managed {
   public DockerHealthChecker(final SupervisorMetrics metrics,
                              final TimeUnit timeUnit, int interval,
                              final RiemannFacade facade) {
-    super("docker");
+    super();
     this.metrics = checkNotNull(metrics);
     this.timeUnit = checkNotNull(timeUnit);
     this.facade = checkNotNull(facade).stack("docker-health");

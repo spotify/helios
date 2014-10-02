@@ -36,7 +36,7 @@
     <dependency>
       <groupId>ch.qos.logback</groupId>
       <artifactId>logback-core</artifactId>
-      <version>1.1.1</version>
+      <version>1.1.2</version>
     </dependency>
     <dependency>
       <groupId>com.yammer.metrics</groupId>
@@ -51,7 +51,7 @@
     <dependency>
       <groupId>net.sourceforge.argparse4j</groupId>
       <artifactId>argparse4j</artifactId>
-      <version>0.4.1</version>
+      <version>0.4.3</version>
     </dependency>
     <dependency>
       <groupId>ch.qos.logback</groupId>

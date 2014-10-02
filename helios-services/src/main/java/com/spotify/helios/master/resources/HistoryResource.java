@@ -30,8 +30,8 @@ import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
-import com.yammer.metrics.annotation.ExceptionMetered;
-import com.yammer.metrics.annotation.Timed;
+import com.codahale.metrics.annotation.ExceptionMetered;
+import com.codahale.metrics.annotation.Timed;
 
 import java.util.List;
 
