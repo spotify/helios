@@ -225,7 +225,7 @@ public class MasterService extends AbstractIdleService {
 
   private void logBanner() {
     try {
-      final String banner = Resources.toString(Resources.getResource("banner.txt"), UTF_8);
+      final String banner = Resources.toString(Resources.getResource("master-banner.txt"), UTF_8);
       log.info("\n{}", banner);
     } catch (IllegalArgumentException | IOException ignored) {
     }
