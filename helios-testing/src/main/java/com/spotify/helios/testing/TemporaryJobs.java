@@ -51,6 +51,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -252,7 +253,18 @@ public class TemporaryJobs implements TestRule {
         builder.hostFilter(Optional
             .fromNullable(DEFAULT_HOST_FILTER)
             .or(DEFAULT_LOCAL_HOST_FILTER));
-        builder.endpoints("http://localhost:5801");
+
+        final String dockerHost = System.getenv("DOCKER_HOST");
+        if (dockerHost == null) {
+          builder.endpoints("http://localhost:5801");
+        } else {
+          try {
+            final URI uri = new URI(dockerHost);
+            builder.endpoints("http://" + uri.getHost() + ":5801");
+          } catch (URISyntaxException e) {
+            throw Throwables.propagate(e);
+          }
+        }
       }
     }
     return builder.build();
