@@ -48,8 +48,6 @@ import com.spotify.helios.serviceregistration.NopServiceRegistrationHandle;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
-
-import org.joda.time.DateTimeUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -227,7 +225,6 @@ public class GracePeriodTest {
       sut.close();
       sut.join();
     }
-    DateTimeUtils.setCurrentMillisSystem();
   }
 
   @Test
@@ -312,9 +309,6 @@ public class GracePeriodTest {
         return null;
       }
     });
-
-    // Set the current datetime to 0
-    DateTimeUtils.setCurrentMillisFixed(0);
 
     // Stop the container
     verify(docker, timeout(30000)).killContainer(eq(containerId));
