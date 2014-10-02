@@ -45,7 +45,7 @@ public class ConfigTest {
     when(client.jobs()).thenReturn(future);
   }
 
-  public static class ProfileTest implements TemporaryJob.Deployer {
+  public static class ProfileTest implements Deployer {
 
     // Local is the default profile, so don't specify it explicitly to test default loading
     @Rule
@@ -69,7 +69,7 @@ public class ConfigTest {
     }
 
     @Override
-    public TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts) {
+    public TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts, Prober prober) {
       // This is called when the first job is deployed
       assertThat(hosts, equalTo((List<String>) newArrayList("test-host")));
       parameters.validate(job, temporaryJobs.prefix());
@@ -77,7 +77,7 @@ public class ConfigTest {
     }
 
     @Override
-    public TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts) {
+    public TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts, Prober prober) {
       // This is called when the second job is deployed
       assertThat(hostFilter, equalTo(parameters.hostFilter));
       parameters.validate(job, temporaryJobs.prefix());

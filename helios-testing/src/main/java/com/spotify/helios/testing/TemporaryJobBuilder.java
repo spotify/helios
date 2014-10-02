@@ -50,6 +50,7 @@ import java.util.regex.Pattern;
 import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.Integer.toHexString;
 import static java.lang.System.getenv;
@@ -64,16 +65,21 @@ public class TemporaryJobBuilder {
   private final List<String> hosts = Lists.newArrayList();
   private final Job.Builder builder = Job.newBuilder();
   private final Set<String> waitPorts = Sets.newHashSet();
-  private final TemporaryJob.Deployer deployer;
+  private final Deployer deployer;
   private final String jobNamePrefix;
 
-  private String hostFilter = null;
-
+  private String hostFilter;
+  private Prober prober;
   private TemporaryJob job;
 
-  public TemporaryJobBuilder(final TemporaryJob.Deployer deployer, final String jobNamePrefix) {
+  public TemporaryJobBuilder(final Deployer deployer, final String jobNamePrefix,
+                             final Prober defaultProber) {
+    checkNotNull(deployer, "deployer");
+    checkNotNull(jobNamePrefix, "jobNamePrefix");
+    checkNotNull(defaultProber, "defaultProber");
     this.deployer = deployer;
     this.jobNamePrefix = jobNamePrefix;
+    this.prober = defaultProber;
     this.builder.setRegistrationDomain(jobNamePrefix);
   }
 
@@ -178,6 +184,16 @@ public class TemporaryJobBuilder {
   }
 
   /**
+   * This will override the default prober provided by {@link TemporaryJobs} to the constructor.
+   * @param prober the prober to use for this job
+   * @return the TemporaryJobBuilder
+   */
+  public TemporaryJobBuilder prober(final Prober prober) {
+    this.prober = prober;
+    return this;
+  }
+
+  /**
    * Deploys the job to the specified hosts. If no hosts are specified, a host will be chosen at
    * random from the current Helios cluster. If the HELIOS_HOST_FILTER environment variable is set,
    * it will be used to filter the list of hosts in the current Helios cluster.
@@ -220,9 +236,9 @@ public class TemporaryJobBuilder {
           hostFilter = getenv("HELIOS_HOST_FILTER");
         }
 
-        job = deployer.deploy(builder.build(), hostFilter, waitPorts);
+        job = deployer.deploy(builder.build(), hostFilter, waitPorts, prober);
       } else {
-        job = deployer.deploy(builder.build(), this.hosts, waitPorts);
+        job = deployer.deploy(builder.build(), this.hosts, waitPorts, prober);
       }
     }
 

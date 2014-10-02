@@ -72,7 +72,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TemporaryJobs implements TestRule {
-  private static final Logger log = LoggerFactory.getLogger(TemporaryJob.class);
+  private static final Logger log = LoggerFactory.getLogger(TemporaryJobs.class);
 
   static final String HELIOS_TESTING_PROFILE = "helios.testing.profile";
   private static final String HELIOS_TESTING_PROFILES = "helios.testing.profiles.";
@@ -89,7 +89,7 @@ public class TemporaryJobs implements TestRule {
   private final JobPrefixFile jobPrefixFile;
   private final Config config;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
-  private TemporaryJob.Deployer deployer;
+  private final Deployer deployer;
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
@@ -103,8 +103,7 @@ public class TemporaryJobs implements TestRule {
     this.client = checkNotNull(builder.client, "client");
     this.prober = checkNotNull(builder.prober, "prober");
     this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
-    this.deployer = Optional.fromNullable(builder.deployer)
-        .or(new DefaultDeployer(client, jobs, prober));
+    this.deployer = Optional.fromNullable(builder.deployer).or(new DefaultDeployer(client, jobs));
     final Path prefixDirectory = Paths.get(Optional.fromNullable(builder.prefixDirectory)
         .or(DEFAULT_PREFIX_DIRECTORY));
 
@@ -165,7 +164,8 @@ public class TemporaryJobs implements TestRule {
   }
 
   public TemporaryJobBuilder job() {
-    final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix());
+    final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix(),
+                                                                prober);
 
     if (config.hasPath("env")) {
       final Config env = config.getConfig("env");
@@ -480,7 +480,7 @@ public class TemporaryJobs implements TestRule {
     private final Config config;
     private String user = DEFAULT_USER;
     private Prober prober = DEFAULT_PROBER;
-    private TemporaryJob.Deployer deployer;
+    private Deployer deployer;
     private String hostFilter = DEFAULT_HOST_FILTER;
     private HeliosClient client;
     private String prefixDirectory;
@@ -524,7 +524,7 @@ public class TemporaryJobs implements TestRule {
       return this;
     }
 
-    public Builder deployer(final TemporaryJob.Deployer deployer) {
+    public Builder deployer(final Deployer deployer) {
       this.deployer = deployer;
       return this;
     }

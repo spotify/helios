@@ -41,25 +41,23 @@ import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 
-public class DefaultDeployer implements TemporaryJob.Deployer {
+public class DefaultDeployer implements Deployer {
 
   private static final Logger log = LoggerFactory.getLogger(DefaultDeployer.class);
 
   private final HeliosClient client;
   private final List<TemporaryJob> jobs;
-  private final Prober prober;
 
   private boolean readyToDeploy;
 
-  public DefaultDeployer(HeliosClient client, List<TemporaryJob> jobs, Prober prober) {
+  public DefaultDeployer(HeliosClient client, List<TemporaryJob> jobs) {
     this.client = client;
     this.jobs = jobs;
-    this.prober = prober;
   }
 
   @Override
   public TemporaryJob deploy(final Job job, final String hostFilter,
-                             final Set<String> waitPorts) {
+                             final Set<String> waitPorts, final Prober prober) {
     if (isNullOrEmpty(hostFilter)) {
       fail("a host filter pattern must be passed to hostFilter(), " +
            "or one must be specified in HELIOS_HOST_FILTER");
@@ -83,12 +81,12 @@ public class DefaultDeployer implements TemporaryJob.Deployer {
     }
 
     final String chosenHost = filteredHosts.get(new Random().nextInt(filteredHosts.size()));
-    return deploy(job, asList(chosenHost), waitPorts);
+    return deploy(job, asList(chosenHost), waitPorts, prober);
   }
 
   @Override
   public TemporaryJob deploy(final Job job, final List<String> hosts,
-                             final Set<String> waitPorts) {
+                             final Set<String> waitPorts, final Prober prober) {
     if (!readyToDeploy) {
       fail("deploy() must be called in a @Before or in the test method, or perhaps you forgot"
            + " to put @Rule before TemporaryJobs");
