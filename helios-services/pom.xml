@@ -134,7 +134,7 @@
     </dependency>
     <dependency>
       <groupId>com.readytalk</groupId>
-      <artifactId>metrics2-statsd</artifactId>
+      <artifactId>metrics3-statsd</artifactId>
       <version>4.1.0</version>
     </dependency>
     <dependency>

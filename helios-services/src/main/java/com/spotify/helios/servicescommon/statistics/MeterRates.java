@@ -21,7 +21,7 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.yammer.metrics.core.Meter;
+import com.codahale.metrics.Meter;
 
 public class MeterRates {
   private final double oneMinuteRate;
@@ -29,7 +29,7 @@ public class MeterRates {
   private final double fifteenMinuteRate;
 
   public MeterRates(Meter meter) {
-    this(meter.oneMinuteRate(), meter.fiveMinuteRate(), meter.fifteenMinuteRate());
+    this(meter.getOneMinuteRate(), meter.getFiveMinuteRate(), meter.getFifteenMinuteRate());
   }
 
   public MeterRates(double oneMinuteRate, double fiveMinuteRate, double fifteenMinuteRate) {

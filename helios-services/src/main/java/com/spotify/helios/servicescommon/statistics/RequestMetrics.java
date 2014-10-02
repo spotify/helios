@@ -21,13 +21,10 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.yammer.metrics.core.Counter;
-import com.yammer.metrics.core.MetricName;
-import com.yammer.metrics.core.MetricsRegistry;
-import com.yammer.metrics.core.Timer;
-import com.yammer.metrics.core.TimerContext;
-
-import java.util.concurrent.TimeUnit;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.Timer;
+import com.codahale.metrics.Timer.Context;
 
 public class RequestMetrics {
 
@@ -35,30 +32,22 @@ public class RequestMetrics {
   private final Counter failureCounter;
   private final Counter userErrorCounter;
   private final Timer timer;
-  private final MetricName successName;
-  private final MetricName failureName;
-  private final MetricName userErrorName;
-  private final MetricName timerName;
 
   public RequestMetrics(final String group, final String type, final String requestName,
-                        final MetricsRegistry registry) {
+                        final MetricRegistry registry) {
 
-    successName = new MetricName(group, type, requestName + "_successful");
-    failureName = new MetricName(group, type, requestName + "_failed");
-    userErrorName = new MetricName(group, type, requestName + "_failed");
-    timerName = new MetricName(group, type, requestName + "_latency");
-
-    successCounter = registry.newCounter(successName);
-    failureCounter = registry.newCounter(failureName);
-    userErrorCounter = registry.newCounter(userErrorName);
-    timer = registry.newTimer(timerName, TimeUnit.MILLISECONDS, TimeUnit.SECONDS);
+    final String prefix = MetricRegistry.name(group, type, requestName);
+    successCounter = registry.counter(prefix + "_successful");
+    failureCounter = registry.counter(prefix + "_failed");
+    userErrorCounter = registry.counter(prefix + "_failed");
+    timer = registry.timer(prefix + "_latency");
   }
 
-  public TimerContext begin() {
+  public Context begin() {
     return timer.time();
   }
 
-  public void success(TimerContext context) {
+  public void success(Context context) {
     success();
     context.stop();
   }
@@ -67,7 +56,7 @@ public class RequestMetrics {
     successCounter.inc();
   }
 
-  public void failure(TimerContext context) {
+  public void failure(Context context) {
     failure();
     context.stop();
   }
@@ -76,7 +65,7 @@ public class RequestMetrics {
     failureCounter.inc();
   }
 
-  public void userError(TimerContext context) {
+  public void userError(Context context) {
     userError();
     context.stop();
   }
@@ -99,21 +88,5 @@ public class RequestMetrics {
 
   public Timer getTimer() {
     return timer;
-  }
-
-  public MetricName getSuccessName() {
-    return successName;
-  }
-
-  public MetricName getFailureName() {
-    return failureName;
-  }
-
-  public MetricName getTimerName() {
-    return timerName;
-  }
-
-  public MetricName getUserErrorName() {
-    return userErrorName;
   }
 }

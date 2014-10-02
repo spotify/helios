@@ -27,6 +27,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
+import com.codahale.metrics.MetricRegistry;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.HistoryResource;
@@ -52,7 +53,6 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
-import com.yammer.metrics.core.MetricsRegistry;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -71,7 +71,6 @@ import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Environment;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
@@ -110,7 +109,7 @@ public class MasterService extends AbstractIdleService {
 
     // Configure metrics
     // TODO (dano): do something with the riemann facade
-    final MetricsRegistry metricsRegistry = com.yammer.metrics.Metrics.defaultRegistry();
+    final MetricRegistry metricsRegistry = new MetricRegistry();
     final RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry,
         config.getRiemannHostPort(), config.getName(), "helios-master");
     riemannFacade = riemannSupport.getFacade();

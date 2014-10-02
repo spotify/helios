@@ -26,6 +26,7 @@ import com.google.common.base.Throwables;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
+import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.JobId;
@@ -50,7 +51,6 @@ import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 import com.sun.management.OperatingSystemMXBean;
-import com.yammer.metrics.core.MetricsRegistry;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -154,7 +154,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     }
 
     // Configure metrics
-    final MetricsRegistry metricsRegistry = com.yammer.metrics.Metrics.defaultRegistry();
+    final MetricRegistry metricsRegistry = new MetricRegistry();
     RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(),
                                                        config.getName(), "helios-agent");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();
@@ -165,8 +165,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       log.info("Starting metrics");
       metrics = new MetricsImpl(metricsRegistry);
       environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
-        "helios-agent",
-                                                   metricsRegistry));
+          "helios-agent", metricsRegistry));
       environment.lifecycle().manage(riemannSupport);
     }
 

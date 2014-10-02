@@ -21,8 +21,8 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.yammer.metrics.core.MetricsRegistry;
-import com.yammer.metrics.reporting.JmxReporter;
+import com.codahale.metrics.JmxReporter;
+import com.codahale.metrics.MetricRegistry;
 
 public class MetricsImpl implements Metrics {
 
@@ -33,11 +33,11 @@ public class MetricsImpl implements Metrics {
   private final ZooKeeperMetrics zooKeeperMetrics;
   private final JmxReporter jmxReporter;
 
-  public MetricsImpl(final MetricsRegistry registry) {
+  public MetricsImpl(final MetricRegistry registry) {
     this.masterMetrics = new MasterMetricsImpl(GROUP, registry);
     this.supervisorMetrics = new SupervisorMetricsImpl(GROUP, registry);
     this.zooKeeperMetrics = new ZooKeeperMetricsImpl(GROUP, registry);
-    this.jmxReporter = new JmxReporter(registry);
+    this.jmxReporter = JmxReporter.forRegistry(registry).build();
   }
 
   @Override
@@ -47,7 +47,7 @@ public class MetricsImpl implements Metrics {
 
   @Override
   public void stop() {
-    jmxReporter.shutdown();
+    jmxReporter.close();
   }
 
   @Override

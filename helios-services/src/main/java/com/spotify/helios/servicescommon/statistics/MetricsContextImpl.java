@@ -21,7 +21,7 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.yammer.metrics.core.TimerContext;
+import com.codahale.metrics.Timer.Context;
 
 /**
  * Creation of this class marks the beginning of a call to some service. Either {@link #success()}
@@ -31,7 +31,7 @@ import com.yammer.metrics.core.TimerContext;
 public class MetricsContextImpl implements MetricsContext {
 
   private final RequestMetrics metrics;
-  private final TimerContext timerContext;
+  private final Context timerContext;
 
   public MetricsContextImpl(RequestMetrics metrics) {
     this.metrics = metrics;
