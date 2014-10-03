@@ -26,10 +26,11 @@ import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 
 import com.aphyr.riemann.client.RiemannClient;
-import com.yammer.dropwizard.lifecycle.Managed;
-import com.yammer.metrics.core.MetricsRegistry;
-import com.yammer.metrics.reporting.RiemannReporter;
-import com.yammer.metrics.reporting.RiemannReporter.Config;
+import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.riemann.Riemann;
+import com.codahale.metrics.riemann.RiemannReporter;
+
+import io.dropwizard.lifecycle.Managed;
 
 import java.io.IOException;
 
@@ -43,7 +44,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class RiemannSupport implements Managed {
   private final String host;
   private final int port;
-  private final MetricsRegistry metricsRegistry;
+  private final MetricRegistry metricsRegistry;
   private final String serviceName;
   private final String hostName;
 
@@ -51,7 +52,7 @@ public class RiemannSupport implements Managed {
   private RiemannReporter riemannReporter;
   private final String proto;
 
-  public RiemannSupport(final MetricsRegistry metricsRegistry, final String hostPort,
+  public RiemannSupport(final MetricRegistry metricsRegistry, final String hostPort,
                         final String hostName, final String serviceName) {
     this.metricsRegistry = metricsRegistry;
     this.serviceName = serviceName;
@@ -114,14 +115,9 @@ public class RiemannSupport implements Managed {
     if (host == null) {
       return null;
     }
-    final Config c = Config.newBuilder()
-        .metricsRegistry(metricsRegistry)
-        .name(serviceName)
+    return RiemannReporter.forRegistry(metricsRegistry)
         .localHost(hostName)
-        .host(host)
-        .port(port)
-        .build();
-    return new RiemannReporter(c, getClient());
+        .build(new Riemann(getClient()));
   }
 
   @Override
@@ -135,7 +131,7 @@ public class RiemannSupport implements Managed {
   @Override
   public void stop() throws Exception {
     if (riemannReporter != null) {
-      riemannReporter.shutdown();
+      riemannReporter.close();
     }
   }
 }

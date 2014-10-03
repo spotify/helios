@@ -24,35 +24,30 @@ package com.spotify.helios.servicescommon.statistics;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.servicescommon.MasterRequestMetrics;
-import com.yammer.metrics.core.Histogram;
-import com.yammer.metrics.core.MetricName;
-import com.yammer.metrics.core.MetricsRegistry;
+import com.codahale.metrics.Histogram;
+import com.codahale.metrics.MetricRegistry;
 
 import java.util.Map;
+
+import static com.codahale.metrics.MetricRegistry.name;
 
 public class MasterMetricsImpl implements MasterMetrics {
   private static final String TYPE = "master";
 
   private final Map<String, MasterRequestMetrics> requestMetrics = Maps.newConcurrentMap();
 
-  private final MetricName jobsInJobList;
-  private final MetricName eventsInJobHistory;
-
   private final Histogram jobsInJobListHist;
   private final Histogram eventsInJobHistoryHist;
   private final String group;
-  private final MetricsRegistry registry;
+  private final MetricRegistry registry;
 
   public MasterMetricsImpl(final String group,
-                           final MetricsRegistry registry) {
+                           final MetricRegistry registry) {
     this.group = group;
     this.registry = registry;
 
-    eventsInJobHistory = new MetricName(group, TYPE, "events_in_job_history");
-    jobsInJobList = new MetricName(group, TYPE, "jobs_in_job_list");
-
-    eventsInJobHistoryHist = registry.newHistogram(eventsInJobHistory, true);
-    jobsInJobListHist = registry.newHistogram(jobsInJobList, true);
+    eventsInJobHistoryHist = registry.histogram(name(group, TYPE + "_events_in_job_history"));
+    jobsInJobListHist = registry.histogram(name(group, TYPE + "_jobs_in_job_list"));
   }
 
   @Override

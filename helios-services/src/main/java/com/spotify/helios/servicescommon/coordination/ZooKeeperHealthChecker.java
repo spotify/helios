@@ -22,8 +22,8 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import com.spotify.helios.servicescommon.RiemannFacade;
-import com.yammer.dropwizard.lifecycle.Managed;
-import com.yammer.metrics.core.HealthCheck;
+import io.dropwizard.lifecycle.Managed;
+import com.codahale.metrics.health.HealthCheck;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
@@ -50,7 +50,7 @@ public class ZooKeeperHealthChecker extends HealthCheck
   public ZooKeeperHealthChecker(final ZooKeeperClient zooKeeperClient, final String path,
                                 final RiemannFacade facade, final TimeUnit timeUnit,
                                 final long interval) {
-    super("zookeeper");
+    super();
     this.scheduler = Executors.newScheduledThreadPool(2);
     this.cache = new PathChildrenCache(zooKeeperClient.getCuratorFramework(), path, true, false,
         scheduler);

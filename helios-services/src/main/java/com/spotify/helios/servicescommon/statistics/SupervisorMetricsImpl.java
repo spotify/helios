@@ -21,12 +21,9 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.yammer.metrics.core.Counter;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.MetricName;
-import com.yammer.metrics.core.MetricsRegistry;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 
 public class SupervisorMetricsImpl implements SupervisorMetrics {
   private static final String TYPE = "agent_supervisor";
@@ -55,84 +52,34 @@ public class SupervisorMetricsImpl implements SupervisorMetrics {
   private final Meter supervisorStoppedMeter;
   private final Meter supervisorRunMeter;
 
-  private final MetricName containerStartedCounterName;
-  private final MetricName containersExitedCounterName;
-  private final MetricName containersRunningCounterName;
-  private final MetricName containersThrewExceptionCounterName;
-  private final MetricName dockerTimeoutCounterName;
-  private final MetricName imageCacheHitCounterName;
-  private final MetricName supervisorClosedCounterName;
-  private final MetricName supervisorStartedCounterName;
-  private final MetricName supervisorStoppedCounterName;
-  private final MetricName supervisorRunCounterName;
-
-  private final MetricName containerStartedMeterName;
-  private final MetricName containersExitedMeterName;
-  private final MetricName containersRunningMeterName;
-  private final MetricName containersThrewExceptionMeterName;
-  private final MetricName dockerTimeoutMeterName;
-  private final MetricName imageCacheHitMeterName;
-  private final MetricName supervisorClosedMeterName;
-  private final MetricName supervisorStartedMeterName;
-  private final MetricName supervisorStoppedMeterName;
-  private final MetricName supervisorRunMeterName;
 
   public SupervisorMetricsImpl(final String group,
-                               final MetricsRegistry registry) {
+                               final MetricRegistry registry) {
 
-    containerStartedCounterName = new MetricName(group, TYPE, "container_started_counter");
-    containersExitedCounterName = new MetricName(group, TYPE, "containers_exited_counter");
-    containersRunningCounterName = new MetricName(group, TYPE, "containers_running_counter");
-    containersThrewExceptionCounterName = new MetricName(group, TYPE,
-                                                         "containers_threw_exception_counter");
-    imageCacheHitCounterName = new MetricName(group, TYPE, "image_cache_hit_counter");
-    supervisorClosedCounterName = new MetricName(group, TYPE, "supervisor_closed_counter");
-    supervisorStartedCounterName = new MetricName(group, TYPE, "supervisors_created_counter");
-    supervisorStoppedCounterName = new MetricName(group, TYPE, "supervisor_stopped_counter");
-    supervisorRunCounterName = new MetricName(group, TYPE, "supervisor_run_counter");
-    dockerTimeoutCounterName = new MetricName(group, TYPE, "docker_timeout_counter");
+    final String prefix = MetricRegistry.name(group, TYPE) + ".";
 
-    containerStartedMeterName = new MetricName(group, TYPE, "container_started_meter");
-    containersExitedMeterName = new MetricName(group, TYPE, "containers_exited_meter");
-    containersRunningMeterName = new MetricName(group, TYPE, "containers_running_meter");
-    containersThrewExceptionMeterName = new MetricName(group, TYPE,
-                                                       "containers_threw_exception_meter");
-    imageCacheHitMeterName = new MetricName(group, TYPE, "image_cache_hit_meter");
-    supervisorClosedMeterName = new MetricName(group, TYPE, "supervisor_closed_meter");
-    supervisorStartedMeterName = new MetricName(group, TYPE, "supervisors_created_meter");
-    supervisorStoppedMeterName = new MetricName(group, TYPE, "supervisor_stopped_meter");
-    supervisorRunMeterName = new MetricName(group, TYPE, "supervisor_run_meter");
-    dockerTimeoutMeterName = new MetricName(group, TYPE, "docker_timeout_meter");
+    containerStartedCounter = registry.counter(prefix + "container_started_counter");
+    containersExitedCounter = registry.counter(prefix + "containers_exited_counter");
+    containersRunningCounter = registry.counter(prefix + "containers_running_counter");
+    containersThrewExceptionCounter = registry.counter(
+        prefix + "containers_threw_exception_counter");
+    imageCacheHitCounter = registry.counter(prefix + "image_cache_hit_counter");
+    supervisorClosedCounter = registry.counter(prefix + "supervisor_closed_counter");
+    supervisorStartedCounter = registry.counter(prefix + "supervisors_created_counter");
+    supervisorStoppedCounter = registry.counter(prefix + "supervisor_stopped_counter");
+    supervisorRunCounter = registry.counter(prefix + "supervisor_run_counter");
+    dockerTimeoutCounter = registry.counter(prefix + "docker_timeout_counter");
 
-    containerStartedCounter = registry.newCounter(containerStartedCounterName);
-    containersExitedCounter = registry.newCounter(containersExitedCounterName);
-    containersRunningCounter = registry.newCounter(containersRunningCounterName);
-    containersThrewExceptionCounter = registry.newCounter(containersThrewExceptionCounterName);
-    imageCacheHitCounter = registry.newCounter(imageCacheHitCounterName);
-    supervisorClosedCounter = registry.newCounter(supervisorClosedCounterName);
-    supervisorStartedCounter = registry.newCounter(supervisorStartedCounterName);
-    supervisorStoppedCounter = registry.newCounter(supervisorStoppedCounterName);
-    supervisorRunCounter = registry.newCounter(supervisorRunCounterName);
-    dockerTimeoutCounter = registry.newCounter(dockerTimeoutCounterName);
-
-    containerStartedMeter = registry.newMeter(containerStartedMeterName, "container_starts",
-        MINUTES);
-    containersExitedMeter = registry.newMeter(containersExitedMeterName, "containers_exits",
-        MINUTES);
-    containersRunningMeter = registry.newMeter(containersRunningMeterName, "containers_ran",
-        MINUTES);
-    containersThrewExceptionMeter = registry.newMeter(containersThrewExceptionMeterName,
-        "container_exceptions", MINUTES);
-    imageCacheHitMeter = registry.newMeter(imageCacheHitMeterName, "image_cache_hits", MINUTES);
-    supervisorClosedMeter = registry.newMeter(supervisorClosedMeterName, "supervisor_closes",
-        MINUTES);
-    supervisorStartedMeter = registry.newMeter(supervisorStartedMeterName, "supervisor_starts",
-        MINUTES);
-    supervisorStoppedMeter = registry.newMeter(supervisorStoppedMeterName, "supervisor_stops",
-        MINUTES);
-    supervisorRunMeter = registry.newMeter(supervisorRunMeterName, "supervisor_runs",
-        MINUTES);
-    dockerTimeoutMeter = registry.newMeter(dockerTimeoutMeterName, "docker_timeouts", MINUTES);
+    containerStartedMeter = registry.meter(prefix + "container_started_meter");
+    containersExitedMeter = registry.meter(prefix + "containers_exited_meter");
+    containersRunningMeter = registry.meter(prefix + "containers_running_meter");
+    containersThrewExceptionMeter = registry.meter(prefix + "containers_threw_exception_meter");
+    imageCacheHitMeter = registry.meter(prefix + "image_cache_hit_meter");
+    supervisorClosedMeter = registry.meter(prefix + "supervisor_closed_meter");
+    supervisorStartedMeter = registry.meter(prefix + "supervisors_created_meter");
+    supervisorStoppedMeter = registry.meter(prefix + "supervisor_stopped_meter");
+    supervisorRunMeter = registry.meter(prefix + "supervisor_run_meter");
+    dockerTimeoutMeter = registry.meter(prefix + "docker_timeout_meter");
 
     imagePull = new RequestMetrics(group, TYPE, "image_pull", registry);
   }

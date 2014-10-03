@@ -25,8 +25,10 @@ import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 
 import com.readytalk.metrics.StatsDReporter;
-import com.yammer.dropwizard.lifecycle.Managed;
-import com.yammer.metrics.core.MetricsRegistry;
+
+import io.dropwizard.lifecycle.Managed;
+
+import com.codahale.metrics.MetricRegistry;
 
 import java.util.List;
 
@@ -36,12 +38,11 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class ManagedStatsdReporter implements Managed {
 
   private static final int POLL_INTERVAL_SECONDS = 15;
-  private static final int SHUTDOWN_TIMEOUT_SECONDS = 5;
 
   private final StatsDReporter statsdReporter;
 
   public ManagedStatsdReporter(final String endpoint, final String name,
-                               final MetricsRegistry registry) {
+                               final MetricRegistry registry) {
     if (Strings.isNullOrEmpty(endpoint)) {
       statsdReporter = null;
       return;
@@ -51,7 +52,7 @@ public class ManagedStatsdReporter implements Managed {
                                      "parts. Should be host:port");
     final String host = parts.get(0);
     final int port = Integer.valueOf(parts.get(1));
-    statsdReporter = new StatsDReporter(registry, host, port, name);
+    statsdReporter = StatsDReporter.forRegistry(registry).build(host, port);
   }
 
   @Override
@@ -64,7 +65,7 @@ public class ManagedStatsdReporter implements Managed {
   @Override
   public void stop() throws Exception {
     if (statsdReporter != null) {
-      statsdReporter.shutdown(SHUTDOWN_TIMEOUT_SECONDS, SECONDS);
+      statsdReporter.close();
     }
   }
 }

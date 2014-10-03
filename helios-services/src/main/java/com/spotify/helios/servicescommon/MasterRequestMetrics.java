@@ -21,12 +21,11 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.yammer.metrics.core.Counter;
-import com.yammer.metrics.core.Meter;
-import com.yammer.metrics.core.MetricName;
-import com.yammer.metrics.core.MetricsRegistry;
+import com.codahale.metrics.Counter;
+import com.codahale.metrics.Meter;
+import com.codahale.metrics.MetricRegistry;
 
-import java.util.concurrent.TimeUnit;
+import static com.codahale.metrics.MetricRegistry.name;
 
 /**
  * Tracks API requests to the master to be tracked by the yammer metrics stuff.
@@ -37,33 +36,21 @@ public class MasterRequestMetrics {
   private final Counter failureCounter;
   private final Counter userErrorCounter;
 
-  private final MetricName successMeterName;
-  private final MetricName failureMeterName;
-  private final MetricName userErrorMeterName;
-  private final MetricName userErrorCounterName;
-  private final MetricName failureCounterName;
-  private final MetricName successCounterName;
   private final Meter successMeter;
   private final Meter failureMeter;
   private final Meter userErrorMeter;
 
   public MasterRequestMetrics(String group, String type, String requestName,
-                              final MetricsRegistry registry) {
-    successCounterName = new MetricName(group, type, requestName + "_count_success");
-    failureCounterName = new MetricName(group, type, requestName + "_count_failures");
-    userErrorCounterName = new MetricName(group, type, requestName + "_count_usererror");
+                              final MetricRegistry registry) {
+    final String prefix = name(group, type, requestName);
 
-    successMeterName = new MetricName(group, type, requestName + "_meter_success");
-    failureMeterName = new MetricName(group, type, requestName + "_meter_failures");
-    userErrorMeterName = new MetricName(group, type, requestName + "_meter_usererror");
+    successCounter = registry.counter(prefix + "_count_success");
+    failureCounter = registry.counter(prefix + "_count_failures");
+    userErrorCounter = registry.counter(prefix + "_count_usererror");
 
-    successCounter = registry.newCounter(successCounterName);
-    failureCounter = registry.newCounter(failureCounterName);
-    userErrorCounter = registry.newCounter(userErrorCounterName);
-
-    successMeter = registry.newMeter(successMeterName, "successes", TimeUnit.SECONDS);
-    failureMeter = registry.newMeter(failureMeterName, "failures", TimeUnit.SECONDS);
-    userErrorMeter = registry.newMeter(userErrorMeterName, "user_errors", TimeUnit.SECONDS);
+    successMeter = registry.meter(prefix + "_meter_success");
+    failureMeter = registry.meter(prefix + "_meter_failures");
+    userErrorMeter = registry.meter(prefix + "_meter_usererror");
   }
 
   public void success() {
@@ -91,17 +78,5 @@ public class MasterRequestMetrics {
 
   public Counter getUserErrorCounter() {
     return failureCounter;
-  }
-
-  public MetricName getSuccessName() {
-    return successMeterName;
-  }
-
-  public MetricName getFailureName() {
-    return failureMeterName;
-  }
-
-  public MetricName getUserErrorName() {
-    return userErrorMeterName;
   }
 }

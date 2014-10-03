@@ -24,13 +24,22 @@ package com.spotify.helios.servicescommon;
 import com.google.common.base.Strings;
 import com.google.common.util.concurrent.AbstractIdleService;
 
+import com.codahale.metrics.MetricRegistry;
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.logging.LoggingConfigurator;
 import com.spotify.logging.LoggingConfigurator.Level;
 
+import org.hibernate.validator.HibernateValidator;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
+import io.dropwizard.jackson.Jackson;
+import io.dropwizard.setup.Environment;
+import io.dropwizard.validation.valuehandling.OptionalValidatedValueUnwrapper;
+
 import java.io.File;
+
+import javax.validation.Validation;
+import javax.validation.Validator;
 
 import static com.google.common.collect.Iterables.get;
 import static com.spotify.logging.LoggingConfigurator.Level.ALL;
@@ -44,7 +53,22 @@ import static java.util.Arrays.asList;
 public abstract class ServiceMain extends AbstractIdleService {
 
   protected ServiceMain(LoggingConfig loggingConfig, String sentryDsn) {
+    super();
     setupLogging(loggingConfig, sentryDsn);
+  }
+
+  protected static Environment createEnvironment(final String name) {
+    final Validator validator = Validation
+        .byProvider(HibernateValidator.class)
+        .configure()
+        .addValidatedValueHandler(new OptionalValidatedValueUnwrapper())
+        .buildValidatorFactory()
+        .getValidator();
+    return new Environment(name,
+        Jackson.newObjectMapper(),
+        validator,
+        new MetricRegistry(),
+        Thread.currentThread().getContextClassLoader());
   }
 
   protected static void setupLogging(LoggingConfig config, String sentryDsn) {

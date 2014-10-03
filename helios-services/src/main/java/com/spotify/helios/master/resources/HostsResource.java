@@ -38,8 +38,8 @@ import com.spotify.helios.master.JobNotDeployedException;
 import com.spotify.helios.master.JobPortAllocationConflictException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.master.http.PATCH;
-import com.yammer.metrics.annotation.ExceptionMetered;
-import com.yammer.metrics.annotation.Timed;
+import com.codahale.metrics.annotation.ExceptionMetered;
+import com.codahale.metrics.annotation.Timed;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

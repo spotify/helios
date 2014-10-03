@@ -25,9 +25,6 @@ import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.servicescommon.ServiceMain;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
-import com.yammer.dropwizard.config.Environment;
-import com.yammer.dropwizard.json.ObjectMapperFactory;
-import com.yammer.dropwizard.validation.Validator;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
@@ -70,9 +67,8 @@ public class MasterMain extends ServiceMain {
 
   @Override
   protected void startUp() throws Exception {
-    final Environment environment = new Environment("helios-master", masterConfig,
-                                                    new ObjectMapperFactory(), new Validator());
-    service = new MasterService(masterConfig, environment, curatorClientFactory);
+    service = new MasterService(masterConfig, createEnvironment("helios-master"),
+        curatorClientFactory);
     service.startAsync().awaitRunning();
   }
 

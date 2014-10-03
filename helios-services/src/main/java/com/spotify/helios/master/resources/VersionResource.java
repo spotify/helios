@@ -25,8 +25,8 @@ import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCheckResponse;
 import com.spotify.helios.common.VersionCompatibility;
-import com.yammer.metrics.annotation.ExceptionMetered;
-import com.yammer.metrics.annotation.Timed;
+import com.codahale.metrics.annotation.ExceptionMetered;
+import com.codahale.metrics.annotation.Timed;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
