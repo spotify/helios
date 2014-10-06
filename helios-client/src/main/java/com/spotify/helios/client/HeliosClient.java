@@ -98,7 +98,7 @@ import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class HeliosClient {
+public class HeliosClient implements AutoCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosClient.class);
   private static final long TIMEOUT_MILLIS = SECONDS.toMillis(30);
@@ -132,6 +132,7 @@ public class HeliosClient {
     this(user, Suppliers.ofInstance(endpoints));
   }
 
+  @Override
   public void close() {
     executorService.shutdownNow();
   }
