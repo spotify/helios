@@ -23,6 +23,8 @@ package com.spotify.helios.master.resources;
 
 import com.google.common.base.Optional;
 
+import com.codahale.metrics.annotation.ExceptionMetered;
+import com.codahale.metrics.annotation.Timed;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -38,8 +40,6 @@ import com.spotify.helios.master.JobNotDeployedException;
 import com.spotify.helios.master.JobPortAllocationConflictException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.master.http.PATCH;
-import com.codahale.metrics.annotation.ExceptionMetered;
-import com.codahale.metrics.annotation.Timed;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,7 +66,6 @@ import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/hosts")
 public class HostsResource {
-
   private static final Logger log = LoggerFactory.getLogger(HostsResource.class);
 
   private final MasterModel model;
@@ -149,13 +148,15 @@ public class HostsResource {
   @ExceptionMetered
   public JobDeployResponse jobPut(@PathParam("host") final String host,
                                   @PathParam("job") final JobId jobId,
-                                  @Valid final Deployment deployment) {
+                                  @Valid final Deployment deployment,
+                                  @RequestUser final String username) {
     if (!jobId.isFullyQualified()) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.INVALID_ID, host,
                                              jobId));
     }
     try {
-      model.deployJob(host, deployment);
+      final Deployment actualDeployment = deployment.toBuilder().setDeployerUser(username).build();
+      model.deployJob(host, actualDeployment);
       return new JobDeployResponse(JobDeployResponse.Status.OK, host, jobId);
     } catch (JobAlreadyDeployedException e) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.JOB_ALREADY_DEPLOYED, host,

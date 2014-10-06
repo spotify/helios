@@ -23,6 +23,7 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
@@ -96,6 +97,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final String EMPTY_MOUNT = "";
   public static final Date EMPTY_EXPIRES = null;
   public static final String EMPTY_REGISTRATION_DOMAIN = "";
+  public static final String EMPTY_CREATING_USER = null;
 
   private final JobId id;
   private final String image;
@@ -107,6 +109,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Map<String, String> volumes;
   private final Date expires;
   private final String registrationDomain;
+  private final String creatingUser;
 
   /**
    * Create a Job.
@@ -135,7 +138,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("gracePeriod") @Nullable final Integer gracePeriod,
              @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
              @JsonProperty("expires") @Nullable final Date expires,
-             @JsonProperty("registrationDomain") @Nullable String registrationDomain) {
+             @JsonProperty("registrationDomain") @Nullable String registrationDomain,
+             @JsonProperty("creatingUser") @Nullable String creatingUser) {
     this.id = id;
     this.image = image;
 
@@ -149,6 +153,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.expires = expires;
     this.registrationDomain = Optional.fromNullable(registrationDomain)
         .or(EMPTY_REGISTRATION_DOMAIN);
+    this.creatingUser = Optional.fromNullable(creatingUser).orNull();
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -163,6 +168,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.expires = p.expires;
     this.registrationDomain = Optional.fromNullable(p.registrationDomain)
         .or(EMPTY_REGISTRATION_DOMAIN);
+    this.creatingUser = p.creatingUser;
   }
 
   public JobId getId() {
@@ -203,6 +209,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public Date getExpires() {
     return expires;
+  }
+
+  public String getCreatingUser() {
+    return creatingUser;
   }
 
   public static Builder newBuilder() {
@@ -257,6 +267,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (volumes != null ? !volumes.equals(job.volumes) : job.volumes != null) {
       return false;
     }
+    if (creatingUser != null ? !creatingUser.equals(job.creatingUser) : job.creatingUser != null) {
+      return false;
+    }
 
     return true;
   }
@@ -273,6 +286,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (registrationDomain != null ? registrationDomain.hashCode() : 0);
     result = 31 * result + (gracePeriod != null ? gracePeriod.hashCode() : 0);
     result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
+    result = 31 * result + (creatingUser != null ? creatingUser.hashCode() : 0);
     return result;
   }
 
@@ -288,6 +302,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("gracePeriod", gracePeriod)
         .add("expires", expires)
         .add("registrationDomain", registrationDomain)
+        .add("creatingUser", creatingUser)
         .toString();
   }
 
@@ -307,7 +322,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setGracePeriod(gracePeriod)
         .setVolumes(volumes)
         .setExpires(expires)
-        .setRegistrationDomain(registrationDomain);
+        .setRegistrationDomain(registrationDomain)
+        .setCreatingUser(creatingUser);
   }
 
   public static class Builder implements Cloneable {
@@ -337,6 +353,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Integer gracePeriod;
       public Map<String, String> volumes;
       public Date expires;
+      public String creatingUser;
 
       private Parameters() {
         this.command = EMPTY_COMMAND;
@@ -346,6 +363,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.gracePeriod = EMPTY_GRACE_PERIOD;
         this.volumes = Maps.newHashMap(EMPTY_VOLUMES);
         this.registrationDomain = EMPTY_REGISTRATION_DOMAIN;
+        this.creatingUser = EMPTY_CREATING_USER;
       }
 
       private Parameters(final Parameters p) {
@@ -360,11 +378,17 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.volumes = Maps.newHashMap(p.volumes);
         this.expires = p.expires;
         this.registrationDomain = p.registrationDomain;
+        this.creatingUser = p.creatingUser;
       }
     }
 
     public Builder setRegistrationDomain(final String domain) {
       this.p.registrationDomain = domain;
+      return this;
+    }
+
+    public Builder setCreatingUser(final String creatingUser) {
+      this.p.creatingUser = creatingUser;
       return this;
     }
 
@@ -492,6 +516,10 @@ public class Job extends Descriptor implements Comparable<Job> {
       return p.expires;
     }
 
+    public String getCreatingUser() {
+      return p.creatingUser;
+    }
+
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
     @Override
     public Builder clone() {
@@ -507,15 +535,15 @@ public class Job extends Descriptor implements Comparable<Job> {
       }
 
       final String hash;
-      if (p.name != null && p.version != null) {
-        final String input = String.format("%s:%s:%s", p.name, p.version, configHash);
-        hash = hex(sha1digest(input.getBytes(UTF_8)));
-
-        if (this.hash != null) {
-          checkArgument(this.hash.equals(hash));
-        }
+      if (!Strings.isNullOrEmpty(this.hash)) {
+        hash = this.hash;
       } else {
-        hash = null;
+        if (p.name != null && p.version != null) {
+          final String input = String.format("%s:%s:%s", p.name, p.version, configHash);
+          hash = hex(sha1digest(input.getBytes(UTF_8)));
+        } else {
+          hash = null;
+        }
       }
 
       final JobId id = new JobId(p.name, p.version, hash);

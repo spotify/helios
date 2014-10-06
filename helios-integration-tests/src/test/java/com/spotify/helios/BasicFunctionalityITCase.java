@@ -125,7 +125,8 @@ public class BasicFunctionalityITCase {
 
     final List<String> hosts = client.listHosts().get();
     deployHost = Iterables.get(hosts, 0);
-    final JobDeployResponse deployResult = client.deploy(new Deployment(id, Goal.START),
+    final JobDeployResponse deployResult = client.deploy(
+        new Deployment(id, Goal.START, Deployment.EMTPY_DEPLOYER_USER),
         deployHost).get();
     assertEquals(JobDeployResponse.Status.OK, deployResult.getStatus());
 

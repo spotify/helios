@@ -80,7 +80,7 @@ public class TerminationTest extends SystemTestBase {
     deployJob(jobId, host);
     awaitTaskState(jobId, host, RUNNING);
 
-    client.setGoal(new Deployment(jobId, Goal.STOP), host);
+    client.setGoal(new Deployment(jobId, Goal.STOP, Deployment.EMTPY_DEPLOYER_USER), host);
 
     final TaskStatus taskStatus = awaitTaskState(jobId, host, STOPPED);
 
@@ -118,7 +118,7 @@ public class TerminationTest extends SystemTestBase {
     deployJob(jobId, host);
     awaitTaskState(jobId, host, RUNNING);
 
-    client.setGoal(new Deployment(jobId, Goal.STOP), host);
+    client.setGoal(new Deployment(jobId, Goal.STOP, Deployment.EMTPY_DEPLOYER_USER), host);
 
     final TaskStatus taskStatus = awaitTaskState(jobId, host, STOPPED);
 

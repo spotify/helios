@@ -84,7 +84,8 @@ public class CliJobCreationTest extends SystemTestBase {
         .setEnv(env)
         .setPorts(ports)
         .setRegistration(registration)
-        .setVolumes(volumes);
+        .setVolumes(volumes)
+        .setCreatingUser(TEST_USER);
     final Job job = builder.build();
     final String jobConfigJsonString = job.toJsonString();
 
@@ -107,7 +108,7 @@ public class CliJobCreationTest extends SystemTestBase {
       final Job actualJob = Json.read(actualJobConfigJson, Job.class);
       Job.Builder actualJobBuilder = actualJob.toBuilder();
       builder.setName(testJobName).setVersion(testJobVersion).setImage(BUSYBOX);
-      assertEquals(builder.build(), actualJobBuilder.build());
+      assertJobEquals(builder.build(), actualJobBuilder.build());
     }
   }
 
@@ -174,7 +175,8 @@ public class CliJobCreationTest extends SystemTestBase {
         .setEnv(env)
         .setPorts(ports)
         .setRegistration(registration)
-        .setVolumes(volumes);
+        .setVolumes(volumes)
+        .setCreatingUser(TEST_USER);
     final Job job = builder.build();
     final String jobConfigJsonString = job.toJsonString();
 

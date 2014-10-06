@@ -537,7 +537,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       portNodes.put(path, idJson);
     }
 
-    final Task task = new Task(job, deployment.getGoal());
+    final Task task = new Task(job, deployment.getGoal(), deployment.getDeployerUser());
     final List<ZooKeeperOperation> operations = Lists.newArrayList(
         check(jobPath),
         create(portNodes),
@@ -650,7 +650,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     assertTaskExists(client, host, deployment.getJobId());
 
     final String path = Paths.configHostJob(host, jobId);
-    final Task task = new Task(job, deployment.getGoal());
+    final Task task = new Task(job, deployment.getGoal(), Task.EMPTY_DEPLOYER_USER);
     try {
       client.setData(path, task.toJsonBytes());
     } catch (Exception e) {
@@ -691,7 +691,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       final byte[] data = client.getData(path);
       final Task task = parse(data, Task.class);
-      return Deployment.of(jobId, task.getGoal());
+      return Deployment.of(jobId, task.getGoal(), task.getDeployerUser());
     } catch (KeeperException.NoNodeException e) {
       return null;
     } catch (KeeperException | IOException e) {

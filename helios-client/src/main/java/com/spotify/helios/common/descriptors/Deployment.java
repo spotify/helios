@@ -21,7 +21,11 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.google.common.base.Objects;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Basically, a pair of {@link JobId} and {@link Goal}.  This is different than {@link Task}
@@ -37,8 +41,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class Deployment extends Descriptor {
 
+  public static final String EMTPY_DEPLOYER_USER = null;
   private final JobId jobId;
   private final Goal goal;
+  private final String deployerUser;
 
   /**
    * Constructor
@@ -47,9 +53,11 @@ public class Deployment extends Descriptor {
    * @param goal The desired state (i.e. goal) of the task/deployment.
    */
   public Deployment(@JsonProperty("job") final JobId jobId,
-                    @JsonProperty("goal") final Goal goal) {
+                    @JsonProperty("goal") final Goal goal,
+                    @JsonProperty("deployerUser") @Nullable final String deployerUser) {
     this.jobId  = jobId;
     this.goal = goal;
+    this.deployerUser = deployerUser;
   }
 
   public static Deployment of(final JobId jobId, final Goal goal) {
@@ -59,6 +67,13 @@ public class Deployment extends Descriptor {
         .build();
   }
 
+  public static Deployment of(final JobId jobId, final Goal goal, final String deployerUser) {
+    return newBuilder()
+        .setJobId(jobId)
+        .setGoal(goal)
+        .setDeployerUser(deployerUser)
+        .build();
+  }
   public JobId getJobId() {
     return jobId;
   }
@@ -67,9 +82,17 @@ public class Deployment extends Descriptor {
     return goal;
   }
 
+  public String getDeployerUser() {
+    return deployerUser;
+  }
+
   @Override
   public String toString() {
-    return jobId + "|" + goal;
+    return Objects.toStringHelper(this)
+        .add("jobId",  jobId)
+        .add("goal", goal)
+        .add("deployerUser", deployerUser)
+        .toString();
   }
 
   @Override
@@ -89,7 +112,11 @@ public class Deployment extends Descriptor {
     if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
       return false;
     }
-
+    if (deployerUser != null
+        ? !deployerUser.equals(that.deployerUser)
+        : that.deployerUser != null) {
+      return false;
+    }
     return true;
   }
 
@@ -97,7 +124,15 @@ public class Deployment extends Descriptor {
   public int hashCode() {
     int result = jobId != null ? jobId.hashCode() : 0;
     result = 31 * result + (goal != null ? goal.hashCode() : 0);
+    result = 31 * result + (deployerUser != null ? deployerUser.hashCode() : 0);
     return result;
+  }
+
+  public Builder toBuilder() {
+    return newBuilder()
+        .setDeployerUser(deployerUser)
+        .setGoal(goal)
+        .setJobId(jobId);
   }
 
   public static Builder newBuilder() {
@@ -108,6 +143,7 @@ public class Deployment extends Descriptor {
 
     private JobId jobId;
     private Goal goal;
+    private String deployerUser;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -119,8 +155,13 @@ public class Deployment extends Descriptor {
       return this;
     }
 
+    public Builder setDeployerUser(final String deployerUser) {
+      this.deployerUser = deployerUser;
+      return this;
+    }
+
     public Deployment build() {
-      return new Deployment(jobId, goal);
+      return new Deployment(jobId, goal, deployerUser);
     }
   }
 }

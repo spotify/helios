@@ -161,6 +161,7 @@ public class MasterService extends AbstractIdleService {
     environment.jersey().register(new HostsResource(model));
     environment.jersey().register(new MastersResource(model));
     environment.jersey().register(new VersionResource());
+    environment.jersey().register(new UserProvider());
 
     final DefaultServerFactory serverFactory = ServiceUtil.createServerFactory(
         config.getHttpEndpoint(), config.getAdminPort(), false);

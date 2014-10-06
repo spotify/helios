@@ -127,6 +127,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.junit.Assert.assertEquals;
 
 public abstract class SystemTestBase {
 
@@ -180,6 +181,7 @@ public abstract class SystemTestBase {
 
   @Before
   public void baseSetup() throws Exception {
+    System.setProperty("user.name", TEST_USER);
     masterPort = temporaryPorts.localPort("helios master");
     masterAdminPort = temporaryPorts.localPort("helios master admin");
 
@@ -1010,5 +1012,9 @@ public abstract class SystemTestBase {
       }
     }
     return list;
+  }
+
+  protected void assertJobEquals(final Job expected, final Job actual) {
+    assertEquals(expected.toBuilder().setHash(actual.getId().getHash()).build(), actual);
   }
 }
