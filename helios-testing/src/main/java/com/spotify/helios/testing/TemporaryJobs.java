@@ -52,6 +52,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -398,6 +399,8 @@ public class TemporaryJobs implements TestRule {
         if (!jobRemovalFailed) {
           prefixFile.delete();
         }
+      } catch (NoSuchFileException e) {
+        log.debug("File {} already processed by somebody else.", file.getPath());
       } catch (Exception e) {
         // log exception and continue on to next file
         log.warn("Exception processing file {}", file.getPath(), e);
