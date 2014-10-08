@@ -33,7 +33,7 @@ import org.slf4j.LoggerFactory;
 
 /**
  * Instantiates and runs the helios master. We do our own bootstrapping instead of using
- * {@link com.yammer.dropwizard.config.Bootstrap} because we want more control over logging etc.
+ * {@link io.dropwizard.setup.Bootstrap} because we want more control over logging etc.
  */
 public class MasterMain extends ServiceMain {
 

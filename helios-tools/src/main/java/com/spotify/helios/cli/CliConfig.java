@@ -103,7 +103,7 @@ public class CliConfig {
    * Returns a CliConfig instance with values from a config file from under the users home
    * directory:
    *
-   * <user.home>/.helios/config
+   * &lt;user.home&gt;/.helios/config
    *
    * If the file is not found, a CliConfig with pre-defined values will be returned.
    *

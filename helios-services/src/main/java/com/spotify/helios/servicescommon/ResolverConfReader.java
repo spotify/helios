@@ -41,7 +41,7 @@ public class ResolverConfReader {
   /**
    * Looks in file to find the domain setting.
    *
-   * @param string path to resolver config file
+   * @param file path to resolver config file
    * @return the domain specified there, or empty string if any failure
    */
   public static String getDomainFromResolverConf(final String file) {

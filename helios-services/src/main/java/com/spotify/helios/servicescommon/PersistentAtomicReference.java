@@ -45,7 +45,7 @@ import static java.nio.file.StandardCopyOption.ATOMIC_MOVE;
 import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 /**
- * A class that is similar to {@link AtomicReference<T>} but is backed by a file, so can be
+ * A class that is similar to {@link AtomicReference} but is backed by a file, so can be
  * persisted across a server restart.  Assumes the underlying type can be serialized by Jackson.
  *
  * Strangely, this is not actually atomic in the {@link AtomicReference} way; i.e. not threadsafe,

@@ -26,6 +26,7 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
@@ -110,7 +111,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   }
 
   /**
-   * Returns the tasks (basically, a pair of {@link Job} and {@Goal}) for the current agent.
+   * Returns the tasks (basically, a pair of {@link JobId} and {@link Goal}) for the current agent.
    */
   @Override
   public Map<JobId, Task> getTasks() {

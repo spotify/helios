@@ -46,6 +46,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CliDeploymentTest extends SystemTestBase {
 
@@ -106,7 +107,8 @@ public class CliDeploymentTest extends SystemTestBase {
     assertThat(cli("jobs", testJobName, "-q"), containsString(jobId.toString()));
     assertThat(cli("jobs", testJobName + ":" + testJobVersion, "-q"),
                containsString(jobId.toString()));
-    assertEquals("job pattern foozbarz matched no jobs", cli("jobs", "foozbarz", "-q").trim());
+    assertEquals("job pattern foozbarz matched no jobs", cli("jobs", "foozbarz").trim());
+    assertTrue(cli("jobs", "foozbarz", "-q").isEmpty());
 
     // Create a new job using the first job as a template
     final Job expectedCloned = expected.toBuilder()
