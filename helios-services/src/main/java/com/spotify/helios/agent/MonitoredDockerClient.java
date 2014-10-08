@@ -34,7 +34,7 @@ import java.lang.reflect.Proxy;
 /**
  * A docker client proxy used to monitor docker operations.  It's abstract and doesn't implement
  * {@link DockerClient}, but don't let it fool you.  You call {@link #wrap} with the
- * {@link RiemmanFacade} and the real {@link DockerClient} and you then use that.
+ * {@link RiemannFacade} and the real {@link DockerClient} and you then use that.
  */
 public abstract class MonitoredDockerClient {
 

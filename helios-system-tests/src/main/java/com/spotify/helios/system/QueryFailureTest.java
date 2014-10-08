@@ -31,13 +31,14 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests that commands which do search matching tell you that you didn't match anything if you
  * provided something to match against.  Specifically, if you do something like
  *     helios -s foo hosts list
  * and no host starts with 'list', it'll at least tell you that no hosts matched that, rather than
- * just returning an empty display
+ * just returning an empty display, unless option -q (quiet) is used.
  *
  * @author (Drew Csillag) drewc@spotify.com
  */
@@ -51,11 +52,27 @@ public class QueryFailureTest extends SystemTestBase {
   }
 
   @Test
+  public void testQuietHostList() throws Exception {
+    startDefaultMaster();
+
+    final String result = cli("hosts", "framazama", "-q");
+    assertTrue(result.isEmpty());
+  }
+
+  @Test
   public void testJobList() throws Exception {
     startDefaultMaster();
 
     final String result = cli("jobs", "framazama");
     assertThat(result, containsString("matched no jobs"));
+  }
+
+  @Test
+  public void testQuietJobList() throws Exception {
+    startDefaultMaster();
+
+    final String result = cli("jobs", "framazama", "-q");
+    assertTrue(result.isEmpty());
   }
 
   @Test

@@ -94,15 +94,16 @@ public class HostListCommand extends ControlCommand {
         .filter(containsPattern(pattern))
         .toList();
     final boolean full = options.getBoolean(fullArg.getDest());
+    final boolean quiet = options.getBoolean(quietArg.getDest());
 
     if (!Strings.isNullOrEmpty(pattern) && hosts.isEmpty()) {
-      out.printf("host pattern %s matched no hosts%n", pattern);
+      if (!quiet) {
+        out.printf("host pattern %s matched no hosts%n", pattern);
+      }
       return 1;
     }
 
     final List<String> sortedHosts = natural().sortedCopy(hosts);
-
-    final boolean quiet = options.getBoolean(quietArg.getDest());
 
     if (quiet) {
       if (json) {
