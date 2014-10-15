@@ -25,6 +25,8 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 
+import com.codahale.metrics.annotation.ExceptionMetered;
+import com.codahale.metrics.annotation.Timed;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.descriptors.Job;
@@ -38,8 +40,6 @@ import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.sun.jersey.api.core.InjectParam;
-import com.codahale.metrics.annotation.ExceptionMetered;
-import com.codahale.metrics.annotation.Timed;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -131,20 +131,26 @@ public class JobsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public CreateJobResponse post(@Valid final Job job) {
+  public CreateJobResponse post(@Valid final Job job,
+                                @RequestUser final String username) {
     final Collection<String> errors = JOB_VALIDATOR.validate(job);
-    final String jobIdString = job.toBuilder().build().getId().toString();
+    final Job actualJob = job.toBuilder()
+        .setCreatingUser(username)
+        // if job had an id coming in, preserve it
+        .setHash(job.getId().getHash())
+        .build();
+    final String jobIdString = actualJob.getId().toString();
     if (!errors.isEmpty()) {
       throw badRequest(new CreateJobResponse(INVALID_JOB_DEFINITION, ImmutableList.copyOf(errors),
           jobIdString));
     }
     try {
-      model.addJob(job.toBuilder().build());
+      model.addJob(actualJob);
     } catch (JobExistsException e) {
       throw badRequest(new CreateJobResponse(JOB_ALREADY_EXISTS, ImmutableList.<String>of(),
           jobIdString));
     }
-    log.info("created job: {}", job);
+    log.info("created job: {}", actualJob);
     return new CreateJobResponse(CreateJobResponse.Status.OK, ImmutableList.<String>of(),
         jobIdString);
   }

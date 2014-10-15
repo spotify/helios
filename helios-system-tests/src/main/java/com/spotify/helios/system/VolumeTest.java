@@ -72,6 +72,7 @@ public class VolumeTest extends SystemTestBase {
                                        "nc -p 4712 -lle dd if=/urandom bs=1 count=4"))
         .addPort("bar", PortMapping.of(4711))
         .addPort("urandom", PortMapping.of(4712))
+        .setCreatingUser(TEST_USER)
         .build();
   }
 
@@ -79,18 +80,16 @@ public class VolumeTest extends SystemTestBase {
   public void testClient() throws Exception {
     final CreateJobResponse created = client.createJob(job).get();
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
-    assertVolumes();
+    assertVolumes(job.getId());
   }
 
   @Test
   public void testCli() throws Exception {
-    createJob(job);
-    assertVolumes();
+    final JobId jobId = createJob(job);
+    assertVolumes(jobId);
   }
 
-  public void assertVolumes() throws Exception {
-    final JobId jobId = job.getId();
-
+  public void assertVolumes(final JobId jobId) throws Exception {
     // Wait for agent to come up
     awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
     awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
@@ -101,9 +100,9 @@ public class VolumeTest extends SystemTestBase {
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
     // Wait for the job to run
-    TaskStatus taskStatus;
-    taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
-    assertEquals(job, taskStatus.getJob());
+    final TaskStatus taskStatus = awaitJobState(
+        client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    assertJobEquals(job, taskStatus.getJob());
 
     final Integer bar = taskStatus.getPorts().get("bar").getExternalPort();
     final Integer urandom = taskStatus.getPorts().get("urandom").getExternalPort();

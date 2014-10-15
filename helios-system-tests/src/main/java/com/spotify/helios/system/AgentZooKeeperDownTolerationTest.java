@@ -68,6 +68,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
         .setVersion(testJobVersion)
         .setImage(BUSYBOX)
         .setCommand(IDLE_COMMAND)
+        .setCreatingUser(TEST_USER)
         .build();
     final JobId jobId = job.getId();
     final CreateJobResponse created = client.createJob(job).get();

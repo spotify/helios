@@ -100,10 +100,11 @@ public class CliDeploymentTest extends SystemTestBase {
         .setEnv(env)
         .setPorts(ports)
         .setRegistration(registration)
+        .setCreatingUser(TEST_USER)
         .build();
-    final String inspectOutput = cli("inspect", "--json", expected.getId().toString());
+    final String inspectOutput = cli("inspect", "--json", jobId.toString());
     final Job parsed = Json.read(inspectOutput, Job.class);
-    assertEquals(expected, parsed);
+    assertJobEquals(expected, parsed);
     assertThat(cli("jobs", testJobName, "-q"), containsString(jobId.toString()));
     assertThat(cli("jobs", testJobName + ":" + testJobVersion, "-q"),
                containsString(jobId.toString()));

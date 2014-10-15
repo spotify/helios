@@ -23,6 +23,8 @@ package com.spotify.helios.common.descriptors;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import org.jetbrains.annotations.Nullable;
+
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
@@ -30,14 +32,18 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * which has a {@link JobId} and not a {@link Job}
  */
 public class Task extends Descriptor {
+  public static final String EMPTY_DEPLOYER_USER = null;
 
   private final Job job;
   private final Goal goal;
+  private final String deployerUser;
 
   public Task(@JsonProperty("job") final Job job,
-              @JsonProperty("goal") final Goal goal) {
+              @JsonProperty("goal") final Goal goal,
+              @JsonProperty("deployerUser") @Nullable final String deployerUser) {
     this.job = checkNotNull(job, "job");
     this.goal = checkNotNull(goal, "goal");
+    this.deployerUser = deployerUser;
   }
 
   public Goal getGoal() {
@@ -46,6 +52,10 @@ public class Task extends Descriptor {
 
   public Job getJob() {
     return job;
+  }
+
+  public String getDeployerUser() {
+    return deployerUser;
   }
 
   @Override
@@ -65,7 +75,11 @@ public class Task extends Descriptor {
     if (job != null ? !job.equals(task.job) : task.job != null) {
       return false;
     }
-
+    if (deployerUser != null
+        ? !deployerUser.equals(task.deployerUser)
+        : task.deployerUser != null) {
+      return false;
+    }
     return true;
   }
 
@@ -73,6 +87,7 @@ public class Task extends Descriptor {
   public int hashCode() {
     int result = goal != null ? goal.hashCode() : 0;
     result = 31 * result + (job != null ? job.hashCode() : 0);
+    result = 31 * result + (deployerUser != null ? deployerUser.hashCode() : 0);
     return result;
   }
 
@@ -81,6 +96,7 @@ public class Task extends Descriptor {
     return "Task{" +
            "job=" + job +
            ", goal=" + goal +
+           ", deployerUser=" + deployerUser +
            '}';
   }
 }
