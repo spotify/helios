@@ -106,7 +106,8 @@ public class TemporaryJobs implements TestRule {
     this.client = checkNotNull(builder.client, "client");
     this.prober = checkNotNull(builder.prober, "prober");
     this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
-    this.deployer = Optional.fromNullable(builder.deployer).or(new DefaultDeployer(client, jobs));
+    this.deployer = Optional.fromNullable(builder.deployer).or(
+        new DefaultDeployer(client, jobs, builder.hostPickingStrategy));
     final Path prefixDirectory = Paths.get(Optional.fromNullable(builder.prefixDirectory)
         .or(DEFAULT_PREFIX_DIRECTORY));
 
@@ -494,6 +495,42 @@ public class TemporaryJobs implements TestRule {
       if (this.config.hasPath("domain")) {
         domain(this.config.getString("domain"));
       }
+      if (this.config.hasPath("hostPickingStrategy")) {
+        processHostPickingStrategy();
+      }
+    }
+
+    private void processHostPickingStrategy() {
+      final String value = this.config.getString("hostPickingStrategy");
+      if ("random".equals(value)) {
+        hostPickingStrategy(HostPickingStrategies.random());
+
+      } else if ("onerandom".equals(value)) {
+        hostPickingStrategy(HostPickingStrategies.randomOneHost());
+
+      } else if ("deterministic".equals(value)) {
+        verifyHasStrategyKey(value);
+        hostPickingStrategy(HostPickingStrategies.deterministic(
+            this.config.getString("hostPickingStrategyKey")));
+
+      } else if ("onedeterministic".equals(value)) {
+        verifyHasStrategyKey(value);
+        hostPickingStrategy(HostPickingStrategies.deterministicOneHost(
+            this.config.getString("hostPickingStrategyKey")));
+
+      } else {
+        throw new RuntimeException("The hostPickingStrategy " + value + " is not valid. "
+          + "Valid values are [random, onerandom, deterministic, onedeterministic] and the "
+          + "deterministic variants require a string value hostPickingStrategyKey to be set "
+          + "which is used to seed the random number generator, so can be any string.");
+      }
+    }
+
+    private void verifyHasStrategyKey(final String value) {
+      if (!this.config.hasPath("hostPickingStrategyKey")) {
+        throw new RuntimeException("host picking strategy [" + value + "] selected but no "
+            + "value for hostPickingStrategyKey which is used to seed the random number generator");
+      }
     }
 
     private final Config config;
@@ -504,6 +541,7 @@ public class TemporaryJobs implements TestRule {
     private HeliosClient client;
     private String prefixDirectory;
     private String jobDeployedMessageFormat = null;
+    private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.random();
 
     public Builder domain(final String domain) {
       return client(HeliosClient.newBuilder()
@@ -532,6 +570,11 @@ public class TemporaryJobs implements TestRule {
                         .setUser(user)
                         .setEndpoints(endpoints)
                         .build());
+    }
+
+    public Builder hostPickingStrategy(final HostPickingStrategy strategy) {
+      this.hostPickingStrategy = strategy;
+      return this;
     }
 
     public Builder user(final String user) {

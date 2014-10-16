@@ -31,7 +31,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -47,12 +46,15 @@ public class DefaultDeployer implements Deployer {
 
   private final HeliosClient client;
   private final List<TemporaryJob> jobs;
+  private final HostPickingStrategy hostPicker;
 
   private boolean readyToDeploy;
 
-  public DefaultDeployer(HeliosClient client, List<TemporaryJob> jobs) {
+  public DefaultDeployer(final HeliosClient client, final List<TemporaryJob> jobs,
+                         final HostPickingStrategy hostPicker) {
     this.client = client;
     this.jobs = jobs;
+    this.hostPicker = hostPicker;
   }
 
   @Override
@@ -80,7 +82,7 @@ public class DefaultDeployer implements Deployer {
       fail(format("no hosts matched the filter pattern - %s", hostFilter));
     }
 
-    final String chosenHost = filteredHosts.get(new Random().nextInt(filteredHosts.size()));
+    final String chosenHost = hostPicker.pickHost(filteredHosts);
     return deploy(job, asList(chosenHost), waitPorts, prober);
   }
 
@@ -104,6 +106,7 @@ public class DefaultDeployer implements Deployer {
     return temporaryJob;
   }
 
+  @Override
   public void readyToDeploy() {
     readyToDeploy = true;
   }
