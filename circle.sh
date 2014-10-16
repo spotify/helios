@@ -2,8 +2,10 @@
 
 case "$1" in
   pre_machine)
-    # have docker bind to localhost
-    docker_opts='DOCKER_OPTS="$DOCKER_OPTS -H tcp://127.0.0.1:2375"'
+    sudo apt-get install socat
+
+    # have docker write debug logs
+    docker_opts='DOCKER_OPTS="$DOCKER_OPTS -D"'
     sudo sh -c "echo '$docker_opts' >> /etc/default/docker"
 
     cat /etc/default/docker
@@ -15,13 +17,16 @@ case "$1" in
 
     ;;
 
-  pre_test)
+  test)
     # clean the artifacts dir from the previous build
     rm -rf artifacts && mkdir artifacts
 
-    ;;
+    # use socat so we can log all traffic to/from docker daemon
+    socat -v TCP4-LISTEN:2375,fork,reuseaddr UNIX-CONNECT:/var/run/docker.sock &> artifacts/socat.log &
+    sleep 2
 
-  test)
+    docker info
+
     # expected parallelism: 2x. needs to be set in the project settings via CircleCI's UI.
     case $CIRCLE_NODE_INDEX in
       0)
@@ -46,6 +51,13 @@ case "$1" in
     find . -regex ".*/target/.*-[0-9]\.jar" | xargs -I {} mv {} artifacts
     find . -regex ".*/target/.*-SNAPSHOT\.jar" | xargs -I {} mv {} artifacts
     find . -regex ".*/target/.*\.deb" | xargs -I {} mv {} artifacts
+
+    sudo cp /var/log/upstart/docker.log artifacts
+    sudo chown ubuntu:ubuntu artifacts/docker.log
+
+    ;;
+
+  socat)
 
     ;;
 
