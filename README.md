@@ -37,9 +37,10 @@ $ helios remove nginx:v1
 
 Production Readiness
 --------------------
-We at Spotify are running this in production now (as of early July 2014) with a money-generating
-service, so we trust it.  Whether you should trust it to not cause smoking holes in your 
-infrastructure is up to you.
+We at Spotify are running this in production now (as of early July
+2014) with a money-generating service, so we trust it.  Whether you
+should trust it to not cause smoking holes in your infrastructure is
+up to you.
 
 Getting Started
 ---------------
@@ -160,11 +161,27 @@ The Helios services use [Dropwizard](http://dropwizard.io) which is a
 bundle of Jetty, Jersey, Jackson, Yammer Metrics, Guava, Logback and
 other Java libraries.
 
-Releasing
----------
+Other Software You Might Want To Consider
+-----------------------------------------
+Here are a few other things you probably want to consider using alongside
+Helios:
+* [docker-gc](https://github.com/spotify/docker-gc) Garbage collects dead containers and removes unused images.
+* [syslog-redirector](https://github.com/spotify/syslog-redirector) Can be used by Helios agents to redirect the standard out/err of containers to syslog.
+* [helios-skydns](https://github.com/spotify/helios-skydns) Makes it so you can auto register services in SkyDNS.  If you use leading underscores in your SRV record names, let us know, we have a patch for etcd which disables the "hidden" node feature which makes this use case break.
+* [skygc](https://github.com/spotify/skygc)  When using SkyDNS, especially if you're using the Helios Testing Framework, can leave garbage in the skydns tree within etcd.  This will clean out dead stuff.
+* [docker-maven-plugin](https://github.com/spotify/docker-maven-plugin)  Simplifies the building of Docker containers if you're using Maven (and most likely Java).
 
-    # Run tests and create a tagged release commit
-    ./release.sh
 
-    # Push it
-    ./push-release.sh
+Community Ideas
+---------------
+
+These are things we want, but haven't gotten to.  If you feel
+inspired, we'd love to talk to you about these (in no particular
+order):
+
+* Host groups
+* ACLs - on jobs, hosts, and deployments
+* Composite jobs -- be able to deploy related containers as a unit on a machine
+* Run once jobs -- for batch jobs
+* Resource specification and enforcement -- That is: restrict my container to *X* MB of RAM, *X* CPUs, and *X* MB disk and perhaps other things like IOPs, network bandwidth, etc.
+* Dynamic scheduling of jobs -- either within Helios itself or as a layer on top
