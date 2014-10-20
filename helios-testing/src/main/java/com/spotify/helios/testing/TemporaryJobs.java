@@ -92,6 +92,7 @@ public class TemporaryJobs implements TestRule {
   private final Config config;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
   private final Deployer deployer;
+  private final String jobDeployedMessageFormat;
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
@@ -121,6 +122,7 @@ public class TemporaryJobs implements TestRule {
         .withValue("prefix", ConfigValueFactory.fromAnyRef(prefix()));
 
     this.config = config.withFallback(configWithPrefix).resolve();
+    this.jobDeployedMessageFormat = Optional.fromNullable(builder.jobDeployedMessageFormat).or("");
   }
 
   /**
@@ -167,7 +169,7 @@ public class TemporaryJobs implements TestRule {
 
   public TemporaryJobBuilder job() {
     final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix(),
-                                                                prober);
+                                                                prober, jobDeployedMessageFormat);
 
     if (config.hasPath("env")) {
       final Config env = config.getConfig("env");
@@ -477,7 +479,9 @@ public class TemporaryJobs implements TestRule {
       } else {
         this.config = ConfigFactory.empty();
       }
-
+      if (this.config.hasPath("jobDeployedMessageFormat")) {
+        jobDeployedMessageFormat(this.config.getString("jobDeployedMessageFormat"));
+      }
       if (this.config.hasPath("user")) {
         user(this.config.getString("user"));
       }
@@ -499,6 +503,7 @@ public class TemporaryJobs implements TestRule {
     private String hostFilter = DEFAULT_HOST_FILTER;
     private HeliosClient client;
     private String prefixDirectory;
+    private String jobDeployedMessageFormat = null;
 
     public Builder domain(final String domain) {
       return client(HeliosClient.newBuilder()
@@ -534,6 +539,11 @@ public class TemporaryJobs implements TestRule {
       return this;
     }
 
+    public Builder jobDeployedMessageFormat(final String jobLinkFormat) {
+      this.jobDeployedMessageFormat = jobLinkFormat;
+      return this;
+    }
+    
     public Builder prober(final Prober prober) {
       this.prober = prober;
       return this;

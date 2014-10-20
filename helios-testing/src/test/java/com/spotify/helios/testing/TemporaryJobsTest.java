@@ -95,6 +95,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
         .client(client)
         .prober(new TestProber())
+        .jobDeployedMessageFormat("Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")
         .build();
 
     private TemporaryJob job1;

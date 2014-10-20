@@ -21,11 +21,12 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
@@ -33,7 +34,10 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 
+import org.apache.commons.lang.text.StrSubstitutor;
 import org.joda.time.DateTime;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -58,7 +62,7 @@ import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 
 public class TemporaryJobBuilder {
-
+  private static final Logger log = LoggerFactory.getLogger(TemporaryJobBuilder.class);
   private static final Pattern JOB_NAME_FORBIDDEN_CHARS = Pattern.compile("[^0-9a-zA-Z-_.]+");
   private static final int DEFAULT_EXPIRES_MINUTES = 30;
 
@@ -67,13 +71,20 @@ public class TemporaryJobBuilder {
   private final Set<String> waitPorts = Sets.newHashSet();
   private final Deployer deployer;
   private final String jobNamePrefix;
-
+  private final String jobDeployedMessageFormat;
+  
   private String hostFilter;
   private Prober prober;
   private TemporaryJob job;
 
   public TemporaryJobBuilder(final Deployer deployer, final String jobNamePrefix,
                              final Prober defaultProber) {
+    this(deployer, jobNamePrefix, defaultProber, (String) null);
+  }
+  
+  
+  public TemporaryJobBuilder(final Deployer deployer, final String jobNamePrefix,
+      final Prober defaultProber, final String jobDeployedMessageFormat) {
     checkNotNull(deployer, "deployer");
     checkNotNull(jobNamePrefix, "jobNamePrefix");
     checkNotNull(defaultProber, "defaultProber");
@@ -81,6 +92,7 @@ public class TemporaryJobBuilder {
     this.jobNamePrefix = jobNamePrefix;
     this.prober = defaultProber;
     this.builder.setRegistrationDomain(jobNamePrefix);
+    this.jobDeployedMessageFormat = jobDeployedMessageFormat;
   }
 
   public TemporaryJobBuilder name(final String jobName) {
@@ -240,9 +252,28 @@ public class TemporaryJobBuilder {
       } else {
         job = deployer.deploy(builder.build(), this.hosts, waitPorts, prober);
       }
+      
+      if (!Strings.isNullOrEmpty(jobDeployedMessageFormat)) {
+        outputMessage(job);
+      }
     }
 
     return job;
+  }
+
+  private void outputMessage(final TemporaryJob job) {
+    for (String host : job.hosts()) {
+      final StrSubstitutor subst = new StrSubstitutor(new ImmutableMap.Builder<String, Object>()
+          .put("host", host)
+          .put("name", job.job().getId().getName())
+          .put("version", job.job().getId().getVersion())
+          .put("hash", job.job().getId().getHash())
+          .put("job", job.job().toString())
+          .put("containerId", job.statuses().get(host).getContainerId())
+          .build()
+          );
+      log.info("{}", subst.replace(jobDeployedMessageFormat));
+    }
   }
 
   public TemporaryJobBuilder imageFromBuild() {
