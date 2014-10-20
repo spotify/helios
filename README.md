@@ -42,6 +42,52 @@ We at Spotify are running this in production now (as of early July
 should trust it to not cause smoking holes in your infrastructure is
 up to you.
 
+
+Why Helios?
+-----------
+
+There are a number of Docker orchestration systems, why should you
+choose Helios?
+
+* Helios is pragmatic.  We're not trying to solve everything *today*,
+  but what we have, we try hard to ensure is rock-solid.  So we don't
+  have things like resource limits or dynamic scheduling yet.  Today,
+  for us, it has been more important to get the CI/CD use cases, and
+  surrounding tooling solid first.  That said, we eventually want to
+  do dynamic scheduling, composite jobs, etc. (see below for more).
+  But what we provide, we use (i.e. we eat our own dogfood), so you
+  can have reasonable assurances that anything that's been in the
+  codebase for more than a week or two is pretty solid as we release
+  frequently (usually, at least weekly) into production here at
+  Spotify.
+
+* We do not to pretend to have features we don't have.
+
+* Helios should be able to fit in the way you already do ops.  Of the
+  popular Docker Orchestration frameworks, Helios is the only one
+  we're aware of that doesn't have anything much in the way of system
+  dependencies.  That is, we don't require that you run in AWS or GCE,
+  etc.  We don't require a specific network topology.  We don't
+  require you run a specific operating system.  We don't require that
+  you're using Mesos.  Our only requirement is that you have a
+  ZooKeeper cluster somewhere and a Java 7 JVM on the machines which
+  Helios runs on.  So if you're using Puppet, Chef, etc. to manage the
+  rest of the OS install and configuration, you can still continue to
+  do so with whatever Linux OS you're using.
+
+* Don't have to drink *all* the Kool-Aid.  Generally, we try to make
+  it so you only have to take the features you want to use, and should
+  be able to ignore the rest.  For example, Helios doesn't prescribe a
+  discovery service: we happen to provide a plugin for SkyDNS, and we
+  hear that someone else is working on one for another service, but if
+  you don't want to even use a discovery service, you don't have to.
+
+* Scalability.  We're already at well over a hundred machines in
+  production, but we're nowhere near the limit before the existing
+  architecture would need to be revisited.  Helios can also scale down
+  well in that you can run a single machine instance if you want to
+  run it all locally.
+
 Getting Started
 ---------------
 
@@ -131,6 +177,16 @@ The `helios-services` Debian package is a shared dependency of both the agent
 and the master. Install it and either the `helios-agent` or `helios-master`
 Debian package on each agent and master, respectively.
 
+Other Software You Might Want To Consider
+-----------------------------------------
+Here are a few other things you probably want to consider using alongside
+Helios:
+* [docker-gc](https://github.com/spotify/docker-gc) Garbage collects dead containers and removes unused images.
+* [syslog-redirector](https://github.com/spotify/syslog-redirector) Can be used by Helios agents to redirect the standard out/err of containers to syslog.
+* [helios-skydns](https://github.com/spotify/helios-skydns) Makes it so you can auto register services in SkyDNS.  If you use leading underscores in your SRV record names, let us know, we have a patch for etcd which disables the "hidden" node feature which makes this use case break.
+* [skygc](https://github.com/spotify/skygc)  When using SkyDNS, especially if you're using the Helios Testing Framework, can leave garbage in the skydns tree within etcd.  This will clean out dead stuff.
+* [docker-maven-plugin](https://github.com/spotify/docker-maven-plugin)  Simplifies the building of Docker containers if you're using Maven (and most likely Java).
+
 Findbugs
 --------
 
@@ -161,16 +217,6 @@ The Helios services use [Dropwizard](http://dropwizard.io) which is a
 bundle of Jetty, Jersey, Jackson, Yammer Metrics, Guava, Logback and
 other Java libraries.
 
-Other Software You Might Want To Consider
------------------------------------------
-Here are a few other things you probably want to consider using alongside
-Helios:
-* [docker-gc](https://github.com/spotify/docker-gc) Garbage collects dead containers and removes unused images.
-* [syslog-redirector](https://github.com/spotify/syslog-redirector) Can be used by Helios agents to redirect the standard out/err of containers to syslog.
-* [helios-skydns](https://github.com/spotify/helios-skydns) Makes it so you can auto register services in SkyDNS.  If you use leading underscores in your SRV record names, let us know, we have a patch for etcd which disables the "hidden" node feature which makes this use case break.
-* [skygc](https://github.com/spotify/skygc)  When using SkyDNS, especially if you're using the Helios Testing Framework, can leave garbage in the skydns tree within etcd.  This will clean out dead stuff.
-* [docker-maven-plugin](https://github.com/spotify/docker-maven-plugin)  Simplifies the building of Docker containers if you're using Maven (and most likely Java).
-
 
 Community Ideas
 ---------------
@@ -185,3 +231,4 @@ order):
 * Run once jobs -- for batch jobs
 * Resource specification and enforcement -- That is: restrict my container to *X* MB of RAM, *X* CPUs, and *X* MB disk and perhaps other things like IOPs, network bandwidth, etc.
 * Dynamic scheduling of jobs -- either within Helios itself or as a layer on top
+* Packaging/Config for other Linux OS's like RedHat, CoreOS, etc.
