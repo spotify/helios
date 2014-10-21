@@ -198,6 +198,18 @@ accomplish this. Within a profile, the following keys having meaning:
 * `domain`  - string -- same as the `TemporaryJobsbuilder.domain()` method.
 * `endpoints`  - list of string -- same as the `TemporaryJobsbuilder.endpoints()` method.
 * `jobDeployedMessageFormat` - string -- a string format for [Apache StrSubstitutor](https://commons.apache.org/proper/commons-lang/javadocs/api-2.6/org/apache/commons/lang/text/StrSubstitutor.html) to log a custom message when the job has started -- available substitutions are [`host`, `name`, `version`, `hash`, `containerId`, `job`] - useful to log a link where container logs might be found.
+* `hostPickingStrategy` - string -- one of
+    * `random` (the default) - randomly pick a host for each temporary job.
+    * `onerandom` - randomly pick a host and deploy all temporary jobs there
+    * `deterministic` - seed the random number generator so it
+       "randomly" picks the same hosts across test runs that it
+       did in previous runs.  You must specify `hostPickingStrategyKey`.
+    * `onedetermistic` - seed the random number generator so it
+       "randomly" picks the same host on which it deploys all
+       jobs across test runs. You must specify `hostPickingStrategyKey`.
+* `hostPickingStrategyKey` - string - a string used to seed the random number
+  generator.  It can be basically anything, but it's best for it to not
+  be empty.
 
 There's also the `prefix` config variable, which is useless to set,
 but useful to reference from some of the above variables if you want
