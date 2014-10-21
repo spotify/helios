@@ -236,39 +236,37 @@ public class TemporaryJobs implements TestRule {
    */
 
   public static TemporaryJobs create() {
-    final String domain = System.getenv("HELIOS_DOMAIN");
-    if (!isNullOrEmpty(domain)) {
-      return create(domain);
-    }
-
-    final String endpoints = System.getenv("HELIOS_ENDPOINTS");
     final Builder builder = builder();
 
     if (DEFAULT_HOST_FILTER != null) {
       builder.hostFilter(DEFAULT_HOST_FILTER);
     }
 
+    final String domain = System.getenv("HELIOS_DOMAIN");
+    if (!isNullOrEmpty(domain)) {
+      return builder.domain(domain).build();
+    }
+    
+    final String endpoints = System.getenv("HELIOS_ENDPOINTS");
     if (!isNullOrEmpty(endpoints)) {
-      builder.endpointStrings(Splitter.on(',').splitToList(endpoints));
-    } else {
-      // if nothing specified in file or env vars, i.e. no client has been built
-      if (builder.client == null) {
-        // We're running locally
-        builder.hostFilter(Optional
-            .fromNullable(DEFAULT_HOST_FILTER)
-            .or(DEFAULT_LOCAL_HOST_FILTER));
+      return builder.endpointStrings(Splitter.on(',').splitToList(endpoints)).build();
+    }
+    
+    // Neither domain nor endpoints specified, so we assume we're going to run wherever DOCKER_HOST
+    // points to and hope there's a Helios instance there.
+    if (DEFAULT_HOST_FILTER == null) {
+      builder.hostFilter(DEFAULT_LOCAL_HOST_FILTER);
+    }
 
-        final String dockerHost = System.getenv("DOCKER_HOST");
-        if (dockerHost == null) {
-          builder.endpoints("http://localhost:5801");
-        } else {
-          try {
-            final URI uri = new URI(dockerHost);
-            builder.endpoints("http://" + uri.getHost() + ":5801");
-          } catch (URISyntaxException e) {
-            throw Throwables.propagate(e);
-          }
-        }
+    final String dockerHost = System.getenv("DOCKER_HOST");
+    if (dockerHost == null) {
+      builder.endpoints("http://localhost:5801");
+    } else {
+      try {
+        final URI uri = new URI(dockerHost);
+        builder.endpoints("http://" + uri.getHost() + ":5801");
+      } catch (URISyntaxException e) {
+        throw Throwables.propagate(e);
       }
     }
     return builder.build();
