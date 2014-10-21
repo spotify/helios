@@ -22,6 +22,7 @@
 package com.spotify.helios.testing;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
@@ -82,6 +83,14 @@ public class TemporaryJob {
 
   public Job job() {
     return job;
+  }
+
+  public List<String> hosts() {
+    return hosts;
+  }
+
+  public Map<String, TaskStatus> statuses() {
+    return ImmutableMap.copyOf(statuses);
   }
 
   /**
