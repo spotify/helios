@@ -247,6 +247,11 @@ Library, you can then make the default profile settable by java
 property or environment variable, which can then be configured via
 Maven (if you're using it) profiles.
 
+You can specify the profile via `mvn` when running tests by:
+```
+mvn -Dhelios.testing.profile=myprofile other maven arguments here....
+```
+
 # Job Cleanup
 
 When a test completes, the TemporaryJobs rule will undeploy and delete all jobs it created during the test. If the test process is killed before the test completes, the jobs will be left running. Helios handles this in two ways.
@@ -255,4 +260,41 @@ When a test completes, the TemporaryJobs rule will undeploy and delete all jobs 
 
 2. TemporaryJobs sets a time-to-live on each job it creates. This defaults to 30 minutes, but can be overridden if needed.
 
+# Debugging
 
+Debugging containers can be more difficult than if it were running
+outside a container.  Fortunately, it can be made a little simpler
+with Java because it supports remote debugging.  What you need to do
+is add the following to your java command line before the class or jar
+you will run:
+
+```
+-Xdebug -Xrunjdwp:transport=dt_socket,address=8001,server=y,suspend=y
+```
+For example:
+```
+java -Xdebug -Xrunjdwp:transport=dt_socket,address=8001,server=y,suspend=y \
+    -Djava.net.preferIPv4Stack=true \
+    -cp ./helios-services/target/helios-services-0.8.25-SNAPSHOT-shaded.jar \
+    com.spotify.helios.master.MasterMain
+```
+
+And then make sure you define the port mapping for port 8001.  You can
+set your container not to wait for the debugger connection by changing
+`suspend=y` to `suspend=n`, but chances are good you probably don't
+want to do that.  Additionally, you can choose a port other than 8001,
+just make sure your port mapping is adjusted accordingly.
+
+After that, when your test spins up the container in question, use the
+helios tools to find out:
+
+  1. where your container was spun up
+  2. what port was chosen if not using static port allocation
+
+Then, from here I assume you already know how to do remote debugging with
+your IDE of choice.
+
+**Pro Tip** In general, it will be easier for debugging if you fix the
+host you're going to run the test on, as well as using static port
+allocation; this way you don't have to fiddle to reconfigure the debug
+settings in your IDE for every test run.
