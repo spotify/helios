@@ -21,10 +21,14 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
+import com.google.common.base.Throwables;
 import com.google.common.collect.FluentIterable;
+import com.google.common.collect.Lists;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.HostStatus.Status;
 import com.spotify.helios.common.descriptors.Job;
 
 import org.slf4j.Logger;
@@ -82,8 +86,28 @@ public class DefaultDeployer implements Deployer {
       fail(format("no hosts matched the filter pattern - %s", hostFilter));
     }
 
-    final String chosenHost = hostPicker.pickHost(filteredHosts);
+    final String chosenHost = pickHost(filteredHosts);
     return deploy(job, asList(chosenHost), waitPorts, prober);
+  }
+
+  @VisibleForTesting
+  String pickHost(final List<String> filteredHosts) {
+    final List<String> mutatedList = Lists.newArrayList(filteredHosts);
+    
+    while (true) {
+      final String candidateHost = hostPicker.pickHost(mutatedList);
+      try {
+        if (Status.UP == client.hostStatus(candidateHost).get().getStatus()) {
+          return candidateHost;
+        } 
+        mutatedList.remove(candidateHost);
+        if (mutatedList.isEmpty()) {
+          fail("all hosts matching filter pattern are DOWN");
+        }
+      } catch (InterruptedException | ExecutionException e) {
+        throw Throwables.propagate(e);
+      }
+    }
   }
 
   @Override
@@ -110,5 +134,4 @@ public class DefaultDeployer implements Deployer {
   public void readyToDeploy() {
     readyToDeploy = true;
   }
-
 }
