@@ -10,5 +10,5 @@ find . -name *.deb -type f -not -path "./target/*" -exec cp {} target/debs/ \;
 tar -C target/debs -zcf target/helios-debs.tar.gz .
 
 # Output build version into file for later Jenkins items
-VERSION="$(egrep -o '<version>.*?\${revision}</version>' pom.xml | sed 's/^<version>\(.*\)${revision}<\/version>$/\1/')${PIPELINE_VERSION}"
+VERSION=$(egrep -o '<version>.*</version>' -m 1 pom.xml | sed 's/<version>\(.*\)<\/version>/\1/')
 echo ${VERSION} > target/version
