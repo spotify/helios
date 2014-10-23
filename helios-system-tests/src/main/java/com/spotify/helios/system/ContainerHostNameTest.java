@@ -68,8 +68,7 @@ public class ContainerHostNameTest extends SystemTestBase {
         log = logs.readFully();
       }
 
-      final String needle = testJobName + "_" + testJobVersion + "." + testHost();
-      assertThat(log, containsString(needle));
+      assertThat(log, containsString(testHost()));
     }
   }
 
