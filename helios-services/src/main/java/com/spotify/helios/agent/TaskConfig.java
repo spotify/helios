@@ -104,6 +104,12 @@ public class TaskConfig {
     builder.cmd(job.getCommand());
     builder.env(containerEnvStrings());
     builder.exposedPorts(containerExposedPorts());
+//    Setting the hostname to this 17-character string works when interacting with docker
+//    builder.hostname("aaaaaaaaaaaaaaaaa");
+//    But setting the hostname to this 18-character string doesn't work
+//    builder.hostname("aaaaaaaaaaaaaaaaaa");
+//    Other examples of hostnames that work: "ad-server-proxy-s"
+//    Other examples of hostnames that don't work: "ad-server-proxy-sn"
     builder.hostname(containerHostname(job.getId().getName() + "_" +
                                        job.getId().getVersion()));
     builder.domainname(host);
