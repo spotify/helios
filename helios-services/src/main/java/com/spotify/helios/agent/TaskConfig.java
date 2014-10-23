@@ -104,8 +104,6 @@ public class TaskConfig {
     builder.cmd(job.getCommand());
     builder.env(containerEnvStrings());
     builder.exposedPorts(containerExposedPorts());
-    builder.hostname(containerHostname(job.getId().getName() + "_" +
-                                       job.getId().getVersion()));
     builder.domainname(host);
     builder.volumes(volumes());
     containerDecorator.decorateContainerConfig(job, imageInfo, builder);
