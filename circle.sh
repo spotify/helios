@@ -8,6 +8,9 @@ case "$1" in
 
     cat /etc/default/docker
 
+    # Edit pom files to have correct version syntax
+    for i in $(find . -name pom.xml -not -path './.rvm*'); do sed -i "s/\${revision}/0/g" $i; done
+
     ;;
 
   dependencies)
