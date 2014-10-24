@@ -492,7 +492,7 @@ public class TemporaryJobs implements TestRule {
     }
 
     private Builder(final String profile, final Config preConfig) {
-      log.debug("Using profile: " + profile);
+      log.info("Using profile: " + profile);
       if (profile != null) {
         final String key = HELIOS_TESTING_PROFILES + profile;
         if (preConfig.hasPath(key)) {
