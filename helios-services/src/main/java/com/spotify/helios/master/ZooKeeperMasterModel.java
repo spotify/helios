@@ -200,47 +200,41 @@ public class ZooKeeperMasterModel implements MasterModel {
         }
       }
 
-      for (JobId job : jobs) {
-        final String hostJobPath = Paths.configHostJob(host, job);
-        final List<String> nodes = client.listRecursive(hostJobPath);
-        for (final String node : reverse(nodes)) {
-          operations.add(delete(node));
-        }
-        if (client.exists(Paths.configJobHost(job, host)) != null) {
-          operations.add(delete(Paths.configJobHost(job, host)));
-        }
-        // Clean out the history for each job
-        try {
-          final List<String> history = client.listRecursive(Paths.historyJobHost(job, host));
-          for (String s : reverse(history)) {
+      if (jobs != null) {
+        for (final JobId job : jobs) {
+          final String hostJobPath = Paths.configHostJob(host, job);
+
+          final List<String> nodes = safeListRecursive(client, hostJobPath);
+          for (final String node : reverse(nodes)) {
+            operations.add(delete(node));
+          }
+          if (client.exists(Paths.configJobHost(job, host)) != null) {
+            operations.add(delete(Paths.configJobHost(job, host)));
+          }
+          // Clean out the history for each job
+          final List<String> history = safeListRecursive(client, Paths.historyJobHost(job, host));
+          for (final String s : reverse(history)) {
             operations.add(delete(s));
           }
-        } catch (NoNodeException ignore) {
         }
       }
       operations.add(delete(Paths.configHostJobs(host)));
 
       // Remove the host status
-      try {
-        final List<String> nodes = client.listRecursive(Paths.statusHost(host));
-        for (final String node : reverse(nodes)) {
-          operations.add(delete(node));
-        }
-      } catch (NoNodeException ignore) {
+      final List<String> nodes = safeListRecursive(client, Paths.statusHost(host));
+      for (final String node : reverse(nodes)) {
+        operations.add(delete(node));
       }
 
       // Remove port allocations
-      try {
-        final List<String> ports = client.getChildren(Paths.configHostPorts(host));
-        for (final String port : ports) {
-          operations.add(delete(Paths.configHostPort(host, Integer.valueOf(port))));
-        }
-        operations.add(delete(Paths.configHostPorts(host)));
-      } catch (NoNodeException ignore) {
+      final List<String> ports = safeGetChildren(client, Paths.configHostPorts(host));
+      for (final String port : ports) {
+        operations.add(delete(Paths.configHostPort(host, Integer.valueOf(port))));
       }
+      operations.add(delete(Paths.configHostPorts(host)));
 
       // Remove host id
-      String idPath = Paths.configHostId(host);
+      final String idPath = Paths.configHostId(host);
       if (client.exists(idPath) != null) {
         operations.add(delete(idPath));
       }
@@ -259,6 +253,23 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new HostNotFoundException(host);
     } catch (KeeperException e) {
       throw new HeliosRuntimeException(e);
+    }
+  }
+
+  private List<String> safeGetChildren(final ZooKeeperClient client, final String path) {
+    try {
+      return client.getChildren(path);
+    } catch (KeeperException ignore) {
+      return ImmutableList.of();
+    }
+  }
+
+  private List<String> safeListRecursive(final ZooKeeperClient client, final String path)
+      throws KeeperException {
+    try {
+      return client.listRecursive(path);
+    } catch (NoNodeException e) {
+      return ImmutableList.of();
     }
   }
 
