@@ -91,7 +91,9 @@ public class JobListCommand extends ControlCommand {
     }
 
     if (!Strings.isNullOrEmpty(pattern) && jobs.isEmpty()) {
-      if (!quiet) {
+      if (json) {
+        out.println(Json.asPrettyStringUnchecked(jobs));
+      } else if (!quiet) {
         out.printf("job pattern %s matched no jobs%n", pattern);
       }
       return 1;
