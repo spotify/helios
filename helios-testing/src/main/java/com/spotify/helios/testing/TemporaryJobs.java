@@ -240,61 +240,8 @@ public class TemporaryJobs implements TestRule {
    * @see <a href="https://github.com/spotify/helios/blob/master/docs/testing_framework.md#
    * configuration-by-file">Helios Testing Framework - Configuration By File</a>
    */
-
   public static TemporaryJobs create() {
-    // Builder will be initialized with values from a testing profile if one is present. If domain
-    // or endpoints is specified in the profile, they will be used to create a helios client.
-    final Builder builder = builder();
-
-    // If set, use HELIOS_HOST_FILTER to override value from test profile
-    final String heliosHostFilter = System.getenv("HELIOS_HOST_FILTER");
-    if (heliosHostFilter != null) {
-      builder.hostFilter(heliosHostFilter);
-    }
-
-    // If set, use HELIOS_DOMAIN to override client which may have been created from test profile
-    final String domain = System.getenv("HELIOS_DOMAIN");
-    if (!isNullOrEmpty(domain)) {
-      return builder.domain(domain).build();
-    }
-
-    // If set, use HELIOS_ENDPOINTS to override client which may have been created from test profile
-    final String endpoints = System.getenv("HELIOS_ENDPOINTS");
-    if (!isNullOrEmpty(endpoints)) {
-      return builder.endpointStrings(Splitter.on(',').splitToList(endpoints)).build();
-    }
-
-    // If we get here and client is set in the builder, it was created using a testing profile,
-    // and the values were not overridden by environment variables. Let's use it.
-    if (builder.client != null) {
-      return builder.build();
-    }
-
-    // If we get here, we were not able to create a client based on environment variables or a
-    // testing profile, so check if DOCKER_HOST is set. If so, try to connect to that host on port
-    // 5801, assuming it has a helios master running. If not, attempt to connect to
-    // http://localhost:5801 as a last attempt.
-    final String dockerHost = System.getenv("DOCKER_HOST");
-    if (dockerHost == null) {
-      builder.endpoints("http://localhost:5801");
-    } else {
-      try {
-        final URI uri = new URI(dockerHost);
-        builder.endpoints("http://" + uri.getHost() + ":5801");
-      } catch (URISyntaxException e) {
-        throw Throwables.propagate(e);
-      }
-    }
-
-    // We usually require the caller to specify a host filter, so jobs aren't accidentally deployed
-    // to arbitrary hosts. But at this point the master is either running on localhost or the docker
-    // host. Either way, this is probably a test machine with one master and one agent both running
-    // on the same box, so it is safe to provide a default filter that will deploy anywhere.
-    if (heliosHostFilter == null) {
-      builder.hostFilter(DEFAULT_LOCAL_HOST_FILTER);
-    }
-
-    return builder.build();
+    return builder().build();
   }
 
   public static TemporaryJobs create(final HeliosClient client) {
@@ -520,6 +467,62 @@ public class TemporaryJobs implements TestRule {
       }
       if (this.config.hasPath("hostPickingStrategy")) {
         processHostPickingStrategy();
+      }
+
+      // Configuration from profile may be overridden by environment variables
+      configureWithEnv();
+    }
+
+    private void configureWithEnv() {
+      // Use HELIOS_HOST_FILTER if set
+      final String heliosHostFilter = System.getenv("HELIOS_HOST_FILTER");
+      if (heliosHostFilter != null) {
+        hostFilter(heliosHostFilter);
+      }
+
+      // Use HELIOS_DOMAIN if set
+      final String domain = System.getenv("HELIOS_DOMAIN");
+      if (!isNullOrEmpty(domain)) {
+        domain(domain);
+        return;
+      }
+
+      // Use HELIOS_ENDPOINTS if set
+      final String endpoints = System.getenv("HELIOS_ENDPOINTS");
+      if (!isNullOrEmpty(endpoints)) {
+        endpointStrings(Splitter.on(',').splitToList(endpoints));
+        return;
+      }
+
+      // If we get here and client is set, we know which master we'll be talking to, so just return
+      // as rest of this method handles the case where the helios master wasn't specified.
+      if (client != null) {
+        return;
+      }
+
+      // If we get here, we did not create a client based on environment variables or a testing
+      // profile, so check if DOCKER_HOST is set. If so, try to connect to that host on port 5801,
+      // assuming it has a helios master running. If not, attempt to connect to
+      // http://localhost:5801 as a last attempt.
+      final String dockerHost = System.getenv("DOCKER_HOST");
+      if (dockerHost == null) {
+        endpoints("http://localhost:5801");
+      } else {
+        try {
+          final URI uri = new URI(dockerHost);
+          endpoints("http://" + uri.getHost() + ":5801");
+        } catch (URISyntaxException e) {
+          throw Throwables.propagate(e);
+        }
+      }
+
+      // We usually require the caller to specify a host filter, so jobs aren't accidentally
+      // deployed to arbitrary hosts. But at this point the master is either running on localhost
+      // or the docker host. Either way, this is probably a test machine with one master and one
+      // agent both running on the same box, so it is safe to provide a default filter that will
+      // deploy anywhere.
+      if (heliosHostFilter == null) {
+        hostFilter(DEFAULT_LOCAL_HOST_FILTER);
       }
     }
 
