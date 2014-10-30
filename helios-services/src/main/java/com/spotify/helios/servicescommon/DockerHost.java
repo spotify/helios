@@ -36,6 +36,7 @@ public class DockerHost {
 
   public static final int DEFAULT_PORT = 2375;
   public static final String DEFAULT_HOST = "localhost";
+  public static final String DEFAULT_UNIX_ENDPOINT = "unix:///var/run/docker.sock";
 
   private final String host;
   private final URI uri;
@@ -43,17 +44,24 @@ public class DockerHost {
   private final int port;
 
   private DockerHost(final String endpoint) {
-    final String stripped = endpoint.replaceAll(".*://", "");
-    final HostAndPort hostAndPort = HostAndPort.fromString(stripped);
-    final String hostText = hostAndPort.getHostText();
-    this.port = hostAndPort.getPortOrDefault(defaultPort());
-    this.address = Strings.isNullOrEmpty(hostText) ? DEFAULT_HOST : hostText;
-    this.host = address + ":" + port;
-    this.uri = URI.create("http://" + address + ":" + port);
+    if (endpoint.startsWith("unix://")) {
+      this.port = 0;
+      this.address = "localhost";
+      this.host = endpoint;
+      this.uri = URI.create(endpoint);
+    } else {
+      final String stripped = endpoint.replaceAll(".*://", "");
+      final HostAndPort hostAndPort = HostAndPort.fromString(stripped);
+      final String hostText = hostAndPort.getHostText();
+      this.port = hostAndPort.getPortOrDefault(defaultPort());
+      this.address = Strings.isNullOrEmpty(hostText) ? DEFAULT_HOST : hostText;
+      this.host = address + ":" + port;
+      this.uri = URI.create("http://" + address + ":" + port);
+    }
   }
 
   /**
-   * Get a docker endpoint usable as a DOCKER_HOST environment variable.
+   * Get a docker endpoint usable for instantiating a new DockerHost with DockerHost.from(endpoint).
    */
   public String host() {
     return host;
@@ -84,7 +92,14 @@ public class DockerHost {
    * Create a {@link DockerHost} from DOCKER_HOST and DOCKER_PORT env vars.
    */
   public static DockerHost fromEnv() {
-    final String host = fromNullable(getenv("DOCKER_HOST")).or(DEFAULT_HOST + ":" + defaultPort());
+    String defaultEndpoint;
+    if (System.getProperty("os.name").toLowerCase().equals("linux")) {
+      defaultEndpoint = DEFAULT_UNIX_ENDPOINT;
+    } else {
+      defaultEndpoint = DEFAULT_HOST + ":" + defaultPort();
+    }
+
+    final String host = fromNullable(getenv("DOCKER_HOST")).or(defaultEndpoint);
     return new DockerHost(host);
   }
 
