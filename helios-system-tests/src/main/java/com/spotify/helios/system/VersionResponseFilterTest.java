@@ -47,7 +47,6 @@ import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STAT
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 
-@RunWith(Parallelized.class)
 public class VersionResponseFilterTest extends SystemTestBase {
 
   private PomVersion current;
