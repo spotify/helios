@@ -21,7 +21,6 @@
 
 package com.spotify.helios.system;
 
-import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.messages.ContainerConfig;
@@ -42,7 +41,11 @@ import static org.junit.Assert.assertThat;
 
 public class ReapingTest extends SystemTestBase {
 
-  private final DockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri());
+  private final DockerClient docker;
+
+  public ReapingTest() throws Exception {
+    this.docker = getNewDockerClient();
+  }
 
   @Test
   public void test() throws Exception {

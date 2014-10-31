@@ -21,13 +21,13 @@
 
 package com.spotify.helios.system;
 
-import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.ContainerExit;
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+
 import org.joda.time.DateTime;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,7 +47,11 @@ import static org.junit.Assert.assertThat;
 @RunWith(MockitoJUnitRunner.class)
 public class JobExpirationTest extends SystemTestBase {
 
-  private final DockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri());
+  private final DockerClient docker;
+
+  public JobExpirationTest() throws Exception {
+    this.docker = getNewDockerClient();
+  }
 
   @Rule public ExpectedException expectedException = ExpectedException.none();
 

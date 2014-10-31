@@ -23,7 +23,6 @@ package com.spotify.helios.system;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
-import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -58,7 +57,7 @@ public class AgentRestartTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
 
-    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
+    final DockerClient dockerClient = getNewDockerClient();
 
     final HeliosClient client = defaultClient();
 
