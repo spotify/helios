@@ -22,6 +22,7 @@
 package com.spotify.helios.agent;
 
 import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.messages.ContainerExit;
@@ -44,6 +45,10 @@ public class PollingDockerClient extends DefaultDockerClient {
 
   public PollingDockerClient(final URI uri) {
     super(uri);
+  }
+
+  public PollingDockerClient(final URI uri, DockerCertificates dockerCertificates) {
+    super(uri, dockerCertificates);
   }
 
   @Override
