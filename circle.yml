@@ -14,6 +14,8 @@ test:
 machine:
   pre:
     - helios/circle.sh pre_machine
+  post:
+    - helios/circle.sh post_machine
   services:
     - docker
   environment:
@@ -23,3 +25,4 @@ machine:
 general:
   artifacts:
     - artifacts
+    - /var/log/upstart/docker.log
