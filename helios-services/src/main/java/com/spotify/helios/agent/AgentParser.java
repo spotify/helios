@@ -56,6 +56,7 @@ public class AgentParser extends ServiceParser {
   private Argument adminArg;
   private Argument stateDirArg;
   private Argument dockerArg;
+  private Argument dockerCertPathArg;
   private Argument envArg;
   private Argument syslogRedirectToArg;
   private Argument portRangeArg;
@@ -66,7 +67,9 @@ public class AgentParser extends ServiceParser {
     super("helios-agent", "Spotify Helios Agent", args);
 
     final Namespace options = getNamespace();
-    final DockerHost dockerHost = DockerHost.from(options.getString(dockerArg.getDest()));
+    final DockerHost dockerHost = DockerHost.from(
+        options.getString(dockerArg.getDest()),
+        options.getString(dockerCertPathArg.getDest()));
 
     final List<List<String>> env = options.getList(envArg.getDest());
     final Map<String, String> envVars = Maps.newHashMap();
@@ -170,6 +173,10 @@ public class AgentParser extends ServiceParser {
     dockerArg = parser.addArgument("--docker")
         .setDefault(DockerHost.fromEnv().host())
         .help("docker endpoint");
+
+    dockerCertPathArg = parser.addArgument("--docker-cert-path")
+        .setDefault(DockerHost.fromEnv().dockerCertPath())
+        .help("directory containing client.pem and client.key for connecting to Docker over HTTPS");
 
     envArg = parser.addArgument("--env")
         .action(append())

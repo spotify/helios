@@ -27,6 +27,7 @@ import com.google.common.net.HostAndPort;
 import java.net.URI;
 
 import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.System.getenv;
 
 /**
@@ -42,8 +43,9 @@ public class DockerHost {
   private final URI uri;
   private final String address;
   private final int port;
+  private final String dockerCertPath;
 
-  private DockerHost(final String endpoint) {
+  private DockerHost(final String endpoint, final String dockerCertPath) {
     if (endpoint.startsWith("unix://")) {
       this.port = 0;
       this.address = "localhost";
@@ -53,11 +55,15 @@ public class DockerHost {
       final String stripped = endpoint.replaceAll(".*://", "");
       final HostAndPort hostAndPort = HostAndPort.fromString(stripped);
       final String hostText = hostAndPort.getHostText();
+      final String scheme = isNullOrEmpty(dockerCertPath) ? "http" : "https";
+
       this.port = hostAndPort.getPortOrDefault(defaultPort());
-      this.address = Strings.isNullOrEmpty(hostText) ? DEFAULT_HOST : hostText;
+      this.address = isNullOrEmpty(hostText) ? DEFAULT_HOST : hostText;
       this.host = address + ":" + port;
-      this.uri = URI.create("http://" + address + ":" + port);
+      this.uri = URI.create(scheme + "://" + address + ":" + port);
     }
+
+    this.dockerCertPath = dockerCertPath;
   }
 
   /**
@@ -89,6 +95,13 @@ public class DockerHost {
   }
 
   /**
+   * Get the path to certicate & key for connecting to Docker via HTTPS.
+   */
+  public String dockerCertPath() {
+    return dockerCertPath;
+  }
+
+  /**
    * Create a {@link DockerHost} from DOCKER_HOST and DOCKER_PORT env vars.
    */
   public static DockerHost fromEnv() {
@@ -100,14 +113,16 @@ public class DockerHost {
     }
 
     final String host = fromNullable(getenv("DOCKER_HOST")).or(defaultEndpoint);
-    return new DockerHost(host);
+    final String dockerCertPath = getenv("DOCKER_CERT_PATH");
+
+    return new DockerHost(host, dockerCertPath);
   }
 
   /**
    * Create a {@link DockerHost} from an explicit address or uri.
    */
-  public static DockerHost from(final String endpoint) {
-    return new DockerHost(endpoint);
+  public static DockerHost from(final String endpoint, final String dockerCertPath) {
+    return new DockerHost(endpoint, dockerCertPath);
   }
 
   private static int defaultPort() {
