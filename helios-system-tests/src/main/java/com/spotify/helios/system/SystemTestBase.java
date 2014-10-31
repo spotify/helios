@@ -36,6 +36,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.util.ISO8601Utils;
 import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.DockerRequestException;
@@ -110,6 +111,7 @@ import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
@@ -239,8 +241,17 @@ public abstract class SystemTestBase {
     }
   }
 
+  private DockerClient getDockerClient() throws Exception {
+    if (isNullOrEmpty(DOCKER_HOST.dockerCertPath())) {
+      return new DefaultDockerClient(DOCKER_HOST.uri());
+    } else {
+      final Path dockerCertPath = java.nio.file.Paths.get(DOCKER_HOST.dockerCertPath());
+      return new DefaultDockerClient(DOCKER_HOST.uri(), new DockerCertificates(dockerCertPath));
+    }
+  }
+
   private void assertDockerReachable(final int probePort) throws Exception {
-    try (final DefaultDockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient docker = getDockerClient()) {
       try {
         docker.inspectImage(BUSYBOX);
       } catch (ImageNotFoundException e) {
@@ -322,7 +333,7 @@ public abstract class SystemTestBase {
     services.clear();
 
     // Clean up docker
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient dockerClient = getDockerClient()) {
       final List<Container> containers = dockerClient.listContainers();
       for (final Container container : containers) {
         for (final String name : container.names()) {
@@ -697,7 +708,7 @@ public abstract class SystemTestBase {
     }
 
     for (Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
-      if (Strings.isNullOrEmpty(entry.getKey())) {
+      if (isNullOrEmpty(entry.getKey())) {
         // Data volume
         args.add("--volume=" + entry.getKey());
       } else {

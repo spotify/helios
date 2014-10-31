@@ -28,6 +28,8 @@ import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.docker.client.DockerCertificateException;
+import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
@@ -73,6 +75,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
@@ -194,7 +197,21 @@ public class AgentService extends AbstractIdleService implements Managed {
     final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =
         new ZooKeeperNodeUpdaterFactory(zooKeeperClient);
 
-    final DockerClient dockerClient = new PollingDockerClient(config.getDockerHost().uri());
+    final DockerClient dockerClient;
+    if (isNullOrEmpty(config.getDockerHost().dockerCertPath())) {
+      dockerClient = new PollingDockerClient(config.getDockerHost().uri());
+    } else {
+      final Path dockerCertPath = java.nio.file.Paths.get(config.getDockerHost().dockerCertPath());
+      final DockerCertificates dockerCertificates;
+      try {
+        dockerCertificates = new DockerCertificates(dockerCertPath);
+      } catch (DockerCertificateException e) {
+        throw Throwables.propagate(e);
+      }
+
+      dockerClient = new PollingDockerClient(config.getDockerHost().uri(), dockerCertificates);
+    }
+
     final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,
                                                                           dockerClient);
 
