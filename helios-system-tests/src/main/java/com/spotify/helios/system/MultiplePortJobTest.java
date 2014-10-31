@@ -24,7 +24,7 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Range;
 
-import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
@@ -65,7 +65,7 @@ public class MultiplePortJobTest extends SystemTestBase {
                                                           portRange.lowerEndpoint() + ":" +
                                                           portRange.upperEndpoint());
 
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient dockerClient = getNewDockerClient()) {
       final HeliosClient client = defaultClient();
 
       awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
@@ -150,7 +150,7 @@ public class MultiplePortJobTest extends SystemTestBase {
     final Map<String, PortMapping> ports =
         ImmutableMap.of("bar", PortMapping.of(4712, externalPort1));
 
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient dockerClient = getNewDockerClient()) {
       final JobId jobId = createJob(testJobName + 1, testJobVersion, BUSYBOX,
         asList("sh", "-c", "echo $HELIOS_PORT_bar"), EMPTY_ENV, ports);
 

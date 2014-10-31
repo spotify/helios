@@ -21,9 +21,7 @@
 
 package com.spotify.helios.system;
 
-import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -48,11 +46,11 @@ import static org.junit.Assume.assumeThat;
 public class TerminationTest extends SystemTestBase {
 
   @Before
-  public void setup() throws DockerException, InterruptedException {
+  public void setup() throws Exception {
     // LXC has a bug where the TERM signal isn't sent to containers, so we can only run this test
     // if docker runs with the native driver.
     // See: https://github.com/docker/docker/issues/2436
-    final DockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
+    final DockerClient dockerClient = getNewDockerClient();
     assumeThat(dockerClient.info().executionDriver(), startsWith("native"));
   }
 
@@ -85,7 +83,7 @@ public class TerminationTest extends SystemTestBase {
     final TaskStatus taskStatus = awaitTaskState(jobId, host, STOPPED);
 
     final String log;
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
+    try (final DockerClient dockerClient = getNewDockerClient();
          LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT)) {
       log = logs.readFully();
     }
@@ -123,7 +121,7 @@ public class TerminationTest extends SystemTestBase {
     final TaskStatus taskStatus = awaitTaskState(jobId, host, STOPPED);
 
     final String log;
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri());
+    try (final DockerClient dockerClient = getNewDockerClient();
          LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT)) {
       log = logs.readFully();
     }
