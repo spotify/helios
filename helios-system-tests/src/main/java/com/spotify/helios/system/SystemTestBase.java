@@ -127,9 +127,9 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.junit.Assert.assertEquals;
 
 public abstract class SystemTestBase {
 
@@ -241,7 +241,7 @@ public abstract class SystemTestBase {
     }
   }
 
-  private DockerClient getDockerClient() throws Exception {
+  protected DockerClient getNewDockerClient() throws Exception {
     if (isNullOrEmpty(DOCKER_HOST.dockerCertPath())) {
       return new DefaultDockerClient(DOCKER_HOST.uri());
     } else {
@@ -251,7 +251,7 @@ public abstract class SystemTestBase {
   }
 
   private void assertDockerReachable(final int probePort) throws Exception {
-    try (final DockerClient docker = getDockerClient()) {
+    try (final DockerClient docker = getNewDockerClient()) {
       try {
         docker.inspectImage(BUSYBOX);
       } catch (ImageNotFoundException e) {
@@ -333,7 +333,7 @@ public abstract class SystemTestBase {
     services.clear();
 
     // Clean up docker
-    try (final DockerClient dockerClient = getDockerClient()) {
+    try (final DockerClient dockerClient = getNewDockerClient()) {
       final List<Container> containers = dockerClient.listContainers();
       for (final Container container : containers) {
         for (final String name : container.names()) {

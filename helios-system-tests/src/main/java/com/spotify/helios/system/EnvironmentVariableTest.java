@@ -24,7 +24,7 @@ package com.spotify.helios.system;
 import com.google.common.collect.ImmutableMap;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
@@ -71,7 +71,7 @@ public class EnvironmentVariableTest extends SystemTestBase {
       }
     });
 
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient dockerClient = getNewDockerClient()) {
       final List<String> command = asList("sh", "-c",
                                           "echo pod: $SPOTIFY_POD; " +
                                           "echo role: $SPOTIFY_ROLE; " +

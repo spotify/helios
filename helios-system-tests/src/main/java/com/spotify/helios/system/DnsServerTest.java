@@ -22,7 +22,7 @@
 package com.spotify.helios.system;
 
 
-import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -54,7 +54,7 @@ public class DnsServerTest extends SystemTestBase {
     deployJob(jobId, testHost());
 
     final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient dockerClient = getNewDockerClient()) {
       final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
       final String log = logs.readFully();
 
@@ -75,7 +75,7 @@ public class DnsServerTest extends SystemTestBase {
     deployJob(jobId, testHost());
 
     final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient dockerClient = getNewDockerClient()) {
       final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
       final String log = logs.readFully();
 

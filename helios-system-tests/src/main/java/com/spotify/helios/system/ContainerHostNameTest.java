@@ -23,7 +23,7 @@ package com.spotify.helios.system;
 
 import com.google.common.base.Splitter;
 
-import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -51,7 +51,7 @@ public class ContainerHostNameTest extends SystemTestBase {
     startDefaultAgent(testHost());
     awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient dockerClient = getNewDockerClient()) {
 
       final List<String> command = asList("hostname", "-f");
 
@@ -78,7 +78,7 @@ public class ContainerHostNameTest extends SystemTestBase {
     startDefaultAgent(testHost());
     awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
 
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient dockerClient = getNewDockerClient()) {
       final List<String> command = asList("hostname", "-f");
 
       // make something absurdly long

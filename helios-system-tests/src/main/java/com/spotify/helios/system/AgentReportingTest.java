@@ -21,7 +21,7 @@
 
 package com.spotify.helios.system;
 
-import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.DockerVersion;
@@ -56,7 +56,7 @@ public class AgentReportingTest extends SystemTestBase {
           }
         });
 
-    try (final DefaultDockerClient dockerClient = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient dockerClient = getNewDockerClient()) {
       final String expectedDockerVersion = dockerClient.version().version();
       assertThat(dockerVersion.getVersion(), is(expectedDockerVersion));
     }

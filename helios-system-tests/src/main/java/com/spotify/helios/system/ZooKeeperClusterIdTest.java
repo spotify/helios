@@ -21,7 +21,7 @@
 
 package com.spotify.helios.system;
 
-import com.spotify.docker.client.DefaultDockerClient;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Container;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
@@ -127,7 +127,7 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
     Thread.sleep(1000);
 
     // Make sure the agent didn't stop the job
-    try (final DefaultDockerClient docker = new DefaultDockerClient(DOCKER_HOST.uri())) {
+    try (final DockerClient docker = getNewDockerClient()) {
       final List<Container> containers = docker.listContainers();
       final CustomTypeSafeMatcher<Container> containerIdMatcher =
           new CustomTypeSafeMatcher<Container>("Container with id " + containerId) {
