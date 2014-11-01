@@ -1,4 +1,4 @@
-Reviewed by [dxia](https://github.com/rculbertson) on 2014-09-09
+Reviewed by [davidxia](https://github.com/davidxia) on 2014-11-01
 
 ***
 
@@ -8,6 +8,7 @@ Note that this guide assumes that you are familiar with [Docker](http://docker.i
 
 
 * [Basic Concepts in Helios](#basic-concepts-in-helios)
+* [Install the Helios CLI](#install-the-helios-cli)
 * [Using the Helios CLI](#using-the-helios-cli)
 * [Creating Your Job](#creating-your-job)
   * [A basic job](#a-basic-job)
@@ -27,6 +28,15 @@ Basic Concepts in Helios
 * **Master:** Helios masters are the servers that the Helios CLI and other tools talk to. They coordinate the deployment of your Docker containers onto Helios agents.
 
 * **Agents:** Helios agents, sometimes known as Helios hosts, are the machines on which the images you built eventually run. The masters tell agents to download jobs and run them.
+
+Install the Helios CLI
+---
+
+Whichever environment you are deploying to, you should install the CLI locally so you can talk to 
+Helios clusters without having to SSH to another machine.
+
+  * Ubuntu Trusty: `dpkg -i helios_all.deb` [download from here](https://github.com/spotify/helios/releases)
+  * Mac OS X: `brew install helios`
 
 Using the Helios CLI
 ---
