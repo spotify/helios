@@ -84,6 +84,7 @@ public class JobTest {
     final Date setExpires = new Date();
     final String setRegistrationDomain = "my.domain";
     final String setCreatingUser = "username";
+    final Resources setResources = new Resources(10485760L, 10485761L, 4L, "1");
 
     // Input to addXXX
     final Map<String, String> addEnv = ImmutableMap.of("add", "env");
@@ -107,6 +108,7 @@ public class JobTest {
     final Date expectedExpires = setExpires;
     final String expectedRegistrationDomain = setRegistrationDomain;
     final String expectedCreatingUser = setCreatingUser;
+    final Resources expectedResources = setResources;
 
     // Check setXXX methods
     builder.setName(setName);
@@ -121,6 +123,7 @@ public class JobTest {
     builder.setExpires(setExpires);
     builder.setRegistrationDomain(setRegistrationDomain);
     builder.setCreatingUser(setCreatingUser);
+    builder.setResources(setResources);
     assertEquals("name", setName, builder.getName());
     assertEquals("version", setVersion, builder.getVersion());
     assertEquals("image", setImage, builder.getImage());
@@ -133,6 +136,7 @@ public class JobTest {
     assertEquals("expires", setExpires, builder.getExpires());
     assertEquals("registrationDomain", setRegistrationDomain, builder.getRegistrationDomain());
     assertEquals("creatingUser", setCreatingUser, builder.getCreatingUser());
+    assertEquals("resources", setResources, builder.getResources());
 
     // Check addXXX methods
     for (final Map.Entry<String, String> entry : addEnv.entrySet()) {
@@ -159,6 +163,7 @@ public class JobTest {
     assertEquals("expires", expectedExpires, builder.getExpires());
     assertEquals("registrationDomain", expectedRegistrationDomain, builder.getRegistrationDomain());
     assertEquals("creatingUser", expectedCreatingUser, builder.getCreatingUser());
+    assertEquals("resources", expectedResources, builder.getResources());
 
     // Check final output
     final Job job = builder.build();
@@ -174,6 +179,7 @@ public class JobTest {
     assertEquals("expires", expectedExpires, job.getExpires());
     assertEquals("registrationDomain", expectedRegistrationDomain, job.getRegistrationDomain());
     assertEquals("creatingUser", expectedCreatingUser, job.getCreatingUser());
+    assertEquals("resources", expectedResources, job.getResources());
 
     // Check toBuilder
     final Job.Builder rebuilder = job.toBuilder();
@@ -190,6 +196,7 @@ public class JobTest {
     assertEquals("registrationDomain", expectedRegistrationDomain,
         rebuilder.getRegistrationDomain());
     assertEquals("creatingUser", expectedCreatingUser, rebuilder.getCreatingUser());
+    assertEquals("resources", expectedResources, rebuilder.getResources());
 
     // Check clone
     final Job.Builder cloned = builder.clone();
@@ -206,6 +213,7 @@ public class JobTest {
     assertEquals("registrationDomain", expectedRegistrationDomain,
         cloned.getRegistrationDomain());
     assertEquals("creatingUser", expectedCreatingUser, cloned.getCreatingUser());
+    assertEquals("resources", expectedResources, cloned.getResources());
 
     final Job clonedJob = cloned.build();
     assertEquals("name", expectedName, clonedJob.getId().getName());
@@ -221,6 +229,7 @@ public class JobTest {
     assertEquals("registrationDomain", expectedRegistrationDomain,
         clonedJob.getRegistrationDomain());
     assertEquals("creatingUser", expectedCreatingUser, clonedJob.getCreatingUser());
+    assertEquals("resources", expectedResources, clonedJob.getResources());
   }
 
   @SafeVarargs

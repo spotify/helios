@@ -38,6 +38,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
+import com.spotify.helios.common.descriptors.Resources;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 
 import org.slf4j.Logger;
@@ -106,6 +107,13 @@ public class TaskConfig {
     builder.exposedPorts(containerExposedPorts());
     builder.domainname(host);
     builder.volumes(volumes());
+    final Resources resources = job.getResources();
+    if (resources != null) {
+      builder.memory(resources.getMemory());
+      builder.memorySwap(resources.getMemorySwap());
+      builder.cpuset(resources.getCpuset());
+      builder.cpuShares(resources.getCpuShares());
+    }
     containerDecorator.decorateContainerConfig(job, imageInfo, builder);
     return builder.build();
   }
