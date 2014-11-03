@@ -172,7 +172,7 @@
               <goal>jdeb</goal>
             </goals>
             <configuration>
-              <deb>${project.build.directory}/helios_${project.version}_all.deb</deb>
+              <deb>${project.build.directory}/helios_${project.version}_tools.deb</deb>
               <controlDir>${project.parent.basedir}/src/deb/helios</controlDir>
               <dataSet>
                 <data>
