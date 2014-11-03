@@ -21,6 +21,8 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.base.Optional;
+
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
@@ -91,11 +93,17 @@ public class TemporaryJobsTest extends SystemTestBase {
 
   public static class SimpleTest {
 
+    // Test tag to be injected by the runner, so that all containers we create are tagged
+    // for cleanup by SystemTestBase's teardown
+    private static String testTag;
+
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
         .client(client)
         .prober(new TestProber())
-        .jobDeployedMessageFormat("Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")
+        .jobDeployedMessageFormat(
+            "Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")
+        .jobPrefix(Optional.of(testTag).get())
         .build();
 
     private TemporaryJob job1;
@@ -205,10 +213,15 @@ public class TemporaryJobsTest extends SystemTestBase {
 
   public static class BadTest {
 
+    // Test tag to be injected by the runner, so that all containers we create are tagged
+    // for cleanup by SystemTestBase's teardown
+    private static String testTag;
+
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
         .client(client)
         .prober(new TestProber())
+        .jobPrefix(Optional.of(testTag).get())
         .build();
 
     @SuppressWarnings("unused")
@@ -224,11 +237,16 @@ public class TemporaryJobsTest extends SystemTestBase {
 
   public static class JobNamePrefixTest {
 
+    // Test tag to be injected by the runner, so that all containers we create are tagged
+    // for cleanup by SystemTestBase's teardown
+    private static String testTag;
+
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
         .client(client)
         .prober(new TestProber())
         .prefixDirectory(prefixDirectory.toString())
+        .jobPrefix(Optional.of(testTag).get())
         .build();
 
     private final Date expires = new DateTime().plusHours(1).toDate();
@@ -285,6 +303,7 @@ public class TemporaryJobsTest extends SystemTestBase {
     awaitHostStatus(client, testHost1, UP, LONG_WAIT_MINUTES, MINUTES);
     awaitHostStatus(client, testHost2, UP, LONG_WAIT_MINUTES, MINUTES);
 
+    SimpleTest.testTag = this.testTag;
     assertThat(testResult(SimpleTest.class), isSuccessful());
     assertTrue("jobs are running that should not be",
                client.jobs().get(15, SECONDS).isEmpty());
@@ -295,6 +314,8 @@ public class TemporaryJobsTest extends SystemTestBase {
     startDefaultMaster();
     client = defaultClient();
     testHost1 = testHost();
+
+    BadTest.testTag = this.testTag;
     assertThat(testResult(BadTest.class),
                hasFailureContaining("deploy() must be called in a @Before or in the test method"));
   }
@@ -340,6 +361,7 @@ public class TemporaryJobsTest extends SystemTestBase {
       file3.release();
       file4.release();
 
+      JobNamePrefixTest.testTag = this.testTag;
       assertThat(testResult(JobNamePrefixTest.class), isSuccessful());
 
       final Map<JobId, Job> jobs = client.jobs().get();
@@ -371,12 +393,18 @@ public class TemporaryJobsTest extends SystemTestBase {
   }
 
   public static class TempJobFailureTest {
+
+    // Test tag to be injected by the runner, so that all containers we create are tagged
+    // for cleanup by SystemTestBase's teardown
+    private static String testTag;
+
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
         .hostFilter(".*")
         .client(client)
         .prober(new TestProber())
         .prefixDirectory(prefixDirectory.toString())
+        .jobPrefix(Optional.of(testTag).get())
         .build();
 
     @Test
@@ -399,6 +427,8 @@ public class TemporaryJobsTest extends SystemTestBase {
     awaitHostStatus(client, testHost1, UP, LONG_WAIT_MINUTES, MINUTES);
 
     final long start = System.currentTimeMillis();
+
+    TempJobFailureTest.testTag = this.testTag;
     assertThat(testResult(TempJobFailureTest.class),
         hasSingleFailureContaining("AssertionError: Unexpected job state"));
     final long end = System.currentTimeMillis();
