@@ -112,7 +112,11 @@ public class TemporaryJobs implements TestRule {
 
     try {
       removeOldJobs(prefixDirectory);
-      this.jobPrefixFile = JobPrefixFile.create(prefixDirectory);
+      if (isNullOrEmpty(builder.jobPrefix)) {
+        this.jobPrefixFile = JobPrefixFile.create(prefixDirectory);
+      } else {
+        this.jobPrefixFile = JobPrefixFile.create(builder.jobPrefix, prefixDirectory);
+      }
     } catch (IOException | ExecutionException | InterruptedException e) {
       throw Throwables.propagate(e);
     }
@@ -566,6 +570,7 @@ public class TemporaryJobs implements TestRule {
     private String hostFilter = System.getenv("HELIOS_HOST_FILTER");
     private HeliosClient client;
     private String prefixDirectory;
+    private String jobPrefix;
     private String jobDeployedMessageFormat = null;
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.random();
 
@@ -635,6 +640,11 @@ public class TemporaryJobs implements TestRule {
 
     public Builder prefixDirectory(final String prefixDirectory) {
       this.prefixDirectory = prefixDirectory;
+      return this;
+    }
+
+    public Builder jobPrefix(final String jobPrefix) {
+      this.jobPrefix = jobPrefix;
       return this;
     }
 
