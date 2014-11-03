@@ -95,6 +95,7 @@ import java.net.Socket;
 import java.net.URI;
 import java.nio.file.Path;
 import java.security.SecureRandom;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -332,12 +333,21 @@ public abstract class SystemTestBase {
     }
     services.clear();
 
+    // TODO (dxia) This string is used to search for containers started by
+    // TemporaryJobs during the current day. I noticed they weren't being cleaned up after
+    // successful runs of TemporaryJobsTest and could be left running forever which is a problem
+    // for build agents. Who wants to manually kill containers after noticing builds starting
+    // to fail? I constructed it here because I couldn't find a nice way to pass it in from
+    // TemporaryJobsTest$SimpleTest. Will killing all tmp jobs on the host created on the day this
+    // test runs cause problems?
+    final String tmpJobsTag = "tmp-" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + "-";
+
     // Clean up docker
     try (final DockerClient dockerClient = getNewDockerClient()) {
       final List<Container> containers = dockerClient.listContainers();
       for (final Container container : containers) {
         for (final String name : container.names()) {
-          if (name.contains(testTag)) {
+          if (name.contains(testTag) || name.contains(tmpJobsTag)) {
             try {
               dockerClient.killContainer(container.id());
             } catch (DockerException e) {
