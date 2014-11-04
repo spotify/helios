@@ -1,5 +1,7 @@
 package com.spotify.helios.testing;
 
+import com.google.common.base.Optional;
+
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.system.SystemTestBase;
 
@@ -21,6 +23,9 @@ public class ProberTest extends SystemTestBase {
 
   public static class OverrideDefaultProberTest {
 
+    // Test tag to be injected by the runner, so that all containers we create are tagged
+    // for cleanup by SystemTestBase's teardown
+    private static String testTag;
     private MockProber defaultProber = new MockProber();
     private MockProber overrideProber = new MockProber();
 
@@ -28,6 +33,7 @@ public class ProberTest extends SystemTestBase {
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
         .client(client)
         .prober(defaultProber)
+        .jobPrefix(Optional.of(testTag).get())
         .build();
 
     @Before
@@ -60,6 +66,8 @@ public class ProberTest extends SystemTestBase {
     testHost = testHost();
     startDefaultAgent(testHost);
     awaitHostStatus(client, testHost, UP, LONG_WAIT_MINUTES, MINUTES);
+
+    OverrideDefaultProberTest.testTag = this.testTag;
     assertThat(testResult(OverrideDefaultProberTest.class), isSuccessful());
   }
 
