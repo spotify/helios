@@ -127,7 +127,7 @@ public class JobStatusCommand extends ControlCommand {
     });
 
     if (noHostMatchedEver) {
-      out.printf("host pattern %s matched no jobs%n", hostPattern);
+      out.printf("host pattern %s matched no hosts%n", hostPattern);
       return 1;
     }
 
