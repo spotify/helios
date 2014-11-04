@@ -167,6 +167,11 @@ public class JobStatusCommand extends ControlCommand {
     for (final JobId jobId : Ordering.natural().sortedCopy(jobIds)) {
       final JobStatus jobStatus = statuses.get(jobId);
 
+      // jobStatus will be null if the job was deleted after we first got the list of job IDs
+      if (jobStatus == null) {
+        continue;
+      }
+
       // Merge hosts without any status into the set of hosts with a reported task status
       final Map<String, TaskStatus> taskStatuses = Maps.newTreeMap();
       taskStatuses.putAll(jobStatus.getTaskStatuses());
