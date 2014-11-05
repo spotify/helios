@@ -87,6 +87,9 @@ public class ResourcesTest extends SystemTestBase {
     try (final DockerClient docker = getNewDockerClient()) {
       ContainerConfig containerConfig =
               docker.inspectContainer(taskStatus.getContainerId()).config();
+      System.err.println(docker.info().executionDriver());
+      //org.junit.Assume.assumeTrue(true);
+      System.err.println(docker.info().toString());
 
       assertEquals(MEMORY, containerConfig.memory());
       assertEquals(MEMORY_SWAP, containerConfig.memorySwap());
