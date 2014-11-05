@@ -88,7 +88,6 @@ public class ResourcesTest extends SystemTestBase {
       ContainerConfig containerConfig =
               docker.inspectContainer(taskStatus.getContainerId()).config();
       System.err.println(docker.info().executionDriver());
-      //org.junit.Assume.assumeTrue(true);
       System.err.println(docker.info().toString());
 
       assertEquals(MEMORY, containerConfig.memory());
