@@ -3,11 +3,10 @@
 case "$1" in
   pre_machine)
     # have docker bind to localhost
-    docker_opts='DOCKER_OPTS="-D=true -s btrfs -H tcp://127.0.0.1:2375"'
-    sudo sh -c "echo '$docker_opts' > /etc/default/docker"
+    docker_opts='DOCKER_OPTS="$DOCKER_OPTS -H tcp://127.0.0.1:2375"'
+    sudo sh -c "echo '$docker_opts' >> /etc/default/docker"
 
     cat /etc/default/docker
-    docker version || true
 
     # Edit pom files to have correct version syntax
     for i in $(find . -name pom.xml -not -path './.rvm*'); do sed -i "s/\${revision}/0/g" $i; done
