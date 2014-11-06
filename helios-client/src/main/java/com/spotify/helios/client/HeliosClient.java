@@ -391,6 +391,14 @@ public class HeliosClient implements AutoCloseable {
     return get(uri(path("/hosts/%s/status", host)), HostStatus.class);
   }
 
+  public ListenableFuture<Map<String, HostStatus>> hostStatuses(final List<String> hosts) {
+    final ConvertResponseToPojo<Map<String, HostStatus>> converter = ConvertResponseToPojo.create(
+        TypeFactory.defaultInstance().constructMapType(Map.class, String.class, HostStatus.class),
+        ImmutableSet.of(HTTP_OK));
+
+    return transform(request(uri("/hosts/statuses"), "POST", hosts), converter);
+  }
+
   public ListenableFuture<Integer> registerHost(final String host, final String id) {
     return put(uri(path("/hosts/%s", host), ImmutableMap.of("id", id)));
   }
@@ -489,11 +497,11 @@ public class HeliosClient implements AutoCloseable {
     private final JavaType javaType;
     private final Set<Integer> decodeableStatusCodes;
 
-    private ConvertResponseToPojo(JavaType javaType) {
+    private ConvertResponseToPojo(final JavaType javaType) {
       this(javaType, ImmutableSet.of(HTTP_OK));
     }
 
-    public ConvertResponseToPojo(JavaType type, Set<Integer> decodeableStatusCodes) {
+    public ConvertResponseToPojo(final JavaType type, final Set<Integer> decodeableStatusCodes) {
       this.javaType = type;
       this.decodeableStatusCodes = decodeableStatusCodes;
     }
@@ -503,8 +511,8 @@ public class HeliosClient implements AutoCloseable {
       return new ConvertResponseToPojo<>(type, decodeableStatusCodes);
     }
 
-    public static <T> ConvertResponseToPojo<T> create(Class<T> clazz,
-                                                      Set<Integer> decodeableStatusCodes) {
+    public static <T> ConvertResponseToPojo<T> create(final Class<T> clazz,
+                                                      final Set<Integer> decodeableStatusCodes) {
       return new ConvertResponseToPojo<>(Json.type(clazz), decodeableStatusCodes);
     }
 

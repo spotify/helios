@@ -22,6 +22,7 @@
 package com.spotify.helios.master.resources;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
@@ -45,10 +46,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
 import javax.ws.rs.GET;
+import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
@@ -134,6 +137,25 @@ public class HostsResource {
   @ExceptionMetered
   public Optional<HostStatus> hostStatus(@PathParam("id") final String host) {
     return Optional.fromNullable(model.getHostStatus(host));
+  }
+
+  /**
+   * Returns various status information about the hosts.
+   */
+  @POST
+  @Path("/statuses")
+  @Produces(APPLICATION_JSON)
+  @Timed
+  @ExceptionMetered
+  public Map<String, HostStatus> hostStatuses(final List<String> hosts) {
+    final Map<String, HostStatus> statuses = Maps.newHashMap();
+    for (final String current : hosts) {
+      final HostStatus status = model.getHostStatus(current);
+      if (status != null) {
+        statuses.put(current, status);
+      }
+    }
+    return statuses;
   }
 
   /**
