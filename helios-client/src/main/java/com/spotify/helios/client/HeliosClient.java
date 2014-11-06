@@ -38,6 +38,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
@@ -475,6 +476,14 @@ public class HeliosClient implements AutoCloseable {
     return get(uri(path("/jobs/%s/status", jobId)), JobStatus.class);
   }
 
+  public ListenableFuture<Map<JobId, JobStatus>> jobStatuses(final Set<JobId> jobs) {
+    final ConvertResponseToPojo<Map<JobId, JobStatus>> converter = ConvertResponseToPojo.create(
+        TypeFactory.defaultInstance().constructMapType(Map.class, JobId.class, JobStatus.class),
+        ImmutableSet.of(HTTP_OK));
+    
+    return transform(request(uri("/jobs/statuses"), "POST", jobs), converter);
+  }
+  
   private static final class ConvertResponseToPojo<T> implements AsyncFunction<Response, T> {
 
     private final JavaType javaType;
@@ -487,6 +496,11 @@ public class HeliosClient implements AutoCloseable {
     public ConvertResponseToPojo(JavaType type, Set<Integer> decodeableStatusCodes) {
       this.javaType = type;
       this.decodeableStatusCodes = decodeableStatusCodes;
+    }
+
+    public static <T> ConvertResponseToPojo<T> create(final JavaType type,
+                                                      final Set<Integer> decodeableStatusCodes) {
+      return new ConvertResponseToPojo<>(type, decodeableStatusCodes);
     }
 
     public static <T> ConvertResponseToPojo<T> create(Class<T> clazz,
