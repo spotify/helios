@@ -38,7 +38,7 @@ import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 // TODO (dano): open source the syslog-redirector and enable this test
@@ -52,7 +52,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
     // docker, and that the redirector executable exists and doesn't do anything terribly stupid.
     startDefaultMaster();
     startDefaultAgent(testHost(), "--syslog-redirect", "10.0.3.1:6514");
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     try (final DockerClient dockerClient = getNewDockerClient()) {
       final List<String> command = asList("sh", "-c", "echo should-be-redirected");

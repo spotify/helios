@@ -47,7 +47,7 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -76,8 +76,8 @@ public class AgentRestartTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     // Wait for agent to come up
-    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Deploy the job on the agent
     final Deployment deployment = Deployment.of(jobId, START);
@@ -86,18 +86,18 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Wait for the job to run
     final TaskStatus firstTaskStatus = awaitJobState(client, testHost(), jobId, RUNNING,
-                                                     LONG_WAIT_MINUTES, MINUTES);
+                                                     LONG_WAIT_SECONDS, SECONDS);
     assertEquals(job, firstTaskStatus.getJob());
     assertEquals(1, listContainers(dockerClient, testTag).size());
     assertTrue(dockerClient.inspectContainer(firstTaskStatus.getContainerId()).state().running());
 
     // Stop the agent
     agent1.stopAsync().awaitTerminated();
-    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_SECONDS, SECONDS);
 
     // Start the agent again
     final AgentMain agent2 = startDefaultAgent(testHost());
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Wait for a while and make sure that the same container is still running
     Thread.sleep(5000);
@@ -115,7 +115,7 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Stop the agent
     agent2.stopAsync().awaitTerminated();
-    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_SECONDS, SECONDS);
 
     // Kill the container
     dockerClient.killContainer(firstTaskStatus.getContainerId());
@@ -123,11 +123,11 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Start the agent again
     final AgentMain agent3 = startDefaultAgent(testHost());
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Wait for the job to be restarted in a new container
     final TaskStatus secondTaskStatus = Polling.await(
-        LONG_WAIT_MINUTES, MINUTES,
+        LONG_WAIT_SECONDS, SECONDS,
         new Callable<TaskStatus>() {
           @Override
           public TaskStatus call() throws Exception {
@@ -145,7 +145,7 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Stop the agent
     agent3.stopAsync().awaitTerminated();
-    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_SECONDS, SECONDS);
 
     // Kill and destroy the container
     dockerClient.killContainer(secondTaskStatus.getContainerId());
@@ -153,11 +153,11 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Start the agent again
     final AgentMain agent4 = startDefaultAgent(testHost());
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Wait for the task to be restarted in a new container
     final TaskStatus thirdTaskStatus = Polling.await(
-        LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
+        LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final HostStatus hostStatus = client.hostStatus(testHost()).get();
@@ -174,7 +174,7 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Stop the agent
     agent4.stopAsync().awaitTerminated();
-    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_SECONDS, SECONDS);
 
     // Stop the job
     final SetGoalResponse stopped = client.setGoal(Deployment.of(jobId, STOP), testHost()).get();
@@ -182,15 +182,15 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Start the agent again
     final AgentMain agent5 = startDefaultAgent(testHost());
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Verify that the task is stopped
-    awaitJobState(client, testHost(), jobId, STOPPED, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), jobId, STOPPED, LONG_WAIT_SECONDS, SECONDS);
     assertEquals(0, listContainers(dockerClient, testTag).size());
 
     // Stop the agent
     agent5.stopAsync().awaitTerminated();
-    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_SECONDS, SECONDS);
 
     // Start the job
     final SetGoalResponse started = client.setGoal(Deployment.of(jobId, START),
@@ -199,15 +199,15 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Start the agent again
     final AgentMain agent6 = startDefaultAgent(testHost());
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Verify that the task is started
-    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
     assertEquals(1, listContainers(dockerClient, testTag).size());
 
     // Stop the agent
     agent6.stopAsync().awaitTerminated();
-    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), DOWN, LONG_WAIT_SECONDS, SECONDS);
 
     // Undeploy the job
     final JobUndeployResponse undeployed = client.undeploy(jobId, testHost()).get();
@@ -215,10 +215,10 @@ public class AgentRestartTest extends SystemTestBase {
 
     // Start the agent again
     startDefaultAgent(testHost());
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Wait for the task to get removed
-    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
+    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_SECONDS, SECONDS);
     assertEquals(0, listContainers(dockerClient, testTag).size());
   }
 }

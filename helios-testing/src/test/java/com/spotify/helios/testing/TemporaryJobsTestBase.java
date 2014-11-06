@@ -69,8 +69,8 @@ public abstract class TemporaryJobsTestBase extends SystemTestBase {
     startDefaultAgent(testHost1);
     startDefaultAgent(testHost2);
 
-    awaitHostStatus(client, testHost1, UP, LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, testHost2, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost1, UP, LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost2, UP, LONG_WAIT_SECONDS, SECONDS);
 
     prefixDirectory = temporaryFolder.newFolder().toPath();
   }

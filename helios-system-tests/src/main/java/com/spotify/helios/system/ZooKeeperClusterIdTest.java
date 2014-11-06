@@ -41,7 +41,7 @@ import java.util.concurrent.ExecutionException;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItems;
 import static org.junit.Assert.assertThat;
@@ -112,7 +112,7 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
   public void testAgent() throws Exception {
     startDefaultMaster("--zk-cluster-id=" + zkClusterId);
     startDefaultAgent(testHost(), "--zk-cluster-id=" + zkClusterId);
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Create job and deploy it
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);

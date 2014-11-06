@@ -42,7 +42,7 @@ import java.util.concurrent.Callable;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -64,7 +64,7 @@ public class CliDeploymentTest extends SystemTestBase {
     startDefaultMaster();
 
     // Wait for master to come up
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
       @Override
       public String call() throws Exception {
         final String output = cli("masters");
@@ -84,8 +84,8 @@ public class CliDeploymentTest extends SystemTestBase {
     final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
 
     // Wait for agent to come up
-    awaitHostRegistered(testHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Create job
     final JobId jobId = createJob(testJobName, testJobVersion, image, IDLE_COMMAND, env, ports,
@@ -168,7 +168,7 @@ public class CliDeploymentTest extends SystemTestBase {
     startDefaultMaster();
 
     // Wait for master to come up
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
       @Override
       public String call() throws Exception {
         final String output = cli("masters");
@@ -187,7 +187,7 @@ public class CliDeploymentTest extends SystemTestBase {
     startDefaultMaster();
 
     // Wait for master to come up
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
       @Override
       public String call() throws Exception {
         final String output = cli("masters");
@@ -209,7 +209,7 @@ public class CliDeploymentTest extends SystemTestBase {
     startDefaultMaster();
 
     // Wait for master to come up
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
       @Override
       public String call() throws Exception {
         final String output = cli("masters");
@@ -228,7 +228,7 @@ public class CliDeploymentTest extends SystemTestBase {
     startDefaultMaster();
 
     // Wait for master to come up
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
       @Override
       public String call() throws Exception {
         final String output = cli("masters");

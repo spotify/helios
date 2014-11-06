@@ -43,7 +43,7 @@ import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -58,10 +58,10 @@ public class EnvironmentVariableTest extends SystemTestBase {
                       "SPOTIFY_POD=PODNAME",
                       "SPOTIFY_ROLE=ROLENAME",
                       "BAR=badfood");
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Wait for the agent to report environment vars
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         Map<String, HostStatus> status = Json.read(

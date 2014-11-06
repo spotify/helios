@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import static com.google.common.collect.Iterables.getOnlyElement;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -65,7 +65,7 @@ public class MasterServiceRegistrationTest extends ServiceRegistrationTestBase {
   public void test() throws Exception {
     startDefaultMaster("--service-registry=" + registryAddress);
 
-    verify(registrar, timeout((int) MINUTES.toMillis(LONG_WAIT_MINUTES)))
+    verify(registrar, timeout((int) SECONDS.toMillis(LONG_WAIT_SECONDS)))
         .register(registrationCaptor.capture());
     final ServiceRegistration registration = registrationCaptor.getValue();
 

@@ -40,7 +40,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertTrue;
 
 public class JobWatchTest extends SystemTestBase {
@@ -49,7 +49,7 @@ public class JobWatchTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
     startDefaultAgent(testHost());
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Create job
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND,
@@ -65,7 +65,7 @@ public class JobWatchTest extends SystemTestBase {
     final AtomicBoolean success = new AtomicBoolean(false);
     final List<String> outputLines = Lists.newArrayList();
 
-    final long deadline = System.currentTimeMillis() + MINUTES.toMillis(LONG_WAIT_MINUTES);
+    final long deadline = System.currentTimeMillis() + SECONDS.toMillis(LONG_WAIT_SECONDS);
 
     final String testHost = testHost();
     final String abbreviatedTestHost;

@@ -43,7 +43,7 @@ import java.util.Map;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -94,8 +94,8 @@ public class DeploymentTest extends SystemTestBase {
     assertEquals(ImmutableMap.of(jobId, job), matchJobs3);
 
     // Wait for agent to come up
-    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Deploy the job on the agent
     final Deployment deployment = Deployment.of(jobId, START, TEST_USER);
@@ -125,7 +125,7 @@ public class DeploymentTest extends SystemTestBase {
 
     // Wait for the job to run
     TaskStatus taskStatus;
-    taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
     assertEquals(job, taskStatus.getJob());
 
     assertEquals(JobDeleteResponse.Status.STILL_IN_USE, client.deleteJob(jobId).get().getStatus());
@@ -145,7 +145,7 @@ public class DeploymentTest extends SystemTestBase {
     assertTrue(undeployedJob == null);
 
     // Wait for the task to disappear
-    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
+    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_SECONDS, SECONDS);
 
     // Verify that the job can be deleted
     assertEquals(JobDeleteResponse.Status.OK, client.deleteJob(jobId).get().getStatus());
