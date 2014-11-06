@@ -37,7 +37,6 @@ import java.util.concurrent.Callable;
 import static org.junit.Assert.assertTrue;
 
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -50,12 +49,12 @@ public class JobHistoryTest extends SystemTestBase {
     final HeliosClient client = defaultClient();
 
     startDefaultAgent(testHost());
-    awaitHostStatus(testHost(), Status.UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), Status.UP, LONG_WAIT_SECONDS, SECONDS);
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
     deployJob(jobId, testHost());
-    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
     undeployJob(jobId, testHost());
-    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
+    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_SECONDS, SECONDS);
     final TaskStatusEvents events = Polling.await(
         WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<TaskStatusEvents>() {
       @Override

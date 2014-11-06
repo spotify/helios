@@ -48,7 +48,7 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.mockito.Mockito.timeout;
@@ -84,7 +84,7 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
     final HeliosClient client = defaultClient();
 
     startDefaultAgent(testHost(), "--service-registry=" + registryAddress);
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final ImmutableMap<String, PortMapping> portMapping = ImmutableMap.of(
         "foo_port", PortMapping.of(4711, externalPort),
@@ -98,9 +98,9 @@ public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {
                                   EMPTY_ENV, portMapping, registration);
 
     deployJob(jobId, testHost());
-    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
 
-    verify(registrar, timeout((int) MINUTES.toMillis(LONG_WAIT_MINUTES)))
+    verify(registrar, timeout((int) SECONDS.toMillis(LONG_WAIT_SECONDS)))
         .register(registrationCaptor.capture());
     final ServiceRegistration serviceRegistration = registrationCaptor.getValue();
 

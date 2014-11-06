@@ -32,7 +32,7 @@ import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public class CliMasterListTest extends SystemTestBase {
@@ -42,7 +42,7 @@ public class CliMasterListTest extends SystemTestBase {
     startDefaultMaster();
 
     // Wait for master to come up
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
       @Override
       public String call() throws Exception {
         final String output = cli("masters");

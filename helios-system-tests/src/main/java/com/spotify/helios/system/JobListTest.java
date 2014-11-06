@@ -33,7 +33,7 @@ import java.util.Map.Entry;
 
 import static com.google.common.collect.Iterables.get;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -47,7 +47,7 @@ public class JobListTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
     startDefaultAgent(testHost());
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Create job
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);

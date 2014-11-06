@@ -31,7 +31,7 @@ import org.junit.Test;
 
 import java.util.concurrent.Callable;
 
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
@@ -44,7 +44,7 @@ public class AgentReportingTest extends SystemTestBase {
 
     final HeliosClient client = defaultClient();
     final DockerVersion dockerVersion = Polling.await(
-        LONG_WAIT_MINUTES, MINUTES, new Callable<DockerVersion>() {
+        LONG_WAIT_SECONDS, SECONDS, new Callable<DockerVersion>() {
           @Override
           public DockerVersion call() throws Exception {
             final HostStatus status = client.hostStatus(testHost()).get();

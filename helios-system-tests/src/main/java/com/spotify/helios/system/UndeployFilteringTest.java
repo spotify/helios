@@ -45,7 +45,7 @@ import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -80,7 +80,7 @@ public class UndeployFilteringTest extends SystemTestBase {
     startDefaultMaster();
     agent = startDefaultAgent(TEST_HOST);
     client = defaultClient();
-    awaitHostRegistered(client, TEST_HOST, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, TEST_HOST, LONG_WAIT_SECONDS, SECONDS);
   }
 
   @Test

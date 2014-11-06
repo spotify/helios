@@ -38,7 +38,7 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assume.assumeThat;
@@ -63,7 +63,7 @@ public class TerminationTest extends SystemTestBase {
 
     final HeliosClient client = defaultClient();
 
-    awaitHostStatus(client, host, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Note: signal 2 is SIGINT
     final Job jobToInterrupt = Job.newBuilder()
@@ -101,7 +101,7 @@ public class TerminationTest extends SystemTestBase {
 
     final HeliosClient client = defaultClient();
 
-    awaitHostStatus(client, host, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Note: signal 15 is SIGTERM
     final Job jobToInterrupt = Job.newBuilder()

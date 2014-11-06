@@ -40,7 +40,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
 import static com.spotify.helios.common.descriptors.ThrottleState.NO;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class FlappingTest extends SystemTestBase {
 
@@ -52,7 +52,7 @@ public class FlappingTest extends SystemTestBase {
 
     final HeliosClient client = defaultClient();
 
-    awaitHostStatus(client, host, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
 
     final Job flapper = Job.newBuilder()
         .setName(testJobName)
@@ -67,7 +67,7 @@ public class FlappingTest extends SystemTestBase {
     awaitTaskState(jobId, host, RUNNING);
 
     // Poke the container to make it exit until it's classified as flapping
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         final JobStatus jobStatus = getOrNull(client.jobStatus(jobId));
@@ -83,7 +83,7 @@ public class FlappingTest extends SystemTestBase {
     });
 
     // Verify that the job recovers after we stop poking
-    awaitJobThrottle(client, host, jobId, NO, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobThrottle(client, host, jobId, NO, LONG_WAIT_SECONDS, SECONDS);
   }
 
   private boolean poke(final int port) {
