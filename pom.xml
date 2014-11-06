@@ -207,9 +207,9 @@
               </environmentVariables>
               <systemPropertyVariables>
                 <logToFile>false</logToFile>
-                <heliosLoggingLevel>WARN</heliosLoggingLevel>
+                <heliosLoggingLevel>ERROR</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
-                <rootLoggingLevel>WARN</rootLoggingLevel>
+                <rootLoggingLevel>ERROR</rootLoggingLevel>
               </systemPropertyVariables>
             </configuration>
           </plugin>
