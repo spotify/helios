@@ -24,16 +24,13 @@ package com.spotify.helios.testing;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.system.SystemTestBase;
 
-import org.junit.After;
 import org.junit.Before;
 
 import java.nio.file.Path;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public abstract class TemporaryJobsTestBase extends SystemTestBase {
 

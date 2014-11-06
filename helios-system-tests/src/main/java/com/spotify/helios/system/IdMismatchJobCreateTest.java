@@ -29,7 +29,6 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import org.junit.Test;
 
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
-
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
