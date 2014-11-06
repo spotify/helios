@@ -140,7 +140,8 @@ public abstract class SystemTestBase {
   public static final int INTERNAL_PORT = 4444;
 
   public static final String BUSYBOX = "busybox";
-  public static final List<String> IDLE_COMMAND = asList("sh", "-c", "while :; do sleep 1; done");
+  public static final List<String> IDLE_COMMAND = asList(
+      "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
 
   public final String testTag = "test_" + toHexString(ThreadLocalRandom.current().nextInt());
   public final String testJobName = "job_" + testTag;

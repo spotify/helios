@@ -56,7 +56,8 @@ public class BasicFunctionalityITCase {
   private static final Logger log = LoggerFactory.getLogger(BasicFunctionalityITCase.class);
   private static final String JOB_NAME = "BasicFunctionalityITCase";
 
-  static final List<String> IDLE_COMMAND = asList("sh", "-c", "while :; do sleep 1; done");
+  static final List<String> IDLE_COMMAND = asList(
+      "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
   public static final String BUSYBOX = "busybox";
 
   private HeliosClient client;
