@@ -21,6 +21,7 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
@@ -28,10 +29,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
-
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -40,7 +38,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.helios.common.Hash.sha1digest;
@@ -89,6 +86,7 @@ import static java.util.Collections.emptyMap;
 public class Job extends Descriptor implements Comparable<Job> {
 
   public static final Map<String, String> EMPTY_ENV = emptyMap();
+  public static final Resources EMPTY_RESOURCES = null;
   public static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
   public static final List<String> EMPTY_COMMAND = emptyList();
   public static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
@@ -103,6 +101,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final String image;
   private final List<String> command;
   private final Map<String, String> env;
+  private final Resources resources;
   private final Map<String, PortMapping> ports;
   private final Map<ServiceEndpoint, ServicePorts> registration;
   private final Integer gracePeriod;
@@ -118,6 +117,7 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param image The docker image to use.
    * @param command The command to pass to the container.
    * @param env Environment variables to set
+   * @param resources Resource specification for the container.
    * @param ports The ports you wish to expose from the container.
    * @param registration Configuration information for the discovery service (if applicable)
    * @param gracePeriod How long to let the container run after deregistering with the discovery
@@ -132,6 +132,7 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("image") final String image,
              @JsonProperty("command") @Nullable final List<String> command,
              @JsonProperty("env") @Nullable final Map<String, String> env,
+             @JsonProperty("resources") @Nullable final Resources resources,
              @JsonProperty("ports") @Nullable final Map<String, PortMapping> ports,
              @JsonProperty("registration") @Nullable
                  final Map<ServiceEndpoint, ServicePorts> registration,
@@ -146,6 +147,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     // Optional
     this.command = Optional.fromNullable(command).or(EMPTY_COMMAND);
     this.env = Optional.fromNullable(env).or(EMPTY_ENV);
+    this.resources = Optional.fromNullable(resources).orNull();
     this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
     this.registration = Optional.fromNullable(registration).or(EMPTY_REGISTRATION);
     this.gracePeriod = Optional.fromNullable(gracePeriod).orNull();
@@ -161,6 +163,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.image = p.image;
     this.command = ImmutableList.copyOf(checkNotNull(p.command, "command"));
     this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
+    this.resources = p.resources;
     this.ports = ImmutableMap.copyOf(checkNotNull(p.ports, "ports"));
     this.registration = ImmutableMap.copyOf(checkNotNull(p.registration, "registration"));
     this.gracePeriod = p.gracePeriod;
@@ -185,6 +188,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public Map<String, String> getEnv() {
     return env;
+  }
+
+  public Resources getResources() {
+    return resources;
   }
 
   public Map<String, PortMapping> getPorts() {
@@ -241,6 +248,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (env != null ? !env.equals(job.env) : job.env != null) {
       return false;
     }
+    if (resources != null ? !resources.equals(job.resources) : job.resources != null) {
+      return false;
+    }
     if (expires != null ? !expires.equals(job.expires) : job.expires != null) {
       return false;
     }
@@ -281,6 +291,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (expires != null ? expires.hashCode() : 0);
     result = 31 * result + (command != null ? command.hashCode() : 0);
     result = 31 * result + (env != null ? env.hashCode() : 0);
+    result = 31 * result + (resources != null ? resources.hashCode() : 0);
     result = 31 * result + (ports != null ? ports.hashCode() : 0);
     result = 31 * result + (registration != null ? registration.hashCode() : 0);
     result = 31 * result + (registrationDomain != null ? registrationDomain.hashCode() : 0);
@@ -297,6 +308,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("image", image)
         .add("command", command)
         .add("env", env)
+        .add("resources", resources)
         .add("ports", ports)
         .add("registration", registration)
         .add("gracePeriod", gracePeriod)
@@ -317,6 +329,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     return builder.setImage(image)
         .setCommand(command)
         .setEnv(env)
+        .setResources(resources)
         .setPorts(ports)
         .setRegistration(registration)
         .setGracePeriod(gracePeriod)
@@ -348,6 +361,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public String image;
       public List<String> command;
       public Map<String, String> env;
+      public Resources resources;
       public Map<String, PortMapping> ports;
       public Map<ServiceEndpoint, ServicePorts> registration;
       public Integer gracePeriod;
@@ -358,6 +372,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       private Parameters() {
         this.command = EMPTY_COMMAND;
         this.env = Maps.newHashMap(EMPTY_ENV);
+        this.resources = EMPTY_RESOURCES;
         this.ports = Maps.newHashMap(EMPTY_PORTS);
         this.registration = Maps.newHashMap(EMPTY_REGISTRATION);
         this.gracePeriod = EMPTY_GRACE_PERIOD;
@@ -372,6 +387,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.image = p.image;
         this.command = ImmutableList.copyOf(p.command);
         this.env = Maps.newHashMap(p.env);
+        this.resources = p.resources;
         this.ports = Maps.newHashMap(p.ports);
         this.registration = Maps.newHashMap(p.registration);
         this.gracePeriod = p.gracePeriod;
@@ -419,6 +435,11 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Builder setEnv(final Map<String, String> env) {
       p.env = Maps.newHashMap(env);
+      return this;
+    }
+
+    public Builder setResources(final Resources resources) {
+      p.resources = resources;
       return this;
     }
 
@@ -518,6 +539,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public String getCreatingUser() {
       return p.creatingUser;
+    }
+
+    public Resources getResources() {
+      return p.resources;
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})

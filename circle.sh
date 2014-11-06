@@ -42,7 +42,7 @@ case "$1" in
 
       1)
         # run helios-system-tests
-        mvn test -B -pl helios-system-tests
+        mvn -Dtest=ResourcesTest test -B -pl helios-system-tests
 
         ;;
 
