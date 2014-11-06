@@ -62,7 +62,6 @@ public class TaskConfig {
   private static final Logger log = LoggerFactory.getLogger(TaskConfig.class);
 
   private static final Pattern CONTAINER_NAME_FORBIDDEN = Pattern.compile("[^a-zA-Z0-9_-]");
-  private static final int HOST_NAME_MAX = 32;
 
   private final String host;
   private final Map<String, Integer> ports;
@@ -197,34 +196,6 @@ public class TaskConfig {
       ports.add(containerPort(mapping.getInternalPort(), mapping.getProtocol()));
     }
     return ports;
-  }
-
-  /**
-   * Generate a host name for the container
-   */
-  private String containerHostname(String name) {
-    final StringBuilder sb = new StringBuilder();
-    for (int i = 0; i < name.length(); i++) {
-      char c = name.charAt(i);
-      if ((c >= 'A' && c <= 'Z')
-          || (c >= 'a' && c <= 'z')
-          || (c >= '0' && c <= '9')) {
-        sb.append(c);
-      } else {
-        sb.append('_');
-      }
-    }
-
-    final String hostname = sb.toString();
-    if (hostname.length() <= HOST_NAME_MAX) {
-      return hostname;
-    }
-
-    // If the hostname is too long, concatenate first and last 16 chars of it, so as to get
-    // an "ideal" sample of significant bits of version, id and name
-    final String tail = hostname.substring(hostname.length() - 16);
-    final String head = hostname.substring(0, 16);
-    return head + tail;
   }
 
   /**

@@ -40,7 +40,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.helios.common.Hash.sha1digest;

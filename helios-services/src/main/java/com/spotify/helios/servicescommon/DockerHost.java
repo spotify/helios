@@ -21,7 +21,6 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.base.Strings;
 import com.google.common.net.HostAndPort;
 
 import java.net.URI;
