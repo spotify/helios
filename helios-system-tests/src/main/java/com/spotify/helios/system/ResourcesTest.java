@@ -23,6 +23,7 @@ package com.spotify.helios.system;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.ContainerConfig;
+import com.spotify.docker.client.messages.Info;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
@@ -40,6 +41,7 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
 
 public class ResourcesTest extends SystemTestBase {
 
@@ -66,6 +68,13 @@ public class ResourcesTest extends SystemTestBase {
         .setCommand(IDLE_COMMAND)
         .setCreatingUser(TEST_USER)
         .build();
+
+    try (final DockerClient docker = getNewDockerClient()) {
+      // Only run this test if limits are actually supported
+      final Info info = docker.info();
+      assumeTrue(info.memoryLimit());
+      assumeTrue(info.swapLimit());
+    }
   }
 
   @Test
@@ -89,6 +98,7 @@ public class ResourcesTest extends SystemTestBase {
     assertJobEquals(job, taskStatus.getJob());
 
     try (final DockerClient docker = getNewDockerClient()) {
+
       final ContainerConfig containerConfig =
           docker.inspectContainer(taskStatus.getContainerId()).config();
 
