@@ -21,25 +21,31 @@
 
 package com.spotify.helios.testing;
 
-import com.typesafe.config.Config;
+import com.spotify.helios.common.descriptors.Job;
 
 import org.junit.Test;
 
-import java.util.Properties;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
 
-import static com.spotify.helios.testing.TemporaryJobs.HELIOS_TESTING_PROFILE;
-import static org.junit.Assert.assertEquals;
+public class JobsTest {
 
-public class TempJobsProfileOverrideTest {
-  @Test public void foo() throws Exception {
-    final Properties oldProperties = System.getProperties();
-    final Config c;
-    try {
-      System.setProperty(HELIOS_TESTING_PROFILE, "this");
-      c = TemporaryJobs.loadConfig();
-    } finally {
-      System.setProperties(oldProperties);
-    }
-    assertEquals("this", TemporaryJobs.getProfileFromConfig(c));
+  @Test
+  public void testGetJobDescription() {
+    final String image = "busybox";
+
+    final Job job = Job.newBuilder()
+        .setImage(image)
+        .setName("testGetJobDescription")
+        .setVersion("1")
+        .build();
+    final String shortHash = job.getId().getHash().substring(0, 7);
+
+    // Simple test to verify the job description contains the image name and a shortened job hash.
+    assertThat(Jobs.getJobDescription(job),
+               both(startsWith(image)).and(containsString(shortHash)));
   }
+
 }

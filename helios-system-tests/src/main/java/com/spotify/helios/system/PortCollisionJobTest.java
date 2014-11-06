@@ -32,9 +32,9 @@ import com.spotify.helios.common.protocol.JobDeployResponse;
 
 import org.junit.Test;
 
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public class PortCollisionJobTest extends SystemTestBase {
@@ -48,7 +48,7 @@ public class PortCollisionJobTest extends SystemTestBase {
 
     final HeliosClient client = defaultClient();
 
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final Job job1 = Job.newBuilder()
         .setName(testTag + "foo")

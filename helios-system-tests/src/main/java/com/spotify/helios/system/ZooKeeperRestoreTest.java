@@ -42,7 +42,7 @@ import java.nio.file.Path;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public class ZooKeeperRestoreTest extends SystemTestBase {
@@ -87,7 +87,7 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
 
     // Start agent
     startDefaultAgent(testHost());
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Restore zk, erasing task state
     zkc.stop();
@@ -95,8 +95,8 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     zkc.start();
 
     // Wait for agent to reregister
-    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
   }
 
   @Test
@@ -104,7 +104,7 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
 
     // Start agent once to have it register
     final AgentMain agent1 = startDefaultAgent(testHost());
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
     agent1.stopAsync().awaitTerminated();
 
     // Deploy job
@@ -117,10 +117,10 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
 
     // Start agent
     startDefaultAgent(testHost());
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Wait for agent to indicate that job is running
-    awaitJobState(client, testHost(), fooJob.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), fooJob.getId(), RUNNING, LONG_WAIT_SECONDS, SECONDS);
 
     // Restore zk, erasing task state
     zkc.stop();
@@ -128,7 +128,7 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     zkc.start();
 
     // Wait for agent to again indicate that job is running
-    awaitJobState(client, testHost(), fooJob.getId(), RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), fooJob.getId(), RUNNING, LONG_WAIT_SECONDS, SECONDS);
 
     // Remove task status
     zkc.curator().delete().forPath(Paths.statusHostJob(testHost(), fooJob.getId()));

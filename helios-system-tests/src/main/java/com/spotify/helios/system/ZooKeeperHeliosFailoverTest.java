@@ -41,7 +41,7 @@ import java.util.concurrent.Callable;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.zookeeper.KeeperException.NodeExistsException;
 import static org.junit.Assert.assertEquals;
 
@@ -75,7 +75,7 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
     startDefaultMaster();
     startDefaultAgent(testHost());
     client = defaultClient();
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
   }
 
   @Test
@@ -103,7 +103,7 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
     zkc.startPeer(0);
 
     // Wait for the zk peer to recover
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<Object>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         return zkc.peerCurator(0).checkExists().forPath("/barrier");
@@ -128,7 +128,7 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
     // Wait for the job to run
-    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
   }
 
   private void undeploy(final JobId jobId) throws Exception {
@@ -141,7 +141,7 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
     assertEquals(JobUndeployResponse.Status.OK, undeployed.getStatus());
 
     // Wait for the task to disappear
-    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
+    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_SECONDS, SECONDS);
   }
 
 }

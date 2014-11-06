@@ -45,7 +45,7 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public class VolumeTest extends SystemTestBase {
@@ -91,8 +91,8 @@ public class VolumeTest extends SystemTestBase {
 
   public void assertVolumes(final JobId jobId) throws Exception {
     // Wait for agent to come up
-    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Deploy the job on the agent
     final Deployment deployment = Deployment.of(jobId, START);
@@ -101,7 +101,7 @@ public class VolumeTest extends SystemTestBase {
 
     // Wait for the job to run
     final TaskStatus taskStatus = awaitJobState(
-        client, testHost(), jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+        client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
     assertJobEquals(job, taskStatus.getJob());
 
     final Integer bar = taskStatus.getPorts().get("bar").getExternalPort();
@@ -125,7 +125,7 @@ public class VolumeTest extends SystemTestBase {
 
   private byte[] recv(final int port, final int n) throws Exception {
     checkArgument(n > 0, "n must be > 0");
-    return Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<byte[]>() {
+    return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<byte[]>() {
       @Override
       public byte[] call() {
         try (final Socket s = new Socket(DOCKER_HOST.address(), port)) {

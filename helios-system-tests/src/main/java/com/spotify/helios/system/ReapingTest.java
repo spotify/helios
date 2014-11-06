@@ -35,7 +35,7 @@ import java.security.SecureRandom;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.lang.Integer.toHexString;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
@@ -62,8 +62,8 @@ public class ReapingTest extends SystemTestBase {
     // Start agent
     final HeliosClient client = defaultClient();
     startDefaultAgent(testHost(), "--id=" + id);
-    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     int expectedExitCode = -1;
     if (docker.info().executionDriver().startsWith("lxc-")) {

@@ -47,7 +47,7 @@ import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.lang.System.getenv;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
@@ -96,7 +96,7 @@ public class ClusterDeploymentTest extends SystemTestBase {
     }
 
     for (int i = 0; i < HOSTS; i++) {
-      awaitHostStatus(client, host(i), UP, 10, MINUTES);
+      awaitHostStatus(client, host(i), UP, LONG_WAIT_SECONDS, SECONDS);
     }
 
     for (int i = 0; i < HOSTS; i++) {
@@ -104,7 +104,7 @@ public class ClusterDeploymentTest extends SystemTestBase {
     }
 
     for (int i = 0; i < HOSTS; i++) {
-      awaitJobState(client, host(i), job.getId(), RUNNING, 10, MINUTES);
+      awaitJobState(client, host(i), job.getId(), RUNNING, LONG_WAIT_SECONDS, SECONDS);
     }
 
     for (int i = 0; i < HOSTS; i++) {
@@ -112,7 +112,7 @@ public class ClusterDeploymentTest extends SystemTestBase {
     }
 
     for (int i = 0; i < HOSTS; i++) {
-      awaitTaskGone(client, host(i), job.getId(), 10, MINUTES);
+      awaitTaskGone(client, host(i), job.getId(), LONG_WAIT_SECONDS, SECONDS);
     }
   }
 

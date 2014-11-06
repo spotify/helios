@@ -34,7 +34,7 @@ import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 
@@ -46,7 +46,7 @@ public class DnsServerTest extends SystemTestBase {
     final String server2 = "127.0.0.2";
     startDefaultMaster();
     startDefaultAgent(testHost(), "--dns", server1, "--dns", server2);
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX,
                                   asList("cat", "/etc/resolv.conf"));
@@ -67,7 +67,7 @@ public class DnsServerTest extends SystemTestBase {
   public void testNoDnsParam() throws Exception {
     startDefaultMaster();
     startDefaultAgent(testHost());
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX,
                                   asList("cat", "/etc/resolv.conf"));

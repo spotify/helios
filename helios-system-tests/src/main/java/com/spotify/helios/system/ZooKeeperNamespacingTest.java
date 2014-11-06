@@ -32,7 +32,7 @@ import java.util.Collections;
 import java.util.List;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public class ZooKeeperNamespacingTest extends SystemTestBase {
@@ -47,8 +47,8 @@ public class ZooKeeperNamespacingTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster("--zk-namespace", NAMESPACE);
     startDefaultAgent(testHost(), "--zk-namespace", NAMESPACE);
-    awaitHostRegistered(testHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
 
     final CuratorFramework framework = CuratorFrameworkFactory.builder()

@@ -34,7 +34,7 @@ import org.junit.Test;
 
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public class UndeployRaceTest extends SystemTestBase {
@@ -71,11 +71,11 @@ public class UndeployRaceTest extends SystemTestBase {
     // Start agent
     startDefaultAgent(testHost(), "--id", agentId);
 
-    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Wait for the task to disappear
-    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_MINUTES, MINUTES);
+    awaitTaskGone(client, testHost(), jobId, LONG_WAIT_SECONDS, SECONDS);
 
     // Verify that the job can be deleted
     assertEquals(JobDeleteResponse.Status.OK, client.deleteJob(jobId).get().getStatus());

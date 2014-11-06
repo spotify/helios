@@ -136,11 +136,12 @@ public abstract class SystemTestBase {
   private static final Logger log = LoggerFactory.getLogger(SystemTestBase.class);
 
   public static final int WAIT_TIMEOUT_SECONDS = 40;
-  public static final int LONG_WAIT_MINUTES = 10;
+  public static final int LONG_WAIT_SECONDS = 200;
   public static final int INTERNAL_PORT = 4444;
 
   public static final String BUSYBOX = "busybox";
-  public static final List<String> IDLE_COMMAND = asList("sh", "-c", "while :; do sleep 1; done");
+  public static final List<String> IDLE_COMMAND = asList(
+      "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
 
   public final String testTag = "test_" + toHexString(ThreadLocalRandom.current().nextInt());
   public final String testJobName = "job_" + testTag;
@@ -217,7 +218,7 @@ public abstract class SystemTestBase {
       final String[] parts = portRange.split(":", 2);
       dockerPortRange = Range.closedOpen(Integer.valueOf(parts[0]),
                                          Integer.valueOf(parts[1]));
-      allocatedPort = Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<AllocatedPort>() {
+      allocatedPort = Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<AllocatedPort>() {
         @Override
         public AllocatedPort call() throws Exception {
           final int port = ThreadLocalRandom.current().nextInt(dockerPortRange.lowerEndpoint(),
@@ -891,9 +892,7 @@ public abstract class SystemTestBase {
 
   protected TaskStatus awaitTaskState(final JobId jobId, final String host,
                                       final TaskStatus.State state) throws Exception {
-    long timeout = LONG_WAIT_MINUTES;
-    TimeUnit timeUnit = MINUTES;
-    return Polling.await(timeout, timeUnit, new Callable<TaskStatus>() {
+    return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final String output = cli("status", "--json", "--job", jobId.toString());

@@ -21,10 +21,10 @@
 
 package com.spotify.helios.system;
 
-import com.spotify.helios.Polling;
-import com.spotify.helios.agent.AgentMain;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Container;
+import com.spotify.helios.Polling;
+import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
@@ -43,7 +43,7 @@ import java.util.concurrent.Callable;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -74,8 +74,8 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     // Wait for agent to come up
-    awaitHostRegistered(client, testHost(), LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Deploy the job on the agent
     final Deployment deployment = Deployment.of(jobId, START);
@@ -84,7 +84,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for the job to run
     final TaskStatus firstTaskStatus = awaitJobState(client, testHost(), jobId, RUNNING,
-                                                     LONG_WAIT_MINUTES, MINUTES);
+                                                     LONG_WAIT_SECONDS, SECONDS);
     assertEquals(job, firstTaskStatus.getJob());
     assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
 
@@ -114,7 +114,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for a while and make sure that a new container was spawned
     final String firstRestartedContainerId =
-        Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+        Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
           @Override
           public String call() throws Exception {
             final List<Container> containers = listContainers(dockerClient, testTag);
@@ -134,7 +134,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
 
     // Wait for a while and make sure that a new container was spawned
     final String secondRestartedContainerId =
-        Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<String>() {
+        Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
           @Override
           public String call() throws Exception {
             final List<Container> containers = listContainers(dockerClient, testTag);
@@ -147,10 +147,10 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     zk().start();
 
     // Verify that the agent is listed as up
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Wait for the new container id to be reflected in the task status
-    Polling.await(LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final JobStatus jobStatus = client.jobStatus(jobId).get();

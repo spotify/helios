@@ -39,7 +39,6 @@ import java.util.concurrent.Callable;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -62,7 +61,7 @@ public class JobExpirationTest extends SystemTestBase {
     final HeliosClient client = defaultClient();
 
     startDefaultAgent(testHost());
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND,
         DateTime.now().plusSeconds(10).toDate());
@@ -79,7 +78,7 @@ public class JobExpirationTest extends SystemTestBase {
         SECONDS);
 
     // Then make sure it expires
-    Polling.await(3, MINUTES, new Callable<JobId>() {
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<JobId>() {
       @Override
       public JobId call() throws Exception {
         if (client.jobs().get().containsKey(jobId)) {
@@ -90,14 +89,8 @@ public class JobExpirationTest extends SystemTestBase {
       }
     });
 
-    int expectedExitCode = -1;
-    if (docker.info().executionDriver().startsWith("lxc-")) {
-      // with LXC, killing a container results in exit code 0
-      expectedExitCode = 0;
-    }
-
     // Wait for the agent to kill the container
     final ContainerExit exit = docker.waitContainer(taskStatus.getContainerId());
-    assertThat(exit.statusCode(), is(expectedExitCode));
+    assertThat(exit.statusCode(), is(0));
   }
 }

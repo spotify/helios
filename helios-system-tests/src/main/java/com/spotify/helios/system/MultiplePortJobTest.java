@@ -47,7 +47,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
@@ -68,7 +68,7 @@ public class MultiplePortJobTest extends SystemTestBase {
     try (final DockerClient dockerClient = getNewDockerClient()) {
       final HeliosClient client = defaultClient();
 
-      awaitHostStatus(client, testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+      awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
       final Map<String, PortMapping> ports1 =
           ImmutableMap.of("foo", PortMapping.of(4711),
@@ -92,7 +92,7 @@ public class MultiplePortJobTest extends SystemTestBase {
       assertNotNull(jobId1);
       deployJob(jobId1, testHost());
       final TaskStatus firstTaskStatus1 = awaitJobState(client, testHost(), jobId1, RUNNING,
-                                                        LONG_WAIT_MINUTES, MINUTES);
+                                                        LONG_WAIT_SECONDS, SECONDS);
 
       final JobId jobId2 = createJob(testJobName + 2, testJobVersion, BUSYBOX, IDLE_COMMAND,
                                      EMPTY_ENV, ports2);
@@ -100,7 +100,7 @@ public class MultiplePortJobTest extends SystemTestBase {
       assertNotNull(jobId2);
       deployJob(jobId2, testHost());
       final TaskStatus firstTaskStatus2 = awaitJobState(client, testHost(), jobId2, RUNNING,
-                                                        LONG_WAIT_MINUTES, MINUTES);
+                                                        LONG_WAIT_SECONDS, SECONDS);
 
       assertEquals(expectedMapping1, firstTaskStatus1.getPorts());
       assertEquals(expectedMapping2, firstTaskStatus2.getPorts());
@@ -110,7 +110,7 @@ public class MultiplePortJobTest extends SystemTestBase {
       // Verify that port allocation is kept across container restarts
       dockerClient.killContainer(firstTaskStatus1.getContainerId());
       final TaskStatus restartedTaskStatus1 = Polling.await(
-          LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
+          LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
         @Override
         public TaskStatus call() throws Exception {
           final HostStatus hostStatus = client.hostStatus(testHost()).get();
@@ -127,7 +127,7 @@ public class MultiplePortJobTest extends SystemTestBase {
       dockerClient.killContainer(firstTaskStatus2.getContainerId());
       startDefaultAgent(testHost());
       final TaskStatus restartedTaskStatus2 = Polling.await(
-          LONG_WAIT_MINUTES, MINUTES, new Callable<TaskStatus>() {
+          LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
         @Override
         public TaskStatus call() throws Exception {
           final HostStatus hostStatus = client.hostStatus(testHost()).get();
@@ -145,7 +145,7 @@ public class MultiplePortJobTest extends SystemTestBase {
   public void testPortEnvVars() throws Exception {
     startDefaultMaster();
     startDefaultAgent(testHost());
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final Map<String, PortMapping> ports =
         ImmutableMap.of("bar", PortMapping.of(4712, externalPort1));

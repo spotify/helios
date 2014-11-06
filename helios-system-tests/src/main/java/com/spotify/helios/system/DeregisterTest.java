@@ -41,7 +41,7 @@ import org.junit.Test;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public class DeregisterTest extends SystemTestBase {
@@ -80,8 +80,8 @@ public class DeregisterTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     // Wait for agent to come up
-    awaitHostRegistered(client, host, LONG_WAIT_MINUTES, MINUTES);
-    awaitHostStatus(client, host, UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostRegistered(client, host, LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Deploy the job on the agent
     final Deployment deployment = Deployment.of(jobId, START);
@@ -89,7 +89,7 @@ public class DeregisterTest extends SystemTestBase {
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
     // Wait for the job to run
-    awaitJobState(client, host, jobId, RUNNING, LONG_WAIT_MINUTES, MINUTES);
+    awaitJobState(client, host, jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
 
     // Kill off agent
     agent.stopAsync().awaitTerminated();

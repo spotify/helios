@@ -38,7 +38,7 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertTrue;
@@ -49,7 +49,7 @@ public class ContainerHostNameTest extends SystemTestBase {
   public void test() throws Exception {
     startDefaultMaster();
     startDefaultAgent(testHost());
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     try (final DockerClient dockerClient = getNewDockerClient()) {
 
@@ -76,7 +76,7 @@ public class ContainerHostNameTest extends SystemTestBase {
   public void testLength() throws Exception {
     startDefaultMaster();
     startDefaultAgent(testHost());
-    awaitHostStatus(testHost(), UP, LONG_WAIT_MINUTES, MINUTES);
+    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     try (final DockerClient dockerClient = getNewDockerClient()) {
       final List<String> command = asList("hostname", "-f");
