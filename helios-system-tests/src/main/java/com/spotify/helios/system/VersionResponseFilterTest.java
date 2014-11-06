@@ -26,11 +26,9 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.common.Version;
-import com.spotify.helios.Parallelized;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;

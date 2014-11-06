@@ -31,8 +31,8 @@ import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.junit.Test;
 
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
