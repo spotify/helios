@@ -206,7 +206,6 @@
                 <HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>2</HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>
               </environmentVariables>
               <systemPropertyVariables>
-                <junit.parallel.threads>1</junit.parallel.threads>
                 <logToFile>false</logToFile>
                 <heliosLoggingLevel>WARN</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
