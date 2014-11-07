@@ -27,7 +27,6 @@ import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Goal;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
