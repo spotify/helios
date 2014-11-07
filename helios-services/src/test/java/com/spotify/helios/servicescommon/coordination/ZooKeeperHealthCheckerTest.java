@@ -23,7 +23,8 @@ package com.spotify.helios.servicescommon.coordination;
 
 import com.aphyr.riemann.Proto.Event;
 import com.spotify.helios.Polling;
-import com.spotify.helios.ZooKeeperStandaloneServerManager;
+import com.spotify.helios.ZooKeeperTestManager;
+import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.servicescommon.CapturingRiemannClient;
 
 import org.junit.After;
@@ -39,12 +40,12 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 public class ZooKeeperHealthCheckerTest {
   private CapturingRiemannClient riemannClient;
-  private ZooKeeperStandaloneServerManager zk;
+  private ZooKeeperTestManager zk;
 
   @Before
   public void setUp() throws Exception {
     riemannClient = new CapturingRiemannClient();
-    zk = new ZooKeeperStandaloneServerManager();
+    zk = new ZooKeeperTestingServerManager();
   }
 
   @After

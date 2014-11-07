@@ -21,8 +21,8 @@
 
 package com.spotify.helios.system;
 
-import com.spotify.helios.ZooKeeperStandaloneServerManager;
 import com.spotify.helios.ZooKeeperTestManager;
+import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -54,7 +54,7 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
       .setCommand(IDLE_COMMAND)
       .build();
 
-  private final ZooKeeperStandaloneServerManager zkc = new ZooKeeperStandaloneServerManager();
+  private final ZooKeeperTestingServerManager zkc = new ZooKeeperTestingServerManager();
 
   private HeliosClient client;
   private Path backupDir;

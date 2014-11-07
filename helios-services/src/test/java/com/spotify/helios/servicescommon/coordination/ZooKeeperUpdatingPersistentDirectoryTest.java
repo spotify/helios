@@ -22,7 +22,7 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import com.spotify.helios.Parallelized;
-import com.spotify.helios.ZooKeeperStandaloneServerManager;
+import com.spotify.helios.ZooKeeperTestingServerManager;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.utils.ZKPaths;
@@ -60,7 +60,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
   private static final String FOO_PATH = ZKPaths.makePath(PARENT_PATH, FOO_NODE);
   private static final String BAZ_PATH = ZKPaths.makePath(PARENT_PATH, BAZ_NODE);
 
-  private ZooKeeperStandaloneServerManager zk = new ZooKeeperStandaloneServerManager();
+  private ZooKeeperTestingServerManager zk = new ZooKeeperTestingServerManager();
 
   private ZooKeeperUpdatingPersistentDirectory sut;
 
