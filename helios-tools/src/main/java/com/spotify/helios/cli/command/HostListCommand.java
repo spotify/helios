@@ -26,6 +26,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.Table;
@@ -45,6 +46,7 @@ import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -117,8 +119,17 @@ public class HostListCommand extends ControlCommand {
       }
     } else {
       final Map<String, ListenableFuture<HostStatus>> statuses = Maps.newTreeMap();
-      for (final String host : hosts) {
-        statuses.put(host, client.hostStatus(host));
+      try {
+        final Map<String, HostStatus> hostStatuses = client.hostStatuses(hosts).get();
+        for (final Entry<String, HostStatus> entry : hostStatuses.entrySet()) {
+          statuses.put(entry.getKey(), Futures.immediateFuture(entry.getValue()));
+        }
+      } catch (ExecutionException e) {
+        System.err.println("Warning: masters failed batch status fetching.  Falling back to"
+            + " slower host status method");
+        for (final String host : hosts) {
+          statuses.put(host, client.hostStatus(host));
+        }
       }
       if (json) {
         final Map<String, HostStatus> sorted = Maps.newTreeMap();
