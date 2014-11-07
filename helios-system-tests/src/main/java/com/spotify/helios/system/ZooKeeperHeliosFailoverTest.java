@@ -22,7 +22,7 @@
 package com.spotify.helios.system;
 
 import com.spotify.helios.Polling;
-import com.spotify.helios.ZooKeeperClusterTestManager;
+import com.spotify.helios.ZooKeeperTestingClusterManager;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -61,7 +61,7 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
       .setCommand(IDLE_COMMAND)
       .build();
 
-  private final ZooKeeperClusterTestManager zkc = new ZooKeeperClusterTestManager();
+  private final ZooKeeperTestingClusterManager zkc = new ZooKeeperTestingClusterManager();
 
   private HeliosClient client;
 

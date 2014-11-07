@@ -22,7 +22,7 @@
 package com.spotify.helios.system;
 
 import com.spotify.helios.Parallelized;
-import com.spotify.helios.ZooKeeperClusterTestManager;
+import com.spotify.helios.ZooKeeperTestingClusterManager;
 
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
@@ -46,11 +46,11 @@ public class ZooKeeperCuratorFailoverTest {
   public static final byte[] FOO_DATA = "foo".getBytes();
   public static final String FOO = "/foo";
 
-  private ZooKeeperClusterTestManager zk;
+  private ZooKeeperTestingClusterManager zk;
 
   @Before
   public void setup() {
-    zk = new ZooKeeperClusterTestManager();
+    zk = new ZooKeeperTestingClusterManager();
   }
 
   @After
