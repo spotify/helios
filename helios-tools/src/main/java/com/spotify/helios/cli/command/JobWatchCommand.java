@@ -53,6 +53,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.spotify.helios.cli.Utils.allAsMap;
+import static com.spotify.helios.cli.command.JobStatusFetcher.getJobsStatuses;
 import static java.lang.String.format;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -205,11 +206,8 @@ public class JobWatchCommand extends MultiTargetControlCommand {
   private static Map<JobId, JobStatus> getStatuses(final HeliosClient client,
                                                    final Set<JobId> jobIds)
       throws ExecutionException, InterruptedException {
-    final Map<JobId, ListenableFuture<JobStatus>> futures = Maps.newTreeMap();
+    final Map<JobId, ListenableFuture<JobStatus>> futures = getJobsStatuses(client, jobIds);
 
-    for (final JobId jobId : jobIds) {
-      futures.put(jobId, client.jobStatus(jobId));
-    }
     final Map<JobId, JobStatus> statuses = Maps.newTreeMap();
     statuses.putAll(allAsMap(futures));
     return statuses;

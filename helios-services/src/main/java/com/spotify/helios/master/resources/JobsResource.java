@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Set;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
@@ -191,5 +192,26 @@ public class JobsResource {
       throw badRequest("Invalid id");
     }
     return Optional.fromNullable(model.getJobStatus(id));
+  }
+  
+  @Path("/statuses")
+  @POST
+  @Produces(APPLICATION_JSON)
+  @Timed
+  @ExceptionMetered
+  public Map<JobId, JobStatus> jobStatuses(@Valid final Set<JobId> ids) {
+    for (final JobId id : ids) {
+      if (!id.isFullyQualified()) {
+        throw badRequest("Invalid id " + id);
+      }
+    }
+    final Map<JobId, JobStatus> results = Maps.newHashMap();
+    for (final JobId id : ids) {
+      final JobStatus status = model.getJobStatus(id);
+      if (status != null) {
+        results.put(id, status);
+      }
+    }
+    return results;
   }
 }

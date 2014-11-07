@@ -101,11 +101,8 @@ public class JobStatusCommand extends ControlCommand {
     }
 
     // TODO (dano): it would sure be nice to be able to report container/task uptime
-
-    final Map<JobId, ListenableFuture<JobStatus>> futures = Maps.newTreeMap();
-    for (final JobId jobId : jobIds) {
-      futures.put(jobId, client.jobStatus(jobId));
-    }
+    final Map<JobId, ListenableFuture<JobStatus>> futures = 
+        JobStatusFetcher.getJobsStatuses(client, jobIds);
     final Map<JobId, JobStatus> statuses = Maps.newTreeMap();
     statuses.putAll(allAsMap(futures));
 
