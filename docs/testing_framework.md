@@ -10,6 +10,7 @@ The framework integrates with standard JUnit tests, and provides a JUnit rule ca
 * [Environment Configuration](#environment-configuration)
 * [Configuration By File](#configuration-by-file)
 * [Job Cleanup](#job-cleanup)
+* [Debugging](#debugging)
 
 # Instructions
 
