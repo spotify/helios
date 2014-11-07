@@ -29,7 +29,8 @@ import com.google.common.util.concurrent.SettableFuture;
 
 import com.spotify.helios.Parallelized;
 import com.spotify.helios.Polling;
-import com.spotify.helios.ZooKeeperStandaloneServerManager;
+import com.spotify.helios.ZooKeeperTestManager;
+import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.common.Json;
 
 import org.apache.commons.io.FileUtils;
@@ -122,7 +123,7 @@ public class PersistentPathChildrenCacheTest {
 
   private static final String PATH = "/foos";
 
-  private ZooKeeperStandaloneServerManager zk;
+  private ZooKeeperTestManager zk;
 
   private PersistentPathChildrenCache<DataPojo> cache;
   private Path directory;
@@ -133,7 +134,7 @@ public class PersistentPathChildrenCacheTest {
 
   @Before
   public void setup() throws Exception {
-    zk = new ZooKeeperStandaloneServerManager();
+    zk = new ZooKeeperTestingServerManager();
     zk.ensure("/foos");
     directory = Files.createTempDirectory("helios-test");
     stateFile = directory.resolve("persistent-path-children-cache-test-nodes.json");

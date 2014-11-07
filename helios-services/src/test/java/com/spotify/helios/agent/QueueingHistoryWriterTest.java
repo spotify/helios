@@ -25,7 +25,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
 import com.spotify.helios.Polling;
-import com.spotify.helios.ZooKeeperStandaloneServerManager;
+import com.spotify.helios.ZooKeeperTestManager;
+import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -80,7 +81,7 @@ public class QueueingHistoryWriterTest {
       .setContainerId("containerId")
       .build();
 
-  private ZooKeeperStandaloneServerManager zk;
+  private ZooKeeperTestManager zk;
   private DefaultZooKeeperClient client;
   private QueueingHistoryWriter writer;
   private ZooKeeperMasterModel masterModel;
@@ -88,7 +89,7 @@ public class QueueingHistoryWriterTest {
 
   @Before
   public void setUp() throws Exception {
-    zk = new ZooKeeperStandaloneServerManager();
+    zk = new ZooKeeperTestingServerManager();
     agentStateDirs = Files.createTempDirectory("helios-agents");
 
     client = new DefaultZooKeeperClient(zk.curator());

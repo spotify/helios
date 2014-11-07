@@ -23,7 +23,8 @@ package com.spotify.helios.system;
 
 import com.google.common.util.concurrent.Service;
 
-import com.spotify.helios.ZooKeeperStandaloneServerManager;
+import com.spotify.helios.ZooKeeperTestManager;
+import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.agent.AgentMain;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
@@ -46,11 +47,11 @@ public class AgentStateDirConflictTest {
   private Path stateDir;
   private AgentMain first;
   private AgentMain second;
-  private ZooKeeperStandaloneServerManager zk;
+  private ZooKeeperTestManager zk;
 
   @Before
   public void setup() throws Exception {
-    zk = new ZooKeeperStandaloneServerManager();
+    zk = new ZooKeeperTestingServerManager();
     dueh = Thread.getDefaultUncaughtExceptionHandler();
 
     Thread.setDefaultUncaughtExceptionHandler(new Thread.UncaughtExceptionHandler() {

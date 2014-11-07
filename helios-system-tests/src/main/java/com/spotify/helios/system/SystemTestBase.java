@@ -52,8 +52,8 @@ import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.Polling;
 import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.TemporaryPorts.AllocatedPort;
-import com.spotify.helios.ZooKeeperStandaloneServerManager;
 import com.spotify.helios.ZooKeeperTestManager;
+import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
@@ -306,7 +306,7 @@ public abstract class SystemTestBase {
   }
 
   protected ZooKeeperTestManager zooKeeperTestManager() {
-    return new ZooKeeperStandaloneServerManager(zooKeeperNamespace);
+    return new ZooKeeperTestingServerManager(zooKeeperNamespace);
   }
 
   @After
