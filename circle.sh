@@ -58,4 +58,9 @@ case "$1" in
 
     ;;
 
+  collect_test_reports)
+    cp */target/surefire-reports/*.xml $CI_REPORTS
+
+    ;;
+
 esac
