@@ -24,6 +24,7 @@ package com.spotify.helios.cli.command;
 import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -42,7 +43,8 @@ import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
-import java.util.SortedSet;
+import java.util.Map.Entry;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
@@ -55,6 +57,7 @@ public class JobListCommand extends ControlCommand {
   private final Argument quietArg;
   private final Argument patternArg;
   private final Argument fullArg;
+  private final Argument deployedArg;
 
   public JobListCommand(final Subparser parser) {
     super(parser);
@@ -72,6 +75,10 @@ public class JobListCommand extends ControlCommand {
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
         .help("only print job id's");
+
+    deployedArg = parser.addArgument("-y")
+        .action(storeTrue())
+        .help("only show deployed jobs");
   }
 
   @Override
@@ -81,6 +88,7 @@ public class JobListCommand extends ControlCommand {
     final boolean full = options.getBoolean(fullArg.getDest());
     final boolean quiet = options.getBoolean(quietArg.getDest());
     final String pattern = options.getString(patternArg.getDest());
+    final boolean deployed = options.getBoolean(deployedArg.getDest());
 
     final Map<JobId, Job> jobs;
     if (pattern == null) {
@@ -98,13 +106,35 @@ public class JobListCommand extends ControlCommand {
       return 1;
     }
 
-    final SortedSet<JobId> sortedJobIds = Sets.newTreeSet(jobs.keySet());
+    final Map<JobId, ListenableFuture<JobStatus>> oldFutures =
+        JobStatusFetcher.getJobsStatuses(client, jobs.keySet());
+
+    final Map<JobId, ListenableFuture<JobStatus>> futures = Maps.newHashMap();
+
+    // maybe filter on deployed jobs
+    if (!deployed) {
+      futures.putAll(oldFutures);
+    } else {
+      for (final Entry<JobId, ListenableFuture<JobStatus>> e : oldFutures.entrySet()) {
+        if (!e.getValue().get().getDeployments().isEmpty()) {
+          futures.put(e.getKey(), e.getValue());
+        }
+      }
+    }
+
+    final Set<JobId> sortedJobIds = Sets.newTreeSet(futures.keySet());
 
     if (json) {
       if (quiet) {
         out.println(Json.asPrettyStringUnchecked(sortedJobIds));
       } else {
-        out.println(Json.asPrettyStringUnchecked(jobs));
+        final Map<JobId, Job> filteredJobs = Maps.newHashMap();
+        for (final Entry<JobId, Job> entry : jobs.entrySet()) {
+          if (futures.containsKey(entry.getKey())) {
+            filteredJobs.put(entry.getKey(), entry.getValue());
+          }
+        }
+        out.println(Json.asPrettyStringUnchecked(filteredJobs));
       }
     } else {
       if (quiet) {
@@ -114,9 +144,6 @@ public class JobListCommand extends ControlCommand {
       } else {
         final Table table = table(out);
         table.row("JOB ID", "NAME", "VERSION", "HOSTS", "COMMAND", "ENVIRONMENT");
-
-        final Map<JobId, ListenableFuture<JobStatus>> futures = 
-            JobStatusFetcher.getJobsStatuses(client, sortedJobIds);
         
         for (final Map.Entry<JobId, ListenableFuture<JobStatus>> e : futures.entrySet()) {
           final JobId jobId = e.getKey();
