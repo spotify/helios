@@ -25,7 +25,7 @@ import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 
-import com.spotify.helios.ZooKeeperClusterTestManager;
+import com.spotify.helios.ZooKeeperTestingClusterManager;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
@@ -63,7 +63,7 @@ public class ClusterDeploymentTest extends SystemTestBase {
       .setCommand(IDLE_COMMAND)
       .build();
 
-  private final ZooKeeperClusterTestManager zkc = new ZooKeeperClusterTestManager();
+  private final ZooKeeperTestingClusterManager zkc = new ZooKeeperTestingClusterManager();
 
   private HeliosClient client;
 
