@@ -44,6 +44,7 @@ import com.typesafe.config.ConfigValueType;
 
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
+import org.junit.runners.model.MultipleFailureException;
 import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -70,6 +71,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.testing.Jobs.undeploy;
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -283,6 +285,15 @@ public class TemporaryJobs implements TestRule {
       public Object call() throws Exception {
         try {
           base.evaluate();
+        } catch (MultipleFailureException e) {
+          // Log the stack trace for each exception in the MultipleFailureException, because
+          // stack traces won't be logged when this is caught and logged higher in the call stack.
+          final List<Throwable> failures = e.getFailures();
+          log.error(format("MultipleFailureException contains %d failures:", failures.size()));
+          for (int i = 0; i < failures.size(); i++) {
+            log.error(format("MultipleFailureException %d:", i), failures.get(i));
+          }
+          throw Throwables.propagate(e);
         } catch (Throwable throwable) {
           Throwables.propagateIfPossible(throwable, Exception.class);
           throw Throwables.propagate(throwable);
