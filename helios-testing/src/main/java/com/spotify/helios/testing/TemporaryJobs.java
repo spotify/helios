@@ -583,7 +583,7 @@ public class TemporaryJobs implements TestRule {
     private String prefixDirectory;
     private String jobPrefix;
     private String jobDeployedMessageFormat = null;
-    private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.random();
+    private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
 
     public Builder domain(final String domain) {
       return client(HeliosClient.newBuilder()
