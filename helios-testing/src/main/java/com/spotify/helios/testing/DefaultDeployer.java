@@ -51,14 +51,17 @@ public class DefaultDeployer implements Deployer {
   private final HeliosClient client;
   private final List<TemporaryJob> jobs;
   private final HostPickingStrategy hostPicker;
+  private final String jobDeployedMessageFormat;
 
   private boolean readyToDeploy;
 
   public DefaultDeployer(final HeliosClient client, final List<TemporaryJob> jobs,
-                         final HostPickingStrategy hostPicker) {
+                         final HostPickingStrategy hostPicker,
+                         final String jobDeployedMessageFormat) {
     this.client = client;
     this.jobs = jobs;
     this.hostPicker = hostPicker;
+    this.jobDeployedMessageFormat = jobDeployedMessageFormat;
   }
 
   @Override
@@ -124,7 +127,8 @@ public class DefaultDeployer implements Deployer {
     }
 
     log.info("Deploying {} to {}", job.getImage(), Joiner.on(", ").skipNulls().join(hosts));
-    final TemporaryJob temporaryJob = new TemporaryJob(client, prober, job, hosts, waitPorts);
+    final TemporaryJob temporaryJob = new TemporaryJob(client, prober, job, hosts, waitPorts,
+        jobDeployedMessageFormat);
     jobs.add(temporaryJob);
     temporaryJob.deploy();
     return temporaryJob;
