@@ -33,18 +33,17 @@ import org.junit.Test;
 
 import java.util.Set;
 
-import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
-
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION_DOMAIN;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_RESOURCES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -262,5 +261,14 @@ public class JobValidatorTest {
 
     assertEquals(newHashSet("Volume source is not absolute: bar"),
                  validator.validate(j.toBuilder().addVolume("/foo", "bar").build()));
+  }
+  
+  @Test
+  public void testExpiry() {
+    // make a date that's 24 hours behind
+    final java.util.Date d = new java.util.Date(System.currentTimeMillis() - (86400 * 1000));
+    final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar")
+        .setExpires(d).build();
+    assertEquals(newHashSet("Job expires in the past"), validator.validate(j));
   }
 }
