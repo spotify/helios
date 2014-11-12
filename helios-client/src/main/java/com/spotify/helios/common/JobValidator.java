@@ -30,6 +30,7 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 
 import java.util.Collection;
+import java.util.Date;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -125,6 +126,11 @@ public class JobValidator {
       }
     }
 
+    // Validate Expiry
+    final Date expiry = job.getExpires();
+    if (expiry != null && expiry.before(new Date())) {
+      errors.add("Job expires in the past");
+    }
     return errors;
   }
 
