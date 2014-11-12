@@ -93,7 +93,6 @@ public class TemporaryJobs implements TestRule {
   private final Config config;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
   private final Deployer deployer;
-  private final String jobDeployedMessageFormat;
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
@@ -108,7 +107,8 @@ public class TemporaryJobs implements TestRule {
     this.prober = checkNotNull(builder.prober, "prober");
     this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
     this.deployer = Optional.fromNullable(builder.deployer).or(
-        new DefaultDeployer(client, jobs, builder.hostPickingStrategy));
+        new DefaultDeployer(client, jobs, builder.hostPickingStrategy, 
+            builder.jobDeployedMessageFormat));
     final Path prefixDirectory = Paths.get(Optional.fromNullable(builder.prefixDirectory)
         .or(DEFAULT_PREFIX_DIRECTORY));
 
@@ -128,7 +128,6 @@ public class TemporaryJobs implements TestRule {
         .withValue("prefix", ConfigValueFactory.fromAnyRef(prefix()));
 
     this.config = config.withFallback(configWithPrefix).resolve();
-    this.jobDeployedMessageFormat = Optional.fromNullable(builder.jobDeployedMessageFormat).or("");
   }
 
   /**
@@ -175,7 +174,7 @@ public class TemporaryJobs implements TestRule {
 
   public TemporaryJobBuilder job() {
     final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix(),
-                                                                prober, jobDeployedMessageFormat);
+                                                                prober);
 
     if (config.hasPath("env")) {
       final Config env = config.getConfig("env");

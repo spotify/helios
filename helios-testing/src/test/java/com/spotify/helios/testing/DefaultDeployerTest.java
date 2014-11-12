@@ -72,7 +72,7 @@ public class DefaultDeployerTest {
   
   @Test
   public void testTryAgainOnHostDown() throws Exception {
-    final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST);
+    final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "");
     
     // hosta is down, hostb is up. 
     when(client.hostStatus(HOSTA)).thenReturn(DOWN_STATUS);
@@ -83,7 +83,7 @@ public class DefaultDeployerTest {
 
   @Test
   public void testFailsOnAllDown() throws Exception {
-    final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST);
+    final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "");
     
     // hosta is down, hostb is down too. 
     when(client.hostStatus(HOSTA)).thenReturn(DOWN_STATUS);
