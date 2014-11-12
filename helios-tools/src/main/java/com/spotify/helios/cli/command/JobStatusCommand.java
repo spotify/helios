@@ -25,6 +25,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.JobStatusTable;
@@ -149,12 +150,38 @@ public class JobStatusCommand extends ControlCommand {
           final Map<String, Deployment> deployments = jobStatus.getDeployments();
           final Deployment deployment = (deployments == null) ? null : deployments.get(host);
           if (deployment != null) {
-            returnStatuses.put(jobStatus.getJob().getId(), jobStatus);
+            returnStatuses.put(jobStatus.getJob().getId(),
+                filterJobStatus(jobStatus, matchingHosts));
           }
         }
       }
+
     });
     out.println(Json.asPrettyStringUnchecked(returnStatuses));
+  }
+
+  private JobStatus filterJobStatus(final JobStatus jobStatus,
+      final Iterable<String> matchingHosts) {
+    final Map<String, TaskStatus> taskStatuses = Maps.newHashMap(jobStatus.getTaskStatuses());
+    final Set<String> matchingHostSet = Sets.newHashSet(matchingHosts);
+
+    for (final String key : Sets.newHashSet(taskStatuses.keySet())) {
+      if (!matchingHostSet.contains(key)) {
+        taskStatuses.remove(key);
+      }
+    }
+
+    final Map<String, Deployment> deployments = Maps.newHashMap(jobStatus.getDeployments());
+    for (final String key : Sets.newHashSet(deployments.keySet())) {
+      if (!matchingHostSet.contains(key)) {
+        deployments.remove(key);
+      }
+    }
+    return JobStatus.newBuilder()
+        .setJob(jobStatus.getJob())
+        .setDeployments(deployments)
+        .setTaskStatuses(taskStatuses)
+        .build();
   }
 
   private boolean showStatusesForHosts(final String hostPattern, final Set<JobId> jobIds,
