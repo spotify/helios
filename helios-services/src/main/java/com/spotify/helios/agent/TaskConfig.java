@@ -63,6 +63,7 @@ public class TaskConfig {
   private static final Logger log = LoggerFactory.getLogger(TaskConfig.class);
 
   private static final Pattern CONTAINER_NAME_FORBIDDEN = Pattern.compile("[^a-zA-Z0-9_-]");
+  public static final int HOST_NAME_MAX = 8;
 
   private final String host;
   private final Map<String, Integer> ports;
@@ -104,7 +105,6 @@ public class TaskConfig {
     builder.cmd(job.getCommand());
     builder.env(containerEnvStrings());
     builder.exposedPorts(containerExposedPorts());
-    builder.domainname(host);
     builder.volumes(volumes());
     final Resources resources = job.getResources();
     if (resources != null) {
