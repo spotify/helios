@@ -104,7 +104,6 @@ public class TaskConfig {
     builder.cmd(job.getCommand());
     builder.env(containerEnvStrings());
     builder.exposedPorts(containerExposedPorts());
-    builder.domainname(host);
     builder.volumes(volumes());
     final Resources resources = job.getResources();
     if (resources != null) {
