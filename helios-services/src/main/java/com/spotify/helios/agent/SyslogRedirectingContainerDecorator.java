@@ -57,8 +57,9 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
   @Override
   public void decorateContainerConfig(Job job, ImageInfo imageInfo,
                                       ContainerConfig.Builder containerConfig) {
-    ContainerConfig imageConfig = imageInfo.containerConfig();
+    ContainerConfig imageConfig = imageInfo.config();
 
+    // Inject syslog-redirector in the entrypoint to capture std out/err
     final List<String> entrypoint = Lists.newArrayList("/helios/syslog-redirector",
                                                        "-h", syslogHostPort,
                                                        "-n", job.getId().toString(),
@@ -67,6 +68,12 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
       entrypoint.addAll(imageConfig.entrypoint());
     }
     containerConfig.entrypoint(entrypoint);
+
+    // If there's no explicit container cmd specified, copy over the one from the image.
+    // Only setting the entrypoint causes dockerd to not use the image cmd.
+    if (containerConfig.cmd().isEmpty()) {
+      containerConfig.cmd(imageConfig.cmd());
+    }
 
     final Set<String> volumes = Sets.newHashSet();
     if (containerConfig.volumes() != null) {
