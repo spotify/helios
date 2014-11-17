@@ -55,6 +55,7 @@ import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
@@ -125,8 +126,8 @@ public class GracePeriodTest {
   public static final ContainerInfo RUNNING_RESPONSE = new ContainerInfo() {
     @Override
     public ContainerState state() {
-      final ContainerState state = new ContainerState();
-      state.running(true);
+      final ContainerState state = Mockito.mock(ContainerState.class);
+      when(state.running()).thenReturn(true);
       return state;
     }
 
@@ -141,8 +142,8 @@ public class GracePeriodTest {
   public static final ContainerInfo STOPPED_RESPONSE = new ContainerInfo() {
     @Override
     public ContainerState state() {
-      final ContainerState state = new ContainerState();
-      state.running(false);
+      final ContainerState state = Mockito.mock(ContainerState.class);
+      when(state.running()).thenReturn(false);
       return state;
     }
   };
