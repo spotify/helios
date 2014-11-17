@@ -21,6 +21,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
@@ -40,7 +41,7 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
 
   private final String syslogHostPort;
 
-  public SyslogRedirectingContainerDecorator(String syslogHostPort) {
+  public SyslogRedirectingContainerDecorator(final String syslogHostPort) {
     this.syslogHostPort = syslogHostPort;
   }
 
@@ -60,7 +61,10 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
     ContainerConfig imageConfig = imageInfo.config();
 
     // Inject syslog-redirector in the entrypoint to capture std out/err
-    final List<String> entrypoint = Lists.newArrayList("/helios/syslog-redirector",
+    final String syslogRedirectorPath = Optional.of(job.getEnv().get("SYSLOG_REDIRECTOR"))
+        .or("/helios/syslog-redirector");
+
+    final List<String> entrypoint = Lists.newArrayList(syslogRedirectorPath,
                                                        "-h", syslogHostPort,
                                                        "-n", job.getId().toString(),
                                                        "--");

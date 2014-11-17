@@ -140,6 +140,7 @@ public abstract class SystemTestBase {
   public static final int INTERNAL_PORT = 4444;
 
   public static final String BUSYBOX = "busybox";
+  public static final String ALPINE = "uggedal/alpine-3.0";
   public static final List<String> IDLE_COMMAND = asList(
       "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
 
@@ -253,12 +254,20 @@ public abstract class SystemTestBase {
 
   private void assertDockerReachable(final int probePort) throws Exception {
     try (final DockerClient docker = getNewDockerClient()) {
+      // Pull our base images
       try {
         docker.inspectImage(BUSYBOX);
       } catch (ImageNotFoundException e) {
         docker.pull(BUSYBOX);
       }
 
+      try {
+        docker.inspectImage(ALPINE);
+      } catch (ImageNotFoundException e) {
+        docker.pull(ALPINE);
+      }
+
+      // Start a container with an exposed port
       final ContainerConfig config = ContainerConfig.builder()
           .image(BUSYBOX)
           .cmd("nc", "-p", "4711", "-lle", "cat")
