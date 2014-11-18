@@ -135,6 +135,7 @@ public class SupervisorTest {
   };
 
   @Mock public AgentModel model;
+  @Mock public DockerClientFactory dockerFactory;
   @Mock public DockerClient docker;
   @Mock public RestartPolicy retryPolicy;
   @Mock public ServiceRegistrar registrar;
@@ -164,17 +165,18 @@ public class SupervisorTest {
     final StatusUpdater statusUpdater = new DefaultStatusUpdater(model, taskStatus);
     final TaskMonitor monitor = new TaskMonitor(JOB.getId(), FlapController.create(), statusUpdater);
 
+    when(dockerFactory.getClient()).thenReturn(docker);
     final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
         .registrar(registrar)
         .config(config)
-        .dockerClient(docker)
+        .dockerClientFactory(dockerFactory)
         .listener(monitor)
         .build();
 
     sut = Supervisor.newBuilder()
         .setJob(JOB)
         .setStatusUpdater(statusUpdater)
-        .setDockerClient(docker)
+        .setDockerClientFactory(dockerFactory)
         .setRestartPolicy(retryPolicy)
         .setRunnerFactory(runnerFactory)
         .setMetrics(new NoopSupervisorMetrics())

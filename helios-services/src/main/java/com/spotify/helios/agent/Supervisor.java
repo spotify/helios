@@ -56,7 +56,7 @@ public class Supervisor {
 
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
 
-  private final DockerClient docker;
+  private final DockerClientFactory docker;
   private final Job job;
   private final RestartPolicy restartPolicy;
   private final SupervisorMetrics metrics;
@@ -75,7 +75,7 @@ public class Supervisor {
 
   public Supervisor(final Builder builder) {
     this.job = checkNotNull(builder.job, "job");
-    this.docker = checkNotNull(builder.dockerClient, "docker");
+    this.docker = checkNotNull(builder.dockerClientFactory, "docker");
     this.restartPolicy = checkNotNull(builder.restartPolicy, "restartPolicy");
     this.metrics = checkNotNull(builder.metrics, "metrics");
     this.listener = checkNotNull(builder.listener, "listener");
@@ -195,15 +195,11 @@ public class Supervisor {
   }
 
   public static class Builder {
-
-
-
-    private Builder() {
-    }
+    private Builder() {}
 
     private Job job;
     private String existingContainerId;
-    private DockerClient dockerClient;
+    private DockerClientFactory dockerClientFactory;
     private RestartPolicy restartPolicy;
     private SupervisorMetrics metrics;
     private Listener listener = new NopListener();
@@ -228,8 +224,8 @@ public class Supervisor {
       return this;
     }
 
-    public Builder setDockerClient(final DockerClient dockerClient) {
-      this.dockerClient = dockerClient;
+    public Builder setDockerClientFactory(final DockerClientFactory dockerClientFactory) {
+      this.dockerClientFactory = dockerClientFactory;
       return this;
     }
 
@@ -384,8 +380,8 @@ public class Supervisor {
       if (containerId == null) {
         return;
       }
-      try {
-        docker.killContainer(containerId);
+      try (final DockerClient client = docker.getClient()) {
+        client.killContainer(containerId);
       } catch (DockerException e) {
         log.error("failed to kill container {}", containerId, e);
       }
@@ -397,8 +393,8 @@ public class Supervisor {
         return true;
       }
       final ContainerInfo containerInfo;
-      try {
-        containerInfo = docker.inspectContainer(containerId);
+      try (final DockerClient client = docker.getClient()) {
+        containerInfo = client.inspectContainer(containerId);
       } catch (ContainerNotFoundException e) {
         return true;
       } catch (DockerException e) {

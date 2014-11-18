@@ -23,7 +23,6 @@ package com.spotify.helios.agent;
 
 import com.google.common.collect.Lists;
 
-import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 
 import java.util.List;
@@ -38,7 +37,7 @@ import static java.util.Arrays.asList;
 public class TaskRunnerFactory {
 
   private final TaskConfig taskConfig;
-  private final DockerClient docker;
+  private final DockerClientFactory docker;
   private final ServiceRegistrar registrar;
   private final List<TaskRunner.Listener> listeners;
 
@@ -73,7 +72,7 @@ public class TaskRunnerFactory {
     }
 
     private TaskConfig config;
-    private DockerClient docker;
+    private DockerClientFactory docker;
     private ServiceRegistrar registrar;
     private List<TaskRunner.Listener> listeners = Lists.newArrayList();
 
@@ -87,7 +86,7 @@ public class TaskRunnerFactory {
       return this;
     }
 
-    public Builder dockerClient(final DockerClient docker) {
+    public Builder dockerClientFactory(final DockerClientFactory docker) {
       this.docker = docker;
       return this;
     }
