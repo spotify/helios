@@ -75,7 +75,7 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
 
     // If there's no explicit container cmd specified, copy over the one from the image.
     // Only setting the entrypoint causes dockerd to not use the image cmd.
-    if (containerConfig.cmd().isEmpty()) {
+    if (containerConfig.cmd().isEmpty() && imageConfig.cmd() != null) {
       containerConfig.cmd(imageConfig.cmd());
     }
 
