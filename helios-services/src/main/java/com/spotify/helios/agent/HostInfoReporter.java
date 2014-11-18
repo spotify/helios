@@ -55,14 +55,14 @@ public class HostInfoReporter extends InterruptingScheduledService {
   private final ZooKeeperNodeUpdater nodeUpdater;
   private final int interval;
   private final TimeUnit timeUnit;
-  private final DockerClientFactory dockerClientFactory;
+  private final DockerClient dockerClient;
 
   HostInfoReporter(final Builder builder) {
     this.operatingSystemMXBean = checkNotNull(builder.operatingSystemMXBean,
                                               "operatingSystemMXBean");
     this.nodeUpdater = builder.nodeUpdaterFactory.create(
         Paths.statusHostInfo(checkNotNull(builder.host, "host")));
-    this.dockerClientFactory = checkNotNull(builder.dockerClientFactory, "dockerClientFactory");
+    this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
     this.interval = builder.interval;
     this.timeUnit = checkNotNull(builder.timeUnit, "timeUnit");
   }
@@ -91,8 +91,8 @@ public class HostInfoReporter extends InterruptingScheduledService {
   }
 
   private DockerVersion dockerVersion() throws InterruptedException {
-    try (DockerClient client = dockerClientFactory.getClient()) {
-      final com.spotify.docker.client.messages.Version version = client.version();
+    try {
+      final com.spotify.docker.client.messages.Version version = dockerClient.version();
       return version == null ? null : dockerVersion(version);
     } catch (DockerException e) {
       return null;
@@ -138,7 +138,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
     private NodeUpdaterFactory nodeUpdaterFactory;
     private OperatingSystemMXBean operatingSystemMXBean;
     private String host;
-    private DockerClientFactory dockerClientFactory;
+    private DockerClient dockerClient;
     private int interval = DEFAULT_INTERVAL;
     private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
 
@@ -158,8 +158,8 @@ public class HostInfoReporter extends InterruptingScheduledService {
       return this;
     }
 
-    public Builder setDockerClientFactory(final DockerClientFactory dockerClientFactory) {
-      this.dockerClientFactory = dockerClientFactory;
+    public Builder setDockerClient(final DockerClient dockerClient) {
+      this.dockerClient = dockerClient;
       return this;
     }
 

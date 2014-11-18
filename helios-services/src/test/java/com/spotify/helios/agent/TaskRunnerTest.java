@@ -28,11 +28,9 @@ import com.spotify.docker.client.ImagePullFailedException;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.net.URI;
@@ -56,16 +54,10 @@ public class TaskRunnerTest {
       .build();
   private static final String HOST = "HOST";
 
-  @Mock private DockerClientFactory mockDockerFactory;
   @Mock private DockerClient mockDocker;
   @Mock private StatusUpdater statusUpdater;
   @Mock private Clock clock;
   @Mock private ContainerDecorator containerDecorator;
-
-  @Before
-  public void setUp() throws Exception {
-    Mockito.when(mockDockerFactory.getClient()).thenReturn(mockDocker);
-  }
 
   @Test
   public void test() throws Throwable {
@@ -77,7 +69,7 @@ public class TaskRunnerTest {
                     .job(JOB)
                     .containerDecorator(containerDecorator)
                     .build())
-        .docker(mockDockerFactory)
+        .docker(mockDocker)
         .listener(new TaskRunner.NopListener())
         .build();
 
@@ -108,7 +100,7 @@ public class TaskRunnerTest {
                     .job(JOB)
                     .containerDecorator(containerDecorator)
                     .build())
-        .docker(mockDockerFactory)
+        .docker(mockDocker)
         .listener(new TaskRunner.NopListener())
         .build();
 

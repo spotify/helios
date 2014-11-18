@@ -59,7 +59,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private final long delayMillis;
   private final SettableFuture<Integer> result = SettableFuture.create();
   private final TaskConfig config;
-  private final DockerClientFactory docker;
+  private final DockerClient docker;
   private final String existingContainerId;
   private final Listener listener;
   private final ServiceRegistrar registrar;
@@ -111,8 +111,8 @@ class TaskRunner extends InterruptingExecutionThreadService {
       stopAsync().awaitTerminated();
 
       // Tell docker to stop or eventually kill the container
-      try (final DockerClient client = docker.getClient()) {
-        client.stopContainer(container, SECONDS_TO_WAIT_BEFORE_KILL);
+      try {
+        docker.stopContainer(container, SECONDS_TO_WAIT_BEFORE_KILL);
       } catch (DockerException e) {
         log.warn("Stopping container {} failed", container, e);
       }
@@ -142,8 +142,8 @@ class TaskRunner extends InterruptingExecutionThreadService {
     // Register and wait for container to exit
     serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
     final ContainerExit exit;
-    try (final DockerClient client = docker.getClient()) {
-      exit = client.waitContainer(containerId);
+    try {
+      exit = docker.waitContainer(containerId);
     } finally {
       unregister();
       this.containerId = Optional.absent();
@@ -175,30 +175,27 @@ class TaskRunner extends InterruptingExecutionThreadService {
       throws InterruptedException, DockerException {
 
     // Get container image info
-    final ContainerCreation container;
-    try (final DockerClient client = docker.getClient()) {
-      final ImageInfo imageInfo;
-      imageInfo = client.inspectImage(image);
-      if (imageInfo == null) {
-        throw new HeliosRuntimeException("docker inspect image returned null on image " + image);
-      }
-  
-      // Create container
-      final ContainerConfig containerConfig = config.containerConfig(imageInfo);
-      final String name = config.containerName();
-      listener.creating();
-      container = client.createContainer(containerConfig, name);
-      log.info("created container: {}: {}, {}", config, container, containerConfig);
-      listener.created(container.id());
-  
-      // Start container
-      final HostConfig hostConfig = config.hostConfig();
-      log.info("starting container: {}: {} {}", config, container.id(), hostConfig);
-      listener.starting();
-      client.startContainer(container.id(), hostConfig);
-      log.info("started container: {}: {}", config, container.id());
-      listener.started();
+    final ImageInfo imageInfo = docker.inspectImage(image);
+    if (imageInfo == null) {
+      throw new HeliosRuntimeException("docker inspect image returned null on image " + image);
     }
+
+    // Create container
+    final ContainerConfig containerConfig = config.containerConfig(imageInfo);
+    final String name = config.containerName();
+    listener.creating();
+    final ContainerCreation container = docker.createContainer(containerConfig, name);
+    log.info("created container: {}: {}, {}", config, container, containerConfig);
+    listener.created(container.id());
+
+    // Start container
+    final HostConfig hostConfig = config.hostConfig();
+    log.info("starting container: {}: {} {}", config, container.id(), hostConfig);
+    listener.starting();
+    docker.startContainer(container.id(), hostConfig);
+    log.info("started container: {}: {}", config, container.id());
+    listener.started();
+
     return container.id();
   }
 
@@ -208,8 +205,8 @@ class TaskRunner extends InterruptingExecutionThreadService {
       return null;
     }
     log.info("inspecting container: {}: {}", config, existingContainerId);
-    try (final DockerClient client = docker.getClient()) {
-      return client.inspectContainer(existingContainerId);
+    try {
+      return docker.inspectContainer(existingContainerId);
     } catch (ContainerNotFoundException e) {
       return null;
     }
@@ -220,8 +217,8 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     DockerTimeoutException wasTimeout = null;
     // Attempt to pull.  Failure, while less than ideal, is ok.
-    try (final DockerClient client = docker.getClient()) {
-      client.pull(image);
+    try {
+      docker.pull(image);
     } catch (DockerTimeoutException e) {
       log.warn("Pulling image {} failed with timeout", image, e);
       wasTimeout = e;
@@ -229,9 +226,9 @@ class TaskRunner extends InterruptingExecutionThreadService {
       log.warn("Pulling image {} failed", image, e);
     }
 
-    try (final DockerClient client = docker.getClient()) {
+    try {
       // If we don't have the image by now, fail.
-      client.inspectImage(image);
+      docker.inspectImage(image);
     } catch (ImageNotFoundException e) {
       // If we get not found, see if we timed out above, since that's what we actually care
       // to know, as the pull should have fixed the not found-ness.
@@ -274,7 +271,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     private long delayMillis;
     private TaskConfig taskConfig;
-    private DockerClientFactory docker;
+    private DockerClient docker;
     private String existingContainerId;
     private Listener listener;
     public ServiceRegistrar registrar = new NopServiceRegistrar();
@@ -289,7 +286,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
       return this;
     }
 
-    public Builder docker(final DockerClientFactory docker) {
+    public Builder docker(final DockerClient docker) {
       this.docker = docker;
       return this;
     }
