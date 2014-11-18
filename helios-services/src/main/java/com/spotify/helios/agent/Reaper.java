@@ -42,10 +42,10 @@ public class Reaper {
 
   private final Logger log = LoggerFactory.getLogger(Reaper.class);
 
-  private final DockerClientFactory docker;
+  private final DockerClient docker;
   private final String prefix;
 
-  public Reaper(final DockerClientFactory docker, final String namespace) {
+  public Reaper(final DockerClient docker, final String namespace) {
     this.docker = docker;
     this.prefix = "/" + namespace;
   }
@@ -61,10 +61,7 @@ public class Reaper {
   private void reap0(final Supplier<Set<String>> activeSupplier)
       throws DockerException, InterruptedException {
     final List<String> candidates = Lists.newArrayList();
-    final List<Container> containers;
-    try (final DockerClient client = docker.getClient()) {
-      containers = client.listContainers();
-    }
+    final List<Container> containers = docker.listContainers();
     for (Container container : containers) {
       for (String name : container.names()) {
         if (name.startsWith(prefix)) {
@@ -86,8 +83,6 @@ public class Reaper {
 
   private void reap(final String containerId) throws InterruptedException, DockerException {
     log.info("reaping {}", containerId);
-    try (final DockerClient client = docker.getClient()) {
-      client.killContainer(containerId);
-    }
+    docker.killContainer(containerId);
   }
 }

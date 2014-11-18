@@ -21,6 +21,7 @@
 
 package com.spotify.helios.agent;
 
+import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
@@ -39,7 +40,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class SupervisorFactory {
 
   private final AgentModel model;
-  private final DockerClientFactory dockerClientFactory;
+  private final DockerClient dockerClient;
   private final String namespace;
   private final Map<String, String> envVars;
   private final ServiceRegistrar registrar;
@@ -49,7 +50,7 @@ public class SupervisorFactory {
   private final String defaultRegistrationDomain;
   private final List<String> dns;
 
-  public SupervisorFactory(final AgentModel model, final DockerClientFactory dockerClientFactory,
+  public SupervisorFactory(final AgentModel model, final DockerClient dockerClient,
                            final Map<String, String> envVars,
                            final ServiceRegistrar registrar,
                            final ContainerDecorator containerDecorator,
@@ -58,7 +59,7 @@ public class SupervisorFactory {
                            final String namespace,
                            final String defaultRegistrationDomain,
                            final List<String> dns) {
-    this.dockerClientFactory = dockerClientFactory;
+    this.dockerClient = dockerClient;
     this.namespace = namespace;
     this.model = checkNotNull(model, "model");
     this.envVars = checkNotNull(envVars, "envVars");
@@ -102,14 +103,14 @@ public class SupervisorFactory {
     final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
         .config(taskConfig)
         .registrar(registrar)
-        .dockerClientFactory(dockerClientFactory)
+        .dockerClient(dockerClient)
         .listener(taskMonitor)
         .build();
 
     return Supervisor.newBuilder()
         .setJob(job)
         .setExistingContainerId(existingContainerId)
-        .setDockerClientFactory(dockerClientFactory)
+        .setDockerClient(dockerClient)
         .setRestartPolicy(policy)
         .setMetrics(metrics)
         .setListener(listener)

@@ -28,6 +28,9 @@ import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.docker.client.DockerCertificateException;
+import com.spotify.docker.client.DockerCertificates;
+import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
@@ -72,6 +75,7 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
@@ -193,12 +197,29 @@ public class AgentService extends AbstractIdleService implements Managed {
     final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =
         new ZooKeeperNodeUpdaterFactory(zooKeeperClient);
 
-    final DockerClientFactory dockerClientFactory = new DockerClientFactory(config, riemannFacade);
+    final DockerClient dockerClient;
+    if (isNullOrEmpty(config.getDockerHost().dockerCertPath())) {
+      dockerClient = new PollingDockerClient(config.getDockerHost().uri());
+    } else {
+      final Path dockerCertPath = java.nio.file.Paths.get(config.getDockerHost().dockerCertPath());
+      final DockerCertificates dockerCertificates;
+      try {
+        dockerCertificates = new DockerCertificates(dockerCertPath);
+      } catch (DockerCertificateException e) {
+        throw Throwables.propagate(e);
+      }
+
+      dockerClient = new PollingDockerClient(config.getDockerHost().uri(), dockerCertificates);
+    }
+
+    final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,
+                                                                          dockerClient);
+
     this.hostInfoReporter = HostInfoReporter.newBuilder()
         .setNodeUpdaterFactory(nodeUpdaterFactory)
         .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
         .setHost(config.getName())
-        .setDockerClientFactory(dockerClientFactory)
+        .setDockerClient(dockerClient)
         .build();
 
     this.agentInfoReporter = AgentInfoReporter.newBuilder()
@@ -214,7 +235,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     final String namespace = "helios-" + id;
 
     final SupervisorFactory supervisorFactory = new SupervisorFactory(
-        model, dockerClientFactory,
+        model, monitoredDockerClient,
         config.getEnvVars(), serviceRegistrar,
         config.getRedirectToSyslog() != null
         ? new SyslogRedirectingContainerDecorator(config.getRedirectToSyslog())
@@ -239,7 +260,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       throw Throwables.propagate(e);
     }
 
-    final Reaper reaper = new Reaper(dockerClientFactory, namespace);
+    final Reaper reaper = new Reaper(dockerClient, namespace);
     this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator,
                            reaper);
 
