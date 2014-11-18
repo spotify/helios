@@ -61,7 +61,7 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
     ContainerConfig imageConfig = imageInfo.config();
 
     // Inject syslog-redirector in the entrypoint to capture std out/err
-    final String syslogRedirectorPath = Optional.of(job.getEnv().get("SYSLOG_REDIRECTOR"))
+    final String syslogRedirectorPath = Optional.fromNullable(job.getEnv().get("SYSLOG_REDIRECTOR"))
         .or("/helios/syslog-redirector");
 
     final List<String> entrypoint = Lists.newArrayList(syslogRedirectorPath,
