@@ -23,7 +23,12 @@ package com.spotify.helios.system;
 
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.messages.Container;
+import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
@@ -38,11 +43,16 @@ import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import org.junit.Test;
 
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.lang.Integer.toHexString;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -53,6 +63,82 @@ public class DeploymentTest extends SystemTestBase {
   private static final String BOGUS_HOST = "BOGUS_HOST";
 
   private final int externalPort = temporaryPorts.localPort("external");
+
+  @Test
+  public void testLotsOfConcurrentJobs() throws Exception {
+    startDefaultMaster();
+
+    final HeliosClient client = defaultClient();
+    startDefaultAgent(testHost());
+
+    awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    final int numberOfJobs = 40;
+    final List<JobId> jobIds = Lists.newArrayListWithCapacity(numberOfJobs);
+
+    final String jobName = testJobName + "_" + toHexString(ThreadLocalRandom.current().nextInt());
+
+    // create and deploy a bunch of jobs
+    for (Integer i = 0; i < numberOfJobs; i++ ) {
+      final Job job = Job.newBuilder()
+          .setName(jobName)
+          .setVersion(i.toString())
+          .setImage(BUSYBOX)
+          .setCommand(IDLE_COMMAND)
+          .setCreatingUser(TEST_USER)
+          .build();
+
+      final JobId jobId = job.getId();
+      final CreateJobResponse created = client.createJob(job).get();
+      assertEquals(CreateJobResponse.Status.OK, created.getStatus());
+
+      final Deployment deployment = Deployment.of(jobId, START, TEST_USER);
+      final JobDeployResponse deployed = client.deploy(deployment, testHost()).get();
+      assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
+
+      jobIds.add(jobId);
+    }
+
+    // get the container ID's for the jobs
+    final Set<String> containerIds = Sets.newHashSetWithExpectedSize(numberOfJobs);
+    for (final JobId jobId : jobIds) {
+      final TaskStatus taskStatus = awaitJobState(client, testHost(), jobId, RUNNING,
+                                                  LONG_WAIT_SECONDS, SECONDS);
+      containerIds.add(taskStatus.getContainerId());
+    }
+
+    try (final DockerClient dockerClient = getNewDockerClient()) {
+      // kill all the containers for the jobs
+      for (final String containerId : containerIds) {
+        dockerClient.killContainer(containerId);
+      }
+
+      // make sure all the containers come back up
+      final int restartedContainers = Polling.await(LONG_WAIT_SECONDS, SECONDS,
+          new Callable<Integer>() {
+            @Override
+            public Integer call() throws Exception {
+              int matchingContainerCount = 0;
+
+              for (final Container c : dockerClient.listContainers()) {
+                for (final String name : c.names()) {
+                  if (name.contains(jobName)) {
+                    matchingContainerCount++;
+                  }
+                }
+              }
+
+              if (matchingContainerCount < containerIds.size()) {
+                return null;
+              } else {
+                return matchingContainerCount;
+              }
+            }
+          });
+      assertEquals(numberOfJobs, restartedContainers);
+    }
+  }
 
   @Test
   public void test() throws Exception {
