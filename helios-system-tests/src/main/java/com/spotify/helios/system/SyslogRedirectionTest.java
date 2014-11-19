@@ -82,6 +82,11 @@ public class SyslogRedirectionTest extends SystemTestBase {
       final String containerId = creation.id();
       docker.startContainer(containerId);
 
+      // Wait for the container to exit.
+      // If we don't wait, docker.logs() might return an epmty string because the container
+      // cmd hasn't run yet.
+      docker.waitContainer(containerId);
+
       final String log;
       try (LogStream logs = docker.logs(containerId, STDOUT, STDERR)) {
         log = logs.readFully();
@@ -91,7 +96,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
       if (m.find()) {
         syslogHost = m.group("gateway");
       } else {
-        fail("couldn't determine the host address");
+        fail("couldn't determine the host address from '" + log + "'");
       }
     }
   }
