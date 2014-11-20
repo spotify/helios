@@ -772,7 +772,7 @@ public abstract class SystemTestBase {
   }
 
   protected String deregisterHost(final String host) throws Exception {
-    return cli("deregister", host, "--force");
+    return cli("deregister", host, "--yes");
   }
 
   protected String cli(final String command, final Object... args)

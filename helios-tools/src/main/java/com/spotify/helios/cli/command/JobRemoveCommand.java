@@ -21,6 +21,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
@@ -30,6 +31,9 @@ import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -37,6 +41,9 @@ import java.util.concurrent.ExecutionException;
 
 public class JobRemoveCommand extends WildcardJobCommand {
 
+  private static final Logger log = LoggerFactory.getLogger(JobRemoveCommand.class);
+
+  private final Argument yesArg;
   private final Argument forceArg;
 
   public JobRemoveCommand(Subparser parser) {
@@ -44,9 +51,14 @@ public class JobRemoveCommand extends WildcardJobCommand {
 
     parser.help("remove a job");
 
+    yesArg = parser.addArgument("--yes")
+        .action(Arguments.storeTrue())
+        .help("Automatically answer 'yes' to the interactive prompt.");
+
+    // TODO (dxia) Deprecated, remove at a later date
     forceArg = parser.addArgument("--force")
         .action(Arguments.storeTrue())
-        .help("Force removal.");
+        .help("Automatically answer 'yes' to the interactive prompt.");
   }
 
   @Override
@@ -54,20 +66,18 @@ public class JobRemoveCommand extends WildcardJobCommand {
                              final PrintStream out, final boolean json, final JobId jobId,
                              final BufferedReader stdin)
       throws IOException, ExecutionException, InterruptedException {
+    final boolean yes = options.getBoolean(yesArg.getDest());
     final boolean force = options.getBoolean(forceArg.getDest());
 
-    if (!force) {
+    if (force) {
+      log.warn("If you are using '--force' to skip the interactive prompt, " +
+               "note that we have deprecated it. Please use '--yes'.");
+    }
+
+    if (!yes && !force) {
       out.printf("This will remove the job %s%n", jobId);
-      out.printf("Do you want to continue? [y/N]%n");
-
-      final String line = stdin.readLine().trim();
-
-      if (line.length() < 1) {
-        return 1;
-      }
-      final char c = line.charAt(0);
-
-      if (c != 'Y' && c != 'y') {
+      final boolean confirmed = Utils.userConfirmed(out, stdin);
+      if (!confirmed) {
         return 1;
       }
     }
