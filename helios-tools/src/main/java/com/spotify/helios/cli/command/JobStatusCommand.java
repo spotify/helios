@@ -21,6 +21,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Maps;
@@ -42,6 +43,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.BufferedReader;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -92,7 +94,6 @@ public class JobStatusCommand extends ControlCommand {
     if (Strings.isNullOrEmpty(jobIdString)) {
       jobIds = client.jobs().get().keySet();
     } else {
-      // TODO (dano): complain if there were no matching jobs?
       jobIds = client.jobs(jobIdString).get().keySet();
     }
 
@@ -125,7 +126,18 @@ public class JobStatusCommand extends ControlCommand {
     });
 
     if (noHostMatchedEver) {
-      out.printf("host pattern %s matched no hosts%n", hostPattern);
+      String domainsSwitchString = "";
+
+      final List<String> domains = options.get("domains");
+      final List<String> sites = options.get("sites");
+      if (domains.size() > 0) {
+        domainsSwitchString = "-d " + Joiner.on(",").join(domains);
+      } else if (sites.size() > 0) {
+        domainsSwitchString = "-d " + Joiner.on(",").join(sites);
+      }
+      out.printf("There are no jobs deployed to hosts with the pattern '%s'%n" +
+                 "Run 'helios %s hosts %s' to check it exists and is up.%n",
+                 hostPattern, domainsSwitchString, hostPattern);
       return 1;
     }
 
@@ -196,10 +208,12 @@ public class JobStatusCommand extends ControlCommand {
         continue;
       }
 
-      // Merge hosts without any status into the set of hosts with a reported task status
       final Map<String, TaskStatus> taskStatuses = Maps.newTreeMap();
       taskStatuses.putAll(jobStatus.getTaskStatuses());
 
+      // Add keys for jobs that were deployed to a host,
+      // but for which we didn't get a reported task status.
+      // This will help us see hosts where jobs aren't running correctly.
       for (final String host : jobStatus.getDeployments().keySet()) {
         if (!taskStatuses.containsKey(host)) {
           taskStatuses.put(host, null);
