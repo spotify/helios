@@ -146,10 +146,6 @@ public class JobValidator {
     if (image == null) {
       errors.add(format("Image was not specified."));
     } else {
-      if (image.endsWith(":latest")) {
-        errors.add("Cannot use images that are tagged with :latest, use the hex id instead");
-      }
-
       // Validate image name
       validateImageReference(image, errors);
     }

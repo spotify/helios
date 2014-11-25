@@ -129,14 +129,6 @@ public class JobValidatorTest {
   }
 
   @Test
-  public void testLatestTagIsBanned() {
-    final Job job = VALID_JOB.toBuilder().setImage("registry:80/myimage:latest").build();
-    assertEquals(ImmutableSet.of(
-        "Cannot use images that are tagged with :latest, use the hex id instead"),
-        validator.validate(job));
-  }
-
-  @Test
   public void testIdMismatchFails() throws Exception {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
                             "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS, EMPTY_REGISTRATION,
