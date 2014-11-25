@@ -2,6 +2,14 @@
 
 case "$1" in
   pre_machine)
+    # ensure correct level of parallelism
+    expected_nodes=2
+    if [ "$CIRCLE_NODE_TOTAL" -ne "$expected_nodes" ]
+    then
+        echo "Parallelism is set to ${CIRCLE_NODE_TOTAL}x, but we need ${expected_nodes}x."
+        exit 1
+    fi
+
     # have docker bind to localhost
     docker_opts='DOCKER_OPTS="$DOCKER_OPTS -H tcp://127.0.0.1:2375"'
     sudo sh -c "echo '$docker_opts' >> /etc/default/docker"
