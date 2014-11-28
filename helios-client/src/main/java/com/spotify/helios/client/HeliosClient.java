@@ -79,6 +79,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.zip.GZIPInputStream;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -198,12 +199,14 @@ public class HeliosClient implements AutoCloseable {
       public Response call() throws Exception {
         final HttpURLConnection connection = connect(uri, method, entityBytes, headers);
         final int status = connection.getResponseCode();
-        final InputStream stream;
+        final InputStream rawStream;
         if (status / 100 != 2) {
-          stream = connection.getErrorStream();
+          rawStream = connection.getErrorStream();
         } else {
-          stream = connection.getInputStream();
+          rawStream = connection.getInputStream();
         }
+        final boolean gzip = isGzipCompressed(connection);
+        final InputStream stream = gzip ? new GZIPInputStream(rawStream) : rawStream;
         final ByteArrayOutputStream payload = new ByteArrayOutputStream();
         if (stream != null) {
           int n;
@@ -214,14 +217,27 @@ public class HeliosClient implements AutoCloseable {
         }
         URI realUri = connection.getURL().toURI();
         if (log.isTraceEnabled()) {
-          log.trace("rep: {} {} {} {} {}",
-                    method, realUri, status, payload.size(), decode(payload));
+          log.trace("rep: {} {} {} {} {} gzip:{}",
+                    method, realUri, status, payload.size(), decode(payload), gzip);
         } else {
-          log.debug("rep: {} {} {} {}",
-                    method, realUri, status, payload.size());
+          log.debug("rep: {} {} {} {} gzip:{}",
+                    method, realUri, status, payload.size(), gzip);
         }
         checkprotocolVersionStatus(connection);
         return new Response(method, uri, status, payload.toByteArray());
+      }
+
+      private boolean isGzipCompressed(final HttpURLConnection connection) {
+        final List<String> encodings = connection.getHeaderFields().get("Content-Encoding");
+        if (encodings == null) {
+          return false;
+        }
+        for (String encoding : encodings) {
+          if ("gzip".equals(encoding)) {
+            return true;
+          }
+        }
+        return false;
       }
     });
   }
@@ -312,6 +328,7 @@ public class HeliosClient implements AutoCloseable {
     }
     final HttpURLConnection connection;
     connection = (HttpURLConnection) uri.toURL().openConnection();
+    connection.setRequestProperty("Accept-Encoding", "gzip");
     connection.setInstanceFollowRedirects(false);
     for (Map.Entry<String, List<String>> header : headers.entrySet()) {
       for (final String value : header.getValue()) {
