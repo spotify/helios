@@ -21,9 +21,8 @@
 
 package com.spotify.helios.master;
 
-import ch.qos.logback.access.jetty.RequestLogImpl;
-
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
@@ -64,17 +63,19 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.dropwizard.configuration.ConfigurationException;
-import io.dropwizard.jetty.RequestLogFactory;
-import io.dropwizard.logging.AppenderFactory;
-import io.dropwizard.server.DefaultServerFactory;
-import io.dropwizard.setup.Environment;
-
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
+
+import ch.qos.logback.access.jetty.RequestLogImpl;
+import io.dropwizard.configuration.ConfigurationException;
+import io.dropwizard.jetty.GzipFilterFactory;
+import io.dropwizard.jetty.RequestLogFactory;
+import io.dropwizard.logging.AppenderFactory;
+import io.dropwizard.server.DefaultServerFactory;
+import io.dropwizard.setup.Environment;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
@@ -169,6 +170,11 @@ public class MasterService extends AbstractIdleService {
     final RequestLogFactory requestLog = new RequestLogFactory();
     requestLog.setAppenders(ImmutableList.<AppenderFactory>of());
     serverFactory.setRequestLogFactory(requestLog);
+
+    // Enable gzip compression for POST and GET requests. Default is GET only.
+    final GzipFilterFactory gzip = new GzipFilterFactory();
+    gzip.setIncludedMethods(ImmutableSet.of("GET", "POST"));
+    serverFactory.setGzipFilterFactory(gzip);
 
     this.server = serverFactory.build(environment);
 
