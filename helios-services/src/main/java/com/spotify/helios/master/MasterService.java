@@ -60,6 +60,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.servlets.CrossOriginFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +69,7 @@ import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.FilterRegistration;
 
 import ch.qos.logback.access.jetty.RequestLogImpl;
 import io.dropwizard.configuration.ConfigurationException;
@@ -170,6 +172,18 @@ public class MasterService extends AbstractIdleService {
     final RequestLogFactory requestLog = new RequestLogFactory();
     requestLog.setAppenders(ImmutableList.<AppenderFactory>of());
     serverFactory.setRequestLogFactory(requestLog);
+
+    // Enable CORS headers
+    final FilterRegistration.Dynamic cors = environment.servlets()
+        .addFilter("CORS", CrossOriginFilter.class);
+
+    // Configure CORS parameters
+    cors.setInitParameter("allowedOrigins", "*");
+    cors.setInitParameter("allowedHeaders", "X-Requested-With,Content-Type,Accept,Origin");
+    cors.setInitParameter("allowedMethods", "OPTIONS,GET,PUT,POST,DELETE,HEAD");
+
+    // Add URL mapping
+    cors.addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
 
     // Enable gzip compression for POST and GET requests. Default is GET only.
     final GzipFilterFactory gzip = new GzipFilterFactory();
