@@ -80,7 +80,7 @@ public class DeploymentTest extends SystemTestBase {
     final String jobName = testJobName + "_" + toHexString(ThreadLocalRandom.current().nextInt());
 
     // create and deploy a bunch of jobs
-    for (Integer i = 0; i < numberOfJobs; i++ ) {
+    for (Integer i = 0; i < numberOfJobs; i++) {
       final Job job = Job.newBuilder()
           .setName(jobName)
           .setVersion(i.toString())

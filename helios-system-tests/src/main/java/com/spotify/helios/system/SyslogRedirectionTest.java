@@ -62,7 +62,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
   private static final Pattern DEFAULT_GATEWAY_PATTERN =
       Pattern.compile("^default via (?<gateway>[0-9\\.]+)");
 
-  private final String TEST_IMAGE = testTag + "_helios-syslog-test";
+  private final String testImage = testTag + "_helios-syslog-test";
 
   private String syslogHost;
 
@@ -71,7 +71,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
     try (final DockerClient docker = getNewDockerClient()) {
       // Build an image with an ENTRYPOINT and CMD prespecified
       final String dockerDirectory = Resources.getResource("syslog-test-image").getPath();
-      docker.build(Paths.get(dockerDirectory), TEST_IMAGE);
+      docker.build(Paths.get(dockerDirectory), testImage);
 
       // Figure out the host IP from the container's point of view (needed for syslog)
       final ContainerConfig config = ContainerConfig.builder()
@@ -105,7 +105,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
   public void tearDown() throws Exception {
     try (final DockerClient docker = getNewDockerClient()) {
       try {
-        docker.removeImage(TEST_IMAGE, true, false);
+        docker.removeImage(testImage, true, false);
       } catch (DockerException e) {
         // oh well, we tried
       }
@@ -148,7 +148,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
       awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
       final List<String> command =  Collections.EMPTY_LIST;
-      final JobId jobId = createJob(testJobName, testJobVersion, TEST_IMAGE, command,
+      final JobId jobId = createJob(testJobName, testJobVersion, testImage, command,
                                     ImmutableMap.of("SYSLOG_REDIRECTOR", "/syslog-redirector"));
       deployJob(jobId, testHost());
 
