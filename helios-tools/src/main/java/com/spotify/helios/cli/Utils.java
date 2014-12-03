@@ -26,6 +26,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
 
+import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.util.Collections;
@@ -62,5 +64,23 @@ public class Utils {
         .setEndpointSupplier(target.getEndpointSupplier())
         .setUser(username)
         .build();
+  }
+
+  public static boolean userConfirmed(final PrintStream out, final BufferedReader stdin)
+      throws IOException {
+    out.printf("Do you want to continue? [y/N]%n");
+
+    final String line = stdin.readLine().trim();
+
+    if (line.length() < 1) {
+      return false;
+    }
+    final char c = line.charAt(0);
+
+    if (c != 'Y' && c != 'y') {
+      return false;
+    }
+
+    return true;
   }
 }
