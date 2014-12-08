@@ -125,6 +125,20 @@ public class TaskRunnerFactory {
     }
 
     @Override
+    public void pulled() {
+      for (TaskRunner.Listener l : listeners) {
+        l.pulled();
+      }
+    }
+
+    @Override
+    public void pullFailed() {
+      for (TaskRunner.Listener l : listeners) {
+        l.pullFailed();
+      }
+    }
+
+    @Override
     public void creating() {
       for (TaskRunner.Listener l : listeners) {
         l.creating();

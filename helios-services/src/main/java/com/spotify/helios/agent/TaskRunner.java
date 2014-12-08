@@ -219,11 +219,14 @@ class TaskRunner extends InterruptingExecutionThreadService {
     // Attempt to pull.  Failure, while less than ideal, is ok.
     try {
       docker.pull(image);
+      listener.pulled();
     } catch (DockerTimeoutException e) {
       log.warn("Pulling image {} failed with timeout", image, e);
+      listener.pullFailed();
       wasTimeout = e;
     } catch (DockerException e) {
       log.warn("Pulling image {} failed", image, e);
+      listener.pullFailed();
     }
 
     try {
@@ -245,6 +248,10 @@ class TaskRunner extends InterruptingExecutionThreadService {
     void failed(Throwable t);
 
     void pulling();
+
+    void pulled();
+
+    void pullFailed();
 
     void creating();
 
@@ -320,6 +327,16 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     @Override
     public void pulling() {
+
+    }
+
+    @Override
+    public void pulled() {
+
+    }
+
+    @Override
+    public void pullFailed() {
 
     }
 

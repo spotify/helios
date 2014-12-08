@@ -125,6 +125,14 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
   }
 
   @Override
+  public void pulled() {
+  }
+
+  @Override
+  public void pullFailed() {
+  }
+
+  @Override
   public void creating() {
     updateState(CREATING);
   }
