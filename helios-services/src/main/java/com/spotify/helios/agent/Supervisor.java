@@ -31,6 +31,7 @@ import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.Reactor;
+import com.spotify.helios.servicescommon.statistics.MetricsContext;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
 import org.slf4j.Logger;
@@ -427,6 +428,8 @@ public class Supervisor {
 
   private class TaskListener extends TaskRunner.NopListener {
 
+    private MetricsContext pullContext;
+
     @Override
     public void failed(final Throwable t) {
       metrics.containersThrewException();
@@ -434,7 +437,21 @@ public class Supervisor {
 
     @Override
     public void pulling() {
-      metrics.containerPull();
+      pullContext = metrics.containerPull();
+    }
+
+    @Override
+    public void pullFailed() {
+      if (pullContext != null) {
+        pullContext.failure();
+      }
+    }
+
+    @Override
+    public void pulled() {
+      if (pullContext != null) {
+        pullContext.success();
+      }
     }
 
     @Override
