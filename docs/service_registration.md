@@ -6,6 +6,7 @@ registration system as well, so they can be found by the command line interface.
 
 # Currently Known Supported Discovery Services
 * [SkyDNS](https://github.com/spotify/helios-skydns)
+* [Consul](https://github.com/SVT/helios-consul)
 
 Hopefully soon, this list will be less sad.
 
