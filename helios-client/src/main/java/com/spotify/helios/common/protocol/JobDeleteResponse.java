@@ -27,7 +27,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 
 public class JobDeleteResponse {
-  public enum Status { OK, STILL_IN_USE, JOB_NOT_FOUND }
+  public enum Status { OK, STILL_IN_USE, JOB_NOT_FOUND, FORBIDDEN }
 
   private final Status status;
 

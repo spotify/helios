@@ -34,7 +34,7 @@ public class JobUndeployResponse {
     JOB_NOT_FOUND,
     HOST_NOT_FOUND,
     INVALID_ID,
-    UNAUTHORIZED
+    FORBIDDEN
   }
 
   private final Status status;

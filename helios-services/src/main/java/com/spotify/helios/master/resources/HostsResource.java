@@ -61,14 +61,14 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
+import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.FORBIDDEN;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST_NOT_FOUND;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.INVALID_ID;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.JOB_NOT_FOUND;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.OK;
-import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.UNAUTHORIZED;
 import static com.spotify.helios.master.http.Responses.badRequest;
+import static com.spotify.helios.master.http.Responses.forbidden;
 import static com.spotify.helios.master.http.Responses.notFound;
-import static com.spotify.helios.master.http.Responses.unauthorized;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/hosts")
@@ -194,7 +194,7 @@ public class HostsResource {
     } catch (JobPortAllocationConflictException e) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.PORT_CONFLICT, host, jobId));
     } catch (TokenVerificationException e) {
-      throw unauthorized(new JobDeployResponse(JobDeployResponse.Status.UNAUTHORIZED, host, jobId));
+      throw forbidden(new JobDeployResponse(JobDeployResponse.Status.FORBIDDEN, host, jobId));
     }
   }
 
@@ -221,7 +221,7 @@ public class HostsResource {
     } catch (JobNotDeployedException e) {
       throw notFound(new JobUndeployResponse(JOB_NOT_FOUND, host, jobId));
     } catch (TokenVerificationException e) {
-      throw unauthorized(new JobUndeployResponse(UNAUTHORIZED, host, jobId));
+      throw forbidden(new JobUndeployResponse(FORBIDDEN, host, jobId));
     }
   }
 
@@ -248,7 +248,7 @@ public class HostsResource {
     } catch (JobNotDeployedException e) {
       throw notFound(new SetGoalResponse(SetGoalResponse.Status.JOB_NOT_DEPLOYED, host, jobId));
     } catch (TokenVerificationException e) {
-      throw unauthorized(new SetGoalResponse(SetGoalResponse.Status.UNAUTHORIZED, host, jobId));
+      throw forbidden(new SetGoalResponse(SetGoalResponse.Status.FORBIDDEN, host, jobId));
     }
     log.info("patched job {} on host {}", deployment, host);
     return new SetGoalResponse(SetGoalResponse.Status.OK, host, jobId);

@@ -38,7 +38,7 @@ public class JobDeployResponse {
     ID_MISMATCH,
     INVALID_ID,
     AMBIGUOUS_JOB_REFERENCE,
-    UNAUTHORIZED
+    FORBIDDEN
   }
 
   private final Status status;

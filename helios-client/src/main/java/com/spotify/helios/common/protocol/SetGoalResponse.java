@@ -36,7 +36,7 @@ public class SetGoalResponse {
     JOB_NOT_DEPLOYED,
     ID_MISMATCH,
     INVALID_ID,
-    UNAUTHORIZED
+    FORBIDDEN
   }
 
   private final Status status;

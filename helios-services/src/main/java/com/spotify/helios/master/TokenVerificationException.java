@@ -41,6 +41,6 @@ public class TokenVerificationException extends HeliosException {
   }
 
   public TokenVerificationException(final JobId id) {
-    super(format("token provided by user does not match token in job %s", id));
+    super(format("Token verification failed for job %s", id));
   }
 }
