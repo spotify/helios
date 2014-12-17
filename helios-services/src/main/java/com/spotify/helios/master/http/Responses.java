@@ -25,7 +25,7 @@ import javax.ws.rs.WebApplicationException;
 
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
-import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static javax.ws.rs.core.Response.Status.FORBIDDEN;
 import static javax.ws.rs.core.Response.status;
 
 /**
@@ -49,11 +49,11 @@ public class Responses {
     return new WebApplicationException(NOT_FOUND);
   }
 
-  public static WebApplicationException unauthorized(final Object entity) {
-    return new WebApplicationException(status(UNAUTHORIZED).entity(entity).build());
+  public static WebApplicationException forbidden(final Object entity) {
+    return new WebApplicationException(status(FORBIDDEN).entity(entity).build());
   }
 
-  public static WebApplicationException unauthorized() {
-    return new WebApplicationException(UNAUTHORIZED);
+  public static WebApplicationException forbidden() {
+    return new WebApplicationException(FORBIDDEN);
   }
 }

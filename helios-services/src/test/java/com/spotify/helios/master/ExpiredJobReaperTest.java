@@ -101,9 +101,9 @@ public class ExpiredJobReaperTest {
 
     // Make sure that the expiring job was removed, but that the non-expiring job
     // and the job that expires far in the future were not.
-    verify(masterModel).undeployJob(eq("hostA"), eq(EXPIRING_JOB_ID));
-    verify(masterModel).undeployJob(eq("hostB"), eq(EXPIRING_JOB_ID));
-    verify(masterModel).removeJob(eq(EXPIRING_JOB_ID));
+    verify(masterModel).undeployJob(eq("hostA"), eq(EXPIRING_JOB_ID), eq(""));
+    verify(masterModel).undeployJob(eq("hostB"), eq(EXPIRING_JOB_ID), eq(""));
+    verify(masterModel).removeJob(eq(EXPIRING_JOB_ID), eq(""));
 
     verifyNoMoreInteractions(ignoreStubs(masterModel));
   }

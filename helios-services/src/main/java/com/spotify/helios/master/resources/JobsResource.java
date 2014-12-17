@@ -38,6 +38,7 @@ import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.JobExistsException;
 import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.master.MasterModel;
+import com.spotify.helios.master.TokenVerificationException;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.sun.jersey.api.core.InjectParam;
 
@@ -62,6 +63,7 @@ import javax.ws.rs.QueryParam;
 import static com.spotify.helios.common.protocol.CreateJobResponse.Status.INVALID_JOB_DEFINITION;
 import static com.spotify.helios.common.protocol.CreateJobResponse.Status.JOB_ALREADY_EXISTS;
 import static com.spotify.helios.master.http.Responses.badRequest;
+import static com.spotify.helios.master.http.Responses.forbidden;
 import static com.spotify.helios.master.http.Responses.notFound;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -177,6 +179,8 @@ public class JobsResource {
       throw notFound(new JobDeleteResponse(JobDeleteResponse.Status.JOB_NOT_FOUND));
     } catch (JobStillDeployedException e) {
       throw badRequest(new JobDeleteResponse(JobDeleteResponse.Status.STILL_IN_USE));
+    } catch (TokenVerificationException e) {
+      throw forbidden(new JobDeleteResponse(JobDeleteResponse.Status.FORBIDDEN));
     }
   }
 

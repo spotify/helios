@@ -66,6 +66,7 @@ import java.util.UUID;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
@@ -457,6 +458,15 @@ public class ZooKeeperMasterModel implements MasterModel {
     return hosts;
   }
 
+  @Override
+  public Job removeJob(JobId jobId) throws JobDoesNotExistException, JobStillDeployedException {
+    try {
+      return removeJob(jobId, null);
+    } catch (TokenVerificationException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
   /**
    * Deletes a job from ZooKeeper.  Ensures that job is not currently running anywhere.
    */
@@ -506,6 +516,17 @@ public class ZooKeeperMasterModel implements MasterModel {
       }
     }
     return null;
+  }
+
+  @Override
+  public void deployJob(String host, Deployment job)
+      throws HostNotFoundException, JobAlreadyDeployedException, JobDoesNotExistException,
+             JobPortAllocationConflictException {
+    try {
+      deployJob(host, job, null);
+    } catch (TokenVerificationException e) {
+      throw Throwables.propagate(e);
+    }
   }
 
   /**
@@ -642,6 +663,16 @@ public class ZooKeeperMasterModel implements MasterModel {
       }
     }
     return staticPorts;
+  }
+
+  @Override
+  public void updateDeployment(String host, Deployment deployment)
+      throws HostNotFoundException, JobNotDeployedException {
+    try {
+      updateDeployment(host, deployment, null);
+    } catch (TokenVerificationException e) {
+      Throwables.propagate(e);
+    }
   }
 
   /**
@@ -859,6 +890,16 @@ public class ZooKeeperMasterModel implements MasterModel {
     return jobs;
   }
 
+  @Override
+  public Deployment undeployJob(String host, JobId jobId)
+      throws HostNotFoundException, JobNotDeployedException {
+    try {
+      return undeployJob(host, jobId, null);
+    } catch (TokenVerificationException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
   /**
    * Undeploys the job specified by {@code jobId} on {@code host}.
    */
@@ -903,7 +944,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private void verifyToken(final String token, final Job job) throws TokenVerificationException {
-    if (token != null && !token.equals(job.getToken())) {
+    if (!isNullOrEmpty(job.getToken()) && !job.getToken().equals(token)) {
       throw new TokenVerificationException(job.getId());
     }
   }

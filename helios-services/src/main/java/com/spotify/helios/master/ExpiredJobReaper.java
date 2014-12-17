@@ -80,7 +80,7 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
 
         for (String host : hosts) {
           try {
-            masterModel.undeployJob(host, jobId, null);
+            masterModel.undeployJob(host, jobId, job.getToken());
           } catch (HostNotFoundException e) {
             log.error("couldn't undeploy job {} from host {} when it hit deadline", jobId, host, e);
           } catch (JobNotDeployedException e) {
@@ -92,7 +92,7 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
         }
 
         try {
-          masterModel.removeJob(jobId, null);
+          masterModel.removeJob(jobId, job.getToken());
         } catch (JobDoesNotExistException e) {
           log.debug("job {} was already removed when it hit deadline", jobId, e);
         } catch (JobStillDeployedException e) {

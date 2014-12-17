@@ -47,16 +47,26 @@ public interface MasterModel {
 
   void addJob(Job job) throws JobExistsException;
 
-  Job getJob(JobId job);
+  Job getJob(JobId jobId);
 
   Map<JobId, Job> getJobs();
 
   JobStatus getJobStatus(JobId jobId);
 
-  Job removeJob(JobId job, String token)
+  Job removeJob(JobId jobId)
+      throws JobDoesNotExistException,
+             JobStillDeployedException;
+
+  Job removeJob(JobId jobId, String token)
       throws JobDoesNotExistException,
              JobStillDeployedException,
              TokenVerificationException;
+
+  void deployJob(String host, Deployment job)
+      throws HostNotFoundException,
+             JobAlreadyDeployedException,
+             JobDoesNotExistException,
+             JobPortAllocationConflictException;
 
   void deployJob(String host, Deployment job, String token)
       throws HostNotFoundException,
@@ -65,12 +75,20 @@ public interface MasterModel {
              JobPortAllocationConflictException,
              TokenVerificationException;
 
-  Deployment getDeployment(String host, JobId job);
+  Deployment getDeployment(String host, JobId jobId);
 
-  Deployment undeployJob(String host, JobId job, String token)
+  Deployment undeployJob(String host, JobId jobId)
+      throws HostNotFoundException,
+             JobNotDeployedException;
+
+  Deployment undeployJob(String host, JobId jobId, String token)
       throws HostNotFoundException,
              JobNotDeployedException,
              TokenVerificationException;
+
+  void updateDeployment(String host, Deployment deployment)
+      throws HostNotFoundException,
+             JobNotDeployedException;
 
   void updateDeployment(String host, Deployment deployment, String token)
       throws HostNotFoundException,
