@@ -45,6 +45,7 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 public class JobDeployCommand extends WildcardJobCommand {
 
   private final Argument hostsArg;
+  private final Argument tokenArg;
   private final Argument noStartArg;
   private final Argument watchArg;
   private final Argument intervalArg;
@@ -54,13 +55,18 @@ public class JobDeployCommand extends WildcardJobCommand {
 
     parser.help("deploy a job to hosts");
 
-    noStartArg = parser.addArgument("--no-start")
-        .action(storeTrue())
-        .help("Deploy job without starting it.");
-
     hostsArg = parser.addArgument("hosts")
         .nargs("+")
         .help("The hosts to deploy the job on.");
+
+    tokenArg = parser.addArgument("--token")
+        .nargs("?")
+        .setDefault("")
+        .help("Insecure access token");
+
+    noStartArg = parser.addArgument("--no-start")
+        .action(storeTrue())
+        .help("Deploy job without starting it.");
 
     watchArg = parser.addArgument("--watch")
         .action(storeTrue())
@@ -95,7 +101,8 @@ public class JobDeployCommand extends WildcardJobCommand {
       if (!json) {
         out.printf("%s: ", host);
       }
-      final JobDeployResponse result = client.deploy(job, host).get();
+      final String token = options.getString(tokenArg.getDest());
+      final JobDeployResponse result = client.deploy(job, host, token).get();
       if (result.getStatus() == JobDeployResponse.Status.OK) {
         if (!json) {
           out.printf("done%n");

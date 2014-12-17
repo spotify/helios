@@ -43,6 +43,7 @@ public class JobRemoveCommand extends WildcardJobCommand {
 
   private static final Logger log = LoggerFactory.getLogger(JobRemoveCommand.class);
 
+  private final Argument tokenArg;
   private final Argument yesArg;
   private final Argument forceArg;
 
@@ -50,6 +51,11 @@ public class JobRemoveCommand extends WildcardJobCommand {
     super(parser);
 
     parser.help("remove a job");
+
+    tokenArg = parser.addArgument("--token")
+            .nargs("?")
+            .setDefault("")
+            .help("Insecure access token");
 
     yesArg = parser.addArgument("--yes")
         .action(Arguments.storeTrue())
@@ -88,7 +94,8 @@ public class JobRemoveCommand extends WildcardJobCommand {
 
     int code = 0;
 
-    final JobDeleteResponse response = client.deleteJob(jobId).get();
+    final String token = options.getString(tokenArg.getDest());
+    final JobDeleteResponse response = client.deleteJob(jobId, token).get();
     if (!json) {
       out.printf("%s: ", jobId);
     }
