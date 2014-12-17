@@ -138,6 +138,7 @@ public class JobsResource {
     final Collection<String> errors = JOB_VALIDATOR.validate(job);
     final Job actualJob = job.toBuilder()
         .setCreatingUser(username)
+        .setToken(token)
         // if job had an id coming in, preserve it
         .setHash(job.getId().getHash())
         .build();
