@@ -461,13 +461,16 @@ public class ZooKeeperMasterModel implements MasterModel {
    * Deletes a job from ZooKeeper.  Ensures that job is not currently running anywhere.
    */
   @Override
-  public Job removeJob(final JobId id) throws JobDoesNotExistException, JobStillDeployedException {
+  public Job removeJob(final JobId id, final String token)
+      throws JobDoesNotExistException, JobStillDeployedException, TokenVerificationException {
     log.info("removing job: id={}", id);
     final ZooKeeperClient client = provider.get("removeJob");
     final Job job = getJob(client, id);
     if (job == null) {
       throw new JobDoesNotExistException(id);
     }
+    verifyToken(token, job);
+
     // TODO (dano): handle retry failures
     try {
       final ImmutableList.Builder<ZooKeeperOperation> operations = ImmutableList.builder();
@@ -510,18 +513,18 @@ public class ZooKeeperMasterModel implements MasterModel {
    * the deployment status according to the {@link Goal} value in {@link Deployment}.
    */
   @Override
-  public void deployJob(final String host, final Deployment deployment)
+  public void deployJob(final String host, final Deployment deployment, final String token)
       throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
-             JobPortAllocationConflictException {
+             JobPortAllocationConflictException, TokenVerificationException {
     final ZooKeeperClient client = provider.get("deployJob");
-    deployJobRetry(client, host, deployment, 0);
+    deployJobRetry(client, host, deployment, 0, token);
   }
 
   // TODO(drewc): this kinda screams "long method"
   private void deployJobRetry(final ZooKeeperClient client, final String host,
-                              final Deployment deployment, int count)
+                              final Deployment deployment, int count, final String token)
       throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
-          JobPortAllocationConflictException {
+             JobPortAllocationConflictException, TokenVerificationException {
     if (count == 3) {
       throw new HeliosRuntimeException("3 failures (possibly concurrent modifications) while " +
                                        "deploying. Giving up.");
@@ -534,6 +537,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     if (job == null) {
       throw new JobDoesNotExistException(id);
     }
+    verifyToken(token, job);
 
     final UUID operationId = UUID.randomUUID();
     final String jobPath = Paths.configJob(id);
@@ -576,7 +580,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       assertHostExists(client, host);
       // If the job and host still exists, we likely tried to redeploy a job that had an UNDEPLOY
       // goal and lost the race with the agent removing the task before we could set it. Retry.
-      deployJobRetry(client, host, deployment, count + 1);
+      deployJobRetry(client, host, deployment, count + 1, token);
     } catch (NodeExistsException e) {
       // Check for conflict due to transaction retry
       try {
@@ -644,8 +648,8 @@ public class ZooKeeperMasterModel implements MasterModel {
    * Used to update the existing deployment of a job.
    */
   @Override
-  public void updateDeployment(final String host, final Deployment deployment)
-      throws HostNotFoundException, JobNotDeployedException {
+  public void updateDeployment(final String host, final Deployment deployment, final String token)
+      throws HostNotFoundException, JobNotDeployedException, TokenVerificationException {
     log.info("updating deployment {}: {}", deployment, host);
 
     final ZooKeeperClient client = provider.get("updateDeployment");
@@ -656,6 +660,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     if (job == null) {
       throw new JobNotDeployedException(host, jobId);
     }
+    verifyToken(token, job);
 
     assertHostExists(client, host);
     assertTaskExists(client, host, deployment.getJobId());
@@ -858,8 +863,8 @@ public class ZooKeeperMasterModel implements MasterModel {
    * Undeploys the job specified by {@code jobId} on {@code host}.
    */
   @Override
-  public Deployment undeployJob(final String host, final JobId jobId)
-      throws HostNotFoundException, JobNotDeployedException {
+  public Deployment undeployJob(final String host, final JobId jobId, final String token)
+      throws HostNotFoundException, JobNotDeployedException, TokenVerificationException {
     log.info("undeploying {}: {}", jobId, host);
     final ZooKeeperClient client = provider.get("undeployJob");
 
@@ -871,6 +876,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     final Job job = getJob(client, jobId);
+    verifyToken(token, job);
     final String configHostJobPath = Paths.configHostJob(host, jobId);
 
     try {
@@ -894,5 +900,11 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new HeliosRuntimeException("Removing deployment failed", e);
     }
     return deployment;
+  }
+
+  private void verifyToken(final String token, final Job job) throws TokenVerificationException {
+    if (token != null && !token.equals(job.getToken())) {
+      throw new TokenVerificationException(job.getId());
+    }
   }
 }

@@ -166,13 +166,12 @@ public class JobsResource {
   @ExceptionMetered
   public JobDeleteResponse delete(@PathParam("id") @Valid final JobId id,
                                   @QueryParam("token") @DefaultValue("") final String token)
-          throws HeliosException
-  {
+          throws HeliosException {
     if (!id.isFullyQualified()) {
       throw badRequest("Invalid id");
     }
     try {
-      model.removeJob(id);
+      model.removeJob(id, token);
       return new JobDeleteResponse(JobDeleteResponse.Status.OK);
     } catch (JobDoesNotExistException e) {
       throw notFound(new JobDeleteResponse(JobDeleteResponse.Status.JOB_NOT_FOUND));

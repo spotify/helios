@@ -40,6 +40,7 @@ import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.JobNotDeployedException;
 import com.spotify.helios.master.JobPortAllocationConflictException;
 import com.spotify.helios.master.MasterModel;
+import com.spotify.helios.master.TokenVerificationException;
 import com.spotify.helios.master.http.PATCH;
 
 import org.slf4j.Logger;
@@ -56,8 +57,10 @@ import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.INVALID_ID;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.JOB_NOT_FOUND;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.OK;
+import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.UNAUTHORIZED;
 import static com.spotify.helios.master.http.Responses.badRequest;
 import static com.spotify.helios.master.http.Responses.notFound;
+import static com.spotify.helios.master.http.Responses.unauthorized;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/hosts")
@@ -172,7 +175,7 @@ public class HostsResource {
     }
     try {
       final Deployment actualDeployment = deployment.toBuilder().setDeployerUser(username).build();
-      model.deployJob(host, actualDeployment);
+      model.deployJob(host, actualDeployment, token);
       return new JobDeployResponse(JobDeployResponse.Status.OK, host, jobId);
     } catch (JobAlreadyDeployedException e) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.JOB_ALREADY_DEPLOYED, host,
@@ -183,6 +186,8 @@ public class HostsResource {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.JOB_NOT_FOUND, host, jobId));
     } catch (JobPortAllocationConflictException e) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.PORT_CONFLICT, host, jobId));
+    } catch (TokenVerificationException e) {
+      throw unauthorized(new JobDeployResponse(JobDeployResponse.Status.UNAUTHORIZED, host, jobId));
     }
   }
 
@@ -202,12 +207,14 @@ public class HostsResource {
       throw badRequest(new JobUndeployResponse(INVALID_ID, host, jobId));
     }
     try {
-      model.undeployJob(host, jobId);
+      model.undeployJob(host, jobId, token);
       return new JobUndeployResponse(OK, host, jobId);
     } catch (HostNotFoundException e) {
       throw notFound(new JobUndeployResponse(HOST_NOT_FOUND, host, jobId));
     } catch (JobNotDeployedException e) {
       throw notFound(new JobUndeployResponse(JOB_NOT_FOUND, host, jobId));
+    } catch (TokenVerificationException e) {
+      throw unauthorized(new JobUndeployResponse(UNAUTHORIZED, host, jobId));
     }
   }
 
@@ -228,11 +235,13 @@ public class HostsResource {
       throw badRequest(new SetGoalResponse(SetGoalResponse.Status.ID_MISMATCH, host, jobId));
     }
     try {
-      model.updateDeployment(host, deployment);
+      model.updateDeployment(host, deployment, token);
     } catch (HostNotFoundException e) {
       throw notFound(new SetGoalResponse(SetGoalResponse.Status.HOST_NOT_FOUND, host, jobId));
     } catch (JobNotDeployedException e) {
       throw notFound(new SetGoalResponse(SetGoalResponse.Status.JOB_NOT_DEPLOYED, host, jobId));
+    } catch (TokenVerificationException e) {
+      throw unauthorized(new SetGoalResponse(SetGoalResponse.Status.UNAUTHORIZED, host, jobId));
     }
     log.info("patched job {} on host {}", deployment, host);
     return new SetGoalResponse(SetGoalResponse.Status.OK, host, jobId);

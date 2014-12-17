@@ -37,7 +37,8 @@ public class JobDeployResponse {
     JOB_ALREADY_DEPLOYED,
     ID_MISMATCH,
     INVALID_ID,
-    AMBIGUOUS_JOB_REFERENCE
+    AMBIGUOUS_JOB_REFERENCE,
+    UNAUTHORIZED
   }
 
   private final Status status;
