@@ -133,7 +133,8 @@ public class JobsResource {
   @Timed
   @ExceptionMetered
   public CreateJobResponse post(@Valid final Job job,
-                                @RequestUser final String username) {
+                                @RequestUser final String username,
+                                @QueryParam("token") @DefaultValue("") final String token) {
     final Collection<String> errors = JOB_VALIDATOR.validate(job);
     final Job actualJob = job.toBuilder()
         .setCreatingUser(username)
@@ -164,7 +165,10 @@ public class JobsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public JobDeleteResponse delete(@PathParam("id") @Valid final JobId id) throws HeliosException {
+  public JobDeleteResponse delete(@PathParam("id") @Valid final JobId id,
+                                  @QueryParam("token") @DefaultValue("") final String token)
+          throws HeliosException
+  {
     if (!id.isFullyQualified()) {
       throw badRequest("Invalid id");
     }

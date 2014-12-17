@@ -50,6 +50,7 @@ import java.util.Map;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -161,7 +162,6 @@ public class HostsResource {
   /**
    * Sets the deployment of the job identified by its {@link JobId} on the host named by
    * {@code host} to {@code deployment}
-   * @return
    */
   @PUT
   @Path("/{host}/jobs/{job}")
@@ -171,7 +171,8 @@ public class HostsResource {
   public JobDeployResponse jobPut(@PathParam("host") final String host,
                                   @PathParam("job") final JobId jobId,
                                   @Valid final Deployment deployment,
-                                  @RequestUser final String username) {
+                                  @RequestUser final String username,
+                                  @QueryParam("token") @DefaultValue("") final String token) {
     if (!jobId.isFullyQualified()) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.INVALID_ID, host,
                                              jobId));
@@ -202,7 +203,8 @@ public class HostsResource {
   @Timed
   @ExceptionMetered
   public JobUndeployResponse jobDelete(@PathParam("host") final String host,
-                                       @PathParam("job") final JobId jobId) {
+                                       @PathParam("job") final JobId jobId,
+                                       @QueryParam("token") @DefaultValue("") final String token) {
     if (!jobId.isFullyQualified()) {
       throw badRequest(new JobUndeployResponse(INVALID_ID, host, jobId));
     }
@@ -227,7 +229,8 @@ public class HostsResource {
   @ExceptionMetered
   public SetGoalResponse jobPatch(@PathParam("host") final String host,
                                   @PathParam("job") final JobId jobId,
-                                  @Valid final Deployment deployment) {
+                                  @Valid final Deployment deployment,
+                                  @QueryParam("token") @DefaultValue("") final String token) {
     if (!deployment.getJobId().equals(jobId)) {
       throw badRequest(new SetGoalResponse(SetGoalResponse.Status.ID_MISMATCH, host, jobId));
     }
