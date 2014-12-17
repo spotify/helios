@@ -66,16 +66,17 @@ public class JobCreateCommand extends ControlCommand {
 
   private static final JobValidator JOB_VALIDATOR = new JobValidator();
 
+  private final Argument fileArg;
+  private final Argument templateArg;
   private final Argument quietArg;
   private final Argument idArg;
   private final Argument imageArg;
+  private final Argument tokenArg;
   private final Argument envArg;
   private final Argument argsArg;
   private final Argument portArg;
   private final Argument registrationArg;
   private final Argument gracePeriodArg;
-  private final Argument fileArg;
-  private final Argument templateArg;
   private final Argument volumeArg;
   private final Argument expiresArg;
 
@@ -104,6 +105,11 @@ public class JobCreateCommand extends ControlCommand {
     imageArg = parser.addArgument("image")
         .nargs("?")
         .help("Container image");
+
+    tokenArg = parser.addArgument("--token")
+         .nargs("?")
+         .setDefault("")
+         .help("Insecure access token");
 
     envArg = parser.addArgument("--env")
         .action(append())
@@ -366,6 +372,8 @@ public class JobCreateCommand extends ControlCommand {
       // Use DateTime to parse the ISO-8601 string
       builder.setExpires(new DateTime(expires).toDate());
     }
+
+    builder.setToken(options.getString(tokenArg.getDest()));
 
     final Job job = builder.build();
 

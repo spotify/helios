@@ -103,6 +103,7 @@ public class JobInspectCommand extends WildcardJobCommand {
     } else {
       out.printf("Id: %s%n", job.getId());
       out.printf("Image: %s%n", job.getImage());
+      out.printf("Token: %s%n", job.getToken());
       out.printf("Command: %s%n", quote(job.getCommand()));
       printMap(out, "Env:   ", QUOTE, job.getEnv());
       printMap(out, "Ports: ", FORMAT_PORTMAPPING, job.getPorts());

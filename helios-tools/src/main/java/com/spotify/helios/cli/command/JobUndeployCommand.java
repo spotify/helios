@@ -49,6 +49,7 @@ public class JobUndeployCommand extends WildcardJobCommand {
   private static final Logger log = LoggerFactory.getLogger(JobUndeployCommand.class);
 
   private final Argument hostsArg;
+  private final Argument tokenArg;
   private final Argument allArg;
   private final Argument yesArg;
   private final Argument forceArg;
@@ -57,6 +58,15 @@ public class JobUndeployCommand extends WildcardJobCommand {
     super(parser);
 
     parser.help("undeploy a job from hosts");
+
+    hostsArg = parser.addArgument("hosts")
+            .nargs("*")
+            .help("The hosts to undeploy the job from.");
+
+    tokenArg = parser.addArgument("--token")
+            .nargs("?")
+            .setDefault("")
+            .help("Insecure access token");
 
     allArg = parser.addArgument("-a", "--all")
         .action(storeTrue())
@@ -70,10 +80,6 @@ public class JobUndeployCommand extends WildcardJobCommand {
     forceArg = parser.addArgument("--force")
         .action(storeTrue())
         .help("Automatically answer 'yes' to the interactive prompt.");
-
-    hostsArg = parser.addArgument("hosts")
-        .nargs("*")
-        .help("The hosts to undeploy the job from.");
   }
 
   @Override
@@ -129,7 +135,8 @@ public class JobUndeployCommand extends WildcardJobCommand {
         out.printf("%s: ", host);
       }
 
-      final JobUndeployResponse response = client.undeploy(jobId, host).get();
+      final String token = options.getString(tokenArg.getDest());
+      final JobUndeployResponse response = client.undeploy(jobId, host, token).get();
       if (response.getStatus() == JobUndeployResponse.Status.OK) {
         if (!json) {
           out.println("done");
