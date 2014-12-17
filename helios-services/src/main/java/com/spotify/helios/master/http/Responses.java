@@ -23,9 +23,10 @@ package com.spotify.helios.master.http;
 
 import javax.ws.rs.WebApplicationException;
 
-import static javax.ws.rs.core.Response.status;
 import static javax.ws.rs.core.Response.Status.BAD_REQUEST;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
+import static javax.ws.rs.core.Response.Status.UNAUTHORIZED;
+import static javax.ws.rs.core.Response.status;
 
 /**
  * Simpler utility code to signal error conditions from the resource classes.
@@ -46,5 +47,13 @@ public class Responses {
 
   public static WebApplicationException notFound() {
     return new WebApplicationException(NOT_FOUND);
+  }
+
+  public static WebApplicationException unauthorized(final Object entity) {
+    return new WebApplicationException(status(UNAUTHORIZED).entity(entity).build());
+  }
+
+  public static WebApplicationException unauthorized() {
+    return new WebApplicationException(UNAUTHORIZED);
   }
 }

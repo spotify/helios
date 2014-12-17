@@ -35,7 +35,8 @@ public class SetGoalResponse {
     HOST_NOT_FOUND,
     JOB_NOT_DEPLOYED,
     ID_MISMATCH,
-    INVALID_ID
+    INVALID_ID,
+    UNAUTHORIZED
   }
 
   private final Status status;

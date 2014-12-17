@@ -33,7 +33,8 @@ public class JobUndeployResponse {
     OK,
     JOB_NOT_FOUND,
     HOST_NOT_FOUND,
-    INVALID_ID
+    INVALID_ID,
+    UNAUTHORIZED
   }
 
   private final Status status;
