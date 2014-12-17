@@ -49,14 +49,7 @@ import java.util.List;
 import java.util.Map;
 
 import javax.validation.Valid;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.PUT;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Response;
 
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST_NOT_FOUND;
@@ -171,7 +164,8 @@ public class HostsResource {
   public JobDeployResponse jobPut(@PathParam("host") final String host,
                                   @PathParam("job") final JobId jobId,
                                   @Valid final Deployment deployment,
-                                  @RequestUser final String username) {
+                                  @RequestUser final String username,
+                                  @QueryParam("token") @DefaultValue("") final String token) {
     if (!jobId.isFullyQualified()) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.INVALID_ID, host,
                                              jobId));
@@ -202,7 +196,8 @@ public class HostsResource {
   @Timed
   @ExceptionMetered
   public JobUndeployResponse jobDelete(@PathParam("host") final String host,
-                                       @PathParam("job") final JobId jobId) {
+                                       @PathParam("job") final JobId jobId,
+                                       @QueryParam("token") @DefaultValue("") final String token) {
     if (!jobId.isFullyQualified()) {
       throw badRequest(new JobUndeployResponse(INVALID_ID, host, jobId));
     }
@@ -227,7 +222,8 @@ public class HostsResource {
   @ExceptionMetered
   public SetGoalResponse jobPatch(@PathParam("host") final String host,
                                   @PathParam("job") final JobId jobId,
-                                  @Valid final Deployment deployment) {
+                                  @Valid final Deployment deployment,
+                                  @QueryParam("token") @DefaultValue("") final String token) {
     if (!deployment.getJobId().equals(jobId)) {
       throw badRequest(new SetGoalResponse(SetGoalResponse.Status.ID_MISMATCH, host, jobId));
     }
