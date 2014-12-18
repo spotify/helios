@@ -82,16 +82,28 @@ public class JobRemoveCommand extends WildcardJobCommand {
       }
     }
 
-    out.printf("Removing job %s%n", jobId);
+    if (!json) {
+      out.printf("Removing job %s%n", jobId);
+    }
 
     int code = 0;
 
     final JobDeleteResponse response = client.deleteJob(jobId).get();
-    out.printf("%s: ", jobId);
+    if (!json) {
+      out.printf("%s: ", jobId);
+    }
     if (response.getStatus() == JobDeleteResponse.Status.OK) {
-      out.printf("done%n");
+      if (json) {
+        out.printf(response.toJsonString());
+      } else {
+        out.printf("done%n");
+      }
     } else {
-      out.printf("failed: %s%n", response);
+      if (json) {
+        out.printf(response.toJsonString());
+      } else {
+        out.printf("failed: %s%n", response);
+      }
       code = 1;
     }
     return code;
