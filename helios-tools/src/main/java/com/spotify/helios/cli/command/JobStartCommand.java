@@ -64,17 +64,29 @@ public class JobStartCommand extends WildcardJobCommand {
         .setJobId(jobId)
         .build();
 
-    out.printf("Starting %s on %s%n", jobId, hosts);
+    if (!json) {
+      out.printf("Starting %s on %s%n", jobId, hosts);
+    }
 
     int code = 0;
 
     for (final String host : hosts) {
-      out.printf("%s: ", host);
+      if (!json) {
+        out.printf("%s: ", host);
+      }
       final SetGoalResponse result = client.setGoal(deployment, host).get();
       if (result.getStatus() == SetGoalResponse.Status.OK) {
-        out.printf("done%n");
+        if (json) {
+          out.printf(result.toJsonString());
+        } else {
+          out.printf("done%n");
+        }
       } else {
-        out.printf("failed: %s%n", result);
+        if (json) {
+          out.printf(result.toJsonString());
+        } else {
+          out.printf("failed: %s%n", result);
+        }
         code = 1;
       }
     }
