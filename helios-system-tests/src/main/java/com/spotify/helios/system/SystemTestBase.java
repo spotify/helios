@@ -147,6 +147,7 @@ public abstract class SystemTestBase {
   public final String testTag = "test_" + toHexString(ThreadLocalRandom.current().nextInt());
   public final String testJobName = "job_" + testTag;
   public final String testJobVersion = "v" + toHexString(ThreadLocalRandom.current().nextInt());
+  public final String testJobNameAndVersion = testJobName + ":" + testJobVersion;
 
   public static final DockerHost DOCKER_HOST = DockerHost.fromEnv();
 
@@ -790,6 +791,18 @@ public abstract class SystemTestBase {
     final List<String> commands = asList(command, "-z", masterEndpoint(), "--no-log-setup");
     final List<String> allArgs = newArrayList(concat(commands, args));
     return main(allArgs).toString();
+  }
+
+  protected <T> T cliJson(final Class<T> klass, final String command, final String... args)
+      throws Exception {
+    return cliJson(klass, command, asList(args));
+  }
+
+  protected <T> T cliJson(final Class<T> klass, final String command, final List<String> args)
+      throws Exception {
+    final List<String> args0 = newArrayList("--json");
+    args0.addAll(args);
+    return Json.read(cli(command, args0), klass);
   }
 
   protected ByteArrayOutputStream main(final String... args) throws Exception {
