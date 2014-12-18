@@ -28,7 +28,17 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 
 import org.junit.Test;
 
-import static com.spotify.helios.common.descriptors.Job.*;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_RESOURCES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION_DOMAIN;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
+
 import static org.junit.Assert.assertEquals;
 
 public class IdMismatchJobCreateTest extends SystemTestBase {

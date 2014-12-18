@@ -288,6 +288,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (creatingUser != null ? !creatingUser.equals(job.creatingUser) : job.creatingUser != null) {
       return false;
     }
+    if (!token.equals(job.token)) {
+      return false;
+    }
 
     return true;
   }
