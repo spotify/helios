@@ -165,7 +165,6 @@ public class HostsResource {
   /**
    * Sets the deployment of the job identified by its {@link JobId} on the host named by
    * {@code host} to {@code deployment}
-   * @return
    */
   @PUT
   @Path("/{host}/jobs/{job}")
