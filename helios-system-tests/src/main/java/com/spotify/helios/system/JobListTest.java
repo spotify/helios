@@ -70,13 +70,15 @@ public class JobListTest extends SystemTestBase {
       final Map<String, Object> resultObj2 = OBJECT_MAPPER.readValue(result2, MAP_TYPE);
       // It might conceivably get here at some point, but better be empty if it does
       assertTrue(resultObj2.isEmpty());
-    } catch (JsonParseException e) {}
+    } catch (JsonParseException ignored) {
+    }
 
     final String result3 = cli("jobs", "-y", "--json");
     try {
       final Map<String, Object> resultObj3 = OBJECT_MAPPER.readValue(result3, MAP_TYPE);
       assertTrue(result3, resultObj3.isEmpty());
-    } catch (JsonParseException e) {}
+    } catch (JsonParseException ignored) {
+    }
 
     HeliosClient client = defaultClient();
     client.deploy(Deployment.of(jobId, Goal.START), testHost());
@@ -86,6 +88,7 @@ public class JobListTest extends SystemTestBase {
     try {
       final Map<String, Object> resultObj4 = OBJECT_MAPPER.readValue(result4, MAP_TYPE);
       assertFalse(resultObj4.isEmpty());
-    } catch (JsonParseException e) {}
+    } catch (JsonParseException ignored) {
+    }
   }
 }

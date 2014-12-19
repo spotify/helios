@@ -257,7 +257,7 @@ public class Json {
     return OBJECT_MAPPER.readTree(bytes);
   }
 
-  public static JsonNode readTreeUnchecked(final byte[] bytes){
+  public static JsonNode readTreeUnchecked(final byte[] bytes) {
     try {
       return readTree(bytes);
     } catch (IOException e) {
@@ -269,7 +269,7 @@ public class Json {
     return OBJECT_MAPPER.readTree(content);
   }
 
-  public static JsonNode readTreeUnchecked(final String content){
+  public static JsonNode readTreeUnchecked(final String content) {
     try {
       return readTree(content);
     } catch (IOException e) {
@@ -281,7 +281,7 @@ public class Json {
     return OBJECT_MAPPER.readTree(file);
   }
 
-  public static JsonNode readTreeUnchecked(final File file){
+  public static JsonNode readTreeUnchecked(final File file) {
     try {
       return readTree(file);
     } catch (IOException e) {
