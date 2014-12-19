@@ -27,7 +27,6 @@ import com.google.common.collect.Maps;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
-import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -167,8 +166,7 @@ public class JobsResource {
   @Timed
   @ExceptionMetered
   public JobDeleteResponse delete(@PathParam("id") @Valid final JobId id,
-                                  @QueryParam("token") @DefaultValue("") final String token)
-          throws HeliosException {
+                                  @QueryParam("token") @DefaultValue("") final String token) {
     if (!id.isFullyQualified()) {
       throw badRequest("Invalid id");
     }
