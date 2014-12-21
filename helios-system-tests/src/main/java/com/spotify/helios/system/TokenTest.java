@@ -47,7 +47,7 @@ public class TokenTest extends SystemTestBase {
   private static final String WRONG_TOKEN = "--token=wrongToken";
 
   @Test
-  public void test() throws Exception {
+  public void testJobWithToken() throws Exception {
     startDefaultMaster();
     startDefaultAgent(testHost());
     final HeliosClient client = defaultClient();
@@ -77,6 +77,35 @@ public class TokenTest extends SystemTestBase {
     remove(NO_TOKEN, JobDeleteResponse.Status.FORBIDDEN);
     remove(WRONG_TOKEN, JobDeleteResponse.Status.FORBIDDEN);
     remove(TOKEN, JobDeleteResponse.Status.OK);
+  }
+
+  @Test
+  public void testJobWithoutToken() throws Exception {
+    startDefaultMaster();
+    startDefaultAgent(testHost());
+    final HeliosClient client = defaultClient();
+    awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    // Create a job without a token
+    final CreateJobResponse createJobResponse = cliJson(
+        CreateJobResponse.class, "create", testJobNameAndVersion, BUSYBOX);
+    assertThat(createJobResponse.getStatus(), equalTo(CreateJobResponse.Status.OK));
+
+    // Now run all operations which honor the token. Test
+    // that they work as expected with and without a token.
+
+    deploy(TOKEN, JobDeployResponse.Status.FORBIDDEN);
+    deploy(NO_TOKEN, JobDeployResponse.Status.OK);
+
+    stop(TOKEN, SetGoalResponse.Status.FORBIDDEN);
+    stop(NO_TOKEN, SetGoalResponse.Status.OK);
+
+    undeploy(TOKEN, JobUndeployResponse.Status.FORBIDDEN);
+    undeploy(NO_TOKEN, JobUndeployResponse.Status.OK);
+
+    remove(TOKEN, JobDeleteResponse.Status.FORBIDDEN);
+    remove(NO_TOKEN, JobDeleteResponse.Status.OK);
   }
 
   private void deploy(final String token, final JobDeployResponse.Status status)

@@ -66,7 +66,7 @@ import java.util.UUID;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
@@ -461,7 +461,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public Job removeJob(JobId jobId) throws JobDoesNotExistException, JobStillDeployedException {
     try {
-      return removeJob(jobId, null);
+      return removeJob(jobId, Job.EMPTY_TOKEN);
     } catch (TokenVerificationException e) {
       throw Throwables.propagate(e);
     }
@@ -523,7 +523,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws HostNotFoundException, JobAlreadyDeployedException, JobDoesNotExistException,
              JobPortAllocationConflictException {
     try {
-      deployJob(host, job, null);
+      deployJob(host, job, Job.EMPTY_TOKEN);
     } catch (TokenVerificationException e) {
       throw Throwables.propagate(e);
     }
@@ -669,7 +669,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public void updateDeployment(String host, Deployment deployment)
       throws HostNotFoundException, JobNotDeployedException {
     try {
-      updateDeployment(host, deployment, null);
+      updateDeployment(host, deployment, Job.EMPTY_TOKEN);
     } catch (TokenVerificationException e) {
       Throwables.propagate(e);
     }
@@ -894,7 +894,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public Deployment undeployJob(String host, JobId jobId)
       throws HostNotFoundException, JobNotDeployedException {
     try {
-      return undeployJob(host, jobId, null);
+      return undeployJob(host, jobId, Job.EMPTY_TOKEN);
     } catch (TokenVerificationException e) {
       throw Throwables.propagate(e);
     }
@@ -943,8 +943,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     return deployment;
   }
 
-  private void verifyToken(final String token, final Job job) throws TokenVerificationException {
-    if (!isNullOrEmpty(job.getToken()) && !job.getToken().equals(token)) {
+  private static void verifyToken(final String token, final Job job)
+      throws TokenVerificationException {
+    checkNotNull(token, "token");
+    if (!token.equals(job.getToken())) {
       throw new TokenVerificationException(job.getId());
     }
   }
