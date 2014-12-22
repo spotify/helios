@@ -62,7 +62,8 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
   }
 
   @Override
-  protected void tearDownJobs() {}
+  protected void tearDownJobs() {
+  }
 
   @Test
   public void test() throws Exception {
@@ -112,7 +113,9 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
       try {
         when(builder.forPath(anyString())).thenThrow(
             new KeeperException.ConnectionLossException());
-      } catch (Exception e) {} // never throws
+      } catch (Exception ignored) {
+        // never throws
+      }
       when(curator.newNamespaceAwareEnsurePath(anyString())).thenReturn(mock(EnsurePath.class));
 
       return curator;
