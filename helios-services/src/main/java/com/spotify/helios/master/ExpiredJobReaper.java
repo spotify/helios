@@ -80,20 +80,25 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
 
         for (String host : hosts) {
           try {
-            masterModel.undeployJob(host, jobId);
+            masterModel.undeployJob(host, jobId, job.getToken());
           } catch (HostNotFoundException e) {
             log.error("couldn't undeploy job {} from host {} when it hit deadline", jobId, host, e);
           } catch (JobNotDeployedException e) {
             log.debug("job {} was already undeployed when it hit deadline", jobId, e);
+          } catch (TokenVerificationException e) {
+            log.error("couldn't undeploy job {} from host {} because token verification failed",
+                      jobId, host, e);
           }
         }
 
         try {
-          masterModel.removeJob(jobId);
+          masterModel.removeJob(jobId, job.getToken());
         } catch (JobDoesNotExistException e) {
           log.debug("job {} was already removed when it hit deadline", jobId, e);
         } catch (JobStillDeployedException e) {
           log.debug("job {} still deployed on some host(s) after expiry reap", jobId, e);
+        } catch (TokenVerificationException e) {
+          log.error("couldn't remove job {} because token verification failed", jobId, e);
         }
       }
     }

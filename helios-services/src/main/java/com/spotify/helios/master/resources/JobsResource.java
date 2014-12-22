@@ -27,7 +27,6 @@ import com.google.common.collect.Maps;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
-import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -38,6 +37,7 @@ import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.JobExistsException;
 import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.master.MasterModel;
+import com.spotify.helios.master.TokenVerificationException;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.sun.jersey.api.core.InjectParam;
 
@@ -62,6 +62,7 @@ import javax.ws.rs.QueryParam;
 import static com.spotify.helios.common.protocol.CreateJobResponse.Status.INVALID_JOB_DEFINITION;
 import static com.spotify.helios.common.protocol.CreateJobResponse.Status.JOB_ALREADY_EXISTS;
 import static com.spotify.helios.master.http.Responses.badRequest;
+import static com.spotify.helios.master.http.Responses.forbidden;
 import static com.spotify.helios.master.http.Responses.notFound;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -164,17 +165,20 @@ public class JobsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public JobDeleteResponse delete(@PathParam("id") @Valid final JobId id) throws HeliosException {
+  public JobDeleteResponse delete(@PathParam("id") @Valid final JobId id,
+                                  @QueryParam("token") @DefaultValue("") final String token) {
     if (!id.isFullyQualified()) {
       throw badRequest("Invalid id");
     }
     try {
-      model.removeJob(id);
+      model.removeJob(id, token);
       return new JobDeleteResponse(JobDeleteResponse.Status.OK);
     } catch (JobDoesNotExistException e) {
       throw notFound(new JobDeleteResponse(JobDeleteResponse.Status.JOB_NOT_FOUND));
     } catch (JobStillDeployedException e) {
       throw badRequest(new JobDeleteResponse(JobDeleteResponse.Status.STILL_IN_USE));
+    } catch (TokenVerificationException e) {
+      throw forbidden(new JobDeleteResponse(JobDeleteResponse.Status.FORBIDDEN));
     }
   }
 

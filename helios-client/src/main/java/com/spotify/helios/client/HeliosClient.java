@@ -91,10 +91,13 @@ import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSI
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+
+import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
 import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-import static java.net.HttpURLConnection.HTTP_OK;
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newFixedThreadPool;
@@ -377,17 +380,33 @@ public class HeliosClient implements AutoCloseable {
   }
 
   public ListenableFuture<JobDeployResponse> deploy(final Deployment job, final String host) {
+    return deploy(job, host, "");
+  }
+
+  public ListenableFuture<JobDeployResponse> deploy(final Deployment job, final String host,
+                                                    final String token) {
     final Set<Integer> deserializeReturnCodes = ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
                                                                 HTTP_BAD_METHOD,
-                                                                HTTP_BAD_REQUEST);
-    return transform(request(uri(path("/hosts/%s/jobs/%s", host, job.getJobId())), "PUT", job),
+                                                                HTTP_BAD_REQUEST,
+                                                                HTTP_FORBIDDEN);
+    return transform(request(uri(path("/hosts/%s/jobs/%s", host, job.getJobId()),
+                                 ImmutableMap.of("token", token)),
+                             "PUT", job),
                      ConvertResponseToPojo.create(JobDeployResponse.class, deserializeReturnCodes));
   }
 
   public ListenableFuture<SetGoalResponse> setGoal(final Deployment job, final String host) {
-    return transform(request(uri(path("/hosts/%s/jobs/%s", host, job.getJobId())), "PATCH", job),
+    return setGoal(job, host, "");
+  }
+
+  public ListenableFuture<SetGoalResponse> setGoal(final Deployment job, final String host,
+                                                   final String token) {
+    return transform(request(uri(path("/hosts/%s/jobs/%s", host, job.getJobId()),
+                                 ImmutableMap.of("token", token)),
+                             "PATCH", job),
                      ConvertResponseToPojo.create(SetGoalResponse.class,
-                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
+                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
+                                                                  HTTP_FORBIDDEN)));
   }
 
   private ListenableFuture<Integer> status(final ListenableFuture<Response> req) {
@@ -421,17 +440,32 @@ public class HeliosClient implements AutoCloseable {
   }
 
   public ListenableFuture<JobDeleteResponse> deleteJob(final JobId id) {
-    return transform(request(uri(path("/jobs/%s", id)), "DELETE"),
+    return deleteJob(id, "");
+  }
+
+  public ListenableFuture<JobDeleteResponse> deleteJob(final JobId id, final String token) {
+    return transform(request(uri(path("/jobs/%s", id),
+                                 ImmutableMap.of("token", token)),
+                             "DELETE"),
                      ConvertResponseToPojo.create(JobDeleteResponse.class,
                                                   ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
-                                                                  HTTP_BAD_REQUEST)));
+                                                                  HTTP_BAD_REQUEST,
+                                                                  HTTP_FORBIDDEN)));
   }
 
   public ListenableFuture<JobUndeployResponse> undeploy(final JobId jobId, final String host) {
-    return transform(request(uri(path("/hosts/%s/jobs/%s", host, jobId)), "DELETE"),
+    return undeploy(jobId, host, "");
+  }
+
+  public ListenableFuture<JobUndeployResponse> undeploy(final JobId jobId, final String host,
+                                                        final String token) {
+    return transform(request(uri(path("/hosts/%s/jobs/%s", host, jobId),
+                                 ImmutableMap.of("token", token)),
+                             "DELETE"),
                      ConvertResponseToPojo.create(JobUndeployResponse.class,
                                                   ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND,
-                                                                  HTTP_BAD_REQUEST)));
+                                                                  HTTP_BAD_REQUEST,
+                                                                  HTTP_FORBIDDEN)));
   }
 
   public ListenableFuture<HostDeregisterResponse> deregisterHost(final String host) {

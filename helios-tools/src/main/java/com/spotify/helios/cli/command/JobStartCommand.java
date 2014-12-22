@@ -40,6 +40,7 @@ import java.util.concurrent.ExecutionException;
 public class JobStartCommand extends WildcardJobCommand {
 
   private final Argument hostsArg;
+  private final Argument tokenArg;
 
   public JobStartCommand(Subparser parser) {
     super(parser);
@@ -49,7 +50,12 @@ public class JobStartCommand extends WildcardJobCommand {
     hostsArg = parser.addArgument("hosts")
         .nargs("+")
         .help("The hosts to start the job on.");
-  }
+
+    tokenArg = parser.addArgument("--token")
+        .nargs("?")
+        .setDefault("")
+        .help("Insecure access token");
+ }
 
   @Override
   protected int runWithJobId(final Namespace options, final HeliosClient client,
@@ -74,7 +80,8 @@ public class JobStartCommand extends WildcardJobCommand {
       if (!json) {
         out.printf("%s: ", host);
       }
-      final SetGoalResponse result = client.setGoal(deployment, host).get();
+      final String token = options.getString(tokenArg.getDest());
+      final SetGoalResponse result = client.setGoal(deployment, host, token).get();
       if (result.getStatus() == SetGoalResponse.Status.OK) {
         if (json) {
           out.printf(result.toJsonString());

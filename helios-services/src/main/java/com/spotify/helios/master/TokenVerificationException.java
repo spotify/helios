@@ -19,34 +19,28 @@
  * under the License.
  */
 
-package com.spotify.helios.common.protocol;
+package com.spotify.helios.master;
 
-import com.google.common.base.Objects;
+import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.descriptors.JobId;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.helios.common.Json;
+import static java.lang.String.format;
 
-public class JobDeleteResponse {
-  public enum Status { OK, STILL_IN_USE, JOB_NOT_FOUND, FORBIDDEN }
+public class TokenVerificationException extends HeliosException {
 
-  private final Status status;
-
-  public JobDeleteResponse(@JsonProperty("status") Status status) {
-    this.status = status;
+  public TokenVerificationException(final String message) {
+    super(message);
   }
 
-  public Status getStatus() {
-    return status;
+  public TokenVerificationException(final Throwable cause) {
+    super(cause);
   }
 
-  @Override
-  public String toString() {
-    return Objects.toStringHelper(getClass())
-        .add("status", status)
-        .toString();
+  public TokenVerificationException(final String message, final Throwable cause) {
+    super(message, cause);
   }
 
-  public String toJsonString() {
-    return Json.asStringUnchecked(this);
+  public TokenVerificationException(final JobId id) {
+    super(format("Token verification failed for job %s", id));
   }
 }

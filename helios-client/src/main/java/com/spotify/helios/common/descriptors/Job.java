@@ -96,6 +96,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Date EMPTY_EXPIRES = null;
   public static final String EMPTY_REGISTRATION_DOMAIN = "";
   public static final String EMPTY_CREATING_USER = null;
+  public static final String EMPTY_TOKEN = "";
 
   private final JobId id;
   private final String image;
@@ -109,6 +110,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Date expires;
   private final String registrationDomain;
   private final String creatingUser;
+  private final String token;
 
   /**
    * Create a Job.
@@ -140,7 +142,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
              @JsonProperty("expires") @Nullable final Date expires,
              @JsonProperty("registrationDomain") @Nullable String registrationDomain,
-             @JsonProperty("creatingUser") @Nullable String creatingUser) {
+             @JsonProperty("creatingUser") @Nullable String creatingUser,
+             @JsonProperty("token") @Nullable String token) {
     this.id = id;
     this.image = image;
 
@@ -156,11 +159,13 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.registrationDomain = Optional.fromNullable(registrationDomain)
         .or(EMPTY_REGISTRATION_DOMAIN);
     this.creatingUser = Optional.fromNullable(creatingUser).orNull();
+    this.token = Optional.fromNullable(token).or(EMPTY_TOKEN);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
     this.id = id;
     this.image = p.image;
+
     this.command = ImmutableList.copyOf(checkNotNull(p.command, "command"));
     this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
     this.resources = p.resources;
@@ -172,6 +177,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.registrationDomain = Optional.fromNullable(p.registrationDomain)
         .or(EMPTY_REGISTRATION_DOMAIN);
     this.creatingUser = p.creatingUser;
+    this.token = p.token;
   }
 
   public JobId getId() {
@@ -221,6 +227,8 @@ public class Job extends Descriptor implements Comparable<Job> {
   public String getCreatingUser() {
     return creatingUser;
   }
+
+  public String getToken() { return token; }
 
   public static Builder newBuilder() {
     return new Builder();
@@ -280,6 +288,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (creatingUser != null ? !creatingUser.equals(job.creatingUser) : job.creatingUser != null) {
       return false;
     }
+    if (!token.equals(job.token)) {
+      return false;
+    }
 
     return true;
   }
@@ -298,6 +309,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (gracePeriod != null ? gracePeriod.hashCode() : 0);
     result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
     result = 31 * result + (creatingUser != null ? creatingUser.hashCode() : 0);
+    result = 31 * result + token.hashCode();
     return result;
   }
 
@@ -315,6 +327,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("expires", expires)
         .add("registrationDomain", registrationDomain)
         .add("creatingUser", creatingUser)
+        .add("token", token)
         .toString();
   }
 
@@ -336,7 +349,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setVolumes(volumes)
         .setExpires(expires)
         .setRegistrationDomain(registrationDomain)
-        .setCreatingUser(creatingUser);
+        .setCreatingUser(creatingUser)
+        .setToken(token);
   }
 
   public static class Builder implements Cloneable {
@@ -368,6 +382,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Map<String, String> volumes;
       public Date expires;
       public String creatingUser;
+      public String token;
 
       private Parameters() {
         this.command = EMPTY_COMMAND;
@@ -379,6 +394,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.volumes = Maps.newHashMap(EMPTY_VOLUMES);
         this.registrationDomain = EMPTY_REGISTRATION_DOMAIN;
         this.creatingUser = EMPTY_CREATING_USER;
+        this.token = EMPTY_TOKEN;
       }
 
       private Parameters(final Parameters p) {
@@ -395,6 +411,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.expires = p.expires;
         this.registrationDomain = p.registrationDomain;
         this.creatingUser = p.creatingUser;
+        this.token = p.token;
       }
     }
 
@@ -405,6 +422,11 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Builder setCreatingUser(final String creatingUser) {
       this.p.creatingUser = creatingUser;
+      return this;
+    }
+
+    public Builder setToken(final String token) {
+      this.p.token = token;
       return this;
     }
 

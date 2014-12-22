@@ -47,27 +47,53 @@ public interface MasterModel {
 
   void addJob(Job job) throws JobExistsException;
 
-  Job getJob(JobId job);
+  Job getJob(JobId jobId);
 
   Map<JobId, Job> getJobs();
 
   JobStatus getJobStatus(JobId jobId);
 
-  Job removeJob(JobId job) throws JobDoesNotExistException,
-                                  JobStillDeployedException;
+  Job removeJob(JobId jobId)
+      throws JobDoesNotExistException,
+             JobStillDeployedException;
 
-  void deployJob(String host, Deployment job) throws HostNotFoundException,
-                                                     JobAlreadyDeployedException,
-                                                     JobDoesNotExistException,
-                                                     JobPortAllocationConflictException;
+  Job removeJob(JobId jobId, String token)
+      throws JobDoesNotExistException,
+             JobStillDeployedException,
+             TokenVerificationException;
 
-  Deployment getDeployment(String host, JobId job);
+  void deployJob(String host, Deployment job)
+      throws HostNotFoundException,
+             JobAlreadyDeployedException,
+             JobDoesNotExistException,
+             JobPortAllocationConflictException;
 
-  Deployment undeployJob(String host, JobId job) throws HostNotFoundException,
-                                                        JobNotDeployedException;
+  void deployJob(String host, Deployment job, String token)
+      throws HostNotFoundException,
+             JobAlreadyDeployedException,
+             JobDoesNotExistException,
+             JobPortAllocationConflictException,
+             TokenVerificationException;
 
-  void updateDeployment(String host, Deployment deployment) throws HostNotFoundException,
-                                                                   JobNotDeployedException;
+  Deployment getDeployment(String host, JobId jobId);
+
+  Deployment undeployJob(String host, JobId jobId)
+      throws HostNotFoundException,
+             JobNotDeployedException;
+
+  Deployment undeployJob(String host, JobId jobId, String token)
+      throws HostNotFoundException,
+             JobNotDeployedException,
+             TokenVerificationException;
+
+  void updateDeployment(String host, Deployment deployment)
+      throws HostNotFoundException,
+             JobNotDeployedException;
+
+  void updateDeployment(String host, Deployment deployment, String token)
+      throws HostNotFoundException,
+             JobNotDeployedException,
+             TokenVerificationException;
 
   List<String> getRunningMasters();
 

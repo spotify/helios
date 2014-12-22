@@ -50,7 +50,6 @@ import static org.junit.Assert.assertTrue;
 public class CliJobCreationTest extends SystemTestBase {
 
   private final Integer externalPort = temporaryPorts().localPort("external");
-  private final String testJobNameAndVersion = testJobName + ":" + testJobVersion;
 
   @Before
   public void initialize() throws Exception {

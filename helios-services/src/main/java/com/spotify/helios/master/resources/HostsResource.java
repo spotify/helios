@@ -40,6 +40,7 @@ import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.JobNotDeployedException;
 import com.spotify.helios.master.JobPortAllocationConflictException;
 import com.spotify.helios.master.MasterModel;
+import com.spotify.helios.master.TokenVerificationException;
 import com.spotify.helios.master.http.PATCH;
 
 import org.slf4j.Logger;
@@ -50,6 +51,7 @@ import java.util.Map;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.PUT;
@@ -59,11 +61,13 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
+import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.FORBIDDEN;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST_NOT_FOUND;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.INVALID_ID;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.JOB_NOT_FOUND;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.OK;
 import static com.spotify.helios.master.http.Responses.badRequest;
+import static com.spotify.helios.master.http.Responses.forbidden;
 import static com.spotify.helios.master.http.Responses.notFound;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -171,14 +175,15 @@ public class HostsResource {
   public JobDeployResponse jobPut(@PathParam("host") final String host,
                                   @PathParam("job") final JobId jobId,
                                   @Valid final Deployment deployment,
-                                  @RequestUser final String username) {
+                                  @RequestUser final String username,
+                                  @QueryParam("token") @DefaultValue("") final String token) {
     if (!jobId.isFullyQualified()) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.INVALID_ID, host,
                                              jobId));
     }
     try {
       final Deployment actualDeployment = deployment.toBuilder().setDeployerUser(username).build();
-      model.deployJob(host, actualDeployment);
+      model.deployJob(host, actualDeployment, token);
       return new JobDeployResponse(JobDeployResponse.Status.OK, host, jobId);
     } catch (JobAlreadyDeployedException e) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.JOB_ALREADY_DEPLOYED, host,
@@ -189,6 +194,8 @@ public class HostsResource {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.JOB_NOT_FOUND, host, jobId));
     } catch (JobPortAllocationConflictException e) {
       throw badRequest(new JobDeployResponse(JobDeployResponse.Status.PORT_CONFLICT, host, jobId));
+    } catch (TokenVerificationException e) {
+      throw forbidden(new JobDeployResponse(JobDeployResponse.Status.FORBIDDEN, host, jobId));
     }
   }
 
@@ -202,17 +209,20 @@ public class HostsResource {
   @Timed
   @ExceptionMetered
   public JobUndeployResponse jobDelete(@PathParam("host") final String host,
-                                       @PathParam("job") final JobId jobId) {
+                                       @PathParam("job") final JobId jobId,
+                                       @QueryParam("token") @DefaultValue("") final String token) {
     if (!jobId.isFullyQualified()) {
       throw badRequest(new JobUndeployResponse(INVALID_ID, host, jobId));
     }
     try {
-      model.undeployJob(host, jobId);
+      model.undeployJob(host, jobId, token);
       return new JobUndeployResponse(OK, host, jobId);
     } catch (HostNotFoundException e) {
       throw notFound(new JobUndeployResponse(HOST_NOT_FOUND, host, jobId));
     } catch (JobNotDeployedException e) {
       throw notFound(new JobUndeployResponse(JOB_NOT_FOUND, host, jobId));
+    } catch (TokenVerificationException e) {
+      throw forbidden(new JobUndeployResponse(FORBIDDEN, host, jobId));
     }
   }
 
@@ -227,16 +237,19 @@ public class HostsResource {
   @ExceptionMetered
   public SetGoalResponse jobPatch(@PathParam("host") final String host,
                                   @PathParam("job") final JobId jobId,
-                                  @Valid final Deployment deployment) {
+                                  @Valid final Deployment deployment,
+                                  @QueryParam("token") @DefaultValue("") final String token) {
     if (!deployment.getJobId().equals(jobId)) {
       throw badRequest(new SetGoalResponse(SetGoalResponse.Status.ID_MISMATCH, host, jobId));
     }
     try {
-      model.updateDeployment(host, deployment);
+      model.updateDeployment(host, deployment, token);
     } catch (HostNotFoundException e) {
       throw notFound(new SetGoalResponse(SetGoalResponse.Status.HOST_NOT_FOUND, host, jobId));
     } catch (JobNotDeployedException e) {
       throw notFound(new SetGoalResponse(SetGoalResponse.Status.JOB_NOT_DEPLOYED, host, jobId));
+    } catch (TokenVerificationException e) {
+      throw forbidden(new SetGoalResponse(SetGoalResponse.Status.FORBIDDEN, host, jobId));
     }
     log.info("patched job {} on host {}", deployment, host);
     return new SetGoalResponse(SetGoalResponse.Status.OK, host, jobId);
