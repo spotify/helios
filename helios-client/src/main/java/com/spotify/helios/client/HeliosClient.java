@@ -290,7 +290,8 @@ public class HeliosClient implements AutoCloseable {
    */
   private HttpURLConnection connect(final URI uri, final String method, final byte[] entity,
                                     final Map<String, List<String>> headers)
-      throws URISyntaxException, IOException, TimeoutException, InterruptedException {
+      throws URISyntaxException, IOException, TimeoutException, InterruptedException,
+             HeliosException {
     final long deadline = currentTimeMillis() + TIMEOUT_MILLIS;
     final int offset = ThreadLocalRandom.current().nextInt();
     while (currentTimeMillis() < deadline) {
@@ -302,8 +303,15 @@ public class HeliosClient implements AutoCloseable {
       for (int i = 0; i < endpoints.size() && currentTimeMillis() < deadline; i++) {
         final URI endpoint = endpoints.get(positive(offset + i) % endpoints.size());
         final String fullpath = endpoint.getPath() + uri.getPath();
-        final URI realUri = new URI("http", endpoint.getHost() + ":" + endpoint.getPort(),
-                                    fullpath, uri.getQuery(), null);
+
+        final String host = endpoint.getHost();
+        final int port = endpoint.getPort();
+        if (host == null || port == -1) {
+          throw new HeliosException("Master endpoints must be of the form "
+                                    + "\"http[s]://heliosmaster.domain.net:<port>\"");
+        }
+
+        final URI realUri = new URI("http", host + ":" + port, fullpath, uri.getQuery(), null);
         try {
           log.debug("connecting to {}", realUri);
           return connect0(realUri, method, entity, headers);
