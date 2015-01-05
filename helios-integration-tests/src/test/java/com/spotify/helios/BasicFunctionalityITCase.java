@@ -24,6 +24,7 @@ package com.spotify.helios;
 import com.google.common.collect.Iterables;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
@@ -44,6 +45,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.Polling.await;
@@ -86,6 +88,21 @@ public class BasicFunctionalityITCase {
     if (id != null) {
       log.error("delete job");
       client.deleteJob(id).get();
+    }
+  }
+
+  @Test(expected=HeliosException.class)
+  public void testComputeTargetSingleEndpointInvalid() throws Exception {
+    final HeliosClient badClient =
+        HeliosClient.newBuilder().setUser("unittest").setEndpoints("some.fqdn.net").build();
+    try {
+      badClient.listMasters().get();
+    } catch (ExecutionException e) {
+      if (e.getCause() instanceof HeliosException) {
+        throw (HeliosException) e.getCause();
+      } else {
+        throw e;
+      }
     }
   }
 
