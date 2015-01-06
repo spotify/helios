@@ -149,6 +149,9 @@ You now need to specify the token for each deploy, undeploy, start, stop and rem
 that job using `--token` parameter. If no token or an incorrect one is specified, those operations
 will fail with a `FORBIDDEN` status code.
 
+**Note:** This token is intended only to prevent unintentional operations. The token mechanism does
+not provide actual security, and will not prevent malicious behavior.
+
 Deploying Your Job
 ---
 Now that you've created a Helios job, you can deploy it to Helios hosts. You'll need to find a running Helios host to do so. You can see which hosts are available using the CLI. For example:
