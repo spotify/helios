@@ -162,7 +162,11 @@ Takes options:
 
   `--state-dir STATE_DIR`  Directory for persisting agent state locally. (default: .)
 
-  `--docker DOCKER`        docker endpoint (default: http://localhost:4160)
+  `--docker DOCKER`        Docker endpoint (default: http://localhost:4160)
+
+  `--docker-cert-path DOCKER_CERT_PATH`
+                           Directory containing client.pem and client.key
+                           for connecting to Docker over HTTPS
 
   `--env ENV [ENV ...]`    Specify environment variables that  will  pass  down to all
                          containers (default: [])
