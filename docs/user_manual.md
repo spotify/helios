@@ -64,10 +64,10 @@ Once you have a Docker image you want to deploy, you need to tell Helios how you
 
 ### A basic job
 
-If you specified an `ENTRYPOINT` in the `Dockerfile` you built your image with, you can create your job with the `create` command. For example, to create a job named "foo" to run the [rohan/memcached-tiny](https://index.docker.io/u/rohan/memcached-tiny/) image:
+If you specified an `ENTRYPOINT` in the `Dockerfile` you built your image with, you can create your job with the `create` command. For example, to create a job named "foo" to run the `nginx` image:
 
-    $ helios create foo:v1 rohan/memcached-tiny
-    Creating job: {"id":"foo:v1:2a89d5a87851d68678aabdad38d31faa296f5bf1","image":"rohan/memcached-tiny","command":[],"env":{},"ports":{},"registration":{}}
+    $ helios create foo:v1 nginx
+    Creating job: {"id":"foo:v1:2a89d5a87851d68678aabdad38d31faa296f5bf1","image":"nginx","command":[],"env":{},"ports":{},"registration":{}}
     Done.
     foo:v1:2a89d5a87851d68678aabdad38d31faa296f5bf1
 
@@ -143,7 +143,7 @@ your helios job params to changes in your application code.
 
 You can optionally specify an access token when creating a job by using the `--token` parameter.
 
-    $ helios create --token abc123 foo:v1 spotify/cassandra
+    $ helios create --token abc123 foo:v1 nginx
 
 You now need to specify the token for each deploy, undeploy, start, stop and remove operation on
 that job using `--token` parameter. If no token or an incorrect one is specified, those operations
