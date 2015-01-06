@@ -138,6 +138,15 @@ A current best practice is to save all your job creation parameters in
 version-controlled files in your project directory. This allows you to tie
 your helios job params to changes in your application code.
 
+### Specifying an Access Token
+
+You can optionally specify an access token when creating a job by using the `--token` parameter.
+
+    $ helios create --token abc123 foo:v1 spotify/cassandra
+
+You now need to specify the token for each deploy, undeploy, start, stop and remove operation on
+that job using `--token` parameter. If no token or an incorrect one is specified, those operations
+will fail with a `FORBIDDEN` status code.
 
 Deploying Your Job
 ---
