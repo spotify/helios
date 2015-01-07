@@ -30,6 +30,11 @@ Vagrant.configure("2") do |config|
   pkg_cmd << "echo 'DOCKER_OPTS=\"--restart=false -D=true -H=tcp://0.0.0.0:2375 -H=unix:///var/run/docker.sock --dns=192.168.33.10\"' > /etc/default/docker; "
   # make docker usable by vagrant user w/o sudo
   pkg_cmd << "groupadd docker; gpasswd -a vagrant docker; service docker restart;"
+  # create the helios user (needed to be able to set up permissions to docker properly)
+  # this is copied from the docker-agent postinst script
+  pkg_cmd << "adduser --system --quiet --home /var/lib/helios-agent --no-create-home --shell /bin/bash --group --gecos 'Helios' helios;"
+  # give the helios user access to docker
+  pkg_cmd << "gpasswd -a helios docker;"
 
   # install other helios dependencies and development tools
   pkg_cmd << "apt-get install -y default-jdk maven zookeeperd=3.4.5+dfsg-1 git vim curl golang mercurial; "
