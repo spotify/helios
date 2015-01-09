@@ -94,7 +94,7 @@ public class DockerHost {
   }
 
   /**
-   * Get the path to certicate & key for connecting to Docker via HTTPS.
+   * Get the path to certicate &amp; key for connecting to Docker via HTTPS.
    */
   public String dockerCertPath() {
     return dockerCertPath;
