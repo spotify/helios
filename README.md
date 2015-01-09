@@ -44,7 +44,8 @@ The `helios` command line tool connects to your helios master via HTTP. The
 Helios master is connected to a Zookeeper cluster that is used both as
 persistent storage and as a communications channel to the agents. The
 helios agent is a java process that typically lives on the same host as
-the Docker daemon, connecting to it via a Unix socket.
+the Docker daemon, connecting to it via a Unix socket or optionally TCP
+socket.
 
 Helios is designed for high availability, with execution state being confined
 to a potentially highly available Zookeeper cluster. This means that several
