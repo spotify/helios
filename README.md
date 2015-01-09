@@ -2,7 +2,11 @@ Helios [![Circle CI](https://circleci.com/gh/spotify/helios.png?style=badge)](ht
 ======
 
 Helios is a Docker orchestration platform for deploying and managing
-containers across an entire fleet.
+containers across an entire fleet of servers. Helios provides a HTTP
+API as well as a command line client to interact with servers running
+your containers. It also keeps history of events in your cluster including
+information such as deploys, restarts and version changes.
+
 
 Usage Example
 -------------
@@ -32,6 +36,22 @@ $ helios undeploy -a nginx:v1
 # Remove the nginx job
 $ helios remove nginx:v1
 ```
+
+How it all fits together
+------------------------
+
+The `helios` command line tool connects to your helios master via HTTP. The
+Helios master is connected to a Zookeeper cluster that is used both as
+persistent storage and as a communications channel to the agents. The
+helios agent is a java process that typically lives on the same host as
+the Docker daemon, connecting to it via a Unix socket.
+
+Helios is designed for high availability, with execution state being confined
+to a potentially highly available Zookeeper cluster. This means that several
+helios-master services can respond to HTTP requests concurrently, removing
+any single point of failure in the helios setup using straight forward HTTP
+load balancing strategies.
+
 
 Production Readiness
 --------------------
@@ -97,12 +117,21 @@ If you're looking for how to download, build, install and run Helios, keep readi
 Prerequisities
 --------------
 
+The binary release of Helios is built for Ubuntu 14.04.1 LTS, but Helios should
+be buildable on any platform with at least Java 7 and a recent Maven 3
+available.
+
+Other components are that are required for a helios installation are:
+
 * [Docker 1.0](https://github.com/dotcloud/docker) or newer
 * [Zookeeper 3.4.0](https://zookeeper.apache.org/) or newer
 
+
 Downloading
 -----------
-You can download Debian packages from our [releases page](https://github.com/spotify/helios/releases).  Though if you want to build it yourself, the process described below is the same process that
+You can download Ubuntu packages from our
+[releases page](https://github.com/spotify/helios/releases).  Though if you
+want to build it yourself, the process described below is the same process that
 generates those packages.
 
 Build & Test
@@ -155,10 +184,10 @@ After you've run `mvn package`, you should be able to start the agent and master
 If you see any issues, make sure you have the prerequisites (Docker and Zookeeper) installed.
 
 ### Production
-You can install the downloaded Debian packages as mentioned above, or you
+You can install the downloaded deb packages as mentioned above, or you
 can build them yourself.
 
-Running `mvn package` generates Debian packages that you can install on
+Running `mvn package` generates deb packages that you can install on
 your servers. For example:
 
     $ mvn package
@@ -169,11 +198,11 @@ your servers. For example:
     ./helios-services/target/helios-services_0.0.27-SNAPSHOT_all.deb
     ./helios-tools/target/helios_0.0.27-SNAPSHOT_all.deb
 
-The Debian package in the helios-tools directory contains the Helios CLI tool.
+The deb package in the helios-tools directory contains the Helios CLI tool.
 
-The `helios-services` Debian package is a shared dependency of both the agent
+The `helios-services` deb package is a shared dependency of both the agent
 and the master. Install it and either the `helios-agent` or `helios-master`
-Debian package on each agent and master, respectively.
+deb package on each agent and master, respectively.
 
 Other Software You Might Want To Consider
 -----------------------------------------
@@ -229,4 +258,4 @@ order):
 * Run once jobs -- for batch jobs
 * Resource specification and enforcement -- That is: restrict my container to *X* MB of RAM, *X* CPUs, and *X* MB disk and perhaps other things like IOPs, network bandwidth, etc.
 * Dynamic scheduling of jobs -- either within Helios itself or as a layer on top
-* Packaging/Config for other Linux OS's like RedHat, CoreOS, etc.
+* Packaging/Config for other Linux distributions such as RedHat, CoreOS, etc.
