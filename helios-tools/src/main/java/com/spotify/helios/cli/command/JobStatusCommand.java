@@ -33,6 +33,7 @@ import com.spotify.helios.cli.JobStatusTable;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -90,15 +91,23 @@ public class JobStatusCommand extends ControlCommand {
     final String hostPattern = options.getString(hostArg.getDest());
     final boolean full = options.getBoolean(fullArg.getDest());
 
-    final Set<JobId> jobIds;
+    final Map<JobId, Job> jobs;
     if (Strings.isNullOrEmpty(jobIdString)) {
-      jobIds = client.jobs().get().keySet();
+      jobs = client.jobs().get();
     } else {
-      jobIds = client.jobs(jobIdString).get().keySet();
+      jobs = client.jobs(jobIdString).get();
     }
 
+    if (jobs == null) {
+      out.printf("The specified Helios master either returned an error or job id matcher "
+                 + "\"%s\" matched no jobs%n", jobIdString);
+      return 1;
+    }
+
+    final Set<JobId> jobIds = jobs.keySet();
+
     if (!Strings.isNullOrEmpty(jobIdString) && jobIds.isEmpty()) {
-      out.printf("job id matcher %s matched no jobs%n", jobIdString);
+      out.printf("job id matcher \"%s\" matched no jobs%n", jobIdString);
       return 1;
     }
 
