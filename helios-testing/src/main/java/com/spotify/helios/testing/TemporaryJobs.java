@@ -242,6 +242,9 @@ public class TemporaryJobs implements TestRule {
    * </ol>
    *
    * @return an instance of TemporaryJobs
+   * @see <a href=
+   * "https://github.com/spotify/helios/blob/master/docs/testing_framework.md#configuration-by-file"
+   * >Helios Testing Framework - Configuration By File</a>
    */
   public static TemporaryJobs create() {
     return builder().build();
