@@ -59,6 +59,7 @@ public class AgentConfig extends Configuration {
   private int adminPort;
   private InetSocketAddress httpEndpoint;
   private boolean noHttp;
+  private List<String> binds;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -269,5 +270,14 @@ public class AgentConfig extends Configuration {
 
   public boolean getNoHttp() {
     return noHttp;
+  }
+
+  public List<String> getBinds() {
+    return binds;
+  }
+
+  public AgentConfig setBinds(List<String> binds) {
+    this.binds = binds;
+    return this;
   }
 }

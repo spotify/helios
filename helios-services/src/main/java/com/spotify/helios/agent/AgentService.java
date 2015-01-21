@@ -242,6 +242,10 @@ public class AgentService extends AbstractIdleService implements Managed {
       decorators.add(new SyslogRedirectingContainerDecorator(config.getRedirectToSyslog()));
     }
 
+    if (!config.getBinds().isEmpty()) {
+      decorators.add(new BindVolumeContainerDecorator(config.getBinds()));
+    }
+
     final SupervisorFactory supervisorFactory = new SupervisorFactory(
         model, monitoredDockerClient,
         config.getEnvVars(), serviceRegistrar,

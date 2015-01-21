@@ -41,6 +41,7 @@ import java.util.Map;
 
 import static com.google.common.io.BaseEncoding.base16;
 import static com.google.common.net.InetAddresses.isInetAddress;
+import static com.spotify.helios.agent.BindVolumeContainerDecorator.isValidBind;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -62,6 +63,7 @@ public class AgentParser extends ServiceParser {
   private Argument portRangeArg;
   private Argument agentIdArg;
   private Argument dnsArg;
+  private Argument bindArg;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -138,13 +140,23 @@ public class AgentParser extends ServiceParser {
 
     final List<String> dns = options.getList(dnsArg.getDest());
     if (!dns.isEmpty()) {
-      for (String d : dns) {
+      for (final String d : dns) {
         if (!isInetAddress(d)) {
           throw new IllegalArgumentException("Invalid IP address " + d);
         }
       }
     }
     agentConfig.setDns(dns);
+
+    final List<String> binds = options.getList(bindArg.getDest());
+    if (!binds.isEmpty()) {
+      for (final String b : binds) {
+        if (!isValidBind(b)) {
+          throw new IllegalArgumentException("Invalid bind " + b);
+        }
+      }
+    }
+    agentConfig.setBinds(binds);
   }
 
   @Override
@@ -196,6 +208,10 @@ public class AgentParser extends ServiceParser {
         .setDefault(new ArrayList<String>())
         .help("Dns servers to use.");
 
+    bindArg = parser.addArgument("--bind")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("volumes to bind to all containers");
   }
 
   public AgentConfig getAgentConfig() {
