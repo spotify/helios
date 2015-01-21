@@ -90,7 +90,7 @@ Takes options:
 
   `--admin ADMIN` admin http port (default: 5802) the master will listen on.
 
-Example `/etc/default/helios-master`
+Example `/etc/default/helios-master`:
 
     ENABLED=true
 
@@ -179,7 +179,10 @@ Takes options:
                          Port   allocation   range,   start:end   (end   exclusive).
                          (default: 20000:32768)
 
-Example `/etc/default/helios-agent
+  `--bind VOLUME` Bind the given volume into all containers. You may specify multiply --bind
+                  arguments. Each bind must conform to the [`docker run -v` syntax](https://docs.docker.com/reference/run/#volume-shared-filesystems).
+
+Example `/etc/default/helios-agent`:
 
     ENABLED=true
 
