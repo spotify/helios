@@ -44,7 +44,7 @@ public class SupervisorFactory {
   private final String namespace;
   private final Map<String, String> envVars;
   private final ServiceRegistrar registrar;
-  private final ContainerDecorator containerDecorator;
+  private final List<ContainerDecorator> containerDecorators;
   private final String host;
   private final SupervisorMetrics metrics;
   private final String defaultRegistrationDomain;
@@ -53,7 +53,7 @@ public class SupervisorFactory {
   public SupervisorFactory(final AgentModel model, final DockerClient dockerClient,
                            final Map<String, String> envVars,
                            final ServiceRegistrar registrar,
-                           final ContainerDecorator containerDecorator,
+                           final List<ContainerDecorator> containerDecorators,
                            final String host,
                            final SupervisorMetrics supervisorMetrics,
                            final String namespace,
@@ -64,7 +64,7 @@ public class SupervisorFactory {
     this.model = checkNotNull(model, "model");
     this.envVars = checkNotNull(envVars, "envVars");
     this.registrar = registrar;
-    this.containerDecorator = containerDecorator;
+    this.containerDecorators = containerDecorators;
     this.host = host;
     this.metrics = supervisorMetrics;
     this.defaultRegistrationDomain = checkNotNull(defaultRegistrationDomain,
@@ -86,7 +86,7 @@ public class SupervisorFactory {
         .job(job)
         .ports(ports)
         .envVars(envVars)
-        .containerDecorator(containerDecorator)
+        .containerDecorators(containerDecorators)
         .namespace(namespace)
         .defaultRegistrationDomain(defaultRegistrationDomain)
         .dns(dns)

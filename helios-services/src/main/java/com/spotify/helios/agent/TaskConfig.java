@@ -68,7 +68,7 @@ public class TaskConfig {
   private final Map<String, Integer> ports;
   private final Job job;
   private final Map<String, String> envVars;
-  private final ContainerDecorator containerDecorator;
+  private final List<ContainerDecorator> containerDecorators;
   private final String namespace;
   private final String defaultRegistrationDomain;
   private final List<String> dns;
@@ -78,7 +78,7 @@ public class TaskConfig {
     this.ports = checkNotNull(builder.ports, "ports");
     this.job = checkNotNull(builder.job, "job");
     this.envVars = checkNotNull(builder.envVars, "envVars");
-    this.containerDecorator = checkNotNull(builder.containerDecorator, "containerDecorator");
+    this.containerDecorators = checkNotNull(builder.containerDecorators, "containerDecorators");
     this.namespace = checkNotNull(builder.namespace, "namespace");
     this.defaultRegistrationDomain = checkNotNull(builder.defaultRegistrationDomain,
         "defaultRegistrationDomain");
@@ -100,11 +100,13 @@ public class TaskConfig {
    */
   public ContainerConfig containerConfig(final ImageInfo imageInfo) {
     final ContainerConfig.Builder builder = ContainerConfig.builder();
+
     builder.image(job.getImage());
     builder.cmd(job.getCommand());
     builder.env(containerEnvStrings());
     builder.exposedPorts(containerExposedPorts());
     builder.volumes(volumes());
+
     final Resources resources = job.getResources();
     if (resources != null) {
       builder.memory(resources.getMemory());
@@ -112,7 +114,11 @@ public class TaskConfig {
       builder.cpuset(resources.getCpuset());
       builder.cpuShares(resources.getCpuShares());
     }
-    containerDecorator.decorateContainerConfig(job, imageInfo, builder);
+
+    for (final ContainerDecorator decorator : containerDecorators) {
+      decorator.decorateContainerConfig(job, imageInfo, builder);
+    }
+
     return builder.build();
   }
 
@@ -245,7 +251,11 @@ public class TaskConfig {
         .binds(binds())
         .portBindings(portBindings())
         .dns(dns);
-    containerDecorator.decorateHostConfig(builder);
+
+    for (final ContainerDecorator decorator : containerDecorators) {
+      decorator.decorateHostConfig(builder);
+    }
+
     return builder.build();
   }
 
@@ -309,7 +319,7 @@ public class TaskConfig {
     private Job job;
     private Map<String, Integer> ports = Collections.emptyMap();
     private Map<String, String> envVars = Collections.emptyMap();
-    private ContainerDecorator containerDecorator = new NoOpContainerDecorator();
+    private List<ContainerDecorator> containerDecorators = Collections.EMPTY_LIST;
     private String namespace;
     private String defaultRegistrationDomain = "";
     private List<String> dns = Collections.emptyList();
@@ -339,8 +349,8 @@ public class TaskConfig {
       return this;
     }
 
-    public Builder containerDecorator(final ContainerDecorator containerDecorator) {
-      this.containerDecorator = containerDecorator;
+    public Builder containerDecorators(final List<ContainerDecorator> containerDecorators) {
+      this.containerDecorators = containerDecorators;
       return this;
     }
 
@@ -366,7 +376,7 @@ public class TaskConfig {
         .add("host", host)
         .add("ports", ports)
         .add("envVars", envVars)
-        .add("containerDecorator", containerDecorator)
+        .add("containerDecorators", containerDecorators)
         .add("defaultRegistrationDomain", defaultRegistrationDomain)
         .toString();
   }

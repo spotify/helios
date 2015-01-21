@@ -23,6 +23,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
@@ -71,6 +72,7 @@ import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -234,12 +236,16 @@ public class AgentService extends AbstractIdleService implements Managed {
 
     final String namespace = "helios-" + id;
 
+    final List<ContainerDecorator> decorators = Lists.newArrayList();
+
+    if (!isNullOrEmpty(config.getRedirectToSyslog())) {
+      decorators.add(new SyslogRedirectingContainerDecorator(config.getRedirectToSyslog()));
+    }
+
     final SupervisorFactory supervisorFactory = new SupervisorFactory(
         model, monitoredDockerClient,
         config.getEnvVars(), serviceRegistrar,
-        config.getRedirectToSyslog() != null
-        ? new SyslogRedirectingContainerDecorator(config.getRedirectToSyslog())
-        : new NoOpContainerDecorator(),
+        decorators,
         config.getName(),
         metrics.getSupervisorMetrics(),
         namespace,

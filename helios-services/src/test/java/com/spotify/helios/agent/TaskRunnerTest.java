@@ -21,6 +21,8 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.collect.ImmutableList;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerTimeoutException;
 import com.spotify.docker.client.ImageNotFoundException;
@@ -67,7 +69,7 @@ public class TaskRunnerTest {
                     .namespace("test")
                     .host(HOST)
                     .job(JOB)
-                    .containerDecorator(containerDecorator)
+                    .containerDecorators(ImmutableList.of(containerDecorator))
                     .build())
         .docker(mockDocker)
         .listener(new TaskRunner.NopListener())
@@ -98,7 +100,7 @@ public class TaskRunnerTest {
                     .namespace("test")
                     .host(HOST)
                     .job(JOB)
-                    .containerDecorator(containerDecorator)
+                    .containerDecorators(ImmutableList.of(containerDecorator))
                     .build())
         .docker(mockDocker)
         .listener(new TaskRunner.NopListener())
