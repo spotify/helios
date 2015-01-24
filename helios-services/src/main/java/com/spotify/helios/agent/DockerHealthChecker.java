@@ -79,7 +79,9 @@ public class DockerHealthChecker extends HealthCheck implements Managed {
           metrics.getDockerTimeoutRates(), metrics.getSupervisorRunRates());
       final double exceptionRatio = fiveMinuteRatio(
           metrics.getContainersThrewExceptionRates(), metrics.getSupervisorRunRates());
-      log.info("timeout ratio is {}, exception ratio is {}", timeoutRatio, exceptionRatio);
+      if (timeoutRatio > 0 || exceptionRatio > 0) {
+        log.info("timeout ratio is {}, exception ratio is {}", timeoutRatio, exceptionRatio);
+      }
 
       final String origReason = reason;
 
