@@ -11,6 +11,65 @@
   <artifactId>helios-services</artifactId>
   <packaging>jar</packaging>
 
+  <profiles>
+    <profile>
+      <id>build-containers</id>
+      <activation>
+        <property>
+          <name>build-containers</name>
+        </property>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.spotify</groupId>
+            <artifactId>docker-maven-plugin</artifactId>
+            <version>0.1.1</version>
+            <configuration>
+              <baseImage>java:7u71-jre</baseImage>
+              <resources>
+                <resource>
+                  <targetPath>/usr/share/helios/lib/services/</targetPath>
+                  <directory>${project.build.directory}</directory>
+                  <include>${project.build.finalName}-shaded.jar</include>
+                </resource>
+                <resource>
+                  <targetPath>/usr/bin/</targetPath>
+                  <directory>${project.parent.basedir}/bin</directory>
+                  <include>helios-*</include>
+                </resource>
+              </resources>
+            </configuration>
+            <executions>
+              <execution>
+                <id>master</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+                <configuration>
+                  <imageName>helios-master:${project.version}-${gitShortCommitId}</imageName>
+                  <entryPoint>["helios-master"]</entryPoint>
+                </configuration>
+              </execution>
+              <execution>
+                <id>agent</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>build</goal>
+                </goals>
+                <configuration>
+                  <imageName>helios-agent:${project.version}-${gitShortCommitId}</imageName>
+                  <entryPoint>["helios-agent"]</entryPoint>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
   <dependencies>
     <dependency>
       <groupId>com.spotify.docgenerator</groupId>
