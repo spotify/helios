@@ -48,6 +48,7 @@ import com.spotify.helios.serviceregistration.NopServiceRegistrationHandle;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -77,6 +78,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMA
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -251,6 +253,18 @@ public class GracePeriodTest {
     // Start the job
     sut.setGoal(START);
 
+    // Verify that the pulling state is signalled
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(START)
+                                                       .setState(PULLING_IMAGE)
+                                                       .setPorts(PORTS)
+                                                       .setContainerId(null)
+                                                       .setEnv(ENV)
+                                                       .build())
+    );
+
     // Verify that the container is created
     verify(docker, timeout(30000)).createContainer(containerConfigCaptor.capture(),
                                                    containerNameCaptor.capture());
@@ -322,18 +336,17 @@ public class GracePeriodTest {
     when(docker.inspectContainer(eq(containerId))).thenReturn(STOPPED_RESPONSE);
     killFuture.set(null);
 
-    // Verify that the pulling state is signalled
+    // Verify that the stopping state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
                                                        .setJob(JOB)
-                                                       .setGoal(START)
-                                                       .setState(PULLING_IMAGE)
+                                                       .setGoal(STOP)
+                                                       .setState(STOPPING)
                                                        .setPorts(PORTS)
-                                                       .setContainerId(null)
+                                                       .setContainerId(containerId)
                                                        .setEnv(ENV)
                                                        .build())
     );
-
 
     // Verify that the stopped state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
