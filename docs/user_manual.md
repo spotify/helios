@@ -37,7 +37,7 @@ Whichever environment you are deploying to, you should install the CLI locally s
 Helios clusters without having to SSH to another machine.
 
   * Ubuntu Trusty: `dpkg -i helios_all.deb` [download from here](https://github.com/spotify/helios/releases)
-  * Mac OS X: `brew install helios`
+  * Mac OS X: `brew install helios` (after installing [Spotify's homebrew tap](https://github.com/spotify/homebrew-public))
 
 Using the Helios CLI
 ---
