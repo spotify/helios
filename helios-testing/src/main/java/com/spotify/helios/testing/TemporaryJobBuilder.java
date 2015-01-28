@@ -159,6 +159,11 @@ public class TemporaryJobBuilder {
     return this;
   }
 
+  public TemporaryJobBuilder volume(final String path, final String source) {
+    this.builder.addVolume(path, source);
+    return this;
+  }
+
   public TemporaryJobBuilder host(final String host) {
     this.hosts.add(host);
     return this;
