@@ -73,6 +73,7 @@ public class TaskStatus extends Descriptor {
     STARTING,
     RUNNING,
     EXITED,
+    STOPPING,
     STOPPED,
     FAILED,
     UNKNOWN

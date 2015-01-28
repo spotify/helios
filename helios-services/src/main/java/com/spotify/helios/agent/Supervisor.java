@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -351,6 +352,8 @@ public class Supervisor {
       if (gracePeriod != null && gracePeriod > 0) {
         log.info("Unregistering from service discovery for {} seconds before stopping",
                  gracePeriod);
+        statusUpdater.setState(STOPPING);
+        statusUpdater.update();
 
         if (runner.unregister()) {
           log.info("Unregistered. Now sleeping for {} seconds.", gracePeriod);
