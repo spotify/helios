@@ -21,4 +21,7 @@
 
 package com.spotify.helios.system;
 
+import org.junit.Ignore;
+
+@Ignore
 public class ConfigFileJobCreationITCase extends ConfigFileJobCreationTest {}

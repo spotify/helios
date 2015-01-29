@@ -13,10 +13,10 @@
 
   <profiles>
     <profile>
-      <id>build-containers</id>
+      <id>build-images</id>
       <activation>
         <property>
-          <name>build-containers</name>
+          <name>build-images</name>
         </property>
       </activation>
       <build>
@@ -50,6 +50,7 @@
                 <configuration>
                   <imageName>helios-master:${project.version}-${gitShortCommitId}</imageName>
                   <entryPoint>["helios-master"]</entryPoint>
+                  <tagInfoFile>${project.build.testOutputDirectory}/master-image.json</tagInfoFile>
                 </configuration>
               </execution>
               <execution>
@@ -61,6 +62,7 @@
                 <configuration>
                   <imageName>helios-agent:${project.version}-${gitShortCommitId}</imageName>
                   <entryPoint>["helios-agent"]</entryPoint>
+                  <tagInfoFile>${project.build.testOutputDirectory}/agent-image.json</tagInfoFile>
                 </configuration>
               </execution>
             </executions>
@@ -316,7 +318,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.16</version>
+        <version>2.18.1</version>
         <executions>
           <execution>
             <goals>

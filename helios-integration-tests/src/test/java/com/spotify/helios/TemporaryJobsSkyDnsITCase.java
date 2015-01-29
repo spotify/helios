@@ -7,6 +7,7 @@ import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -22,6 +23,7 @@ import static org.junit.Assert.assertThat;
  * for the test to pass. It's easiest to use the vagrant image in the helios root directory
  * which will install and run SkyDNS.
  */
+@Ignore
 public class TemporaryJobsSkyDnsITCase {
 
   @Rule
