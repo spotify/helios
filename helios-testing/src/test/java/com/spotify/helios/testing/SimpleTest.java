@@ -161,6 +161,15 @@ public class SimpleTest extends TemporaryJobsTestBase {
           .deploy();
     }
 
+    @Test
+    public void testVolume() {
+      temporaryJobs.job()
+          .volume(System.getProperty("user.dir") + "/helios-testing/src/test/resources/helios.conf",
+                  "/helios.conf")
+          .command("sh", "-c", "while :; do sleep 5; done")
+          .deploy();
+    }
+
     private void ping(final String host, final int port) throws Exception {
       try (final Socket s = new Socket(host, port)) {
         byte[] ping = "ping".getBytes(UTF_8);
