@@ -134,7 +134,7 @@ public class JobCreateCommand extends ControlCommand {
         .help("Service discovery registration. Specify a service name, the port name and a " +
               "protocol on the format service/protocol=port. E.g. -r website/tcp=http will " +
               "register the port named http with the protocol tcp. Protocol is optional and " +
-              "default is http. If there is only one port mapping this will be used by " +
+              "default is tcp. If there is only one port mapping this will be used by " +
               "default and it will be enough to specify only the service name, e.g. " +
               "-r wordpress.");
 
