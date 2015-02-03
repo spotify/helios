@@ -70,6 +70,7 @@ import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -315,7 +316,12 @@ public class HeliosClient implements AutoCloseable {
         try {
           log.debug("connecting to {}", realUri);
           return connect0(realUri, method, entity, headers);
-        } catch (ConnectException e) {
+        } catch (ConnectException | UnknownHostException e) {
+          // ConnectException happens if we can't connect to port. UnknownHostException happens
+          // if we can't resolve hostname into IP address. UnknownHostException's getMessage
+          // method returns just the hostname which is a useless message, so log the exception
+          // name as well to make what the error was.
+          log.debug(e.getClass().getSimpleName() + " - " + e.getMessage());
           // Connecting failed, sleep a bit to avoid hammering and then try another endpoint
           Thread.sleep(200);
         }
