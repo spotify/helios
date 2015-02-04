@@ -107,7 +107,7 @@ public class GracePeriodTest {
       "bar", PortMapping.of(5000, EXTERNAL_PORT)
   );
   static final Map<ServiceEndpoint, ServicePorts> REGISTRATION = ImmutableMap.of(
-      ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
+      ServiceEndpoint.of("foo-service", "tcp"), ServicePorts.of("foo"),
       ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
   static final String VERSION = "4711";
   static final Integer GRACE_PERIOD = 60;

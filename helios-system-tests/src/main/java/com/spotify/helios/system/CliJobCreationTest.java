@@ -71,7 +71,7 @@ public class CliJobCreationTest extends SystemTestBase {
         "foo", PortMapping.of(4711),
         "bar", PortMapping.of(5000, externalPort));
     final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
-        ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
+        ServiceEndpoint.of("foo-service", "tcp"), ServicePorts.of("foo"),
         ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
     final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
     final Map<String, String> volumes = Maps.newHashMap();
@@ -162,7 +162,7 @@ public class CliJobCreationTest extends SystemTestBase {
         "foo", PortMapping.of(4711),
         "bar", PortMapping.of(5000, externalPort));
     final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
-        ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
+        ServiceEndpoint.of("foo-service", "tcp"), ServicePorts.of("foo"),
         ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
     final Map<String, String> env = ImmutableMap.of(redundantEnvKey, "f00d");
     final Map<String, String> volumes = Maps.newHashMap();
