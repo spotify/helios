@@ -50,16 +50,19 @@ This basic example shows how to deploy a single service called Wiggum.
 ```java
 package com.spotify.wiggum;
 
+import com.google.common.net.HostAndPort;
+
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
-import com.spotify.hermes.message.Message;
-import com.spotify.hermes.message.StatusCode;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 
 public class ServiceIT {
@@ -67,7 +70,9 @@ public class ServiceIT {
   @Rule
   public TemporaryJobs temporaryJobs = TemporaryJobs.create();
 
-  private Client client;
+  private final HttpClient client = new DefaultHttpClient();
+
+  private TemporaryJob temporaryJob;
 
   @Before
   public void setup() {
@@ -77,15 +82,20 @@ public class ServiceIT {
         .imageFromBuild()
         .port("wiggum", 4229)
         .deploy();
-     
-    // create a hermes client using the host and dynamically allocated port of the job
-    client = new Client("tcp://" + temporaryJob.address("wiggum"));
   }
 
   @Test
   public void testPing() throws Exception {    
-    final Message message = client.ping().get(10, SECONDS);
-    assertEquals("ping failed", StatusCode.OK, message.getStatusCode());
+    // send a request to a /ping endpoint using the host and dynamically
+    // allocated port of the job
+    HostAndPort port = job.address("wiggum");
+    String pingUri = String.format("http://%s:%d/ping",
+                                   port.getHostText(),
+                                   port.getPort());
+
+    HttpResponse response = client.execute(new HttpGet(pingUri));
+    
+    assertEquals("ping failed", 200, response.getStatusLine().getStatusCode());
   }
 ```
 
