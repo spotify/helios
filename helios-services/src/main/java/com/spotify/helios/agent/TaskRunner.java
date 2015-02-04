@@ -63,6 +63,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private final String existingContainerId;
   private final Listener listener;
   private final ServiceRegistrar registrar;
+  private final Boolean autoRegister;
   private Optional<ServiceRegistrationHandle> serviceRegistrationHandle;
   private Optional<String> containerId;
 
@@ -74,6 +75,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.listener = checkNotNull(builder.listener, "listener");
     this.existingContainerId = builder.existingContainerId;
     this.registrar = checkNotNull(builder.registrar, "registrar");
+    this.autoRegister = checkNotNull(builder.autoRegister, "autoRegister");
     this.serviceRegistrationHandle = Optional.absent();
     this.containerId = Optional.absent();
   }
@@ -139,8 +141,12 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.containerId = Optional.of(containerId);
     listener.running();
 
-    // Register and wait for container to exit
-    serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
+    // Register if not auto-registration is not explicitly disabled in the Helios job configuration
+    if (this.autoRegister) {
+      serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
+    }
+
+    //  Wait for container to exit
     final ContainerExit exit;
     try {
       exit = docker.waitContainer(containerId);
@@ -282,6 +288,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     private String existingContainerId;
     private Listener listener;
     public ServiceRegistrar registrar = new NopServiceRegistrar();
+    public boolean autoRegister;
 
     public Builder delayMillis(final long delayMillis) {
       this.delayMillis = delayMillis;
@@ -310,6 +317,11 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     public Builder registrar(final ServiceRegistrar registrar) {
       this.registrar = registrar;
+      return this;
+    }
+
+    public Builder autoRegister(final boolean autoRegister) {
+      this.autoRegister = autoRegister;
       return this;
     }
 
