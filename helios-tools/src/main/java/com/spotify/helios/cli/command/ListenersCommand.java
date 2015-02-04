@@ -23,6 +23,7 @@ package com.spotify.helios.cli.command;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.protocol.ListenerResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -42,7 +43,8 @@ public class ListenersCommand extends ControlCommand {
     parser.help("register event listeners");
 
     listenerUrl = parser.addArgument("listener").
-                      help("Listener URL");
+                         type(String.class).
+                         help("Listener URL");
   }
 
   @Override
@@ -51,7 +53,7 @@ public class ListenersCommand extends ControlCommand {
       throws ExecutionException, InterruptedException {
 
     String url = options.getString(listenerUrl.getDest());
-    TaskStatusEvents result = client.listeners(url).get();
+    ListenerResponse result = client.listeners(url).get();
 
     if (json) {
       out.println(Json.asPrettyStringUnchecked(result));

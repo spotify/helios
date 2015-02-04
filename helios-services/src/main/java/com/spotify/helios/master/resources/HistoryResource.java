@@ -24,9 +24,17 @@ package com.spotify.helios.master.resources;
 import com.google.common.collect.ImmutableList;
 
 import javax.ws.rs.POST;
+import javax.ws.rs.GET;
+import javax.ws.rs.Consumes;
+import javax.ws.rs.Produces;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
 import com.spotify.helios.common.HeliosException;
+import com.spotify.helios.common.HeliosRuntimeException;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.common.protocol.ListenerResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.MasterModel;
@@ -34,14 +42,10 @@ import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
 
-import java.util.Collections;
+import java.io.IOException;
 import java.util.List;
 
 import javax.validation.Valid;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
 
 import static com.spotify.helios.common.protocol.TaskStatusEvents.Status.JOB_ID_NOT_FOUND;
 import static com.spotify.helios.common.protocol.TaskStatusEvents.Status.OK;
@@ -80,16 +84,22 @@ public class HistoryResource {
       return new TaskStatusEvents(ImmutableList.<TaskStatusEvent>of(), JOB_ID_NOT_FOUND);
     }
   }
-  
-  
+
   @POST
   @Path("listeners")
   @Produces(APPLICATION_JSON)
+  @Consumes(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public TaskStatusEvents listeners(final String listenerUrls) {
-    System.out.println( "[[[[" + listenerUrls + "]]]]" );
-    return new TaskStatusEvents( Collections.<TaskStatusEvent>emptyList(), OK);
+  public ListenerResponse listeners(@Valid final String listenerUrl) {
+    try {
+        model.addListener(Json.read(listenerUrl, String.class));
+    } catch (HeliosRuntimeException e) {
+        return new ListenerResponse(ListenerResponse.Status.DUPLICATE_LISTENER, listenerUrl);
+    } catch (IOException e) {
+        return new ListenerResponse(ListenerResponse.Status.INVALID_LISTENER, listenerUrl);
+    }
+
+    return new ListenerResponse(ListenerResponse.Status.OK, listenerUrl);
   }
-    
 }
