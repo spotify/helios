@@ -40,11 +40,13 @@ public class TaskRunnerFactory {
   private final TaskConfig taskConfig;
   private final DockerClient docker;
   private final ServiceRegistrar registrar;
+  private final Boolean autoRegister;
   private final List<TaskRunner.Listener> listeners;
 
   public TaskRunnerFactory(final Builder builder) {
     this.taskConfig = checkNotNull(builder.config, "config");
     this.registrar = checkNotNull(builder.registrar, "registrar");
+    this.autoRegister = checkNotNull(builder.autoRegister, "autoRegister");
     this.docker = checkNotNull(builder.docker, "docker");
     this.listeners = checkNotNull(builder.listeners, "listeners");
   }
@@ -59,6 +61,7 @@ public class TaskRunnerFactory {
         .existingContainerId(containerId)
         .listener(new BroadcastingListener(concat(this.listeners, asList(listener))))
         .registrar(registrar)
+        .autoRegister(autoRegister)
         .build();
   }
 
@@ -75,6 +78,7 @@ public class TaskRunnerFactory {
     private TaskConfig config;
     private DockerClient docker;
     private ServiceRegistrar registrar;
+    private Boolean autoRegister;
     private List<TaskRunner.Listener> listeners = Lists.newArrayList();
 
     public Builder config(final TaskConfig config) {
@@ -84,6 +88,11 @@ public class TaskRunnerFactory {
 
     public Builder registrar(final ServiceRegistrar registrar) {
       this.registrar = registrar;
+      return this;
+    }
+
+    public Builder autoRegister(final Boolean autoRegister) {
+      this.autoRegister= autoRegister;
       return this;
     }
 

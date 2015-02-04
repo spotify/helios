@@ -103,6 +103,7 @@ public class SupervisorFactory {
     final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
         .config(taskConfig)
         .registrar(registrar)
+        .autoRegister(job.getAutoRegister())
         .dockerClient(dockerClient)
         .listener(taskMonitor)
         .build();
