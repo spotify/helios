@@ -539,6 +539,12 @@ public class HeliosClient implements AutoCloseable {
                                      ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
   }
 
+  public ListenableFuture<TaskStatusEvents> listeners(final String listenerUrl) {
+    return transform(request(uri("/history/listeners"), "POST", listenerUrl),
+                     ConvertResponseToPojo.create(TaskStatusEvents.class, 
+                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
+  }
+
   public ListenableFuture<JobStatus> jobStatus(final JobId jobId) {
     return get(uri(path("/jobs/%s/status", jobId)), JobStatus.class);
   }

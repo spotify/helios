@@ -23,6 +23,7 @@ package com.spotify.helios.master.resources;
 
 import com.google.common.collect.ImmutableList;
 
+import javax.ws.rs.POST;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
@@ -33,6 +34,7 @@ import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
 
+import java.util.Collections;
 import java.util.List;
 
 import javax.validation.Valid;
@@ -78,4 +80,16 @@ public class HistoryResource {
       return new TaskStatusEvents(ImmutableList.<TaskStatusEvent>of(), JOB_ID_NOT_FOUND);
     }
   }
+  
+  
+  @POST
+  @Path("listeners")
+  @Produces(APPLICATION_JSON)
+  @Timed
+  @ExceptionMetered
+  public TaskStatusEvents listeners(final String listenerUrls) {
+    System.out.println( "[[[[" + listenerUrls + "]]]]" );
+    return new TaskStatusEvents( Collections.<TaskStatusEvent>emptyList(), OK);
+  }
+    
 }
