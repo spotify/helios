@@ -80,7 +80,7 @@ choose Helios?
   frequently (usually, at least weekly) into production here at
   Spotify.
 
-* We do not to pretend to have features we don't have.
+* We do not pretend to have features we don't have.
 
 * Helios should be able to fit in the way you already do ops.  Of the
   popular Docker Orchestration frameworks, Helios is the only one
