@@ -114,6 +114,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
+import static com.spotify.helios.common.descriptors.Job.DEFAULT_DISABLE_AUTO_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
@@ -659,7 +660,7 @@ public abstract class SystemTestBase {
                             final Integer gracePeriod,
                             final Map<String, String> volumes) throws Exception {
     return createJob(name, version, image, command, env, ports, registration, gracePeriod, volumes,
-        EMPTY_EXPIRES);
+                     EMPTY_EXPIRES);
   }
 
   protected JobId createJob(final String name,
@@ -672,6 +673,21 @@ public abstract class SystemTestBase {
                             final Integer gracePeriod,
                             final Map<String, String> volumes,
                             final Date expires) throws Exception {
+    return createJob(name, version, image, command, env, ports, registration, gracePeriod, volumes,
+                     expires, DEFAULT_DISABLE_AUTO_REGISTRATION);
+  }
+
+  protected JobId createJob(final String name,
+                            final String version,
+                            final String image,
+                            final List<String> command,
+                            final Map<String, String> env,
+                            final Map<String, PortMapping> ports,
+                            final Map<ServiceEndpoint, ServicePorts> registration,
+                            final Integer gracePeriod,
+                            final Map<String, String> volumes,
+                            final Date expires,
+                            final Boolean disableAutoRegistration) throws Exception {
     return createJob(Job.newBuilder()
                          .setName(name)
                          .setVersion(version)
@@ -683,6 +699,7 @@ public abstract class SystemTestBase {
                          .setGracePeriod(gracePeriod)
                          .setVolumes(volumes)
                          .setExpires(expires)
+                         .setDisableAutoRegistration(disableAutoRegistration)
                          .build());
   }
 

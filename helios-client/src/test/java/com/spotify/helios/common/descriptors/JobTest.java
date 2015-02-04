@@ -79,6 +79,7 @@ public class JobTest {
     final Map<ServiceEndpoint, ServicePorts> setRegistration = ImmutableMap.of(
         ServiceEndpoint.of("set_service", "set_proto"),
         ServicePorts.of("set_ports1", "set_ports2"));
+    final Boolean setDisableAutoRegistration = false;
     final Integer setGracePeriod = 120;
     final Map<String, String> setVolumes = ImmutableMap.of("/set", "/volume");
     final Date setExpires = new Date();
@@ -103,6 +104,7 @@ public class JobTest {
     final Map<String, PortMapping> expectedPorts = concat(setPorts, addPorts);
     final Map<ServiceEndpoint, ServicePorts> expectedRegistration = concat(setRegistration,
                                                                            addRegistration);
+    final Boolean expectedAutoRegistration = setDisableAutoRegistration;
     final Integer expectedGracePeriod = setGracePeriod;
     final Map<String, String> expectedVolumes = concat(setVolumes, addVolumes);
     final Date expectedExpires = setExpires;
@@ -118,6 +120,7 @@ public class JobTest {
     builder.setEnv(setEnv);
     builder.setPorts(setPorts);
     builder.setRegistration(setRegistration);
+    builder.setDisableAutoRegistration(setDisableAutoRegistration);
     builder.setGracePeriod(setGracePeriod);
     builder.setVolumes(setVolumes);
     builder.setExpires(setExpires);
@@ -131,6 +134,7 @@ public class JobTest {
     assertEquals("env", setEnv, builder.getEnv());
     assertEquals("ports", setPorts, builder.getPorts());
     assertEquals("registration", setRegistration, builder.getRegistration());
+    assertEquals("disableAutoRegistration", setDisableAutoRegistration, builder.getDisableAutoRegistration());
     assertEquals("gracePeriod", setGracePeriod, builder.getGracePeriod());
     assertEquals("volumes", setVolumes, builder.getVolumes());
     assertEquals("expires", setExpires, builder.getExpires());
@@ -158,6 +162,7 @@ public class JobTest {
     assertEquals("env", expectedEnv, builder.getEnv());
     assertEquals("ports", expectedPorts, builder.getPorts());
     assertEquals("registration", expectedRegistration, builder.getRegistration());
+    assertEquals("disableAutoRegistration", setDisableAutoRegistration, builder.getDisableAutoRegistration());
     assertEquals("gracePeriod", expectedGracePeriod, builder.getGracePeriod());
     assertEquals("volumes", expectedVolumes, builder.getVolumes());
     assertEquals("expires", expectedExpires, builder.getExpires());
@@ -174,6 +179,7 @@ public class JobTest {
     assertEquals("env", expectedEnv, job.getEnv());
     assertEquals("ports", expectedPorts, job.getPorts());
     assertEquals("registration", expectedRegistration, job.getRegistration());
+    assertEquals("disableAutoRegistration", setDisableAutoRegistration, job.getDisableAutoRegistration());
     assertEquals("gracePeriod", expectedGracePeriod, job.getGracePeriod());
     assertEquals("volumes", expectedVolumes, job.getVolumes());
     assertEquals("expires", expectedExpires, job.getExpires());
@@ -190,6 +196,7 @@ public class JobTest {
     assertEquals("env", expectedEnv, rebuilder.getEnv());
     assertEquals("ports", expectedPorts, rebuilder.getPorts());
     assertEquals("registration", expectedRegistration, rebuilder.getRegistration());
+    assertEquals("disableAutoRegistration", setDisableAutoRegistration, rebuilder.getDisableAutoRegistration());
     assertEquals("gracePeriod", expectedGracePeriod, rebuilder.getGracePeriod());
     assertEquals("volumes", expectedVolumes, rebuilder.getVolumes());
     assertEquals("expires", expectedExpires, rebuilder.getExpires());
@@ -207,6 +214,7 @@ public class JobTest {
     assertEquals("env", expectedEnv, cloned.getEnv());
     assertEquals("ports", expectedPorts, cloned.getPorts());
     assertEquals("registration", expectedRegistration, cloned.getRegistration());
+    assertEquals("disableAutoRegistration", setDisableAutoRegistration, cloned.getDisableAutoRegistration());
     assertEquals("gracePeriod", expectedGracePeriod, cloned.getGracePeriod());
     assertEquals("volumes", expectedVolumes, cloned.getVolumes());
     assertEquals("expires", expectedExpires, cloned.getExpires());
@@ -223,6 +231,7 @@ public class JobTest {
     assertEquals("env", expectedEnv, clonedJob.getEnv());
     assertEquals("ports", expectedPorts, clonedJob.getPorts());
     assertEquals("registration", expectedRegistration, clonedJob.getRegistration());
+    assertEquals("disableAutoRegistration", setDisableAutoRegistration, clonedJob.getDisableAutoRegistration());
     assertEquals("gracePeriod", expectedGracePeriod, clonedJob.getGracePeriod());
     assertEquals("volumes", expectedVolumes, clonedJob.getVolumes());
     assertEquals("expires", expectedExpires, clonedJob.getExpires());
@@ -246,7 +255,8 @@ public class JobTest {
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
                                                    "image", "foobar:4711",
                                                    "name", "foozbarz",
-                                                   "version", "17");
+                                                   "version", "17",
+                                                   "disableAutoRegistration", false);
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
@@ -269,7 +279,8 @@ public class JobTest {
                                                    "image", "foobar:4711",
                                                    "name", "foozbarz",
                                                    "version", "17",
-                                                   "env", env);
+                                                   "env", env,
+                                                   "disableAutoRegistration", false);
 
     final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
     final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
@@ -281,6 +292,30 @@ public class JobTest {
         .setName("foozbarz")
         .setVersion("17")
         .setEnv(env)
+        .build();
+
+    assertEquals(expectedId, job.getId());
+  }
+
+  @Test
+  public void verifySha1IDWithDisableAutoRegistration() throws IOException {
+    final Map<String, String> env = ImmutableMap.of("FOO", "BAR");
+    final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
+                                                   "image", "foobar:4711",
+                                                   "name", "foozbarz",
+                                                   "version", "17",
+                                                   "disableAutoRegistration", true);
+
+    final String expectedInput = "foozbarz:17:" + hex(Json.sha1digest(expectedConfig));
+    final String expectedDigest = hex(Hash.sha1digest(expectedInput.getBytes(UTF_8)));
+    final JobId expectedId = JobId.fromString("foozbarz:17:" + expectedDigest);
+
+    final Job job = Job.newBuilder()
+        .setCommand(asList("foo", "bar"))
+        .setImage("foobar:4711")
+        .setName("foozbarz")
+        .setVersion("17")
+        .setDisableAutoRegistration(true)
         .build();
 
     assertEquals(expectedId, job.getId());
@@ -342,6 +377,7 @@ public class JobTest {
     final Map<ServiceEndpoint, ServicePorts> expectedRegistration =
         ImmutableMap.of(ServiceEndpoint.of("foo", "tcp"), ServicePorts.of("p1"));
     final Integer expectedGracePeriod = 240;
+    final Boolean expectedAutorRegister = true;
 
     final List<String> mutableCommand = Lists.newArrayList(expectedCommand);
     final Map<String, String> mutableEnv = Maps.newHashMap(expectedEnv);
@@ -357,6 +393,7 @@ public class JobTest {
         .setName("foozbarz")
         .setVersion("17")
         .setRegistration(mutableRegistration)
+        .setDisableAutoRegistration(expectedAutorRegister)
         .setGracePeriod(expectedGracePeriod);
 
     final Job job = builder.build();
@@ -371,11 +408,13 @@ public class JobTest {
     builder.addRegistration(ServiceEndpoint.of("added_reg", "added_proto"),
                             ServicePorts.of("added_port"));
     builder.setGracePeriod(480);
+    builder.setDisableAutoRegistration(false);
 
     assertEquals(expectedCommand, job.getCommand());
     assertEquals(expectedEnv, job.getEnv());
     assertEquals(expectedPorts, job.getPorts());
     assertEquals(expectedRegistration, job.getRegistration());
+    assertEquals(expectedAutorRegister, job.getDisableAutoRegistration());
     assertEquals(expectedGracePeriod, job.getGracePeriod());
   }
 }

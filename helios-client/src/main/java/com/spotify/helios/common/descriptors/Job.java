@@ -21,7 +21,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
@@ -29,7 +28,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
+
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -90,6 +92,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
   public static final List<String> EMPTY_COMMAND = emptyList();
   public static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
+  public static final Boolean DEFAULT_DISABLE_AUTO_REGISTRATION = false;
   public static final Integer EMPTY_GRACE_PERIOD = null;
   public static final Map<String, String> EMPTY_VOLUMES = emptyMap();
   public static final String EMPTY_MOUNT = "";
@@ -105,6 +108,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Resources resources;
   private final Map<String, PortMapping> ports;
   private final Map<ServiceEndpoint, ServicePorts> registration;
+  private final Boolean disableAutoRegistration;
   private final Integer gracePeriod;
   private final Map<String, String> volumes;
   private final Date expires;
@@ -122,13 +126,15 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param resources Resource specification for the container.
    * @param ports The ports you wish to expose from the container.
    * @param registration Configuration information for the discovery service (if applicable)
+   * @param disableAutoRegistration Whether to automatically register
+   *                                the service on container startup
    * @param gracePeriod How long to let the container run after deregistering with the discovery
-   *    service.  If nothing is configured in registration, this option is ignored.
+   *                    service.  If nothing is configured in registration, this option is ignored.
    * @param volumes Docker volumes to mount.
    * @param expires If set, a timestamp at which the job and any deployments will be removed.
    * @param registrationDomain If set, override the default domain in which discovery service
-   *    registration occurs.  What is allowed here will vary based upon the discovery service
-   *    plugin used.
+   *                           registration occurs.  What is allowed here will vary based upon the
+   *                           discovery service plugin used.
    */
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
@@ -138,6 +144,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("ports") @Nullable final Map<String, PortMapping> ports,
              @JsonProperty("registration") @Nullable
                  final Map<ServiceEndpoint, ServicePorts> registration,
+             @JsonProperty("disableAutoRegistration") @Nullable
+                 final Boolean disableAutoRegistration,
              @JsonProperty("gracePeriod") @Nullable final Integer gracePeriod,
              @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
              @JsonProperty("expires") @Nullable final Date expires,
@@ -153,6 +161,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.resources = Optional.fromNullable(resources).orNull();
     this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
     this.registration = Optional.fromNullable(registration).or(EMPTY_REGISTRATION);
+    this.disableAutoRegistration = Optional.fromNullable(disableAutoRegistration)
+        .or(DEFAULT_DISABLE_AUTO_REGISTRATION);
     this.gracePeriod = Optional.fromNullable(gracePeriod).orNull();
     this.volumes = Optional.fromNullable(volumes).or(EMPTY_VOLUMES);
     this.expires = expires;
@@ -171,6 +181,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.resources = p.resources;
     this.ports = ImmutableMap.copyOf(checkNotNull(p.ports, "ports"));
     this.registration = ImmutableMap.copyOf(checkNotNull(p.registration, "registration"));
+    this.disableAutoRegistration = p.disableAutoRegistration;
     this.gracePeriod = p.gracePeriod;
     this.volumes = ImmutableMap.copyOf(checkNotNull(p.volumes, "volumes"));
     this.expires = p.expires;
@@ -208,6 +219,10 @@ public class Job extends Descriptor implements Comparable<Job> {
     return registration;
   }
 
+  public Boolean getDisableAutoRegistration() {
+    return disableAutoRegistration;
+  }
+
   public String getRegistrationDomain() {
     return registrationDomain;
   }
@@ -228,7 +243,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     return creatingUser;
   }
 
-  public String getToken() { return token; }
+  public String getToken() {
+    return token;
+  }
 
   public static Builder newBuilder() {
     return new Builder();
@@ -274,6 +291,11 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (registration != null ? !registration.equals(job.registration) : job.registration != null) {
       return false;
     }
+    if (disableAutoRegistration != null
+        ? !disableAutoRegistration.equals(job.disableAutoRegistration)
+        : job.disableAutoRegistration != null) {
+      return false;
+    }
     if (registrationDomain != null
         ? !registrationDomain.equals(job.registrationDomain)
         : job.registrationDomain != null) {
@@ -305,6 +327,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (resources != null ? resources.hashCode() : 0);
     result = 31 * result + (ports != null ? ports.hashCode() : 0);
     result = 31 * result + (registration != null ? registration.hashCode() : 0);
+    result = 31 * result + (disableAutoRegistration != null
+                            ? disableAutoRegistration.hashCode()
+                            : 0);
     result = 31 * result + (registrationDomain != null ? registrationDomain.hashCode() : 0);
     result = 31 * result + (gracePeriod != null ? gracePeriod.hashCode() : 0);
     result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
@@ -323,6 +348,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("resources", resources)
         .add("ports", ports)
         .add("registration", registration)
+        .add("disableAutoRegistration", disableAutoRegistration)
         .add("gracePeriod", gracePeriod)
         .add("expires", expires)
         .add("registrationDomain", registrationDomain)
@@ -345,6 +371,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setResources(resources)
         .setPorts(ports)
         .setRegistration(registration)
+        .setDisableAutoRegistration(disableAutoRegistration)
         .setGracePeriod(gracePeriod)
         .setVolumes(volumes)
         .setExpires(expires)
@@ -378,6 +405,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Resources resources;
       public Map<String, PortMapping> ports;
       public Map<ServiceEndpoint, ServicePorts> registration;
+      public Boolean disableAutoRegistration;
       public Integer gracePeriod;
       public Map<String, String> volumes;
       public Date expires;
@@ -390,6 +418,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.resources = EMPTY_RESOURCES;
         this.ports = Maps.newHashMap(EMPTY_PORTS);
         this.registration = Maps.newHashMap(EMPTY_REGISTRATION);
+        this.disableAutoRegistration = DEFAULT_DISABLE_AUTO_REGISTRATION;
         this.gracePeriod = EMPTY_GRACE_PERIOD;
         this.volumes = Maps.newHashMap(EMPTY_VOLUMES);
         this.registrationDomain = EMPTY_REGISTRATION_DOMAIN;
@@ -406,6 +435,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.resources = p.resources;
         this.ports = Maps.newHashMap(p.ports);
         this.registration = Maps.newHashMap(p.registration);
+        this.disableAutoRegistration = p.disableAutoRegistration;
         this.gracePeriod = p.gracePeriod;
         this.volumes = Maps.newHashMap(p.volumes);
         this.expires = p.expires;
@@ -490,6 +520,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setDisableAutoRegistration(final Boolean disableAutoRegistration) {
+      p.disableAutoRegistration = disableAutoRegistration;
+      return this;
+    }
+
     public Builder setGracePeriod(final Integer gracePeriod) {
       p.gracePeriod = gracePeriod;
       return this;
@@ -541,6 +576,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Map<ServiceEndpoint, ServicePorts> getRegistration() {
       return ImmutableMap.copyOf(p.registration);
+    }
+
+    public Boolean getDisableAutoRegistration() {
+      return p.disableAutoRegistration;
     }
 
     public String getRegistrationDomain() {

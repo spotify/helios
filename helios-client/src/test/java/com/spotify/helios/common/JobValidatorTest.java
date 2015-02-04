@@ -34,6 +34,7 @@ import org.junit.Test;
 import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
+import static com.spotify.helios.common.descriptors.Job.DEFAULT_DISABLE_AUTO_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
@@ -133,7 +134,7 @@ public class JobValidatorTest {
   public void testIdMismatchFails() throws Exception {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
                             "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS, EMPTY_REGISTRATION,
-                            EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
+                            DEFAULT_DISABLE_AUTO_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
                             EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN);
     final JobId recomputedId = job.toBuilder().build().getId();
     assertEquals(ImmutableSet.of("Id hash mismatch: " + job.getId().getHash()
