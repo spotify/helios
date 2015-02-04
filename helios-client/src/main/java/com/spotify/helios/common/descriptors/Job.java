@@ -21,7 +21,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
@@ -29,7 +28,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
+
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -124,7 +126,7 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param resources Resource specification for the container.
    * @param ports The ports you wish to expose from the container.
    * @param registration Configuration information for the discovery service (if applicable)
-   * @param autoRegister Wether to have Helios automatically register your service on container startup
+   * @param autoRegister Whether to automatically register the service on container startup
    * @param gracePeriod How long to let the container run after deregistering with the discovery
    *    service.  If nothing is configured in registration, this option is ignored.
    * @param volumes Docker volumes to mount.
@@ -238,7 +240,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     return creatingUser;
   }
 
-  public String getToken() { return token; }
+  public String getToken() {
+    return token;
+  }
 
   public static Builder newBuilder() {
     return new Builder();

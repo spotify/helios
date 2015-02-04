@@ -78,7 +78,7 @@ public class TaskRunnerFactory {
     private TaskConfig config;
     private DockerClient docker;
     private ServiceRegistrar registrar;
-    private Boolean autoRegister;
+    private Boolean autoRegister = true;
     private List<TaskRunner.Listener> listeners = Lists.newArrayList();
 
     public Builder config(final TaskConfig config) {
@@ -92,7 +92,7 @@ public class TaskRunnerFactory {
     }
 
     public Builder autoRegister(final Boolean autoRegister) {
-      this.autoRegister= autoRegister;
+      this.autoRegister = autoRegister;
       return this;
     }
 

@@ -141,7 +141,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.containerId = Optional.of(containerId);
     listener.running();
 
-    // Register if not disabled
+    // Register if not auto-registration is not explicitly disabled in the Helios job configuration
     if (this.autoRegister) {
       serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
     }
