@@ -44,7 +44,6 @@ public class ServiceEndpoint extends Descriptor implements Comparable<ServiceEnd
 
   public static final String UDP = "udp";
   public static final String TCP = "tcp";
-  public static final String HERMES = "hm";
   public static final String HTTP = "http";
 
   private final String name;

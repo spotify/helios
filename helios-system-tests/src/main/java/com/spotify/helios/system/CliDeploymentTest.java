@@ -79,7 +79,7 @@ public class CliDeploymentTest extends SystemTestBase {
         "foo", PortMapping.of(4711),
         "bar", PortMapping.of(5000, externalPort));
     final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
-        ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
+        ServiceEndpoint.of("foo-service", "tcp"), ServicePorts.of("foo"),
         ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
     final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
 
@@ -128,7 +128,7 @@ public class CliDeploymentTest extends SystemTestBase {
     final Map<JobId, JobStatus> statuses = Json.read(statusString, STATUSES_TYPE);
     final Job job = statuses.get(jobId).getJob();
     assertEquals(ServicePorts.of("foo"),
-                 job.getRegistration().get(ServiceEndpoint.of("foo-service", "hm")));
+                 job.getRegistration().get(ServiceEndpoint.of("foo-service", "tcp")));
     assertEquals(ServicePorts.of("bar"),
                  job.getRegistration().get(ServiceEndpoint.of("bar-service", "http")));
     assertEquals(4711, job.getPorts().get("foo").getInternalPort());
