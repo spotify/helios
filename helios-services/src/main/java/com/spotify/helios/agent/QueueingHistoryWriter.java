@@ -300,7 +300,7 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
           try {
             urls.add(new String(nodeData, "UTF-8"));
           } catch (UnsupportedEncodingException e) {
-              continue;
+              log.error("Unable to parse listener endpoint: {}", e);
           }
         }
 
@@ -317,6 +317,8 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
                       (HttpURLConnection) new URL(url).openConnection();
 
               connection.setRequestMethod("POST");
+              connection.setConnectTimeout(1000);
+              connection.setReadTimeout(1000);
 
               for (Map.Entry<String, List<String>> header : headers.entrySet()) {
                   for (final String value : header.getValue()) {
@@ -336,7 +338,6 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
               }
             } catch (IOException e) {
                 log.error("Unable to communicate with listener endpoint {}: {}", url, e);
-                continue;
             }
         }
 
