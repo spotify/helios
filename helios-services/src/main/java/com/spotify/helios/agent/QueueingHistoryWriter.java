@@ -23,6 +23,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -42,22 +43,22 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.bouncycastle.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
 import java.net.URL;
-import java.net.URI;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.ArrayList;
-import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -67,7 +68,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Preconditions.checkState;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -281,65 +281,16 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         return;
       }
 
-      try {
-        final JobId jobId = item.getStatus().getJob().getId();
-        final String historyPath = Paths.historyJobHostEventsTimestamp(
-            jobId, hostname, item.getTimestamp());
+      final JobId jobId = item.getStatus().getJob().getId();
+      final String historyPath = Paths.historyJobHostEventsTimestamp(
+          jobId, hostname, item.getTimestamp());
 
-        log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
-            item.getTimestamp());
+      log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
+          item.getTimestamp());
+
+      try {
         client.ensurePath(historyPath, true);
         client.createAndSetData(historyPath, item.getStatus().toJsonBytes());
-
-        final List<String> listeners = client.getChildren(Paths.historyListeners());
-        final List<String> urls = new ArrayList<String>();
-
-        for (String listener: listeners) {
-          final byte[] nodeData = client.getData(Paths.historyListener(listener));
-
-          try {
-            urls.add(new String(nodeData, "UTF-8"));
-          } catch (UnsupportedEncodingException e) {
-              log.error("Unable to parse listener endpoint: {}", e);
-          }
-        }
-
-        final Map<String, List<String>> headers = Maps.newHashMap();
-
-        headers.put("Content-Type", asList("application/json"));
-        headers.put("Charset", asList("UTF-8"));
-
-        for (String url: urls) {
-            log.info("Trying to push listener event to {}", url);
-
-            try {
-              final HttpURLConnection connection =
-                      (HttpURLConnection) new URL(url).openConnection();
-
-              connection.setRequestMethod("POST");
-              connection.setConnectTimeout(1000);
-              connection.setReadTimeout(1000);
-
-              for (Map.Entry<String, List<String>> header : headers.entrySet()) {
-                  for (final String value : header.getValue()) {
-                      connection.addRequestProperty(header.getKey(), value);
-                  }
-              }
-
-              connection.setDoOutput(true);
-              connection.getOutputStream().write(Json.asBytes(item));
-
-              final int status = connection.getResponseCode();
-
-              connection.disconnect();
-
-              if (status / 100 != 2) {
-                log.error("Unable to contact listener endpoint {}: {}", url, status);
-              }
-            } catch (IOException e) {
-                log.error("Unable to communicate with listener endpoint {}: {}", url, e);
-            }
-        }
 
         // See if too many
         final List<String> events = client.getChildren(Paths.historyJobHostEvents(jobId, hostname));
@@ -359,6 +310,47 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         putBack(item);
         break;
       }
+
+      final List<String> listeners = new ArrayList<>();
+
+      try {
+        listeners.addAll(client.getChildren(Paths.historyListeners()));
+      } catch (KeeperException e) {
+        log.error("Unable to fetch listener names", e);
+      }
+
+      listeners.stream().map(listener -> {
+        try {
+          return Optional.of(new URL(new String(
+              client.getData(Paths.historyListener(listener)), "UTF-8")));
+        } catch (KeeperException | UnsupportedEncodingException | MalformedURLException e) {
+          log.error("Unable to fetch listener endpoint for {}", listener, e);
+          return Optional.<URL>empty();
+        }
+      }).forEach(possibleUrl -> possibleUrl.ifPresent(url -> {
+        log.info("Pushing task status event to listener endpoint {}", url);
+
+        try {
+          final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+          connection.setConnectTimeout(1000);
+          connection.setReadTimeout(1000);
+
+          connection.addRequestProperty("Content-Type", "application/json");
+          connection.addRequestProperty("Charset", "UTF-8");
+
+          connection.setRequestMethod("POST");
+
+          connection.setDoOutput(true);
+          connection.getOutputStream().write(Json.asBytes(item));
+
+          if (connection.getResponseCode() / 100 != 2) {
+            log.error("Got non-200 response code while communicating with listener endpoint {}", url);
+          }
+        } catch (IOException e) {
+          log.error("Unable to communicate with listener endpoint {}", url, e);
+        }
+      }));
     }
   }
 
