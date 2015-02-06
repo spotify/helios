@@ -23,7 +23,6 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
-import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -50,7 +49,6 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpURLConnection;
 import java.net.MalformedURLException;
-import java.net.ProtocolException;
 import java.net.URL;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
@@ -66,6 +64,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -319,38 +318,49 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         log.error("Unable to fetch listener names", e);
       }
 
-      listeners.stream().map(listener -> {
-        try {
-          return Optional.of(new URL(new String(
-              client.getData(Paths.historyListener(listener)), "UTF-8")));
-        } catch (KeeperException | UnsupportedEncodingException | MalformedURLException e) {
-          log.error("Unable to fetch listener endpoint for {}", listener, e);
-          return Optional.<URL>empty();
-        }
-      }).forEach(possibleUrl -> possibleUrl.ifPresent(url -> {
-        log.info("Pushing task status event to listener endpoint {}", url);
-
-        try {
-          final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-
-          connection.setConnectTimeout(1000);
-          connection.setReadTimeout(1000);
-
-          connection.addRequestProperty("Content-Type", "application/json");
-          connection.addRequestProperty("Charset", "UTF-8");
-
-          connection.setRequestMethod("POST");
-
-          connection.setDoOutput(true);
-          connection.getOutputStream().write(Json.asBytes(item));
-
-          if (connection.getResponseCode() / 100 != 2) {
-            log.error("Got non-200 response code while communicating with listener endpoint {}", url);
+      Iterables.transform(listeners, new Function<String, Optional<URL>>() {
+        @Override
+        public Optional<URL> apply(final String listener) {
+          try {
+            return Optional.of(new URL(new String(
+                client.getData(Paths.historyListener(listener)), "UTF-8")));
+          } catch (KeeperException | UnsupportedEncodingException | MalformedURLException e) {
+            log.error("Unable to fetch listener endpoint for {}", listener, e);
+            return Optional.empty();
           }
-        } catch (IOException e) {
-          log.error("Unable to communicate with listener endpoint {}", url, e);
         }
-      }));
+      }).forEach(new Consumer<Optional<URL>>() {
+        @Override
+        public void accept(Optional<URL> possibleUrl) {
+          if (!possibleUrl.isPresent()) {
+            return;
+          }
+
+          URL url = possibleUrl.get();
+          log.info("Pushing task status event to listener endpoint {}", url);
+
+          try {
+            final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+            connection.setConnectTimeout(1000);
+            connection.setReadTimeout(1000);
+
+            connection.addRequestProperty("Content-Type", "application/json");
+            connection.addRequestProperty("Charset", "UTF-8");
+
+            connection.setRequestMethod("POST");
+
+            connection.setDoOutput(true);
+            connection.getOutputStream().write(Json.asBytes(item));
+
+            if (connection.getResponseCode() / 100 != 2) {
+              log.error("Got non-200 response code while communicating with listener endpoint {}", url);
+            }
+          } catch (IOException e) {
+            log.error("Unable to communicate with listener endpoint {}", url, e);
+          }
+        }
+      });
     }
   }
 
