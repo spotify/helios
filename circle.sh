@@ -3,7 +3,7 @@
 case "$1" in
   pre_machine)
     # ensure correct level of parallelism
-    expected_nodes=2
+    expected_nodes=3
     if [ "$CIRCLE_NODE_TOTAL" -ne "$expected_nodes" ]
     then
         echo "Parallelism is set to ${CIRCLE_NODE_TOTAL}x, but we need ${expected_nodes}x."
@@ -39,7 +39,6 @@ case "$1" in
     ;;
 
   test)
-    # expected parallelism: 2x. needs to be set in the project settings via CircleCI's UI.
     case $CIRCLE_NODE_INDEX in
       0)
         # run all tests *except* helios-system-tests
@@ -49,7 +48,15 @@ case "$1" in
         ;;
 
       1)
-        # run helios-system-tests
+        # run helios-system-tests that start with A-L
+        echo "%regex[com.spotify.helios.system.[M-Z].*]" >> .test-excludes
+        mvn test -B -pl helios-system-tests
+
+        ;;
+
+      2)
+        # run helios-system-tests that start with M-Z
+        echo "%regex[com.spotify.helios.system.[A-L].*]" >> .test-excludes
         mvn test -B -pl helios-system-tests
 
         ;;

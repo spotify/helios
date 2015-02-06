@@ -208,6 +208,7 @@
                 <externalLoggingLevel>OFF</externalLoggingLevel>
                 <rootLoggingLevel>ERROR</rootLoggingLevel>
               </systemPropertyVariables>
+              <excludesFile>../.test-excludes</excludesFile>
             </configuration>
           </plugin>
         </plugins>
