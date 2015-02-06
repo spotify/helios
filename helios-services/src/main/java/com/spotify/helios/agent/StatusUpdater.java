@@ -36,6 +36,8 @@ public interface StatusUpdater {
 
   void setState(final TaskStatus.State status);
 
+  void setRegistered(final TaskStatus.Registered registered);
+
   void setGoal(Goal goal);
 
   void update() throws InterruptedException;

@@ -37,6 +37,7 @@ public class DefaultStatusUpdater implements StatusUpdater {
   private ThrottleState throttleState = ThrottleState.NO;
   private AgentModel model;
   private TaskStatus.State state;
+  private TaskStatus.Registered registered = TaskStatus.Registered.NO;
 
   public DefaultStatusUpdater(final AgentModel model,
                               final TaskStatus.Builder builder) {
@@ -60,18 +61,25 @@ public class DefaultStatusUpdater implements StatusUpdater {
   }
 
   @Override
+  public void setState(final TaskStatus.State state) {
+    this.state = state;
+  }
+
+  @Override
+  public void setRegistered(final TaskStatus.Registered registered) {
+    this.registered = registered;
+  }
+
+  @Override
   public void update() throws InterruptedException {
     final TaskStatus status = builder
         .setGoal(goal)
         .setState(state)
+        .setRegistered(registered)
         .setContainerId(containerId)
         .setThrottled(throttleState)
         .build();
     model.setTaskStatus(status.getJob().getId(), status);
   }
 
-  @Override
-  public void setState(final TaskStatus.State state) {
-    this.state = state;
-  }
 }

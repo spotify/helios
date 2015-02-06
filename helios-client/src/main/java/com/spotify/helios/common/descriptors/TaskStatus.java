@@ -59,6 +59,7 @@ import static java.util.Collections.emptyMap;
  *     }
  *   },
  *   "state" : "RUNNING",
+ *   "registered" : "YES",
  *   "throttled" : "NO"
  * },
  * </pre>
@@ -79,9 +80,15 @@ public class TaskStatus extends Descriptor {
     UNKNOWN
   }
 
+  public enum Registered {
+    YES,
+    NO
+  }
+
   private final Job job;
   private final Goal goal;
   private final State state;
+  private final Registered registered;
   private final String containerId;
   private final ThrottleState throttled;
   private final Map<String, PortMapping> ports;
@@ -91,6 +98,7 @@ public class TaskStatus extends Descriptor {
    * @param job The job the task is running.
    * @param goal The desired state of the task.
    * @param state The state of the task.
+   * @param registered Whether the job is registered with service registration plugin.
    * @param containerId The containerId, if the task has one (yet).
    * @param throttled The throttle state of the task.
    * @param ports The ports actually assigned to the task.
@@ -99,6 +107,7 @@ public class TaskStatus extends Descriptor {
   public TaskStatus(@JsonProperty("job") final Job job,
                     @Nullable @JsonProperty("goal") final Goal goal,
                     @JsonProperty("state") final State state,
+                    @Nullable @JsonProperty("registered") final Registered registered,
                     @Nullable @JsonProperty("containerId") final String containerId,
                     @JsonProperty("throttled") final ThrottleState throttled,
                     @JsonProperty("ports") final Map<String, PortMapping> ports,
@@ -106,6 +115,7 @@ public class TaskStatus extends Descriptor {
     this.job = checkNotNull(job, "job");
     this.goal = goal; // TODO (dano): add null check when all masters are upgraded
     this.state = checkNotNull(state, "state");
+    this.registered = checkNotNull(registered, "registered");
 
     // Optional
     this.containerId = containerId;
@@ -119,6 +129,7 @@ public class TaskStatus extends Descriptor {
         .setJob(job)
         .setGoal(goal)
         .setState(state)
+        .setRegistered(registered)
         .setContainerId(containerId)
         .setThrottled(throttled)
         .setPorts(ports)
@@ -129,6 +140,7 @@ public class TaskStatus extends Descriptor {
     this.job = checkNotNull(builder.job, "job");
     this.goal = checkNotNull(builder.goal, "goal");
     this.state = checkNotNull(builder.state, "state");
+    this.registered = checkNotNull(builder.registered, "registered");
 
     // Optional
     this.containerId = builder.containerId;
@@ -154,6 +166,10 @@ public class TaskStatus extends Descriptor {
     return state;
   }
 
+  public Registered getRegistered() {
+    return registered;
+  }
+
   public Job getJob() {
     return job;
   }
@@ -172,6 +188,7 @@ public class TaskStatus extends Descriptor {
         .add("job", job)
         .add("goal", goal)
         .add("state", state)
+        .add("registered", registered)
         .add("containerId", containerId)
         .add("throttled", throttled)
         .add("ports", ports)
@@ -208,6 +225,9 @@ public class TaskStatus extends Descriptor {
     if (state != that.state) {
       return false;
     }
+    if (registered != that.registered) {
+      return false;
+    }
     if (throttled != that.throttled) {
       return false;
     }
@@ -220,6 +240,7 @@ public class TaskStatus extends Descriptor {
     int result = job != null ? job.hashCode() : 0;
     result = 31 * result + (goal != null ? goal.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
+    result = 31 * result + (registered != null ? registered.hashCode() : 0);
     result = 31 * result + (containerId != null ? containerId.hashCode() : 0);
     result = 31 * result + (throttled != null ? throttled.hashCode() : 0);
     result = 31 * result + (ports != null ? ports.hashCode() : 0);
@@ -237,6 +258,7 @@ public class TaskStatus extends Descriptor {
     private Job job;
     private Goal goal;
     private State state;
+    private Registered registered;
     private String containerId;
     private Map<String, PortMapping> ports;
     private ThrottleState throttled;
@@ -254,6 +276,11 @@ public class TaskStatus extends Descriptor {
 
     public Builder setState(final State state) {
       this.state = state;
+      return this;
+    }
+
+    public Builder setRegistered(final Registered registered) {
+      this.registered = registered;
       return this;
     }
 

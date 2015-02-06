@@ -42,7 +42,9 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
+import com.spotify.helios.serviceregistration.NopServiceRegistrationHandle;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
 
 import org.junit.After;
@@ -148,18 +150,22 @@ public class SupervisorTest {
   @Before
   public void setup() throws Exception {
     when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
+    when(registrar.register(any(ServiceRegistration.class)))
+        .thenReturn(new NopServiceRegistrationHandle());
 
     final TaskConfig config = TaskConfig.builder()
         .namespace(NAMESPACE)
         .host("AGENT_NAME")
         .job(JOB)
         .envVars(ENV)
+        .defaultRegistrationDomain("domain")
         .build();
 
     final TaskStatus.Builder taskStatus = TaskStatus.newBuilder()
         .setJob(JOB)
         .setEnv(ENV)
-        .setPorts(PORTS);
+        .setPorts(PORTS)
+        .setRegistered(TaskStatus.Registered.NO);
 
     final StatusUpdater statusUpdater = new DefaultStatusUpdater(model, taskStatus);
     final TaskMonitor monitor = new TaskMonitor(JOB.getId(), FlapController.create(), statusUpdater);
@@ -232,7 +238,7 @@ public class SupervisorTest {
     // Start the job
     sut.setGoal(START);
 
-    // Verify that the container is created
+    // Verify that the container is created and not registered
     verify(docker, timeout(30000)).createContainer(containerConfigCaptor.capture(),
                                                    containerNameCaptor.capture());
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
@@ -242,6 +248,7 @@ public class SupervisorTest {
                                                        .setState(CREATING)
                                                        .setContainerId(null)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
     createFuture.set(createResponse);
@@ -252,7 +259,7 @@ public class SupervisorTest {
 
     assertEquals(JOB.getId().toShortString(), shortJobIdFromContainerName(containerName));
 
-    // Verify that the container is started
+    // Verify that the container is started and not registered
     verify(docker, timeout(30000)).startContainer(eq(containerId), any(HostConfig.class));
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
@@ -261,11 +268,13 @@ public class SupervisorTest {
                                                        .setState(STARTING)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
     when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
     startFuture.set(null);
 
+    // Verify that the container is running and not registered
     verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
@@ -274,6 +283,20 @@ public class SupervisorTest {
                                                        .setState(RUNNING)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
+                                                       .build())
+    );
+
+    // Verify that the container is running and registered
+    verify(docker, timeout(30000)).waitContainer(containerId);
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(START)
+                                                       .setState(RUNNING)
+                                                       .setContainerId(containerId)
+                                                       .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.YES)
                                                        .build())
     );
 
@@ -295,6 +318,7 @@ public class SupervisorTest {
     killFuture.set(null);
 
     // Verify that the pulling state is signalled
+    verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
                                                        .setJob(JOB)
@@ -302,18 +326,21 @@ public class SupervisorTest {
                                                        .setState(PULLING_IMAGE)
                                                        .setContainerId(null)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
 
-
-    // Verify that the stopped state is signalled
+    // Verify that the pulling state is signalled
+    verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
                                                        .setJob(JOB)
                                                        .setGoal(STOP)
                                                        .setState(STOPPED)
+                                    // TODO (dxia) why is containerId not null in actual response?
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.YES)
                                                        .build())
     );
   }

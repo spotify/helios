@@ -47,6 +47,7 @@ import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.serviceregistration.NopServiceRegistrationHandle;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.serviceregistration.ServiceRegistrationHandle;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
 
 import org.junit.After;
@@ -78,7 +79,6 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMA
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
@@ -262,6 +262,7 @@ public class GracePeriodTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(null)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
 
@@ -276,6 +277,7 @@ public class GracePeriodTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(null)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
     createFuture.set(createResponse);
@@ -286,7 +288,7 @@ public class GracePeriodTest {
 
     assertEquals(JOB.getId().toShortString(), shortJobIdFromContainerName(containerName));
 
-    // Verify that the container is started
+    // Verify that the container is starting and not registered
     verify(docker, timeout(30000)).startContainer(eq(containerId), any(HostConfig.class));
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
@@ -296,11 +298,13 @@ public class GracePeriodTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
     when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
     startFuture.set(null);
 
+    // Verify that the container is running and not registered
     verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
@@ -310,6 +314,21 @@ public class GracePeriodTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
+                                                       .build())
+    );
+
+    // Verify that the container is running and registered
+    verify(docker, timeout(30000)).waitContainer(containerId);
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(START)
+                                                       .setState(RUNNING)
+                                                       .setPorts(PORTS)
+                                                       .setContainerId(containerId)
+                                                       .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.YES)
                                                        .build())
     );
 
@@ -328,27 +347,32 @@ public class GracePeriodTest {
     // Stop the container
     verify(docker, timeout(30000)).killContainer(eq(containerId));
 
-    // Verify that Sleeper has been called and that datetime has increased by
-    // GRACE_PERIOD number of milliseconds
+    // Verify that Sleeper has been called
     verify(sleeper).sleep(GRACE_PERIOD_MILLIS);
 
     // Change docker container state to stopped when it's killed
     when(docker.inspectContainer(eq(containerId))).thenReturn(STOPPED_RESPONSE);
     killFuture.set(null);
 
-    // Verify that the stopping state is signalled
+    // Verify that service deregistration happened.
+    verify(registrar).unregister(any(ServiceRegistrationHandle.class));
+
+    // Verify that the stopped state is signalled, container is still running, but not registered
+    verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
                                                        .setJob(JOB)
                                                        .setGoal(STOP)
-                                                       .setState(STOPPING)
+                                                       .setState(RUNNING)
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
 
-    // Verify that the stopped state is signalled
+    // Verify that the stopped state is signalled, the container is stopped and not registered
+    verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
                                                        .setJob(JOB)
@@ -357,6 +381,7 @@ public class GracePeriodTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
   }

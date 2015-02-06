@@ -34,6 +34,8 @@ import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 
+import static com.spotify.helios.common.descriptors.TaskStatus.Registered.NO;
+import static com.spotify.helios.common.descriptors.TaskStatus.Registered.YES;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -67,7 +69,7 @@ public class JobHistoryTest extends SystemTestBase {
         int requiredEventCount = -1;
         for (int i = 0; i < size; i++) {
           if (events.getEvents().get(i).getStatus().getState() != State.PULLING_IMAGE) {
-            requiredEventCount = i + 4;
+            requiredEventCount = i + 5;
             break;
           }
         }
@@ -95,17 +97,27 @@ public class JobHistoryTest extends SystemTestBase {
     }
     final TaskStatusEvent event1 = eventsList.get(n);
     assertEquals(State.CREATING, event1.getStatus().getState());
+    assertEquals(NO, event1.getStatus().getRegistered());
     assertNull(event1.getStatus().getContainerId());
 
     final TaskStatusEvent event2 = eventsList.get(n + 1);
     assertEquals(State.STARTING, event2.getStatus().getState());
+    assertEquals(NO, event2.getStatus().getRegistered());
     assertNotNull(event2.getStatus().getContainerId());
 
     final TaskStatusEvent event3 = eventsList.get(n + 2);
     assertEquals(State.RUNNING, event3.getStatus().getState());
+    assertEquals(NO, event3.getStatus().getRegistered());
 
     final TaskStatusEvent event4 = eventsList.get(n + 3);
-    final State finalState = event4.getStatus().getState();
+    assertEquals(State.RUNNING, event4.getStatus().getState());
+    assertEquals(YES, event4.getStatus().getRegistered());
+
+    final TaskStatusEvent event5 = eventsList.get(n + 4);
+    final State finalState = event5.getStatus().getState();
     assertTrue(finalState == State.EXITED || finalState == State.STOPPED);
+    // Deregistration happens in the finally clause of TaskRunner.run0()
+    // But the TaskStatus isn't updated for this.
+    assertEquals(YES, event5.getStatus().getRegistered());
   }
 }

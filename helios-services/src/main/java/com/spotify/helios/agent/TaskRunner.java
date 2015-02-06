@@ -63,7 +63,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private final String existingContainerId;
   private final Listener listener;
   private final ServiceRegistrar registrar;
-  private final Boolean disableAutoRegistration;
   private Optional<ServiceRegistrationHandle> serviceRegistrationHandle;
   private Optional<String> containerId;
 
@@ -75,8 +74,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.listener = checkNotNull(builder.listener, "listener");
     this.existingContainerId = builder.existingContainerId;
     this.registrar = checkNotNull(builder.registrar, "registrar");
-    this.disableAutoRegistration = checkNotNull(builder.disableAutoRegistration,
-                                                "disableAutoRegistration");
     this.serviceRegistrationHandle = Optional.absent();
     this.containerId = Optional.absent();
   }
@@ -90,7 +87,17 @@ class TaskRunner extends InterruptingExecutionThreadService {
   }
 
   /**
-   * Unregister a set of service endpoints previously registered.
+   * Register a set of service endpoints.
+   *
+   * @return boolean true if service registration handle was present, false otherwise
+   */
+  public boolean register() throws InterruptedException {
+    serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
+    return serviceRegistrationHandle.isPresent();
+  }
+
+  /**
+   * Deregister a set of service endpoints previously registered.
    *
    * @return boolean true if service registration handle was present, false otherwise
    */
@@ -141,16 +148,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
     final String containerId = createAndStartContainer();
     this.containerId = Optional.of(containerId);
     listener.running();
-
-    // Register if not disable-auto-registration is not
-    // explicitly enabled in the Helios job configuration
-    if (!this.disableAutoRegistration) {
-      log.info("Registering with service discovery.");
-      serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
-    } else {
-      log.info("Not registering with service discovery because disable-auto-registration"
-               + "explicitly enabled.");
-    }
 
     //  Wait for container to exit
     final ContainerExit exit;
@@ -294,7 +291,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
     private String existingContainerId;
     private Listener listener;
     public ServiceRegistrar registrar = new NopServiceRegistrar();
-    public boolean disableAutoRegistration;
 
     public Builder delayMillis(final long delayMillis) {
       this.delayMillis = delayMillis;
@@ -323,11 +319,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     public Builder registrar(final ServiceRegistrar registrar) {
       this.registrar = registrar;
-      return this;
-    }
-
-    public Builder disableAutoRegistration(final boolean disableAutoRegistration) {
-      this.disableAutoRegistration = disableAutoRegistration;
       return this;
     }
 

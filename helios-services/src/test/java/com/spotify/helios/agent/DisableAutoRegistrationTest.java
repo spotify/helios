@@ -165,7 +165,7 @@ public class DisableAutoRegistrationTest {
   }
 
   @Test
-  public void verifyautoRegistrationTrueRegistersService() throws Exception {
+  public void verifyAutoRegistrationTrueRegistersService() throws Exception {
     // Verify supervisor starts, registers the service since disableAutoRegistration is set to false,
     // and stops docker container
     when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
@@ -255,6 +255,7 @@ public class DisableAutoRegistrationTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(null)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
 
@@ -269,6 +270,7 @@ public class DisableAutoRegistrationTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(null)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
     createFuture.set(createResponse);
@@ -279,7 +281,7 @@ public class DisableAutoRegistrationTest {
 
     assertEquals(JOB.getId().toShortString(), shortJobIdFromContainerName(containerName));
 
-    // Verify that the container is started
+    // Verify that the container is starting and not registered
     verify(docker, timeout(30000)).startContainer(eq(containerId), any(HostConfig.class));
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
@@ -289,11 +291,13 @@ public class DisableAutoRegistrationTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
     when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
     startFuture.set(null);
 
+    // Verify that the container is running and not registered
     verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
@@ -303,6 +307,22 @@ public class DisableAutoRegistrationTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
+                                                       .build())
+    );
+
+    // (dxia) Why do I need the 2 verify() below to prevent InterruptedException?
+    // Verify that the container is running and is now registered
+    verify(docker, timeout(30000)).waitContainer(containerId);
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(START)
+                                                       .setState(RUNNING)
+                                                       .setPorts(PORTS)
+                                                       .setContainerId(containerId)
+                                                       .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.YES)
                                                        .build())
     );
 
@@ -337,6 +357,7 @@ public class DisableAutoRegistrationTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.YES)
                                                        .build())
     );
   }
@@ -367,7 +388,6 @@ public class DisableAutoRegistrationTest {
 
     final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
         .registrar(registrar)
-        .disableAutoRegistration(true)
         .config(config)
         .dockerClient(docker)
         .listener(monitor)
@@ -382,6 +402,7 @@ public class DisableAutoRegistrationTest {
         .setMetrics(new NoopSupervisorMetrics())
         .setMonitor(monitor)
         .setSleeper(sleeper)
+        .setDisableAutoRegistration(true)
         .build();
 
     final ConcurrentMap<JobId, TaskStatus> statusMap = Maps.newConcurrentMap();
@@ -433,6 +454,7 @@ public class DisableAutoRegistrationTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(null)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
 
@@ -447,6 +469,7 @@ public class DisableAutoRegistrationTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(null)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
     createFuture.set(createResponse);
@@ -467,6 +490,7 @@ public class DisableAutoRegistrationTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
     when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
@@ -481,6 +505,7 @@ public class DisableAutoRegistrationTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
 
@@ -515,6 +540,7 @@ public class DisableAutoRegistrationTest {
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
                                                        .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
                                                        .build())
     );
   }
