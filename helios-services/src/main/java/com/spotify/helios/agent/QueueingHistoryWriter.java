@@ -325,7 +325,7 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
             return Optional.of(new URL(new String(
                 client.getData(Paths.historyListener(listener)), "UTF-8")));
           } catch (KeeperException | UnsupportedEncodingException | MalformedURLException e) {
-            log.error("Unable to fetch listener endpoint for {}", listener, e);
+            log.error("Unable to fetch endpoint for listener {}", listener, e);
             return Optional.empty();
           }
         }
@@ -337,7 +337,7 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
           }
 
           URL url = possibleUrl.get();
-          log.info("Pushing task status event to listener endpoint {}", url);
+          log.info("Pushing task status event to listener {}", url);
 
           try {
             final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
@@ -354,10 +354,10 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
             connection.getOutputStream().write(Json.asBytes(item));
 
             if (connection.getResponseCode() / 100 != 2) {
-              log.error("Got non-200 response code while communicating with listener endpoint {}", url);
+              log.error("Got non-200 response code while communicating with listener {}", url);
             }
           } catch (IOException e) {
-            log.error("Unable to communicate with listener endpoint {}", url, e);
+            log.error("Unable to communicate with listener {}", url, e);
           }
         }
       });
