@@ -958,12 +958,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("addListener");
 
     try {
-        final URL parsedUrl = new URL(listenerUrl);
-        client.ensurePath(Paths.historyListeners());
-        client.transaction(create(Paths.historyListener(parsedUrl.getHost())),
-                           set(Paths.historyListener(parsedUrl.getHost()), listenerUrl.getBytes()));
+        client.createAndSetData(
+            Paths.historyListener(new URL(listenerUrl).getHost()),
+            listenerUrl.getBytes());
     } catch (KeeperException | MalformedURLException e) {
-        log.error("{}", e);
         throw new HeliosRuntimeException("Adding new listener URL failed", e);
     }
   }
