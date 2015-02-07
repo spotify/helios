@@ -55,7 +55,7 @@ public class ServiceRegistration {
     public Builder endpoint(final String name,
                             final String protocol,
                             final int port) {
-      endpoints.add(new Endpoint(name, protocol, port, "", ""));
+      endpoints.add(new Endpoint(name, protocol, port, "", "", null));
       return this;
     }
 
@@ -64,7 +64,17 @@ public class ServiceRegistration {
                             final int port,
                             final String domain,
                             final String host) {
-      endpoints.add(new Endpoint(name, protocol, port, domain, host));
+      endpoints.add(new Endpoint(name, protocol, port, domain, host, null));
+      return this;
+    }
+
+    public Builder endpoint(final String name,
+                            final String protocol,
+                            final int port,
+                            final String domain,
+                            final String host,
+                            final List<String> tags) {
+      endpoints.add(new Endpoint(name, protocol, port, domain, host, tags));
       return this;
     }
 
@@ -84,14 +94,16 @@ public class ServiceRegistration {
     private final String domain;
     /** The hostname on which we will advertise this service in service discovery */
     private final String host;
+    private final List<String> tags;
 
     public Endpoint(final String name, final String protocol, final int port,
-                    final String domain, final String host) {
+                    final String domain, final String host, final List<String> tags) {
       this.name = name;
       this.protocol = protocol;
       this.port = port;
       this.domain = domain;
       this.host = host;
+      this.tags = tags;
     }
 
     public String getHost() {
@@ -114,6 +126,9 @@ public class ServiceRegistration {
       return port;
     }
 
+    public List<String> getTags() {
+      return tags;
+    }
 
     @Override
     public String toString() {
@@ -123,6 +138,7 @@ public class ServiceRegistration {
           .add("port", port)
           .add("domain", domain)
           .add("host", host)
+          .add("tags", tags)
           .toString();
     }
   }
