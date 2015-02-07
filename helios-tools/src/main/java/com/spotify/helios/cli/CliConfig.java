@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 
 public class CliConfig {
 
@@ -157,6 +158,11 @@ public class CliConfig {
 
     // TODO (dxia) Remove DEPRECATED_SITE_SCHEME after a period of time
     final String scheme = uri.getScheme();
+    if (isNullOrEmpty(scheme)) {
+      throw new RuntimeException("Your environment variable HELIOS_MASTER=" + master +
+                                 " is not a valid URI with a scheme.");
+    }
+
     switch (scheme) {
       case DOMAIN_SCHEME:
       case DEPRECATED_SITE_SCHEME:
@@ -166,8 +172,8 @@ public class CliConfig {
         builder.put(MASTER_ENDPOINTS_KEY, ImmutableList.of(master));
         break;
       default:
-        throw new RuntimeException("Unknown Scheme " + scheme
-                                   + " in HELIOS_MASTER env variable setting of [" + master + "]");
+        throw new RuntimeException("Your environment variable HELIOS_MASTER=" + master +
+                                   " does not have a valid scheme.");
     }
 
     return fromMap(builder.build());
