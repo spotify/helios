@@ -1,4 +1,4 @@
-Helios [![Circle CI](https://circleci.com/gh/spotify/helios.png?style=badge)](https://circleci.com/gh/spotify/helios)
+Helios [![Circle CI](https://circleci.com/gh/spotify/helios/tree/master.png?style=badge)](https://circleci.com/gh/spotify/helios/tree/master)
 ======
 
 Helios is a Docker orchestration platform for deploying and managing
