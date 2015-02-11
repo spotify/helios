@@ -84,7 +84,7 @@ public class TemporaryJob {
     this.job = checkNotNull(job, "job");
     this.hosts = ImmutableList.copyOf(checkNotNull(hosts, "hosts"));
     this.waitPorts = ImmutableSet.copyOf(checkNotNull(waitPorts, "waitPorts"));
-    this.jobDeployedMessageFormat = Optional.fromNullable(jobDeployedMessageFormat).or(""); 
+    this.jobDeployedMessageFormat = Optional.fromNullable(jobDeployedMessageFormat).or("");
   }
 
   public Job job() {
@@ -192,7 +192,7 @@ public class TemporaryJob {
                       job.getId(), job.toString(), deployResponse));
         }
       }
-      
+
       // Wait for jobs to have container ids
       if (!Strings.isNullOrEmpty(jobDeployedMessageFormat)) {
         for (final String host : hosts) {
@@ -245,6 +245,8 @@ public class TemporaryJob {
               log.debug("Task status not available on {}", host);
               return null;
             }
+            final TaskStatus.State state = taskStatus.getState();
+            log.info("Job state of {}: {}", job.getImage(), state);
             if (taskStatus.getContainerId() == null) {
               log.debug("Task Status has no containerId on {}", host);
               return null;
