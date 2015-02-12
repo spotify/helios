@@ -228,7 +228,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     return creatingUser;
   }
 
-  public String getToken() { return token; }
+  public String getToken() {
+    return token;
+  }
 
   public static Builder newBuilder() {
     return new Builder();

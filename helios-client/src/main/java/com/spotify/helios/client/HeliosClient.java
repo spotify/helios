@@ -68,6 +68,7 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -107,7 +108,9 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class HeliosClient implements AutoCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosClient.class);
-  private static final long TIMEOUT_MILLIS = SECONDS.toMillis(30);
+  private static final long RETRY_TIMEOUT_MILLIS = SECONDS.toMillis(60);
+  private static final long HTTP_TIMEOUT_MILLIS = SECONDS.toMillis(10);
+
 
   private final AtomicBoolean versionWarningLogged = new AtomicBoolean();
 
@@ -293,7 +296,7 @@ public class HeliosClient implements AutoCloseable {
                                     final Map<String, List<String>> headers)
       throws URISyntaxException, IOException, TimeoutException, InterruptedException,
              HeliosException {
-    final long deadline = currentTimeMillis() + TIMEOUT_MILLIS;
+    final long deadline = currentTimeMillis() + RETRY_TIMEOUT_MILLIS;
     final int offset = ThreadLocalRandom.current().nextInt();
     while (currentTimeMillis() < deadline) {
       final List<URI> endpoints = endpointSupplier.get();
@@ -316,11 +319,10 @@ public class HeliosClient implements AutoCloseable {
         try {
           log.debug("connecting to {}", realUri);
           return connect0(realUri, method, entity, headers);
-        } catch (ConnectException | UnknownHostException e) {
-          // ConnectException happens if we can't connect to port. UnknownHostException happens
-          // if we can't resolve hostname into IP address. UnknownHostException's getMessage
-          // method returns just the hostname which is a useless message, so log the exception
-          // name as well to make what the error was.
+        } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
+          // UnknownHostException happens if we can't resolve hostname into IP address.
+          // UnknownHostException's getMessage method returns just the hostname which is a useless
+          // message, so log the exception class name to provide more info.
           log.debug(e.getClass().getSimpleName() + " - " + e.getMessage());
           // Connecting failed, sleep a bit to avoid hammering and then try another endpoint
           Thread.sleep(200);
@@ -347,6 +349,8 @@ public class HeliosClient implements AutoCloseable {
     connection = (HttpURLConnection) uri.toURL().openConnection();
     connection.setRequestProperty("Accept-Encoding", "gzip");
     connection.setInstanceFollowRedirects(false);
+    connection.setConnectTimeout((int) HTTP_TIMEOUT_MILLIS);
+    connection.setReadTimeout((int) HTTP_TIMEOUT_MILLIS);
     for (Map.Entry<String, List<String>> header : headers.entrySet()) {
       for (final String value : header.getValue()) {
         connection.addRequestProperty(header.getKey(), value);
