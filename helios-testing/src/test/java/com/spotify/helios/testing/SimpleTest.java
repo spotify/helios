@@ -37,6 +37,7 @@ import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertArrayEquals;
@@ -65,6 +66,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
         .jobDeployedMessageFormat(
             "Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")
         .jobPrefix(Optional.of(testTag).get())
+        .deployTimeoutMillis(MINUTES.toMillis(3))
         .build();
 
     private TemporaryJob job1;

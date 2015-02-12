@@ -44,6 +44,7 @@ import java.util.Map;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.when;
@@ -59,6 +60,7 @@ public class DefaultDeployerTest {
   private static final ListenableFuture<HostStatus> UP_STATUS = Futures.immediateFuture(
       makeDummyStatusBuilder().setStatus(UP).build());
   private static final List<String> HOSTS = ImmutableList.of(HOSTA, HOSTB);
+  private static final long TIMEOUT = MINUTES.toMillis(5);
   
   /** Pick the first host in the list */
   private static final HostPickingStrategy PICK_FIRST = new HostPickingStrategy() {
@@ -72,7 +74,8 @@ public class DefaultDeployerTest {
   
   @Test
   public void testTryAgainOnHostDown() throws Exception {
-    final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "");
+    final DefaultDeployer sut =
+        new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "", TIMEOUT);
     
     // hosta is down, hostb is up. 
     when(client.hostStatus(HOSTA)).thenReturn(DOWN_STATUS);
@@ -83,7 +86,7 @@ public class DefaultDeployerTest {
 
   @Test
   public void testFailsOnAllDown() throws Exception {
-    final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "");
+    final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "", TIMEOUT);
     
     // hosta is down, hostb is down too. 
     when(client.hostStatus(HOSTA)).thenReturn(DOWN_STATUS);
