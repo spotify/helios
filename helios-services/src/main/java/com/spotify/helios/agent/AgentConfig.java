@@ -60,6 +60,7 @@ public class AgentConfig extends Configuration {
   private InetSocketAddress httpEndpoint;
   private boolean noHttp;
   private List<String> binds;
+  private List<String> kafkaBrokers;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -279,5 +280,13 @@ public class AgentConfig extends Configuration {
   public AgentConfig setBinds(List<String> binds) {
     this.binds = binds;
     return this;
+  }
+
+  public List<String> getKafkaBrokers() {
+    return kafkaBrokers;
+  }
+
+  public void setKafkaBrokers(List<String> kafkaBrokers) {
+    this.kafkaBrokers = kafkaBrokers;
   }
 }

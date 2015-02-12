@@ -21,16 +21,20 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+
 import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
@@ -38,24 +42,37 @@ import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
+import org.apache.kafka.clients.producer.RecordMetadata;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.clients.producer.KafkaProducer;
+
+import org.apache.kafka.common.serialization.StringSerializer;
+
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
+
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.TimeUnit;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -78,9 +95,13 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 public class QueueingHistoryWriter extends AbstractIdleService implements Runnable {
   private static final Logger log = LoggerFactory.getLogger(QueueingHistoryWriter.class);
 
+  @VisibleForTesting
   public static final int MAX_NUMBER_STATUS_EVENTS_TO_RETAIN = 30;
+
   private static final int MAX_QUEUE_SIZE = 30;
   private static final int MAX_TOTAL_SIZE = 600;
+
+  private static final String KAFKA_TOPIC = "HeliosEvents";
 
   private final ConcurrentMap<JobId, Deque<TaskStatusEvent>> items;
   private final ScheduledExecutorService zkWriterExecutor =
@@ -92,7 +113,10 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
   private final PersistentAtomicReference<ConcurrentMap<JobId, Deque<TaskStatusEvent>>>
       backingStore;
 
+  private final Optional<KafkaProducer<String, TaskStatusEvent>> kafkaProducer;
+
   public QueueingHistoryWriter(final String hostname, final ZooKeeperClient client,
+                               final KafkaClientProvider kafkaProvider,
                                final Path backingFile) throws IOException, InterruptedException {
     this.hostname = hostname;
     this.client = client;
@@ -104,6 +128,10 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
           }
         });
     this.items = backingStore.get();
+
+    // Get the Kafka Producer suitable for TaskStatus events.
+    this.kafkaProducer = kafkaProvider.getProducer(
+      new StringSerializer(), new TaskStatusEventSerializer());
 
     // Clean out any errant null values.  Normally shouldn't have any, but we did have a few
     // where it happened, and this will make sure we can get out of a bad state if we get into it.
@@ -130,6 +158,11 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
   protected void shutDown() throws Exception {
     zkWriterExecutor.shutdownNow();
     zkWriterExecutor.awaitTermination(1, TimeUnit.MINUTES);
+
+    if (kafkaProducer.isPresent()) {
+      // Otherwise it enters an infinite loop for some reason.
+      kafkaProducer.get().close();
+    }
   }
 
   private void add(TaskStatusEvent item) throws InterruptedException {
@@ -272,12 +305,13 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         return;
       }
 
+      final JobId jobId = item.getStatus().getJob().getId();
+      final String historyPath = Paths.historyJobHostEventsTimestamp(
+              jobId, hostname, item.getTimestamp());
+      log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
+              item.getTimestamp());
+
       try {
-        final JobId jobId = item.getStatus().getJob().getId();
-        final String historyPath = Paths.historyJobHostEventsTimestamp(
-            jobId, hostname, item.getTimestamp());
-        log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
-            item.getTimestamp());
         client.ensurePath(historyPath, true);
         client.createAndSetData(historyPath, item.getStatus().toJsonBytes());
 
@@ -298,6 +332,17 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         log.error("Error putting item into zookeeper, will retry", e);
         putBack(item);
         break;
+      }
+
+      try {
+        if (kafkaProducer.isPresent()) {
+          Future<RecordMetadata> future = kafkaProducer.get().send(
+            new ProducerRecord<String, TaskStatusEvent>(KAFKA_TOPIC, item));
+          RecordMetadata metadata = future.get(5, TimeUnit.SECONDS);
+          log.debug("Sent an event to Kafka, meta: {}", metadata);
+        }
+      } catch (ExecutionException | InterruptedException | TimeoutException e) {
+        log.error("Unable to send an event to Kafka", e);
       }
     }
   }
