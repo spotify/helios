@@ -12,6 +12,8 @@ test:
         parallel: true
 
 machine:
+  java:
+    version: oraclejdk8
   pre:
     - helios/circle.sh pre_machine
   post:
