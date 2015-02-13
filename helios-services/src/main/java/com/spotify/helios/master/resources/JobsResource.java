@@ -135,12 +135,12 @@ public class JobsResource {
   @ExceptionMetered
   public CreateJobResponse post(@Valid final Job job,
                                 @RequestUser final String username) {
-    final Collection<String> errors = JOB_VALIDATOR.validate(job);
-    final Job actualJob = job.toBuilder()
+    final Job.Builder clone = job.toBuilder()
         .setCreatingUser(username)
-        // if job had an id coming in, preserve it
-        .setHash(job.getId().getHash())
-        .build();
+        // If the job had a hash coming in, preserve it
+        .setHash(job.getId().getHash());
+    final Job actualJob = clone.build();
+    final Collection<String> errors = JOB_VALIDATOR.validate(actualJob);
     final String jobIdString = actualJob.getId().toString();
     if (!errors.isEmpty()) {
       throw badRequest(new CreateJobResponse(INVALID_JOB_DEFINITION, ImmutableList.copyOf(errors),
