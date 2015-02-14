@@ -141,6 +141,7 @@ public class Supervisor {
 
   /**
    * Check if the current command is start.
+   * @return True if current command is start, otherwise false.
    */
   public boolean isStarting() {
     return currentCommand instanceof Start;
@@ -148,6 +149,7 @@ public class Supervisor {
 
   /**
    * Check if the current command is stop.
+   * @return True if current command is stop, otherwise false.
    */
   public boolean isStopping() {
     return currentCommand instanceof Stop;
@@ -155,6 +157,7 @@ public class Supervisor {
 
   /**
    * Check whether the last start/stop command is done.
+   * @return True if last start/stop command is done, otherwise false.
    */
   public boolean isDone() {
     return currentCommand == performedCommand;
@@ -162,6 +165,7 @@ public class Supervisor {
 
   /**
    * Get the current container id
+   * @return The container id.
    */
   public String containerId() {
     return containerId;
@@ -284,6 +288,8 @@ public class Supervisor {
      * Perform the command. Although this is declared to throw InterruptedException, this will only
      * happen when the supervisor is being shut down. During normal operations, the operation will
      * be allowed to run until it's done.
+     * @param done Flag indicating if operation is done.
+     * @throws InterruptedException If thread is interrupted.
      */
     void perform(final boolean done) throws InterruptedException;
   }

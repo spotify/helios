@@ -85,6 +85,10 @@ public class PersistentAtomicReference<T> {
 
   /**
    * Set the reference to {@code newValue}.
+   *
+   * @param newValue The value to set.
+   * @throws IOException If an error occurs working with the file on disk.
+   * @throws InterruptedException If the thread is interrupted.
    */
   public void set(T newValue) throws IOException, InterruptedException {
     try {
@@ -109,6 +113,9 @@ public class PersistentAtomicReference<T> {
   /**
    * Set the reference to {@code newValue}, and wraps {@link IOException}s in
    * {@link RuntimeException}s.
+   *
+   * @param newValue The value to set.
+   * @throws InterruptedException If the thread is interrupted.
    */
   public void setUnchecked(T newValue) throws InterruptedException {
     try {
@@ -120,6 +127,8 @@ public class PersistentAtomicReference<T> {
 
   /**
    * Returns the value stored.
+   *
+   * @return The value.
    */
   public T get() {
     return value;

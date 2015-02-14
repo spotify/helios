@@ -44,6 +44,7 @@ public interface ServiceRegistrarFactory {
    * registry in turn is resolved using some service discovery mechanism, e.g. DNS SRV queries.
    *
    * @param domain The domain that the registry should be managing.
+   * @return A registrar.
    */
   ServiceRegistrar createForDomain(String domain);
 }

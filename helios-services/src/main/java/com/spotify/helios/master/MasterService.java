@@ -103,6 +103,9 @@ public class MasterService extends AbstractIdleService {
    * Create a new service instance. Initializes the control interface and the worker.
    *
    * @param config The service configuration.
+   * @param environment The DropWizard environment.
+   * @param curatorClientFactory The zookeeper curator factory.
+   * @throws ConfigurationException If there is a problem with the DropWizard configuration.
    */
   public MasterService(final MasterConfig config, final Environment environment,
                        final CuratorClientFactory curatorClientFactory)

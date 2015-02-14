@@ -84,6 +84,9 @@ public class JobsResource {
   /**
    * Returns a {@link Map} of job id to job definition for all jobs known.  If the query
    * parameter {@code q} is specified it will only return jobs whose job id contains the string.
+   *
+   * @param q The query string.
+   * @return A map of Job IDs to Jobs.
    */
   @GET
   @Produces(APPLICATION_JSON)
@@ -113,6 +116,9 @@ public class JobsResource {
 
   /**
    * Returns the {@link Job} with the given id.
+   *
+   * @param id The job ID.
+   * @return The job.
    */
   @Path("{id}")
   @GET
@@ -128,6 +134,10 @@ public class JobsResource {
 
   /**
    * Create a job given the definition in {@code job}.
+   *
+   * @param job The job to create.
+   * @param username The user creating the job.
+   * @return The response.
    */
   @POST
   @Produces(APPLICATION_JSON)
@@ -159,6 +169,10 @@ public class JobsResource {
 
   /**
    * Deletes the job specified by the given id.
+   *
+   * @param id The id of the job to delete.
+   * @param token The optional authorization token.
+   * @return The response.
    */
   @Path("{id}")
   @DELETE
@@ -185,6 +199,9 @@ public class JobsResource {
   /**
    * Returns the job status for the given job id.  The job status includes things like where it's
    * deployed, and the status of the jobs where it's deployed, etc.
+   *
+   * @param id The job ID.
+   * @return The job status.
    */
   @Path("{id}/status")
   @GET

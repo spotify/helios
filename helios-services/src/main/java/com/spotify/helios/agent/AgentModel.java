@@ -50,12 +50,17 @@ public interface AgentModel {
   /**
    * Register task status.
    *
-   * @param status The container state.
+   * @param jobId The job ID.
+   * @param status The job state.
+   * @throws InterruptedException If the thread is interrupted.
    */
   void setTaskStatus(final JobId jobId, TaskStatus status) throws InterruptedException;
 
   /**
    * Get registered task status.
+   *
+   * @param jobId The job ID.
+   * @return The job state.
    */
   TaskStatus getTaskStatus(JobId jobId);
 
@@ -63,6 +68,7 @@ public interface AgentModel {
    * Remove a task status.
    *
    * @param jobId The job id.
+   * @throws InterruptedException If the thread is interrupted.
    */
   void removeTaskStatus(JobId jobId) throws InterruptedException;
 
@@ -77,6 +83,7 @@ public interface AgentModel {
   /**
    * Remove a listener.
    *
+   * @param listener The listener to remove.
    * @see #addListener(Listener)
    */
   void removeListener(Listener listener);

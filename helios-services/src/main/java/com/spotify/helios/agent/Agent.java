@@ -99,6 +99,7 @@ public class Agent extends AbstractIdleService {
    * @param reactorFactory    The factory to use for creating reactors.
    * @param executions        A persistent map of executions.
    * @param portAllocator     Allocator for job ports.
+   * @param reaper            The reaper.
    */
   public Agent(final AgentModel model, final SupervisorFactory supervisorFactory,
                final ReactorFactory reactorFactory,

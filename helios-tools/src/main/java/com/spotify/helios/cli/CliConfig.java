@@ -108,6 +108,7 @@ public class CliConfig {
    *
    * If the file is not found, a CliConfig with pre-defined values will be returned.
    *
+   * @return                    The configuration
    * @throws IOException        If the file exists but could not be read
    * @throws URISyntaxException If a HELIOS_MASTER env var is present and doesn't parse as a URI
    */
@@ -124,6 +125,7 @@ public class CliConfig {
    * If the file is not found, a CliConfig with pre-defined values will be returned.
    *
    * @param defaultsFile        The file to parse from
+   * @return                    The configuration
    * @throws IOException        If the file exists but could not be read
    * @throws URISyntaxException If a HELIOS_MASTER env var is present and doesn't parse as a URI
    */
@@ -180,9 +182,17 @@ public class CliConfig {
   }
 
   /**
-   * Returns a CliConfig instance with values parsed from the specified config node.
    *
+   *
+   *
+   */
+
+  /**
+   * Returns a CliConfig instance with values parsed from the specified config node.
    * Any value missing in the config tree will get a pre-defined default value.
+   *
+   * @param config A map of configuration parameters
+   * @return The configuration
    */
   public static CliConfig fromMap(Map<String, Object> config) {
     checkNotNull(config);

@@ -36,9 +36,9 @@ import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.Resources;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
-import com.spotify.helios.common.descriptors.Resources;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 
 import org.slf4j.Logger;
@@ -87,6 +87,7 @@ public class TaskConfig {
 
   /**
    * Generate a random container name.
+   * @return The random container name.
    */
   public String containerName() {
     final String shortId = job.getId().toShortString();
@@ -97,6 +98,8 @@ public class TaskConfig {
 
   /**
    * Create docker container configuration for a job.
+   * @param imageInfo The ImageInfo object.
+   * @return The ContainerConfig object.
    */
   public ContainerConfig containerConfig(final ImageInfo imageInfo) {
     final ContainerConfig.Builder builder = ContainerConfig.builder();
@@ -124,6 +127,7 @@ public class TaskConfig {
 
   /**
    * Get final port mappings using allocated ports.
+   * @return The port mapping.
    */
   public Map<String, PortMapping> ports() {
     final ImmutableMap.Builder<String, PortMapping> builder = ImmutableMap.builder();
@@ -138,6 +142,7 @@ public class TaskConfig {
 
   /**
    * Get environment variables for the container.
+   * @return The environment variables.
    */
   public Map<String, String> containerEnv() {
     final Map<String, String> env = Maps.newHashMap(envVars);
@@ -188,6 +193,7 @@ public class TaskConfig {
   /**
    * Given the registration domain in the job, and the default registration domain for the agent,
    * figure out what domain we should actually register the job in.
+   * @return The full registration domain.
    */
   private String fullyQualifiedRegistrationDomain() {
     if (job.getRegistrationDomain().endsWith(".")) {
@@ -201,6 +207,7 @@ public class TaskConfig {
 
   /**
    * Create container port exposure configuration for a job.
+   * @return The exposed ports.
    */
   private Set<String> containerExposedPorts() {
     final Set<String> ports = Sets.newHashSet();
@@ -213,6 +220,7 @@ public class TaskConfig {
 
   /**
    * Compute docker container environment variables.
+   * @return The container environment variables.
    */
   private List<String> containerEnvStrings() {
     final Map<String, String> env = containerEnv();
@@ -225,6 +233,7 @@ public class TaskConfig {
 
   /**
    * Create a port binding configuration for the job.
+   * @return The port bindings.
    */
   private Map<String, List<PortBinding>> portBindings() {
     final Map<String, List<PortBinding>> bindings = Maps.newHashMap();
@@ -245,6 +254,7 @@ public class TaskConfig {
 
   /**
    * Create a container host configuration for the job.
+   * @return The host configuration.
    */
   public HostConfig hostConfig() {
     final HostConfig.Builder builder = HostConfig.builder()
@@ -261,6 +271,7 @@ public class TaskConfig {
 
   /**
    * Get container volumes.
+   * @return A set of container volumes.
    */
   private Set<String> volumes() {
     final ImmutableSet.Builder<String> volumes = ImmutableSet.builder();
@@ -276,6 +287,7 @@ public class TaskConfig {
 
   /**
    * Get container bind mount volumes.
+   * @return A list of container bind mount volumes.
    */
   private List<String> binds() {
     final ImmutableList.Builder<String> binds = ImmutableList.builder();
@@ -292,6 +304,9 @@ public class TaskConfig {
 
   /**
    * Create a docker port exposure/mapping entry.
+   * @param port The port.
+   * @param protocol The protocol.
+   * @return A string representing the port and protocol.
    */
   private String containerPort(final int port, final String protocol) {
     return port + "/" + protocol;
@@ -319,7 +334,7 @@ public class TaskConfig {
     private Job job;
     private Map<String, Integer> ports = Collections.emptyMap();
     private Map<String, String> envVars = Collections.emptyMap();
-    private List<ContainerDecorator> containerDecorators = Collections.EMPTY_LIST;
+    private List<ContainerDecorator> containerDecorators = Lists.newArrayList();
     private String namespace;
     private String defaultRegistrationDomain = "";
     private List<String> dns = Collections.emptyList();

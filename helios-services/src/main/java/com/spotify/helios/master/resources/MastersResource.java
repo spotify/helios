@@ -44,6 +44,7 @@ public class MastersResource {
 
   /**
    * Returns a list of names of running Helios masters.
+   * @return The list of names.
    */
   @GET
   @Produces(APPLICATION_JSON)

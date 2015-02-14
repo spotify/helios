@@ -86,6 +86,7 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
 
   /**
    * Get the current task throttle as derived from task runner events.
+   * @return The throttle state.
    */
   public ThrottleState throttle() {
     return throttle;

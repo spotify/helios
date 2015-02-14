@@ -129,6 +129,8 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param registrationDomain If set, override the default domain in which discovery service
    *    registration occurs.  What is allowed here will vary based upon the discovery service
    *    plugin used.
+   * @param creatingUser The user creating the job.
+   * @param token The token needed to manipulate this job.
    */
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
