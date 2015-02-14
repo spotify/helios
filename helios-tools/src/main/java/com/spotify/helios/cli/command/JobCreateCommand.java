@@ -76,6 +76,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument argsArg;
   private final Argument portArg;
   private final Argument registrationArg;
+  private final Argument disableAutoRegistrationArg;
   private final Argument gracePeriodArg;
   private final Argument volumeArg;
   private final Argument expiresArg;
@@ -137,6 +138,12 @@ public class JobCreateCommand extends ControlCommand {
               "default is tcp. If there is only one port mapping this will be used by " +
               "default and it will be enough to specify only the service name, e.g. " +
               "-r wordpress.");
+
+    disableAutoRegistrationArg = parser.addArgument("--disable-auto-registration")
+        .action(storeTrue())
+        .setDefault((Object) null)
+        .help("Disable automatic registration, i.e. Helios will not automatically register the " +
+              "service when the container starts.");
 
     gracePeriodArg = parser.addArgument("--grace-period")
         .type(Integer.class)
@@ -339,6 +346,13 @@ public class JobCreateCommand extends ControlCommand {
     registration.putAll(builder.getRegistration());
     registration.putAll(explicitRegistration);
     builder.setRegistration(registration);
+
+    // Get wether to disable auto registration
+    final Boolean disableAutoRegistration =
+        options.getBoolean(disableAutoRegistrationArg.getDest());
+    if (disableAutoRegistration != null) {
+      builder.setDisableAutoRegistration(disableAutoRegistration);
+    }
 
     // Get grace period interval
     Integer gracePeriod = options.getInt(gracePeriodArg.getDest());

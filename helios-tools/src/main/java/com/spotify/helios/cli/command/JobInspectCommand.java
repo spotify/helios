@@ -108,6 +108,7 @@ public class JobInspectCommand extends WildcardJobCommand {
       printMap(out, "Env:   ", QUOTE, job.getEnv());
       printMap(out, "Ports: ", FORMAT_PORTMAPPING, job.getPorts());
       printMap(out, "Reg: ", FORMAT_SERVICE_PORTS, job.getRegistration());
+      out.printf("Disable auto service registration: %s%n", job.getDisableAutoRegistration());
       out.printf("Grace period (seconds): %s%n", job.getGracePeriod());
       printVolumes(out, job.getVolumes());
     }
