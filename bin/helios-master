@@ -18,7 +18,7 @@ fi
 args=()
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-if [[ -e "$dir/../../helios" ]]; then
+if [[ -e "$dir/../helios-services" ]]; then
     jar="$(ls -t $dir/../helios-services/target/helios*-shaded.jar | grep -v sources | grep -v javadoc | head -n 1)"
     CLASSPATH="$(cd $(dirname $jar) && pwd -P)/$(basename $jar)"
     echo "running in helios project, using $CLASSPATH" 1>&2

@@ -25,13 +25,6 @@
       <artifactId>helios-client</artifactId>
       <version>${project.version}</version>
     </dependency>
-
-    <dependency>
-      <groupId>junit</groupId>
-      <artifactId>junit</artifactId>
-      <version>4.11</version>
-      <scope>test</scope>
-    </dependency>
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>helios-testing</artifactId>
@@ -70,7 +63,13 @@
       </plugin>
       <plugin>
         <artifactId>maven-failsafe-plugin</artifactId>
-	<version>2.16</version>
+        <version>2.18.1</version>
+        <configuration>
+          <systemPropertyVariables>
+            <masterImage>${project.parent.basedir}/helios-services/target/test-classes/master-image.json</masterImage>
+            <agentImage>${project.parent.basedir}/helios-services/target/test-classes/agent-image.json</agentImage>
+          </systemPropertyVariables>
+        </configuration>
         <executions>
           <execution>
             <goals>
