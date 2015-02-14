@@ -51,6 +51,7 @@ public class TaskStatusTest {
       .setState(State.RUNNING)
       .setEnv(ENV)
       .setThrottled(ThrottleState.NO)
+      .setRegistered(TaskStatus.Registered.NO)
       .build();
 
   @Test

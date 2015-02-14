@@ -47,11 +47,9 @@ import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.serviceregistration.NopServiceRegistrationHandle;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
-import com.spotify.helios.serviceregistration.ServiceRegistrationHandle;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
 
 import org.junit.After;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.ArgumentCaptor;
@@ -70,7 +68,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
@@ -86,12 +83,13 @@ import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class GracePeriodTest {
+public class DisableAutoRegistrationTest {
 
   final ExecutorService executor = Executors.newCachedThreadPool();
   static final TemporaryPorts TEMPORARY_PORTS = TemporaryPorts.create();
@@ -107,12 +105,9 @@ public class GracePeriodTest {
       "bar", PortMapping.of(5000, EXTERNAL_PORT)
   );
   static final Map<ServiceEndpoint, ServicePorts> REGISTRATION = ImmutableMap.of(
-      ServiceEndpoint.of("foo-service", "tcp"), ServicePorts.of("foo"),
+      ServiceEndpoint.of("foo-service", "hm"), ServicePorts.of("foo"),
       ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
   static final String VERSION = "4711";
-  static final Integer GRACE_PERIOD = 60;
-  static final long GRACE_PERIOD_MILLIS =
-      TimeUnit.MILLISECONDS.convert(GRACE_PERIOD, TimeUnit.SECONDS);
   static final Job JOB = Job.newBuilder()
       .setName(NAME)
       .setCommand(COMMAND)
@@ -120,7 +115,6 @@ public class GracePeriodTest {
       .setPorts(PORTS)
       .setRegistration(REGISTRATION)
       .setVersion(VERSION)
-      .setGracePeriod(GRACE_PERIOD)
       .build();
   static final Map<String, String> ENV = ImmutableMap.of("foo", "17", "bar", "4711");
   static final Set<String> EXPECTED_CONTAINER_ENV = ImmutableSet.of("foo=17", "bar=4711");
@@ -162,8 +156,18 @@ public class GracePeriodTest {
 
   Supervisor sut;
 
-  @Before
-  public void setup() throws Exception {
+  @After
+  public void teardown() throws Exception {
+    if (sut != null) {
+      sut.close();
+      sut.join();
+    }
+  }
+
+  @Test
+  public void verifyAutoRegistrationTrueRegistersService() throws Exception {
+    // Verify supervisor starts, registers the service since disableAutoRegistration is set to false,
+    // and stops docker container
     when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
     when(registrar.register(any(ServiceRegistration.class)))
         .thenReturn(new NopServiceRegistrationHandle());
@@ -220,18 +224,7 @@ public class GracePeriodTest {
         return statusMap.get(jobId);
       }
     });
-  }
 
-  @After
-  public void teardown() throws Exception {
-    if (sut != null) {
-      sut.close();
-      sut.join();
-    }
-  }
-
-  @Test
-  public void verifySupervisorStartsAndStopsDockerContainer() throws Exception {
     final String containerId = "deadbeef";
 
     final ContainerCreation createResponse = new ContainerCreation(containerId);
@@ -318,7 +311,8 @@ public class GracePeriodTest {
                                                        .build())
     );
 
-    // Verify that the container is running and registered
+    // (dxia) Why do I need the 2 verify() below to prevent InterruptedException?
+    // Verify that the container is running and is now registered
     verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
@@ -331,6 +325,9 @@ public class GracePeriodTest {
                                                        .setRegistered(TaskStatus.Registered.YES)
                                                        .build())
     );
+
+    // Verify that service registration happened.
+    verify(registrar).register(any(ServiceRegistration.class));
 
     // Stop the job
     final SettableFuture<Void> killFuture = SettableFuture.create();
@@ -347,22 +344,163 @@ public class GracePeriodTest {
     // Stop the container
     verify(docker, timeout(30000)).killContainer(eq(containerId));
 
-    // Verify that Sleeper has been called
-    verify(sleeper).sleep(GRACE_PERIOD_MILLIS);
-
     // Change docker container state to stopped when it's killed
     when(docker.inspectContainer(eq(containerId))).thenReturn(STOPPED_RESPONSE);
     killFuture.set(null);
 
-    // Verify that service deregistration happened.
-    verify(registrar).unregister(any(ServiceRegistrationHandle.class));
-
-    // Verify that the stopped state is signalled, container is still running, but not registered
-    verify(docker, timeout(30000)).waitContainer(containerId);
+    // Verify that the stopped state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
                                                        .setJob(JOB)
                                                        .setGoal(STOP)
+                                                       .setState(STOPPED)
+                                                       .setPorts(PORTS)
+                                                       .setContainerId(containerId)
+                                                       .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.YES)
+                                                       .build())
+    );
+  }
+
+  @Test
+  public void verifyDisableautoRegistrationFalseDoesNotRegistersService() throws Exception {
+    // Verify supervisor starts, doesn't register the service since disableAutoRegistration is set to true,
+    // and stops docker container
+    when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
+    when(registrar.register(any(ServiceRegistration.class)))
+        .thenReturn(new NopServiceRegistrationHandle());
+
+    final TaskConfig config = TaskConfig.builder()
+        .namespace(NAMESPACE)
+        .host("AGENT_NAME")
+        .job(JOB)
+        .envVars(ENV)
+        .defaultRegistrationDomain("domain")
+        .build();
+
+    final TaskStatus.Builder taskStatus = TaskStatus.newBuilder()
+        .setJob(JOB)
+        .setEnv(ENV)
+        .setPorts(PORTS);
+
+    final StatusUpdater statusUpdater = new DefaultStatusUpdater(model, taskStatus);
+    final TaskMonitor monitor = new TaskMonitor(JOB.getId(), FlapController.create(), statusUpdater);
+
+    final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
+        .registrar(registrar)
+        .config(config)
+        .dockerClient(docker)
+        .listener(monitor)
+        .build();
+
+    sut = Supervisor.newBuilder()
+        .setJob(JOB)
+        .setStatusUpdater(statusUpdater)
+        .setDockerClient(docker)
+        .setRestartPolicy(retryPolicy)
+        .setRunnerFactory(runnerFactory)
+        .setMetrics(new NoopSupervisorMetrics())
+        .setMonitor(monitor)
+        .setSleeper(sleeper)
+        .setDisableAutoRegistration(true)
+        .build();
+
+    final ConcurrentMap<JobId, TaskStatus> statusMap = Maps.newConcurrentMap();
+    doAnswer(new Answer<Object>() {
+      @Override
+      public Object answer(final InvocationOnMock invocationOnMock) {
+        final Object[] arguments = invocationOnMock.getArguments();
+        final JobId jobId = (JobId) arguments[0];
+        final TaskStatus status = (TaskStatus) arguments[1];
+        statusMap.put(jobId, status);
+        return null;
+      }
+    }).when(model).setTaskStatus(eq(JOB.getId()), taskStatusCaptor.capture());
+    when(model.getTaskStatus(eq(JOB.getId()))).thenAnswer(new Answer<Object>() {
+      @Override
+      public Object answer(final InvocationOnMock invocationOnMock) throws Throwable {
+        final JobId jobId = (JobId) invocationOnMock.getArguments()[0];
+        return statusMap.get(jobId);
+      }
+    });
+
+    final String containerId = "deadbeef";
+
+    final ContainerCreation createResponse = new ContainerCreation(containerId);
+
+    final SettableFuture<ContainerCreation> createFuture = SettableFuture.create();
+    when(docker.createContainer(any(ContainerConfig.class),
+                                any(String.class))).thenAnswer(futureAnswer(createFuture));
+
+    final SettableFuture<Void> startFuture = SettableFuture.create();
+    doAnswer(futureAnswer(startFuture))
+        .when(docker).startContainer(eq(containerId), any(HostConfig.class));
+
+    final ImageInfo imageInfo = new ImageInfo();
+    when(docker.inspectImage(IMAGE)).thenReturn(imageInfo);
+
+    final SettableFuture<ContainerExit> waitFuture = SettableFuture.create();
+    when(docker.waitContainer(containerId)).thenAnswer(futureAnswer(waitFuture));
+
+    // Start the job
+    sut.setGoal(START);
+
+    // Verify that the pulling state is signalled
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(START)
+                                                       .setState(PULLING_IMAGE)
+                                                       .setPorts(PORTS)
+                                                       .setContainerId(null)
+                                                       .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
+                                                       .build())
+    );
+
+    // Verify that the container is created
+    verify(docker, timeout(30000)).createContainer(containerConfigCaptor.capture(),
+                                                   containerNameCaptor.capture());
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(START)
+                                                       .setState(CREATING)
+                                                       .setPorts(PORTS)
+                                                       .setContainerId(null)
+                                                       .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
+                                                       .build())
+    );
+    createFuture.set(createResponse);
+    final ContainerConfig containerConfig = containerConfigCaptor.getValue();
+    assertEquals(IMAGE, containerConfig.image());
+    assertEquals(EXPECTED_CONTAINER_ENV, ImmutableSet.copyOf(containerConfig.env()));
+    final String containerName = containerNameCaptor.getValue();
+
+    assertEquals(JOB.getId().toShortString(), shortJobIdFromContainerName(containerName));
+
+    // Verify that the container is started
+    verify(docker, timeout(30000)).startContainer(eq(containerId), any(HostConfig.class));
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(START)
+                                                       .setState(STARTING)
+                                                       .setPorts(PORTS)
+                                                       .setContainerId(containerId)
+                                                       .setEnv(ENV)
+                                                       .setRegistered(TaskStatus.Registered.NO)
+                                                       .build())
+    );
+    when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
+    startFuture.set(null);
+
+    verify(docker, timeout(30000)).waitContainer(containerId);
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(START)
                                                        .setState(RUNNING)
                                                        .setPorts(PORTS)
                                                        .setContainerId(containerId)
@@ -371,8 +509,29 @@ public class GracePeriodTest {
                                                        .build())
     );
 
-    // Verify that the stopped state is signalled, the container is stopped and not registered
-    verify(docker, timeout(30000)).waitContainer(containerId);
+    // Verify that service registration never happened.
+    verify(registrar, never()).register(any(ServiceRegistration.class));
+
+    // Stop the job
+    final SettableFuture<Void> killFuture = SettableFuture.create();
+    doAnswer(futureAnswer(killFuture)).when(docker).killContainer(eq(containerId));
+    executor.submit(new Callable<Void>() {
+      @Override
+      public Void call() throws Exception {
+        // TODO (dano): Make Supervisor.stop() asynchronous
+        sut.setGoal(STOP);
+        return null;
+      }
+    });
+
+    // Stop the container
+    verify(docker, timeout(30000)).killContainer(eq(containerId));
+
+    // Change docker container state to stopped when it's killed
+    when(docker.inspectContainer(eq(containerId))).thenReturn(STOPPED_RESPONSE);
+    killFuture.set(null);
+
+    // Verify that the stopped state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
                                                        .setJob(JOB)

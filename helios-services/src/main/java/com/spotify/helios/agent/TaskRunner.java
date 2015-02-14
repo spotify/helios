@@ -87,7 +87,17 @@ class TaskRunner extends InterruptingExecutionThreadService {
   }
 
   /**
-   * Unregister a set of service endpoints previously registered.
+   * Register a set of service endpoints.
+   *
+   * @return boolean true if service registration handle was present, false otherwise
+   */
+  public boolean register() throws InterruptedException {
+    serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
+    return serviceRegistrationHandle.isPresent();
+  }
+
+  /**
+   * Deregister a set of service endpoints previously registered.
    *
    * @return boolean true if service registration handle was present, false otherwise
    */
@@ -139,8 +149,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.containerId = Optional.of(containerId);
     listener.running();
 
-    // Register and wait for container to exit
-    serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
+    //  Wait for container to exit
     final ContainerExit exit;
     try {
       exit = docker.waitContainer(containerId);

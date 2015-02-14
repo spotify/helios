@@ -229,12 +229,14 @@ public class AgentTest {
         .setJob(FOO_JOB)
         .setContainerId(fooContainerId)
         .setState(RUNNING)
+        .setRegistered(TaskStatus.Registered.NO)
         .build();
     final TaskStatus barStatus = TaskStatus.newBuilder()
         .setGoal(START)
         .setJob(BAR_JOB)
         .setContainerId(barContainerId)
         .setState(RUNNING)
+        .setRegistered(TaskStatus.Registered.NO)
         .build();
     jobStatuses.put(FOO_JOB.getId(), fooStatus);
     jobStatuses.put(BAR_JOB.getId(), barStatus);

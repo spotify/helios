@@ -79,6 +79,7 @@ public class QueueingHistoryWriterTest {
       .setJob(JOB)
       .setGoal(START)
       .setContainerId("containerId")
+      .setRegistered(TaskStatus.Registered.YES)
       .build();
 
   private ZooKeeperTestManager zk;

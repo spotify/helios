@@ -29,6 +29,7 @@ import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.servicescommon.DefaultReactor;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.statistics.MetricsContext;
@@ -43,7 +44,6 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -68,6 +68,7 @@ public class Supervisor {
   private final StatusUpdater statusUpdater;
   private final TaskMonitor monitor;
   private final Sleeper sleeper;
+  private final Boolean disableAutoRegistration;
 
   private volatile Goal goal;
   private volatile String containerId;
@@ -91,6 +92,7 @@ public class Supervisor {
     this.reactor.startAsync();
     statusUpdater.setContainerId(containerId);
     this.sleeper = builder.sleeper;
+    this.disableAutoRegistration = builder.disableAutoRegistration;
   }
 
   public void setGoal(final Goal goal) {
@@ -213,6 +215,7 @@ public class Supervisor {
     private StatusUpdater statusUpdater;
     private TaskMonitor monitor;
     private Sleeper sleeper = new ThreadSleeper();
+    private Boolean disableAutoRegistration = false;
 
 
     public Builder setJob(final Job job) {
@@ -264,6 +267,12 @@ public class Supervisor {
       this.sleeper = sleeper;
       return this;
     }
+
+    public Builder setDisableAutoRegistration(final Boolean disableAutoRegistration) {
+      this.disableAutoRegistration = disableAutoRegistration;
+      return this;
+    }
+
 
     public Supervisor build() {
       return new Supervisor(this);
@@ -328,9 +337,18 @@ public class Supervisor {
       startAfter(restartPolicy.delay(monitor.throttle()));
     }
 
-    private void startAfter(final long delay) {
+    private void startAfter(final long delay) throws InterruptedException {
       log.debug("starting job (delay={}): {}", delay, job);
-      runner = runnerFactory.create(delay, containerId, new TaskListener());
+      runner = runnerFactory.create(delay, containerId, new TaskListener() {
+        @Override
+        public void running() {
+          try {
+            register(disableAutoRegistration, runner);
+          } catch (InterruptedException e) {
+            e.printStackTrace();
+          }
+        }
+      });
       runner.startAsync();
       runner.resultFuture().addListener(reactor.signalRunnable(), sameThreadExecutor());
     }
@@ -352,10 +370,10 @@ public class Supervisor {
       if (gracePeriod != null && gracePeriod > 0) {
         log.info("Unregistering from service discovery for {} seconds before stopping",
                  gracePeriod);
-        statusUpdater.setState(STOPPING);
-        statusUpdater.update();
 
         if (runner.unregister()) {
+          statusUpdater.setRegistered(TaskStatus.Registered.NO);
+          statusUpdater.update();
           log.info("Unregistered. Now sleeping for {} seconds.", gracePeriod);
           sleeper.sleep(TimeUnit.MILLISECONDS.convert(gracePeriod, TimeUnit.SECONDS));
         }
@@ -460,6 +478,22 @@ public class Supervisor {
     @Override
     public void created(final String createdContainerId) {
       containerId = createdContainerId;
+    }
+  }
+
+  private void register(final Boolean disableAutoRegistration, final TaskRunner runner)
+      throws InterruptedException {
+    // Register if not disable-auto-registration is not
+    // explicitly enabled in the Helios job configuration
+    if (!disableAutoRegistration) {
+      if (runner.register()) {
+        statusUpdater.setRegistered(TaskStatus.Registered.YES);
+        statusUpdater.update();
+        log.info("Registered with service registration plugin.");
+      }
+    } else {
+      log.info("Not registering with service registration plugin because " +
+               "disable-auto-registration explicitly enabled.");
     }
   }
 }

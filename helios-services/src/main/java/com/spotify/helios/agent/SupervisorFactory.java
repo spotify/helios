@@ -117,6 +117,7 @@ public class SupervisorFactory {
         .setRunnerFactory(runnerFactory)
         .setStatusUpdater(statusUpdater)
         .setMonitor(taskMonitor)
+        .setDisableAutoRegistration(job.getDisableAutoRegistration())
         .build();
   }
 }
