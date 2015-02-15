@@ -25,6 +25,125 @@
     </dependency>
   </dependencies>
 
+  <profiles>
+    <profile>
+      <id>jacoco</id>
+      <!-- The jacoco maven plugin does not calculate code coverage for multi-module projects -->
+      <!-- properly, so we use an ant task instead to generate a report for all modules. -->
+      <!-- https://github.com/jacoco/jacoco/pull/97 -->
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>jacoco-dependency-ant</id>
+                <goals>
+                  <goal>copy</goal>
+                </goals>
+                <phase>process-test-resources</phase>
+                <inherited>false</inherited>
+                <configuration>
+                  <artifactItems>
+                    <artifactItem>
+                      <groupId>org.jacoco</groupId>
+                      <artifactId>org.jacoco.ant</artifactId>
+                      <version>${jacoco.version}</version>
+                    </artifactItem>
+                  </artifactItems>
+                  <stripVersion>true</stripVersion>
+                  <outputDirectory>${project.build.directory}/jacoco</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <version>1.8</version>
+            <executions>
+              <execution>
+                <id>prepare-reports</id>
+                <phase>prepare-package</phase>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <configuration>
+                  <target>
+                    <taskdef name="report" classname="org.jacoco.ant.ReportTask">
+                      <classpath path="${project.build.directory}/jacoco/org.jacoco.ant.jar" />
+                    </taskdef>
+                    <echo message="Coverage report"/>
+                    <report>
+                      <executiondata>
+                        <fileset dir=".." includes="**/jacoco.exec"/>
+                      </executiondata>
+                      <structure name="JaCoCo">
+                        <group name="helios-client">
+                          <classfiles>
+                            <fileset dir="../helios-client/target/classes"/>
+                          </classfiles>
+                          <sourcefiles>
+                            <fileset dir="../helios-client/src"/>
+                          </sourcefiles>
+                        </group>
+                        <group name="helios-service-registration">
+                          <classfiles>
+                            <fileset dir="../helios-service-registration/target/classes"/>
+                          </classfiles>
+                          <sourcefiles>
+                            <fileset dir="../helios-service-registration/src"/>
+                          </sourcefiles>
+                        </group>
+                        <group name="helios-services">
+                          <classfiles>
+                            <fileset dir="../helios-services/target/classes"/>
+                          </classfiles>
+                          <sourcefiles>
+                            <fileset dir="../helios-services/src"/>
+                          </sourcefiles>
+                        </group>
+                        <group name="helios-testing">
+                          <classfiles>
+                            <fileset dir="../helios-testing/target/classes"/>
+                          </classfiles>
+                          <sourcefiles>
+                            <fileset dir="../helios-testing/src"/>
+                          </sourcefiles>
+                        </group>
+                        <group name="helios-tools">
+                          <classfiles>
+                            <fileset dir="../helios-tools/target/classes"/>
+                          </classfiles>
+                          <sourcefiles>
+                            <fileset dir="../helios-tools/src"/>
+                          </sourcefiles>
+                        </group>
+                      </structure>
+                      <html destdir="${project.build.directory}/jacoco"
+                            footer="Code Coverage Report for Helios ${project.version}"
+                            locale="en"/>
+                      <csv destfile="${project.build.directory}/jacoco/coverage.csv"/>
+                      <xml destfile="${project.build.directory}/jacoco/coverage.xml"/>
+                    </report>
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+            <dependencies>
+              <dependency>
+                <groupId>org.jacoco</groupId>
+                <artifactId>org.jacoco.ant</artifactId>
+                <version>${jacoco.version}</version>
+              </dependency>
+            </dependencies>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
   <reporting>
     <plugins>
       <plugin>
