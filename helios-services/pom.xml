@@ -11,6 +11,11 @@
   <artifactId>helios-services</artifactId>
   <packaging>jar</packaging>
 
+  <properties>
+    <masterImageName>helios-master:${project.version}-${gitShortCommitId}</masterImageName>
+    <agentImageName>helios-agent:${project.version}-${gitShortCommitId}</agentImageName>
+  </properties>
+
   <profiles>
     <profile>
       <id>build-images</id>
@@ -48,7 +53,7 @@
                   <goal>build</goal>
                 </goals>
                 <configuration>
-                  <imageName>helios-master:${project.version}-${gitShortCommitId}</imageName>
+                  <imageName>${masterImageName}</imageName>
                   <entryPoint>["helios-master"]</entryPoint>
                   <tagInfoFile>${project.build.testOutputDirectory}/master-image.json</tagInfoFile>
                 </configuration>
@@ -60,7 +65,7 @@
                   <goal>build</goal>
                 </goals>
                 <configuration>
-                  <imageName>helios-agent:${project.version}-${gitShortCommitId}</imageName>
+                  <imageName>${agentImageName}</imageName>
                   <entryPoint>["helios-agent"]</entryPoint>
                   <tagInfoFile>${project.build.testOutputDirectory}/agent-image.json</tagInfoFile>
                 </configuration>
