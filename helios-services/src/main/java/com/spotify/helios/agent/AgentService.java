@@ -115,6 +115,9 @@ public class AgentService extends AbstractIdleService implements Managed {
    * Create a new agent instance.
    *
    * @param config The service configuration.
+   * @param environment The DropWizard environment.
+   * @throws ConfigurationException If an error occurs with the DropWizard configuration.
+   * @throws InterruptedException If the thread is interrupted.
    */
   public AgentService(final AgentConfig config, final Environment environment)
       throws ConfigurationException, InterruptedException {

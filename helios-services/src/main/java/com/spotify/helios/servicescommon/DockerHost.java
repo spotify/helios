@@ -67,6 +67,8 @@ public class DockerHost {
 
   /**
    * Get a docker endpoint usable for instantiating a new DockerHost with DockerHost.from(endpoint).
+   *
+   * @return The hostname.
    */
   public String host() {
     return host;
@@ -74,6 +76,8 @@ public class DockerHost {
 
   /**
    * Get the docker rest uri.
+   *
+   * @return The uri of the host.
    */
   public URI uri() {
     return uri;
@@ -81,6 +85,8 @@ public class DockerHost {
 
   /**
    * Get the docker endpoint port.
+   *
+   * @return The port.
    */
   public int port() {
     return port;
@@ -88,13 +94,17 @@ public class DockerHost {
 
   /**
    * Get the docker ip address or hostname.
+   *
+   * @return The ip address or hostname.
    */
   public String address() {
     return address;
   }
 
   /**
-   * Get the path to certicate &amp; key for connecting to Docker via HTTPS.
+   * Get the path to certificate and key for connecting to Docker via HTTPS.
+   *
+   * @return The path to the certificate.
    */
   public String dockerCertPath() {
     return dockerCertPath;
@@ -102,6 +112,8 @@ public class DockerHost {
 
   /**
    * Create a {@link DockerHost} from DOCKER_HOST and DOCKER_PORT env vars.
+   *
+   * @return The DockerHost object.
    */
   public static DockerHost fromEnv() {
     String defaultEndpoint;
@@ -119,6 +131,10 @@ public class DockerHost {
 
   /**
    * Create a {@link DockerHost} from an explicit address or uri.
+   *
+   * @param endpoint The docker endpoint.
+   * @param dockerCertPath The certificate path.
+   * @return The DockerHost object.
    */
   public static DockerHost from(final String endpoint, final String dockerCertPath) {
     return new DockerHost(endpoint, dockerCertPath);

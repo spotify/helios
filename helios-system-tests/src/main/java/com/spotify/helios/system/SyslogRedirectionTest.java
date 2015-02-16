@@ -23,6 +23,7 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 
 import com.spotify.docker.client.DockerClient;
@@ -40,7 +41,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -147,7 +147,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
       startDefaultAgent(testHost(), "--syslog-redirect", syslogEndpoint);
       awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
-      final List<String> command =  Collections.EMPTY_LIST;
+      final List<String> command = Lists.newArrayList();
       final JobId jobId = createJob(testJobName, testJobVersion, testImage, command,
                                     ImmutableMap.of("SYSLOG_REDIRECTOR", "/syslog-redirector"));
       deployJob(jobId, testHost());

@@ -51,6 +51,7 @@ public class Deployment extends Descriptor {
    *
    * @param jobId The id of the job.
    * @param goal The desired state (i.e. goal) of the task/deployment.
+   * @param deployerUser The user doing the deployment.
    */
   public Deployment(@JsonProperty("job") final JobId jobId,
                     @JsonProperty("goal") final Goal goal,

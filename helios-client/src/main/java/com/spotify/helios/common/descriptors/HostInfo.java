@@ -79,9 +79,9 @@ public class HostInfo extends Descriptor {
    * @param loadAvg The current load average on the host.
    * @param memoryTotalBytes Total memory on the host.
    * @param memoryFreeBytes Total memory free on the host.
-   * @param swapTotalBytes
-   * @param swapFreeBytes
-   * @param dockerVersion
+   * @param swapTotalBytes Total swap bytes.
+   * @param swapFreeBytes Total free swap bytes.
+   * @param dockerVersion Docker version.
    */
   public HostInfo(@JsonProperty("hostname") final String hostname,
                   @JsonProperty("uname") final String uname,

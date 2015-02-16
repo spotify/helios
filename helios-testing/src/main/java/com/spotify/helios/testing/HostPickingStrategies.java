@@ -60,7 +60,11 @@ public class HostPickingStrategies {
     return randomGenerator;
   }
 
-  /** For any given invocation returns a random host */
+  /**
+   * For any given invocation returns a random host
+   *
+   * @return The strategy object
+   * */
   public static HostPickingStrategy random() {
     return new RandomHostPickingStrategy(new Random());
   }
@@ -69,6 +73,8 @@ public class HostPickingStrategies {
    * Pick a single host and use that for all jobs to be deployed in the tests used by this
    * strategy.  If you want multiple test classes to use the same host, share the strategy
    * between tests as a constant.
+   *
+   * @return The strategy object
    */
   public static HostPickingStrategy randomOneHost() {
     return new RandomOneHostPickingStrategy(new Random());
@@ -77,6 +83,9 @@ public class HostPickingStrategies {
   /**
    * For any given invocation returns a random host, but running the same test with the same
    * key should put jobs on the same hosts as they were the last time.
+   *
+   * @param key The random generator seed
+   * @return The strategy object
    */
   public static HostPickingStrategy deterministic(final String key) {
     return new RandomHostPickingStrategy(getSeededRandom(key));
@@ -86,6 +95,9 @@ public class HostPickingStrategies {
    * Deterministically, choose a single host for all jobs in the test.  That is, it will
    * choose the same host given equal values of key.  If you want multiple test classes to
    * use the same host, share the strategy between tests as a constant.
+   *
+   * @param key The random generator seed
+   * @return The strategy object
    */
   public static HostPickingStrategy deterministicOneHost(final String key) {
     return new RandomOneHostPickingStrategy(getSeededRandom(key));

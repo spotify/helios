@@ -41,6 +41,7 @@ public class VersionResource {
 
   /**
    * Returns the server version string.
+   * @return The server version.
    */
   @GET
   @Produces(TEXT_PLAIN)
@@ -54,6 +55,8 @@ public class VersionResource {
   /**
    * Given the client version, returns the version status, i.e. whether or not they should be
    * compatible or not.
+   * @param client The client version.
+   * @return The VersionCheckResponse object.
    */
   @GET
   @Path("/check")

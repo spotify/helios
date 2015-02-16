@@ -91,6 +91,8 @@ public final class Context {
    * originated from.
    *
    * @param in The original Callable.
+   * @param <T> The result type.
+   * @return The ContextCallable.
    */
   public static <T> Callable<T> makeContextCallable(final Callable<T> in) {
     return new ContextCallable<T>(in);
@@ -101,6 +103,7 @@ public final class Context {
    * originated from.
    *
    * @param in The original Runnable
+   * @return The ContextRunnable.
    */
   public static Runnable makeContextRunnable(final Runnable in) {
     return new ContextRunnable(in);
@@ -108,6 +111,9 @@ public final class Context {
 
   /**
    * Returns an Executor that wraps Runnables before submission to the passed in Executor.
+   *
+   * @param executor The executor to decorate.
+   * @return The decorated executor.
    */
   public static Executor decorate(final Executor executor) {
     return new Executor() {
@@ -121,6 +127,9 @@ public final class Context {
   /**
    * Returns an ExecutorService that wraps *ables before submission to the passed in
    * ExecutorService.
+   *
+   * @param executorService The ExecutorService to decorate.
+   * @return The decorated ExecutorService.
    */
   public static ExecutorService decorate(final ExecutorService executorService) {
     return new ContextExecutorService(executorService);
@@ -129,6 +138,9 @@ public final class Context {
   /**
    * Returns a ScheduledExecutorService that wraps *ables before submission to the passed in
    * ScheduledExecutorService.
+   *
+   * @param service The ScheduledExecutorService to decorate.
+   * @return The decorated ScheduledExecutorService.
    */
   public static ScheduledExecutorService decorate(final ScheduledExecutorService service) {
     return new ContextScheduledExecutorService(service);
@@ -137,6 +149,9 @@ public final class Context {
   /**
    * Returns a ListeningExecutorService that wraps *ables before submission to the passed in
    * ListeningExecutorService.
+   *
+   * @param service The ListeningExecutorService to decorate.
+   * @return The decorated ListeningExecutorService.
    */
   public static ListeningExecutorService decorate(final ListeningExecutorService service) {
     return new ContextListeningExecutorService(service);
@@ -145,6 +160,9 @@ public final class Context {
   /**
    * Returns a ListeningScheduledExecutorService that wraps *ables before submission to the passed
    * in ListeningScheduledExecutorService.
+   *
+   * @param service The ListeningScheduledExecutorService to decorate.
+   * @return The decorated ListeningScheduledExecutorService.
    */
   public static ListeningScheduledExecutorService decorate(
       final ListeningScheduledExecutorService service) {
@@ -154,6 +172,9 @@ public final class Context {
   /**
    * Set the cause of the root-cause Exception to a new CallPathToExcecutorException
    * that has the trace info in it.
+   *
+   * @param trace The stack trace.
+   * @param th The throwable.
    */
   static void handleException(final StackTraceElement[] trace, final Throwable th) {
     if (causeField != null) { // should *always* be non-null
@@ -178,7 +199,13 @@ public final class Context {
     return th;
   }
 
-  /** Utility function used by the Context*Executor classes */
+  /**
+   * Utility function used by the Context*Executor classes
+   *
+   * @param tasks The tasks.
+   * @param <T> The result type.
+   * @return The list of Callable objects.
+   */
   static <T> List<Callable<T>> makeContextWrappedCollection(
       Collection<? extends Callable<T>> tasks) {
     final List<Callable<T>> contexted = Lists.newArrayList();

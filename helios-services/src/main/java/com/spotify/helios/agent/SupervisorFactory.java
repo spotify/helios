@@ -74,7 +74,10 @@ public class SupervisorFactory {
 
   /**
    * Create a new application container.
-   *
+   * @param job The job definition.
+   * @param existingContainerId ID of existing container.
+   * @param ports The ports.
+   * @param listener The listener.
    * @return A new container.
    */
   public Supervisor create(final Job job, final String existingContainerId,

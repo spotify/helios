@@ -35,7 +35,9 @@ public interface Reactor extends Service {
   void signal();
 
   /**
-   * Returns a runnable that calls {@link #signal()}
+   * Returns a runnable that calls {@link #signal()}.
+   *
+   * @return The runnable object.
    */
   Runnable signalRunnable();
 }

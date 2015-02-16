@@ -54,11 +54,12 @@ public class PortAllocator {
   }
 
   /**
-   * Allocate ports for portmappings with no external ports configured.
+   * Allocate ports for port mappings with no external ports configured.
    *
    * @param ports A mutable map of port mappings for a container, both with statically configured
    *              external ports and dynamic unconfigured external ports.
    * @param used  A mutable set of used ports. The ports allocated will not clash with these ports.
+   * @return The allocated ports.
    */
   public Map<String, Integer> allocate(final Map<String, PortMapping> ports,
                                        final Set<Integer> used) {
@@ -122,6 +123,8 @@ public class PortAllocator {
   /**
    * Get the next port number to try, continuing from the previous port allocation to avoid eagerly
    * reusing ports. Wraps around when the end of the port range has been reached.
+   *
+   * @return The next port.
    */
   private int next() {
     if (i == end) {

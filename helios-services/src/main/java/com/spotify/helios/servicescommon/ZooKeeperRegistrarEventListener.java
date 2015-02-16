@@ -29,18 +29,23 @@ public interface ZooKeeperRegistrarEventListener {
 
   /**
    * Called upon startup
+   *
+   * @throws Exception If an unexpected error occurs.
    */
   void startUp() throws Exception;
 
   /**
    * Called upon shutdown
+   *
+   * @throws Exception If an unexpected error occurs.
    */
   void shutDown() throws Exception;
 
   /**
-   * Called when ZK client connects
+   * Called when ZK client connects. Handler should attempt to do on connection initialization here.
    *
-   * Handler should attempt to do on connection initialization here
+   * @param client The zookeeper client.
+   * @throws KeeperException If an unexpected zookeeper error occurs.
    */
   void tryToRegister(final ZooKeeperClient client) throws KeeperException;
 }
