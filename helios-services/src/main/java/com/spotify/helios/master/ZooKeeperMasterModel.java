@@ -34,7 +34,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
@@ -70,21 +69,16 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.KeeperException.NotEmptyException;
-import org.apache.zookeeper.data.Stat;
-import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
@@ -93,8 +87,6 @@ import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.ROLLING_OUT;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.check;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
@@ -177,22 +169,9 @@ public class ZooKeeperMasterModel implements MasterModel {
    */
   @Override
   public void registerHost(final String host, final String id) {
-    log.info("registering host: {}", host);
     final ZooKeeperClient client = provider.get("registerHost");
     try {
-      // TODO (dano): this code is replicated in AgentZooKeeperRegistrar
-
-      // This would've been nice to do in a transaction but PathChildrenCache ensures paths
-      // so we can't know what paths already exist so assembling a suitable transaction is too
-      // painful.
-      client.ensurePath(Paths.configHost(host));
-      client.ensurePath(Paths.configHostJobs(host));
-      client.ensurePath(Paths.configHostPorts(host));
-      client.ensurePath(Paths.statusHost(host));
-      client.ensurePath(Paths.statusHostJobs(host));
-
-      // Finish registration by creating the id node last
-      client.createAndSetData(Paths.configHostId(host), id.getBytes(UTF_8));
+      ZooKeeperRegistrarUtil.registerHost(client, Paths.configHostId(host), host, id);
     } catch (Exception e) {
       throw new HeliosRuntimeException("registering host " + host + " failed", e);
     }
@@ -240,94 +219,9 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public void deregisterHost(final String host)
       throws HostNotFoundException, HostStillInUseException {
-    log.info("deregistering host: {}", host);
     final ZooKeeperClient client = provider.get("deregisterHost");
-    // TODO (dano): handle retry failures
-    try {
-      final List<ZooKeeperOperation> operations = Lists.newArrayList();
-
-      // Remove all jobs deployed to this host
-      final List<JobId> jobs = listHostJobs(client, host);
-
-      if (jobs == null) {
-        if (client.exists(Paths.configHost(host)) == null) {
-          throw new HostNotFoundException("host [" + host + "] does not exist");
-        }
-      }
-
-      if (jobs != null) {
-        for (final JobId job : jobs) {
-          final String hostJobPath = Paths.configHostJob(host, job);
-
-          final List<String> nodes = safeListRecursive(client, hostJobPath);
-          for (final String node : reverse(nodes)) {
-            operations.add(delete(node));
-          }
-          if (client.exists(Paths.configJobHost(job, host)) != null) {
-            operations.add(delete(Paths.configJobHost(job, host)));
-          }
-          // Clean out the history for each job
-          final List<String> history = safeListRecursive(client, Paths.historyJobHost(job, host));
-          for (final String s : reverse(history)) {
-            operations.add(delete(s));
-          }
-        }
-      }
-      operations.add(delete(Paths.configHostJobs(host)));
-
-      // Remove the host status
-      final List<String> nodes = safeListRecursive(client, Paths.statusHost(host));
-      for (final String node : reverse(nodes)) {
-        operations.add(delete(node));
-      }
-
-      // Remove port allocations
-      final List<String> ports = safeGetChildren(client, Paths.configHostPorts(host));
-      for (final String port : ports) {
-        operations.add(delete(Paths.configHostPort(host, Integer.valueOf(port))));
-      }
-      operations.add(delete(Paths.configHostPorts(host)));
-
-      // Remove host id
-      final String idPath = Paths.configHostId(host);
-      if (client.exists(idPath) != null) {
-        operations.add(delete(idPath));
-      }
-
-      // Remove host config root
-      operations.add(delete(Paths.configHost(host)));
-
-      client.transaction(operations);
-    } catch (NotEmptyException e) {
-      final HostStatus hostStatus = getHostStatus(host);
-      final List<JobId> jobs = hostStatus != null
-                               ? ImmutableList.copyOf(hostStatus.getJobs().keySet())
-                               : Collections.<JobId>emptyList();
-      throw new HostStillInUseException(host, jobs);
-    } catch (NoNodeException e) {
-      throw new HostNotFoundException(host);
-    } catch (KeeperException e) {
-      throw new HeliosRuntimeException(e);
-    }
+    ZooKeeperRegistrarUtil.deregisterHost(client, host);
   }
-
-  private List<String> safeGetChildren(final ZooKeeperClient client, final String path) {
-    try {
-      return client.getChildren(path);
-    } catch (KeeperException ignore) {
-      return ImmutableList.of();
-    }
-  }
-
-  private List<String> safeListRecursive(final ZooKeeperClient client, final String path)
-      throws KeeperException {
-    try {
-      return client.listRecursive(path);
-    } catch (NoNodeException e) {
-      return ImmutableList.of();
-    }
-  }
-
   /**
    * Adds a job into the configuration.
    */
@@ -1085,7 +979,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ImmutableMap.Builder<String, Deployment> deployments = ImmutableMap.builder();
     final ImmutableMap.Builder<String, TaskStatus> taskStatuses = ImmutableMap.builder();
     for (final String host : hosts) {
-      final TaskStatus taskStatus = getTaskStatus(client, host, jobId);
+      final TaskStatus taskStatus = ZooKeeperRegistrarUtil.getTaskStatus(client, host, jobId);
       if (taskStatus != null) {
         taskStatuses.put(host, taskStatus);
       }
@@ -1411,7 +1305,6 @@ public class ZooKeeperMasterModel implements MasterModel {
    */
   @Override
   public HostStatus getHostStatus(final String host) {
-    final Stat stat;
     final ZooKeeperClient client = provider.get("getHostStatus");
 
     try {

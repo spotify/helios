@@ -23,7 +23,10 @@ package com.spotify.helios.agent;
 
 import com.google.common.util.concurrent.Service;
 
+import com.spotify.helios.master.HostNotFoundException;
+import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarEventListener;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
@@ -34,10 +37,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
 /**
@@ -48,6 +53,9 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
   private static final Logger log = LoggerFactory.getLogger(AgentZooKeeperRegistrar.class);
 
   private static final byte[] EMPTY_BYTES = new byte[]{};
+  private static final int AGENT_REGISTRATION_TTL_MINUTES = 10;
+  private static final long AGENT_REGISTRATION_TTL_MILLIS =
+      TimeUnit.MILLISECONDS.convert(AGENT_REGISTRATION_TTL_MINUTES, TimeUnit.MINUTES);
 
   private final Service agentService;
   private final String name;
@@ -79,34 +87,34 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
   }
 
   @Override
-  public void tryToRegister(ZooKeeperClient client) throws KeeperException {
+  public void tryToRegister(ZooKeeperClient client)
+      throws KeeperException, HostStillInUseException, HostNotFoundException {
     final String idPath = Paths.configHostId(name);
 
     final Stat stat = client.exists(idPath);
     if (stat == null) {
       log.debug("Agent id node not present, registering agent {}: {}", id, name);
-
-      // This would've been nice to do in a transaction but PathChildrenCache ensures paths
-      // so we can't know what paths already exist so assembling a suitable transaction is too
-      // painful.
-      client.ensurePath(Paths.configHost(name));
-      client.ensurePath(Paths.configHost(name));
-      client.ensurePath(Paths.configHostJobs(name));
-      client.ensurePath(Paths.configHostPorts(name));
-      client.ensurePath(Paths.statusHost(name));
-      client.ensurePath(Paths.statusHostJobs(name));
-
-      // Finish registration by creating the id node last
-      client.createAndSetData(idPath, id.getBytes(UTF_8));
+      ZooKeeperRegistrarUtil.registerHost(client, idPath, name, id);
     } else {
       final byte[] bytes = client.getData(idPath);
       final String existingId = bytes == null ? "" : new String(bytes, UTF_8);
       if (!id.equals(existingId)) {
-        final String message = format("Another agent already registered as '%s' " +
-                                      "(local=%s remote=%s).", name, id, existingId);
-        log.error(message);
-        agentService.stopAsync();
-        return;
+        final long mtime = client.stat(idPath).getMtime();
+
+        if ((currentTimeMillis() - mtime) > AGENT_REGISTRATION_TTL_MILLIS) {
+          log.info("Another agent has already registered as '{}', but its ID node was last " +
+                   "updated more than {} minutes ago. I\'m deregistering the agent with the old " +
+                   "ID of {} and replacing it with this new agent with ID '{}'.",
+                   name, AGENT_REGISTRATION_TTL_MINUTES, existingId, id);
+          ZooKeeperRegistrarUtil.deregisterHost(client, name);
+          ZooKeeperRegistrarUtil.registerHost(client, idPath, name, id);
+        } else {
+          final String message = format("Another agent already registered as '%s' " +
+                                        "(local=%s remote=%s).", name, id, existingId);
+          log.error(message);
+          agentService.stopAsync();
+          return;
+        }
       } else {
         log.info("Matching agent id node already present, not registering agent {}: {}", id, name);
       }
