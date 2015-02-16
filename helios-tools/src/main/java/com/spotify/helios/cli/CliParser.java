@@ -40,6 +40,7 @@ import com.spotify.helios.cli.command.JobStatusCommand;
 import com.spotify.helios.cli.command.JobStopCommand;
 import com.spotify.helios.cli.command.JobUndeployCommand;
 import com.spotify.helios.cli.command.JobWatchCommand;
+import com.spotify.helios.cli.command.ListenersCommand;
 import com.spotify.helios.cli.command.MasterListCommand;
 import com.spotify.helios.cli.command.VersionCommand;
 import com.spotify.helios.common.LoggingConfig;
@@ -204,6 +205,7 @@ public class CliParser {
     new JobListCommand(p("jobs"));
     new JobStatusCommand(p("status"));
     new JobWatchCommand(p("watch"));
+    new ListenersCommand(p("listener"));
 
     // Host commands
     new HostListCommand(p("hosts"));

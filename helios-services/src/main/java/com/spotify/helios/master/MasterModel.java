@@ -98,4 +98,6 @@ public interface MasterModel {
   List<String> getRunningMasters();
 
   List<TaskStatusEvent> getJobHistory(JobId jobId) throws JobDoesNotExistException;
+
+  void addListener(String listenerUrl);
 }

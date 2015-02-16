@@ -41,6 +41,7 @@ public class Paths {
   private static final String PORTS = "ports";
   private static final String ENVIRONMENT = "environment";
   private static final String ID = "id";
+  private static final String LISTENERS = "listeners";
 
   private static final PathFactory CONFIG_ID = new PathFactory("/", CONFIG, ID);
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
@@ -49,6 +50,7 @@ public class Paths {
   private static final PathFactory STATUS_HOSTS = new PathFactory("/", STATUS, HOSTS);
   private static final PathFactory STATUS_MASTERS = new PathFactory("/", STATUS, MASTERS);
   private static final PathFactory HISTORY_JOBS = new PathFactory("/", HISTORY, JOBS);
+  private static final PathFactory HISTORY_LISTENERS = new PathFactory("/", HISTORY, LISTENERS);
   private static final String CREATION_PREFIX = "creation-";
 
   public static String configHosts() {
@@ -198,5 +200,13 @@ public class Paths {
 
   public static String historyJobs() {
     return HISTORY_JOBS.path();
+  }
+
+  public static String historyListener(final String url) {
+    return HISTORY_LISTENERS.path(url);
+  }
+
+  public static String historyListeners() {
+    return HISTORY_LISTENERS.path();
   }
 }

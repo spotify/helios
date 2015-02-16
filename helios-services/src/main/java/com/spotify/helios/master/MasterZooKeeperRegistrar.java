@@ -76,6 +76,7 @@ public class MasterZooKeeperRegistrar implements ZooKeeperRegistrarEventListener
     client.ensurePath(Paths.statusHosts());
     client.ensurePath(Paths.statusMasters());
     client.ensurePath(Paths.historyJobs());
+    client.ensurePath(Paths.historyListeners());
 
     if (upNode == null) {
       final String upPath = Paths.statusMasterUp(name);

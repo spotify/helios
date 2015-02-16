@@ -23,6 +23,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Function;
 import com.google.common.base.Supplier;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -31,6 +32,8 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
@@ -41,15 +44,24 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
+
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.file.Path;
+
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -272,12 +284,14 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         return;
       }
 
+      final JobId jobId = item.getStatus().getJob().getId();
+      final String historyPath = Paths.historyJobHostEventsTimestamp(
+          jobId, hostname, item.getTimestamp());
+
+      log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
+          item.getTimestamp());
+
       try {
-        final JobId jobId = item.getStatus().getJob().getId();
-        final String historyPath = Paths.historyJobHostEventsTimestamp(
-            jobId, hostname, item.getTimestamp());
-        log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
-            item.getTimestamp());
         client.ensurePath(historyPath, true);
         client.createAndSetData(historyPath, item.getStatus().toJsonBytes());
 
@@ -298,6 +312,57 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
         log.error("Error putting item into zookeeper, will retry", e);
         putBack(item);
         break;
+      }
+
+      final List<String> listeners = new ArrayList<>();
+
+      try {
+        listeners.addAll(client.getChildren(Paths.historyListeners()));
+      } catch (KeeperException e) {
+        log.error("Unable to fetch listener names", e);
+      }
+
+      final Iterable<Optional<URL>> possibleUrls =
+          Iterables.transform(listeners, new Function<String, Optional<URL>>()
+      {
+        @Override
+        public Optional<URL> apply(final String listener) {
+          Optional<URL> result = Optional.absent();
+
+          try {
+            result = Optional.of(new URL(new String(
+                client.getData(Paths.historyListener(listener)), "UTF-8")));
+          } catch (KeeperException | UnsupportedEncodingException | MalformedURLException e) {
+            log.error("Unable to fetch endpoint for listener {}", listener, e);
+          }
+
+          return result;
+        }
+      });
+
+      for (URL url: Optional.presentInstances(possibleUrls)) {
+        log.info("Pushing task status event to listener {}", url);
+
+        try {
+          final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+
+          connection.setConnectTimeout(1000);
+          connection.setReadTimeout(1000);
+
+          connection.addRequestProperty("Content-Type", "application/json");
+          connection.addRequestProperty("Charset", "UTF-8");
+
+          connection.setRequestMethod("POST");
+
+          connection.setDoOutput(true);
+          connection.getOutputStream().write(Json.asBytes(item));
+
+          if (connection.getResponseCode() / 100 != 2) {
+            log.error("Got non-200 response code while communicating with listener {}", url);
+          }
+        } catch (IOException e) {
+          log.error("Unable to communicate with listener {}", url, e);
+        }
       }
     }
   }

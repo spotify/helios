@@ -55,12 +55,14 @@ import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
+import com.spotify.helios.common.protocol.ListenerResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -547,6 +549,12 @@ public class HeliosClient implements AutoCloseable {
         request(uri(path("/history/jobs/%s", jobId.toString())), "GET"),
         ConvertResponseToPojo.create(TaskStatusEvents.class,
                                      ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
+  }
+
+  public ListenableFuture<ListenerResponse> listeners(final String listenerUrl) {
+    return transform(request(uri("/history/listeners"), "POST", listenerUrl),
+                     ConvertResponseToPojo.create(ListenerResponse.class,
+                                                  ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
   }
 
   public ListenableFuture<JobStatus> jobStatus(final JobId jobId) {

@@ -58,6 +58,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -948,6 +950,19 @@ public class ZooKeeperMasterModel implements MasterModel {
     checkNotNull(token, "token");
     if (!token.equals(job.getToken())) {
       throw new TokenVerificationException(job.getId());
+    }
+  }
+
+  @Override
+  public void addListener(String listenerUrl) {
+    final ZooKeeperClient client = provider.get("addListener");
+
+    try {
+        client.createAndSetData(
+            Paths.historyListener(new URL(listenerUrl).getHost()),
+            listenerUrl.getBytes());
+    } catch (KeeperException | MalformedURLException e) {
+        throw new HeliosRuntimeException("Adding new listener URL failed", e);
     }
   }
 }
