@@ -222,9 +222,6 @@
           <name>env.JENKINS</name>
         </property>
       </activation>
-      <properties>
-        <skipITs>true</skipITs>
-      </properties>
       <build>
         <plugins>
           <plugin>
