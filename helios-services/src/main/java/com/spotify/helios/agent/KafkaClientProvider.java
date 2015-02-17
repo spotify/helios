@@ -50,9 +50,13 @@ public class KafkaClientProvider {
             "bootstrap.servers", Joiner.on(',').join(input),
             "acks", KAFKA_QUORUM_PARAMETER,
             "client.id", KAFKA_HELIOS_CLIENT_ID);
-        }
-      });
-    }
+      }
+    });
+  }
+
+  static KafkaClientProvider getTestingProvider() {
+    return new KafkaClientProvider(null);
+  }
 
   public <K, V> Optional<KafkaProducer<K, V>> getProducer(@NotNull final Serializer<K> ks,
                                                           @NotNull final Serializer<V> vs) {

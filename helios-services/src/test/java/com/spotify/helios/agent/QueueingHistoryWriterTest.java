@@ -24,7 +24,6 @@ package com.spotify.helios.agent;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 
-import com.google.common.collect.Lists;
 import com.spotify.helios.Polling;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
@@ -95,7 +94,7 @@ public class QueueingHistoryWriterTest {
     agentStateDirs = Files.createTempDirectory("helios-agents");
 
     client = new DefaultZooKeeperClient(zk.curator());
-    kafkaProvider = new KafkaClientProvider(Lists.<String>newArrayList());
+    kafkaProvider = KafkaClientProvider.getTestingProvider();
     makeWriter(client, kafkaProvider);
     masterModel = new ZooKeeperMasterModel(new ZooKeeperClientProvider(client,
         ZooKeeperModelReporter.noop()));

@@ -308,10 +308,11 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
       final JobId jobId = item.getStatus().getJob().getId();
       final String historyPath = Paths.historyJobHostEventsTimestamp(
               jobId, hostname, item.getTimestamp());
-      log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
-              item.getTimestamp());
 
       try {
+        log.debug("writing queued item to zookeeper {} {}", item.getStatus().getJob().getId(),
+                item.getTimestamp());
+
         client.ensurePath(historyPath, true);
         client.createAndSetData(historyPath, item.getStatus().toJsonBytes());
 
@@ -336,9 +337,9 @@ public class QueueingHistoryWriter extends AbstractIdleService implements Runnab
 
       try {
         if (kafkaProducer.isPresent()) {
-          Future<RecordMetadata> future = kafkaProducer.get().send(
+          final Future<RecordMetadata> future = kafkaProducer.get().send(
             new ProducerRecord<String, TaskStatusEvent>(KAFKA_TOPIC, item));
-          RecordMetadata metadata = future.get(5, TimeUnit.SECONDS);
+          final RecordMetadata metadata = future.get(5, TimeUnit.SECONDS);
           log.debug("Sent an event to Kafka, meta: {}", metadata);
         }
       } catch (ExecutionException | InterruptedException | TimeoutException e) {

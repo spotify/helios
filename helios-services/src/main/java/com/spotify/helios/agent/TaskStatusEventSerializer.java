@@ -35,10 +35,10 @@ import java.util.Map;
 
 public class TaskStatusEventSerializer implements Serializer<TaskStatusEvent> {
     @Override
-    public void configure(Map<String, ?> configs, boolean isKey) { }
+    public void configure(final Map<String, ?> configs, final boolean isKey) { }
 
     @Override
-    public byte[] serialize(String topic, TaskStatusEvent value) {
+    public byte[] serialize(final String topic, final TaskStatusEvent value) {
         return Json.asBytesUnchecked(value);
     }
 
