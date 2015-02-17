@@ -31,11 +31,13 @@ import static org.junit.Assert.assertEquals;
 
 public class JobIdTest {
 
+  @Test
   public void testFullToString() {
     final JobId id = JobId.newBuilder().setName("foo").setVersion("bar").setHash("baz").build();
     assertEquals("foo:bar:baz", id.toString());
   }
 
+  @Test
   public void testShortToString() {
     final JobId id = JobId.newBuilder().setName("foo").setVersion("bar").build();
     assertEquals("foo:bar", id.toString());
