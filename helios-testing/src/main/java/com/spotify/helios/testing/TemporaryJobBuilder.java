@@ -53,7 +53,6 @@ import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.Integer.toHexString;
-import static java.lang.System.getenv;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 
@@ -66,13 +65,14 @@ public class TemporaryJobBuilder {
   private final Set<String> waitPorts = Sets.newHashSet();
   private final Deployer deployer;
   private final String jobNamePrefix;
+  private final Map<String, String> env;
   
   private String hostFilter;
   private Prober prober;
   private TemporaryJob job;
 
   public TemporaryJobBuilder(final Deployer deployer, final String jobNamePrefix,
-                             final Prober defaultProber) {
+                             final Prober defaultProber, final Map<String, String> env) {
     checkNotNull(deployer, "deployer");
     checkNotNull(jobNamePrefix, "jobNamePrefix");
     checkNotNull(defaultProber, "defaultProber");
@@ -80,6 +80,7 @@ public class TemporaryJobBuilder {
     this.jobNamePrefix = jobNamePrefix;
     this.prober = defaultProber;
     this.builder.setRegistrationDomain(jobNamePrefix);
+    this.env = env;
   }
 
   public TemporaryJobBuilder name(final String jobName) {
@@ -237,7 +238,7 @@ public class TemporaryJobBuilder {
 
       if (this.hosts.isEmpty()) {
         if (isNullOrEmpty(hostFilter)) {
-          hostFilter = getenv("HELIOS_HOST_FILTER");
+          hostFilter = env.get("HELIOS_HOST_FILTER");
         }
 
         job = deployer.deploy(builder.build(), hostFilter, waitPorts, prober);
@@ -250,11 +251,11 @@ public class TemporaryJobBuilder {
   }
 
   public TemporaryJobBuilder imageFromBuild() {
-    final String envPath = getenv("IMAGE_INFO_PATH");
+    final String envPath = env.get("IMAGE_INFO_PATH");
     if (envPath != null) {
       return imageFromInfoFile(envPath);
     } else {
-      final String name = fromNullable(getenv("IMAGE_INFO_NAME")).or("image_info.json");
+      final String name = fromNullable(env.get("IMAGE_INFO_NAME")).or("image_info.json");
       URL info;
       try {
         info = Resources.getResource(name);

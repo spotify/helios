@@ -58,7 +58,7 @@ public class ProberTest extends TemporaryJobsTestBase {
     private MockProber overrideProber = new MockProber();
 
     @Rule
-    public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
+    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .client(client)
         .prober(defaultProber)
         .jobPrefix(Optional.of(testTag).get())

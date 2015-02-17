@@ -72,6 +72,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.testing.Jobs.undeploy;
 import static java.lang.String.format;
+import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -80,7 +81,7 @@ public class TemporaryJobs implements TestRule {
 
   static final String HELIOS_TESTING_PROFILE = "helios.testing.profile";
   private static final String HELIOS_TESTING_PROFILES = "helios.testing.profiles.";
-  private static final String DEFAULT_USER = System.getProperty("user.name");
+  private static final String DEFAULT_USER = getProperty("user.name");
   private static final Prober DEFAULT_PROBER = new DefaultProber();
   private static final String DEFAULT_LOCAL_HOST_FILTER = ".+";
   private static final String DEFAULT_PREFIX_DIRECTORY = "/tmp/helios-temp-jobs";
@@ -91,6 +92,7 @@ public class TemporaryJobs implements TestRule {
   private final String defaultHostFilter;
   private final JobPrefixFile jobPrefixFile;
   private final Config config;
+  private final Map<String, String> env;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
   private final Deployer deployer;
 
@@ -106,6 +108,7 @@ public class TemporaryJobs implements TestRule {
     this.client = checkNotNull(builder.client, "client");
     this.prober = checkNotNull(builder.prober, "prober");
     this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
+    this.env = checkNotNull(builder.env, "env");
     this.deployer = Optional.fromNullable(builder.deployer).or(
         new DefaultDeployer(client, jobs, builder.hostPickingStrategy, 
             builder.jobDeployedMessageFormat));
@@ -174,7 +177,7 @@ public class TemporaryJobs implements TestRule {
 
   public TemporaryJobBuilder job() {
     final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix(),
-                                                                prober);
+                                                                prober, env);
 
     if (config.hasPath("env")) {
       final Config env = config.getConfig("env");
@@ -430,41 +433,46 @@ public class TemporaryJobs implements TestRule {
   }
 
   public static Builder builder() {
-    return new Builder();
+    return builder((String) null);
   }
 
   public static Builder builder(final String profile) {
-    return new Builder(profile);
+    return builder(profile, System.getenv());
+  }
+
+  static Builder builder(final Map<String, String> env) {
+    return builder(null, env);
+  }
+
+  static Builder builder(final String profile, final Map<String, String> env) {
+    return new Builder(profile, TemporaryJobs.loadConfig(), env);
   }
 
   public static class Builder {
 
-    Builder(final String profile) {
-      this(profile, TemporaryJobs.loadConfig());
-    }
+    Builder(String profile, Config rootConfig, Map<String, String> env) {
+      this.env = env;
 
-    Builder() {
-      this(TemporaryJobs.loadConfig());
-    }
+      // No profile specified so see if there is one specified in the config object.
+      if (profile == null) {
+        profile = TemporaryJobs.getProfileFromConfig(rootConfig);
+      }
 
-    // I feel like I'm building the y-combinator here because Java insists on the calls to this()
-    // in a constructor being the first thing in the method.
-    private Builder(final Config preConfig) {
-      this(TemporaryJobs.getProfileFromConfig(preConfig), preConfig);
-    }
-
-    private Builder(final String profile, final Config preConfig) {
-      log.info("Using profile: " + profile);
-      if (profile != null) {
+      // If profile is null, use empty config, otherwise load config for this profile. Note,
+      // the config for each profile is a subnode in the rootConfig object.
+      if (profile == null) {
+        this.config = ConfigFactory.empty();
+      } else {
         final String key = HELIOS_TESTING_PROFILES + profile;
-        if (preConfig.hasPath(key)) {
-          this.config = preConfig.getConfig(key);
+        if (rootConfig.hasPath(key)) {
+          this.config = rootConfig.getConfig(key);
         } else {
           throw new RuntimeException("The configuration profile " + profile + " does not exist");
         }
-      } else {
-        this.config = ConfigFactory.empty();
       }
+
+      log.info("Using profile: " + profile);
+
       if (this.config.hasPath("jobDeployedMessageFormat")) {
         jobDeployedMessageFormat(this.config.getString("jobDeployedMessageFormat"));
       }
@@ -490,20 +498,20 @@ public class TemporaryJobs implements TestRule {
 
     private void configureWithEnv() {
       // Use HELIOS_HOST_FILTER if set
-      final String heliosHostFilter = System.getenv("HELIOS_HOST_FILTER");
+      final String heliosHostFilter = env.get("HELIOS_HOST_FILTER");
       if (heliosHostFilter != null) {
         hostFilter(heliosHostFilter);
       }
 
       // Use HELIOS_DOMAIN if set
-      final String domain = System.getenv("HELIOS_DOMAIN");
+      final String domain = env.get("HELIOS_DOMAIN");
       if (!isNullOrEmpty(domain)) {
         domain(domain);
         return;
       }
 
       // Use HELIOS_ENDPOINTS if set
-      final String endpoints = System.getenv("HELIOS_ENDPOINTS");
+      final String endpoints = env.get("HELIOS_ENDPOINTS");
       if (!isNullOrEmpty(endpoints)) {
         endpointStrings(Splitter.on(',').splitToList(endpoints));
         return;
@@ -519,7 +527,7 @@ public class TemporaryJobs implements TestRule {
       // profile, so check if DOCKER_HOST is set. If so, try to connect to that host on port 5801,
       // assuming it has a helios master running. If not, attempt to connect to
       // http://localhost:5801 as a last attempt.
-      final String dockerHost = System.getenv("DOCKER_HOST");
+      final String dockerHost = env.get("DOCKER_HOST");
       if (dockerHost == null) {
         endpoints("http://localhost:5801");
       } else {
@@ -574,11 +582,12 @@ public class TemporaryJobs implements TestRule {
       }
     }
 
+    private final Map<String, String> env;
     private final Config config;
     private String user = DEFAULT_USER;
     private Prober prober = DEFAULT_PROBER;
     private Deployer deployer;
-    private String hostFilter = System.getenv("HELIOS_HOST_FILTER");
+    private String hostFilter;
     private HeliosClient client;
     private String prefixDirectory;
     private String jobPrefix;

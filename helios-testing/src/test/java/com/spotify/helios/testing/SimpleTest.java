@@ -59,7 +59,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
   public static class SimpleTestImpl {
 
     @Rule
-    public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
+    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .client(client)
         .prober(new TestProber())
         .jobDeployedMessageFormat(
