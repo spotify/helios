@@ -27,6 +27,8 @@ import com.spotify.helios.system.SystemTestBase;
 import org.junit.Before;
 
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -70,5 +72,17 @@ public abstract class TemporaryJobsTestBase extends SystemTestBase {
     awaitHostStatus(client, testHost2, UP, LONG_WAIT_SECONDS, SECONDS);
 
     prefixDirectory = temporaryFolder.newFolder().toPath();
+  }
+
+  public static Map<String, String> emptyEnv() {
+    return Collections.emptyMap();
+  }
+
+  public static TemporaryJobs.Builder temporaryJobsBuilder() {
+    return TemporaryJobs.builder(emptyEnv());
+  }
+
+  public static TemporaryJobs.Builder temporaryJobsBuilder(final String profile) {
+    return TemporaryJobs.builder(profile, emptyEnv());
   }
 }
