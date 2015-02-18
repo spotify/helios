@@ -67,6 +67,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
@@ -74,6 +75,7 @@ import static com.spotify.helios.testing.Jobs.undeploy;
 import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TemporaryJobs implements TestRule {
@@ -86,6 +88,7 @@ public class TemporaryJobs implements TestRule {
   private static final String DEFAULT_LOCAL_HOST_FILTER = ".+";
   private static final String DEFAULT_PREFIX_DIRECTORY = "/tmp/helios-temp-jobs";
   private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
+  private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
   private final HeliosClient client;
   private final Prober prober;
@@ -109,9 +112,10 @@ public class TemporaryJobs implements TestRule {
     this.prober = checkNotNull(builder.prober, "prober");
     this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
     this.env = checkNotNull(builder.env, "env");
+    checkArgument(builder.deployTimeoutMillis >= 0, "deployTimeoutMillis");
     this.deployer = Optional.fromNullable(builder.deployer).or(
         new DefaultDeployer(client, jobs, builder.hostPickingStrategy, 
-            builder.jobDeployedMessageFormat));
+            builder.jobDeployedMessageFormat, builder.deployTimeoutMillis));
     final Path prefixDirectory = Paths.get(Optional.fromNullable(builder.prefixDirectory)
         .or(DEFAULT_PREFIX_DIRECTORY));
 
@@ -491,6 +495,9 @@ public class TemporaryJobs implements TestRule {
       if (this.config.hasPath("hostPickingStrategy")) {
         processHostPickingStrategy();
       }
+      if (this.config.hasPath("deployTimeoutMillis")) {
+        deployTimeoutMillis(this.config.getLong("deployTimeoutMillis"));
+      }
 
       // Configuration from profile may be overridden by environment variables
       configureWithEnv();
@@ -591,8 +598,9 @@ public class TemporaryJobs implements TestRule {
     private HeliosClient client;
     private String prefixDirectory;
     private String jobPrefix;
-    private String jobDeployedMessageFormat = null;
+    private String jobDeployedMessageFormat;
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
+    private long deployTimeoutMillis = DEFAULT_DEPLOY_TIMEOUT_MILLIS;
 
     public Builder domain(final String domain) {
       return client(HeliosClient.newBuilder()
@@ -665,6 +673,11 @@ public class TemporaryJobs implements TestRule {
 
     public Builder jobPrefix(final String jobPrefix) {
       this.jobPrefix = jobPrefix;
+      return this;
+    }
+
+    public Builder deployTimeoutMillis(final long timeout) {
+      this.deployTimeoutMillis = timeout;
       return this;
     }
 

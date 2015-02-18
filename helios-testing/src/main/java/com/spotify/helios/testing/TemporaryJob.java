@@ -22,7 +22,6 @@
 package com.spotify.helios.testing;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -52,9 +51,11 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Maps.newHashMap;
 import static com.spotify.helios.testing.Jobs.TIMEOUT_MILLIS;
 import static com.spotify.helios.testing.Jobs.get;
@@ -75,16 +76,18 @@ public class TemporaryJob {
   private final Map<String, String> hostToIp = newHashMap();
   private final Set<String> waitPorts;
   private final String jobDeployedMessageFormat;
+  private final long deployTimeoutMillis;
 
   TemporaryJob(final HeliosClient client, final Prober prober, final Job job,
                final List<String> hosts, final Set<String> waitPorts,
-               final String jobDeployedMessageFormat) {
+               final String jobDeployedMessageFormat, final long deployTimeoutMillis) {
     this.client = checkNotNull(client, "client");
     this.prober = checkNotNull(prober, "prober");
     this.job = checkNotNull(job, "job");
     this.hosts = ImmutableList.copyOf(checkNotNull(hosts, "hosts"));
     this.waitPorts = ImmutableSet.copyOf(checkNotNull(waitPorts, "waitPorts"));
     this.jobDeployedMessageFormat = Optional.fromNullable(jobDeployedMessageFormat).or("");
+    this.deployTimeoutMillis = deployTimeoutMillis;
   }
 
   public Job job() {
@@ -193,21 +196,12 @@ public class TemporaryJob {
         }
       }
 
-      // Wait for jobs to have container ids
-      if (!Strings.isNullOrEmpty(jobDeployedMessageFormat)) {
-        for (final String host : hosts) {
-          awaitHasContainerId(host);
-        }
-        outputDeployedMessage();
-      }
-      
       // Wait for job to come up
       for (final String host : hosts) {
         awaitUp(host);
       }
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
-      fail(format("Failed to deploy job %s %s - %s",
-                  job.getId(), job.toString(), e));
+      fail(format("Failed to deploy job %s %s - %s", job.getId(), job.toString(), e));
     }
   }
 
@@ -229,38 +223,13 @@ public class TemporaryJob {
                   getJobDescription(job), errors.get(0)));
     }
   }
-
-  private void awaitHasContainerId(final String host) throws TimeoutException {
-    final TaskStatus status = Polling.awaitUnchecked(
-        TIMEOUT_MILLIS, MILLISECONDS, new Callable<TaskStatus>() {
-          @Override
-          public TaskStatus call() throws Exception {
-            final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
-            if (status == null) {
-              log.debug("Job status not available");
-              return null;
-            }
-            final TaskStatus taskStatus = status.getTaskStatuses().get(host);
-            if (taskStatus == null) {
-              log.debug("Task status not available on {}", host);
-              return null;
-            }
-            final TaskStatus.State state = taskStatus.getState();
-            log.info("Job state of {}: {}", job.getImage(), state);
-            if (taskStatus.getContainerId() == null) {
-              log.debug("Task Status has no containerId on {}", host);
-              return null;
-            }
-            return taskStatus;
-          }
-        });
-    statuses.put(host, status);
-  }
   
   private void awaitUp(final String host) throws TimeoutException {
 
+    final AtomicBoolean messagePrinted = new AtomicBoolean(false);
+
     final TaskStatus status = Polling.awaitUnchecked(
-        TIMEOUT_MILLIS, MILLISECONDS, new Callable<TaskStatus>() {
+        deployTimeoutMillis, MILLISECONDS, new Callable<TaskStatus>() {
           @Override
           public TaskStatus call() throws Exception {
             final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
@@ -272,6 +241,13 @@ public class TemporaryJob {
             if (taskStatus == null) {
               log.debug("Task status not available on {}", host);
               return null;
+            }
+
+            if (!messagePrinted.get() &&
+                !isNullOrEmpty(jobDeployedMessageFormat) &&
+                !isNullOrEmpty(taskStatus.getContainerId())) {
+              outputDeployedMessage(host, taskStatus.getContainerId());
+              messagePrinted.set(true);
             }
 
             verifyHealthy(host, taskStatus);
@@ -355,18 +331,16 @@ public class TemporaryJob {
     return ip == null ? host : ip;
   }
 
-  private void outputDeployedMessage() {
-    for (String host : hosts()) {
-      final StrSubstitutor subst = new StrSubstitutor(new ImmutableMap.Builder<String, Object>()
-          .put("host", host)
-          .put("name", job.getId().getName())
-          .put("version", job.getId().getVersion())
-          .put("hash", job.getId().getHash())
-          .put("job", job.toString())
-          .put("containerId", statuses.get(host).getContainerId())
-          .build()
-          );
-      log.info("{}", subst.replace(jobDeployedMessageFormat));
-    }
+  private void outputDeployedMessage(final String host, final String containerId) {
+    final StrSubstitutor subst = new StrSubstitutor(new ImmutableMap.Builder<String, Object>()
+        .put("host", host)
+        .put("name", job.getId().getName())
+        .put("version", job.getId().getVersion())
+        .put("hash", job.getId().getHash())
+        .put("job", job.toString())
+        .put("containerId", containerId)
+        .build()
+        );
+    log.info("{}", subst.replace(jobDeployedMessageFormat));
   }
 }

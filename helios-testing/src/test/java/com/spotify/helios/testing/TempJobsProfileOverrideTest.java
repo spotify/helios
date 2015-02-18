@@ -31,7 +31,8 @@ import static com.spotify.helios.testing.TemporaryJobs.HELIOS_TESTING_PROFILE;
 import static org.junit.Assert.assertEquals;
 
 public class TempJobsProfileOverrideTest {
-  @Test public void foo() throws Exception {
+  @Test
+  public void foo() throws Exception {
     final Properties oldProperties = System.getProperties();
     final Config c;
     try {
