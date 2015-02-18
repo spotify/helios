@@ -69,7 +69,8 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private final String agent;
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
 
-  public ZooKeeperAgentModel(final ZooKeeperClientProvider provider, final String host,
+  public ZooKeeperAgentModel(final ZooKeeperClientProvider provider,
+                             final KafkaClientProvider kafkaProvider, final String host,
                              final Path stateDirectory) throws IOException, InterruptedException {
     // TODO(drewc): we're constructing too many heavyweight things in the ctor, these kinds of
     // things should be passed in/provider'd/etc.
@@ -86,7 +87,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
                                                                     provider,
                                                                     taskStatusFile,
                                                                     Paths.statusHostJobs(host));
-    this.historyWriter = new QueueingHistoryWriter(host, client,
+    this.historyWriter = new QueueingHistoryWriter(host, client, kafkaProvider,
         stateDirectory.resolve(TASK_HISTORY_FILENAME));
   }
 

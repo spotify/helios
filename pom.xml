@@ -77,6 +77,11 @@
       <name>David Xia</name>
       <email>dxia@spotify.com</email>
     </developer>
+    <developer>
+      <id>kobolog</id>
+      <name>Andrey Sibiryov</name>
+      <email>kobolog@spotify.com</email>
+    </developer>
   </developers>
 
   <repositories>

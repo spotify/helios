@@ -83,6 +83,7 @@ public class QueueingHistoryWriterTest {
 
   private ZooKeeperTestManager zk;
   private DefaultZooKeeperClient client;
+  private KafkaClientProvider kafkaProvider;
   private QueueingHistoryWriter writer;
   private ZooKeeperMasterModel masterModel;
   private Path agentStateDirs;
@@ -93,7 +94,8 @@ public class QueueingHistoryWriterTest {
     agentStateDirs = Files.createTempDirectory("helios-agents");
 
     client = new DefaultZooKeeperClient(zk.curator());
-    makeWriter(client);
+    kafkaProvider = KafkaClientProvider.getTestingProvider();
+    makeWriter(client, kafkaProvider);
     masterModel = new ZooKeeperMasterModel(new ZooKeeperClientProvider(client,
         ZooKeeperModelReporter.noop()));
     client.ensurePath(Paths.configJobs());
@@ -109,16 +111,17 @@ public class QueueingHistoryWriterTest {
     zk.stop();
   }
 
-  private void makeWriter(ZooKeeperClient client) throws Exception {
-    writer = new QueueingHistoryWriter(HOSTNAME,
-        client, agentStateDirs.resolve("task-history.json"));
+  private void makeWriter(ZooKeeperClient client, KafkaClientProvider kafkaProvider)
+          throws Exception {
+    writer = new QueueingHistoryWriter(HOSTNAME, client, kafkaProvider,
+        agentStateDirs.resolve("task-history.json"));
     writer.startUp();
   }
 
   @Test
   public void testZooKeeperErrorDoesntLoseItemsReally() throws Exception {
     final ZooKeeperClient mockClient = mock(ZooKeeperClient.class);
-    makeWriter(mockClient);
+    makeWriter(mockClient, kafkaProvider);
     final String path = Paths.historyJobHostEventsTimestamp(JOB_ID, HOSTNAME, TIMESTAMP);
     final KeeperException exc = new ConnectionLossException();
     // make save operations fail
@@ -175,7 +178,7 @@ public class QueueingHistoryWriterTest {
     writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP);
     // simulate a crash by recreating the writer
     writer.stopAsync().awaitTerminated();
-    makeWriter(client);
+    makeWriter(client, kafkaProvider);
     zk.start();
     final TaskStatusEvent historyItem = Iterables.getOnlyElement(awaitHistoryItems());
     assertEquals(JOB_ID, historyItem.getStatus().getJob().getId());

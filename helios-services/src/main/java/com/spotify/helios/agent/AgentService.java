@@ -188,8 +188,11 @@ public class AgentService extends AbstractIdleService implements Managed {
         new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
+    final KafkaClientProvider kafkaClientProvider = new KafkaClientProvider(
+        config.getKafkaBrokers());
     try {
-      this.model = new ZooKeeperAgentModel(zkClientProvider, config.getName(), stateDirectory);
+      this.model = new ZooKeeperAgentModel(zkClientProvider, kafkaClientProvider,
+        config.getName(), stateDirectory);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
