@@ -38,6 +38,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.Resources;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePortParameters;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 
@@ -164,7 +165,10 @@ public class TaskConfig {
         job.getRegistration().entrySet()) {
       final ServiceEndpoint registration = entry.getKey();
       final ServicePorts servicePorts = entry.getValue();
-      for (String portName : servicePorts.getPorts().keySet()) {
+      for (final Entry<String, ServicePortParameters> portEntry :
+          servicePorts.getPorts().entrySet()) {
+        final String portName = portEntry.getKey();
+        final ServicePortParameters portParameters = portEntry.getValue();
         final PortMapping mapping = job.getPorts().get(portName);
         if (mapping == null) {
           log.error("no '{}' port mapped for registration: '{}'", portName, registration);
@@ -183,7 +187,7 @@ public class TaskConfig {
           continue;
         }
         builder.endpoint(registration.getName(), registration.getProtocol(), externalPort,
-            fullyQualifiedRegistrationDomain(), host);
+            fullyQualifiedRegistrationDomain(), host, portParameters.getTags());
       }
     }
 

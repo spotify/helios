@@ -22,21 +22,25 @@
 package com.spotify.helios.common;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePortParameters;
+import com.spotify.helios.common.descriptors.ServicePorts;
 
 import org.junit.Test;
 
+import java.util.Map;
 import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
@@ -44,6 +48,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION_DOMAIN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_RESOURCES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -114,6 +119,25 @@ public class JobValidatorTest {
     assertThat(validator.validate(j.toBuilder().addVolume("/foo:ro", "/").build()), is(empty()));
     assertThat(validator.validate(j.toBuilder().addVolume("/foo", "/bar").build()), is(empty()));
     assertThat(validator.validate(j.toBuilder().addVolume("/foo:ro", "/bar").build()), is(empty()));
+  }
+
+  @Test
+  public void testValidPortTagsPass() {
+    final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
+    final Job.Builder builder = j.toBuilder();
+    final Map<String, PortMapping> ports = ImmutableMap.of("add_ports1", PortMapping.of(1234),
+                                                           "add_ports2", PortMapping.of(2345));
+    final ImmutableMap.Builder<String, ServicePortParameters> servicePortsBuilder =
+        ImmutableMap.builder();
+    servicePortsBuilder.put("add_ports1", new ServicePortParameters(
+        ImmutableList.of("tag1", "tag2")));
+    servicePortsBuilder.put("add_ports2", new ServicePortParameters(
+        ImmutableList.of("tag3", "tag4")));
+    final ServicePorts servicePorts = new ServicePorts(servicePortsBuilder.build());
+    final Map<ServiceEndpoint, ServicePorts> addRegistration = ImmutableMap.of(
+        ServiceEndpoint.of("add_service", "add_proto"), servicePorts);
+    builder.setPorts(ports).setRegistration(addRegistration);
+    assertThat(validator.validate(builder.build()), is(empty()));
   }
 
   @Test
