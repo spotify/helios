@@ -31,8 +31,8 @@ import java.util.Map;
 import static java.util.Arrays.asList;
 
 /**
- * Effectively a set of port names, that is the map keys, as ServicePortParameters is just
- * an empty JSON object.
+ * A set of port names, that is map keys, together with ServicePortParameters containing optional
+ * metadata for a port.
  *
  * A typical JSON representation might be:
  * <pre>

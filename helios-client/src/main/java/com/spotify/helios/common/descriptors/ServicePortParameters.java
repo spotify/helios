@@ -29,8 +29,31 @@ import org.jetbrains.annotations.Nullable;
 import java.util.List;
 
 /**
- * A class that used to do something, but now is just effectively a placeholder in a Map
- * that is treated as a Set.  It is represented by the empty map in JSON.
+ * Stores metadata for a service port. Currently, only tags are supported.
+ *
+ * The tags can be used in service registration plugins trough ServiceRegistration.Endpoint.
+ *
+ * An example expression of a Helios job with service port metadata might be:
+ * <pre>
+ * {
+ *   "ports" : {
+ *     "http" : {
+ *       "externalPort" : 8060,
+ *       "internalPort" : 8080,
+ *       "protocol" : "tcp"
+ *     }
+ *   },
+ *   "registration" : {
+ *     "service/http" : {
+ *       "ports" : {
+ *         "http" : {
+ *           "tags" : ["tag-1", "tag-2"]
+ *         }
+ *       }
+ *     }
+ *   }
+ * }
+ * </pre>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServicePortParameters extends Descriptor {
