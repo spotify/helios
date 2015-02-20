@@ -64,6 +64,7 @@ public class AgentParser extends ServiceParser {
   private Argument agentIdArg;
   private Argument dnsArg;
   private Argument bindArg;
+  private Argument kafkaArg;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -106,6 +107,8 @@ public class AgentParser extends ServiceParser {
       throw new IllegalArgumentException("Bad port range: " + portRangeString);
     }
 
+    final List<String> kafkaBrokers = options.getList(kafkaArg.getDest());
+
     this.agentConfig = new AgentConfig()
         .setName(getName())
         .setZooKeeperConnectionString(getZooKeeperConnectString())
@@ -127,7 +130,8 @@ public class AgentParser extends ServiceParser {
         .setServiceRegistrarPlugin(getServiceRegistrarPlugin())
         .setAdminPort(options.getInt(adminArg.getDest()))
         .setHttpEndpoint(httpAddress)
-        .setNoHttp(options.getBoolean(noHttpArg.getDest()));
+        .setNoHttp(options.getBoolean(noHttpArg.getDest()))
+        .setKafkaBrokers(kafkaBrokers.isEmpty() ? null : kafkaBrokers);
 
     final String explicitId = options.getString(agentIdArg.getDest());
     if (explicitId != null) {
@@ -212,6 +216,11 @@ public class AgentParser extends ServiceParser {
         .action(append())
         .setDefault(new ArrayList<String>())
         .help("volumes to bind to all containers");
+
+    kafkaArg = parser.addArgument("--kafka")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("Kafka brokers to bootstrap with");
   }
 
   public AgentConfig getAgentConfig() {

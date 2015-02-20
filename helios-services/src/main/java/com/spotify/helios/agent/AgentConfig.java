@@ -286,7 +286,8 @@ public class AgentConfig extends Configuration {
     return kafkaBrokers;
   }
 
-  public void setKafkaBrokers(List<String> kafkaBrokers) {
+  public AgentConfig setKafkaBrokers(List<String> kafkaBrokers) {
     this.kafkaBrokers = kafkaBrokers;
+    return this;
   }
 }
