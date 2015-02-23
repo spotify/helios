@@ -80,8 +80,6 @@ choose Helios?
   frequently (usually, at least weekly) into production here at
   Spotify.
 
-* We do not pretend to have features we don't have.
-
 * Helios should be able to fit in the way you already do ops.  Of the
   popular Docker Orchestration frameworks, Helios is the only one
   we're aware of that doesn't have anything much in the way of system
@@ -128,36 +126,12 @@ Other components are that are required for a helios installation are:
 * [Zookeeper 3.4.0](https://zookeeper.apache.org/) or newer
 
 
-Downloading
------------
-You can download Ubuntu packages from our
-[releases page](https://github.com/spotify/helios/releases).  Though if you
-want to build it yourself, the process described below is the same process that
-generates those packages.
-
-Build & Test
-------------
-
-First, make sure you have Docker installed locally. If you're using OS X, you can use
-the included Vagrantfile to bring up Docker inside of a VM:
-
-```sh
-$ vagrant up
-
-# set DOCKER_HOST to use the Docker instance inside the VM
-$ export DOCKER_HOST=tcp://192.168.33.10:2375
-```
-
-Actually building Helios and running its tests should be a simple matter
-of running:
-
-    $ mvn clean test
-
 Install & Run
 -------------
 
 ### Quick start
-If you have [Vagrant](http://www.vagrantup.com/) installed locally, just run:
+If you have [Vagrant](http://www.vagrantup.com/) installed locally, just
+clone the repo and run:
 
     $ vagrant up
 
@@ -184,26 +158,66 @@ After you've run `mvn package`, you should be able to start the agent and master
 
 If you see any issues, make sure you have the prerequisites (Docker and Zookeeper) installed.
 
-### Production
-You can install the downloaded deb packages as mentioned above, or you
-can build them yourself.
+### Production on Debian, Ubuntu, etc.
 
-Running `mvn package` generates deb packages that you can install on
-your servers. For example:
+Prebuilt Debian packages are available for production use. To install:
 
-    $ mvn package
-    ...
-    $ find . -name "*.deb"
-    ./helios-services/target/helios-agent_0.0.27-SNAPSHOT_all.deb
-    ./helios-services/target/helios-master_0.0.27-SNAPSHOT_all.deb
-    ./helios-services/target/helios-services_0.0.27-SNAPSHOT_all.deb
-    ./helios-tools/target/helios_0.0.27-SNAPSHOT_all.deb
+```bash
+$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
 
-The deb package in the helios-tools directory contains the Helios CLI tool.
+# install Helios command-line tools
+$ sudo apt-get install helios
 
-The `helios-services` deb package is a shared dependency of both the agent
-and the master. Install it and either the `helios-agent` or `helios-master`
-deb package on each agent and master, respectively.
+# install Helios master (assumes you already have zookeeperd somewhere)
+$ sudo apt-get install helios-master
+
+# install Helios agent (assumes you have Docker installed)
+$ sudo apt-get install helios-agent
+```
+
+Note that the Helios master and agent services won't autostart when they are installed. To enable
+them, edit `/etc/default/helios-agent` or `/etc/default/helios-master` and set `ENABLED=yes`.
+After that, you can `sudo start helios-agent` or `sudo start helios-master`.
+
+We recommend reading [the Helios configuration & deployment guide](https://github.com/spotify/helios/blob/master/docs/how_to_deploy.md)
+before starting a production cluster.
+
+#### Whatever, just get me running
+
+This will install and start the Helios master and Helios agent on a single machine with default
+configuration:
+
+```bash
+# install prereqs & packages
+$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
+$ sudo apt-get install zookeeperd docker.io helios helios-agent helios-master
+
+# enable and start the services
+$ sudo sed -i -e 's/ENABLED=.*/ENABLED=yes/' /etc/default/helios-*
+$ sudo start helios-master
+$ sudo start helios-agent
+
+# check if it worked and the local agent is registered
+$ helios -z http://localhost:5801 hosts
+```
+
+Build & Test
+------------
+
+First, make sure you have Docker installed locally. If you're using OS X, you can use
+the included Vagrantfile to bring up Docker inside of a VM:
+
+```sh
+$ vagrant up
+
+# set DOCKER_HOST to use the Docker instance inside the VM
+$ export DOCKER_HOST=tcp://192.168.33.10:2375
+```
+
+Actually building Helios and running its tests should be a simple matter
+of running:
+
+    $ mvn clean test
 
 Other Software You Might Want To Consider
 -----------------------------------------
