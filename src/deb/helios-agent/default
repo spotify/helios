@@ -1,5 +1,4 @@
-# by default don't start daemon from init script
-ENABLED=
+ENABLED=yes
 
 HELIOS_AGENT_JVM_OPTS=
 

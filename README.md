@@ -168,18 +168,15 @@ $ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
 # install Helios command-line tools
 $ sudo apt-get install helios
 
-# install Helios master (assumes you already have zookeeperd somewhere)
+# install Helios master (assumes you have zookeeperd installed)
 $ sudo apt-get install helios-master
 
 # install Helios agent (assumes you have Docker installed)
 $ sudo apt-get install helios-agent
 ```
 
-Note that the Helios master and agent services won't autostart when they are installed. To enable
-them, edit `/etc/default/helios-agent` or `/etc/default/helios-master` and set `ENABLED=yes`.
-After that, you can `sudo start helios-agent` or `sudo start helios-master`.
-
-We recommend reading [the Helios configuration & deployment guide](https://github.com/spotify/helios/blob/master/docs/how_to_deploy.md)
+Note that the Helios master and agent services both try to connect to ZooKeeper at `localhost:2181`
+by default. We recommend reading [the Helios configuration & deployment guide](https://github.com/spotify/helios/blob/master/docs/how_to_deploy.md)
 before starting a production cluster.
 
 #### Whatever, just get me running
@@ -188,14 +185,12 @@ This will install and start the Helios master and Helios agent on a single machi
 configuration:
 
 ```bash
-# install prereqs & packages
-$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
-$ sudo apt-get install zookeeperd docker.io helios helios-agent helios-master
+# install prereqs
+$ sudo apt-get install zookeeperd docker.io
 
-# enable and start the services
-$ sudo sed -i -e 's/ENABLED=.*/ENABLED=yes/' /etc/default/helios-*
-$ sudo start helios-master
-$ sudo start helios-agent
+# install helios
+$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
+$ sudo apt-get install helios helios-agent helios-master
 
 # check if it worked and the local agent is registered
 $ helios -z http://localhost:5801 hosts
