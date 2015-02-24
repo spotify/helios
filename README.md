@@ -192,6 +192,9 @@ $ sudo apt-get install zookeeperd docker.io
 $ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
 $ sudo apt-get install helios helios-agent helios-master
 
+# let helios access docker
+$ sudo usermod -aG docker helios && sudo restart helios-agent
+
 # check if it worked and the local agent is registered
 $ helios -z http://localhost:5801 hosts
 ```
