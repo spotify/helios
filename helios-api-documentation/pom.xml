@@ -121,11 +121,11 @@
                           </sourcefiles>
                         </group>
                       </structure>
-                      <html destdir="${project.build.directory}/jacoco"
+                      <html destdir="${project.build.directory}/jacoco/report/html"
                             footer="Code Coverage Report for Helios ${project.version}"
                             locale="en"/>
-                      <csv destfile="${project.build.directory}/jacoco/coverage.csv"/>
-                      <xml destfile="${project.build.directory}/jacoco/coverage.xml"/>
+                      <csv destfile="${project.build.directory}/jacoco/report/coverage.csv"/>
+                      <xml destfile="${project.build.directory}/jacoco/report/coverage.xml"/>
                     </report>
                   </target>
                 </configuration>
