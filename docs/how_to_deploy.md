@@ -22,8 +22,8 @@ Add the Helios apt repository to get Debian packages:
     $ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
 
 You can then `apt-get install helios`, `helios-agent`, and `helios-master`.
-Note that the Helios master and agent services will not autostart when they are installed. You
-will need to configure and enable them as detailed below.
+Note that the Helios master and agent services both try to connect to ZooKeeper at `localhost:2181`
+when installed. You will need to configure and enable them as detailed below.
 
 ### Whatever, just get me running
 
@@ -31,14 +31,12 @@ This will install and start the Helios master and Helios agent on a single machi
 configuration:
 
 ```bash
-# install prereqs & packages
-$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
-$ sudo apt-get install zookeeperd docker.io helios helios-agent helios-master
+# install prereqs
+$ sudo apt-get install zookeeperd docker.io
 
-# enable and start the services
-$ sudo sed -i -e 's/ENABLED=.*/ENABLED=yes/' /etc/default/helios-*
-$ sudo start helios-master
-$ sudo start helios-agent
+# install helios
+$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
+$ sudo apt-get install helios helios-agent helios-master
 
 # check if it worked and the local agent is registered
 $ helios -z http://localhost:5801 hosts
@@ -51,8 +49,7 @@ The `helios-agent` and `helios-master` packages will install defaults files:
 * Agent: `/etc/default/helios-agent`
 * Master: `/etc/default/helios-master`
 
-You must edit these files and set `ENABLED=yes` for the services to start. You can also set
-`HELIOS_AGENT_OPTS` and `HELIOS_MASTER_OPTS` in these files. See the options below.
+You can set `HELIOS_AGENT_OPTS` and `HELIOS_MASTER_OPTS` in these files. See the options below.
 
 ### Helios master options
 Specify these options in the `HELIOS_MASTER_OPTS` variable in `/etc/default/helios-master`:
