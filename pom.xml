@@ -203,7 +203,7 @@
             <version>2.16</version>
             <configuration>
               <enableAssertions>false</enableAssertions>
-              <forkCount>16</forkCount>
+              <forkCount>4</forkCount>
               <reuseForks>false</reuseForks>
               <argLine>${surefireArgLine}</argLine>
               <environmentVariables>
