@@ -107,6 +107,8 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <autoReleaseAfterClose>true</autoReleaseAfterClose>
+    <jacoco.version>0.7.3.201502191951</jacoco.version>
+    <surefireArgLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</surefireArgLine>
   </properties>
 
   <modules>
@@ -137,7 +139,7 @@
               <enableAssertions>false</enableAssertions>
               <forkCount>1C</forkCount>
               <reuseForks>false</reuseForks>
-              <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
+              <argLine>${surefireArgLine}</argLine>
               <systemPropertyVariables>
                 <curator-default-session-timeout>500</curator-default-session-timeout>
                 <curator-default-connection-timeout>500</curator-default-connection-timeout>
@@ -169,7 +171,7 @@
               <enableAssertions>false</enableAssertions>
               <forkCount>1</forkCount>
               <reuseForks>false</reuseForks>
-              <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
+              <argLine>${surefireArgLine}</argLine>
               <environmentVariables>
                 <HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>2</HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>
               </environmentVariables>
@@ -203,7 +205,7 @@
               <enableAssertions>false</enableAssertions>
               <forkCount>16</forkCount>
               <reuseForks>false</reuseForks>
-              <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
+              <argLine>${surefireArgLine}</argLine>
               <environmentVariables>
                 <HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>2</HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>
               </environmentVariables>
@@ -237,7 +239,7 @@
               <enableAssertions>false</enableAssertions>
               <forkCount>1C</forkCount>
               <reuseForks>false</reuseForks>
-              <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
+              <argLine>${surefireArgLine}</argLine>
               <systemPropertyVariables>
                 <junit.parallel.threads>1</junit.parallel.threads>
                 <logToFile>false</logToFile>
@@ -316,6 +318,7 @@
         </plugins>
       </build>
     </profile>
+
     <profile>
       <id>release-no-sign</id>
       <build>
@@ -340,6 +343,7 @@
         </plugins>
       </build>
     </profile>
+
     <profile>
       <id>sign-artifacts</id>
       <build>
@@ -357,6 +361,48 @@
                 </goals>
               </execution>
             </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>jacoco</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.jacoco</groupId>
+            <artifactId>jacoco-maven-plugin</artifactId>
+            <version>${jacoco.version}</version>
+            <executions>
+              <execution>
+                <id>pre-unit-test</id>
+                <goals>
+                  <goal>prepare-agent</goal>
+                </goals>
+                <configuration>
+                  <destFile>${project.build.directory}/jacoco/jacoco.exec</destFile>
+                  <propertyName>jacocoArgLine</propertyName>
+                </configuration>
+              </execution>
+              <execution>
+                <id>post-unit-test</id>
+                <phase>test</phase>
+                <goals>
+                  <goal>report</goal>
+                </goals>
+                <configuration>
+                  <dataFile>${project.build.directory}/jacoco/jacoco.exec</dataFile>
+                  <outputDirectory>${project.build.directory}/jacoco</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <artifactId>maven-surefire-plugin</artifactId>
+            <configuration>
+              <argLine>${jacocoArgLine} ${surefireArgLine}</argLine>
+            </configuration>
           </plugin>
         </plugins>
       </build>
