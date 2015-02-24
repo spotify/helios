@@ -21,7 +21,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
@@ -29,7 +28,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
+
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -55,6 +57,11 @@ import static java.util.Collections.emptyMap;
  *     "JVM_ARGS" : "-Ddw.feature.randomFeatureFlagEnabled=true"
  *   },
  *   "expires" : null,
+ *   "healthCheck" : {
+ *     "type" : "http",
+ *     "path" : "/healthcheck",
+ *     "port" : "http-admin"
+ *   }
  *   "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
  *   "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
  *   "ports" : {
@@ -97,6 +104,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final String EMPTY_REGISTRATION_DOMAIN = "";
   public static final String EMPTY_CREATING_USER = null;
   public static final String EMPTY_TOKEN = "";
+  public static final HealthCheck EMPTY_HEALTH_CHECK = null;
 
   private final JobId id;
   private final String image;
@@ -111,6 +119,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final String registrationDomain;
   private final String creatingUser;
   private final String token;
+  private final HealthCheck healthCheck;
 
   /**
    * Create a Job.
@@ -145,7 +154,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("expires") @Nullable final Date expires,
              @JsonProperty("registrationDomain") @Nullable String registrationDomain,
              @JsonProperty("creatingUser") @Nullable String creatingUser,
-             @JsonProperty("token") @Nullable String token) {
+             @JsonProperty("token") @Nullable String token,
+             @JsonProperty("healthCheck") @Nullable HealthCheck healthCheck) {
     this.id = id;
     this.image = image;
 
@@ -162,6 +172,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .or(EMPTY_REGISTRATION_DOMAIN);
     this.creatingUser = Optional.fromNullable(creatingUser).orNull();
     this.token = Optional.fromNullable(token).or(EMPTY_TOKEN);
+    this.healthCheck = Optional.fromNullable(healthCheck).orNull();
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -180,6 +191,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .or(EMPTY_REGISTRATION_DOMAIN);
     this.creatingUser = p.creatingUser;
     this.token = p.token;
+    this.healthCheck = p.healthCheck;
   }
 
   public JobId getId() {
@@ -232,6 +244,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public String getToken() {
     return token;
+  }
+
+  public HealthCheck getHealthCheck() {
+    return healthCheck;
   }
 
   public static Builder newBuilder() {
@@ -295,6 +311,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (!token.equals(job.token)) {
       return false;
     }
+    if (healthCheck != null ? !healthCheck.equals(job.healthCheck) : job.healthCheck != null) {
+      return false;
+    }
 
     return true;
   }
@@ -314,6 +333,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
     result = 31 * result + (creatingUser != null ? creatingUser.hashCode() : 0);
     result = 31 * result + token.hashCode();
+    result = 31 * result + (healthCheck != null ? healthCheck.hashCode() : 0);
     return result;
   }
 
@@ -332,6 +352,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("registrationDomain", registrationDomain)
         .add("creatingUser", creatingUser)
         .add("token", token)
+        .add("healthCheck", healthCheck)
         .toString();
   }
 
@@ -354,7 +375,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setExpires(expires)
         .setRegistrationDomain(registrationDomain)
         .setCreatingUser(creatingUser)
-        .setToken(token);
+        .setToken(token)
+        .setHealthCheck(healthCheck);
   }
 
   public static class Builder implements Cloneable {
@@ -387,6 +409,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Date expires;
       public String creatingUser;
       public String token;
+      public HealthCheck healthCheck;
 
       private Parameters() {
         this.command = EMPTY_COMMAND;
@@ -399,6 +422,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.registrationDomain = EMPTY_REGISTRATION_DOMAIN;
         this.creatingUser = EMPTY_CREATING_USER;
         this.token = EMPTY_TOKEN;
+        this.healthCheck = EMPTY_HEALTH_CHECK;
       }
 
       private Parameters(final Parameters p) {
@@ -416,6 +440,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.registrationDomain = p.registrationDomain;
         this.creatingUser = p.creatingUser;
         this.token = p.token;
+        this.healthCheck = p.healthCheck;
       }
     }
 
@@ -519,6 +544,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setHealthCheck(final HealthCheck healthCheck) {
+      p.healthCheck = healthCheck;
+      return this;
+    }
+
     public String getName() {
       return p.name;
     }
@@ -569,6 +599,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Resources getResources() {
       return p.resources;
+    }
+
+    public HealthCheck getHealthCheck() {
+      return p.healthCheck;
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
