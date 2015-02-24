@@ -22,10 +22,10 @@ fi
 # Start helios-master
 if which initctl >/dev/null && initctl version | grep -q upstart; then
     # Using upstart
-    initctl stop helios-master || true
+    initctl stop helios-master >/dev/null 2>&1 || true
     initctl start helios-master || true
 else
     # Using SysV init scripts
-    /etc/init.d/helios-master stop || true
+    /etc/init.d/helios-master stop >/dev/null 2>&1 || true
     /etc/init.d/helios-master start || true
 fi

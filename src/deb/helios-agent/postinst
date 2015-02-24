@@ -17,6 +17,10 @@ Please fix this and reinstall this package." >&2
 Please fix this and reinstall this package." >&2
         exit 1
     fi
+    if getent group docker >/dev/null 2>&1; then
+        echo "* Adding helios user to docker group." >&2
+        usermod -aG docker helios
+    fi
     # ensure home directory ownership
     mkdir -p /var/lib/helios-agent
     su - helios -c "test -O /var/lib/helios-agent &&
@@ -27,10 +31,10 @@ fi
 # Start helios-agent
 if which initctl >/dev/null && initctl version | grep -q upstart; then
     # Using upstart
-    initctl stop helios-agent || true
+    initctl stop helios-agent >/dev/null 2>&1 || true
     initctl start helios-agent || true
 else
     # Using SysV init scripts
-    /etc/init.d/helios-agent stop || true
+    /etc/init.d/helios-agent stop >/dev/null 2>&1 || true
     /etc/init.d/helios-agent start || true
 fi
