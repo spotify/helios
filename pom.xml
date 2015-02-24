@@ -201,7 +201,7 @@
             <version>2.16</version>
             <configuration>
               <enableAssertions>false</enableAssertions>
-              <forkCount>16</forkCount>
+              <forkCount>4</forkCount>
               <reuseForks>false</reuseForks>
               <argLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</argLine>
               <environmentVariables>
