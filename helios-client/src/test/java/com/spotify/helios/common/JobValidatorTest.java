@@ -25,6 +25,7 @@ import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 
+import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -36,14 +37,15 @@ import java.util.Set;
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_HEALTH_CHECK;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION_DOMAIN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_RESOURCES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
@@ -54,6 +56,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class JobValidatorTest {
+  private final HealthCheck HEALTH_CHECK =
+    HealthCheck.newHttpHealthCheck().setPath("/").setPort("1").build();
   private final Job VALID_JOB = Job.newBuilder()
       .setName("foo")
       .setVersion("1")
@@ -61,6 +65,7 @@ public class JobValidatorTest {
       .setEnv(ImmutableMap.of("FOO", "BAR"))
       .setPorts(ImmutableMap.of("1", PortMapping.of(1, 1),
                                 "2", PortMapping.of(2, 2)))
+      .setHealthCheck(HEALTH_CHECK)
       .build();
 
   final JobValidator validator = new JobValidator();
@@ -134,7 +139,8 @@ public class JobValidatorTest {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
                             "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS, EMPTY_REGISTRATION,
                             EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
-                            EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN);
+                            EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
+                            EMPTY_HEALTH_CHECK);
     final JobId recomputedId = job.toBuilder().build().getId();
     assertEquals(ImmutableSet.of("Id hash mismatch: " + job.getId().getHash()
         + " != " + recomputedId.getHash()), validator.validate(job));
@@ -254,6 +260,23 @@ public class JobValidatorTest {
 
     assertEquals(newHashSet("Volume source is not absolute: bar"),
                  validator.validate(j.toBuilder().addVolume("/foo", "bar").build()));
+  }
+
+  @Test
+  public void testInvalidHealthCheckFail() {
+    final Job jobWithNoPorts = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("foobar")
+        .setHealthCheck(HEALTH_CHECK)
+        .build();
+
+    assertEquals(1, validator.validate(jobWithNoPorts).size());
+
+    final Job jobWithWrongPort = jobWithNoPorts.toBuilder()
+        .addPort("a", PortMapping.of(1, 1))
+        .build();
+    assertEquals(1, validator.validate(jobWithWrongPort).size());
   }
   
   @Test
