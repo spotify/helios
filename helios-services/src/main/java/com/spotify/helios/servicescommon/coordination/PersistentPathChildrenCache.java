@@ -169,7 +169,9 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
         try {
           update();
           return;
-        } catch (KeeperException e) {
+        } catch (Exception e) {
+          // If an exception is thrown we must set the synced flag to false. Otherwise the next run
+          // of update might not fetch data from zookeeper because it thinks everything is synced.
           synced = false;
           log.warn("update failed: {}", e.getMessage());
           Thread.sleep(retryScheduler.nextMillis());
