@@ -102,7 +102,7 @@ public class TcpHealthCheck extends HealthCheck {
 
     public TcpHealthCheck build() {
       if (isNullOrEmpty(port)) {
-        throw new IllegalArgumentException("You must specify the name of port you opened " +
+        throw new IllegalArgumentException("You must specify the name of a port you opened " +
                                            "to the container for a TCP health check.");
       }
 

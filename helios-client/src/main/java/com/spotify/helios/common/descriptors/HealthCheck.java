@@ -21,22 +21,11 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.Objects;
-import com.google.common.collect.Lists;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
-import org.jetbrains.annotations.Nullable;
-
-import java.util.Collection;
-import java.util.List;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.lang.String.format;
 
 /**
  * Defines the health check for the Helios job. There are 3 types of health checks.

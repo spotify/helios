@@ -47,6 +47,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * A runner service that starts a container once.
@@ -55,6 +57,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
   private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
   private static final int SECONDS_TO_WAIT_BEFORE_KILL = 120;
+  private static final long HEALTHCHECK_MAX_RETRY_MILLIS = MINUTES.toMillis(5);
 
   private final long delayMillis;
   private final SettableFuture<Integer> result = SettableFuture.create();
@@ -63,6 +66,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private final String existingContainerId;
   private final Listener listener;
   private final ServiceRegistrar registrar;
+  private final Optional<HealthChecker> healthChecker;
   private Optional<ServiceRegistrationHandle> serviceRegistrationHandle;
   private Optional<String> containerId;
 
@@ -74,6 +78,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.listener = checkNotNull(builder.listener, "listener");
     this.existingContainerId = builder.existingContainerId;
     this.registrar = checkNotNull(builder.registrar, "registrar");
+    this.healthChecker = Optional.fromNullable(builder.healthChecker);
     this.serviceRegistrationHandle = Optional.absent();
     this.containerId = Optional.absent();
   }
@@ -138,6 +143,29 @@ class TaskRunner extends InterruptingExecutionThreadService {
     final String containerId = createAndStartContainer();
     this.containerId = Optional.of(containerId);
     listener.running();
+
+    if (healthChecker.isPresent()) {
+      final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
+          .setMinIntervalMillis(SECONDS.toMillis(1))
+          .setMaxIntervalMillis(SECONDS.toMillis(30))
+          .build().newScheduler();
+
+      long totalMillis = 0;
+
+      while (!healthChecker.get().check(containerId)) {
+        final long retryMillis = retryScheduler.nextMillis();
+        log.warn("container failed healthcheck, will retry in {}ms: {}: {}",
+                 retryMillis, config, containerId);
+
+        totalMillis += retryMillis;
+        if (totalMillis >= HEALTHCHECK_MAX_RETRY_MILLIS) {
+          docker.killContainer(containerId);
+          throw new RuntimeException("container failed repeated health checks");
+        } else {
+          Thread.sleep(retryMillis);
+        }
+      }
+    }
 
     // Register and wait for container to exit
     serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
@@ -272,7 +300,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
   public static class Builder {
 
-
     private Builder() {
     }
 
@@ -281,6 +308,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     private DockerClient docker;
     private String existingContainerId;
     private Listener listener;
+    private HealthChecker healthChecker;
     public ServiceRegistrar registrar = new NopServiceRegistrar();
 
     public Builder delayMillis(final long delayMillis) {
@@ -305,6 +333,11 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     public Builder listener(final Listener listener) {
       this.listener = listener;
+      return this;
+    }
+
+    public Builder healthChecker(final HealthChecker healthChecker) {
+      this.healthChecker = healthChecker;
       return this;
     }
 

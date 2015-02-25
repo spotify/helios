@@ -34,6 +34,7 @@ import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.PortBinding;
+import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.Resources;
@@ -188,6 +189,10 @@ public class TaskConfig {
     }
 
     return builder.build();
+  }
+
+  public HealthCheck healthCheck() {
+    return job.getHealthCheck();
   }
 
   /**

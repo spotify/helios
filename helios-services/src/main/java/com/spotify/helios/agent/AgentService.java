@@ -256,6 +256,7 @@ public class AgentService extends AbstractIdleService implements Managed {
         model, monitoredDockerClient,
         config.getEnvVars(), serviceRegistrar,
         decorators,
+        config.getDockerHost(),
         config.getName(),
         metrics.getSupervisorMetrics(),
         namespace,
