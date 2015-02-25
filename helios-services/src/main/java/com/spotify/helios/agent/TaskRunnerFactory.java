@@ -21,6 +21,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Lists;
 
 import com.spotify.docker.client.DockerClient;
@@ -39,6 +40,7 @@ public class TaskRunnerFactory {
 
   private final TaskConfig taskConfig;
   private final DockerClient docker;
+  private final Optional<HealthChecker> healthChecker;
   private final ServiceRegistrar registrar;
   private final List<TaskRunner.Listener> listeners;
 
@@ -47,6 +49,7 @@ public class TaskRunnerFactory {
     this.registrar = checkNotNull(builder.registrar, "registrar");
     this.docker = checkNotNull(builder.docker, "docker");
     this.listeners = checkNotNull(builder.listeners, "listeners");
+    this.healthChecker = Optional.fromNullable(builder.healthChecker);
   }
 
   public TaskRunner create(final long delay,
@@ -56,6 +59,7 @@ public class TaskRunnerFactory {
         .delayMillis(delay)
         .config(taskConfig)
         .docker(docker)
+        .healthChecker(healthChecker.orNull())
         .existingContainerId(containerId)
         .listener(new BroadcastingListener(concat(this.listeners, asList(listener))))
         .registrar(registrar)
@@ -68,12 +72,12 @@ public class TaskRunnerFactory {
 
   public static class Builder {
 
-
     private Builder() {
     }
 
     private TaskConfig config;
     private DockerClient docker;
+    private HealthChecker healthChecker;
     private ServiceRegistrar registrar;
     private List<TaskRunner.Listener> listeners = Lists.newArrayList();
 
@@ -89,6 +93,11 @@ public class TaskRunnerFactory {
 
     public Builder dockerClient(final DockerClient docker) {
       this.docker = docker;
+      return this;
+    }
+
+    public Builder healthChecker(final HealthChecker healthChecker) {
+      this.healthChecker = healthChecker;
       return this;
     }
 
