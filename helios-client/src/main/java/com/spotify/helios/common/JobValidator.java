@@ -21,8 +21,10 @@
 
 package com.spotify.helios.common;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
 
+import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -30,6 +32,7 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Map;
 import java.util.Set;
@@ -131,12 +134,13 @@ public class JobValidator {
     if (expiry != null && expiry.before(new Date())) {
       errors.add("Job expires in the past");
     }
+
+    errors.addAll(validateJobHealthCheck(job));
     return errors;
   }
 
   /**
-   * Validate the Job's image by checking it's not null or empty,
-   * isn't tagged with ":latest", and has the right format.
+   * Validate the Job's image by checking it's not null or empty and has the right format.
    * @param image The image String
    * @return A set of error Strings
    */
@@ -359,6 +363,34 @@ public class JobValidator {
       valid = false;
     }
     return valid;
+  }
+
+  /**
+   * Validate the Job's health check.
+   * @param job The Job to check.
+   * @return A set of error Strings
+   */
+  private Set<String> validateJobHealthCheck(final Job job) {
+    final HealthCheck healthCheck = job.getHealthCheck();
+
+    if (healthCheck == null) {
+      return Collections.emptySet();
+    }
+
+    String healthCheckType = healthCheck.getType();
+    final Set<String> errors = Sets.newHashSet();
+
+    // noinspection ConstantConditions
+    if (healthCheckType.equals(HealthCheck.HTTP) || healthCheckType.equals(HealthCheck.TCP)) {
+      final Map<String, PortMapping> ports = job.getPorts();
+      final String port = healthCheck.getPort();
+      if (!ports.containsKey(port)) {
+        errors.add(format("Health check port '%s' is unknown to job. Known ports are '%s'",
+                          port, Joiner.on(", ").join(ports.keySet())));
+      }
+    }
+
+    return errors;
   }
 
   private boolean legalPort(final int port) {
