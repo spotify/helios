@@ -55,6 +55,7 @@ page at http://checkstyle.sourceforge.net/config.html -->
 
     <module name="AvoidStarImport"/>
     <module name="NoLineWrap"/>
+    <module name="UnusedImports"/>
 
     <!--
 
