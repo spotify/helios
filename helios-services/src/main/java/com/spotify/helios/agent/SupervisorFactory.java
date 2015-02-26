@@ -25,6 +25,7 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
 import java.util.List;
@@ -45,6 +46,7 @@ public class SupervisorFactory {
   private final Map<String, String> envVars;
   private final ServiceRegistrar registrar;
   private final List<ContainerDecorator> containerDecorators;
+  private final DockerHost dockerHost;
   private final String host;
   private final SupervisorMetrics metrics;
   private final String defaultRegistrationDomain;
@@ -54,6 +56,7 @@ public class SupervisorFactory {
                            final Map<String, String> envVars,
                            final ServiceRegistrar registrar,
                            final List<ContainerDecorator> containerDecorators,
+                           final DockerHost dockerHost,
                            final String host,
                            final SupervisorMetrics supervisorMetrics,
                            final String namespace,
@@ -65,6 +68,7 @@ public class SupervisorFactory {
     this.envVars = checkNotNull(envVars, "envVars");
     this.registrar = registrar;
     this.containerDecorators = containerDecorators;
+    this.dockerHost = dockerHost;
     this.host = host;
     this.metrics = supervisorMetrics;
     this.defaultRegistrationDomain = checkNotNull(defaultRegistrationDomain,
@@ -103,10 +107,13 @@ public class SupervisorFactory {
     final FlapController flapController = FlapController.create();
     final TaskMonitor taskMonitor = new TaskMonitor(job.getId(), flapController, statusUpdater);
 
+    final HealthChecker healthChecker = HealthCheckerFactory.create(
+        taskConfig, dockerClient, dockerHost);
     final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
         .config(taskConfig)
         .registrar(registrar)
         .dockerClient(dockerClient)
+        .healthChecker(healthChecker)
         .listener(taskMonitor)
         .build();
 

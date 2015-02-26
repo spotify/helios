@@ -27,11 +27,14 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.ExecHealthCheck;
+import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
+import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -55,8 +58,10 @@ import java.util.regex.Pattern;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.common.descriptors.PortMapping.TCP;
 import static com.spotify.helios.common.descriptors.ServiceEndpoint.HTTP;
+import static java.util.Arrays.asList;
 import static java.util.regex.Pattern.compile;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.fileType;
@@ -79,6 +84,9 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument gracePeriodArg;
   private final Argument volumeArg;
   private final Argument expiresArg;
+  private final Argument healthCheckExecArg;
+  private final Argument healthCheckHttpArg;
+  private final Argument healthCheckTcpArg;
 
   public JobCreateCommand(final Subparser parser) {
     super(parser);
@@ -160,6 +168,21 @@ public class JobCreateCommand extends ControlCommand {
         .help("An ISO-8601 string representing the date/time when this job should expire. The " +
               "job will be undeployed from all hosts and removed at this time. E.g. " +
               "2014-06-01T12:00:00Z");
+
+    healthCheckExecArg = parser.addArgument("--exec-check")
+        .help("Run `docker exec` health check with the provided command. The service will not be " +
+              "registered in service discovery until the command executes successfully. " +
+              "E.g. --exec-check 'bash -c \"/usr/bin/curl " +
+              "127.0.0.1:9200/_cluster/health?pretty=true | grep green\"'");
+
+    healthCheckHttpArg = parser.addArgument("--http-check")
+        .help("Run HTTP health check against the provided port name and path. The service will " +
+              "not be registered in service discovery until the container passes the HTTP health " +
+              "check. Format: [port name]:[path].");
+
+    healthCheckTcpArg = parser.addArgument("--tcp-check")
+        .help("Run TCP health check against the provided port name. The service will not be " +
+              "registered in service discovery until the container passes the TCP health check.");
   }
 
   @Override
@@ -371,6 +394,34 @@ public class JobCreateCommand extends ControlCommand {
     if (expires != null) {
       // Use DateTime to parse the ISO-8601 string
       builder.setExpires(new DateTime(expires).toDate());
+    }
+
+    // Parse health check
+    final String execHealthCheck = options.getString(healthCheckExecArg.getDest());
+    final String httpHealthCheck = options.getString(healthCheckHttpArg.getDest());
+    final String tcpHealthCheck = options.getString(healthCheckTcpArg.getDest());
+
+    int numberOfHealthChecks = 0;
+    for (final String c : asList(execHealthCheck, httpHealthCheck, tcpHealthCheck)) {
+      if (!isNullOrEmpty(c)) {
+        numberOfHealthChecks++;
+      }
+    }
+    if (numberOfHealthChecks > 1) {
+      throw new IllegalArgumentException("Only one health check may be specified.");
+    }
+
+    if (!isNullOrEmpty(execHealthCheck)) {
+      builder.setHealthCheck(ExecHealthCheck.of(execHealthCheck));
+    } else if (!isNullOrEmpty(httpHealthCheck)) {
+      final String[] parts = httpHealthCheck.split(":", 2);
+      if (parts.length != 2) {
+        throw new IllegalArgumentException("Invalid HTTP health check: " + httpHealthCheck);
+      }
+
+      builder.setHealthCheck(HttpHealthCheck.of(parts[0], parts[1]));
+    } else if (!isNullOrEmpty(tcpHealthCheck)) {
+      builder.setHealthCheck(TcpHealthCheck.of(tcpHealthCheck));
     }
 
     builder.setToken(options.getString(tokenArg.getDest()));

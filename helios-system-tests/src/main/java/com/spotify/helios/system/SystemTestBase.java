@@ -59,7 +59,9 @@ import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
@@ -67,6 +69,7 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
@@ -140,7 +143,8 @@ public abstract class SystemTestBase {
   public static final int INTERNAL_PORT = 4444;
 
   public static final String BUSYBOX = "busybox";
-  public static final String ALPINE = "uggedal/alpine-3.0";
+  public static final String NGINX = "rohan/nginx-alpine";
+  public static final String ALPINE = "gliderlabs/alpine:3.1";
   public static final List<String> IDLE_COMMAND = asList(
       "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
 
@@ -730,6 +734,17 @@ public abstract class SystemTestBase {
 
     if (job.getExpires() != null) {
       args.add("--expires=" + ISO8601Utils.format(job.getExpires()));
+    }
+
+    if (job.getHealthCheck() != null) {
+      if (job.getHealthCheck() instanceof ExecHealthCheck) {
+        args.add("--exec-check=" + ((ExecHealthCheck) job.getHealthCheck()).getCommand());
+      } else if (job.getHealthCheck() instanceof HttpHealthCheck) {
+        final HttpHealthCheck httpHealthCheck = (HttpHealthCheck) job.getHealthCheck();
+        args.add("--http-check=" + httpHealthCheck.getPort() + ":" + httpHealthCheck.getPath());
+      } else if (job.getHealthCheck() instanceof TcpHealthCheck) {
+        args.add("--tcp-check=" + ((TcpHealthCheck) job.getHealthCheck()).getPort());
+      }
     }
 
     args.add("--");
