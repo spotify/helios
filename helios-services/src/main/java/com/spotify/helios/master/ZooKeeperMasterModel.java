@@ -33,7 +33,6 @@ import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
@@ -531,7 +530,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   /**
    * Creates a config entry within the specified agent to un/deploy a job, or more generally, change
-   * the deployment status according to the {@link Goal} value in {@link Deployment}.
+   * the deployment status according to the {@code Goal} value in {@link Deployment}.
    */
   @Override
   public void deployJob(final String host, final Deployment deployment, final String token)
