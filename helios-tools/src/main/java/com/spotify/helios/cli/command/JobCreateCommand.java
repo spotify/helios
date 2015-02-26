@@ -65,7 +65,6 @@ import static java.util.Arrays.asList;
 import static java.util.regex.Pattern.compile;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.fileType;
-import static net.sourceforge.argparse4j.impl.Arguments.store;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class JobCreateCommand extends ControlCommand {
@@ -172,7 +171,9 @@ public class JobCreateCommand extends ControlCommand {
 
     healthCheckExecArg = parser.addArgument("--exec-check")
         .help("Run `docker exec` health check with the provided command. The service will not be " +
-              "registered in service discovery until the command executes successfully.");
+              "registered in service discovery until the command executes successfully. " +
+              "E.g. --exec-check 'bash -c \"/usr/bin/curl " +
+              "127.0.0.1:9200/_cluster/health?pretty=true | grep green\"'");
 
     healthCheckHttpArg = parser.addArgument("--http-check")
         .help("Run HTTP health check against the provided port name and path. The service will " +

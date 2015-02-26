@@ -134,7 +134,7 @@ public class HttpHealthCheck extends HealthCheck {
       }
       if (!path.startsWith("/")) {
         throw new
-            IllegalArgumentException("The path for an HTTP health check must begin with '/'");
+            IllegalArgumentException("The path for an HTTP health check must begin with '/'.");
       }
       if (isNullOrEmpty(port)) {
         throw new IllegalArgumentException("You must specify a port for an HTTP health check.");
