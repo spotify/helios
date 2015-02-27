@@ -107,7 +107,7 @@
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <autoReleaseAfterClose>true</autoReleaseAfterClose>
-    <jacoco.version>0.7.3.201502191951</jacoco.version>
+    <jacoco.version>0.7.1.201405082137</jacoco.version>
     <surefireArgLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</surefireArgLine>
   </properties>
 
