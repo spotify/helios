@@ -21,7 +21,6 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.MockServiceRegistrarRegistry;
