@@ -257,18 +257,12 @@ public class HeliosClient implements AutoCloseable {
     }
 
     final String serverVersion = connection.getHeaderField(HELIOS_SERVER_VERSION_HEADER);
-    if (versionStatus == VersionCompatibility.Status.MAYBE) {
-      if (versionWarningLogged.compareAndSet(false, true)) {
-        log.warn("Your Helios client version [{}] is ahead of the server [{}].  This will"
-                 + " probably work ok but there is the potential for weird things.  If in doubt,"
-                 + " contact the Helios team if you think the cluster you're connecting to is out"
-                 + " of date and should be upgraded.", Version.POM_VERSION, serverVersion);
-      }
-    } else if (versionStatus == VersionCompatibility.Status.UPGRADE_SOON) {
-      if (versionWarningLogged.compareAndSet(false, true)) {
-        log.warn("Your Helios client is nearly out of date.  Please upgrade to [{}]",
-                 serverVersion);
-      }
+    if ((versionStatus == VersionCompatibility.Status.MAYBE) &&
+        (versionWarningLogged.compareAndSet(false, true))) {
+      log.warn("Your Helios client version [{}] is ahead of the server [{}].  This will"
+               + " probably work ok but there is the potential for weird things.  If in doubt,"
+               + " contact the Helios team if you think the cluster you're connecting to is out"
+               + " of date and should be upgraded.", Version.POM_VERSION, serverVersion);
     }
   }
 
