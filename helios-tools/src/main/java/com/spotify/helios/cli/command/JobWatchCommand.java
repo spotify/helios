@@ -72,6 +72,7 @@ public class JobWatchCommand extends MultiTargetControlCommand {
         .help("Job reference");
 
     intervalArg = parser.addArgument("--interval")
+        .type(Integer.class)
         .setDefault(1)
         .help("polling interval, default 1 second");
 
