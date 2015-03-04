@@ -143,18 +143,18 @@ your helios job params to changes in your application code.
 ### Health Checks
 
 When a job is started, Helios can optionally run a health check before registering your service with
-nameless. This prevents the service from receiving traffic before it is ready. After the container
-starts, Helios will execute the health check as follows.
+service discovery. This prevents the service from receiving traffic before it is ready. After the
+container starts, Helios will execute the health check as follows.
 
-* Begin executing health checks, using exponential backoff from 1 second to 30 seconds.
+* Begin executing health checks. Start with a 1 second interval, then back off exponentially until reaching a maximum interval of 30 seconds.
 * If no health checks succeed after 5 minutes, kill the container. Helios will start it back up and try again.
 * If a health check succeeds
   * Stop running health checks
-  * Register service with nameless (if job is configured to do so)
+  * Register service with service discovery (if job is configured to do so)
   * Mark the job as RUNNING
 
 #### HTTP
-This health check will make an http request to the specified port and path, and consider a return
+This health check makes an HTTP request to the specified port and path and considers a return
 code of 2xx or 3xx as successful. HTTP health checks are specified in the form `port_name:path`,
 where `port_name` is the **name** of the exposed port (as set in the `--port` argument), and `path`
 is the path portion of the URL. Requests have a connect timeout of 500ms and a read timeout of 10s.
@@ -162,7 +162,7 @@ is the path portion of the URL. Requests have a connect timeout of 500ms and a r
     helios create --http-check http:health -p http=8080 -r foo/http=http
 
 #### TCP
-This health check is successful if it able to connect to the specified port. You must specify the
+This health check succeeds if it is able to connect to the specified port. You must specify the
 **name** of the port as set in the `--port` argument. Each request will timeout after 500ms.
 
     helios create --tcp-check hm -p hm=4229 -r foo/hm=hm
