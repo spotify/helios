@@ -28,10 +28,13 @@ import com.google.common.io.Resources;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.HealthCheck;
+import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
+import com.spotify.helios.common.descriptors.TcpHealthCheck;
 
 import org.joda.time.DateTime;
 
@@ -198,6 +201,21 @@ public class TemporaryJobBuilder {
     return this;
   }
 
+  public TemporaryJobBuilder healthCheck(final HealthCheck healthCheck) {
+    this.builder.setHealthCheck(healthCheck);
+    return this;
+  }
+
+  public TemporaryJobBuilder httpHealthCheck(final String port, final String path) {
+    this.builder.setHealthCheck(HttpHealthCheck.of(port, path));
+    return this;
+  }
+
+  public TemporaryJobBuilder tcpHealthCheck(final String port) {
+    this.builder.setHealthCheck(TcpHealthCheck.of(port));
+    return this;
+  }
+
   /**
    * Deploys the job to the specified hosts. If no hosts are specified, a host will be chosen at
    * random from the current Helios cluster. If the HELIOS_HOST_FILTER environment variable is set,
@@ -234,6 +252,12 @@ public class TemporaryJobBuilder {
       // aren't cleaned up properly by the test will be removed by the master.
       if (builder.getExpires() == null) {
         builder.setExpires(new DateTime().plusMinutes(DEFAULT_EXPIRES_MINUTES).toDate());
+      }
+
+      // If a health check is specified, there is no need to probe ports. The health check
+      // mechanism in the agent will make sure the container is ready.
+      if (builder.getHealthCheck() != null) {
+        waitPorts.clear();
       }
 
       if (this.hosts.isEmpty()) {
