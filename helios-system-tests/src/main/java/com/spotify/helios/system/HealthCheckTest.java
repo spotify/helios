@@ -54,6 +54,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.HEALTHCHECKING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
 import static java.util.Arrays.asList;
@@ -110,7 +111,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
 
     final JobId jobId = createJob(job);
     deployJob(jobId, testHost());
-    awaitTaskState(jobId, testHost(), RUNNING);
+    awaitTaskState(jobId, testHost(), HEALTHCHECKING);
 
     // wait a few seconds to see if the service gets registered
     Thread.sleep(3000);
@@ -134,6 +135,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
       }
     });
 
+    awaitTaskState(jobId, testHost(), RUNNING);
     verify(registrar, timeout((int) SECONDS.toMillis(LONG_WAIT_SECONDS)))
         .register(registrationCaptor.capture());
     final ServiceRegistration serviceRegistration = registrationCaptor.getValue();
@@ -172,7 +174,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
 
     final JobId jobId = createJob(job);
     deployJob(jobId, testHost());
-    awaitTaskState(jobId, testHost(), RUNNING);
+    awaitTaskState(jobId, testHost(), HEALTHCHECKING);
 
     // wait a few seconds to see if the service gets registered
     Thread.sleep(3000);
@@ -196,6 +198,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
       }
     });
 
+    awaitTaskState(jobId, testHost(), RUNNING);
     verify(registrar, timeout((int) SECONDS.toMillis(LONG_WAIT_SECONDS)))
         .register(registrationCaptor.capture());
     final ServiceRegistration serviceRegistration = registrationCaptor.getValue();

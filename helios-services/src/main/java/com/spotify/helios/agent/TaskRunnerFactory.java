@@ -176,6 +176,13 @@ public class TaskRunnerFactory {
     }
 
     @Override
+    public void healthChecking() {
+      for (TaskRunner.Listener l : listeners) {
+        l.healthChecking();
+      }
+    }
+
+    @Override
     public void running() {
       for (TaskRunner.Listener l : listeners) {
         l.running();
