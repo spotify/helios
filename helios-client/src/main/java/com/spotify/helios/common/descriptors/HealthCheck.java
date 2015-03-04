@@ -79,6 +79,10 @@ public abstract class HealthCheck extends Descriptor {
     this.type = type;
   }
 
+  public String getType() {
+    return type;
+  }
+
   public static ExecHealthCheck.Builder newExecHealthCheck() {
     return ExecHealthCheck.newBuilder();
   }
