@@ -142,9 +142,10 @@ class TaskRunner extends InterruptingExecutionThreadService {
     // Create and start container if necessary
     final String containerId = createAndStartContainer();
     this.containerId = Optional.of(containerId);
-    listener.running();
 
     if (healthChecker.isPresent()) {
+      listener.healthChecking();
+
       final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
           .setMinIntervalMillis(SECONDS.toMillis(1))
           .setMaxIntervalMillis(SECONDS.toMillis(30))
@@ -166,6 +167,8 @@ class TaskRunner extends InterruptingExecutionThreadService {
         }
       }
     }
+
+    listener.running();
 
     // Register and wait for container to exit
     serviceRegistrationHandle = Optional.fromNullable(registrar.register(config.registration()));
@@ -289,6 +292,8 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     void started();
 
+    void healthChecking();
+
     void running();
 
     void exited(int code);
@@ -390,6 +395,11 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     @Override
     public void started() {
+
+    }
+
+    @Override
+    public void healthChecking() {
 
     }
 

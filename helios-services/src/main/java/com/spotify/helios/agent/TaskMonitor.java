@@ -41,6 +41,7 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.HEALTHCHECKING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
@@ -156,6 +157,13 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
   public void started() {
     // If we managed to start a container, any previous image failure has been resolved
     resetImageFailure();
+  }
+
+  @Override
+  public void healthChecking() {
+    // If the container is running a health check, any previous image failure has been resolved
+    resetImageFailure();
+    updateState(HEALTHCHECKING);
   }
 
   @Override

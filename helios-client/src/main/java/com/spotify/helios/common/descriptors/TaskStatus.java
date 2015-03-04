@@ -71,6 +71,7 @@ public class TaskStatus extends Descriptor {
     PULLING_IMAGE,
     CREATING,
     STARTING,
+    HEALTHCHECKING,
     RUNNING,
     EXITED,
     STOPPING,
