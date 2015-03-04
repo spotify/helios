@@ -15,6 +15,7 @@ Note that this guide assumes that you are familiar with [Docker](http://docker.i
   * [Specifying a command to run](#specifying-a-command-to-run)
   * [Passing environment variables](#passing-environment-variables)
   * [Using a helios job config file](#using-a-helios-job-config-file)
+  * [Health Checks](#health-checks)
   * [Specifying an Access Token](#specifying-an-access-token)
 * [Deploying Your Job](#deploying-your-job)
   * [Checking deployment status and history](#checking-deployment-status-and-history)
@@ -138,6 +139,33 @@ output of `helios inspect -d <DOMAINS> <EXISTING_JOB_NAME> --json`. Here's an ex
 A current best practice is to save all your job creation parameters in
 version-controlled files in your project directory. This allows you to tie
 your helios job params to changes in your application code.
+
+### Health Checks
+
+When a job is started, Helios can optionally run a health check before registering your service with
+service discovery. This prevents the service from receiving traffic before it is ready. After the
+container starts, Helios will execute the health check as follows.
+
+* Begin executing health checks. Start with a 1 second interval, then back off exponentially until reaching a maximum interval of 30 seconds.
+* If no health checks succeed after 5 minutes, kill the container. Helios will start it back up and try again.
+* If a health check succeeds
+  * Stop running health checks
+  * Register service with service discovery (if job is configured to do so)
+  * Mark the job as RUNNING
+
+#### HTTP
+This health check makes an HTTP request to the specified port and path and considers a return
+code of 2xx or 3xx as successful. HTTP health checks are specified in the form `port_name:path`,
+where `port_name` is the **name** of the exposed port (as set in the `--port` argument), and `path`
+is the path portion of the URL. Requests have a connect timeout of 500ms and a read timeout of 10s.
+
+    helios create --http-check http:health -p http=8080 -r foo/http=http
+
+#### TCP
+This health check succeeds if it is able to connect to the specified port. You must specify the
+**name** of the port as set in the `--port` argument. Each request will timeout after 500ms.
+
+    helios create --tcp-check hm -p hm=4229 -r foo/hm=hm
 
 ### Specifying an Access Token
 
