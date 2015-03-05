@@ -30,10 +30,14 @@ import com.google.common.collect.Ordering;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.ExecHealthCheck;
+import com.spotify.helios.common.descriptors.HealthCheck;
+import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServicePorts;
+import com.spotify.helios.common.descriptors.TcpHealthCheck;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
@@ -78,6 +82,21 @@ public class JobInspectCommand extends WildcardJobCommand {
         }
       };
 
+  private static String formatHealthCheck(final HealthCheck healthCheck) {
+    String s = String.format("type: %s", String.valueOf(healthCheck.getType()));
+    if (healthCheck instanceof HttpHealthCheck) {
+      final HttpHealthCheck httpHealthCheck = (HttpHealthCheck) healthCheck;
+      s += String.format(", port: %s, path: %s", httpHealthCheck.getPort(),
+                         httpHealthCheck.getPath());
+    } else if (healthCheck instanceof TcpHealthCheck) {
+      final TcpHealthCheck tcpHealthCheck = (TcpHealthCheck) healthCheck;
+      s += String.format(", port: %s", tcpHealthCheck.getPort());
+    } else if (healthCheck instanceof ExecHealthCheck) {
+      s += "Not implemented yet.";
+    }
+    return s;
+  }
+
   public JobInspectCommand(final Subparser parser) {
     super(parser);
 
@@ -103,12 +122,13 @@ public class JobInspectCommand extends WildcardJobCommand {
     } else {
       out.printf("Id: %s%n", job.getId());
       out.printf("Image: %s%n", job.getImage());
-      out.printf("Token: %s%n", job.getToken());
       out.printf("Command: %s%n", quote(job.getCommand()));
       printMap(out, "Env:   ", QUOTE, job.getEnv());
+      out.printf("Health check: %s%n", formatHealthCheck(job.getHealthCheck()));
+      out.printf("Grace period (seconds): %s%n", job.getGracePeriod());
       printMap(out, "Ports: ", FORMAT_PORTMAPPING, job.getPorts());
       printMap(out, "Reg: ", FORMAT_SERVICE_PORTS, job.getRegistration());
-      out.printf("Grace period (seconds): %s%n", job.getGracePeriod());
+      out.printf("Token: %s%n", job.getToken());
       printVolumes(out, job.getVolumes());
     }
 
