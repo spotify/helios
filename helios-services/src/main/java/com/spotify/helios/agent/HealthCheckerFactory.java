@@ -135,8 +135,7 @@ public class HealthCheckerFactory {
         address = new InetSocketAddress(bridge, port);
       }
 
-      final Socket s = new Socket();
-      try {
+      try (final Socket s = new Socket()) {
         s.connect(address, CONNECT_TIMEOUT_MILLIS);
       } catch (Exception e) {
         return false;
