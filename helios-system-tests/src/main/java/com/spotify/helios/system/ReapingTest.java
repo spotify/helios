@@ -32,11 +32,13 @@ import com.spotify.helios.client.HeliosClient;
 import org.junit.Test;
 
 import java.security.SecureRandom;
+import java.util.List;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.lang.Integer.toHexString;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.core.Is.is;
+import static org.hamcrest.Matchers.isIn;
 import static org.junit.Assert.assertThat;
 
 public class ReapingTest extends SystemTestBase {
@@ -65,22 +67,21 @@ public class ReapingTest extends SystemTestBase {
     awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
     awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
-    int expectedExitCode = -1;
-    if (docker.info().executionDriver().startsWith("lxc-")) {
-      // with LXC, killing a container results in exit code 0
-      expectedExitCode = 0;
-    }
+    // With LXC, killing a container results in exit code 0.
+    // In docker 1.5 killing a container results in exit code 137, in previous versions it's -1.
+    final List<Integer> expectedExitCodes = docker.info().executionDriver().startsWith("lxc-") ?
+                                            asList(0) : asList(-1, 137);
 
     // Wait for the agent to kill the container
     final ContainerExit exit1 = docker.waitContainer(intruder1);
-    assertThat(exit1.statusCode(), is(expectedExitCode));
+    assertThat(exit1.statusCode(), isIn(expectedExitCodes));
 
     // Start another container in the agent namespace
     startContainer(intruder2);
 
     // Wait for the agent to kill the second container as well
     final ContainerExit exit2 = docker.waitContainer(intruder2);
-    assertThat(exit2.statusCode(), is(expectedExitCode));
+    assertThat(exit2.statusCode(), isIn(expectedExitCodes));
   }
 
   private String intruder(final String namespace) {
