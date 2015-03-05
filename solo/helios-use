@@ -1,0 +1,64 @@
+#!/bin/bash
+
+set -e
+
+REPO=spotify/helios-solo
+HELIOS_IMAGE=$REPO:latest
+
+function get_helios_version() {
+	docker run --rm --entrypoint bash $HELIOS_IMAGE \
+		-c "ls *.jar | cut -d- -f3"
+}
+
+function get_cli_version() {
+	if type -p helios >/dev/null; then
+		helios --version | grep -oe '[0-9\.]\+'
+	fi
+}
+
+orig_version=$(get_helios_version)
+echo "Currently using Helios v$orig_version"
+echo
+
+if [ ! -z "$1" ]; then
+	requested_version="$1"
+	if [ "$orig_version" == "$requested_version" ]; then
+		echo "Already at v$requested_version"
+		exit 0
+	fi
+
+	echo "Switching to $requested_version"
+	docker pull "$REPO:$requested_version"
+	docker tag -f "$REPO:$requested_version" "$REPO:latest"
+	echo
+
+	new_version=$(get_helios_version)
+
+	if [ "$requested_version" == "latest" ] && [ "$new_version" == "$orig_version" ]; then
+		echo "Already at latest version (v$new_version)."
+		exit 0
+	fi
+
+	echo "Switched to v$new_version. To use it, please restart helios-solo:"
+	echo
+	echo '    helios-restart'
+	echo
+	echo 'Note that this will destroy all Helios jobs on helios-solo.'
+
+	cli_version=$(get_cli_version)
+	if [ ! -z "$cli_version" ] && [ "$cli_version" != "$new_version" ]; then
+		echo
+		echo "WARNING: Your Helios CLI version is different (v$cli_version)."
+		echo 'Upgrade or downgrade to the correct CLI version if you have issues.'
+		echo 'This is usually accomplished with `brew` or `apt-get`.'
+	fi
+else
+	echo 'Upgrade to the latest version with:'
+	echo
+	echo '    helios-use latest'
+	echo
+	echo 'You can also switch to a specific version with:'
+	echo
+	echo '    helios-use <version>'
+	echo
+fi

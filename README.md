@@ -130,33 +130,20 @@ Install & Run
 -------------
 
 ### Quick start
-If you have [Vagrant](http://www.vagrantup.com/) installed locally, just
-clone the repo and run:
+Use [helios-solo](https://github.com/spotify/helios/blob/master/docs/helios_solo.md)
+to launch a local environment with a Helios master and agent:
 
-    $ vagrant up
+```bash
+# install helios-solo (pick one of the below)
+$ sudo apt-get install helios-solo
+$ brew tap spotify/public && brew install helios-solo
 
-This will start a virtual machine, install the prereqs, build the project, and install and run
-the Helios agent and master. You can then use the Vagrant environment:
+# launch a helios cluster in a Docker container
+$ helios-up
+
+# check if it worked and the solo agent is registered
+$ helios-solo hosts
 ```
-$ vagrant ssh
-vagrant@ubuntu-14:~$ helios hosts
-HOST             STATUS    DEPLOYED    RUNNING    CPUS    MEM     LOAD AVG    MEM USAGE    OS       VERSION
-192.168.33.10    Down      0           0          2       0 gb    0.09        0.81         Linux    3.13.0-24-generic
-```
-
-Note that the included Vagrantfile doesn't run the test suite when building Helios. This is so
-we can get you up and running with a VM as quickly as possible. You should run `mvn package`
-yourself to run the test suite.
-
-### Manual approach
-
-The launcher scripts are in [bin/](bin).
-After you've run `mvn package`, you should be able to start the agent and master:
-
-    $ bin/helios-master &
-    $ bin/helios-agent &
-
-If you see any issues, make sure you have the prerequisites (Docker and Zookeeper) installed.
 
 ### Production on Debian, Ubuntu, etc.
 
@@ -196,18 +183,22 @@ $ sudo apt-get install helios helios-agent helios-master
 $ helios -z http://localhost:5801 hosts
 ```
 
+### Manual approach
+
+The launcher scripts are in [bin/](bin).
+After you've run `mvn package`, you should be able to start the agent and master:
+
+    $ bin/helios-master &
+    $ bin/helios-agent &
+
+If you see any issues, make sure you have the prerequisites (Docker and Zookeeper) installed.
+
 Build & Test
 ------------
 
-First, make sure you have Docker installed locally. If you're using OS X, you can use
-the included Vagrantfile to bring up Docker inside of a VM:
-
-```sh
-$ vagrant up
-
-# set DOCKER_HOST to use the Docker instance inside the VM
-$ export DOCKER_HOST=tcp://192.168.33.10:2375
-```
+First, make sure you have Docker installed locally. If you're using OS X, we
+recommend using [Boot2Docker](http://boot2docker.io/) or
+[docker-machine](https://docs.docker.com/machine/).
 
 Actually building Helios and running its tests should be a simple matter
 of running:

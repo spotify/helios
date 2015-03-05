@@ -1,0 +1,25 @@
+#!/bin/bash
+
+if [ "x$DOCKER_HOST" == "x" ]; then
+	if [ "$(uname -s)" == "Linux" ]; then
+		DOCKER_HOST=unix:///var/run/docker.sock
+		echo export DOCKER_HOST=$DOCKER_HOST
+	else
+		echo "DOCKER_HOST needs to be set"
+		exit 1
+	fi
+fi
+
+
+if [[ "$DOCKER_HOST" == unix:///* ]]; then
+	DOCKER_HOST_RAW=localhost
+	DOCKER_HOST_ADDRESS=127.0.0.1
+else
+	DOCKER_HOST_RAW=$(echo $DOCKER_HOST | sed 's/^[a-zA-Z]\{1,\}:\/\///')
+	DOCKER_HOST_ADDRESS=$(echo $DOCKER_HOST_RAW | cut -d: -f1)
+fi
+HELIOS_URI=http://$DOCKER_HOST_ADDRESS:5801
+
+echo export DOCKER_HOST_RAW=$DOCKER_HOST_RAW
+echo export DOCKER_HOST_ADDRESS=$DOCKER_HOST_ADDRESS
+echo export HELIOS_URI=$HELIOS_URI

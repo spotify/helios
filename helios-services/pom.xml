@@ -14,6 +14,7 @@
   <properties>
     <masterImageName>helios-master:${project.version}-${gitShortCommitId}</masterImageName>
     <agentImageName>helios-agent:${project.version}-${gitShortCommitId}</agentImageName>
+    <soloImageName>helios-solo:${project.version}</soloImageName>
   </properties>
 
   <profiles>
@@ -69,6 +70,38 @@
                   <entryPoint>["helios-agent"]</entryPoint>
                   <tagInfoFile>${project.build.testOutputDirectory}/agent-image.json</tagInfoFile>
                 </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+
+    <profile>
+      <id>build-solo</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>com.spotify</groupId>
+            <artifactId>docker-maven-plugin</artifactId>
+            <version>0.1.1</version>
+            <configuration>
+              <dockerDirectory>solo/docker</dockerDirectory>
+              <imageName>${soloImageName}</imageName>
+              <resources>
+                <resource>
+                  <targetPath>/</targetPath>
+                  <directory>${project.build.directory}</directory>
+                  <include>${project.build.finalName}-shaded.jar</include>
+                </resource>
+              </resources>
+            </configuration>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>build</goal>
+                </goals>
               </execution>
             </executions>
           </plugin>
@@ -372,6 +405,24 @@
       </plugin>
 
       <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <version>2.5.3</version>
+        <configuration>
+          <descriptors>
+            <descriptor>${project.basedir}/src/assembly/helios-solo.xml</descriptor>
+          </descriptors>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
         <artifactId>jdeb</artifactId>
         <groupId>org.vafer</groupId>
         <version>1.1.1</version>
@@ -496,6 +547,40 @@
                   <mapper>
                     <type>perm</type>
                     <prefix>/usr/share/helios/lib/services</prefix>
+                  </mapper>
+                </data>
+              </dataSet>
+            </configuration>
+          </execution>
+
+          <!--helios-solo-->
+          <execution>
+            <id>helios-solo</id>
+            <phase>package</phase>
+            <goals>
+              <goal>jdeb</goal>
+            </goals>
+            <configuration>
+              <deb>${project.build.directory}/helios-solo_${project.version}_all.deb</deb>
+              <controlDir>${project.parent.basedir}/src/deb/helios-solo</controlDir>
+              <dataSet>
+                <data>
+                  <type>files</type>
+                  <paths>
+                    <path>solo/helios-cleanup</path>
+                    <path>solo/helios-down</path>
+                    <path>solo/helios-enter</path>
+                    <path>solo/helios-env</path>
+                    <path>solo/helios-restart</path>
+                    <path>solo/helios-solo</path>
+                    <path>solo/helios-up</path>
+                    <path>solo/helios-use</path>
+                  </paths>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/bin</prefix>
+                    <filemode>0755</filemode>
+                    <strip>1</strip>
                   </mapper>
                 </data>
               </dataSet>
