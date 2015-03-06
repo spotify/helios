@@ -31,21 +31,6 @@
             <groupId>com.spotify</groupId>
             <artifactId>docker-maven-plugin</artifactId>
             <version>0.1.1</version>
-            <configuration>
-              <baseImage>java:7u71-jre</baseImage>
-              <resources>
-                <resource>
-                  <targetPath>/usr/share/helios/lib/services/</targetPath>
-                  <directory>${project.build.directory}</directory>
-                  <include>${project.build.finalName}-shaded.jar</include>
-                </resource>
-                <resource>
-                  <targetPath>/usr/bin/</targetPath>
-                  <directory>${project.parent.basedir}/bin</directory>
-                  <include>helios-*</include>
-                </resource>
-              </resources>
-            </configuration>
             <executions>
               <execution>
                 <id>master</id>
@@ -54,6 +39,19 @@
                   <goal>build</goal>
                 </goals>
                 <configuration>
+                  <baseImage>java:7u71-jre</baseImage>
+                  <resources>
+                    <resource>
+                      <targetPath>/usr/share/helios/lib/services/</targetPath>
+                      <directory>${project.build.directory}</directory>
+                      <include>${project.build.finalName}-shaded.jar</include>
+                    </resource>
+                    <resource>
+                      <targetPath>/usr/bin/</targetPath>
+                      <directory>${project.parent.basedir}/bin</directory>
+                      <include>helios-*</include>
+                    </resource>
+                  </resources>
                   <imageName>${masterImageName}</imageName>
                   <entryPoint>["helios-master"]</entryPoint>
                   <tagInfoFile>${project.build.testOutputDirectory}/master-image.json</tagInfoFile>
@@ -66,6 +64,19 @@
                   <goal>build</goal>
                 </goals>
                 <configuration>
+                  <baseImage>java:7u71-jre</baseImage>
+                  <resources>
+                    <resource>
+                      <targetPath>/usr/share/helios/lib/services/</targetPath>
+                      <directory>${project.build.directory}</directory>
+                      <include>${project.build.finalName}-shaded.jar</include>
+                    </resource>
+                    <resource>
+                      <targetPath>/usr/bin/</targetPath>
+                      <directory>${project.parent.basedir}/bin</directory>
+                      <include>helios-*</include>
+                    </resource>
+                  </resources>
                   <imageName>${agentImageName}</imageName>
                   <entryPoint>["helios-agent"]</entryPoint>
                   <tagInfoFile>${project.build.testOutputDirectory}/agent-image.json</tagInfoFile>
@@ -85,23 +96,23 @@
             <groupId>com.spotify</groupId>
             <artifactId>docker-maven-plugin</artifactId>
             <version>0.1.1</version>
-            <configuration>
-              <dockerDirectory>solo/docker</dockerDirectory>
-              <imageName>${soloImageName}</imageName>
-              <resources>
-                <resource>
-                  <targetPath>/</targetPath>
-                  <directory>${project.build.directory}</directory>
-                  <include>${project.build.finalName}-shaded.jar</include>
-                </resource>
-              </resources>
-            </configuration>
             <executions>
               <execution>
                 <phase>package</phase>
                 <goals>
                   <goal>build</goal>
                 </goals>
+                <configuration>
+                  <dockerDirectory>solo/docker</dockerDirectory>
+                  <imageName>${soloImageName}</imageName>
+                  <resources>
+                    <resource>
+                      <targetPath>/</targetPath>
+                      <directory>${project.build.directory}</directory>
+                      <include>${project.build.finalName}-shaded.jar</include>
+                    </resource>
+                  </resources>
+                </configuration>
               </execution>
             </executions>
           </plugin>
