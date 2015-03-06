@@ -9,6 +9,9 @@ mkdir target/debs
 find . -name *.deb -type f -not -path "./target/*" -exec cp {} target/debs/ \;
 tar -C target/debs -zcf target/helios-debs.tar.gz .
 
+# Copy helios-solo script archive into target/helios-solo.zip
+cp helios-services/target/helios-solo.zip ./target
+
 # Output build version into file for later Jenkins items
 VERSION=$(egrep -o '<version>.*</version>' -m 1 pom.xml | sed 's/<version>\(.*\)<\/version>/\1/')
 echo ${VERSION} > target/version
