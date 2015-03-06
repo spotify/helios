@@ -1,6 +1,5 @@
-FROM uggedal/alpine-3.0
+FROM onescience/alpine
 
-RUN apk update && apk add curl
 RUN curl -L -o /tmp/syslog-redirector.zip https://github.com/spotify/syslog-redirector/releases/download/0.0.5/syslog-redirector.zip
 RUN unzip /tmp/syslog-redirector.zip syslog-redirector -d / && rm /tmp/syslog-redirector.zip
 
