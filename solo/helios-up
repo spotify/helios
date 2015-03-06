@@ -1,0 +1,129 @@
+#!/bin/bash
+
+# Get HELIOS_URI and DOCKER_HOST_RAW
+eval $(PATH=.:$PATH helios-env)
+
+REPO=spotify/helios-solo
+HELIOS_IMAGE=$REPO:latest
+
+RUNNING=$(docker inspect -f '{{ .State.Running }}' helios-solo-container 2>/dev/null)
+
+if [ "$RUNNING" == "true" ]; then
+	echo 'helios-solo already running'
+else
+    # Horrible hack to presere some configuration internal to Spotify.
+    # Unfortunately, I don't have a better way to do this.
+    if grep spotify.net /etc/resolv.conf >/dev/null; then
+        # remember that you are a Spotify user
+        mkdir -p ~/.helios
+        touch ~/.helios/spotify
+    fi
+    if [ -f ~/.helios/spotify ]; then
+        # if you are a Spotify user, use our internal SRV record frmat
+        registrar_host_format='_spotify-${service}._${protocol}.services.${domain}'
+        DOCKER_OPTS="$DOCKER_OPTS -e REGISTRAR_HOST_FORMAT=$registrar_host_format"
+    fi
+
+	PROBE=$(cat /dev/urandom | LC_ALL=C tr -dc 'a-zA-Z0-9' | head -c 32)
+
+	# figure out the CONTAINER_DOCKER_HOST and CONTINER_DOCKER_CERT_PATH, which are the DOCKER_HOST
+	# and DOCKER_CERT_PATH from the perspective of the helios-solo container. these differ
+	# from the local DOCKER_HOST/CERT_PATH in the case of using Boot2Docker.
+	if [[ "$(docker info | grep 'Operating System')" == *Boot2Docker* ]]; then
+		# when using Boot2Docker, just use the unix socket endpoint for talking to Docker from
+		# the Helios container
+		CONTAINER_DOCKER_HOST=unix:///var/run/docker.sock
+		CONTAINER_DOCKER_CERT_PATH=
+	else
+		CONTAINER_DOCKER_HOST="$DOCKER_HOST"
+		CONTAINER_DOCKER_CERT_PATH="$DOCKER_CERT_PATH"
+	fi
+
+	if [ -z "$CONTAINER_DOCKER_CERT_PATH" ]; then
+		PROTOCOL="http"
+	else
+		DOCKER_OPTS="$DOCKER_OPTS -v $CONTAINER_DOCKER_CERT_PATH:/certs -e DOCKER_CERT_PATH=/certs"
+		CURL_OPTS="--insecure --cert /certs/cert.pem --key /certs/key.pem"
+		PROTOCOL="https"
+	fi
+
+	if [[ "$CONTAINER_DOCKER_HOST" == unix:///* ]]; then
+		DOCKER_SOCKET_PATH=$(echo $CONTAINER_DOCKER_HOST | sed 's/^[a-zA-Z]\{1,\}:\/\///')
+		DOCKER_OPTS="$DOCKER_OPTS -v $DOCKER_SOCKET_PATH:/var/run/docker.sock"
+		CURL_OPTS="$CURL_OPTS --unix-socket $DOCKER_SOCKET_PATH"
+	fi
+
+	if type -p nmcli >/dev/null; then
+		# get DNS servers from NetworkManager when it's available, since /etc/resolv.conf is likely
+		# to just point to local dnsmasq
+		dns_servers="$(nmcli -terse -field IP4 device list | grep DNS | cut -d: -f2)"
+		for dns in $dns_servers; do
+			DOCKER_OPTS="$DOCKER_OPTS --dns $dns"
+		done
+	fi
+
+	# Check that CONTAINER_DOCKER_HOST is reachable from within the container by starting a container
+	# with a unique name and probing docker for the existence of this named container, from within the
+	# container itself. If CONTINER_DOCKER_CERT_PATH exists, we will connect using TLS, otherwise HTTP.
+	# We're using the onescience/alpine image, which has curl with Unix socket support.
+	docker run --rm --name $PROBE $DOCKER_OPTS onescience/alpine \
+		curl -f $CURL_OPTS $PROTOCOL://$DOCKER_HOST_RAW/containers/$PROBE/json &>/dev/null
+
+	DOCKER_HOST_OK=$?
+	if [ $DOCKER_HOST_OK -ne 0 ]; then
+		echo "Docker was not reachable using DOCKER_HOST=$DOCKER_HOST_RAW and DOCKER_CERT_PATH=$DOCKER_CERT_PATH from within a container."
+		echo "Please ensure that DOCKER_HOST contains a full hostname or ip address, not localhost or 127.0.0.1, etc."
+		exit 1
+	fi
+
+	HELIOS_HOST_ADDRESS="$DOCKER_HOST_ADDRESS"
+	if [ "$HELIOS_HOST_ADDRESS" == "127.0.0.1" ]; then
+		# HELIOS_HOST_ADDRESS must be addressable from both the physical host and containers.
+		# If Docker is running on the localhost, use the bridge address instead of 127.0.0.1.
+		HELIOS_HOST_ADDRESS=$(docker run --rm onescience/alpine \
+			sh -c "ip route | awk '/default/ { print \$3 }'")
+	fi
+
+	docker rm helios-solo-container &> /dev/null
+	docker inspect "$HELIOS_IMAGE" &>/dev/null || docker pull "$HELIOS_IMAGE"
+	if ! docker inspect "$HELIOS_IMAGE" &>/dev/null; then
+		echo "Failed to pull $HELIOS_IMAGE"
+		exit 1
+	fi
+	CID=$(docker run -d \
+		  -e DOCKER_HOST=$CONTAINER_DOCKER_HOST \
+		  -e HELIOS_NAME=solo.local. \
+		  -e HOST_ADDRESS=$HELIOS_HOST_ADDRESS \
+		  -p 5801:5801 \
+		  --name helios-solo-container \
+		  $DOCKER_OPTS \
+		  $HELIOS_IMAGE)
+    if [ $? -ne 0 ]; then
+        echo "The helios-solo container couldn't start."
+    else
+        echo 'helios-solo started'
+    fi
+fi
+
+INTERNAL_IP=$(docker inspect -f '{{ .NetworkSettings.IPAddress }}' helios-solo-container)
+
+echo
+echo "helios-solo is reachable on: $HELIOS_URI (Internal IP: $INTERNAL_IP)"
+echo
+echo 'To easily interact with helios-solo, use the helios-solo wrapper: '
+echo
+echo '    helios-solo <cmd>'
+echo
+echo 'E.g.:'
+echo
+echo '    helios-solo create test:1 busybox -- sh -c "while :; do sleep 1; done"'
+echo '    helios-solo deploy test:1 solo'
+echo '    helios-solo status'
+echo
+echo 'Alternatively:'
+echo
+echo '    eval $(helios-env)'
+echo '    helios -z $HELIOS_URI <cmd>'
+echo '    ...'
+echo
+

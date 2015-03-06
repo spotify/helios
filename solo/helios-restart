@@ -1,0 +1,5 @@
+#!/bin/bash
+PATH=.:$PATH
+helios-down
+echo
+helios-up

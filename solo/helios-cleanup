@@ -1,0 +1,23 @@
+#!/bin/bash
+echo 'Removing all helios-solo jobs and containers...'
+
+# Instruct helios to undeploy and remove all jobs
+RUNNING=$(docker inspect -f '{{ .State.Running }}' helios-solo-container 2>/dev/null)
+if [ "$RUNNING" == "true" ]; then
+	JOBS=$(PATH=.:$PATH helios-solo jobs -q)
+	for job in $JOBS; do
+		PATH=.:$PATH helios-solo undeploy -a -f $job
+		PATH=.:$PATH helios-solo remove --force $job
+	done
+fi
+
+# Kill containers until they're gone
+while true; do
+	CTRS=$(docker ps -a | grep helios-solo-host- | awk '{ print $(NF) }')
+	if [ -z "$CTRS" ]; then break; fi
+	for ctr in $CTRS; do
+		docker kill $ctr
+		docker rm $ctr
+	done
+	sleep 1
+done
