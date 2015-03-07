@@ -83,6 +83,9 @@ public class JobInspectCommand extends WildcardJobCommand {
       };
 
   private static String formatHealthCheck(final HealthCheck healthCheck) {
+    if (healthCheck == null) {
+      return "";
+    }
     String s = String.format("type: %s", String.valueOf(healthCheck.getType()));
     if (healthCheck instanceof HttpHealthCheck) {
       final HttpHealthCheck httpHealthCheck = (HttpHealthCheck) healthCheck;
