@@ -240,12 +240,9 @@ the process.
 Master with default port:
 
     $ curl http://localhost:5802/healthcheck
-    * deadlocks: OK
-    * zookeeper: OK
+    {"deadlocks":{"healthy":true},"zookeeper":{"healthy":true}}
 
 Agent with default port:
 
     $ curl http://localhost:5804/healthcheck
-    * deadlocks: OK
-    * docker: OK
-    * zookeeper: OK
+    {"deadlocks":{"healthy":true},"docker":{"healthy":true},"zookeeper":{"healthy":true}}
