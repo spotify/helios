@@ -5,5 +5,5 @@ Priority: optional
 Architecture: all
 Depends: docker.io | lxc-docker, helios
 Maintainer: Rohan Singh <rohan@spotify.com>
-Description: Scripts for running Helios locally
+Description: helios-solo provides a local Helios cluster running in a Docker container
 Distribution: development
