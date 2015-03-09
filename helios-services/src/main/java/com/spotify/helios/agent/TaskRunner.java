@@ -47,7 +47,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -57,7 +56,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
   private static final Logger log = LoggerFactory.getLogger(TaskRunner.class);
   private static final int SECONDS_TO_WAIT_BEFORE_KILL = 120;
-  private static final long HEALTHCHECK_MAX_RETRY_MILLIS = MINUTES.toMillis(5);
 
   private final long delayMillis;
   private final SettableFuture<Integer> result = SettableFuture.create();
@@ -151,20 +149,11 @@ class TaskRunner extends InterruptingExecutionThreadService {
           .setMaxIntervalMillis(SECONDS.toMillis(30))
           .build().newScheduler();
 
-      long totalMillis = 0;
-
       while (!healthChecker.get().check(containerId)) {
         final long retryMillis = retryScheduler.nextMillis();
         log.warn("container failed healthcheck, will retry in {}ms: {}: {}",
                  retryMillis, config, containerId);
-
-        totalMillis += retryMillis;
-        if (totalMillis >= HEALTHCHECK_MAX_RETRY_MILLIS) {
-          docker.killContainer(containerId);
-          throw new RuntimeException("container failed repeated health checks");
-        } else {
-          Thread.sleep(retryMillis);
-        }
+        Thread.sleep(retryMillis);
       }
     }
 
