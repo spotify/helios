@@ -19,6 +19,7 @@ $ helios-up
 ### Linux
 
 ```bash
+$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
 $ sudo apt-get install spotify-helios-solo
 $ helios-up
 ```
