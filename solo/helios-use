@@ -61,4 +61,20 @@ else
 	echo
 	echo '    helios-use <version>'
 	echo
+
+	set +e
+	versions=$(curl -sSL https://index.docker.io/v1/repositories/$REPO/tags \
+		| jq  --exit-status --raw-output '.[].name')
+	versions_ok=$?
+	set -e
+
+	if [ $versions_ok -ne 0 ]; then
+		echo 'Error fetching available versions.'
+	else
+		echo 'Available versions:'
+		for v in $versions; do
+			echo "* $v"
+		done
+	fi
+	echo
 fi
