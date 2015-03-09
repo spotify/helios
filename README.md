@@ -131,19 +131,32 @@ Install & Run
 
 ### Quick start
 Use [helios-solo](https://github.com/spotify/helios/blob/master/docs/helios_solo.md)
-to launch a local environment with a Helios master and agent:
+to launch a local environment with a Helios master and agent.
+
+First, ensure you have [Docker installed locally](https://docs.docker.com/installation/). Then
+install helios-solo:
 
 ```bash
-# install helios-solo (pick one of the below)
+# install helios-solo on Debian/Ubuntu
+$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
 $ sudo apt-get install helios-solo
-$ brew tap spotify/public && brew install helios-solo
 
+# install helios-solo on OS X
+$ brew tap spotify/public && brew install helios-solo
+```
+
+Once you've got it installed, bring up the helios-solo cluster:
+
+```bash
 # launch a helios cluster in a Docker container
 $ helios-up
 
 # check if it worked and the solo agent is registered
 $ helios-solo hosts
 ```
+
+You can now [use helios-solo](https://github.com/spotify/helios/blob/master/docs/helios_solo.md#usage)
+as your local Helios cluster.
 
 ### Production on Debian, Ubuntu, etc.
 
