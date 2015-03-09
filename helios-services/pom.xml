@@ -422,6 +422,8 @@
           <descriptors>
             <descriptor>${project.basedir}/src/assembly/helios-solo.xml</descriptor>
           </descriptors>
+          <finalName>helios-solo</finalName>
+          <appendAssemblyId>false</appendAssemblyId>
         </configuration>
         <executions>
           <execution>
