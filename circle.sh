@@ -3,7 +3,7 @@
 case "$1" in
   pre_machine)
     # ensure correct level of parallelism
-    expected_nodes=3
+    expected_nodes=4
     if [ "$CIRCLE_NODE_TOTAL" -ne "$expected_nodes" ]
     then
         echo "Parallelism is set to ${CIRCLE_NODE_TOTAL}x, but we need ${expected_nodes}x."
@@ -11,13 +11,13 @@ case "$1" in
     fi
 
     # have docker bind to localhost
-    docker_opts='DOCKER_OPTS="$DOCKER_OPTS -H tcp://127.0.0.1:2375"'
+    docker_opts='DOCKER_OPTS="$DOCKER_OPTS -H tcp://0.0.0.0:2375"'
     sudo sh -c "echo '$docker_opts' >> /etc/default/docker"
 
     cat /etc/default/docker
 
     # Edit pom files to have correct version syntax
-    for i in $(find . -name pom.xml -not -path './.rvm*'); do sed -i "s/\${revision}/0/g" $i; done
+    for i in $(find . -name pom.xml -not -path './.rvm*'); do sed -i 's/${revision}/0/g' $i; done
 
     ;;
 
@@ -61,6 +61,29 @@ case "$1" in
 
         ;;
 
+      3)
+        sudo apt-get install -y jq
+
+        # build images for integration tests
+        mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true \
+          -B -V -pl helios-services
+
+        # tag the helios-solo image we just built
+        solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
+        docker tag -f $solo_image spotify/helios-solo:latest
+
+        # bring up helios-solo for integration tests
+        cd solo
+        # need to patch helios-up to not docker run --rm, since --rm doesn't work on CircleCI
+        sed -i 's/docker run --rm/docker run/' ./helios-up
+        docker0_ip=$(/sbin/ifconfig docker0 | grep 'inet addr' | \
+          awk -F: '{print $2}' | awk '{print $1}')
+        DOCKER_HOST="tcp://$docker0_ip:2375" ./helios-up
+        cd ..
+
+        mvn verify -B -pl helios-integration-tests
+        ;;
+
     esac
 
     ;;
@@ -74,7 +97,8 @@ case "$1" in
     ;;
 
   collect_test_reports)
-    cp */target/surefire-reports/*.xml $CI_REPORTS
+    cp */target/surefire-reports/*.xml $CI_REPORTS || true
+    cp */target/failsafe-reports/*.xml $CI_REPORTS || true
 
     ;;
 

@@ -12,13 +12,11 @@ RUN curl -o $SKYDNS_PLUGIN_DEB -L $SKYDNS_PLUGIN_DEB_URI \
 
 # Install Go (from the official golang Dockerfile)
 ENV GOLANG_VERSION 1.3.3
-ENV PATH /go/bin:/usr/src/go/bin:$PATH
+ENV PATH /go/bin:/usr/local/go/bin:$PATH
 ENV GOPATH /go
 
-RUN apt-get install -y --no-install-recommends gcc libc6-dev make
-RUN curl -sSL https://golang.org/dl/go$GOLANG_VERSION.src.tar.gz \
-    | tar v -C /usr/src -xz
-RUN cd /usr/src/go/src && ./make.bash --no-clean 2>&1
+RUN curl -sSL https://storage.googleapis.com/golang/go$GOLANG_VERSION.linux-amd64.tar.gz \
+    | tar -C /usr/local -xz
 RUN mkdir -p /go/src /go/bin && chmod -R 777 /go
 
 RUN apt-get install -y git mercurial

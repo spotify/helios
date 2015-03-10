@@ -105,6 +105,7 @@
                 <configuration>
                   <dockerDirectory>solo/docker</dockerDirectory>
                   <imageName>${soloImageName}</imageName>
+                  <tagInfoFile>${project.build.testOutputDirectory}/solo-image.json</tagInfoFile>
                   <resources>
                     <resource>
                       <targetPath>/</targetPath>
