@@ -3,7 +3,7 @@
 case "$1" in
   pre_machine)
     # ensure correct level of parallelism
-    expected_nodes=4
+    expected_nodes=5
     if [ "$CIRCLE_NODE_TOTAL" -ne "$expected_nodes" ]
     then
         echo "Parallelism is set to ${CIRCLE_NODE_TOTAL}x, but we need ${expected_nodes}x."
@@ -48,20 +48,27 @@ case "$1" in
         ;;
 
       1)
-        # run helios-system-tests that start with A-L
-        echo "%regex[com.spotify.helios.system.[M-Z].*]" >> .test-excludes
+        # run helios-system-tests that start with A-G
+        echo "%regex[com.spotify.helios.system.[H-Z].*]" >> .test-excludes
         mvn test -B -pl helios-system-tests
 
         ;;
 
       2)
-        # run helios-system-tests that start with M-Z
-        echo "%regex[com.spotify.helios.system.[A-L].*]" >> .test-excludes
+        # run helios-system-tests that start with H-R
+        echo "%regex[com.spotify.helios.system.[A-GS-Z].*]" >> .test-excludes
         mvn test -B -pl helios-system-tests
 
         ;;
 
       3)
+        # run helios-system-tests that starts with S-Z
+        echo "%regex[com.spotify.helios.system.[A-R].*]" >> .test-excludes
+        mvn test -B -pl helios-system-tests
+
+        ;;
+
+      4)
         sudo apt-get install -y jq
 
         # build images for integration tests
