@@ -107,7 +107,10 @@ You can get the ID's of all running containers with `docker ps`.
 Debugging
 ---------
 
-Use the `helios-enter` debug command to bring up the helios-solo container and
-get a bash shell inside it. Alternatively, use `helios-up` and then:
+The following commands can be helpful for debugging helios-solo:
 
-    $ docker exec -it helios-solo-container bash
+```bash
+$ docker logs helios-solo-container
+
+$ helios-up && docker exec -it helios-solo-container bash
+```
