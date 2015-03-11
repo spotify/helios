@@ -583,7 +583,6 @@
                   <paths>
                     <path>solo/helios-cleanup</path>
                     <path>solo/helios-down</path>
-                    <path>solo/helios-enter</path>
                     <path>solo/helios-env</path>
                     <path>solo/helios-restart</path>
                     <path>solo/helios-solo</path>

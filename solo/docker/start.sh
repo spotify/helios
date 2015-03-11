@@ -55,9 +55,4 @@ com.spotify.helios.master.MasterMain \
 &
 
 # Sleep or execute command line
-if [ -z "$HELIOS_INTERACTIVE" ]; then
-	while :; do sleep 1; done
-else
-	cd /
-	"$@"
-fi
+while :; do sleep 1; done
