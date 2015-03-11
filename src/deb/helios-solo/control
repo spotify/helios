@@ -3,7 +3,7 @@ Version: [[version]]
 Section: non-free/net
 Priority: optional
 Architecture: all
-Depends: docker.io | lxc-docker, helios
+Depends: docker.io | lxc-docker, helios, jq
 Maintainer: Rohan Singh <rohan@spotify.com>
 Description: helios-solo provides a local Helios cluster running in a Docker container
 Distribution: development
