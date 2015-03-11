@@ -36,6 +36,9 @@ Here are some example commands:
 # Start helios-solo
 $ helios-up
 
+# Show available versions of Helios to use for helios-solo
+$ helios-use
+
 # Upgrade to the latest version of Helios
 $ helios-use latest
 
@@ -89,8 +92,8 @@ Commands
   Utility for setting `HELIOS_URI` environment variable in your
   shell: `eval $(helios-env)`.
 
-* `helios-use`<br />
-  Switches the underlying Helios version (or upgrades to the latest version).
+* `helios-use` [version]<br />
+  Lists the available versions of Helios, switches the underlying Helios version, or upgrades to the latest version.
 
 Container Logging
 -----------------

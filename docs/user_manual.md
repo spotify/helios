@@ -146,12 +146,14 @@ When a job is started, Helios can optionally run a health check before registeri
 service discovery. This prevents the service from receiving traffic before it is ready. After the
 container starts, Helios will execute the health check as follows.
 
-* Begin executing health checks. Start with a 1 second interval, then back off exponentially until reaching a maximum interval of 30 seconds.
-* If no health checks succeed after 5 minutes, kill the container. Helios will start it back up and try again.
+* Begin executing health checks and mark the job as "HEALTHCHECKING".
+* Start with a 1 second interval, then back off exponentially until reaching a maximum interval of 30 seconds.
 * If a health check succeeds
   * Stop running health checks
   * Register service with service discovery (if job is configured to do so)
-  * Mark the job as RUNNING
+  * Mark the job as "RUNNING"
+* If a health check doesn't succeed, Helios will leave the job in the "HEALTHCHECKING" state forever
+  for debugging purposes.
 
 #### HTTP
 This health check makes an HTTP request to the specified port and path and considers a return
