@@ -80,9 +80,12 @@ public class HeliosSoloIT {
         .port("helios", 5801, 55801)
         .env("HELIOS_ID", "solo_it")
         .env("HELIOS_NAME", TEST_HOST)
-        .env("HOST_ADDRESS", hostAddress)
         .env("DOCKER_HOST", dockerHost)
         .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.services.${domain}");
+
+    if (!isNullOrEmpty(hostAddress)) {
+      solo.env("HOST_ADDRESS", hostAddress);
+    }
 
     if (!isNullOrEmpty(certPath)) {
       solo.env("DOCKER_CERT_PATH", "/certs")
