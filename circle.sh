@@ -79,13 +79,16 @@ case "$1" in
         solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
         docker tag -f $solo_image spotify/helios-solo:latest
 
+        # fix DOCKER_HOST to be accessible from within containers
+        docker0_ip=$(/sbin/ifconfig docker0 | grep 'inet addr' | \
+          awk -F: '{print $2}' | awk '{print $1}')
+        export DOCKER_HOST="tcp://$docker0_ip:2375"
+
         # bring up helios-solo for integration tests
         cd solo
         # need to patch helios-up to not docker run --rm, since --rm doesn't work on CircleCI
         sed -i 's/docker run --rm/docker run/' ./helios-up
-        docker0_ip=$(/sbin/ifconfig docker0 | grep 'inet addr' | \
-          awk -F: '{print $2}' | awk '{print $1}')
-        DOCKER_HOST="tcp://$docker0_ip:2375" ./helios-up
+        ./helios-up
         cd ..
 
         mvn verify -B -pl helios-integration-tests

@@ -411,6 +411,10 @@ public class TemporaryJobs implements TestRule {
     return jobPrefixFile.prefix();
   }
 
+  public HeliosClient client() {
+    return client;
+  }
+
   static Config loadConfig() {
     final ConfigResolveOptions resolveOptions =
         ConfigResolveOptions.defaults().setAllowUnresolved(true);
@@ -551,7 +555,7 @@ public class TemporaryJobs implements TestRule {
       // or the docker host. Either way, this is probably a test machine with one master and one
       // agent both running on the same box, so it is safe to provide a default filter that will
       // deploy anywhere.
-      if (heliosHostFilter == null) {
+      if (isNullOrEmpty(hostFilter)) {
         hostFilter(DEFAULT_LOCAL_HOST_FILTER);
       }
     }
