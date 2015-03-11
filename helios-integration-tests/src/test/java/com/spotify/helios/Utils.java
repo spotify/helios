@@ -65,6 +65,12 @@ public class Utils {
     return imageInfo(path);
   }
 
+  public static String soloImage() throws IOException {
+    final String path = System.getProperty("soloImage",
+                                           DEFAULT_IMAGE_INFO_PATH + "solo-image.json");
+    return imageInfo(path);
+  }
+
   private static String imageInfo(final String path) throws IOException {
     final String json = new String(Files.readAllBytes(Paths.get(path)));
     final JsonNode node = Json.readTree(json);

@@ -35,7 +35,7 @@ java -cp '/*' \
 com.spotify.helios.agent.AgentMain \
 --name ${HELIOS_NAME} \
 --service-registrar-plugin /usr/share/helios/lib/plugins/helios-skydns-0.1.jar \
---id solo-host \
+--id ${HELIOS_ID:-solo-host} \
 --dns $IPADDRESS \
 --domain 'local.' \
 --service-registry "http://127.0.0.1:4001" \
