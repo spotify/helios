@@ -114,11 +114,11 @@ public class HeliosSoloIT {
 
   public static class HeliosSoloITImpl {
 
-    private TemporaryJob nginx;
     private TemporaryJob alpine;
 
     @Rule
     public final TemporaryJobs soloTemporaryJobs = TemporaryJobs.builder()
+        .hostFilter(TEST_HOST)
         .client(soloClient)
         .prefixDirectory("/tmp/helios-solo-jobs")
         .build();
@@ -127,7 +127,7 @@ public class HeliosSoloIT {
     @Before
     public void setup() throws Exception {
       // start a container that runs nginx and registers with SkyDNS
-      nginx = soloTemporaryJobs.job()
+      soloTemporaryJobs.job()
           .image(NGINX)
           .port("http", 80, 59980)
           .registration("nginx", "http", "http")
