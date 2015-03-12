@@ -130,6 +130,7 @@ public class HeliosSoloIT {
 
     @Rule
     public final TemporaryJobs soloTemporaryJobs = TemporaryJobs.builder("local")
+        .hostFilter(TEST_HOST)
         .client(soloClient)
         .prefixDirectory("/tmp/helios-solo-jobs")
         .build();
