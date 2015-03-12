@@ -27,6 +27,7 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.helios.common.descriptors.DockerVersion;
 import com.spotify.helios.common.descriptors.HostInfo;
+import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.coordination.NodeUpdaterFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
@@ -56,6 +57,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
   private final int interval;
   private final TimeUnit timeUnit;
   private final DockerClient dockerClient;
+  private final DockerHost dockerHost;
 
   HostInfoReporter(final Builder builder) {
     this.operatingSystemMXBean = checkNotNull(builder.operatingSystemMXBean,
@@ -63,6 +65,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
     this.nodeUpdater = builder.nodeUpdaterFactory.create(
         Paths.statusHostInfo(checkNotNull(builder.host, "host")));
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
+    this.dockerHost = checkNotNull(builder.dockerHost, "dockerHost");
     this.interval = builder.interval;
     this.timeUnit = checkNotNull(builder.timeUnit, "timeUnit");
   }
@@ -85,6 +88,8 @@ public class HostInfoReporter extends InterruptingScheduledService {
         .setSwapTotalBytes(operatingSystemMXBean.getTotalSwapSpaceSize())
         .setUname(uname)
         .setDockerVersion(dockerVersion())
+        .setDockerHost(dockerHost())
+        .setDockerCertPath(dockerHost.dockerCertPath())
         .build();
 
     nodeUpdater.update(hostInfo.toJsonBytes());
@@ -109,6 +114,15 @@ public class HostInfoReporter extends InterruptingScheduledService {
         .os(version.os())
         .version(version.version())
         .build();
+  }
+
+  private String dockerHost() {
+    final String host = dockerHost.host();
+    if (host.startsWith("unix://")) {
+      return host;
+    } else {
+      return "tcp://" + host;
+    }
   }
 
   @Override
@@ -139,6 +153,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
     private OperatingSystemMXBean operatingSystemMXBean;
     private String host;
     private DockerClient dockerClient;
+    private DockerHost dockerHost;
     private int interval = DEFAULT_INTERVAL;
     private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
 
@@ -160,6 +175,11 @@ public class HostInfoReporter extends InterruptingScheduledService {
 
     public Builder setDockerClient(final DockerClient dockerClient) {
       this.dockerClient = dockerClient;
+      return this;
+    }
+
+    public Builder setDockerHost(final DockerHost dockerHost) {
+      this.dockerHost = dockerHost;
       return this;
     }
 

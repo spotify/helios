@@ -33,6 +33,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * {
  *   "architecture" : "amd64",
  *   "cpus" : 24,
+ *   "dockerHost" : "unix:///var/run/docker.sock",
+ *   "dockerCertPath" : null,
  *   "dockerVersion" : {
  *     "apiVersion" : "1.12",
  *     "arch" : "amd64",
@@ -68,6 +70,8 @@ public class HostInfo extends Descriptor {
   private final long swapTotalBytes;
   private final long swapFreeBytes;
   private final DockerVersion dockerVersion;
+  private final String dockerHost;
+  private final String dockerCertPath;
 
   /**
    * @param hostname The hostname of the agent.
@@ -82,6 +86,8 @@ public class HostInfo extends Descriptor {
    * @param swapTotalBytes Total swap bytes.
    * @param swapFreeBytes Total free swap bytes.
    * @param dockerVersion Docker version.
+   * @param dockerHost The docker host address.
+   * @param dockerCertPath The docker certificate path.
    */
   public HostInfo(@JsonProperty("hostname") final String hostname,
                   @JsonProperty("uname") final String uname,
@@ -94,7 +100,9 @@ public class HostInfo extends Descriptor {
                   @JsonProperty("memoryFreeBytes") final long memoryFreeBytes,
                   @JsonProperty("swapTotalBytes") final long swapTotalBytes,
                   @JsonProperty("swapFreeBytes") final long swapFreeBytes,
-                  @JsonProperty("dockerVersion") final DockerVersion dockerVersion) {
+                  @JsonProperty("dockerVersion") final DockerVersion dockerVersion,
+                  @JsonProperty("dockerHost") final String dockerHost,
+                  @JsonProperty("dockerCertPath") final String dockerCertPath) {
     this.hostname = hostname;
     this.uname = uname;
     this.architecture = architecture;
@@ -107,6 +115,8 @@ public class HostInfo extends Descriptor {
     this.swapTotalBytes = swapTotalBytes;
     this.swapFreeBytes = swapFreeBytes;
     this.dockerVersion = dockerVersion;
+    this.dockerHost = dockerHost;
+    this.dockerCertPath = dockerCertPath;
   }
 
   public HostInfo(final Builder builder) {
@@ -122,6 +132,8 @@ public class HostInfo extends Descriptor {
     this.swapTotalBytes = builder.swapTotalBytes;
     this.swapFreeBytes = builder.swapFreeBytes;
     this.dockerVersion = builder.dockerVersion;
+    this.dockerHost = builder.dockerHost;
+    this.dockerCertPath = builder.dockerCertPath;
   }
 
   public String getHostname() {
@@ -172,6 +184,14 @@ public class HostInfo extends Descriptor {
     return dockerVersion;
   }
 
+  public String getDockerHost() {
+    return dockerHost;
+  }
+
+  public String getDockerCertPath() {
+    return dockerCertPath;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -190,6 +210,8 @@ public class HostInfo extends Descriptor {
     private long swapTotalBytes;
     private long swapFreeBytes;
     private DockerVersion dockerVersion;
+    private String dockerHost;
+    private String dockerCertPath;
 
     public Builder setHostname(final String hostname) {
       this.hostname = hostname;
@@ -251,6 +273,16 @@ public class HostInfo extends Descriptor {
       return this;
     }
 
+    public Builder setDockerHost(final String dockerHost) {
+      this.dockerHost = dockerHost;
+      return this;
+    }
+
+    public Builder setDockerCertPath(final String dockerCertPath) {
+      this.dockerCertPath = dockerCertPath;
+      return this;
+    }
+
     public HostInfo build() {
       return new HostInfo(this);
     }
@@ -271,6 +303,9 @@ public class HostInfo extends Descriptor {
         .add("memoryFreeBytes", memoryFreeBytes)
         .add("swapTotalBytes", swapTotalBytes)
         .add("swapFreeBytes", swapFreeBytes)
+        .add("dockerVersion", dockerVersion)
+        .add("dockerHost", dockerHost)
+        .add("dockerCertPath", dockerCertPath)
         .toString();
   }
 }

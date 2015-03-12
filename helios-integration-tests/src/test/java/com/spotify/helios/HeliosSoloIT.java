@@ -1,12 +1,12 @@
 package com.spotify.helios;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
 
 import com.spotify.docker.client.DefaultDockerClient;
-import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.DockerCertificates;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.testing.Prober;
 import com.spotify.helios.testing.TemporaryJob;
@@ -19,17 +19,19 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.Socket;
+import java.nio.file.Paths;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.Utils.soloImage;
 import static com.spotify.helios.system.SystemTestBase.ALPINE;
 import static com.spotify.helios.system.SystemTestBase.BUSYBOX;
 import static com.spotify.helios.system.SystemTestBase.IDLE_COMMAND;
 import static com.spotify.helios.system.SystemTestBase.NGINX;
-import static java.lang.System.getenv;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
@@ -49,29 +51,42 @@ public class HeliosSoloIT {
 
   @Before
   public void setup() throws Exception {
-    // we're going to start helios-solo in a helios job. figure out the docker host, cert path, and
-    // other stuff that helios-solo needs.
-    String dockerHost = Optional.fromNullable(getenv("DOCKER_HOST"))
-        .or("unix:///var/run/docker.sock");
-    String certPath = getenv("DOCKER_CERT_PATH");
+    // fun times. we're going to start helios-solo as a temporary job in helios.
 
-    final DockerClient docker = DefaultDockerClient.fromEnv().build();
-    if (docker.info().kernelVersion().contains("tinycore64")) {
-      // using boot2docker, so use the unix socket endpoint
-      dockerHost = "unix:///var/run/docker.sock";
-      certPath = null;
-    }
-
-    // use a probe container to get the correct value for HELIOS_HOST_ADDRESS
+    // use a probe container to inspect the helios agent environment. we need to inject the same
+    // environment into the helios-solo job so that it can find Docker, etc.
     final TemporaryJob probe = temporaryJobs.job()
         .image(BUSYBOX)
         .command(IDLE_COMMAND)
         .deploy();
+    final HostStatus hostStatus = temporaryJobs.client()
+        .hostStatus(probe.hosts().get(0)).get();
+    final Map<String, String> hostEnvironment = hostStatus.getEnvironment();
+    final HostInfo hostInfo = hostStatus.getHostInfo();
+    probe.undeploy();
 
-    final String hostAddress = temporaryJobs.client()
-        .hostStatus(probe.hosts().get(0)).get()
-        .getEnvironment()
-        .get("HELIOS_HOST_ADDRESS");
+    // get values from the agent environment
+    final String hostAddress = fromNullable(hostEnvironment.get("HELIOS_HOST_ADDRESS"))
+        .or(probe.hosts().get(0));
+    String dockerHost = fromNullable(hostInfo.getDockerHost())
+        .or("unix:///var/run/docker.sock");
+    String certPath = hostInfo.getDockerCertPath();
+
+    // check if the docker instance used by the agent is Boot2Docker. if so use the unix socket
+    // endpoint to avoid having to deal with Boot2Docker TLS certificate messiness.
+    if (!dockerHost.startsWith("unix:///")) {
+      final String dockerUri = dockerHost.replace("tcp://", (isNullOrEmpty(certPath) ?
+                                                             "http://" : "https://"));
+      final DefaultDockerClient.Builder docker = DefaultDockerClient.builder().uri(dockerUri);
+      if (!isNullOrEmpty(certPath)) {
+        docker.dockerCertificates(new DockerCertificates(Paths.get(certPath)));
+      }
+      if (docker.build().info().kernelVersion().contains("tinycore64")) {
+        // using boot2docker, so use the unix socket endpoint
+        dockerHost = "unix:///var/run/docker.sock";
+        certPath = null;
+      }
+    }
 
     // build the helios-solo job
     final TemporaryJobBuilder solo = temporaryJobs.job()
@@ -80,12 +95,9 @@ public class HeliosSoloIT {
         .port("helios", 5801, 55801)
         .env("HELIOS_ID", "solo_it")
         .env("HELIOS_NAME", TEST_HOST)
+        .env("HOST_ADDRESS", hostAddress)
         .env("DOCKER_HOST", dockerHost)
         .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.services.${domain}");
-
-    if (!isNullOrEmpty(hostAddress)) {
-      solo.env("HOST_ADDRESS", hostAddress);
-    }
 
     if (!isNullOrEmpty(certPath)) {
       solo.env("DOCKER_CERT_PATH", "/certs")
@@ -117,8 +129,7 @@ public class HeliosSoloIT {
     private TemporaryJob alpine;
 
     @Rule
-    public final TemporaryJobs soloTemporaryJobs = TemporaryJobs.builder()
-        .hostFilter(TEST_HOST)
+    public final TemporaryJobs soloTemporaryJobs = TemporaryJobs.builder("local")
         .client(soloClient)
         .prefixDirectory("/tmp/helios-solo-jobs")
         .build();

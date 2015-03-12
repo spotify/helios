@@ -228,6 +228,7 @@ public class AgentService extends AbstractIdleService implements Managed {
         .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
         .setHost(config.getName())
         .setDockerClient(dockerClient)
+        .setDockerHost(config.getDockerHost())
         .build();
 
     this.agentInfoReporter = AgentInfoReporter.newBuilder()
