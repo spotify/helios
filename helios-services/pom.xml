@@ -286,12 +286,18 @@
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>docker-client</artifactId>
-      <version>2.7.4</version>
+      <version>2.7.14</version>
+      <classifier>shaded</classifier>
     </dependency>
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>logging</artifactId>
       <version>2.0.17</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-lang</groupId>
+      <artifactId>commons-lang</artifactId>
+      <version>2.6</version>
     </dependency>
 
     <!--test deps-->

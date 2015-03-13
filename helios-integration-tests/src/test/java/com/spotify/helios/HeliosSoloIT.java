@@ -68,24 +68,37 @@ public class HeliosSoloIT {
     // get values from the agent environment
     final String hostAddress = fromNullable(hostEnvironment.get("HELIOS_HOST_ADDRESS"))
         .or(probe.hosts().get(0));
-    String dockerHost = fromNullable(hostInfo.getDockerHost())
-        .or("unix:///var/run/docker.sock");
+    String dockerHost = hostInfo.getDockerHost();
     String certPath = hostInfo.getDockerCertPath();
 
-    // check if the docker instance used by the agent is Boot2Docker. if so use the unix socket
-    // endpoint to avoid having to deal with Boot2Docker TLS certificate messiness.
-    if (!dockerHost.startsWith("unix:///")) {
-      final String dockerUri = dockerHost.replace("tcp://", (isNullOrEmpty(certPath) ?
-                                                             "http://" : "https://"));
-      final DefaultDockerClient.Builder docker = DefaultDockerClient.builder().uri(dockerUri);
-      if (!isNullOrEmpty(certPath)) {
-        docker.dockerCertificates(new DockerCertificates(Paths.get(certPath)));
+    boolean useUnixSocketEndpoint = false;
+    if (isNullOrEmpty(dockerHost)) {
+      // no docker host specified, so fall back to the unix socket endpoint.
+      useUnixSocketEndpoint = true;
+    } else if (!dockerHost.startsWith("unix:///")) {
+      if (dockerHost.contains("127.0.0.1")) {
+        // the docker host is localhost. this can't be reached from within the helios-solo container
+        // so try to fallback to the unix socket endpoint instead.
+        useUnixSocketEndpoint = true;
+      } else {
+        // check if the docker instance used by the agent is Boot2Docker. if so use the unix socket
+        // endpoint to avoid having to deal with Boot2Docker TLS certificate messiness.
+        final String dockerUri = dockerHost.replace("tcp://", (isNullOrEmpty(certPath) ?
+                                                               "http://" : "https://"));
+        final DefaultDockerClient.Builder docker = DefaultDockerClient.builder().uri(dockerUri);
+        if (!isNullOrEmpty(certPath)) {
+          docker.dockerCertificates(new DockerCertificates(Paths.get(certPath)));
+        }
+        if (docker.build().info().operatingSystem().contains("Boot2Docker")) {
+          // using boot2docker, so use the unix socket endpoint
+          useUnixSocketEndpoint = true;
+        }
       }
-      if (docker.build().info().kernelVersion().contains("tinycore64")) {
-        // using boot2docker, so use the unix socket endpoint
-        dockerHost = "unix:///var/run/docker.sock";
-        certPath = null;
-      }
+    }
+
+    if (useUnixSocketEndpoint) {
+      dockerHost = DefaultDockerClient.DEFAULT_UNIX_ENDPOINT;
+      certPath = null;
     }
 
     // build the helios-solo job
