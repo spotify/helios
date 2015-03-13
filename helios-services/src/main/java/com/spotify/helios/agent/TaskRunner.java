@@ -35,6 +35,7 @@ import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
 import com.spotify.docker.client.messages.ContainerInfo;
+import com.spotify.docker.client.messages.ContainerState;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.helios.common.HeliosRuntimeException;
@@ -150,6 +151,13 @@ class TaskRunner extends InterruptingExecutionThreadService {
           .build().newScheduler();
 
       while (!healthChecker.get().check(containerId)) {
+        final ContainerState state = docker.inspectContainer(containerId).state();
+        if (!state.running()) {
+          log.warn("container exited during health checking: {}: {}: {}",
+                   config, containerId, state.exitCode());
+          throw new RuntimeException("container exited during health checking");
+        }
+
         final long retryMillis = retryScheduler.nextMillis();
         log.warn("container failed healthcheck, will retry in {}ms: {}: {}",
                  retryMillis, config, containerId);

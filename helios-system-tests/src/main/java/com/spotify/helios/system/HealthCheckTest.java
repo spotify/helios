@@ -35,7 +35,9 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
+import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 
@@ -54,6 +56,7 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.HEALTHCHECKING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
@@ -101,8 +104,9 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
     final Job job = Job.newBuilder()
         .setName(testJobName)
         .setVersion(testJobVersion)
-        .setImage(BUSYBOX)
-        .setCommand(asList("sh", "-c", "nc -l -p 4711 && nc -l -p 4712"))
+        .setImage(ALPINE)
+        .setCommand(asList("sh", "-c",
+                           "nc -l -p 4711 && nc -lk -p 4712 -e hostname"))
         .addPort("poke", PortMapping.of(4711))
         .addPort("health", PortMapping.of(4712))
         .addRegistration(ServiceEndpoint.of("foo_service", "foo_proto"), ServicePorts.of("health"))
@@ -210,6 +214,80 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
 
     assertEquals("wrong service", "foo_service", registered.get("foo_service").getName());
     assertEquals("wrong protocol", "foo_proto", registered.get("foo_service").getProtocol());
+  }
+
+  @Test
+  public void testContainerDiesDuringHealthcheck() throws Exception {
+    startDefaultMaster();
+
+    final HeliosClient client = defaultClient();
+
+    startDefaultAgent(testHost(), "--service-registry=" + registryAddress);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    final HealthCheck healthCheck = TcpHealthCheck.of("health");
+
+    // start a container that listens on a poke port, and once poked listens on the healthcheck port
+    final Job job = Job.newBuilder()
+        .setName(testJobName)
+        .setVersion(testJobVersion)
+        .setImage(ALPINE)
+        .setCommand(asList("sh", "-c",
+                           "nc -l -p 4711 && nc -lk -p 4712 -e hostname"))
+        .addPort("poke", PortMapping.of(4711))
+        .addPort("health", PortMapping.of(4712))
+        .addRegistration(ServiceEndpoint.of("foo_service", "foo_proto"), ServicePorts.of("health"))
+        .setHealthCheck(healthCheck)
+        .build();
+
+    final JobId jobId = createJob(job);
+    deployJob(jobId, testHost());
+    awaitTaskState(jobId, testHost(), HEALTHCHECKING);
+
+    // kill the underlying container
+    final JobStatus jobStatus = getOrNull(client.jobStatus(jobId));
+    final TaskStatus taskStatus = jobStatus.getTaskStatuses().get(testHost());
+    getNewDockerClient().killContainer(taskStatus.getContainerId());
+
+    // ensure the job is marked as failed
+    Polling.await(WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        final TaskStatusEvents jobHistory = getOrNull(client.jobHistory(jobId));
+        for (TaskStatusEvent event : jobHistory.getEvents()) {
+          if (event.getStatus().getState() == FAILED) {
+            return true;
+          }
+        }
+
+        return null;
+      }
+    });
+
+    // wait for the job to come back up and start healthchecking again
+    awaitTaskState(jobId, testHost(), HEALTHCHECKING);
+
+    // poke container to get it to start listening on the healthcheck port
+    Polling.await(WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<Object>() {
+      @Override
+      public Object call() throws Exception {
+        final JobStatus jobStatus = getOrNull(client.jobStatus(jobId));
+        final TaskStatus taskStatus = jobStatus.getTaskStatuses().get(testHost());
+        final PortMapping port = taskStatus.getPorts().get("poke");
+
+        assert port.getExternalPort() != null;
+        if (poke(port.getExternalPort())) {
+          return true;
+        } else {
+          return null;
+        }
+      }
+    });
+
+    // ensure the job is now running and registered
+    awaitTaskState(jobId, testHost(), RUNNING);
+    verify(registrar, timeout((int) SECONDS.toMillis(WAIT_TIMEOUT_SECONDS)))
+        .register(registrationCaptor.capture());
   }
 
   private boolean poke(final int port) {
