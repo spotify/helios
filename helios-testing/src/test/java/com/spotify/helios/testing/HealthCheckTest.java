@@ -83,14 +83,10 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
 
     @Test
     public void testHttpCheck() throws Exception {
-      // We must include the 'Connection: close' header in the response to prevent the health check
-      // http client from making a persistent connection. That would cause netcat to never exit
-      // because the connection would remain open.
-      final String cmd =
-          "(echo -e 'HTTP/1.1 204 No content\\r\\nConnection: close' | nc -l -p 4711)  && " +
-          "(echo -e 'HTTP/1.1 204 No content\\r\\nConnection: close' | nc -l -p 4712)";
+      // Start an HTTP server that listens on ports 4711 and 4712.
       final TemporaryJob job = temporaryJobs.job()
-          .command("sh", "-c", cmd)
+          .image(UHTTPD)
+          .command("-p", "4711", "-p", "4712")
           .port(HEALTH_CHECK_PORT, 4711)
           .port(QUERY_PORT, 4712)
           .httpHealthCheck(HEALTH_CHECK_PORT, "/")
@@ -104,7 +100,7 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
       final URL url = new URL("http", DOCKER_HOST.address(),
                               job.address(QUERY_PORT).getPort(), "/");
       final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-      assertThat(connection.getResponseCode(), equalTo(204));
+      assertThat(connection.getResponseCode(), equalTo(200));
     }
 
     @Test
