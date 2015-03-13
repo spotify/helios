@@ -11,6 +11,9 @@ Install & Run
 
 ### OS X
 
+Ensure you have installed Docker using [Boot2Docker](http://boot2docker.io/) or
+another similar solution. Then:
+
 ```bash
 $ brew tap spotify/public && brew install helios-solo
 $ helios-up
@@ -18,14 +21,25 @@ $ helios-up
 
 ### Linux
 
+Ensure you have installed Docker and have configured it correctly so that
+commands like `docker info` work. Either [follow the detailed instructions from Docker](https://docs.docker.com/installation/),
+or opt for the quick install:
+
+```bash
+$ curl -sSL https://get.docker.com/ | sudo sh -
+$ sudo usermod -aG docker `whoami`
+```
+
+Then, install helios-solo:
+
 ```bash
 $ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
-$ sudo apt-get install spotify-helios-solo
+$ sudo apt-get install helios-solo
 $ helios-up
 ```
 
 If `helios-up` fails, ensure that Docker is running and your client is correctly
-configured. A good test is to run `docker info`.
+configured. A good test is to run `docker info` and make sure it works.
 
 Usage
 ---
