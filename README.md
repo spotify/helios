@@ -3,7 +3,7 @@ Helios [![Circle CI](https://circleci.com/gh/spotify/helios/tree/master.png?styl
 
 Helios is a Docker orchestration platform for deploying and managing
 containers across an entire fleet of servers. Helios provides a HTTP
-API as well as a command line client to interact with servers running
+API as well as a command-line client to interact with servers running
 your containers. It also keeps history of events in your cluster including
 information such as deploys, restarts and version changes.
 
@@ -36,6 +36,119 @@ $ helios undeploy -a nginx:v1
 # Remove the nginx job
 $ helios remove nginx:v1
 ```
+
+Getting Started
+---------------
+
+If you're looking for how to use Helios, see the [docs directory](docs).
+Most probably the [User Manual](docs/user_manual.md) is what you're looking for.
+
+If you're looking for how to download, build, install and run Helios, keep reading.
+
+Prerequisities
+--------------
+
+The binary release of Helios is built for Ubuntu 14.04.1 LTS, but Helios should
+be buildable on any platform with at least Java 7 and a recent Maven 3
+available.
+
+Other components are that are required for a helios installation are:
+
+* [Docker 1.0](https://github.com/dotcloud/docker) or newer
+* [Zookeeper 3.4.0](https://zookeeper.apache.org/) or newer
+
+
+Install & Run
+-------------
+
+### Quick start for local usage
+Use [helios-solo](https://github.com/spotify/helios/blob/master/docs/helios_solo.md)
+to launch a local environment with a Helios master and agent.
+
+First, ensure you have [Docker installed locally](https://docs.docker.com/installation/).
+Test this by making sure `docker info` works. Then install helios-solo:
+
+```bash
+# install helios-solo on Debian/Ubuntu
+$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
+$ sudo apt-get install helios-solo
+
+# install helios-solo on OS X
+$ brew tap spotify/public && brew install helios-solo
+```
+
+Once you've got it installed, bring up the helios-solo cluster:
+
+```bash
+# launch a helios cluster in a Docker container
+$ helios-up
+
+# check if it worked and the solo agent is registered
+$ helios-solo hosts
+```
+
+You can now [use helios-solo](https://github.com/spotify/helios/blob/master/docs/helios_solo.md#usage)
+as your local Helios cluster. If you have issues, see [the detailed helios-solo documentation](https://github.com/spotify/helios/blob/master/docs/helios_solo.md).
+
+### Production on Debian, Ubuntu, etc.
+
+Prebuilt Debian packages are available for production use. To install:
+
+```bash
+$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
+
+# install Helios command-line tools
+$ sudo apt-get install helios
+
+# install Helios master (assumes you have zookeeperd installed)
+$ sudo apt-get install helios-master
+
+# install Helios agent (assumes you have Docker installed)
+$ sudo apt-get install helios-agent
+```
+
+Note that the Helios master and agent services both try to connect to ZooKeeper at `localhost:2181`
+by default. We recommend reading [the Helios configuration & deployment guide](https://github.com/spotify/helios/blob/master/docs/how_to_deploy.md)
+before starting a production cluster.
+
+#### Whatever, just get me running
+
+This will install and start the Helios master and Helios agent on a single machine with default
+configuration:
+
+```bash
+# install prereqs
+$ sudo apt-get install zookeeperd docker.io
+
+# install helios
+$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
+$ sudo apt-get install helios helios-agent helios-master
+
+# check if it worked and the local agent is registered
+$ helios -z http://localhost:5801 hosts
+```
+
+### Manual approach
+
+The launcher scripts are in [bin/](bin). After you've built Helios following the
+instructions below, you should be able to start the agent and master:
+
+    $ bin/helios-master &
+    $ bin/helios-agent &
+
+If you see any issues, make sure you have the prerequisites (Docker and Zookeeper) installed.
+
+Build & Test
+------------
+
+First, make sure you have Docker installed locally. If you're using OS X, we
+recommend using [Boot2Docker](http://boot2docker.io/) or
+[docker-machine](https://docs.docker.com/machine/).
+
+Actually building Helios and running its tests should be a simple matter
+of running:
+
+    $ mvn clean package
 
 How it all fits together
 ------------------------
@@ -81,14 +194,14 @@ choose Helios?
   Spotify.
 
 * Helios should be able to fit in the way you already do ops.  Of the
-  popular Docker Orchestration frameworks, Helios is the only one
+  popular Docker orchestration frameworks, Helios is the only one
   we're aware of that doesn't have anything much in the way of system
   dependencies.  That is, we don't require that you run in AWS or GCE,
   etc.  We don't require a specific network topology.  We don't
   require you run a specific operating system.  We don't require that
   you're using Mesos.  Our only requirement is that you have a
   ZooKeeper cluster somewhere and a Java 7 JVM on the machines which
-  Helios runs on.  So if you're using Puppet, Chef, etc. to manage the
+  Helios runs on.  So if you're using Puppet, Chef, etc., to manage the
   rest of the OS install and configuration, you can still continue to
   do so with whatever Linux OS you're using.
 
@@ -99,124 +212,11 @@ choose Helios?
   hear that someone else is working on one for another service, but if
   you don't want to even use a discovery service, you don't have to.
 
-* Scalability.  We're already at well over a hundred machines in
+* Scalability.  We're already at hundreds of machines in
   production, but we're nowhere near the limit before the existing
   architecture would need to be revisited.  Helios can also scale down
   well in that you can run a single machine instance if you want to
   run it all locally.
-
-Getting Started
----------------
-
-If you're looking for how to use Helios, see the [docs directory](docs).
-Most probably the [User Manual](docs/user_manual.md) is what you're looking for.
-
-If you're looking for how to download, build, install and run Helios, keep reading.
-
-Prerequisities
---------------
-
-The binary release of Helios is built for Ubuntu 14.04.1 LTS, but Helios should
-be buildable on any platform with at least Java 7 and a recent Maven 3
-available.
-
-Other components are that are required for a helios installation are:
-
-* [Docker 1.0](https://github.com/dotcloud/docker) or newer
-* [Zookeeper 3.4.0](https://zookeeper.apache.org/) or newer
-
-
-Install & Run
--------------
-
-### Quick start
-Use [helios-solo](https://github.com/spotify/helios/blob/master/docs/helios_solo.md)
-to launch a local environment with a Helios master and agent.
-
-First, ensure you have [Docker installed locally](https://docs.docker.com/installation/). Then
-install helios-solo:
-
-```bash
-# install helios-solo on Debian/Ubuntu
-$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
-$ sudo apt-get install helios-solo
-
-# install helios-solo on OS X
-$ brew tap spotify/public && brew install helios-solo
-```
-
-Once you've got it installed, bring up the helios-solo cluster:
-
-```bash
-# launch a helios cluster in a Docker container
-$ helios-up
-
-# check if it worked and the solo agent is registered
-$ helios-solo hosts
-```
-
-You can now [use helios-solo](https://github.com/spotify/helios/blob/master/docs/helios_solo.md#usage)
-as your local Helios cluster.
-
-### Production on Debian, Ubuntu, etc.
-
-Prebuilt Debian packages are available for production use. To install:
-
-```bash
-$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
-
-# install Helios command-line tools
-$ sudo apt-get install helios
-
-# install Helios master (assumes you have zookeeperd installed)
-$ sudo apt-get install helios-master
-
-# install Helios agent (assumes you have Docker installed)
-$ sudo apt-get install helios-agent
-```
-
-Note that the Helios master and agent services both try to connect to ZooKeeper at `localhost:2181`
-by default. We recommend reading [the Helios configuration & deployment guide](https://github.com/spotify/helios/blob/master/docs/how_to_deploy.md)
-before starting a production cluster.
-
-#### Whatever, just get me running
-
-This will install and start the Helios master and Helios agent on a single machine with default
-configuration:
-
-```bash
-# install prereqs
-$ sudo apt-get install zookeeperd docker.io
-
-# install helios
-$ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
-$ sudo apt-get install helios helios-agent helios-master
-
-# check if it worked and the local agent is registered
-$ helios -z http://localhost:5801 hosts
-```
-
-### Manual approach
-
-The launcher scripts are in [bin/](bin).
-After you've run `mvn package`, you should be able to start the agent and master:
-
-    $ bin/helios-master &
-    $ bin/helios-agent &
-
-If you see any issues, make sure you have the prerequisites (Docker and Zookeeper) installed.
-
-Build & Test
-------------
-
-First, make sure you have Docker installed locally. If you're using OS X, we
-recommend using [Boot2Docker](http://boot2docker.io/) or
-[docker-machine](https://docs.docker.com/machine/).
-
-Actually building Helios and running its tests should be a simple matter
-of running:
-
-    $ mvn clean test
 
 Other Software You Might Want To Consider
 -----------------------------------------
