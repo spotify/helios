@@ -144,6 +144,7 @@ public abstract class SystemTestBase {
 
   public static final String BUSYBOX = "busybox";
   public static final String NGINX = "rohan/nginx-alpine";
+  public static final String UHTTPD = "fnichol/docker-uhttpd";
   public static final String ALPINE = "onescience/alpine";
   public static final List<String> IDLE_COMMAND = asList(
       "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
