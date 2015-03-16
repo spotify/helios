@@ -140,7 +140,26 @@ public class TemporaryJobBuilder {
 
   public TemporaryJobBuilder port(final String name, final int internalPort,
                                   final Integer externalPort, final boolean wait) {
-    this.builder.addPort(name, PortMapping.of(internalPort, externalPort));
+    return port(name, internalPort, externalPort, wait, "tcp");
+  }
+
+  public TemporaryJobBuilder port(final String name, final int internalPort,
+                                  final String protocol) {
+    return port(name, internalPort, true, protocol);
+  }
+
+  private TemporaryJobBuilder port(String name, int internalPort, boolean wait, String protocol) {
+    return port(name, internalPort, wait, protocol);
+  }
+
+  public TemporaryJobBuilder port(final String name, final int internalPort,
+                                  final Integer externalPort, final String protocol) {
+    return port(name, internalPort, externalPort, true, protocol);
+  }
+
+  private TemporaryJobBuilder port(String name, int internalPort, Integer externalPort,
+                                   boolean wait, String protocol) {
+    this.builder.addPort(name, PortMapping.of(internalPort, externalPort, protocol));
     if (wait) {
       waitPorts.add(name);
     }
