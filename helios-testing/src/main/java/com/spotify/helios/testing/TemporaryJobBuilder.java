@@ -149,7 +149,7 @@ public class TemporaryJobBuilder {
   }
 
   private TemporaryJobBuilder port(String name, int internalPort, boolean wait, String protocol) {
-    return port(name, internalPort, wait, protocol);
+    return port(name, internalPort, null, wait, protocol);
   }
 
   public TemporaryJobBuilder port(final String name, final int internalPort,
