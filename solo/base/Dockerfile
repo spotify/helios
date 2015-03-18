@@ -22,16 +22,15 @@ RUN curl -sSL https://storage.googleapis.com/golang/go$GOLANG_VERSION.linux-amd6
     | tar -C /usr/local -xz
 RUN mkdir -p /go/src /go/bin && chmod -R 777 /go
 
-# Install etcd
-RUN git clone https://github.com/coreos/etcd
-WORKDIR /etcd
-RUN git checkout v0.4.5
-RUN git fetch origin pull/899/head:pull-899 && git merge pull-899
-RUN ./build && cp bin/etcd /usr/bin
-
 # Install skydns
 RUN mkdir -p /go/src/github.com/skynetservices
-WORKDIR /go/src/github.com/skynetservices
-RUN git clone https://github.com/skynetservices/skydns.git
-RUN cd skydns && git checkout 829cce8 && go get && go build
-WORKDIR /
+RUN cd /go/src/github.com/skynetservices \
+    && git clone https://github.com/skynetservices/skydns.git \
+    && cd skydns && go get -v && go build
+
+# Install etcd
+ENV ETCD_ARCHIVE_URI https://github.com/coreos/etcd/releases/download/v2.0.5/etcd-v2.0.5-linux-amd64.tar.gz
+RUN mkdir /etcd \
+    && cd /etcd \
+    && curl -L $ETCD_ARCHIVE_URI | tar --strip-components 1 -xzvf - \
+    && cp ./etcd /usr/bin
