@@ -46,6 +46,7 @@ import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotEquals;
 
 public class JobTest {
 
@@ -76,9 +77,15 @@ public class JobTest {
     final List<String> setCommand = asList("set", "command");
     final Map<String, String> setEnv = ImmutableMap.of("set", "env");
     final Map<String, PortMapping> setPorts = ImmutableMap.of("set_ports", PortMapping.of(1234));
+    final ImmutableMap.Builder<String, ServicePortParameters> setServicePortsBuilder =
+        ImmutableMap.builder();
+    setServicePortsBuilder.put("set_ports1", new ServicePortParameters(
+        ImmutableList.of("tag1", "tag2")));
+    setServicePortsBuilder.put("set_ports2", new ServicePortParameters(
+        ImmutableList.of("tag3", "tag4")));
+    final ServicePorts setServicePorts = new ServicePorts(setServicePortsBuilder.build());
     final Map<ServiceEndpoint, ServicePorts> setRegistration = ImmutableMap.of(
-        ServiceEndpoint.of("set_service", "set_proto"),
-        ServicePorts.of("set_ports1", "set_ports2"));
+        ServiceEndpoint.of("set_service", "set_proto"), setServicePorts);
     final Integer setGracePeriod = 120;
     final Map<String, String> setVolumes = ImmutableMap.of("/set", "/volume");
     final Date setExpires = new Date();
@@ -93,9 +100,15 @@ public class JobTest {
     // Input to addXXX
     final Map<String, String> addEnv = ImmutableMap.of("add", "env");
     final Map<String, PortMapping> addPorts = ImmutableMap.of("add_ports", PortMapping.of(4711));
+    final ImmutableMap.Builder<String, ServicePortParameters> addServicePortsBuilder =
+        ImmutableMap.builder();
+    addServicePortsBuilder.put("add_ports1", new ServicePortParameters(
+        ImmutableList.of("tag1", "tag2")));
+    addServicePortsBuilder.put("add_ports2", new ServicePortParameters(
+        ImmutableList.of("tag3", "tag4")));
+    final ServicePorts addServicePorts = new ServicePorts(addServicePortsBuilder.build());
     final Map<ServiceEndpoint, ServicePorts> addRegistration = ImmutableMap.of(
-        ServiceEndpoint.of("add_service", "add_proto"),
-        ServicePorts.of("add_ports1", "add_ports2"));
+        ServiceEndpoint.of("add_service", "add_proto"), addServicePorts);
     final Map<String, String> addVolumes = ImmutableMap.of("/add", "/volume");
 
     // Expected output from getXXX
@@ -388,5 +401,36 @@ public class JobTest {
     assertEquals(expectedPorts, job.getPorts());
     assertEquals(expectedRegistration, job.getRegistration());
     assertEquals(expectedGracePeriod, job.getGracePeriod());
+  }
+
+  @Test
+  public void testChangingPortTagsChangesJobHash() {
+    final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
+    final Job.Builder builder = j.toBuilder();
+    final Map<String, PortMapping> ports = ImmutableMap.of("add_ports1", PortMapping.of(1234),
+                                                           "add_ports2", PortMapping.of(2345));
+    final ImmutableMap.Builder<String, ServicePortParameters> servicePortsBuilder =
+        ImmutableMap.builder();
+    servicePortsBuilder.put("add_ports1", new ServicePortParameters(
+        ImmutableList.of("tag1", "tag2")));
+    servicePortsBuilder.put("add_ports2", new ServicePortParameters(
+        ImmutableList.of("tag3", "tag4")));
+    final ServicePorts servicePorts = new ServicePorts(servicePortsBuilder.build());
+    final Map<ServiceEndpoint, ServicePorts> oldRegistration = ImmutableMap.of(
+        ServiceEndpoint.of("add_service", "add_proto"), servicePorts);
+    final Job job = builder.setPorts(ports).setRegistration(oldRegistration).build();
+
+    final ImmutableMap.Builder<String, ServicePortParameters> newServicePortsBuilder =
+        ImmutableMap.builder();
+    newServicePortsBuilder.put("add_ports1", new ServicePortParameters(
+        ImmutableList.of("tag1", "newtag")));
+    newServicePortsBuilder.put("add_ports2", new ServicePortParameters(
+        ImmutableList.of("tag3", "tag4")));
+    final ServicePorts newServicePorts = new ServicePorts(newServicePortsBuilder.build());
+    final Map<ServiceEndpoint, ServicePorts> newRegistration = ImmutableMap.of(
+        ServiceEndpoint.of("add_service", "add_proto"), newServicePorts);
+    final Job newJob = builder.setRegistration(newRegistration).build();
+
+    assertNotEquals(job.getId().getHash(), newJob.getId().getHash());
   }
 }

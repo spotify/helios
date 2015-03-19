@@ -21,27 +21,79 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.base.Objects;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.List;
 
 /**
- * A class that used to do something, but now is just effectively a placeholder in a Map
- * that is treated as a Set.  It is represented by the empty map in JSON.
+ * Stores metadata for a service port. Currently, only tags are supported.
+ *
+ * The tags can be used in service registration plugins trough ServiceRegistration.Endpoint.
+ *
+ * An example expression of a Helios job with service port metadata might be:
+ * <pre>
+ * {
+ *   "ports" : {
+ *     "http" : {
+ *       "externalPort" : 8060,
+ *       "internalPort" : 8080,
+ *       "protocol" : "tcp"
+ *     }
+ *   },
+ *   "registration" : {
+ *     "service/http" : {
+ *       "ports" : {
+ *         "http" : {
+ *           "tags" : ["tag-1", "tag-2"]
+ *         }
+ *       }
+ *     }
+ *   }
+ * }
+ * </pre>
  */
-@JsonSerialize
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ServicePortParameters extends Descriptor {
+  private final List<String> tags;
+
+  public ServicePortParameters(@JsonProperty("tags") @Nullable final List<String> tags) {
+    this.tags = tags;
+  }
+
+  public List<String> getTags() {
+    return tags;
+  }
 
   @Override
-  public boolean equals(final Object obj) {
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    ServicePortParameters that = (ServicePortParameters) o;
+
+    if (tags != null ? !tags.equals(that.tags) : that.tags != null) {
+      return false;
+    }
+
     return true;
   }
 
   @Override
   public int hashCode() {
-    return 0;
+    return tags != null ? tags.hashCode() : 0;
   }
 
   @Override
   public String toString() {
-    return "{}";
+    return Objects.toStringHelper(this)
+        .add("tags", tags)
+        .toString();
   }
 }
