@@ -22,6 +22,7 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
 
@@ -242,18 +243,21 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
   private void pullImage(final String image) throws DockerException, InterruptedException {
     listener.pulling();
-
     DockerTimeoutException wasTimeout = null;
+    final Stopwatch pullTime = Stopwatch.createStarted();
+
     // Attempt to pull.  Failure, while less than ideal, is ok.
     try {
       docker.pull(image);
       listener.pulled();
+      log.info("Pulled image {} in {}s", image, pullTime.elapsed(SECONDS));
     } catch (DockerTimeoutException e) {
-      log.warn("Pulling image {} failed with timeout", image, e);
+      log.warn("Pulling image {} failed with timeout after {}s", image,
+               pullTime.elapsed(SECONDS), e);
       listener.pullFailed();
       wasTimeout = e;
     } catch (DockerException e) {
-      log.warn("Pulling image {} failed", image, e);
+      log.warn("Pulling image {} failed after {}s", image, pullTime.elapsed(SECONDS), e);
       listener.pullFailed();
     }
 
