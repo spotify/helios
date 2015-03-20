@@ -52,6 +52,7 @@ java -cp '/*' \
 -Djava.net.preferIPv4Stack=true \
 com.spotify.helios.master.MasterMain \
 --service-registrar-plugin /usr/share/helios/lib/plugins/helios-skydns-0.1.jar \
+--domain '' \
 &
 
 # Sleep or execute command line
