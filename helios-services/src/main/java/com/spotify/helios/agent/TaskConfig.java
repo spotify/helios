@@ -29,20 +29,20 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.common.descriptors.HealthCheck;
+import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.Resources;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePortParameters;
 import com.spotify.helios.common.descriptors.ServicePorts;
+import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -187,12 +187,33 @@ public class TaskConfig {
           log.error("no external '{}' port for registration: '{}'", portName, registration);
           continue;
         }
+
         builder.endpoint(registration.getName(), registration.getProtocol(), externalPort,
-            fullyQualifiedRegistrationDomain(), host, portParameters.getTags());
+            fullyQualifiedRegistrationDomain(), host, portParameters.getTags(),
+            endpointHealthCheck(portName));
       }
     }
 
     return builder.build();
+  }
+
+  /**
+   * Get endpoint health check for a given port
+   * @param portName The port name
+   * @return An EndpointHealthCheck or null if no check exists
+   */
+  private ServiceRegistration.EndpointHealthCheck endpointHealthCheck(String portName) {
+    if (healthCheck() instanceof HttpHealthCheck) {
+      HttpHealthCheck httpHealthCheck = (HttpHealthCheck) healthCheck();
+      if (portName.equals(httpHealthCheck.getPort())) {
+        return ServiceRegistration.EndpointHealthCheck.newHttpCheck(httpHealthCheck.getPath());
+      }
+    } else if (healthCheck() instanceof TcpHealthCheck) {
+      if (portName.equals(((TcpHealthCheck) healthCheck()).getPort())) {
+        return ServiceRegistration.EndpointHealthCheck.newTcpCheck();
+      }
+    }
+    return null;
   }
 
   public HealthCheck healthCheck() {
