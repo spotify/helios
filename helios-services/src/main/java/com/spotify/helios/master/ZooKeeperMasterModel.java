@@ -394,9 +394,14 @@ public class ZooKeeperMasterModel implements MasterModel {
       for (final String id : ids) {
         final JobId jobId = JobId.fromString(id);
         final String path = Paths.configJob(jobId);
-        final byte[] data = client.getData(path);
-        final Job descriptor = parse(data, Job.class);
-        descriptors.put(descriptor.getId(), descriptor);
+        try {
+          final byte[] data = client.getData(path);
+          final Job descriptor = parse(data, Job.class);
+          descriptors.put(descriptor.getId(), descriptor);
+        } catch (NoNodeException e) {
+          // Ignore, the job was deleted before we had a chance to read it.
+          log.debug("Ignoring deleted job {}", jobId);
+        }
       }
       return descriptors;
     } catch (KeeperException | IOException e) {
