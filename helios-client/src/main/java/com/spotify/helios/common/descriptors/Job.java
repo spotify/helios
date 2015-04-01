@@ -58,11 +58,12 @@ import static java.util.Collections.emptyMap;
  *     "JVM_ARGS" : "-Ddw.feature.randomFeatureFlagEnabled=true"
  *   },
  *   "expires" : null,
+ *   "gracePeriod": 60,
  *   "healthCheck" : {
  *     "type" : "http",
  *     "path" : "/healthcheck",
  *     "port" : "http-admin"
- *   }
+ *   },
  *   "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
  *   "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
  *   "ports" : {
@@ -85,8 +86,9 @@ import static java.util.Collections.emptyMap;
  *     }
  *   },
  *   "registrationDomain" : "",
+ *   "token": "insecure-access-token",
  *   "volumes" : {
- *     "/path/to/mysecretconfig.yaml:ro:ro" : "/path/to/mysecretconfig.yaml"
+ *     "/path/to/mysecretconfig.yaml:ro" : "/path/to/mysecretconfig.yaml"
  *   }
  * }
  * </pre>
@@ -126,7 +128,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   /**
    * Create a Job.
    *
-   * @param id The id if the job.
+   * @param id The id of the job.
    * @param image The docker image to use.
    * @param command The command to pass to the container.
    * @param env Environment variables to set
@@ -137,11 +139,12 @@ public class Job extends Descriptor implements Comparable<Job> {
    *    service.  If nothing is configured in registration, this option is ignored.
    * @param volumes Docker volumes to mount.
    * @param expires If set, a timestamp at which the job and any deployments will be removed.
-   * @param registrationDomain If set, override the default domain in which discovery service
+   * @param registrationDomain If set, overrides the default domain in which discovery service
    *    registration occurs.  What is allowed here will vary based upon the discovery service
    *    plugin used.
    * @param creatingUser The user creating the job.
    * @param token The token needed to manipulate this job.
+   * @param healthCheck A health check Helios will execute on the container.
    */
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,

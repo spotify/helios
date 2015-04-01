@@ -105,11 +105,24 @@ The last line of output in the command output is the canonical job ID. Most time
 `helios create -d <DOMAINS> -f <HELIOS_JOB_CONFIG_FILE_PATH> <MORE> <CLI> <ARGS>` will merge
 job parameters in the file `<HELIOS_JOB_CONFIG_FILE_PATH>` with other command line arguments. CLI
 args take precedence. The job configuration file should be valid JSON with a schema that matches the
-output of `helios inspect -d <DOMAINS> <EXISTING_JOB_NAME> --json`. Here's an example:
+output of `helios inspect -d <DOMAINS> <EXISTING_JOB_NAME> --json`. Here's an example that uses all
+the available configuration keys with an explanation of each one.
 
 ```
 {
-  "command" : [ "foo", "bar" ],
+  "command" : [ "server", "serverconfig.yaml" ],
+  "env" : {
+    "JVM_ARGS" : "-Ddw.feature.randomFeatureFlagEnabled=true"
+  },
+  "expires" : "2014-06-01T12:00:00Z",
+  "gracePeriod": 60,
+  "healthCheck" : {
+    "type" : "http",
+    "path" : "/healthcheck",
+    "port" : "http-admin"
+  },
+  "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
+  "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
   "ports" : {
     "http" : {
       "externalPort" : 8080,
@@ -130,15 +143,50 @@ output of `helios inspect -d <DOMAINS> <EXISTING_JOB_NAME> --json`. Here's an ex
     }
   },
   "registrationDomain" : "",
+  "token": "insecure-access-token",
   "volumes" : {
     "/etc/foo/moar-config.yaml:ro" : "/etc/bar/moar-config.yaml"
   }
 }
 ```
 
+* command: The command line arguments to pass to the container (default: []).
+* env: Environment variables (default: []).
+* expires: An ISO-8601 string representing the date/time when  this  job  should  expire. The  job
+  will  be undeployed from all hosts and removed at this time. E.g. 2014-06-01T12:00:00Z
+  (default: null).
+* gracePeriod: If is specified, Helios will unregister from service discovery and wait the specified
+  number of seconds before undeploying, default 0 seconds.
+* healthCheck: A health check Helios will execute on the container. See the health checks section
+  below.
+* id: The id of the job.
+* image: The docker image to use.
+* ports: Port mapping. Specify an endpoint name and a single port (e.g.
+  `{"http": {"internalPort": 8080}}`) for dynamic port mapping and `{"http": {"internalPort": 8080,
+  "externalPort": 80}}` for static port mapping. E.g., `{"foo": {"internalPort": 4711}}`  will  map
+  the internal port 4711 of the container to an arbitrary external port on the host. Specifying
+  `{"foo": {"internalPort": 4711, "externalPort": 80}}` will map internal port 4711  of the
+  container to port 80 on the host. The protocol will be TCP by default. For UDP, add
+  `"protocol": udp`. E.g. `{"quic": {"internalPort": 80, "protocol": "udp"}}` or
+  `{"dns": {"internalPort": 53, "externalPort": 53, "protocol": "udp"}}`. The endpoint name can be
+  used when specifying service registration using `registration`. (default: [])
+* registration: Service discovery registration. Specify a service name, the port name and a protocol
+  on the format service/protocol=port. E.g. `{"website/tcp": {"ports": {"http": {}}}}` will register
+  the port named http with the protocol tcp. Protocol is optional and default is tcp. If there is
+  only one port mapping, this will be used by default and it will be enough to specify only the
+  service name, e.g. `{"wordpress": {}}`. (default: {})
+* registrationDomain: If set, overrides the default domain in which discovery serviceregistration
+  occurs. What is allowed here will vary based upon the discovery service plugin used.
+  (default: "").
+* token: Insecure access token meant to prevent accidental changes to your job (e.g. undeploys).
+* volumes: Container volumes. Specify either a single path to create a data volume, or a source path
+  and a container path to mount a file or directory from the host. The container path can be
+  suffixed with "rw" or "ro" to create a read-write or read-only volume, respectively.
+  Format: `[host-path]:[rw|ro]:[container-path]`. (default: {}).
+
 A current best practice is to save all your job creation parameters in
 version-controlled files in your project directory. This allows you to tie
-your helios job params to changes in your application code.
+your Helios job params to changes in your application code.
 
 ### Health Checks
 

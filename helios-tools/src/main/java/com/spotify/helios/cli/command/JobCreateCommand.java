@@ -81,6 +81,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument argsArg;
   private final Argument portArg;
   private final Argument registrationArg;
+  private final Argument registrationDomainArg;
   private final Argument gracePeriodArg;
   private final Argument volumeArg;
   private final Argument expiresArg;
@@ -117,7 +118,8 @@ public class JobCreateCommand extends ControlCommand {
     tokenArg = parser.addArgument("--token")
          .nargs("?")
          .setDefault("")
-         .help("Insecure access token");
+         .help("Insecure access token meant to prevent accidental changes to your job " +
+               "(e.g. undeploys).");
 
     envArg = parser.addArgument("--env")
         .action(append())
@@ -133,7 +135,7 @@ public class JobCreateCommand extends ControlCommand {
               "container to an arbitrary external port on the host. Specifying foo=4711:80 " +
               "will map internal port 4711 of the container to port 80 on the host. The " +
               "protocol will be TCP by default. For UDP, add /udp. E.g. quic=80/udp or " +
-              "dns=53:53/udp. The endpoint name can be used when specify service registration " +
+              "dns=53:53/udp. The endpoint name can be used when specifying service registration " +
               "using -r/--register.");
 
     registrationArg = parser.addArgument("-r", "--register")
@@ -142,14 +144,20 @@ public class JobCreateCommand extends ControlCommand {
         .help("Service discovery registration. Specify a service name, the port name and a " +
               "protocol on the format service/protocol=port. E.g. -r website/tcp=http will " +
               "register the port named http with the protocol tcp. Protocol is optional and " +
-              "default is tcp. If there is only one port mapping this will be used by " +
+              "default is tcp. If there is only one port mapping, this will be used by " +
               "default and it will be enough to specify only the service name, e.g. " +
               "-r wordpress.");
+
+    registrationDomainArg = parser.addArgument("--registration-domain")
+        .setDefault("")
+        .help("If set, overrides the default domain in which discovery serviceregistration " +
+              "occurs. What is allowed here will vary based upon the discovery service plugin " +
+              "used.");
 
     gracePeriodArg = parser.addArgument("--grace-period")
         .type(Integer.class)
         .setDefault((Object) null)
-        .help("if --grace-period is specified, helios will unregister from service discovery and " +
+        .help("if --grace-period is specified, Helios will unregister from service discovery and " +
               "wait the specified number of seconds before undeploying, default 0 seconds");
 
     volumeArg = parser.addArgument("--volume")
@@ -356,6 +364,8 @@ public class JobCreateCommand extends ControlCommand {
 
       explicitRegistration.put(ServiceEndpoint.of(service, proto), ServicePorts.of(port));
     }
+
+    builder.setRegistrationDomain(options.getString(registrationDomainArg.getDest()));
 
     // Merge service registrations
     final Map<ServiceEndpoint, ServicePorts> registration = Maps.newHashMap();
