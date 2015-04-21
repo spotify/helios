@@ -11,9 +11,9 @@ RUNNING=$(docker inspect -f '{{ .State.Running }}' helios-solo-container 2>/dev/
 if [ "$RUNNING" == "true" ]; then
 	echo 'helios-solo already running'
 else
-    # Horrible hack to presere some configuration internal to Spotify.
+    # Horrible hack to preserve some configuration internal to Spotify.
     # Unfortunately, I don't have a better way to do this.
-    if grep spotify.net /etc/resolv.conf >/dev/null; then
+    if host -W 5 -t SRV _spotify-helios._http.services.lon.spotify.net. >/dev/null; then
         # remember that you are a Spotify user
         mkdir -p ~/.helios
         touch ~/.helios/spotify
