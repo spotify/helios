@@ -145,7 +145,7 @@ the available configuration keys with an explanation of each one.
   "registrationDomain" : "",
   "token": "insecure-access-token",
   "volumes" : {
-    "/etc/foo/moar-config.yaml:ro" : "/etc/bar/moar-config.yaml"
+    "/destination/path/in/container.yaml:ro" : "/source/path/in/host.yaml"
   }
 }
 ```
@@ -182,7 +182,7 @@ the available configuration keys with an explanation of each one.
 * volumes: Container volumes. Specify either a single path to create a data volume, or a source path
   and a container path to mount a file or directory from the host. The container path can be
   suffixed with "rw" or "ro" to create a read-write or read-only volume, respectively.
-  Format: `[host-path]:[rw|ro]:[container-path]`. (default: {}).
+  Format: `"[container-path]:[rw|ro]":[host-path]`. (default: {}).
 
 A current best practice is to save all your job creation parameters in
 version-controlled files in your project directory. This allows you to tie

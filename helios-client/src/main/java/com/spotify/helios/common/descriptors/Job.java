@@ -88,7 +88,7 @@ import static java.util.Collections.emptyMap;
  *   "registrationDomain" : "",
  *   "token": "insecure-access-token",
  *   "volumes" : {
- *     "/path/to/mysecretconfig.yaml:ro" : "/path/to/mysecretconfig.yaml"
+ *     "/destination/path/in/container.yaml:ro" : "/source/path/in/host.yaml"
  *   }
  * }
  * </pre>
