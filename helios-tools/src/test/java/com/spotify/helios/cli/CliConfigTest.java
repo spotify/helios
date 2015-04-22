@@ -4,8 +4,12 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import com.fasterxml.jackson.core.JsonParseException;
+
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
@@ -25,6 +29,8 @@ public class CliConfigTest {
   private static final String SITE3 = "baz";
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  @Rule public final ExpectedException expectedEx = ExpectedException.none();
 
   @Test
   public void testSite() throws Exception {
@@ -51,6 +57,27 @@ public class CliConfigTest {
           "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2+ "\", \"" + ENDPOINT3 +
           "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3 +
           "\"], \"srvName\":\"foo\"}").array());
+      final CliConfig config = CliConfig.fromFile(file);
+
+      assertEquals(
+          ImmutableList.of(URI.create(ENDPOINT1), URI.create(ENDPOINT2), URI.create(ENDPOINT3)),
+          config.getMasterEndpoints());
+      assertEquals(ImmutableList.of(SITE1, SITE2, SITE3), config.getDomains());
+      assertEquals("foo", config.getSrvName());
+    }
+  }
+
+  @Test
+  public void testConfigFromFileWithInvalidJson() throws Exception {
+    final File file = temporaryFolder.newFile();
+    expectedEx.expect(JsonParseException.class);
+    expectedEx.expectMessage(Matchers.containsString("Invalid JSON in"));
+
+    try (final FileOutputStream outFile = new FileOutputStream(file)) {
+      outFile.write(Charsets.UTF_8.encode(
+          "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2+ "\", \"" + ENDPOINT3 +
+          "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3 +
+          "\"], \"srvName\":\"foo\"").array());
       final CliConfig config = CliConfig.fromFile(file);
 
       assertEquals(

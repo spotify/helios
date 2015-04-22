@@ -28,6 +28,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Lists;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.Json;
 
@@ -133,7 +134,12 @@ public class CliConfig {
     final Map<String, Object> config;
     // TODO: use typesafe config for config file parsing
     if (defaultsFile.exists() && defaultsFile.canRead()) {
-      config = Json.read(Files.readAllBytes(defaultsFile.toPath()), OBJECT_TYPE);
+      try {
+        config = Json.read(Files.readAllBytes(defaultsFile.toPath()), OBJECT_TYPE);
+      } catch (JsonParseException e) {
+        throw new JsonParseException("Invalid JSON in " + defaultsFile.getPath(), e.getLocation(),
+                                     e.getCause());
+      }
     } else {
       config = ImmutableMap.of();
     }
