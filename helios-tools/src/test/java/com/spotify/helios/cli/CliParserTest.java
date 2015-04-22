@@ -14,6 +14,7 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -109,9 +110,10 @@ public class CliParserTest {
 
     // Write configuration to that file
     try (final FileOutputStream outFile = new FileOutputStream(configFile)) {
-      outFile.write(Charsets.UTF_8.encode(
-          "{\"masterEndpoints\":[\"" + ENDPOINTS[0] + "\", \"" +ENDPOINTS[1] + "\", \"" +
-          ENDPOINTS[2] + "\"], \"domains\":[\"" + DOMAINS[0] + "\"]}").array());
+      final ByteBuffer byteBuffer = Charsets.UTF_8.encode(
+          "{\"masterEndpoints\":[\"" + ENDPOINTS[0] + "\", \"" + ENDPOINTS[1] + "\", \"" +
+          ENDPOINTS[2] + "\"], \"domains\":[\"" + DOMAINS[0] + "\"]}");
+      outFile.write(byteBuffer.array(), 0, byteBuffer.remaining());
 
       // Set user's home directory to this temporary folder
       System.setProperty("user.home", temporaryFolder.getRoot().getAbsolutePath());
@@ -141,9 +143,9 @@ public class CliParserTest {
 
     // Write configuration to that file
     try (final FileOutputStream outFile = new FileOutputStream(configFile)) {
-      outFile.write(Charsets.UTF_8.encode(
-          "{\"domains\":[\"" + DOMAINS[0] + "\", \"" + DOMAINS[1] + "\", \"" + DOMAINS[2] + "\"]}")
-                        .array());
+      final ByteBuffer byteBuffer = Charsets.UTF_8.encode(
+          "{\"domains\":[\"" + DOMAINS[0] + "\", \"" + DOMAINS[1] + "\", \"" + DOMAINS[2] + "\"]}");
+      outFile.write(byteBuffer.array(), 0, byteBuffer.remaining());
 
       // Set user's home directory to this temporary folder
       System.setProperty("user.home", temporaryFolder.getRoot().getAbsolutePath());

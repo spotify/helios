@@ -4,13 +4,18 @@ import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 
+import com.typesafe.config.ConfigException;
+
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
+import java.nio.ByteBuffer;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -25,6 +30,8 @@ public class CliConfigTest {
   private static final String SITE3 = "baz";
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+
+  @Rule public final ExpectedException expectedEx = ExpectedException.none();
 
   @Test
   public void testSite() throws Exception {
@@ -47,10 +54,11 @@ public class CliConfigTest {
   public void testConfigFromFile() throws Exception {
     final File file = temporaryFolder.newFile();
     try (final FileOutputStream outFile = new FileOutputStream(file)) {
-      outFile.write(Charsets.UTF_8.encode(
-          "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2+ "\", \"" + ENDPOINT3 +
+      final ByteBuffer byteBuffer = Charsets.UTF_8.encode(
+          "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2 + "\", \"" + ENDPOINT3 +
           "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3 +
-          "\"], \"srvName\":\"foo\"}").array());
+          "\"], \"srvName\":\"foo\"}");
+      outFile.write(byteBuffer.array(), 0, byteBuffer.remaining());
       final CliConfig config = CliConfig.fromFile(file);
 
       assertEquals(
@@ -62,11 +70,27 @@ public class CliConfigTest {
   }
 
   @Test
+  public void testConfigFromFileWithInvalidJson() throws Exception {
+    final File file = temporaryFolder.newFile();
+    expectedEx.expect(ConfigException.class);
+    expectedEx.expectMessage(Matchers.containsString("Expecting close brace } or a comma"));
+
+    try (final FileOutputStream outFile = new FileOutputStream(file)) {
+      outFile.write(Charsets.UTF_8.encode(
+          "{\"masterEndpoints\":[\"" + ENDPOINT1 + "\", \"" + ENDPOINT2 + "\", \"" + ENDPOINT3 +
+          "\"], \"domains\":[\"" + SITE1 + "\", \"" + SITE2 + "\", \"" + SITE3 +
+          "\"], \"srvName\":\"foo\"").array());
+      CliConfig.fromFile(file);
+    }
+  }
+
+  @Test
   public void testMixtureOfFileAndEnv() throws Exception {
     final File file = temporaryFolder.newFile();
     try (final FileOutputStream outFile = new FileOutputStream(file)) {
-      outFile.write(Charsets.UTF_8.encode(
-          "{\"masterEndpoints\":[\"http://localhost:5801\"], \"srvName\":\"foo\"}").array());
+      final ByteBuffer byteBuffer = Charsets.UTF_8.encode(
+          "{\"masterEndpoints\":[\"http://localhost:5801\"], \"srvName\":\"foo\"}");
+      outFile.write(byteBuffer.array(), 0, byteBuffer.remaining());
       CliConfig.environment = ImmutableMap.of("HELIOS_MASTER", "domain://" + SITE1);
       final CliConfig config = CliConfig.fromFile(file);
 

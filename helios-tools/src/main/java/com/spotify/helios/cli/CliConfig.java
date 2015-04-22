@@ -22,20 +22,18 @@
 package com.spotify.helios.cli;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Lists;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.helios.common.Json;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValueFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.nio.file.Files;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -55,8 +53,6 @@ public class CliConfig {
   private static final String CONFIG_FILE = "config";
   private static final String CONFIG_PATH = CONFIG_DIR + File.separator + CONFIG_FILE;
   public static final List<String> EMPTY_STRING_LIST = Collections.emptyList();
-  public static final TypeReference<Map<String, Object>> OBJECT_TYPE =
-      new TypeReference<Map<String, Object>>() {};
 
   static Map<String, String> environment = System.getenv();
 
@@ -129,21 +125,20 @@ public class CliConfig {
    * @throws IOException        If the file exists but could not be read
    * @throws URISyntaxException If a HELIOS_MASTER env var is present and doesn't parse as a URI
    */
-  public static CliConfig fromFile(File defaultsFile) throws IOException, URISyntaxException {
-    final Map<String, Object> config;
-    // TODO: use typesafe config for config file parsing
+  public static CliConfig fromFile(final File defaultsFile) throws IOException, URISyntaxException {
+    final Config config;
     if (defaultsFile.exists() && defaultsFile.canRead()) {
-      config = Json.read(Files.readAllBytes(defaultsFile.toPath()), OBJECT_TYPE);
+      config = ConfigFactory.parseFile(defaultsFile);
     } else {
-      config = ImmutableMap.of();
+      config = ConfigFactory.empty();
     }
     return fromEnvVar(config);
   }
 
-  public static CliConfig fromEnvVar(Map<String, Object> config) throws URISyntaxException {
+  public static CliConfig fromEnvVar(final Config config) throws URISyntaxException {
     final String master = environment.get("HELIOS_MASTER");
     if (master == null) {
-      return fromMap(config);
+      return fromConfig(config);
     }
 
     // Specifically only include relevant bits according to the env var setting, rather than
@@ -151,11 +146,11 @@ public class CliConfig {
     // file doesn't override the env var if it's a domain:// as masterEndpoints takes precedence
     // over domains.
     final URI uri = new URI(master);
-    final Builder<String, Object> builder = ImmutableMap.<String, Object>builder();
+    Config configFromEnvVar = ConfigFactory.empty();
     // Always include the srvName bit if it's specified, so it can be specified in the file and
     // a domain flag could be passed on the command line, and it would work as you'd hope.
-    if (config.containsKey(SRV_NAME_KEY)) {
-      builder.put(SRV_NAME_KEY, config.get(SRV_NAME_KEY));
+    if (config.hasPath(SRV_NAME_KEY)) {
+      configFromEnvVar = configFromEnvVar.withValue(SRV_NAME_KEY, config.getValue(SRV_NAME_KEY));
     }
 
     // TODO (dxia) Remove DEPRECATED_SITE_SCHEME after a period of time
@@ -168,52 +163,35 @@ public class CliConfig {
     switch (scheme) {
       case DOMAIN_SCHEME:
       case DEPRECATED_SITE_SCHEME:
-        builder.put(DOMAINS_KEY, ImmutableList.of(uri.getHost())).build();
+        configFromEnvVar = configFromEnvVar.withValue(
+            DOMAINS_KEY, ConfigValueFactory.fromIterable(ImmutableList.of(uri.getHost())));
         break;
       case HTTP_SCHEME:
-        builder.put(MASTER_ENDPOINTS_KEY, ImmutableList.of(master));
+        configFromEnvVar = configFromEnvVar.withValue(
+            MASTER_ENDPOINTS_KEY, ConfigValueFactory.fromIterable(ImmutableList.of(master)));
         break;
       default:
         throw new RuntimeException("Your environment variable HELIOS_MASTER=" + master +
                                    " does not have a valid scheme.");
     }
 
-    return fromMap(builder.build());
+    return fromConfig(configFromEnvVar);
   }
 
-  /**
-   *
-   *
-   *
-   */
-
-  /**
-   * Returns a CliConfig instance with values parsed from the specified config node.
-   * Any value missing in the config tree will get a pre-defined default value.
-   *
-   * @param config A map of configuration parameters
-   * @return The configuration
-   */
-  public static CliConfig fromMap(Map<String, Object> config) {
+  public static CliConfig fromConfig(final Config config) {
     checkNotNull(config);
-    final List<String> domains = getList(config, DOMAINS_KEY, EMPTY_STRING_LIST);
-    final String srvName = getString(config, SRV_NAME_KEY, "helios");
+    final Map<String, Object> defaultSettings = ImmutableMap.of(
+        DOMAINS_KEY, EMPTY_STRING_LIST,
+        SRV_NAME_KEY, "helios",
+        MASTER_ENDPOINTS_KEY, EMPTY_STRING_LIST
+    );
+    final Config configWithDefaults = config.withFallback(ConfigFactory.parseMap(defaultSettings));
+    final List<String> domains = configWithDefaults.getStringList(DOMAINS_KEY);
+    final String srvName = configWithDefaults.getString(SRV_NAME_KEY);
     final List<URI> masterEndpoints = Lists.newArrayList();
-    for (final String endpoint : getList(config, MASTER_ENDPOINTS_KEY, EMPTY_STRING_LIST)) {
+    for (final String endpoint : configWithDefaults.getStringList(MASTER_ENDPOINTS_KEY)) {
       masterEndpoints.add(URI.create(endpoint));
     }
     return new CliConfig(domains, srvName, masterEndpoints);
-  }
-
-  private static String getString(final Map<String, Object> config, final String key,
-                                  final String defaultValue) {
-    return Optional.fromNullable((String) config.get(key)).or(defaultValue);
-  }
-
-  @SuppressWarnings("unchecked")
-  private static <T> List<T> getList(final Map<String, Object> config, final String key,
-                                     final List<T> defaultValue) {
-    final List<T> value = (List<T>) config.get(key);
-    return Optional.fromNullable(value).or(defaultValue);
   }
 }
