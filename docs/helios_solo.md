@@ -11,8 +11,9 @@ Install & Run
 
 ### OS X
 
-Ensure you have installed Docker using [Boot2Docker](http://boot2docker.io/) or
-another similar solution. Then:
+Install Docker using [Boot2Docker](http://boot2docker.io/) or
+another similar solution. Configure it correctly and **start the service** so that commands like
+`docker info` and `docker ps` work. Then run the below.
 
 ```bash
 $ brew tap spotify/public && brew install helios-solo
@@ -21,8 +22,9 @@ $ helios-up
 
 ### Linux
 
-Ensure you have installed Docker and have configured it correctly so that
-commands like `docker info` work. Either [follow the detailed instructions from Docker](https://docs.docker.com/installation/),
+Install Docker, configure it correctly, and **start the service** so that
+commands like `docker info` and `docker ps` work. Either
+[follow the detailed instructions from Docker](https://docs.docker.com/installation/),
 or opt for the quick install:
 
 ```bash
