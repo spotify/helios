@@ -50,12 +50,11 @@ public class ServiceRegistration {
   public static class Builder {
 
     private List<Endpoint> endpoints = new ArrayList<>();
-
     @Deprecated
     public Builder endpoint(final String name,
                             final String protocol,
                             final int port) {
-      endpoints.add(new Endpoint(name, protocol, port, "", "", null));
+      endpoints.add(new Endpoint(name, protocol, port, "", "", null, null));
       return this;
     }
 
@@ -64,7 +63,7 @@ public class ServiceRegistration {
                             final int port,
                             final String domain,
                             final String host) {
-      endpoints.add(new Endpoint(name, protocol, port, domain, host, null));
+      endpoints.add(new Endpoint(name, protocol, port, domain, host, null, null));
       return this;
     }
 
@@ -74,13 +73,25 @@ public class ServiceRegistration {
                             final String domain,
                             final String host,
                             final List<String> tags) {
-      endpoints.add(new Endpoint(name, protocol, port, domain, host, tags));
+      endpoints.add(new Endpoint(name, protocol, port, domain, host, tags, null));
+      return this;
+    }
+
+    public Builder endpoint(final String name,
+                            final String protocol,
+                            final int port,
+                            final String domain,
+                            final String host,
+                            final List<String> tags,
+                            final EndpointHealthCheck healthCheck) {
+      endpoints.add(new Endpoint(name, protocol, port, domain, host, tags, healthCheck));
       return this;
     }
 
     public ServiceRegistration build() {
       return new ServiceRegistration(endpoints);
     }
+
   }
 
   /**
@@ -95,15 +106,18 @@ public class ServiceRegistration {
     /** The hostname on which we will advertise this service in service discovery */
     private final String host;
     private final List<String> tags;
+    private final EndpointHealthCheck healthCheck;
 
     public Endpoint(final String name, final String protocol, final int port,
-                    final String domain, final String host, final List<String> tags) {
+                    final String domain, final String host, final List<String> tags,
+                    final EndpointHealthCheck healthCheck) {
       this.name = name;
       this.protocol = protocol;
       this.port = port;
       this.domain = domain;
       this.host = host;
       this.tags = tags;
+      this.healthCheck = healthCheck;
     }
 
     public String getHost() {
@@ -130,6 +144,10 @@ public class ServiceRegistration {
       return tags;
     }
 
+    public EndpointHealthCheck getHealthCheck() {
+      return healthCheck;
+    }
+
     @Override
     public String toString() {
       return Objects.toStringHelper(this)
@@ -139,6 +157,44 @@ public class ServiceRegistration {
           .add("domain", domain)
           .add("host", host)
           .add("tags", tags)
+          .add("healthCheck", healthCheck)
+          .toString();
+    }
+  }
+
+  public static class EndpointHealthCheck {
+    public static final String HTTP = "http";
+    public static final String TCP = "tcp";
+
+    private final String type;
+    private final String path;
+
+    public EndpointHealthCheck(final String type, final String path) {
+      this.type = type;
+      this.path = path;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    public String getPath() {
+      return path;
+    }
+
+    public static EndpointHealthCheck newHttpCheck(String path) {
+      return new EndpointHealthCheck(HTTP, path);
+    }
+
+    public static EndpointHealthCheck newTcpCheck() {
+      return new EndpointHealthCheck(TCP, null);
+    }
+
+    @Override
+    public String toString() {
+      return Objects.toStringHelper(this)
+          .add("type", type)
+          .add("path", path)
           .toString();
     }
   }
