@@ -2,7 +2,7 @@ FROM ubuntu:trusty
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y curl zookeeper git mercurial \
+    && apt-get install --no-install-recommends -y curl dnsutils zookeeper git mercurial \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 # Install helios-skydns plugin
