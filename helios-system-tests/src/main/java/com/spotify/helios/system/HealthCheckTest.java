@@ -23,9 +23,11 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.Maps;
 
+import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
@@ -214,6 +216,62 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
 
     assertEquals("wrong service", "foo_service", registered.get("foo_service").getName());
     assertEquals("wrong protocol", "foo_proto", registered.get("foo_service").getProtocol());
+  }
+
+  @Test
+  public void testExec() throws Exception {
+    startDefaultMaster();
+
+    final HeliosClient client = defaultClient();
+
+    startDefaultAgent(testHost(), "--service-registry=" + registryAddress);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    // check if "file" exists in the root directory as a healthcheck
+    final HealthCheck healthCheck = ExecHealthCheck.of("test -e file");
+
+    // start a container that listens on the service port
+    final String portName = "service";
+    final String serviceName = "foo_service";
+    final String serviceProtocol = "foo_proto";
+    final Job job = Job.newBuilder()
+        .setName(testJobName)
+        .setVersion(testJobVersion)
+        .setImage(BUSYBOX)
+        .setCommand(asList("sh", "-c", "nc -l -p 4711"))
+        .addPort(portName, PortMapping.of(4711))
+        .addRegistration(ServiceEndpoint.of(serviceName, serviceProtocol),
+                         ServicePorts.of(portName))
+        .setHealthCheck(healthCheck)
+        .build();
+
+    final JobId jobId = createJob(job);
+    deployJob(jobId, testHost());
+    TaskStatus jobState = awaitTaskState(jobId, testHost(), HEALTHCHECKING);
+
+    // wait a few seconds to see if the service gets registered
+    Thread.sleep(3000);
+    // shouldn't be registered, since we haven't created the file yet
+    verify(registrar, never()).register(any(ServiceRegistration.class));
+
+    // create the file in the container to make the healthcheck succeed
+    final DockerClient dockerClient = getNewDockerClient();
+    final String[] makeFileCmd = new String[]{"touch", "file"};
+    final String execId = dockerClient.execCreate(jobState.getContainerId(), makeFileCmd);
+    dockerClient.execStart(execId);
+
+    awaitTaskState(jobId, testHost(), RUNNING);
+    dockerClient.close();
+
+    verify(registrar, timeout((int) SECONDS.toMillis(LONG_WAIT_SECONDS)))
+        .register(registrationCaptor.capture());
+    final ServiceRegistration serviceRegistration = registrationCaptor.getValue();
+
+    assertEquals(1, serviceRegistration.getEndpoints().size());
+    final Endpoint registeredEndpoint = serviceRegistration.getEndpoints().get(0);
+
+    assertEquals("wrong service", serviceName, registeredEndpoint.getName());
+    assertEquals("wrong protocol", serviceProtocol, registeredEndpoint.getProtocol());
   }
 
   @Test

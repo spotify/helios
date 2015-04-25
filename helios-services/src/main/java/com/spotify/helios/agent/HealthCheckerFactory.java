@@ -21,13 +21,21 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Splitter;
+import com.google.common.base.Strings;
+import com.google.common.collect.Iterables;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.servicescommon.DockerHost;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
@@ -55,19 +63,76 @@ public class HealthCheckerFactory {
     throw new IllegalArgumentException("Unknown healthCheck type");
   }
 
-  private static class ExecHealthChecker implements HealthChecker {
+  static class ExecHealthChecker implements HealthChecker {
+
+    private static final Logger log = LoggerFactory.getLogger(ExecHealthChecker.class);
 
     private final ExecHealthCheck healthCheck;
     private final DockerClient docker;
 
-    private ExecHealthChecker(final ExecHealthCheck healthCheck, final DockerClient docker) {
+    ExecHealthChecker(final ExecHealthCheck healthCheck, final DockerClient docker) {
       this.healthCheck = healthCheck;
       this.docker = docker;
     }
 
     @Override
     public boolean check(final String containerId) {
-      throw new UnsupportedOperationException("not yet supported");
+      // Make sure we are on a docker version that supports exec health checks
+      if (!compatibleDockerVersion(docker)) {
+        throw new UnsupportedOperationException(
+            "docker exec healthcheck is not supported on your docker version");
+      }
+
+      try {
+        final String[] cmd = healthCheck.getCommand().split(" ");
+        final String execId = docker.execCreate(containerId, cmd,
+                                                DockerClient.ExecParameter.STDOUT,
+                                                DockerClient.ExecParameter.STDERR);
+
+        final String output;
+        try (LogStream stream = docker.execStart(execId)) {
+          output = stream.readFully();
+        }
+
+        int exitCode = docker.execInspect(execId).exitCode();
+        if (exitCode != 0) {
+          log.info("healthcheck failed with exit code {}. output {}", exitCode, output);
+          return false;
+        }
+
+        return true;
+      } catch (DockerException e) {
+        return false;
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return false;
+      }
+    }
+
+    private static boolean compatibleDockerVersion(final DockerClient docker) {
+      final String executionDriver;
+      final String apiVersion;
+      try {
+        executionDriver = docker.info().executionDriver();
+        apiVersion = docker.version().apiVersion();
+      } catch (DockerException e) {
+        return false;
+      } catch (InterruptedException e) {
+        Thread.currentThread().interrupt();
+        return false;
+      }
+
+      if (Strings.isNullOrEmpty(executionDriver) || !executionDriver.startsWith("native")) {
+        return false;
+      }
+      if (Strings.isNullOrEmpty(apiVersion)) {
+        return false;
+      }
+
+      Iterable<String> split = Splitter.on(".").split(apiVersion);
+      int major = Integer.parseInt(Iterables.get(split, 0, "0"));
+      int minor = Integer.parseInt(Iterables.get(split, 1, "0"));
+      return major == 1 && minor >= 18;
     }
   }
 
