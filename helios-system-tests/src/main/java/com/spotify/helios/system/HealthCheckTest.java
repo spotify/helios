@@ -21,6 +21,7 @@
 
 package com.spotify.helios.system;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 
 import com.spotify.docker.client.DockerClient;
@@ -43,6 +44,8 @@ import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -54,6 +57,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -64,7 +68,9 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -220,6 +226,9 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
 
   @Test
   public void testExec() throws Exception {
+    final DockerClient dockerClient = getNewDockerClient();
+    assumeThat(dockerClient, is(execCompatibleDockerVersion()));
+
     startDefaultMaster();
 
     final HeliosClient client = defaultClient();
@@ -255,7 +264,6 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
     verify(registrar, never()).register(any(ServiceRegistration.class));
 
     // create the file in the container to make the healthcheck succeed
-    final DockerClient dockerClient = getNewDockerClient();
     final String[] makeFileCmd = new String[]{"touch", "file"};
     final String execId = dockerClient.execCreate(jobState.getContainerId(), makeFileCmd);
     dockerClient.execStart(execId);
@@ -272,6 +280,24 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
 
     assertEquals("wrong service", serviceName, registeredEndpoint.getName());
     assertEquals("wrong protocol", serviceProtocol, registeredEndpoint.getProtocol());
+  }
+
+  private static Matcher<DockerClient> execCompatibleDockerVersion() {
+    return new CustomTypeSafeMatcher<DockerClient>("docker version") {
+      @Override
+      protected boolean matchesSafely(DockerClient client) {
+        try {
+          String driver = client.info().executionDriver();
+          Iterator<String> version =
+              Splitter.on('.').split(client.version().apiVersion()).iterator();
+          int apiVersionMajor = Integer.parseInt(version.next());
+          int apiVersionMinor = Integer.parseInt(version.next());
+          return driver.startsWith("native") && apiVersionMajor == 1 && apiVersionMinor >= 18;
+        } catch (Exception e) {
+          return false;
+        }
+      }
+    };
   }
 
   @Test
