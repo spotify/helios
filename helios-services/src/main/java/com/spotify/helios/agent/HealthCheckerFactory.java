@@ -41,6 +41,7 @@ import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.URL;
+import java.util.List;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -84,8 +85,8 @@ public class HealthCheckerFactory {
       }
 
       try {
-        final String[] cmd = healthCheck.getCommand().split(" ");
-        final String execId = docker.execCreate(containerId, cmd,
+        final List<String> cmd = healthCheck.getCommand();
+        final String execId = docker.execCreate(containerId, cmd.toArray(new String[cmd.size()]),
                                                 DockerClient.ExecParameter.STDOUT,
                                                 DockerClient.ExecParameter.STDERR);
 

@@ -180,8 +180,7 @@ public class JobCreateCommand extends ControlCommand {
     healthCheckExecArg = parser.addArgument("--exec-check")
         .help("Run `docker exec` health check with the provided command. The service will not be " +
               "registered in service discovery until the command executes successfully. " +
-              "E.g. --exec-check 'bash -c \"/usr/bin/curl " +
-              "127.0.0.1:9200/_cluster/health?pretty=true | grep green\"'");
+              "E.g. --exec-check=exit 0");
 
     healthCheckHttpArg = parser.addArgument("--http-check")
         .help("Run HTTP health check against the provided port name and path. The service will " +
@@ -422,7 +421,8 @@ public class JobCreateCommand extends ControlCommand {
     }
 
     if (!isNullOrEmpty(execHealthCheck)) {
-      builder.setHealthCheck(ExecHealthCheck.of(execHealthCheck));
+      String[] cmd = execHealthCheck.split(" ");
+      builder.setHealthCheck(ExecHealthCheck.of(cmd));
     } else if (!isNullOrEmpty(httpHealthCheck)) {
       final String[] parts = httpHealthCheck.split(":", 2);
       if (parts.length != 2) {

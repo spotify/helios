@@ -21,6 +21,7 @@
 
 package com.spotify.helios.system;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
@@ -739,7 +740,8 @@ public abstract class SystemTestBase {
 
     if (job.getHealthCheck() != null) {
       if (job.getHealthCheck() instanceof ExecHealthCheck) {
-        args.add("--exec-check=" + ((ExecHealthCheck) job.getHealthCheck()).getCommand());
+        List<String> command = ((ExecHealthCheck) job.getHealthCheck()).getCommand();
+        args.add("--exec-check=" + Joiner.on(' ').join(command));
       } else if (job.getHealthCheck() instanceof HttpHealthCheck) {
         final HttpHealthCheck httpHealthCheck = (HttpHealthCheck) job.getHealthCheck();
         args.add("--http-check=" + httpHealthCheck.getPort() + ":" + httpHealthCheck.getPath());

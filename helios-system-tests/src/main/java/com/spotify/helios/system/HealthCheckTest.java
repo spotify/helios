@@ -237,7 +237,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
     awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // check if "file" exists in the root directory as a healthcheck
-    final HealthCheck healthCheck = ExecHealthCheck.of("test -e file");
+    final HealthCheck healthCheck = ExecHealthCheck.of("test", "-e", "file");
 
     // start a container that listens on the service port
     final String portName = "service";

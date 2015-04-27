@@ -37,6 +37,7 @@ import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -384,7 +385,8 @@ public class JobValidator {
     final Set<String> errors = Sets.newHashSet();
 
     if (healthCheck instanceof ExecHealthCheck) {
-      if (isNullOrEmpty(((ExecHealthCheck) healthCheck).getCommand())) {
+      List<String> command = ((ExecHealthCheck) healthCheck).getCommand();
+      if (command == null || command.isEmpty()) {
         errors.add("A command must be defined for `docker exec`-based health checks.");
       }
     } else if (healthCheck instanceof HttpHealthCheck || healthCheck instanceof TcpHealthCheck) {
