@@ -21,20 +21,21 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.base.Joiner;
+import com.google.common.base.Charsets;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
+import com.google.common.io.Files;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.util.ISO8601Utils;
 import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificates;
@@ -60,9 +61,7 @@ import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
@@ -70,7 +69,6 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
@@ -93,6 +91,7 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.bridge.SLF4JBridgeHandler;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.Socket;
@@ -125,7 +124,6 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static java.lang.Integer.toHexString;
-import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -694,65 +692,13 @@ public abstract class SystemTestBase {
 
   protected JobId createJob(final Job job) throws Exception {
     final String name = job.getId().getName();
-    final String version = job.getId().getVersion();
     checkArgument(name.contains(testTag), "Job name must contain testTag to enable cleanup");
 
-    final List<String> args = Lists.newArrayList("-q", name + ':' + version, job.getImage());
+    final String serializedConfig = Json.asNormalizedString(job);
+    final File configFile = temporaryFolder.newFile();
+    Files.write(serializedConfig, configFile, Charsets.UTF_8);
 
-    for (Map.Entry<String, String> entry : job.getEnv().entrySet()) {
-      args.add("--env=" + entry.getKey() + "=" + entry.getValue());
-    }
-
-    for (final Map.Entry<String, PortMapping> entry : job.getPorts().entrySet()) {
-      args.add("--port");
-      String value = "" + entry.getValue().getInternalPort();
-      if (entry.getValue().getExternalPort() != null) {
-        value += ":" + entry.getValue().getExternalPort();
-      }
-      if (entry.getValue().getProtocol() != null) {
-        value += "/" + entry.getValue().getProtocol();
-      }
-      args.add(entry.getKey() + "=" + value);
-    }
-
-    for (final Map.Entry<ServiceEndpoint, ServicePorts> entry : job.getRegistration().entrySet()) {
-      final ServiceEndpoint r = entry.getKey();
-      for (String portName : entry.getValue().getPorts().keySet()) {
-          args.add("--register=" + ((r.getProtocol() == null)
-                                    ? format("%s=%s", r.getName(), portName)
-                                    : format("%s/%s=%s", r.getName(), r.getProtocol(), portName)));
-        }
-    }
-
-    for (Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
-      if (isNullOrEmpty(entry.getKey())) {
-        // Data volume
-        args.add("--volume=" + entry.getKey());
-      } else {
-        // Bind mount
-        args.add("--volume=" + entry.getValue() + ":" + entry.getKey());
-      }
-    }
-
-    if (job.getExpires() != null) {
-      args.add("--expires=" + ISO8601Utils.format(job.getExpires()));
-    }
-
-    if (job.getHealthCheck() != null) {
-      if (job.getHealthCheck() instanceof ExecHealthCheck) {
-        List<String> command = ((ExecHealthCheck) job.getHealthCheck()).getCommand();
-        args.add("--exec-check=" + Joiner.on(' ').join(command));
-      } else if (job.getHealthCheck() instanceof HttpHealthCheck) {
-        final HttpHealthCheck httpHealthCheck = (HttpHealthCheck) job.getHealthCheck();
-        args.add("--http-check=" + httpHealthCheck.getPort() + ":" + httpHealthCheck.getPath());
-      } else if (job.getHealthCheck() instanceof TcpHealthCheck) {
-        args.add("--tcp-check=" + ((TcpHealthCheck) job.getHealthCheck()).getPort());
-      }
-    }
-
-    args.add("--");
-    args.addAll(job.getCommand());
-
+    final List<String> args = ImmutableList.of("-q", "-f", configFile.getAbsolutePath());
     final String createOutput = cli("create", args);
     final String jobId = WHITESPACE.trimFrom(createOutput);
 
