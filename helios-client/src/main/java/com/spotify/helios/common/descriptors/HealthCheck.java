@@ -54,7 +54,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <pre>
  * {
  *   "type" : "exec",
- *   "command" : ["bash", "-c", "/usr/bin/curl 127.0.0.1:9200/_cluster/health?pretty=true | grep green"]
+ *   "command" : ["bash", "-c", "/usr/bin/curl 127.0.0.1:9200/_cluster/health | grep green"]
  * }
  * </pre>
  */
