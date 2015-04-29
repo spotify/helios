@@ -139,30 +139,39 @@ class TaskRunner extends InterruptingExecutionThreadService {
     // Delay
     Thread.sleep(delayMillis);
 
-    // Create and start container if necessary
-    final String containerId = createAndStartContainer();
-    this.containerId = Optional.of(containerId);
+    // Check if the container is already running
+    final ContainerInfo info = getContainerInfo(existingContainerId);
+    final String containerId;
 
-    if (healthChecker.isPresent()) {
-      listener.healthChecking();
+    if (info != null && info.state().running()) {
+      containerId = existingContainerId;
+      this.containerId = Optional.of(existingContainerId);
+    } else {
+      // Create and start container if necessary
+      containerId = createAndStartContainer();
+      this.containerId = Optional.of(containerId);
 
-      final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
-          .setMinIntervalMillis(SECONDS.toMillis(1))
-          .setMaxIntervalMillis(SECONDS.toMillis(30))
-          .build().newScheduler();
+      if (healthChecker.isPresent()) {
+        listener.healthChecking();
 
-      while (!healthChecker.get().check(containerId)) {
-        final ContainerState state = docker.inspectContainer(containerId).state();
-        if (!state.running()) {
-          log.warn("container exited during health checking: {}: {}: {}",
-                   config, containerId, state.exitCode());
-          throw new RuntimeException("container exited during health checking");
+        final RetryScheduler retryScheduler = BoundedRandomExponentialBackoff.newBuilder()
+            .setMinIntervalMillis(SECONDS.toMillis(1))
+            .setMaxIntervalMillis(SECONDS.toMillis(30))
+            .build().newScheduler();
+
+        while (!healthChecker.get().check(containerId)) {
+          final ContainerState state = docker.inspectContainer(containerId).state();
+          if (!state.running()) {
+            log.warn("container exited during health checking: {}: {}: {}",
+                     config, containerId, state.exitCode());
+            throw new RuntimeException("container exited during health checking");
+          }
+
+          final long retryMillis = retryScheduler.nextMillis();
+          log.warn("container failed healthcheck, will retry in {}ms: {}: {}",
+                   retryMillis, config, containerId);
+          Thread.sleep(retryMillis);
         }
-
-        final long retryMillis = retryScheduler.nextMillis();
-        log.warn("container failed healthcheck, will retry in {}ms: {}: {}",
-                 retryMillis, config, containerId);
-        Thread.sleep(retryMillis);
       }
     }
 
@@ -186,12 +195,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
   private String createAndStartContainer()
       throws DockerException, InterruptedException {
-
-    // Check if the container is already running
-    final ContainerInfo info = getContainerInfo(existingContainerId);
-    if (info != null && info.state().running()) {
-      return existingContainerId;
-    }
 
     // Ensure we have the image
     final String image = config.containerImage();
