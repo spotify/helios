@@ -21,11 +21,14 @@
 
 package com.spotify.helios.system;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.Maps;
 
+import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.Job;
@@ -41,6 +44,8 @@ import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -52,6 +57,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
@@ -62,7 +68,9 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -214,6 +222,82 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
 
     assertEquals("wrong service", "foo_service", registered.get("foo_service").getName());
     assertEquals("wrong protocol", "foo_proto", registered.get("foo_service").getProtocol());
+  }
+
+  @Test
+  public void testExec() throws Exception {
+    final DockerClient dockerClient = getNewDockerClient();
+    assumeThat(dockerClient, is(execCompatibleDockerVersion()));
+
+    startDefaultMaster();
+
+    final HeliosClient client = defaultClient();
+
+    startDefaultAgent(testHost(), "--service-registry=" + registryAddress);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    // check if "file" exists in the root directory as a healthcheck
+    final HealthCheck healthCheck = ExecHealthCheck.of("test", "-e", "file");
+
+    // start a container that listens on the service port
+    final String portName = "service";
+    final String serviceName = "foo_service";
+    final String serviceProtocol = "foo_proto";
+    final Job job = Job.newBuilder()
+        .setName(testJobName)
+        .setVersion(testJobVersion)
+        .setImage(BUSYBOX)
+        .setCommand(asList("sh", "-c", "nc -l -p 4711"))
+        .addPort(portName, PortMapping.of(4711))
+        .addRegistration(ServiceEndpoint.of(serviceName, serviceProtocol),
+                         ServicePorts.of(portName))
+        .setHealthCheck(healthCheck)
+        .build();
+
+    final JobId jobId = createJob(job);
+    deployJob(jobId, testHost());
+    TaskStatus jobState = awaitTaskState(jobId, testHost(), HEALTHCHECKING);
+
+    // wait a few seconds to see if the service gets registered
+    Thread.sleep(3000);
+    // shouldn't be registered, since we haven't created the file yet
+    verify(registrar, never()).register(any(ServiceRegistration.class));
+
+    // create the file in the container to make the healthcheck succeed
+    final String[] makeFileCmd = new String[]{"touch", "file"};
+    final String execId = dockerClient.execCreate(jobState.getContainerId(), makeFileCmd);
+    dockerClient.execStart(execId);
+
+    awaitTaskState(jobId, testHost(), RUNNING);
+    dockerClient.close();
+
+    verify(registrar, timeout((int) SECONDS.toMillis(LONG_WAIT_SECONDS)))
+        .register(registrationCaptor.capture());
+    final ServiceRegistration serviceRegistration = registrationCaptor.getValue();
+
+    assertEquals(1, serviceRegistration.getEndpoints().size());
+    final Endpoint registeredEndpoint = serviceRegistration.getEndpoints().get(0);
+
+    assertEquals("wrong service", serviceName, registeredEndpoint.getName());
+    assertEquals("wrong protocol", serviceProtocol, registeredEndpoint.getProtocol());
+  }
+
+  private static Matcher<DockerClient> execCompatibleDockerVersion() {
+    return new CustomTypeSafeMatcher<DockerClient>("docker version") {
+      @Override
+      protected boolean matchesSafely(DockerClient client) {
+        try {
+          String driver = client.info().executionDriver();
+          Iterator<String> version =
+              Splitter.on('.').split(client.version().apiVersion()).iterator();
+          int apiVersionMajor = Integer.parseInt(version.next());
+          int apiVersionMinor = Integer.parseInt(version.next());
+          return driver.startsWith("native") && apiVersionMajor == 1 && apiVersionMinor >= 18;
+        } catch (Exception e) {
+          return false;
+        }
+      }
+    };
   }
 
   @Test

@@ -23,7 +23,11 @@ package com.spotify.helios.common.descriptors;
 
 import org.junit.Test;
 
+import java.util.Arrays;
+
+import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class HealthCheckTest {
 
@@ -73,8 +77,8 @@ public class HealthCheckTest {
   @Test
   public void testExecHealthCheckBuilder() {
     final ExecHealthCheck healthCheck = HealthCheck.newExecHealthCheck()
-        .setCommand("whoami").build();
-    assertEquals("cmd", "whoami", healthCheck.getCommand());
+        .setCommand(Arrays.asList("whoami")).build();
+    assertThat(healthCheck.getCommand(), contains("whoami"));
   }
 
   @Test(expected = IllegalArgumentException.class)

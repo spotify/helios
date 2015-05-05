@@ -25,13 +25,14 @@ import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
+import java.util.Arrays;
+import java.util.List;
 
 public class ExecHealthCheck extends HealthCheck {
 
-  private final String command;
+  private final List<String> command;
 
-  public ExecHealthCheck(@JsonProperty("command") final String command) {
+  public ExecHealthCheck(@JsonProperty("command") final List<String> command) {
     super(EXEC);
     this.command = command;
   }
@@ -41,12 +42,12 @@ public class ExecHealthCheck extends HealthCheck {
     command = builder.command;
   }
 
-  public String getCommand() {
+  public List<String> getCommand() {
     return command;
   }
 
-  public static ExecHealthCheck of(final String command) {
-    return newBuilder().setCommand(command).build();
+  public static ExecHealthCheck of(final String... command) {
+    return newBuilder().setCommand(Arrays.asList(command)).build();
   }
 
   @Override
@@ -86,19 +87,19 @@ public class ExecHealthCheck extends HealthCheck {
 
   public static class Builder {
 
-    private String command;
+    private List<String> command;
 
-    public String getCommand() {
+    public List<String> getCommand() {
       return command;
     }
 
-    public Builder setCommand(final String command) {
+    public Builder setCommand(final List<String> command) {
       this.command = command;
       return this;
     }
 
     public ExecHealthCheck build() {
-      if (isNullOrEmpty(command)) {
+      if (command == null || command.isEmpty()) {
         throw new IllegalArgumentException("You must specify a command for an exec health check.");
       }
 
