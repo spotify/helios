@@ -107,7 +107,11 @@ public class JobStatusCommand extends ControlCommand {
     final Set<JobId> jobIds = jobs.keySet();
 
     if (!Strings.isNullOrEmpty(jobIdString) && jobIds.isEmpty()) {
-      out.printf("job id matcher \"%s\" matched no jobs%n", jobIdString);
+      if (json) {
+        out.println("{ }");
+      } else {
+        out.printf("job id matcher \"%s\" matched no jobs%n", jobIdString);
+      }
       return 1;
     }
 
