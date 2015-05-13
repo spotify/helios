@@ -29,6 +29,7 @@ fi
 if [ $JMXPORT ]; then
     args=("${args[@]}"
           -Dcom.sun.management.jmxremote.port=$JMXPORT
+          -Dcom.sun.management.jmxremote.rmi.port=$JMXPORT
           -Dcom.sun.management.jmxremote.ssl=false
           -Dcom.sun.management.jmxremote.authenticate=false )
 fi
