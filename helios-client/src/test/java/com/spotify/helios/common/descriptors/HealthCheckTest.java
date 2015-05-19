@@ -21,7 +21,11 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.google.common.collect.ImmutableList;
+
 import org.junit.Test;
+
+import java.util.Collections;
 
 import static org.junit.Assert.assertEquals;
 
@@ -73,8 +77,8 @@ public class HealthCheckTest {
   @Test
   public void testExecHealthCheckBuilder() {
     final ExecHealthCheck healthCheck = HealthCheck.newExecHealthCheck()
-        .setCommand("whoami").build();
-    assertEquals("cmd", "whoami", healthCheck.getCommand());
+        .setCommand(Collections.singletonList("whoami")).build();
+    assertEquals("cmd", healthCheck.getCommand(), ImmutableList.of("whoami"));
   }
 
   @Test(expected = IllegalArgumentException.class)
