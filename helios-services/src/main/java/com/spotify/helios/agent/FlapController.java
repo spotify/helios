@@ -36,7 +36,7 @@ public class FlapController {
   /**
    * Number of restarts in the time period to consider the job flapping
    */
-  private static final int DEFAULT_FLAPPING_RESTART_COUNT = 10;
+  public static int DEFAULT_FLAPPING_RESTART_COUNT = 10;
   /**
    * If total runtime of the container over the last n restarts is less than this, we throttle.
    */
