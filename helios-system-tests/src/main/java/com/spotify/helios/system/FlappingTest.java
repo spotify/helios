@@ -22,6 +22,7 @@
 package com.spotify.helios.system;
 
 import com.spotify.helios.Polling;
+import com.spotify.helios.agent.FlapController;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -46,6 +47,9 @@ public class FlappingTest extends SystemTestBase {
 
   @Test
   public void test() throws Exception {
+    // Lower this field so that this test doesn't time out on slow Docker instances.
+    FlapController.DEFAULT_FLAPPING_RESTART_COUNT = 3;
+
     startDefaultMaster();
     final String host = testHost();
     startDefaultAgent(host);
