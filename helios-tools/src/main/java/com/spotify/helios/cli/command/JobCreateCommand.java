@@ -49,6 +49,7 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -180,7 +181,7 @@ public class JobCreateCommand extends ControlCommand {
     healthCheckExecArg = parser.addArgument("--exec-check")
         .help("Run `docker exec` health check with the provided command. The service will not be " +
               "registered in service discovery until the command executes successfully in the " +
-              "container. E.g. --exec-check=/usr/locale/bin/myhealthcheck");
+              "container, i.e. with exit code 0. E.g. --exec-check ping google.com");
 
     healthCheckHttpArg = parser.addArgument("--http-check")
         .help("Run HTTP health check against the provided port name and path. The service will " +
@@ -406,21 +407,27 @@ public class JobCreateCommand extends ControlCommand {
     }
 
     // Parse health check
-    final String execHealthCheck = options.getString(healthCheckExecArg.getDest());
+    final String execString = options.getString(healthCheckExecArg.getDest());
+    final List<String> execHealthCheck =
+        (execString == null) ? null : Arrays.asList(execString.split(" "));
     final String httpHealthCheck = options.getString(healthCheckHttpArg.getDest());
     final String tcpHealthCheck = options.getString(healthCheckTcpArg.getDest());
 
     int numberOfHealthChecks = 0;
-    for (final String c : asList(execHealthCheck, httpHealthCheck, tcpHealthCheck)) {
+    for (final String c : asList(httpHealthCheck, tcpHealthCheck)) {
       if (!isNullOrEmpty(c)) {
         numberOfHealthChecks++;
       }
     }
+    if (execHealthCheck != null && !execHealthCheck.isEmpty()) {
+      numberOfHealthChecks++;
+    }
+
     if (numberOfHealthChecks > 1) {
       throw new IllegalArgumentException("Only one health check may be specified.");
     }
 
-    if (!isNullOrEmpty(execHealthCheck)) {
+    if (execHealthCheck != null && !execHealthCheck.isEmpty()) {
       builder.setHealthCheck(ExecHealthCheck.of(execHealthCheck));
     } else if (!isNullOrEmpty(httpHealthCheck)) {
       final String[] parts = httpHealthCheck.split(":", 2);

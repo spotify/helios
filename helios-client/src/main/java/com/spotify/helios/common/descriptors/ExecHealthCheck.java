@@ -47,7 +47,11 @@ public class ExecHealthCheck extends HealthCheck {
   }
 
   public static ExecHealthCheck of(final String... command) {
-    return newBuilder().setCommand(Arrays.asList(command)).build();
+    return ExecHealthCheck.of(Arrays.asList(command));
+  }
+
+  public static ExecHealthCheck of(final List<String> command) {
+    return newBuilder().setCommand(command).build();
   }
 
   @Override
