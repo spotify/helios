@@ -209,13 +209,21 @@ code of 2xx or 3xx as successful. HTTP health checks are specified in the form `
 where `port_name` is the **name** of the exposed port (as set in the `--port` argument), and `path`
 is the path portion of the URL. Requests have a connect timeout of 500ms and a read timeout of 10s.
 
-    helios create --http-check http:health -p http=8080 -r foo/http=http
+    helios create --http-check http:health -p http=8080 -r foo/http=http ...
 
 #### TCP
 This health check succeeds if it is able to connect to the specified port. You must specify the
 **name** of the port as set in the `--port` argument. Each request will timeout after 500ms.
 
-    helios create --tcp-check hm -p hm=4229 -r foo/hm=hm
+    helios create --tcp-check hm -p hm=4229 -r foo/hm=hm ...
+
+#### Exec
+
+This health check runs `docker exec` with the provided command. The service will not be registered
+in service discovery until the command executes successfully in the container, i.e. exits with
+status code 0.
+
+    helios create --exec-check "ping google.com" ...
 
 ### Specifying an Access Token
 
