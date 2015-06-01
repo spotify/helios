@@ -22,6 +22,7 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 
 import com.spotify.helios.client.HeliosClient;
@@ -89,6 +90,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument healthCheckExecArg;
   private final Argument healthCheckHttpArg;
   private final Argument healthCheckTcpArg;
+  private final Argument securityOptArg;
 
   public JobCreateCommand(final Subparser parser) {
     super(parser);
@@ -191,6 +193,12 @@ public class JobCreateCommand extends ControlCommand {
     healthCheckTcpArg = parser.addArgument("--tcp-check")
         .help("Run TCP health check against the provided port name. The service will not be " +
               "registered in service discovery until the container passes the TCP health check.");
+
+    securityOptArg = parser.addArgument("--security-opt")
+        .action(append())
+        .setDefault(Lists.newArrayList())
+        .help("Run the Docker container with a security option. " +
+              "See https://docs.docker.com/reference/run/#security-configuration.");
   }
 
   @Override
@@ -439,6 +447,8 @@ public class JobCreateCommand extends ControlCommand {
     } else if (!isNullOrEmpty(tcpHealthCheck)) {
       builder.setHealthCheck(TcpHealthCheck.of(tcpHealthCheck));
     }
+
+    builder.setSecurityOpt(options.<String>getList(securityOptArg.getDest()));
 
     builder.setToken(options.getString(tokenArg.getDest()));
 

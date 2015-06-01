@@ -37,7 +37,6 @@ import com.spotify.helios.common.descriptors.ServicePorts;
 import org.junit.Test;
 
 import java.util.Map;
-import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
@@ -50,6 +49,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION_DOMAIN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_RESOURCES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_SECURITY_OPT;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static org.hamcrest.Matchers.contains;
@@ -161,10 +161,10 @@ public class JobValidatorTest {
   @Test
   public void testIdMismatchFails() throws Exception {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
-                            "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS, EMPTY_REGISTRATION,
-                            EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
+                            "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS,
+                            EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
                             EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
-                            EMPTY_HEALTH_CHECK);
+                            EMPTY_HEALTH_CHECK, EMPTY_SECURITY_OPT);
     final JobId recomputedId = job.toBuilder().build().getId();
     assertEquals(ImmutableSet.of("Id hash mismatch: " + job.getId().getHash()
         + " != " + recomputedId.getHash()), validator.validate(job));
@@ -173,7 +173,7 @@ public class JobValidatorTest {
   @Test
   public void testInvalidNamesFail() throws Exception {
     final Job.Builder b = Job.newBuilder().setVersion("1").setImage("foo");
-    assertEquals((Set<String>) newHashSet("Job name was not specified.",
+    assertEquals(newHashSet("Job name was not specified.",
         "Job hash was not specified in job id [null:1]."),
                  validator.validate(b.build()));
     assertThat(validator.validate(b.setName("foo@bar").build()),
@@ -187,7 +187,7 @@ public class JobValidatorTest {
   @Test
   public void testInvalidVersionsFail() throws Exception {
     final Job.Builder b = Job.newBuilder().setName("foo").setImage("foo");
-    assertEquals((Set<String>) newHashSet("Job version was not specified in job id [foo:null].",
+    assertEquals(newHashSet("Job version was not specified in job id [foo:null].",
         "Job hash was not specified in job id [foo:null]."),
                  validator.validate(b.build()));
     assertThat(validator.validate(b.setVersion("17@bar").build()),
