@@ -101,6 +101,6 @@ public class QueryFailureTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     final String result = cli("status", "--host", "framazama");
-    assertThat(result, containsString("There are no jobs deployed to hosts with the pattern"));
+    assertThat(result, containsString("There are no jobs deployed to hosts with the host pattern"));
   }
 }
