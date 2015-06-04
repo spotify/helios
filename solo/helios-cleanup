@@ -6,8 +6,8 @@ RUNNING=$(docker inspect -f '{{ .State.Running }}' helios-solo-container 2>/dev/
 if [ "$RUNNING" == "true" ]; then
 	JOBS=$(PATH=.:$PATH helios-solo jobs -q)
 	for job in $JOBS; do
-		PATH=.:$PATH helios-solo undeploy -a -f $job
-		PATH=.:$PATH helios-solo remove --force $job
+		PATH=.:$PATH helios-solo undeploy -a --yes $job
+		PATH=.:$PATH helios-solo remove --yes $job
 	done
 fi
 
