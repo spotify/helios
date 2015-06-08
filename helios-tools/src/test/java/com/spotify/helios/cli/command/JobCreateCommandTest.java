@@ -38,6 +38,7 @@ import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.PrintStream;
 import java.util.Collections;
 import java.util.List;
@@ -85,11 +86,18 @@ public class JobCreateCommandTest {
     when(options.getString("id")).thenReturn(JOB_ID);
     when(options.getString("image")).thenReturn("busybox");
     when(options.getString("exec_check")).thenReturn(EXEC_HEALTH_CHECK);
+    // For some reason the mocked options.getInt() returns 0 by default.
+    // Explicitly return null to check that the value from the JSON file doesn't get overwritten.
+    when(options.getInt("grace_period")).thenReturn(null);
+    doReturn(new File("src/main/resources/job_config.json")).when(options).get("file");
     doReturn(SECURITY_OPT).when(options).getList("security_opt");
     final int ret = command.run(options, client, out, false, null);
 
     assertEquals(0, ret);
     final String output = baos.toString();
+    assertThat(output, containsString(
+        "\"env\":{\"JVM_ARGS\":\"-Ddw.feature.randomFeatureFlagEnabled=true\"}"));
+    assertThat(output, containsString("\"gracePeriod\":100"));
     assertThat(output, containsString(
         "\"healthCheck\":{\"type\":\"exec\",\"command\":[\"touch\",\"/this\"],\"type\":\"exec\"},"));
     assertThat(output, containsString("\"securityOpt\":[\"label:user:dxia\",\"apparmor:foo\"]"));
@@ -101,6 +109,14 @@ public class JobCreateCommandTest {
     when(options.getString("image")).thenReturn("busybox");
     final int ret = command.run(options, client, out, false, null);
     assertEquals(1, ret);
+  }
+
+  @Test(expected=IllegalArgumentException.class)
+  public void testJobCreateCommandFailsWithInvalidFilePath() throws Exception {
+    when(options.getString("id")).thenReturn(JOB_ID);
+    when(options.getString("image")).thenReturn("busybox");
+    doReturn(new File("non/existant/file")).when(options).get("file");
+    command.run(options, client, out, false, null);
   }
 
   private static Job jobWhoseNameIs(final String name) {
