@@ -33,6 +33,7 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
@@ -66,6 +67,7 @@ import static java.util.Collections.emptyMap;
  *   },
  *   "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
  *   "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
+ *   "networkMode" : "bridge",
  *   "ports" : {
  *     "http" : {
  *       "externalPort" : 8060,
@@ -111,6 +113,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final String EMPTY_TOKEN = "";
   public static final HealthCheck EMPTY_HEALTH_CHECK = null;
   public static final List<String> EMPTY_SECURITY_OPT = emptyList();
+  public static final String EMPTY_NETWORK_MODE = null;
 
   private final JobId id;
   private final String image;
@@ -127,6 +130,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final String token;
   private final HealthCheck healthCheck;
   private final List<String> securityOpt;
+  private final String networkMode;
 
   /**
    * Create a Job.
@@ -150,6 +154,8 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param healthCheck A health check Helios will execute on the container.
    * @param securityOpt A list of strings denoting security options for running Docker containers,
    *                    i.e. `docker run --security-opt`.
+   * @param networkMode Sets the networking mode for the container. Supported values are: bridge,
+   *                    host, and container:<name|id>.
    */
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
@@ -166,7 +172,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("creatingUser") @Nullable String creatingUser,
              @JsonProperty("token") @Nullable String token,
              @JsonProperty("healthCheck") @Nullable HealthCheck healthCheck,
-             @JsonProperty("securityOpt") @Nullable final List<String> securityOpt) {
+             @JsonProperty("securityOpt") @Nullable final List<String> securityOpt,
+             @JsonProperty("networkMode") @Nullable final String networkMode) {
     this.id = id;
     this.image = image;
 
@@ -185,6 +192,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.token = Optional.fromNullable(token).or(EMPTY_TOKEN);
     this.healthCheck = Optional.fromNullable(healthCheck).orNull();
     this.securityOpt = Optional.fromNullable(securityOpt).or(EMPTY_SECURITY_OPT);
+    this.networkMode = Optional.fromNullable(networkMode).orNull();
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -205,6 +213,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.token = p.token;
     this.healthCheck = p.healthCheck;
     this.securityOpt = p.securityOpt;
+    this.networkMode = p.networkMode;
   }
 
   public JobId getId() {
@@ -267,12 +276,16 @@ public class Job extends Descriptor implements Comparable<Job> {
     return securityOpt;
   }
 
+  public String getNetworkMode() {
+    return networkMode;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
 
   @Override
-  public int compareTo(final Job o) {
+  public int compareTo(@NotNull final Job o) {
     return id.compareTo(o.getId());
   }
 
@@ -334,6 +347,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (securityOpt != null ? !securityOpt.equals(job.securityOpt) : job.securityOpt != null) {
       return false;
     }
+    if (networkMode != null ? !networkMode.equals(job.networkMode) : job.networkMode != null) {
+      return false;
+    }
 
     return true;
   }
@@ -355,6 +371,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + token.hashCode();
     result = 31 * result + (healthCheck != null ? healthCheck.hashCode() : 0);
     result = 31 * result + (securityOpt != null ? securityOpt.hashCode() : 0);
+    result = 31 * result + (networkMode != null ? networkMode.hashCode() : 0);
     return result;
   }
 
@@ -375,6 +392,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("token", token)
         .add("healthCheck", healthCheck)
         .add("securityOpt", securityOpt)
+        .add("networkMode", networkMode)
         .toString();
   }
 
@@ -399,7 +417,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setCreatingUser(creatingUser)
         .setToken(token)
         .setHealthCheck(healthCheck)
-        .setSecurityOpt(securityOpt);
+        .setSecurityOpt(securityOpt)
+        .setNetworkMode(networkMode);
   }
 
   public static class Builder implements Cloneable {
@@ -434,6 +453,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public String token;
       public HealthCheck healthCheck;
       public List<String> securityOpt;
+      public String networkMode;
 
       private Parameters() {
         this.command = EMPTY_COMMAND;
@@ -467,6 +487,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.token = p.token;
         this.healthCheck = p.healthCheck;
         this.securityOpt = p.securityOpt;
+        this.networkMode = p.networkMode;
       }
     }
 
@@ -580,6 +601,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setNetworkMode(final String networkMode) {
+      p.networkMode = networkMode;
+      return this;
+    }
+
     public String getName() {
       return p.name;
     }
@@ -638,6 +664,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public List<String> getSecurityOpt() {
       return p.securityOpt;
+    }
+
+    public String getNetworkMode() {
+      return p.networkMode;
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})

@@ -132,6 +132,7 @@ public class JobInspectCommand extends WildcardJobCommand {
       printMap(out, "Ports: ", FORMAT_PORTMAPPING, job.getPorts());
       printMap(out, "Reg: ", FORMAT_SERVICE_PORTS, job.getRegistration());
       out.printf("Security options: %s%n", job.getSecurityOpt());
+      out.printf("Network mode: %s%n", job.getNetworkMode());
       out.printf("Token: %s%n", job.getToken());
       printVolumes(out, job.getVolumes());
     }

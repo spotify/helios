@@ -91,6 +91,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument healthCheckHttpArg;
   private final Argument healthCheckTcpArg;
   private final Argument securityOptArg;
+  private final Argument networkModeArg;
 
   public JobCreateCommand(final Subparser parser) {
     super(parser);
@@ -199,6 +200,10 @@ public class JobCreateCommand extends ControlCommand {
         .setDefault(Lists.newArrayList())
         .help("Run the Docker container with a security option. " +
               "See https://docs.docker.com/reference/run/#security-configuration.");
+
+    networkModeArg = parser.addArgument("--network-mode")
+        .help("Sets the networking mode for the container. Supported values are: bridge, host, and "
+              + "container:<name|id>. Docker defaults to bridge.");
   }
 
   @Override
@@ -449,6 +454,8 @@ public class JobCreateCommand extends ControlCommand {
     }
 
     builder.setSecurityOpt(options.<String>getList(securityOptArg.getDest()));
+
+    builder.setNetworkMode(options.getString(networkModeArg.getDest()));
 
     builder.setToken(options.getString(tokenArg.getDest()));
 
