@@ -96,6 +96,7 @@ public class JobTest {
         .setPath("/healthcheck")
         .setPort("set_ports")
         .build();
+    final List<String> setSecurityOpt = Lists.newArrayList("label:user:dxia", "apparmor:foo");
 
     // Input to addXXX
     final Map<String, String> addEnv = ImmutableMap.of("add", "env");
@@ -118,8 +119,8 @@ public class JobTest {
     final List<String> expectedCommand = setCommand;
     final Map<String, String> expectedEnv = concat(setEnv, addEnv);
     final Map<String, PortMapping> expectedPorts = concat(setPorts, addPorts);
-    final Map<ServiceEndpoint, ServicePorts> expectedRegistration = concat(setRegistration,
-                                                                           addRegistration);
+    final Map<ServiceEndpoint, ServicePorts> expectedRegistration =
+        concat(setRegistration, addRegistration);
     final Integer expectedGracePeriod = setGracePeriod;
     final Map<String, String> expectedVolumes = concat(setVolumes, addVolumes);
     final Date expectedExpires = setExpires;
@@ -127,6 +128,7 @@ public class JobTest {
     final String expectedCreatingUser = setCreatingUser;
     final Resources expectedResources = setResources;
     final HealthCheck expectedHealthCheck = setHealthCheck;
+    final List<String> expectedSecurityOpt = setSecurityOpt;
 
     // Check setXXX methods
     builder.setName(setName);
@@ -143,6 +145,7 @@ public class JobTest {
     builder.setCreatingUser(setCreatingUser);
     builder.setResources(setResources);
     builder.setHealthCheck(setHealthCheck);
+    builder.setSecurityOpt(setSecurityOpt);
     assertEquals("name", setName, builder.getName());
     assertEquals("version", setVersion, builder.getVersion());
     assertEquals("image", setImage, builder.getImage());
@@ -157,6 +160,7 @@ public class JobTest {
     assertEquals("creatingUser", setCreatingUser, builder.getCreatingUser());
     assertEquals("resources", setResources, builder.getResources());
     assertEquals("healthCheck", setHealthCheck, builder.getHealthCheck());
+    assertEquals("securityOpt", setSecurityOpt, builder.getSecurityOpt());
 
     // Check addXXX methods
     for (final Map.Entry<String, String> entry : addEnv.entrySet()) {
@@ -201,6 +205,7 @@ public class JobTest {
     assertEquals("creatingUser", expectedCreatingUser, job.getCreatingUser());
     assertEquals("resources", expectedResources, job.getResources());
     assertEquals("healthCheck", expectedHealthCheck, job.getHealthCheck());
+    assertEquals("securityOpt", expectedSecurityOpt, job.getSecurityOpt());
 
     // Check toBuilder
     final Job.Builder rebuilder = job.toBuilder();
@@ -219,6 +224,7 @@ public class JobTest {
     assertEquals("creatingUser", expectedCreatingUser, rebuilder.getCreatingUser());
     assertEquals("resources", expectedResources, rebuilder.getResources());
     assertEquals("healthCheck", expectedHealthCheck, rebuilder.getHealthCheck());
+    assertEquals("securityOpt", expectedSecurityOpt, rebuilder.getSecurityOpt());
 
     // Check clone
     final Job.Builder cloned = builder.clone();
@@ -237,6 +243,7 @@ public class JobTest {
     assertEquals("creatingUser", expectedCreatingUser, cloned.getCreatingUser());
     assertEquals("resources", expectedResources, cloned.getResources());
     assertEquals("healthCheck", expectedHealthCheck, cloned.getHealthCheck());
+    assertEquals("securityOpt", expectedSecurityOpt, cloned.getSecurityOpt());
 
     final Job clonedJob = cloned.build();
     assertEquals("name", expectedName, clonedJob.getId().getName());
@@ -254,6 +261,7 @@ public class JobTest {
     assertEquals("creatingUser", expectedCreatingUser, clonedJob.getCreatingUser());
     assertEquals("resources", expectedResources, clonedJob.getResources());
     assertEquals("healthCheck", expectedHealthCheck, clonedJob.getHealthCheck());
+    assertEquals("securityOpt", expectedSecurityOpt, clonedJob.getSecurityOpt());
   }
 
   @SafeVarargs

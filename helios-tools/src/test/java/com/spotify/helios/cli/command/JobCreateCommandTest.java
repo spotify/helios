@@ -21,6 +21,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 
 import com.spotify.helios.client.HeliosClient;
@@ -39,11 +40,13 @@ import org.mockito.ArgumentMatcher;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.Collections;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -52,6 +55,8 @@ public class JobCreateCommandTest {
   private static final String JOB_NAME = "foo";
   private static final String JOB_ID = JOB_NAME + ":123";
   private static final String EXEC_HEALTH_CHECK = "touch /this";
+  private static final List<String> SECURITY_OPT =
+      Lists.newArrayList("label:user:dxia", "apparmor:foo");
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
@@ -80,12 +85,14 @@ public class JobCreateCommandTest {
     when(options.getString("id")).thenReturn(JOB_ID);
     when(options.getString("image")).thenReturn("busybox");
     when(options.getString("exec_check")).thenReturn(EXEC_HEALTH_CHECK);
+    doReturn(SECURITY_OPT).when(options).getList("security_opt");
     final int ret = command.run(options, client, out, false, null);
 
     assertEquals(0, ret);
     final String output = baos.toString();
     assertThat(output, containsString(
         "\"healthCheck\":{\"type\":\"exec\",\"command\":[\"touch\",\"/this\"],\"type\":\"exec\"},"));
+    assertThat(output, containsString("\"securityOpt\":[\"label:user:dxia\",\"apparmor:foo\"]"));
   }
 
   @Test

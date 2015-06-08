@@ -86,6 +86,7 @@ import static java.util.Collections.emptyMap;
  *     }
  *   },
  *   "registrationDomain" : "",
+ *   "securityOpt" : [ "label:user:USER", "apparmor:PROFILE" ],
  *   "token": "insecure-access-token",
  *   "volumes" : {
  *     "/destination/path/in/container.yaml:ro" : "/source/path/in/host.yaml"
@@ -109,6 +110,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final String EMPTY_CREATING_USER = null;
   public static final String EMPTY_TOKEN = "";
   public static final HealthCheck EMPTY_HEALTH_CHECK = null;
+  public static final List<String> EMPTY_SECURITY_OPT = emptyList();
 
   private final JobId id;
   private final String image;
@@ -124,6 +126,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final String creatingUser;
   private final String token;
   private final HealthCheck healthCheck;
+  private final List<String> securityOpt;
 
   /**
    * Create a Job.
@@ -145,6 +148,8 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param creatingUser The user creating the job.
    * @param token The token needed to manipulate this job.
    * @param healthCheck A health check Helios will execute on the container.
+   * @param securityOpt A list of strings denoting security options for running Docker containers,
+   *                    i.e. `docker run --security-opt`.
    */
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
@@ -160,7 +165,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("registrationDomain") @Nullable String registrationDomain,
              @JsonProperty("creatingUser") @Nullable String creatingUser,
              @JsonProperty("token") @Nullable String token,
-             @JsonProperty("healthCheck") @Nullable HealthCheck healthCheck) {
+             @JsonProperty("healthCheck") @Nullable HealthCheck healthCheck,
+             @JsonProperty("securityOpt") @Nullable final List<String> securityOpt) {
     this.id = id;
     this.image = image;
 
@@ -178,6 +184,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.creatingUser = Optional.fromNullable(creatingUser).orNull();
     this.token = Optional.fromNullable(token).or(EMPTY_TOKEN);
     this.healthCheck = Optional.fromNullable(healthCheck).orNull();
+    this.securityOpt = Optional.fromNullable(securityOpt).or(EMPTY_SECURITY_OPT);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -197,6 +204,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.creatingUser = p.creatingUser;
     this.token = p.token;
     this.healthCheck = p.healthCheck;
+    this.securityOpt = p.securityOpt;
   }
 
   public JobId getId() {
@@ -253,6 +261,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public HealthCheck getHealthCheck() {
     return healthCheck;
+  }
+
+  public List<String> getSecurityOpt() {
+    return securityOpt;
   }
 
   public static Builder newBuilder() {
@@ -319,6 +331,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (healthCheck != null ? !healthCheck.equals(job.healthCheck) : job.healthCheck != null) {
       return false;
     }
+    if (securityOpt != null ? !securityOpt.equals(job.securityOpt) : job.securityOpt != null) {
+      return false;
+    }
 
     return true;
   }
@@ -339,6 +354,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (creatingUser != null ? creatingUser.hashCode() : 0);
     result = 31 * result + token.hashCode();
     result = 31 * result + (healthCheck != null ? healthCheck.hashCode() : 0);
+    result = 31 * result + (securityOpt != null ? securityOpt.hashCode() : 0);
     return result;
   }
 
@@ -358,6 +374,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("creatingUser", creatingUser)
         .add("token", token)
         .add("healthCheck", healthCheck)
+        .add("securityOpt", securityOpt)
         .toString();
   }
 
@@ -381,7 +398,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setRegistrationDomain(registrationDomain)
         .setCreatingUser(creatingUser)
         .setToken(token)
-        .setHealthCheck(healthCheck);
+        .setHealthCheck(healthCheck)
+        .setSecurityOpt(securityOpt);
   }
 
   public static class Builder implements Cloneable {
@@ -415,6 +433,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public String creatingUser;
       public String token;
       public HealthCheck healthCheck;
+      public List<String> securityOpt;
 
       private Parameters() {
         this.command = EMPTY_COMMAND;
@@ -428,6 +447,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.creatingUser = EMPTY_CREATING_USER;
         this.token = EMPTY_TOKEN;
         this.healthCheck = EMPTY_HEALTH_CHECK;
+        this.securityOpt = EMPTY_SECURITY_OPT;
       }
 
       private Parameters(final Parameters p) {
@@ -446,6 +466,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.creatingUser = p.creatingUser;
         this.token = p.token;
         this.healthCheck = p.healthCheck;
+        this.securityOpt = p.securityOpt;
       }
     }
 
@@ -554,6 +575,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setSecurityOpt(final List<String> securityOpt) {
+      p.securityOpt = securityOpt;
+      return this;
+    }
+
     public String getName() {
       return p.name;
     }
@@ -608,6 +634,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public HealthCheck getHealthCheck() {
       return p.healthCheck;
+    }
+
+    public List<String> getSecurityOpt() {
+      return p.securityOpt;
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
