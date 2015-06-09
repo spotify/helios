@@ -95,7 +95,8 @@ public class JobInspectCommand extends WildcardJobCommand {
       final TcpHealthCheck tcpHealthCheck = (TcpHealthCheck) healthCheck;
       s += String.format(", port: %s", tcpHealthCheck.getPort());
     } else if (healthCheck instanceof ExecHealthCheck) {
-      s += "Not implemented yet.";
+      final ExecHealthCheck execHealthCheck = (ExecHealthCheck) healthCheck;
+      s += String.format(", command: %s", Joiner.on(" ").join(execHealthCheck.getCommand()));
     }
     return s;
   }
