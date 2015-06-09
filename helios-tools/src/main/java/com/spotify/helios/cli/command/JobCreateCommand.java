@@ -224,8 +224,8 @@ public class JobCreateCommand extends ControlCommand {
       throw new IllegalArgumentException("Please use only one of -t/--template and -f/--file");
     }
 
-    if (file != null && file.exists()) {
-      if (!file.isFile() || !file.canRead()) {
+    if (file != null) {
+      if (!file.exists() || !file.isFile() || !file.canRead()) {
         throw new IllegalArgumentException("Cannot read file " + file);
       }
       final byte[] bytes = Files.readAllBytes(file.toPath());
