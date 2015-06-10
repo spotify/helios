@@ -155,7 +155,7 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param securityOpt A list of strings denoting security options for running Docker containers,
    *                    i.e. `docker run --security-opt`.
    * @param networkMode Sets the networking mode for the container. Supported values are: bridge,
-   *                    host, and container:<name|id>.
+   *                    host, and container:&lt;name|id&gt;.
    */
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
