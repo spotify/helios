@@ -75,6 +75,7 @@ public class TaskConfig {
   private final String defaultRegistrationDomain;
   private final List<String> dns;
   private final List<String> securityOpt;
+  private final String networkMode;
 
   private TaskConfig(final Builder builder) {
     this.host = checkNotNull(builder.host, "host");
@@ -87,6 +88,7 @@ public class TaskConfig {
         "defaultRegistrationDomain");
     this.dns = checkNotNull(builder.dns, "dns");
     this.securityOpt = checkNotNull(builder.securityOpt, "securityOpt");
+    this.networkMode = checkNotNull(builder.networkMode, "networkMode");
   }
 
   /**
@@ -293,7 +295,8 @@ public class TaskConfig {
         .binds(binds())
         .portBindings(portBindings())
         .dns(dns)
-        .securityOpt(securityOpt.toArray(new String[securityOpt.size()]));
+        .securityOpt(securityOpt.toArray(new String[securityOpt.size()]))
+        .networkMode(networkMode);
 
     for (final ContainerDecorator decorator : containerDecorators) {
       decorator.decorateHostConfig(builder);
@@ -359,7 +362,6 @@ public class TaskConfig {
 
   public static class Builder {
 
-
     private Builder() {
     }
 
@@ -372,6 +374,7 @@ public class TaskConfig {
     private String defaultRegistrationDomain = "";
     private List<String> dns = Collections.emptyList();
     private List<String> securityOpt = Collections.emptyList();
+    private String networkMode = "";
 
     public Builder host(final String host) {
       this.host = host;
@@ -418,6 +421,11 @@ public class TaskConfig {
       return this;
     }
 
+    public Builder networkMode(final String networkMode) {
+      this.networkMode = networkMode;
+      return this;
+    }
+
     public TaskConfig build() {
       return new TaskConfig(this);
     }
@@ -433,6 +441,8 @@ public class TaskConfig {
         .add("containerDecorators", containerDecorators)
         .add("defaultRegistrationDomain", defaultRegistrationDomain)
         .add("securityOpt", securityOpt)
+        .add("dns", dns)
+        .add("networkMode", networkMode)
         .toString();
   }
 }

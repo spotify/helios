@@ -97,6 +97,7 @@ public class JobTest {
         .setPort("set_ports")
         .build();
     final List<String> setSecurityOpt = Lists.newArrayList("label:user:dxia", "apparmor:foo");
+    final String setNetworkMode = "host";
 
     // Input to addXXX
     final Map<String, String> addEnv = ImmutableMap.of("add", "env");
@@ -129,6 +130,7 @@ public class JobTest {
     final Resources expectedResources = setResources;
     final HealthCheck expectedHealthCheck = setHealthCheck;
     final List<String> expectedSecurityOpt = setSecurityOpt;
+    final String expectedNetworkMode = setNetworkMode;
 
     // Check setXXX methods
     builder.setName(setName);
@@ -146,6 +148,7 @@ public class JobTest {
     builder.setResources(setResources);
     builder.setHealthCheck(setHealthCheck);
     builder.setSecurityOpt(setSecurityOpt);
+    builder.setNetworkMode(setNetworkMode);
     assertEquals("name", setName, builder.getName());
     assertEquals("version", setVersion, builder.getVersion());
     assertEquals("image", setImage, builder.getImage());
@@ -161,6 +164,7 @@ public class JobTest {
     assertEquals("resources", setResources, builder.getResources());
     assertEquals("healthCheck", setHealthCheck, builder.getHealthCheck());
     assertEquals("securityOpt", setSecurityOpt, builder.getSecurityOpt());
+    assertEquals("networkMode", setNetworkMode, builder.getNetworkMode());
 
     // Check addXXX methods
     for (final Map.Entry<String, String> entry : addEnv.entrySet()) {
@@ -206,6 +210,7 @@ public class JobTest {
     assertEquals("resources", expectedResources, job.getResources());
     assertEquals("healthCheck", expectedHealthCheck, job.getHealthCheck());
     assertEquals("securityOpt", expectedSecurityOpt, job.getSecurityOpt());
+    assertEquals("networkMode", expectedNetworkMode, job.getNetworkMode());
 
     // Check toBuilder
     final Job.Builder rebuilder = job.toBuilder();
@@ -225,6 +230,7 @@ public class JobTest {
     assertEquals("resources", expectedResources, rebuilder.getResources());
     assertEquals("healthCheck", expectedHealthCheck, rebuilder.getHealthCheck());
     assertEquals("securityOpt", expectedSecurityOpt, rebuilder.getSecurityOpt());
+    assertEquals("networkMode", expectedNetworkMode, rebuilder.getNetworkMode());
 
     // Check clone
     final Job.Builder cloned = builder.clone();
@@ -244,6 +250,7 @@ public class JobTest {
     assertEquals("resources", expectedResources, cloned.getResources());
     assertEquals("healthCheck", expectedHealthCheck, cloned.getHealthCheck());
     assertEquals("securityOpt", expectedSecurityOpt, cloned.getSecurityOpt());
+    assertEquals("networkMode", expectedNetworkMode, cloned.getNetworkMode());
 
     final Job clonedJob = cloned.build();
     assertEquals("name", expectedName, clonedJob.getId().getName());
@@ -262,6 +269,7 @@ public class JobTest {
     assertEquals("resources", expectedResources, clonedJob.getResources());
     assertEquals("healthCheck", expectedHealthCheck, clonedJob.getHealthCheck());
     assertEquals("securityOpt", expectedSecurityOpt, clonedJob.getSecurityOpt());
+    assertEquals("networkMode", expectedNetworkMode, clonedJob.getNetworkMode());
   }
 
   @SafeVarargs

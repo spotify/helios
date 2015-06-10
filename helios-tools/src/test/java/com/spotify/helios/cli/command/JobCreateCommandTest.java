@@ -58,6 +58,7 @@ public class JobCreateCommandTest {
   private static final String EXEC_HEALTH_CHECK = "touch /this";
   private static final List<String> SECURITY_OPT =
       Lists.newArrayList("label:user:dxia", "apparmor:foo");
+  private static final String NETWORK_MODE = "host";
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
@@ -91,6 +92,7 @@ public class JobCreateCommandTest {
     when(options.getInt("grace_period")).thenReturn(null);
     doReturn(new File("src/main/resources/job_config.json")).when(options).get("file");
     doReturn(SECURITY_OPT).when(options).getList("security_opt");
+    when(options.getString("network_mode")).thenReturn(NETWORK_MODE);
     final int ret = command.run(options, client, out, false, null);
 
     assertEquals(0, ret);
@@ -101,6 +103,7 @@ public class JobCreateCommandTest {
     assertThat(output, containsString(
         "\"healthCheck\":{\"type\":\"exec\",\"command\":[\"touch\",\"/this\"],\"type\":\"exec\"},"));
     assertThat(output, containsString("\"securityOpt\":[\"label:user:dxia\",\"apparmor:foo\"]"));
+    assertThat(output, containsString("\"networkMode\":\"host\""));
   }
 
   @Test
