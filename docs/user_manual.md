@@ -123,6 +123,7 @@ the available configuration keys with an explanation of each one.
   },
   "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
   "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
+  "networkMode" : "bridge",
   "ports" : {
     "http" : {
       "externalPort" : 8080,
@@ -143,6 +144,7 @@ the available configuration keys with an explanation of each one.
     }
   },
   "registrationDomain" : "",
+  "securityOpt" : [ "label:user:USER", "apparmor:PROFILE" ],
   "token": "insecure-access-token",
   "volumes" : {
     "/destination/path/in/container.yaml:ro" : "/source/path/in/host.yaml"
@@ -150,18 +152,20 @@ the available configuration keys with an explanation of each one.
 }
 ```
 
-* command: The command line arguments to pass to the container (default: []).
-* env: Environment variables (default: []).
-* expires: An ISO-8601 string representing the date/time when  this  job  should  expire. The  job
-  will  be undeployed from all hosts and removed at this time. E.g. 2014-06-01T12:00:00Z
+* `command`: The command line arguments to pass to the container (default: []).
+* `env`: Environment variables (default: []).
+* `expires`: An ISO-8601 string representing the date/time when this job should expire. The job
+  will be undeployed from all hosts and removed at this time. E.g. 2014-06-01T12:00:00Z
   (default: null).
-* gracePeriod: If is specified, Helios will unregister from service discovery and wait the specified
+* `gracePeriod`: If is specified, Helios will unregister from service discovery and wait the specified
   number of seconds before undeploying, default 0 seconds.
-* healthCheck: A health check Helios will execute on the container. See the health checks section
+* `healthCheck`: A health check Helios will execute on the container. See the health checks section
   below.
-* id: The id of the job.
-* image: The docker image to use.
-* ports: Port mapping. Specify an endpoint name and a single port (e.g.
+* `id`: The id of the job.
+* `image`: The docker image to use.
+* `networkMode`: Sets the networking mode for the container. Supported values are: bridge,
+   host, and container:&lt;name|id&gt;. See [Docker docs](https://docs.docker.com/reference/run/#network-settings).
+* `ports`: Port mapping. Specify an endpoint name and a single port (e.g.
   `{"http": {"internalPort": 8080}}`) for dynamic port mapping and `{"http": {"internalPort": 8080,
   "externalPort": 80}}` for static port mapping. E.g., `{"foo": {"internalPort": 4711}}`  will  map
   the internal port 4711 of the container to an arbitrary external port on the host. Specifying
@@ -170,16 +174,18 @@ the available configuration keys with an explanation of each one.
   `"protocol": udp`. E.g. `{"quic": {"internalPort": 80, "protocol": "udp"}}` or
   `{"dns": {"internalPort": 53, "externalPort": 53, "protocol": "udp"}}`. The endpoint name can be
   used when specifying service registration using `registration`. (default: [])
-* registration: Service discovery registration. Specify a service name, the port name and a protocol
+* `registration`: Service discovery registration. Specify a service name, the port name and a protocol
   on the format service/protocol=port. E.g. `{"website/tcp": {"ports": {"http": {}}}}` will register
   the port named http with the protocol tcp. Protocol is optional and default is tcp. If there is
   only one port mapping, this will be used by default and it will be enough to specify only the
   service name, e.g. `{"wordpress": {}}`. (default: {})
-* registrationDomain: If set, overrides the default domain in which discovery serviceregistration
+* `registrationDomain`: If set, overrides the default domain in which discovery serviceregistration
   occurs. What is allowed here will vary based upon the discovery service plugin used.
   (default: "").
-* token: Insecure access token meant to prevent accidental changes to your job (e.g. undeploys).
-* volumes: Container volumes. Specify either a single path to create a data volume, or a source path
+* `securityOpt`: A list of strings denoting security options for running Docker containers,
+   i.e. `docker run --security-opt`. See [Docker docs](https://docs.docker.com/reference/run/#security-configuration).
+* `token`: Insecure access token meant to prevent accidental changes to your job (e.g. undeploys).
+* `volumes`: Container volumes. Specify either a single path to create a data volume, or a source path
   and a container path to mount a file or directory from the host. The container path can be
   suffixed with "rw" or "ro" to create a read-write or read-only volume, respectively.
   Format: `"[container-path]:[rw|ro]":[host-path]`. (default: {}).

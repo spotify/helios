@@ -153,9 +153,12 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param token The token needed to manipulate this job.
    * @param healthCheck A health check Helios will execute on the container.
    * @param securityOpt A list of strings denoting security options for running Docker containers,
-   *                    i.e. `docker run --security-opt`.
+   *    i.e. `docker run --security-opt`.
+   *    See <a href="https://docs.docker.com/reference/run/#security-configuration">Docker docs</a>.
    * @param networkMode Sets the networking mode for the container. Supported values are: bridge,
-   *                    host, and container:&lt;name|id&gt;.
+   *    host, and container:&lt;name|id&gt;.
+   *    See <a href="https://docs.docker.com/reference/run/#network-settings">Docker docs</a>.
+   * @see <a href="https://docs.docker.com/reference/run/#network-settings">Docker run reference</a>
    */
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
