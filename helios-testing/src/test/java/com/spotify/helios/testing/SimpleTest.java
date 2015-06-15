@@ -23,16 +23,22 @@ package com.spotify.helios.testing;
 
 import com.google.common.base.Optional;
 
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
+import java.io.File;
 import java.net.Socket;
+import java.nio.file.Files;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -42,6 +48,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -50,11 +57,27 @@ import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
 public class SimpleTest extends TemporaryJobsTestBase {
 
+  @ClassRule
+  public static final TemporaryFolder reportDir = new TemporaryFolder();
+
   @Test
   public void simpleTest() throws Exception {
     assertThat(testResult(SimpleTestImpl.class), isSuccessful());
     assertTrue("jobs are running that should not be",
                client.jobs().get(15, SECONDS).isEmpty());
+
+    // Ensure test reports were written and everything was successful
+    final File[] reportFiles = reportDir.getRoot().listFiles();
+    assertNotEquals(reportFiles.length, 0);
+
+    for (File reportFile : reportFiles) {
+      final byte[] testReport = Files.readAllBytes(reportFile.toPath());
+      final TemporaryJobEvent[] events = Json.read(testReport, TemporaryJobEvent[].class);
+
+      for (final TemporaryJobEvent event : events) {
+        assertTrue(event.isSuccess());
+      }
+    }
   }
 
   public static class SimpleTestImpl {
@@ -67,6 +90,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
             "Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")
         .jobPrefix(Optional.of(testTag).get())
         .deployTimeoutMillis(MINUTES.toMillis(3))
+        .testReportDirectory(reportDir.getRoot().getAbsolutePath())
         .build();
 
     private TemporaryJob job1;

@@ -28,9 +28,11 @@ import java.util.Set;
 
 public interface Deployer {
 
-  TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts, Prober prober);
+  TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts, Prober prober,
+                      TemporaryJobReports.ReportWriter reportWriter);
 
-  TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts, Prober prober);
+  TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts, Prober prober,
+                      TemporaryJobReports.ReportWriter reportWriter);
 
   void readyToDeploy();
 

@@ -4,6 +4,7 @@
 target/
 pom.xml.versionsBackup
 docker/tmp/
+helios-test-reports/
 
 # Stuff from various IDE's and editors
 *.iml
