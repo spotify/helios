@@ -21,7 +21,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -67,6 +66,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -87,6 +87,7 @@ public class TemporaryJobs implements TestRule {
   private static final Prober DEFAULT_PROBER = new DefaultProber();
   private static final String DEFAULT_LOCAL_HOST_FILTER = ".+";
   private static final String DEFAULT_PREFIX_DIRECTORY = "/tmp/helios-temp-jobs";
+  private static final String DEFAULT_TEST_REPORT_DIRECTORY = "./helios-test-reports";
   private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
@@ -98,6 +99,9 @@ public class TemporaryJobs implements TestRule {
   private final Map<String, String> env;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
   private final Deployer deployer;
+
+  private final TemporaryJobReports reports;
+  private final ThreadLocal<TemporaryJobReports.ReportWriter> reportWriter = new ThreadLocal<>();
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
@@ -112,13 +116,15 @@ public class TemporaryJobs implements TestRule {
     this.prober = checkNotNull(builder.prober, "prober");
     this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
     this.env = checkNotNull(builder.env, "env");
+
     checkArgument(builder.deployTimeoutMillis >= 0, "deployTimeoutMillis");
-    this.deployer = Optional.fromNullable(builder.deployer).or(
+
+    this.deployer = fromNullable(builder.deployer).or(
         new DefaultDeployer(client, jobs, builder.hostPickingStrategy, 
             builder.jobDeployedMessageFormat, builder.deployTimeoutMillis));
-    final Path prefixDirectory = Paths.get(Optional.fromNullable(builder.prefixDirectory)
-        .or(DEFAULT_PREFIX_DIRECTORY));
 
+    final Path prefixDirectory = Paths.get(fromNullable(builder.prefixDirectory)
+                                               .or(DEFAULT_PREFIX_DIRECTORY));
     try {
       removeOldJobs(prefixDirectory);
       if (isNullOrEmpty(builder.jobPrefix)) {
@@ -129,6 +135,10 @@ public class TemporaryJobs implements TestRule {
     } catch (IOException | ExecutionException | InterruptedException e) {
       throw Throwables.propagate(e);
     }
+
+    final Path testReportDirectory = Paths.get(fromNullable(builder.testReportDirectory)
+                                                   .or(DEFAULT_TEST_REPORT_DIRECTORY));
+    this.reports = new TemporaryJobReports(testReportDirectory);
 
     // Load in the prefix so it can be used in the config
     final Config configWithPrefix = ConfigFactory.empty()
@@ -152,6 +162,9 @@ public class TemporaryJobs implements TestRule {
    * If @Rule cannot be used, call this method after running tests.
    */
   public void after() {
+    final TemporaryJobReports.Step undeploy = reportWriter.get().step("undeploy");
+    final List<JobId> jobIds = Lists.newArrayListWithCapacity(jobs.size());
+
     // Stop the test runner thread
     executor.shutdownNow();
     try {
@@ -165,8 +178,11 @@ public class TemporaryJobs implements TestRule {
     final List<AssertionError> errors = newArrayList();
 
     for (TemporaryJob job : jobs) {
+      jobIds.add(job.job().getId());
       job.undeploy(errors);
     }
+
+    undeploy.tag("jobs", jobIds);
 
     for (AssertionError error : errors) {
       log.error(error.getMessage());
@@ -176,12 +192,15 @@ public class TemporaryJobs implements TestRule {
     // try to undeploy them the next time TemporaryJobs is run.
     if (errors.isEmpty()) {
       jobPrefixFile.delete();
+      undeploy.markSuccess();
     }
+
+    undeploy.finish();
   }
 
   public TemporaryJobBuilder job() {
     final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix(),
-                                                                prober, env);
+                                                                prober, env, reportWriter.get());
 
     if (config.hasPath("env")) {
       final Config env = config.getConfig("env");
@@ -270,26 +289,38 @@ public class TemporaryJobs implements TestRule {
   }
 
   @Override
-  public Statement apply(final Statement base, Description description) {
+  public Statement apply(final Statement base, final Description description) {
     return new Statement() {
       @Override
       public void evaluate() throws Throwable {
+        final TemporaryJobReports.ReportWriter writer = reports.getWriterForTest(description);
+        reportWriter.set(writer);
+
+        final TemporaryJobReports.Step test = writer.step("test");
         before();
         try {
           perform(base);
+          test.markSuccess();
         } finally {
           after();
+
+          test.finish();
+          writer.close();
+          reportWriter.set(null);
         }
       }
     };
   }
 
-  private void perform(final Statement base)
-      throws InterruptedException {
+  private void perform(final Statement base) throws InterruptedException {
+    final TemporaryJobReports.ReportWriter writer = reportWriter.get();
+
     // Run the actual test on a thread
     final Future<Object> future = executor.submit(new Callable<Object>() {
       @Override
       public Object call() throws Exception {
+        reportWriter.set(writer);
+
         try {
           base.evaluate();
         } catch (MultipleFailureException e) {
@@ -601,6 +632,7 @@ public class TemporaryJobs implements TestRule {
     private String hostFilter;
     private HeliosClient client;
     private String prefixDirectory;
+    private String testReportDirectory;
     private String jobPrefix;
     private String jobDeployedMessageFormat;
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
@@ -672,6 +704,11 @@ public class TemporaryJobs implements TestRule {
 
     public Builder prefixDirectory(final String prefixDirectory) {
       this.prefixDirectory = prefixDirectory;
+      return this;
+    }
+
+    public Builder testReportDirectory(final String testReportDirectory) {
+      this.testReportDirectory = testReportDirectory;
       return this;
     }
 
