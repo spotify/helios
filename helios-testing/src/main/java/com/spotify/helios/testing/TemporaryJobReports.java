@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.file.Path;
 import java.util.Map;
 
@@ -54,9 +55,13 @@ public class TemporaryJobReports {
     this.outputDir.toFile().mkdirs();
   }
 
-  public ReportWriter getWriterForTest(final Description testDescription) throws IOException {
+  public ReportWriter getWriterForTest(final Description testDescription) {
     return new ReportWriter(outputDir, testDescription.getClassName(),
-                            testDescription.getMethodName());
+            testDescription.getMethodName());
+  }
+
+  public ReportWriter getWriterForStream(final OutputStream outputStream) {
+    return new ReportWriter(outputStream);
   }
 
   public static class ReportWriter implements Closeable {
@@ -66,16 +71,36 @@ public class TemporaryJobReports {
     private final String testClassName;
     private final String testName;
 
-    private ReportWriter(final Path outputDir, final String testClassName, final String testName)
-      throws IOException {
+    private ReportWriter(final Path outputDir, final String testClassName, final String testName) {
       this.testClassName = testClassName;
       this.testName = testName;
 
       final String logFilename = format("%s.%s.json", testClassName, testName).replace('$', '_');
       final File logFile = outputDir.resolve(logFilename).toFile();
 
-      jg = new JsonFactory().createGenerator(logFile, JsonEncoding.UTF8);
-      jg.writeStartArray();
+      JsonGenerator jg = null;
+      try {
+        jg = new JsonFactory().createGenerator(logFile, JsonEncoding.UTF8);
+        jg.writeStartArray();
+      } catch (IOException e) {
+        log.error("exception creating event log: {} - {}", logFile.getAbsolutePath(), e);
+      } finally {
+        this.jg = jg;
+      }
+    }
+
+    private ReportWriter(final OutputStream outputStream) {
+      this.testClassName = null;
+      this.testName = null;
+
+      JsonGenerator jg = null;
+      try {
+        jg = new JsonFactory().createGenerator(outputStream, JsonEncoding.UTF8);
+      } catch (IOException e) {
+        log.error("exception creating event log: {}", e);
+      } finally {
+        this.jg = jg;
+      }
     }
 
     public Step step(final String step) {
@@ -98,6 +123,10 @@ public class TemporaryJobReports {
     }
 
     private void writeEvent(final TemporaryJobEvent event) {
+      if (jg == null) {
+        return;
+      }
+
       try {
         Json.writer().writeValue(jg, event);
       } catch (IOException e) {
@@ -107,7 +136,9 @@ public class TemporaryJobReports {
 
     @Override
     public void close() throws IOException {
-      jg.close();
+      if (jg != null) {
+        jg.close();
+      }
     }
 
   }

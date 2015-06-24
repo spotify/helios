@@ -101,7 +101,7 @@ public class TemporaryJobs implements TestRule {
   private final Deployer deployer;
 
   private final TemporaryJobReports reports;
-  private final ThreadLocal<TemporaryJobReports.ReportWriter> reportWriter = new ThreadLocal<>();
+  private final ThreadLocal<TemporaryJobReports.ReportWriter> reportWriter;
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
@@ -139,6 +139,13 @@ public class TemporaryJobs implements TestRule {
     final Path testReportDirectory = Paths.get(fromNullable(builder.testReportDirectory)
                                                    .or(DEFAULT_TEST_REPORT_DIRECTORY));
     this.reports = new TemporaryJobReports(testReportDirectory);
+    this.reportWriter = new ThreadLocal<TemporaryJobReports.ReportWriter>() {
+      @Override
+      protected TemporaryJobReports.ReportWriter initialValue() {
+        log.warn("unable to determine test context, writing event log to stdout");
+        return TemporaryJobs.this.reports.getWriterForStream(System.out);
+      }
+    };
 
     // Load in the prefix so it can be used in the config
     final Config configWithPrefix = ConfigFactory.empty()
@@ -161,8 +168,8 @@ public class TemporaryJobs implements TestRule {
    * Perform teardown. This is normally called by JUnit when TemporaryJobs is used with @Rule.
    * If @Rule cannot be used, call this method after running tests.
    */
-  public void after() {
-    final TemporaryJobReports.Step undeploy = reportWriter.get().step("undeploy");
+  public void after(final TemporaryJobReports.ReportWriter writer) {
+    final TemporaryJobReports.Step undeploy = writer.step("undeploy");
     final List<JobId> jobIds = Lists.newArrayListWithCapacity(jobs.size());
 
     // Stop the test runner thread
@@ -299,10 +306,10 @@ public class TemporaryJobs implements TestRule {
         final TemporaryJobReports.Step test = writer.step("test");
         before();
         try {
-          perform(base);
+          perform(base, writer);
           test.markSuccess();
         } finally {
-          after();
+          after(writer);
 
           test.finish();
           writer.close();
@@ -312,9 +319,8 @@ public class TemporaryJobs implements TestRule {
     };
   }
 
-  private void perform(final Statement base) throws InterruptedException {
-    final TemporaryJobReports.ReportWriter writer = reportWriter.get();
-
+  private void perform(final Statement base, final TemporaryJobReports.ReportWriter writer)
+          throws InterruptedException {
     // Run the actual test on a thread
     final Future<Object> future = executor.submit(new Callable<Object>() {
       @Override
