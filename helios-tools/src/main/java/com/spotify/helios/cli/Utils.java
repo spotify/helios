@@ -26,6 +26,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
 
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -82,5 +85,22 @@ public class Utils {
     }
 
     return true;
+  }
+
+  public static Map<String, String> argToStringMap(final Namespace namespace, final Argument arg) {
+    final List<List<String>> args = namespace.getList(arg.getDest());
+    final Map<String, String> map = Maps.newHashMap();
+    if (args != null) {
+      for (final List<String> group : args) {
+        for (final String s : group) {
+          final String[] parts = s.split("=", 2);
+          if (parts.length != 2) {
+            throw new IllegalArgumentException("Bad " + arg.textualName() + " value: " + s);
+          }
+          map.put(parts[0], parts[1]);
+        }
+      }
+    }
+    return map;
   }
 }

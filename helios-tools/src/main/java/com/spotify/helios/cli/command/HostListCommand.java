@@ -21,8 +21,8 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
-import com.google.common.base.Strings;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -44,6 +44,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.BufferedReader;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -51,14 +52,17 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Predicates.containsPattern;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Ordering.natural;
 import static com.spotify.helios.cli.Output.formatHostname;
 import static com.spotify.helios.cli.Output.humanDuration;
 import static com.spotify.helios.cli.Output.table;
 import static com.spotify.helios.cli.Utils.allAsMap;
+import static com.spotify.helios.cli.Utils.argToStringMap;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class HostListCommand extends ControlCommand {
@@ -66,6 +70,7 @@ public class HostListCommand extends ControlCommand {
   private final Argument quietArg;
   private final Argument patternArg;
   private final Argument fullArg;
+  private final Argument labelsArg;
 
   public HostListCommand(final Subparser parser) {
     super(parser);
@@ -84,6 +89,12 @@ public class HostListCommand extends ControlCommand {
     fullArg = parser.addArgument("-f")
         .action(storeTrue())
         .help("Print full host names.");
+
+    labelsArg = parser.addArgument("-l", "--labels")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .nargs("+")
+        .help("Only include hosts that match all of these labels");
   }
 
   @Override
@@ -98,7 +109,7 @@ public class HostListCommand extends ControlCommand {
     final boolean full = options.getBoolean(fullArg.getDest());
     final boolean quiet = options.getBoolean(quietArg.getDest());
 
-    if (!Strings.isNullOrEmpty(pattern) && hosts.isEmpty()) {
+    if (!isNullOrEmpty(pattern) && hosts.isEmpty()) {
       if (json) {
         out.println(Json.asPrettyStringUnchecked(hosts));
       } else if (!quiet) {
@@ -108,6 +119,12 @@ public class HostListCommand extends ControlCommand {
     }
 
     final List<String> sortedHosts = natural().sortedCopy(hosts);
+    final Map<String, String> selectedLabels = argToStringMap(options, labelsArg);
+
+    if (selectedLabels != null && !selectedLabels.isEmpty() && json) {
+      System.err.println("Warning: filtering by label is not supported for JSON output. Not doing"
+          + " any filtering by label.");
+    }
 
     if (quiet) {
       if (json) {
@@ -137,8 +154,8 @@ public class HostListCommand extends ControlCommand {
         out.println(Json.asPrettyStringUnchecked(sorted));
       } else {
         final Table table = table(out);
-        table.row("HOST", "STATUS", "DEPLOYED", "RUNNING",
-                  "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS", "HELIOS", "DOCKER");
+        table.row("HOST", "STATUS", "DEPLOYED", "RUNNING", "CPUS", "MEM", "LOAD AVG", "MEM USAGE",
+                  "OS", "HELIOS", "DOCKER", "LABELS");
 
         for (final Map.Entry<String, ListenableFuture<HostStatus>> e : statuses.entrySet()) {
 
@@ -146,6 +163,30 @@ public class HostListCommand extends ControlCommand {
           final HostStatus s = e.getValue().get();
 
           if (s == null) {
+            continue;
+          }
+
+          boolean skipHost = false;
+          if (selectedLabels != null && !selectedLabels.isEmpty()) {
+            final Map<String, String> hostLabels = s.getLabels();
+            for (Entry<String, String> label : selectedLabels.entrySet()) {
+              final String key = label.getKey();
+              final String value = label.getValue();
+
+              if (!hostLabels.containsKey(key)) {
+                skipHost = true;
+                break;
+              }
+
+              final String hostValue = hostLabels.get(key);
+
+              if (isNullOrEmpty(value) ? !isNullOrEmpty(hostValue) : !value.equals(hostValue)) {
+                skipHost = true;
+                break;
+              }
+            }
+          }
+          if (skipHost) {
             continue;
           }
 
@@ -199,8 +240,11 @@ public class HostListCommand extends ControlCommand {
             }
           }
 
+          final String labels = Joiner.on(", ").withKeyValueSeparator("=").join(selectedLabels);
+
           table.row(formatHostname(full, host), status, s.getJobs().size(),
-                    runningDeployedJobs.size(), cpus, mem, loadAvg, memUsage, os, version, docker);
+              runningDeployedJobs.size(), cpus, mem, loadAvg, memUsage, os, version, docker,
+              labels);
         }
 
         table.print();

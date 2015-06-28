@@ -103,6 +103,7 @@ public class AgentService extends AbstractIdleService implements Managed {
   private final HostInfoReporter hostInfoReporter;
   private final AgentInfoReporter agentInfoReporter;
   private final EnvironmentVariableReporter environmentVariableReporter;
+  private final LabelReporter labelReporter;
   private final FileChannel stateLockFile;
   private final FileLock stateLock;
   private final ZooKeeperAgentModel model;
@@ -241,6 +242,9 @@ public class AgentService extends AbstractIdleService implements Managed {
                                                                        config.getEnvVars(),
                                                                        nodeUpdaterFactory);
 
+    this.labelReporter = new LabelReporter(config.getName(), config.getLabels(),
+        nodeUpdaterFactory);
+
     final String namespace = "helios-" + id;
 
     final List<ContainerDecorator> decorators = Lists.newArrayList();
@@ -340,6 +344,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     hostInfoReporter.startAsync();
     agentInfoReporter.startAsync();
     environmentVariableReporter.startAsync();
+    labelReporter.startAsync();
     metrics.start();
     if (server != null) {
       try {
@@ -367,6 +372,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     hostInfoReporter.stopAsync().awaitTerminated();
     agentInfoReporter.stopAsync().awaitTerminated();
     environmentVariableReporter.stopAsync().awaitTerminated();
+    labelReporter.stopAsync().awaitTerminated();
     agent.stopAsync().awaitTerminated();
 
     if (serviceRegistrar != null) {
