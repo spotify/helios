@@ -40,6 +40,7 @@ public class Paths {
   private static final String AGENTINFO = "agentinfo";
   private static final String PORTS = "ports";
   private static final String ENVIRONMENT = "environment";
+  private static final String LABELS = "labels";
   private static final String ID = "id";
 
   private static final PathFactory CONFIG_ID = new PathFactory("/", CONFIG, ID);
@@ -172,6 +173,10 @@ public class Paths {
 
   public static String statusHostEnvVars(final String host) {
     return STATUS_HOSTS.path(host, ENVIRONMENT);
+  }
+
+  public static String statusHostLabels(final String host) {
+    return STATUS_HOSTS.path(host, LABELS);
   }
 
   public static String historyJobHostEventsTimestamp(final JobId jobId,

@@ -774,6 +774,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final Map<JobId, Deployment> tasks = getTasks(client, host);
     final Map<JobId, TaskStatus> statuses = getTaskStatuses(client, host);
     final Map<String, String> environment = getEnvironment(client, host);
+    final Map<String, String> labels = getLabels(client, host);
 
     return HostStatus.newBuilder()
         .setJobs(tasks)
@@ -782,6 +783,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         .setAgentInfo(agentInfo)
         .setStatus(up ? UP : DOWN)
         .setEnvironment(environment)
+        .setLabels(labels)
         .build();
   }
 
@@ -799,6 +801,10 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private Map<String, String> getEnvironment(final ZooKeeperClient client, final String host) {
     return tryGetEntity(client, Paths.statusHostEnvVars(host), STRING_MAP_TYPE, "environment");
+  }
+
+  private Map<String, String> getLabels(final ZooKeeperClient client, final String host) {
+    return tryGetEntity(client, Paths.statusHostLabels(host), STRING_MAP_TYPE, "labels");
   }
 
   private AgentInfo getAgentInfo(final ZooKeeperClient client, final String host) {

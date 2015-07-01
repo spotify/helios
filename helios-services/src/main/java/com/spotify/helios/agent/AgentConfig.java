@@ -61,6 +61,7 @@ public class AgentConfig extends Configuration {
   private boolean noHttp;
   private List<String> binds;
   private List<String> kafkaBrokers;
+  private Map<String, String> labels;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -288,6 +289,15 @@ public class AgentConfig extends Configuration {
 
   public AgentConfig setKafkaBrokers(List<String> kafkaBrokers) {
     this.kafkaBrokers = kafkaBrokers;
+    return this;
+  }
+
+  public Map<String, String> getLabels() {
+    return labels;
+  }
+
+  public AgentConfig setLabels(Map<String, String> labels) {
+    this.labels = labels;
     return this;
   }
 }

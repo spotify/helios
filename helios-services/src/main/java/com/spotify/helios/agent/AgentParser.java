@@ -22,7 +22,6 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Splitter;
-import com.google.common.collect.Maps;
 
 import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.ServiceParser;
@@ -42,6 +41,7 @@ import java.util.Map;
 import static com.google.common.io.BaseEncoding.base16;
 import static com.google.common.net.InetAddresses.isInetAddress;
 import static com.spotify.helios.agent.BindVolumeContainerDecorator.isValidBind;
+import static com.spotify.helios.cli.Utils.argToStringMap;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -65,6 +65,7 @@ public class AgentParser extends ServiceParser {
   private Argument dnsArg;
   private Argument bindArg;
   private Argument kafkaArg;
+  private Argument labelsArg;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -74,19 +75,8 @@ public class AgentParser extends ServiceParser {
         options.getString(dockerArg.getDest()),
         options.getString(dockerCertPathArg.getDest()));
 
-    final List<List<String>> env = options.getList(envArg.getDest());
-    final Map<String, String> envVars = Maps.newHashMap();
-    if (env != null) {
-      for (final List<String> group : env) {
-        for (final String s : group) {
-          final String[] parts = s.split("=", 2);
-          if (parts.length != 2) {
-            throw new IllegalArgumentException("Bad environment variable: " + s);
-          }
-          envVars.put(parts[0], parts[1]);
-        }
-      }
-    }
+    final Map<String, String> envVars = argToStringMap(options, envArg);
+    final Map<String, String> labels = argToStringMap(options, labelsArg);
 
     final InetSocketAddress httpAddress = parseSocketAddress(options.getString(httpArg.getDest()));
 
@@ -131,7 +121,8 @@ public class AgentParser extends ServiceParser {
         .setAdminPort(options.getInt(adminArg.getDest()))
         .setHttpEndpoint(httpAddress)
         .setNoHttp(options.getBoolean(noHttpArg.getDest()))
-        .setKafkaBrokers(kafkaBrokers.isEmpty() ? null : kafkaBrokers);
+        .setKafkaBrokers(kafkaBrokers.isEmpty() ? null : kafkaBrokers)
+        .setLabels(labels);
 
     final String explicitId = options.getString(agentIdArg.getDest());
     if (explicitId != null) {
@@ -221,6 +212,12 @@ public class AgentParser extends ServiceParser {
         .action(append())
         .setDefault(new ArrayList<String>())
         .help("Kafka brokers to bootstrap with");
+
+    labelsArg = parser.addArgument("--labels")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .nargs("+")
+        .help("labels to apply to this agent");
   }
 
   public AgentConfig getAgentConfig() {
