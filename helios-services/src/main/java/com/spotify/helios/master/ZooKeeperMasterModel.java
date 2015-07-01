@@ -33,6 +33,7 @@ import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
@@ -348,6 +349,57 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     return Ordering.from(EVENT_COMPARATOR).sortedCopy(jsEvents);
+  }
+
+  @Override
+  public void addDeploymentGroup(final DeploymentGroup deploymentGroup)
+      throws DeploymentGroupExistsException {
+    log.info("adding deployment-group: {}", deploymentGroup);
+    final ZooKeeperClient client = provider.get("addDeploymentGroup");
+    try {
+      try {
+        client.ensurePath(Paths.configDeploymentGroups());
+        client.transaction(
+            create(Paths.configDeploymentGroups(deploymentGroup.getName()), deploymentGroup));
+      } catch (final NodeExistsException e) {
+        final byte[] data = client.getData(Paths.configDeploymentGroups(deploymentGroup.getName()));
+        final DeploymentGroup existing = Json.read(data, DeploymentGroup.class);
+        if (!existing.getLabels().equals(deploymentGroup.getLabels())) {
+          throw new DeploymentGroupExistsException(deploymentGroup.getName());
+        }
+      }
+    } catch (final KeeperException | IOException e) {
+      throw new HeliosRuntimeException("adding deployment group " + deploymentGroup + " failed", e);
+    }
+  }
+
+  @Override
+  public DeploymentGroup getDeploymentGroup(final String name)
+      throws DeploymentGroupDoesNotExistException {
+    log.debug("getting deployment group: {}", name);
+    final ZooKeeperClient client = provider.get("getDeploymentGroup");
+    try {
+      final byte[] data = client.getData(Paths.configDeploymentGroups(name));
+      return Json.read(data, DeploymentGroup.class);
+    } catch (NoNodeException e) {
+      throw new DeploymentGroupDoesNotExistException(name);
+    } catch (KeeperException | IOException e) {
+      throw new HeliosRuntimeException("getting deployment group " + name + " failed", e);
+    }
+  }
+
+  @Override
+  public void removeDeploymentGroup(final String name) throws DeploymentGroupDoesNotExistException {
+    log.info("removing deployment-group: name={}", name);
+    final ZooKeeperClient client = provider.get("removeDeploymentGroup");
+    try {
+      client.ensurePath(Paths.configDeploymentGroups());
+      client.deleteRecursive(Paths.configDeploymentGroups(name));
+    } catch (final NoNodeException e) {
+      throw new DeploymentGroupDoesNotExistException(name);
+    } catch (final KeeperException e) {
+      throw new HeliosRuntimeException("removing deployment-group " + name + " failed", e);
+    }
   }
 
   /**
