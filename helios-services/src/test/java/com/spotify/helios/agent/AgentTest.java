@@ -181,7 +181,8 @@ public class AgentTest {
   }
 
   private void configure(final Job job, final Goal goal) {
-    final Task task = new Task(job, goal, Task.EMPTY_DEPLOYER_USER);
+    final Task task = new Task(job, goal, Task.EMPTY_DEPLOYER_USER, Task.EMPTY_DEPLOYER_MASTER,
+                               Task.EMPTY_DEPOYMENT_GROUP_NAME);
     jobs.put(job.getId(), task);
   }
 

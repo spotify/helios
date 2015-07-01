@@ -61,6 +61,7 @@ import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -70,6 +71,7 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
@@ -514,23 +516,29 @@ public abstract class SystemTestBase {
                                                      "--no-log-setup",
                                                      "--http", masterEndpoint(),
                                                      "--admin=" + masterAdminPort(),
-                                                     "--name", TEST_MASTER,
                                                      "--domain", "",
                                                      "--zk", zk.connectString());
+    if (!asList(args).contains("--name")) {
+      argsList.add("--name");
+      argsList.add(TEST_MASTER);
+    }
+
     argsList.addAll(asList(args));
 
     return argsList;
   }
 
-  protected void startDefaultMaster(String... args) throws Exception {
+  protected MasterMain startDefaultMaster(String... args) throws Exception {
     final List<String> argsList = setupDefaultMaster(args);
 
     if (argsList == null) {
-      return;
+      return null;
     }
 
-    startMaster(argsList.toArray(new String[argsList.size()]));
+    final MasterMain master = startMaster(argsList.toArray(new String[argsList.size()]));
     waitForMasterToConnectToZK();
+
+    return master;
   }
 
   protected void waitForMasterToConnectToZK() throws Exception {
@@ -712,7 +720,8 @@ public abstract class SystemTestBase {
 
     final String output = cli("status", "--host", host, "--json");
     final Map<JobId, JobStatus> statuses =
-        Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {});
+        Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {
+        });
     assertTrue(statuses.keySet().contains(jobId));
   }
 
@@ -722,7 +731,8 @@ public abstract class SystemTestBase {
 
     final String output = cli("status", "--host", host, "--json");
     final Map<JobId, JobStatus> statuses =
-        Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {});
+        Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {
+        });
     final JobStatus status = statuses.get(jobId);
     assertTrue(status == null ||
                status.getDeployments().get(host) == null);
@@ -913,6 +923,31 @@ public abstract class SystemTestBase {
         final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
         final Deployment deployment = hostStatus.getJobs().get(jobId);
         return taskStatus == null && deployment == null ? true : null;
+      }
+    });
+  }
+
+  protected DeploymentGroupStatus awaitDeploymentGroupStatus(
+      final HeliosClient client,
+      final String name,
+      final DeploymentGroupStatus.State state)
+      throws Exception {
+    return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<DeploymentGroupStatus>() {
+      @Override
+      public DeploymentGroupStatus call() throws Exception {
+        final DeploymentGroupStatusResponse response = getOrNull(
+            client.deploymentGroupStatus(name));
+
+        if (response != null) {
+          final DeploymentGroupStatus status = response.getDeploymentGroupStatus();
+          if (status.getState().equals(state)) {
+            return status;
+          } else if (status.getState().equals(DeploymentGroupStatus.State.FAILED)) {
+            assertEquals(state, status.getState());
+          }
+        }
+
+        return null;
       }
     });
   }

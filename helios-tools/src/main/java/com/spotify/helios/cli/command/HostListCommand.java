@@ -248,7 +248,7 @@ public class HostListCommand extends ControlCommand {
             }
           }
 
-          final String labels = Joiner.on(", ").withKeyValueSeparator("=").join(selectedLabels);
+          final String labels = Joiner.on(", ").withKeyValueSeparator("=").join(s.getLabels());
 
           table.row(formatHostname(full, host), status, s.getJobs().size(),
               runningDeployedJobs.size(), cpus, mem, loadAvg, memUsage, os, version, docker,

@@ -26,6 +26,12 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import com.spotify.helios.cli.command.CliCommand;
+import com.spotify.helios.cli.command.DeploymentGroupCreateCommand;
+import com.spotify.helios.cli.command.DeploymentGroupInspectCommand;
+import com.spotify.helios.cli.command.DeploymentGroupListCommand;
+import com.spotify.helios.cli.command.DeploymentGroupRemoveCommand;
+import com.spotify.helios.cli.command.DeploymentGroupStatusCommand;
+import com.spotify.helios.cli.command.DeploymentGroupWatchCommand;
 import com.spotify.helios.cli.command.HostDeregisterCommand;
 import com.spotify.helios.cli.command.HostListCommand;
 import com.spotify.helios.cli.command.HostRegisterCommand;
@@ -41,6 +47,8 @@ import com.spotify.helios.cli.command.JobStopCommand;
 import com.spotify.helios.cli.command.JobUndeployCommand;
 import com.spotify.helios.cli.command.JobWatchCommand;
 import com.spotify.helios.cli.command.MasterListCommand;
+import com.spotify.helios.cli.command.RollingUpdateAbortCommand;
+import com.spotify.helios.cli.command.RollingUpdateCommand;
 import com.spotify.helios.cli.command.VersionCommand;
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.common.Version;
@@ -211,8 +219,18 @@ public class CliParser {
     new HostRegisterCommand(p("register"));
     new HostDeregisterCommand(p("deregister"));
 
-    // Master Commands
+    // Master commands
     new MasterListCommand(p("masters"));
+
+    // Deployment group commands
+    new DeploymentGroupCreateCommand(p("create-deployment-group"));
+    new DeploymentGroupRemoveCommand(p("remove-deployment-group"));
+    new DeploymentGroupListCommand(p("list-deployment-groups"));
+    new DeploymentGroupInspectCommand(p("inspect-deployment-group"));
+    new DeploymentGroupStatusCommand(p("status-deployment-group"));
+    new DeploymentGroupWatchCommand(p("watch-deployment-group"));
+    new RollingUpdateCommand(p("rolling-update"));
+    new RollingUpdateAbortCommand(p("abort-rolling-update"));
 
     // Version Command
     final Subparser version = p("version").help("print version of master and client");
