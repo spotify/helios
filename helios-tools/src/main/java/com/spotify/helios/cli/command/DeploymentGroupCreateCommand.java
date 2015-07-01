@@ -24,6 +24,7 @@ package com.spotify.helios.cli.command;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -37,11 +38,13 @@ import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class DeploymentGroupCreateCommand extends ControlCommand {
 
   private final Argument nameArg;
   private final Argument labelsArg;
+  private final Argument quietArg;
 
   public DeploymentGroupCreateCommand(final Subparser parser) {
     super(parser);
@@ -49,7 +52,7 @@ public class DeploymentGroupCreateCommand extends ControlCommand {
     parser.help("create a deployment group");
 
     nameArg = parser.addArgument("name")
-        .nargs(1)
+        .nargs("?")
         .help("Deployment group name");
 
     labelsArg = parser.addArgument("labels")
@@ -58,6 +61,10 @@ public class DeploymentGroupCreateCommand extends ControlCommand {
         .nargs("+")
         .help("Only include hosts that match all of these labels. Separate multiple labels with "
               + "spaces, e.g. 'foo=bar baz=qux'.");
+
+    quietArg = parser.addArgument("-q")
+        .action(storeTrue())
+        .help("only print job id");
   }
 
   @Override
@@ -69,6 +76,7 @@ public class DeploymentGroupCreateCommand extends ControlCommand {
 
     final String name = options.getString(nameArg.getDest());
     final Map<String, String> labels = Utils.argToStringMap(options, labelsArg);
+    final boolean quiet = options.getBoolean(quietArg.getDest());
 
     if (name == null || labels.isEmpty()) {
       throw new IllegalArgumentException("Please specify a name and at least one label.");
@@ -77,8 +85,28 @@ public class DeploymentGroupCreateCommand extends ControlCommand {
     builder = DeploymentGroup.newBuilder().setName(name).setLabels(labels);
     final DeploymentGroup deploymentGroup = builder.build();
 
-    out.println(deploymentGroup);
-    return 0;
+    if (!quiet && !json) {
+      out.println("Creating deployment group: " + deploymentGroup.toJsonString());
+    }
+
+    final CreateDeploymentGroupResponse status =
+        client.createDeploymentGroup(deploymentGroup).get();
+
+    if (status == null) {
+      throw new RuntimeException("The Helios master could not create a deployment group.");
+    }
+
+    if (status.getStatus() == CreateDeploymentGroupResponse.Status.OK) {
+      out.println(status.toJsonString());
+      return 0;
+    } else {
+      if (!quiet && !json) {
+        out.println("Failed: " + status);
+      } else if (json) {
+        out.println(status.toJsonString());
+      }
+      return 1;
+    }
   }
 }
 
