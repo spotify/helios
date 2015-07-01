@@ -29,6 +29,7 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.codahale.metrics.MetricRegistry;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
+import com.spotify.helios.master.resources.DeploymentGroupResource;
 import com.spotify.helios.master.resources.HistoryResource;
 import com.spotify.helios.master.resources.HostsResource;
 import com.spotify.helios.master.resources.JobsResource;
@@ -168,6 +169,7 @@ public class MasterService extends AbstractIdleService {
     environment.jersey().register(new MastersResource(model));
     environment.jersey().register(new VersionResource());
     environment.jersey().register(new UserProvider());
+    environment.jersey().register(new DeploymentGroupResource(model));
 
     final DefaultServerFactory serverFactory = ServiceUtil.createServerFactory(
         config.getHttpEndpoint(), config.getAdminPort(), false);
