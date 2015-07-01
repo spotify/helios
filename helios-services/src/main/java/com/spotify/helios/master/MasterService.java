@@ -35,9 +35,11 @@ import com.spotify.helios.master.resources.HostsResource;
 import com.spotify.helios.master.resources.JobsResource;
 import com.spotify.helios.master.resources.MastersResource;
 import com.spotify.helios.master.resources.VersionResource;
+import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
+import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
@@ -97,6 +99,7 @@ public class MasterService extends AbstractIdleService {
   private final ZooKeeperClient zooKeeperClient;
   private final ExpiredJobReaper expiredJobReaper;
   private final CuratorClientFactory curatorClientFactory;
+  private final RollingUpdateService rollingUpdateService;
 
   private ZooKeeperRegistrar zkRegistrar;
 
@@ -156,6 +159,10 @@ public class MasterService extends AbstractIdleService {
     this.expiredJobReaper = ExpiredJobReaper.newBuilder()
         .setMasterModel(model)
         .build();
+
+    // Set up rolling update service
+    final ReactorFactory reactorFactory = new ReactorFactory();
+    this.rollingUpdateService = new RollingUpdateService(reactorFactory);
 
     // Set up http server
     environment.servlets()
@@ -225,6 +232,7 @@ public class MasterService extends AbstractIdleService {
     logBanner();
     zkRegistrar.startAsync().awaitRunning();
     expiredJobReaper.startAsync().awaitRunning();
+    rollingUpdateService.startAsync().awaitRunning();
     try {
       server.start();
     } catch (Exception e) {
@@ -244,6 +252,7 @@ public class MasterService extends AbstractIdleService {
     server.stop();
     server.join();
     registrar.close();
+    rollingUpdateService.stopAsync().awaitTerminated();
     expiredJobReaper.stopAsync().awaitTerminated();
     zkRegistrar.stopAsync().awaitTerminated();
     zooKeeperClient.close();
