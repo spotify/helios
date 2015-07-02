@@ -27,6 +27,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.JobId;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -53,7 +54,7 @@ public class DeploymentGroupInspectCommandTest {
   private static final String NAME = "foo-group";
   private static final String NON_EXISTENT_NAME = "bar-group";
   private static final Map<String, String> LABELS_MAP = ImmutableMap.of("foo", "bar", "baz", "qux");
-  private static final String JOB = "foo-job:0.1.0";
+  private static final JobId JOB = new JobId("foo-job", "0.1.0");
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);

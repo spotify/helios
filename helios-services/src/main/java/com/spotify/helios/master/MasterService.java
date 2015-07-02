@@ -162,7 +162,7 @@ public class MasterService extends AbstractIdleService {
 
     // Set up rolling update service
     final ReactorFactory reactorFactory = new ReactorFactory();
-    this.rollingUpdateService = new RollingUpdateService(reactorFactory);
+    this.rollingUpdateService = new RollingUpdateService(model, reactorFactory);
 
     // Set up http server
     environment.servlets()
