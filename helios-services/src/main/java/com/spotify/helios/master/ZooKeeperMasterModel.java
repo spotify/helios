@@ -362,21 +362,17 @@ public class ZooKeeperMasterModel implements MasterModel {
         client.transaction(
             create(Paths.configDeploymentGroups(deploymentGroup.getName()), deploymentGroup));
       } catch (final NodeExistsException e) {
-        final byte[] data = client.getData(Paths.configDeploymentGroups(deploymentGroup.getName()));
-        final DeploymentGroup existing = Json.read(data, DeploymentGroup.class);
-        if (!existing.getLabels().equals(deploymentGroup.getLabels())) {
-          throw new DeploymentGroupExistsException(deploymentGroup.getName());
-        }
+        throw new DeploymentGroupExistsException(deploymentGroup.getName());
       }
-    } catch (final KeeperException | IOException e) {
-      throw new HeliosRuntimeException("adding deployment group " + deploymentGroup + " failed", e);
+    } catch (final KeeperException e) {
+      throw new HeliosRuntimeException("adding deployment-group " + deploymentGroup + " failed", e);
     }
   }
 
   @Override
   public DeploymentGroup getDeploymentGroup(final String name)
       throws DeploymentGroupDoesNotExistException {
-    log.debug("getting deployment group: {}", name);
+    log.debug("getting deployment-group: {}", name);
     final ZooKeeperClient client = provider.get("getDeploymentGroup");
     try {
       final byte[] data = client.getData(Paths.configDeploymentGroups(name));
@@ -384,7 +380,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     } catch (NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(name);
     } catch (KeeperException | IOException e) {
-      throw new HeliosRuntimeException("getting deployment group " + name + " failed", e);
+      throw new HeliosRuntimeException("getting deployment-group " + name + " failed", e);
     }
   }
 
@@ -399,6 +395,33 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new DeploymentGroupDoesNotExistException(name);
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException("removing deployment-group " + name + " failed", e);
+    }
+  }
+
+  @Override
+  public void rollingUpdate(final String deploymentGroupName, final JobId jobId)
+      throws DeploymentGroupDoesNotExistException, JobDoesNotExistException {
+    log.info("rolling-update on deployment-group: name={}", deploymentGroupName);
+
+    final DeploymentGroup existing = getDeploymentGroup(deploymentGroupName);
+    final Job job = getJob(jobId);
+    if (job == null) {
+      throw new JobDoesNotExistException(jobId);
+    }
+
+    final ZooKeeperClient client = provider.get("updateDeploymentGroup");
+
+    final DeploymentGroup updated = existing.toBuilder().setJob(jobId).build();
+
+    try {
+      client.ensurePath(Paths.configDeploymentGroups());
+      client.transaction(
+          set(Paths.configDeploymentGroups(deploymentGroupName), updated));
+    } catch (final NoNodeException e) {
+      throw new DeploymentGroupDoesNotExistException(deploymentGroupName);
+    } catch (final KeeperException e) {
+      throw new HeliosRuntimeException(
+          "rolling-update on deployment-group " + deploymentGroupName + " failed", e);
     }
   }
 

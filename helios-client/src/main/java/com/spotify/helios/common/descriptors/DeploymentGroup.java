@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Spotify AB.
+ * Copyright (c) 2015 Spotify AB.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -21,10 +21,10 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
@@ -49,15 +49,16 @@ import static java.util.Collections.emptyMap;
  * </pre>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class DeploymentGroup extends Descriptor {
 
   public static final String EMPTY_NAME = "";
   public static final Map<String, String> EMPTY_LABELS = emptyMap();
-  public static final String EMPTY_JOB = "";
+  public static final JobId EMPTY_JOB = null;
 
   private final String name;
   private final Map<String, String> labels;
-  private final String job;
+  private final JobId job;
 
   /**
    * Create a Job.
@@ -68,19 +69,17 @@ public class DeploymentGroup extends Descriptor {
    */
   public DeploymentGroup(@JsonProperty("name") final String name,
                          @JsonProperty("labels") final Map<String, String> labels,
-                         @JsonProperty("job") @Nullable final String job) {
+                         @JsonProperty("job") @Nullable final JobId job) {
     this.name = name;
     this.labels = labels;
-
-    // Optional
-    this.job = Optional.fromNullable(job).or(EMPTY_JOB);
+    this.job = job;
   }
 
   public String getName() {
     return name;
   }
 
-  public String getJob() {
+  public JobId getJob() {
     return job;
   }
 
@@ -149,7 +148,7 @@ public class DeploymentGroup extends Descriptor {
     private static class Parameters implements Cloneable {
 
       public String name;
-      public String job;
+      public JobId job;
       public Map<String, String> labels;
 
       private Parameters() {
@@ -164,7 +163,7 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
-    public Builder setJob(final String job) {
+    public Builder setJob(final JobId job) {
       p.job = job;
       return this;
     }
