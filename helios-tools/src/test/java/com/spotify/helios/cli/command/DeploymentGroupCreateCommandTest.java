@@ -67,8 +67,7 @@ public class DeploymentGroupCreateCommandTest {
   private DeploymentGroupCreateCommand command;
 
   final CreateDeploymentGroupResponse okResponse =
-      new CreateDeploymentGroupResponse(CreateDeploymentGroupResponse.Status.OK,
-                                        Collections.<String>emptyList(), "12345");
+      new CreateDeploymentGroupResponse(CreateDeploymentGroupResponse.Status.CREATED);
 
   @Rule
   public ExpectedException expectedEx = ExpectedException.none();

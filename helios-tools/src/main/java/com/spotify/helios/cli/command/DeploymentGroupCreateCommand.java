@@ -96,7 +96,7 @@ public class DeploymentGroupCreateCommand extends ControlCommand {
       throw new RuntimeException("The Helios master could not create a deployment group.");
     }
 
-    if (status.getStatus() == CreateDeploymentGroupResponse.Status.OK) {
+    if (status.getStatus() == CreateDeploymentGroupResponse.Status.CREATED) {
       out.println(status.toJsonString());
       return 0;
     } else {

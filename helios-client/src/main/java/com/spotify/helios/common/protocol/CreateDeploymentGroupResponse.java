@@ -31,39 +31,25 @@ import java.util.List;
 public class CreateDeploymentGroupResponse {
 
   public enum Status {
-    OK
+    CREATED,
+    NOT_MODIFIED,
+    CONFLICT
   }
 
   private final Status status;
-  private final List<String> errors;
-  private final String id;
 
-  public CreateDeploymentGroupResponse(@JsonProperty("status") final Status status,
-                                       @JsonProperty("errors") final List<String> errors,
-                                       @JsonProperty("id") final String id) {
+  public CreateDeploymentGroupResponse(@JsonProperty("status") final Status status) {
     this.status = status;
-    this.errors = errors;
-    this.id = id;
   }
 
   public Status getStatus() {
     return status;
   }
 
-  public List<String> getErrors() {
-    return errors;
-  }
-
-  public String getId() {
-    return id;
-  }
-
   @Override
   public String toString() {
     return Objects.toStringHelper(getClass())
         .add("status", status)
-        .add("errors", errors)
-        .add("id", id)
         .toString();
   }
 

@@ -24,6 +24,7 @@ package com.spotify.helios.master.resources;
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateRequest;
 import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
@@ -50,6 +51,14 @@ public class DeploymentGroupResource {
 
   private final MasterModel model;
 
+  private static final CreateDeploymentGroupResponse CREATED_RESPONSE =
+      new CreateDeploymentGroupResponse(CreateDeploymentGroupResponse.Status.CREATED);
+  private static final CreateDeploymentGroupResponse NOT_MODIFIED_RESPONSE =
+      new CreateDeploymentGroupResponse(CreateDeploymentGroupResponse.Status.NOT_MODIFIED);
+  private static final CreateDeploymentGroupResponse DEPLOYMENT_GROUP_ALREADY_EXISTS_RESPONSE =
+      new CreateDeploymentGroupResponse(
+          CreateDeploymentGroupResponse.Status.CONFLICT);
+
   public DeploymentGroupResource(final MasterModel model) {
     this.model = model;
   }
@@ -62,21 +71,25 @@ public class DeploymentGroupResource {
   public Response createDeploymentGroup(@Valid final DeploymentGroup deploymentGroup) {
     try {
       model.addDeploymentGroup(deploymentGroup);
-      return Response.created(URI.create(deploymentGroup.getName())).build();
+      return Response.created(
+          URI.create(deploymentGroup.getName())).entity(CREATED_RESPONSE).build();
     } catch (DeploymentGroupExistsException ignored) {
       final DeploymentGroup existing;
       try {
         existing = model.getDeploymentGroup(deploymentGroup.getName());
       } catch (DeploymentGroupDoesNotExistException e) {
-        // Racy edge condition -- return 500
+        // Edge condition: There's a race where someone can potentially remove the deployment-group
+        // while this operation is in progress. This should be very rare. If it does happen,
+        // return 500.
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
       }
 
       if (!existing.getLabels().equals(deploymentGroup.getLabels())) {
-        return Response.status(Response.Status.CONFLICT).build();
+        return Response.status(Response.Status.CONFLICT)
+            .entity(DEPLOYMENT_GROUP_ALREADY_EXISTS_RESPONSE).build();
       }
 
-      return Response.created(URI.create(deploymentGroup.getName())).build();
+      return Response.notModified().entity(NOT_MODIFIED_RESPONSE).build();
     }
   }
 
