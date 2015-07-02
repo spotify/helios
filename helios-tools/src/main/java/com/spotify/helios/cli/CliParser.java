@@ -44,6 +44,7 @@ import com.spotify.helios.cli.command.JobStopCommand;
 import com.spotify.helios.cli.command.JobUndeployCommand;
 import com.spotify.helios.cli.command.JobWatchCommand;
 import com.spotify.helios.cli.command.MasterListCommand;
+import com.spotify.helios.cli.command.RollingUpdateCommand;
 import com.spotify.helios.cli.command.VersionCommand;
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.common.Version;
@@ -221,6 +222,7 @@ public class CliParser {
     new DeploymentGroupCreateCommand(p("create-deployment-group"));
     new DeploymentGroupInspectCommand(p("inspect-deployment-group"));
     new DeploymentGroupWatchCommand(p("watch-deployment-group"));
+    new RollingUpdateCommand(p("rolling-update"));
 
     // Version Command
     final Subparser version = p("version").help("print version of master and client");

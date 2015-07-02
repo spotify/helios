@@ -57,6 +57,8 @@ import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
+import com.spotify.helios.common.protocol.RollingUpdateRequest;
+import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
@@ -567,6 +569,15 @@ public class HeliosClient implements AutoCloseable {
     return transform(request(uri("/deployment-group/"), "POST", descriptor),
                      ConvertResponseToPojo.create(CreateDeploymentGroupResponse.class,
                                                   ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+  }
+
+  public ListenableFuture<RollingUpdateResponse> rollingUpdate(
+      final String deploymentGroupName, final JobId jobId) {
+    return transform(
+        request(uri(path("/deployment-group/%s/rolling-update", deploymentGroupName)),
+                "POST", new RollingUpdateRequest(jobId)),
+        ConvertResponseToPojo.create(RollingUpdateResponse.class,
+                                     ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }
 
   private static final class ConvertResponseToPojo<T> implements AsyncFunction<Response, T> {

@@ -26,13 +26,12 @@ import com.codahale.metrics.annotation.Timed;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateRequest;
+import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
 import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.master.http.Responses;
-
-import java.net.URI;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
@@ -63,7 +62,6 @@ public class DeploymentGroupResource {
     this.model = model;
   }
 
-
   @POST
   @Produces(APPLICATION_JSON)
   @Timed
@@ -71,8 +69,7 @@ public class DeploymentGroupResource {
   public Response createDeploymentGroup(@Valid final DeploymentGroup deploymentGroup) {
     try {
       model.addDeploymentGroup(deploymentGroup);
-      return Response.created(
-          URI.create(deploymentGroup.getName())).entity(CREATED_RESPONSE).build();
+      return Response.ok(CREATED_RESPONSE).build();
     } catch (DeploymentGroupExistsException ignored) {
       final DeploymentGroup existing;
       try {
@@ -89,7 +86,7 @@ public class DeploymentGroupResource {
             .entity(DEPLOYMENT_GROUP_ALREADY_EXISTS_RESPONSE).build();
       }
 
-      return Response.notModified().entity(NOT_MODIFIED_RESPONSE).build();
+      return Response.ok(NOT_MODIFIED_RESPONSE).build();
     }
   }
 
@@ -100,8 +97,7 @@ public class DeploymentGroupResource {
   @ExceptionMetered
   public DeploymentGroup getDeploymentGroup(@PathParam("name") final String name) {
     try {
-      final DeploymentGroup dg = model.getDeploymentGroup(name);
-      return dg;
+      return model.getDeploymentGroup(name);
     } catch (final DeploymentGroupDoesNotExistException e) {
       throw Responses.notFound();
     }
@@ -126,17 +122,16 @@ public class DeploymentGroupResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Response rollingUpdate(@PathParam("name") @Valid final String name,
+  public RollingUpdateResponse rollingUpdate(@PathParam("name") @Valid final String name,
                                 @Valid final RollingUpdateRequest args) {
-    // TODO(staffan): nicer error messages
     try {
       model.rollingUpdate(name, args.getJob());
     } catch (DeploymentGroupDoesNotExistException e) {
-      throw Responses.notFound();
+      return new RollingUpdateResponse(RollingUpdateResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND);
     } catch (JobDoesNotExistException e) {
-      throw Responses.badRequest();
+      return new RollingUpdateResponse(RollingUpdateResponse.Status.JOB_NOT_FOUND);
     }
 
-    return Response.ok().build();
+    return new RollingUpdateResponse(RollingUpdateResponse.Status.OK);
   }
 }
