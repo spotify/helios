@@ -21,44 +21,13 @@
 
 package com.spotify.helios.rollingupdate;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.AbstractIdleService;
-
-import com.spotify.helios.agent.AgentModel;
-import com.spotify.helios.agent.Execution;
-import com.spotify.helios.agent.PortAllocator;
-import com.spotify.helios.agent.Reaper;
-import com.spotify.helios.agent.Supervisor;
-import com.spotify.helios.agent.SupervisorFactory;
-import com.spotify.helios.common.descriptors.Goal;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.Task;
-import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.ReactorFactory;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.Map;
-import java.util.Map.Entry;
-import java.util.Set;
-
-import io.dropwizard.lifecycle.Managed;
-
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Predicates.in;
-import static com.google.common.base.Predicates.not;
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.Goal.UNDEPLOY;
 import static com.spotify.helios.servicescommon.Reactor.Callback;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
