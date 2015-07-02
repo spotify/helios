@@ -27,6 +27,8 @@ import com.google.common.collect.Sets;
 
 import com.spotify.helios.cli.command.CliCommand;
 import com.spotify.helios.cli.command.DeploymentGroupCreateCommand;
+import com.spotify.helios.cli.command.DeploymentGroupInspectCommand;
+import com.spotify.helios.cli.command.DeploymentGroupWatchCommand;
 import com.spotify.helios.cli.command.HostDeregisterCommand;
 import com.spotify.helios.cli.command.HostListCommand;
 import com.spotify.helios.cli.command.HostRegisterCommand;
@@ -217,6 +219,8 @@ public class CliParser {
 
     // Deployment group commands
     new DeploymentGroupCreateCommand(p("create-deployment-group"));
+    new DeploymentGroupInspectCommand(p("inspect-deployment-group"));
+    new DeploymentGroupWatchCommand(p("watch-deployment-group"));
 
     // Version Command
     final Subparser version = p("version").help("print version of master and client");
