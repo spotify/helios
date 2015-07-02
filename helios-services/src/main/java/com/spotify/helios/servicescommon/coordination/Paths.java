@@ -43,6 +43,7 @@ public class Paths {
   private static final String LABELS = "labels";
   private static final String ID = "id";
   private static final String DEPLOYMENT_GROUPS = "deployment-groups";
+  private static final String INDEX = "index";
 
   private static final PathFactory CONFIG_ID = new PathFactory("/", CONFIG, ID);
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
@@ -50,8 +51,12 @@ public class Paths {
   private static final PathFactory CONFIG_HOSTS = new PathFactory("/", CONFIG, HOSTS);
   private static final PathFactory CONFIG_DEPLOYMENT_GROUPS = new PathFactory(
       "/", CONFIG, DEPLOYMENT_GROUPS);
+
   private static final PathFactory STATUS_HOSTS = new PathFactory("/", STATUS, HOSTS);
   private static final PathFactory STATUS_MASTERS = new PathFactory("/", STATUS, MASTERS);
+  private static final PathFactory STATUS_DEPLOYMENT_GROUPS = new PathFactory(
+      "/", STATUS, DEPLOYMENT_GROUPS);
+
   private static final PathFactory HISTORY_JOBS = new PathFactory("/", HISTORY, JOBS);
   private static final String CREATION_PREFIX = "creation-";
 
@@ -75,7 +80,7 @@ public class Paths {
     return CONFIG_DEPLOYMENT_GROUPS.path();
   }
 
-  public static String configDeploymentGroups(final String name) {
+  public static String configDeploymentGroup(final String name) {
     return CONFIG_DEPLOYMENT_GROUPS.path(name);
   }
 
@@ -188,6 +193,14 @@ public class Paths {
 
   public static String statusHostLabels(final String host) {
     return STATUS_HOSTS.path(host, LABELS);
+  }
+
+  public static String statusDeploymentGroups() {
+    return STATUS_DEPLOYMENT_GROUPS.path();
+  }
+
+  public static String statusDeploymentGroup(final String name) {
+    return STATUS_DEPLOYMENT_GROUPS.path(name);
   }
 
   public static String historyJobHostEventsTimestamp(final JobId jobId,

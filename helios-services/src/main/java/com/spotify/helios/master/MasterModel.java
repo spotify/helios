@@ -23,6 +23,7 @@ package com.spotify.helios.master;
 
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -103,6 +104,11 @@ public interface MasterModel {
   void addDeploymentGroup(DeploymentGroup deploymentGroup) throws DeploymentGroupExistsException;
 
   DeploymentGroup getDeploymentGroup(String name) throws DeploymentGroupDoesNotExistException;
+
+  Map<String, DeploymentGroup> getDeploymentGroups();
+
+  DeploymentGroupStatus getDeploymentGroupStatus(String name)
+      throws DeploymentGroupDoesNotExistException;
 
   void removeDeploymentGroup(String name) throws DeploymentGroupDoesNotExistException;
 

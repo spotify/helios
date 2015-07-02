@@ -22,6 +22,8 @@
 package com.spotify.helios.rollingupdate;
 
 import com.google.common.util.concurrent.AbstractIdleService;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import org.slf4j.Logger;
@@ -41,13 +43,15 @@ public class RollingUpdateService extends AbstractIdleService {
   private static final long UPDATE_INTERVAL = SECONDS.toMillis(30);
 
   private final Reactor reactor;
+  private final MasterModel masterModel;
 
   /**
    * Create a new RollingUpdateService.
    *
    * @param reactorFactory    The factory to use for creating reactors.
    */
-  public RollingUpdateService(final ReactorFactory reactorFactory) {
+  public RollingUpdateService(final MasterModel masterModel, final ReactorFactory reactorFactory) {
+    this.masterModel = checkNotNull(masterModel, "masterModel");
     this.reactor = checkNotNull(reactorFactory.create("rollingupdate", new Update(),
                                                       UPDATE_INTERVAL),
                                 "reactor");
@@ -71,7 +75,9 @@ public class RollingUpdateService extends AbstractIdleService {
 
     @Override
     public void run(final boolean timeout) throws InterruptedException {
-      log.debug("running rolling update service, not doing anything");
+      for (final DeploymentGroup dg : masterModel.getDeploymentGroups().values()) {
+
+      }
     }
   }
 }

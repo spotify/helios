@@ -34,6 +34,7 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
@@ -43,6 +44,7 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
@@ -76,6 +78,7 @@ import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
+import static java.util.Collections.EMPTY_LIST;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
@@ -356,11 +359,23 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupExistsException {
     log.info("adding deployment-group: {}", deploymentGroup);
     final ZooKeeperClient client = provider.get("addDeploymentGroup");
+
+    final DeploymentGroupStatus initialStatus = DeploymentGroupStatus.newBuilder()
+        .setDeploymentGroup(deploymentGroup)
+        .setState(DeploymentGroupStatus.State.QUEUED)
+        .setIndex(0)
+        .setHosts(EMPTY_LIST)
+        .setVersion(0)
+        .build();
+
     try {
       try {
         client.ensurePath(Paths.configDeploymentGroups());
+        client.ensurePath(Paths.statusDeploymentGroups());
+
         client.transaction(
-            create(Paths.configDeploymentGroups(deploymentGroup.getName()), deploymentGroup));
+            create(Paths.configDeploymentGroup(deploymentGroup.getName()), deploymentGroup),
+            create(Paths.statusDeploymentGroup(deploymentGroup.getName()), initialStatus));
       } catch (final NodeExistsException e) {
         throw new DeploymentGroupExistsException(deploymentGroup.getName());
       }
@@ -374,8 +389,13 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException {
     log.debug("getting deployment-group: {}", name);
     final ZooKeeperClient client = provider.get("getDeploymentGroup");
+    return getDeploymentGroup(client, name);
+  }
+
+  private DeploymentGroup getDeploymentGroup(final ZooKeeperClient client, final String name)
+      throws DeploymentGroupDoesNotExistException {
     try {
-      final byte[] data = client.getData(Paths.configDeploymentGroups(name));
+      final byte[] data = client.getData(Paths.configDeploymentGroup(name));
       return Json.read(data, DeploymentGroup.class);
     } catch (NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(name);
@@ -390,7 +410,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("removeDeploymentGroup");
     try {
       client.ensurePath(Paths.configDeploymentGroups());
-      client.deleteRecursive(Paths.configDeploymentGroups(name));
+      client.deleteRecursive(Paths.configDeploymentGroup(name));
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(name);
     } catch (final KeeperException e) {
@@ -416,12 +436,70 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       client.ensurePath(Paths.configDeploymentGroups());
       client.transaction(
-          set(Paths.configDeploymentGroups(deploymentGroupName), updated));
+          set(Paths.configDeploymentGroup(deploymentGroupName), updated));
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(deploymentGroupName);
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException(
           "rolling-update on deployment-group " + deploymentGroupName + " failed", e);
+    }
+  }
+
+  /**
+   * Returns a {@link Map} of deployment group name to {@link DeploymentGroup} objects for all of
+   * the deployment groups known.
+   */
+  @Override
+  public Map<String, DeploymentGroup> getDeploymentGroups() {
+    log.debug("getting deployment groups");
+    final String folder = Paths.configDeploymentGroups();
+    final ZooKeeperClient client = provider.get("getDeploymentGroups");
+    try {
+      final List<String> names;
+      try {
+        names = client.getChildren(folder);
+      } catch (NoNodeException e) {
+        return Maps.newHashMap();
+      }
+      final Map<String, DeploymentGroup> descriptors = Maps.newHashMap();
+      for (final String name : names) {
+        final String path = Paths.configDeploymentGroup(name);
+        try {
+          final byte[] data = client.getData(path);
+          final DeploymentGroup descriptor = parse(data, DeploymentGroup.class);
+          descriptors.put(descriptor.getName(), descriptor);
+        } catch (NoNodeException e) {
+          // Ignore, the deployment group was deleted before we had a chance to read it.
+          log.debug("Ignoring deleted deployment group {}", name);
+        }
+      }
+      return descriptors;
+    } catch (KeeperException | IOException e) {
+      throw new HeliosRuntimeException("getting deployment groups failed", e);
+    }
+  }
+
+  @Override
+  public DeploymentGroupStatus getDeploymentGroupStatus(final String name)
+      throws DeploymentGroupDoesNotExistException {
+    log.debug("getting deployment group status: {}", name);
+    final ZooKeeperClient client = provider.get("getDeploymentGroupStatus");
+
+    final DeploymentGroup deploymentGroup = getDeploymentGroup(client, name);
+    if (deploymentGroup == null) {
+      return null;
+    }
+
+    try {
+      final Node node = client.getNode(Paths.statusDeploymentGroup(name));
+      final DeploymentGroupStatus status = Json.read(node.getBytes(), DeploymentGroupStatus.class);
+      return status.asBuilder()
+          .setVersion(node.getStat().getVersion())
+          .build();
+    } catch (NoNodeException e) {
+      throw new DeploymentGroupDoesNotExistException(name);
+    } catch (KeeperException | IOException e) {
+      throw new HeliosRuntimeException("getting deployment group status " + name + " failed", e);
     }
   }
 
@@ -617,12 +695,13 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
              JobPortAllocationConflictException, TokenVerificationException {
     final ZooKeeperClient client = provider.get("deployJob");
-    deployJobRetry(client, host, deployment, 0, token);
+    deployJobRetry(client, host, deployment, 0, token, null);
   }
 
   // TODO(drewc): this kinda screams "long method"
   private void deployJobRetry(final ZooKeeperClient client, final String host,
-                              final Deployment deployment, int count, final String token)
+                              final Deployment deployment, int count, final String token,
+                              final DeploymentGroup deploymentGroup)
       throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
              JobPortAllocationConflictException, TokenVerificationException {
     if (count == 3) {
@@ -687,7 +766,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       assertHostExists(client, host);
       // If the job and host still exists, we likely tried to redeploy a job that had an UNDEPLOY
       // goal and lost the race with the agent removing the task before we could set it. Retry.
-      deployJobRetry(client, host, deployment, count + 1, token);
+      deployJobRetry(client, host, deployment, count + 1, token, deploymentGroup);
     } catch (NodeExistsException e) {
       // Check for conflict due to transaction retry
       try {
