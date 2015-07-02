@@ -82,8 +82,7 @@ public class DeploymentGroupResource {
       }
 
       if (!existing.getLabels().equals(deploymentGroup.getLabels())) {
-        return Response.status(Response.Status.CONFLICT)
-            .entity(DEPLOYMENT_GROUP_ALREADY_EXISTS_RESPONSE).build();
+        return Response.ok(DEPLOYMENT_GROUP_ALREADY_EXISTS_RESPONSE).build();
       }
 
       return Response.ok(NOT_MODIFIED_RESPONSE).build();
