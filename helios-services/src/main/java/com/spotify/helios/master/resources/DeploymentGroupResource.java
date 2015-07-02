@@ -24,7 +24,6 @@ package com.spotify.helios.master.resources;
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.protocol.RollingUpdateRequest;
 import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
