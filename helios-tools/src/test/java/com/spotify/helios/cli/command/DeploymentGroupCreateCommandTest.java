@@ -95,11 +95,10 @@ public class DeploymentGroupCreateCommandTest {
     final String output = baos.toString();
     assertThat(output, containsString("\"name\":\"foo-group\""));
     assertThat(output, containsString("\"labels\":{\"baz\":\"qux\",\"foo\":\"bar\"}"));
-    assertThat(output, containsString("\"job\":\"\""));
   }
 
   @Test
-  public void testInalidDeploymentGroupCreateCommand() throws Exception {
+  public void testInvalidDeploymentGroupCreateCommand() throws Exception {
     expectedEx.expect(IllegalArgumentException.class);
     expectedEx.expectMessage("Please specify a name and at least one label.");
 
