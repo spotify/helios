@@ -21,6 +21,7 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.base.Strings;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
@@ -57,7 +58,9 @@ class Jobs {
   }
 
   static String getJobDescription(final Job job) {
-    final String shortHash = job.getId().getHash().substring(0, 7);
+    final String hash = job.getId().getHash();
+    final String shortHash =
+        (Strings.isNullOrEmpty(hash) || hash.length() < 8) ? "" : hash.substring(0, 7);
     return String.format("%s (Job %s)", job.getImage(), shortHash);
   }
 
