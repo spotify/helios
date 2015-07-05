@@ -89,11 +89,6 @@ public class TemporaryJobBuilder {
     this.reportWriter = reportWriter;
   }
 
-  public TemporaryJobBuilder name(final String jobName) {
-    this.builder.setName(jobName);
-    return this;
-  }
-
   public TemporaryJobBuilder version(final String jobVersion) {
     this.builder.setVersion(jobVersion);
     return this;
@@ -282,7 +277,6 @@ public class TemporaryJobBuilder {
         waitPorts.clear();
       }
 
-      boolean success = false;
       if (this.hosts.isEmpty()) {
         if (isNullOrEmpty(hostFilter)) {
           hostFilter = env.get("HELIOS_HOST_FILTER");
