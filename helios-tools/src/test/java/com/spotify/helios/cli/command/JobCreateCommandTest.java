@@ -21,6 +21,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 
@@ -107,11 +108,24 @@ public class JobCreateCommandTest {
   }
 
   @Test
-  public void testInvalidJobCreateCommand() throws Exception {
+  public void testJobCreateCommandFailsWithInvalidJobID() throws Exception {
     when(options.getString("id")).thenReturn(JOB_NAME);
     when(options.getString("image")).thenReturn("busybox:latest");
     final int ret = command.run(options, client, out, false, null);
     assertEquals(1, ret);
+  }
+
+  @Test
+  public void testJobCreateCommandFailsWithInvalidPortProtocol() throws Exception {
+    when(options.getString("id")).thenReturn(JOB_ID);
+    when(options.getString("image")).thenReturn("busybox");
+    doReturn(ImmutableList.of("dns=53:53/http")).when(options).getList("port");
+    final int ret = command.run(options, client, out, true, null);
+
+    assertEquals(1, ret);
+    final String output = baos.toString();
+    assertThat(output, containsString("\"status\":\"INVALID_JOB_DEFINITION\"}"));
+    assertThat(output, containsString("\"errors\":[\"Invalid port mapping protocol: http\"]"));
   }
 
   @Test(expected=IllegalArgumentException.class)

@@ -21,6 +21,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -469,7 +470,8 @@ public class JobCreateCommand extends ControlCommand {
         }
       } else {
         CreateJobResponse createJobResponse = new CreateJobResponse(
-            CreateJobResponse.Status.INVALID_JOB_DEFINITION, null, job.getId().toString());
+            CreateJobResponse.Status.INVALID_JOB_DEFINITION, ImmutableList.copyOf(errors),
+            job.getId().toString());
         out.println(createJobResponse.toJsonString());
       }
 
