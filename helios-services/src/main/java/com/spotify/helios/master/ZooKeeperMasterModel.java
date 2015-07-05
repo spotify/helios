@@ -566,6 +566,13 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final UUID operationId = UUID.randomUUID();
     final String jobPath = Paths.configJob(id);
+
+    try {
+      Paths.configHostJob(host, id);
+    } catch (IllegalArgumentException e) {
+      throw new HostNotFoundException("Could not find Helios host '" + host + "'");
+    }
+
     final String taskPath = Paths.configHostJob(host, id);
     final String taskCreationPath = Paths.configHostJobCreation(host, id, operationId);
 
