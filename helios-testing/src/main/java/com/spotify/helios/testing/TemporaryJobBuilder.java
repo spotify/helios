@@ -309,7 +309,9 @@ public class TemporaryJobBuilder {
       } catch (IllegalArgumentException e) {
         info = getFromFileSystem(name);
         if (info == null) {
-          throw e;
+          throw new IllegalArgumentException(
+              e.getMessage() + " Try building the docker image first with `mvn docker:build` "
+              + "which will generate image_info.json.");
         }
       }
 
