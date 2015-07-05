@@ -78,6 +78,7 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 public class CliParser {
 
   private static final String NAME_AND_VERSION = "Spotify Helios CLI " + Version.POM_VERSION;
+  private static final String TESTED_DOCKER_VERSION = "1.6.2";
   private static final String HELP_ISSUES =
       "Report improvements/bugs at https://github.com/spotify/helios/issues";
   private static final String HELP_WIKI =
@@ -97,7 +98,7 @@ public class CliParser {
 
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("helios")
         .defaultHelp(true)
-        .version(NAME_AND_VERSION)
+        .version(format("%s%nTested on Docker %s", NAME_AND_VERSION, TESTED_DOCKER_VERSION))
         .description(format("%s%n%n%s%n%s", NAME_AND_VERSION, HELP_ISSUES, HELP_WIKI));
 
     cliConfig = CliConfig.fromUserConfig();
