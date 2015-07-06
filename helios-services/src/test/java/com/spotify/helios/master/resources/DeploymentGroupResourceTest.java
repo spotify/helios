@@ -141,7 +141,7 @@ public class DeploymentGroupResourceTest {
     final Response response = resource.removeDeploymentGroup("foo");
     assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
   }
-  
+
   /*
   @Test
   public void testRollingUpdateDeploymentGroupDoesNotExist() throws Exception {

@@ -27,6 +27,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 
 import org.junit.Before;
@@ -101,11 +103,27 @@ public class DeploymentGroupTest extends SystemTestBase {
 
   @Test
   public void testRollingUpdate() throws Exception {
-    cli("create-deployment-group", "--json", "my_group", "foo=bar", "baz=qux");
-    cli("create", "my_job:2", "my_image");
+    startDefaultAgent(testHost(), "--labels", "foo=bar");
+    startDefaultAgent(testHost() + "2", "--labels", "foo=bar");
+
+    cli("create-deployment-group", "--json", "my_group", "foo=bar");
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
     assertEquals(RollingUpdateResponse.Status.OK,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", "my_job:2", "my_group"),
+                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion, "my_group"),
                                          RollingUpdateResponse.class).getStatus());
+
+    awaitTaskState(jobId, testHost() + "2", TaskStatus.State.RUNNING);
+    Thread.sleep(10);
+
+    final JobId secondJob = createJob(testJobName, testJobVersion + "2", BUSYBOX, IDLE_COMMAND);
+
+    assertEquals(RollingUpdateResponse.Status.OK,
+                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion + "2",
+                                             "my_group"),
+                                         RollingUpdateResponse.class).getStatus());
+
+    awaitTaskState(secondJob, testHost() + "2", TaskStatus.State.RUNNING);
   }
 
   @Test

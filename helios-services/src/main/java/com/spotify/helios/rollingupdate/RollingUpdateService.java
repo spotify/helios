@@ -21,9 +21,12 @@
 
 package com.spotify.helios.rollingupdate;
 
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -31,7 +34,11 @@ import com.spotify.helios.servicescommon.ReactorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.Map;
+
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.servicescommon.Reactor.Callback;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -42,7 +49,7 @@ public class RollingUpdateService extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(RollingUpdateService.class);
 
-  private static final long UPDATE_INTERVAL = SECONDS.toMillis(30);
+  private static final long UPDATE_INTERVAL = SECONDS.toMillis(5);
 
   private final Reactor reactor;
   private final MasterModel masterModel;
@@ -77,9 +84,44 @@ public class RollingUpdateService extends AbstractIdleService {
 
     @Override
     public void run(final boolean timeout) throws InterruptedException {
+      final List<String> allHosts = masterModel.listHosts();
+      final Map<String, Map<String, String>> hostsToLabels = Maps.newHashMap();
+
+      // determine all hosts and their labels
+      for (final String host : allHosts) {
+        final HostStatus hostStatus = masterModel.getHostStatus(host);
+        if (hostStatus.getStatus().equals(HostStatus.Status.UP)) {
+          hostsToLabels.put(host, hostStatus.getLabels());
+        }
+      }
+
       for (final DeploymentGroup dg : masterModel.getDeploymentGroups().values()) {
+        final List<String> matchingHosts = Lists.newArrayList();
+
+        // determine the hosts that match the current deployment group
+        hostLoop:
+        for (final Map.Entry<String, Map<String, String>> entry : hostsToLabels.entrySet()) {
+          final String host = entry.getKey();
+          final Map<String, String> hostLabels = entry.getValue();
+
+          for (Map.Entry<String, String> desiredLabel : dg.getLabels().entrySet()) {
+            final String key = desiredLabel.getKey();
+            if (!hostLabels.containsKey(key)) {
+              continue hostLoop;
+            }
+
+            final String value = desiredLabel.getValue();
+            final String hostValue = hostLabels.get(key);
+            if (isNullOrEmpty(value) ? !isNullOrEmpty(hostValue) : !value.equals(hostValue)) {
+              continue hostLoop;
+            }
+          }
+
+          matchingHosts.add(host);
+        }
+
         try {
-          masterModel.rollingUpdateStep(dg);
+          masterModel.rollingUpdateStep(dg, matchingHosts);
         } catch (Exception e) {
           log.warn("error processing rolling update step for deployment group: {} - {}",
                    dg.getName(), e);

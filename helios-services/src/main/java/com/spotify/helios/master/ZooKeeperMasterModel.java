@@ -65,6 +65,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -72,6 +73,7 @@ import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.reverse;
+import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DETERMINING_HOSTS;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.ROLLING_OUT;
@@ -412,11 +414,9 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public void rollingUpdate(final DeploymentGroup deploymentGroup, final JobId jobId,
-                            final List<String> hosts)
+  public void rollingUpdate(final DeploymentGroup deploymentGroup, final JobId jobId)
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException {
     checkNotNull(deploymentGroup, "deploymentGroup");
-    checkNotNull(hosts, "hosts");
 
     log.info("rolling-update on deployment-group: name={}", deploymentGroup.getName());
 
@@ -437,29 +437,12 @@ public class ZooKeeperMasterModel implements MasterModel {
     operations.add(set(Paths.configDeploymentGroup(deploymentGroup.getName()), updated));
 
     final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
-    final DeploymentGroupStatus currentStatus = getDeploymentGroupStatus(deploymentGroup.getName());
-
-    if (currentStatus == null) {
-      final DeploymentGroupStatus initialStatus = DeploymentGroupStatus.newBuilder()
-          .setDeploymentGroup(deploymentGroup)
-          .setState(ROLLING_OUT)
-          .setIndex(0)
-          .setHosts(hosts)
-          .build();
-
-      operations.add(create(statusPath, initialStatus));
-    } else {
-      final DeploymentGroupStatus updatedStatus = currentStatus.toBuilder()
-          .setIndex(0)
-          .setState(ROLLING_OUT)
-          .setHosts(hosts)
-          .build();
-
-      operations.add(check(statusPath, currentStatus.getVersion()));
-      operations.add(set(statusPath, updatedStatus));
-    }
+    final DeploymentGroupStatus initialStatus = DeploymentGroupStatus.of(
+        deploymentGroup, DETERMINING_HOSTS);
+    operations.add(set(statusPath, initialStatus));
 
     try {
+      client.ensurePath(statusPath);
       client.transaction(operations);
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(deploymentGroup.getName());
@@ -469,7 +452,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  public void rollingUpdateStep(final DeploymentGroup deploymentGroup)
+  @Override
+  public void rollingUpdateStep(final DeploymentGroup deploymentGroup, final List<String> hosts)
       throws DeploymentGroupDoesNotExistException {
     checkNotNull(deploymentGroup, "deploymentGroup");
 
@@ -481,7 +465,11 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
 
-    if (status.getState().equals(ROLLING_OUT)) {
+    if (status.getState().equals(DETERMINING_HOSTS)) {
+      // set the hosts and proceed to ROLLING_OUT
+      operations.add(set(statusPath, DeploymentGroupStatus.of(
+          deploymentGroup, ROLLING_OUT, hosts)));
+    } else if (status.getState().equals(ROLLING_OUT)) {
       final int index = status.getIndex();
 
       // before processing on the current host, ensure the job is running on the previous host.
@@ -496,7 +484,10 @@ public class ZooKeeperMasterModel implements MasterModel {
         if (!taskStatuses.containsKey(deploymentGroup.getJob())) {
           // job hasn't been deployed to the previous host. that's messed up, we shouldn't have
           // gotten to the current host. fail.
-          operations.add(set(statusPath, status.toBuilder().setState(FAILED).build()));
+          operations.add(set(statusPath, status.toBuilder()
+              .setState(FAILED)
+              .setError("job somehow disappeared from host after deployment - " + previousHost)
+              .build()));
           previousHostOk = false;
         } else if (!taskStatuses.get(deploymentGroup.getJob()).getState()
             .equals(TaskStatus.State.RUNNING)) {
@@ -504,10 +495,14 @@ public class ZooKeeperMasterModel implements MasterModel {
           previousHostOk = false;
 
           try {
-            if (MILLISECONDS.toMinutes(client.getNode(statusPath).getStat().getMtime()) > 5) {
+            if (MILLISECONDS.toMinutes(
+                System.currentTimeMillis() - client.getNode(statusPath).getStat().getMtime()) > 5) {
               // it's been 5 minutes and this job is still not running on the previous host.
               // mark this deployment group as FAILED.
-              operations.add(set(statusPath, status.toBuilder().setState(FAILED).build()));
+              operations.add(set(statusPath, status.toBuilder()
+                  .setState(FAILED)
+                  .setError("timed out waiting for job to reach RUNNING on " + previousHost)
+                  .build()));
             }
           } catch (KeeperException e) {
             // statusPath doesn't exist or some other ZK issue. probably this deployment group
@@ -519,14 +514,16 @@ public class ZooKeeperMasterModel implements MasterModel {
           // the job is running on the previous host. last thing we have to ensure is that it was
           // deployed by this deployment group. otherwise some weird conflict has occurred and we
           // won't be able to undeploy the job on the next update.
-          final HostStatus hostStatus = getHostStatus(previousHost);
-          if (hostStatus.getJobs().containsKey(deploymentGroup.getJob()) &&
-              hostStatus.getJobs().get(deploymentGroup.getJob()).getDeployerUser()
-                  .equals(deploymentGroup.getName())) {
+          final Deployment deployment = getDeployment(previousHost, deploymentGroup.getJob());
+          if ((deployment != null) &&
+              Objects.equals(deployment.getDeployerUser(), deploymentGroup.getName())) {
             previousHostOk = true;
           } else {
             previousHostOk = false;
-            operations.add(set(statusPath, status.toBuilder().setState(FAILED).build()));
+            operations.add(set(statusPath, status.toBuilder()
+                .setState(FAILED)
+                .setError("job already deployed by someone else on host - " + previousHost)
+                .build()));
           }
         }
       }
@@ -538,19 +535,21 @@ public class ZooKeeperMasterModel implements MasterModel {
         } else {
           // deploy to the current host
           final String host = status.getHosts().get(status.getIndex());
-          final HostStatus hostStatus = getHostStatus(host);
+          final Map<JobId, Deployment> tasks = getTasks(client, host);
 
           // add undeploy ops for jobs previously deployed by this deployment group
-          boolean undeployOk = true;
-          for (final Deployment deployment : hostStatus.getJobs().values()) {
+          Exception undeployError = null;
+          for (final Deployment deployment : tasks.values()) {
+            if (deployment.getJobId().equals(deploymentGroup.getJob())) {
+              // this deployed job is the same as the one we wanted to deploy. just leave it.
+              continue;
+            }
+
             if (deployment.getDeployerUser().equals(deploymentGroup.getName())) {
               try {
-                operations.addAll(getUndeployOperations(client, host, deployment.getJobId(), null));
-              } catch (TokenVerificationException e) {
-                undeployOk = false;
-                break;
-              } catch (HostNotFoundException e) {
-                undeployOk = false;
+                operations.addAll(getUndeployOperations(client, host, deployment.getJobId(), ""));
+              } catch (TokenVerificationException | HostNotFoundException e) {
+                undeployError = e;
                 break;
               } catch (JobNotDeployedException e) {
                 // probably somebody beat us to the punch of undeploying. that's fine.
@@ -558,40 +557,57 @@ public class ZooKeeperMasterModel implements MasterModel {
             }
           }
 
-          if (!undeployOk) {
+          if (undeployError != null) {
             operations.clear();
-            operations.add(set(statusPath, status.toBuilder().setState(FAILED).build()));
+            operations.add(set(statusPath, status.toBuilder()
+                .setState(FAILED)
+                .setError(String.format("error undeploying from %s - %s", host,
+                                        undeployError.toString()))
+                .build()));
           } else {
             // add deploy ops for the new job
             final Deployment deployment = Deployment.of(deploymentGroup.getJob(), Goal.START,
                                                         deploymentGroup.getName());
 
-            Exception fatal;
+            Exception deployError;
             try {
-              operations.addAll(getDeployOperations(client, host, deployment, null));
-              operations.add(set(statusPath, status.toBuilder().setIndex(index + 1).build()));
-              fatal = null;
+              operations.addAll(getDeployOperations(client, host, deployment, ""));
+              deployError = null;
             } catch (JobDoesNotExistException | HostNotFoundException | TokenVerificationException |
                 JobPortAllocationConflictException e) {
-              fatal = e;
+              deployError = e;
             } catch (JobAlreadyDeployedException e) {
-              // somebody beat us to the punch on deployment. that's fine, non-fatal
-              fatal = null;
+              // already deployed to this host. that's fine, non-fatal
+              deployError = null;
             }
 
-            if (fatal != null) {
+            if (deployError == null) {
+              // no error, move on to the next host
+              operations.add(set(statusPath, status.toBuilder().setIndex(index + 1).build()));
+            } else {
               operations.clear();
-              operations.add(set(statusPath, status.toBuilder().setState(FAILED).build()));
+              operations.add(set(statusPath, status.toBuilder()
+                  .setState(FAILED)
+                  .setError(String.format("fatal deploy error on %s - %s",
+                                          host, deployError.toString()))
+                  .build()));
               log.error("fatal error processing a rolling update of a deployment group: {} - {}",
-                        deploymentGroup.getName(), fatal);
+                        deploymentGroup.getName(), deployError);
             }
           }
         }
       }
+    } else if (status.getState().equals(DONE)) {
+      // after 30 seconds in DONE, go back to DETERMINING_HOSTS
+      operations.add(set(statusPath, DeploymentGroupStatus.of(deploymentGroup, DETERMINING_HOSTS)));
+    }
+
+    if (operations.isEmpty()) {
+      return;
     }
 
     try {
-      operations.add(check(statusPath, status.getVersion()));
+      operations.add(0, check(statusPath, status.getVersion()));
       client.transaction(operations);
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException(
@@ -1209,7 +1225,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         try {
           final byte[] data = client.getData(containerPath);
           final Task task = parse(data, Task.class);
-          jobs.put(jobId, Deployment.of(jobId, task.getGoal()));
+          jobs.put(jobId, Deployment.of(jobId, task.getGoal(), task.getDeployerUser()));
         } catch (KeeperException.NoNodeException ignored) {
           log.debug("deployment config node disappeared: {}", jobIdString);
         }
