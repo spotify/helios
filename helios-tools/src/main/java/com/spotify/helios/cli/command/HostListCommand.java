@@ -94,7 +94,8 @@ public class HostListCommand extends ControlCommand {
         .action(append())
         .setDefault(new ArrayList<String>())
         .nargs("+")
-        .help("Only include hosts that match all of these labels");
+        .help("Only include hosts that match all of these labels. Labels need to be in the format "
+              + "key=value.");
   }
 
   @Override
@@ -119,7 +120,14 @@ public class HostListCommand extends ControlCommand {
     }
 
     final List<String> sortedHosts = natural().sortedCopy(hosts);
-    final Map<String, String> selectedLabels = argToStringMap(options, labelsArg);
+
+    final Map<String, String> selectedLabels;
+    try {
+      selectedLabels = argToStringMap(options, labelsArg);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(e.getMessage() +
+                                         "\nLabels need to be in the format key=value.");
+    }
 
     if (selectedLabels != null && !selectedLabels.isEmpty() && json) {
       System.err.println("Warning: filtering by label is not supported for JSON output. Not doing"
