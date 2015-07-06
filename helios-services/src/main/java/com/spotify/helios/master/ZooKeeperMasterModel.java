@@ -835,7 +835,15 @@ public class ZooKeeperMasterModel implements MasterModel {
     final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
     final List<JobId> jobIds = listHostJobs(client, host);
     for (final JobId jobId : jobIds) {
-      final TaskStatus status = getTaskStatus(client, host, jobId);
+      TaskStatus status;
+      try {
+        status = getTaskStatus(client, host, jobId);
+      } catch (HeliosRuntimeException e) {
+        // Skip this task status so we can return other available information instead of failing the
+        // entire thing.
+        status = null;
+      }
+
       if (status != null) {
         statuses.put(jobId, status);
       } else {
