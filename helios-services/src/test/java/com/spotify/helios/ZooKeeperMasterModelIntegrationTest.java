@@ -22,12 +22,16 @@
 package com.spotify.helios;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
+import com.spotify.helios.master.DeploymentGroupExistsException;
 import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.JobNotDeployedException;
@@ -44,7 +48,9 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -80,6 +86,9 @@ public class ZooKeeperMasterModelIntegrationTest {
   private ZooKeeperMasterModel model;
 
   private ZooKeeperTestManager zk = new ZooKeeperTestingServerManager();
+
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
 
   @Before
   public void setup() throws Exception {
@@ -261,5 +270,64 @@ public class ZooKeeperMasterModelIntegrationTest {
         .setGoal(Goal.STOP)
         .setJobId(job.getId())
         .build());
+  }
+
+  @Test
+  public void testAddDeploymentGroup() throws Exception {
+    final DeploymentGroup dg = new DeploymentGroup(
+        "my_group", ImmutableMap.of("role", "foo"), null);
+    model.addDeploymentGroup(dg);
+    assertEquals(dg, model.getDeploymentGroup("my_group"));
+  }
+
+  @Test
+  public void testAddExistingDeploymentGroup() throws Exception {
+    final DeploymentGroup dg = new DeploymentGroup(
+        "my_group", ImmutableMap.of("role", "foo"), null);
+    model.addDeploymentGroup(dg);
+    exception.expect(DeploymentGroupExistsException.class);
+    model.addDeploymentGroup(dg);
+  }
+
+  @Test
+  public void testRemoveDeploymentGroup() throws Exception {
+    final DeploymentGroup dg = new DeploymentGroup(
+        "my_group", ImmutableMap.of("role", "foo"), null);
+    model.addDeploymentGroup(dg);
+    model.removeDeploymentGroup("my_group");
+    exception.expect(DeploymentGroupDoesNotExistException.class);
+    model.getDeploymentGroup("my_group");
+  }
+
+  @Test
+  public void testRemoveNonExistingDeploymentGroup() throws Exception {
+    exception.expect(DeploymentGroupDoesNotExistException.class);
+    model.removeDeploymentGroup("my_group");
+  }
+
+  @Test
+  public void testRollingUpdate() throws Exception {
+    final DeploymentGroup dg = new DeploymentGroup(
+        "my_group", ImmutableMap.of("role", "foo"), null);
+    model.addDeploymentGroup(dg);
+    model.addJob(JOB);
+    model.rollingUpdate("my_group", JOB.getId());
+    assertEquals(JOB.getId(), model.getDeploymentGroup("my_group").getJob());
+  }
+
+  @Test
+  public void testRollingUpdateDeploymentGroupNotFound() throws Exception {
+    model.addJob(JOB);
+    exception.expect(DeploymentGroupDoesNotExistException.class);
+    model.rollingUpdate("my_group", JOB.getId());
+  }
+
+  @Test
+  public void testRollingUpdateJobNotFound() throws Exception {
+    final DeploymentGroup dg = new DeploymentGroup(
+        "my_group", ImmutableMap.of("role", "foo"), null);
+    model.addDeploymentGroup(dg);
+    exception.expect(JobDoesNotExistException.class);
+    model.rollingUpdate("my_group", new JobId("foo", "0.1", "1234"));
   }
 }

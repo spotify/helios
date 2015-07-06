@@ -423,13 +423,14 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException {
     log.info("rolling-update on deployment-group: name={}", deploymentGroupName);
 
+    // TODO(staffan): This check is racey -- job can be removed after check
     final DeploymentGroup existing = getDeploymentGroup(deploymentGroupName);
     final Job job = getJob(jobId);
     if (job == null) {
       throw new JobDoesNotExistException(jobId);
     }
 
-    final ZooKeeperClient client = provider.get("updateDeploymentGroup");
+    final ZooKeeperClient client = provider.get("rollingUpdate");
 
     final DeploymentGroup updated = existing.toBuilder().setJob(jobId).build();
 

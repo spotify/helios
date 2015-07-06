@@ -44,7 +44,6 @@ import javax.ws.rs.core.Response;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-
 @Path("/deployment-group")
 public class DeploymentGroupResource {
 
@@ -94,11 +93,11 @@ public class DeploymentGroupResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public DeploymentGroup getDeploymentGroup(@PathParam("name") final String name) {
+  public Response getDeploymentGroup(@PathParam("name") final String name) {
     try {
-      return model.getDeploymentGroup(name);
+      return Response.ok(model.getDeploymentGroup(name)).build();
     } catch (final DeploymentGroupDoesNotExistException e) {
-      throw Responses.notFound();
+      return Response.status(Response.Status.NOT_FOUND).build();
     }
   }
 
@@ -112,7 +111,7 @@ public class DeploymentGroupResource {
       model.removeDeploymentGroup(name);
       return Response.noContent().build();
     } catch (final DeploymentGroupDoesNotExistException e) {
-      throw Responses.notFound();
+      return Response.status(Response.Status.NOT_FOUND).build();
     }
   }
 
@@ -121,16 +120,17 @@ public class DeploymentGroupResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public RollingUpdateResponse rollingUpdate(@PathParam("name") @Valid final String name,
+  public Response rollingUpdate(@PathParam("name") @Valid final String name,
                                 @Valid final RollingUpdateRequest args) {
     try {
       model.rollingUpdate(name, args.getJob());
+      return Response.ok(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)).build();
     } catch (DeploymentGroupDoesNotExistException e) {
-      return new RollingUpdateResponse(RollingUpdateResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND);
+      return Response.ok(new RollingUpdateResponse(
+          RollingUpdateResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND)).build();
     } catch (JobDoesNotExistException e) {
-      return new RollingUpdateResponse(RollingUpdateResponse.Status.JOB_NOT_FOUND);
+      return Response.ok(new RollingUpdateResponse(
+          RollingUpdateResponse.Status.JOB_NOT_FOUND)).build();
     }
-
-    return new RollingUpdateResponse(RollingUpdateResponse.Status.OK);
   }
 }

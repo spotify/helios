@@ -56,4 +56,27 @@ public class CreateDeploymentGroupResponse {
   public String toJsonString() {
     return Json.asStringUnchecked(this);
   }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final CreateDeploymentGroupResponse that = (CreateDeploymentGroupResponse) o;
+
+    if (status != that.status) {
+      return false;
+    }
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return status != null ? status.hashCode() : 0;
+  }
 }
