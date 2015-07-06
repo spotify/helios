@@ -27,6 +27,7 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
+import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateRequest;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
@@ -130,7 +131,9 @@ public class DeploymentGroupResourceTest {
   @Test
   public void testRemoveDeploymentGroup() throws Exception {
     final Response response = resource.removeDeploymentGroup("foo");
-    assertEquals(Response.Status.NO_CONTENT.getStatusCode(), response.getStatus());
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertEquals(new RemoveDeploymentGroupResponse(
+        RemoveDeploymentGroupResponse.Status.REMOVED), response.getEntity());
   }
 
   @Test
@@ -139,7 +142,9 @@ public class DeploymentGroupResourceTest {
         .removeDeploymentGroup(anyString());
 
     final Response response = resource.removeDeploymentGroup("foo");
-    assertEquals(Response.Status.NOT_FOUND.getStatusCode(), response.getStatus());
+    assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
+    assertEquals(new RemoveDeploymentGroupResponse(
+        RemoveDeploymentGroupResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND), response.getEntity());
   }
 
   /*

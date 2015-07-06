@@ -28,6 +28,7 @@ import com.google.common.collect.Sets;
 import com.spotify.helios.cli.command.CliCommand;
 import com.spotify.helios.cli.command.DeploymentGroupCreateCommand;
 import com.spotify.helios.cli.command.DeploymentGroupInspectCommand;
+import com.spotify.helios.cli.command.DeploymentGroupRemoveCommand;
 import com.spotify.helios.cli.command.DeploymentGroupWatchCommand;
 import com.spotify.helios.cli.command.HostDeregisterCommand;
 import com.spotify.helios.cli.command.HostListCommand;
@@ -220,6 +221,7 @@ public class CliParser {
 
     // Deployment group commands
     new DeploymentGroupCreateCommand(p("create-deployment-group"));
+    new DeploymentGroupRemoveCommand(p("remove-deployment-group"));
     new DeploymentGroupInspectCommand(p("inspect-deployment-group"));
     new DeploymentGroupWatchCommand(p("watch-deployment-group"));
     new RollingUpdateCommand(p("rolling-update"));

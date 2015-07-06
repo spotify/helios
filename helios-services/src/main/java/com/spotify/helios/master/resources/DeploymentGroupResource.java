@@ -25,6 +25,7 @@ import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
+import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateRequest;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
@@ -108,9 +109,11 @@ public class DeploymentGroupResource {
   public Response removeDeploymentGroup(@PathParam("name") @Valid final String name) {
     try {
       model.removeDeploymentGroup(name);
-      return Response.noContent().build();
+      return Response.ok(new RemoveDeploymentGroupResponse(
+          RemoveDeploymentGroupResponse.Status.REMOVED)).build();
     } catch (final DeploymentGroupDoesNotExistException e) {
-      return Response.status(Response.Status.NOT_FOUND).build();
+      return Response.ok(new RemoveDeploymentGroupResponse(
+              RemoveDeploymentGroupResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND)).build();
     }
   }
 

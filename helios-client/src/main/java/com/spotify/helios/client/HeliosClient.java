@@ -57,6 +57,7 @@ import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
+import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateRequest;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
@@ -568,6 +569,12 @@ public class HeliosClient implements AutoCloseable {
   createDeploymentGroup(final DeploymentGroup descriptor) {
     return transform(request(uri("/deployment-group/"), "POST", descriptor),
                      ConvertResponseToPojo.create(CreateDeploymentGroupResponse.class,
+                                                  ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+  }
+
+  public ListenableFuture<RemoveDeploymentGroupResponse> removeDeploymentGroup(final String name) {
+    return transform(request(uri("/deployment-group/" + name), "DELETE"),
+                     ConvertResponseToPojo.create(RemoveDeploymentGroupResponse.class,
                                                   ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }
 

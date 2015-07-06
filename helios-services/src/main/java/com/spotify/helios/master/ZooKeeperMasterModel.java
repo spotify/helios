@@ -405,7 +405,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("removeDeploymentGroup");
     try {
       client.ensurePath(Paths.configDeploymentGroups());
-      client.deleteRecursive(Paths.configDeploymentGroup(name));
+      client.delete(Paths.configDeploymentGroup(name));
+      if (client.exists(Paths.statusDeploymentGroup(name)) != null) {
+        client.delete(Paths.statusDeploymentGroup(name));
+      }
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(name);
     } catch (final KeeperException e) {
