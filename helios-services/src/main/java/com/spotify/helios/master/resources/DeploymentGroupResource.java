@@ -165,4 +165,17 @@ public class DeploymentGroupResource {
       return Response.status(Response.Status.NOT_FOUND).build();
     }
   }
+
+  @GET
+  @Path("/{name}/status")
+  @Produces(APPLICATION_JSON)
+  @Timed
+  @ExceptionMetered
+  public Response getDeploymentGroupStatus(@PathParam("name") final String name) {
+    try {
+      return Response.ok(model.getDeploymentGroupStatus(name)).build();
+    } catch (final DeploymentGroupDoesNotExistException e) {
+      return Response.status(Response.Status.NOT_FOUND).build();
+    }
+  }
 }

@@ -30,6 +30,7 @@ import com.spotify.helios.cli.command.DeploymentGroupCreateCommand;
 import com.spotify.helios.cli.command.DeploymentGroupInspectCommand;
 import com.spotify.helios.cli.command.DeploymentGroupListCommand;
 import com.spotify.helios.cli.command.DeploymentGroupRemoveCommand;
+import com.spotify.helios.cli.command.DeploymentGroupStatusCommand;
 import com.spotify.helios.cli.command.DeploymentGroupWatchCommand;
 import com.spotify.helios.cli.command.HostDeregisterCommand;
 import com.spotify.helios.cli.command.HostListCommand;
@@ -226,6 +227,7 @@ public class CliParser {
     new DeploymentGroupRemoveCommand(p("remove-deployment-group"));
     new DeploymentGroupListCommand(p("list-deployment-groups"));
     new DeploymentGroupInspectCommand(p("inspect-deployment-group"));
+    new DeploymentGroupStatusCommand(p("status-deployment-group"));
     new DeploymentGroupWatchCommand(p("watch-deployment-group"));
     new RollingUpdateCommand(p("rolling-update"));
     new RollingUpdateAbortCommand(p("abort-rolling-update"));

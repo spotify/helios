@@ -70,7 +70,7 @@ public class DeploymentGroupInspectCommandTest {
   public void setUp() {
     // use a real, dummy Subparser impl to avoid having to mock out every single call
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("test");
-    final Subparser subparser = parser.addSubparsers().addParser("create");
+    final Subparser subparser = parser.addSubparsers().addParser("inspect");
 
     final DeploymentGroup deploymentGroup =
         DeploymentGroup.newBuilder().setName(NAME).setLabels(LABELS_MAP).setJob(JOB).build();
@@ -89,10 +89,10 @@ public class DeploymentGroupInspectCommandTest {
 
     assertEquals(0, ret);
     final String output = baos.toString();
-    assertThat(output, containsString("Name: foo-group"));
+    assertThat(output, containsString("Name: " + NAME));
     assertThat(output, containsString("Labels: baz=qux"));
     assertThat(output, containsString("foo=bar"));
-    assertThat(output, containsString("Job: foo-job:0.1.0"));
+    assertThat(output, containsString("Job: " + JOB.toString()));
   }
 
   @Test
