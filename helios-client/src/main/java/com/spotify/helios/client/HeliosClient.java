@@ -565,6 +565,10 @@ public class HeliosClient implements AutoCloseable {
     });
   }
 
+  public ListenableFuture<List<String>> listDeploymentGroups() {
+    return get(uri("/deployment-group/"), new TypeReference<List<String>>() {});
+  }
+
   public ListenableFuture<CreateDeploymentGroupResponse>
   createDeploymentGroup(final DeploymentGroup descriptor) {
     return transform(request(uri("/deployment-group/"), "POST", descriptor),

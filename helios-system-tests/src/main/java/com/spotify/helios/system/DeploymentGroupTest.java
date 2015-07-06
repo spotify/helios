@@ -23,6 +23,7 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
@@ -34,6 +35,8 @@ import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -114,6 +117,16 @@ public class DeploymentGroupTest extends SystemTestBase {
     assertEquals("DEPLOYMENT_GROUP_NOT_FOUND", Json.readTree(
         cli("remove-deployment-group", "--json", "my_group"))
         .get("status").asText());
+  }
+
+  @Test
+  public void testListDeploymentGroups() throws Exception {
+    cli("create-deployment-group", "group2", "foo=bar");
+    cli("create-deployment-group", "group1", "foo=bar");
+    final String output = cli("list-deployment-groups", "--json");
+    final List<String> deploymentGroups = OBJECT_MAPPER.readValue(
+        output, new TypeReference<List<String>>(){});
+    assertEquals(Arrays.asList("group1", "group2"), deploymentGroups);
   }
 
   @Test

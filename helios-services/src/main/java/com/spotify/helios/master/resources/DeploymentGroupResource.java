@@ -21,6 +21,8 @@
 
 package com.spotify.helios.master.resources;
 
+import com.google.common.collect.Lists;
+
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
@@ -32,6 +34,9 @@ import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
 import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.MasterModel;
+
+import java.util.Collections;
+import java.util.List;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
@@ -115,6 +120,16 @@ public class DeploymentGroupResource {
       return Response.ok(new RemoveDeploymentGroupResponse(
               RemoveDeploymentGroupResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND)).build();
     }
+  }
+
+  @GET
+  @Produces(APPLICATION_JSON)
+  @Timed
+  @ExceptionMetered
+  public List<String> getDeploymentGroup() {
+    final List<String> deploymentGroups = Lists.newArrayList(model.getDeploymentGroups().keySet());
+    Collections.sort(deploymentGroups);
+    return deploymentGroups;
   }
 
   @POST
