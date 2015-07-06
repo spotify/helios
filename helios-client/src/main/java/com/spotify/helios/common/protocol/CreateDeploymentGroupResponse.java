@@ -26,8 +26,6 @@ import com.google.common.base.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 
-import java.util.List;
-
 public class CreateDeploymentGroupResponse {
 
   public enum Status {

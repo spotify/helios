@@ -34,16 +34,17 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class DeploymentGroupStatus extends Descriptor {
 
   public enum State {
-    QUEUED,
     ROLLING_OUT,
     FAILED,
-    DONE
+    DONE,
   }
 
   private final DeploymentGroup deploymentGroup;
   private final State state;
   private final List<String> hosts;
   private final int index;
+
+  // TODO: ignore for JSON serialization
   private final int version;
 
   public DeploymentGroupStatus(
@@ -57,7 +58,7 @@ public class DeploymentGroupStatus extends Descriptor {
     this.version = version;
   }
 
-  public Builder asBuilder() {
+  public Builder toBuilder() {
     return newBuilder()
         .setDeploymentGroup(deploymentGroup)
         .setState(state)

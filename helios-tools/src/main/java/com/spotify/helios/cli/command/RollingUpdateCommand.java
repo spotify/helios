@@ -21,11 +21,8 @@
 
 package com.spotify.helios.cli.command;
 
-import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -35,12 +32,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.ArrayList;
-import java.util.Map;
 import java.util.concurrent.ExecutionException;
-
-import static net.sourceforge.argparse4j.impl.Arguments.append;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class RollingUpdateCommand extends WildcardJobCommand {
 

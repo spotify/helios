@@ -31,7 +31,6 @@ import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
 import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.MasterModel;
-import com.spotify.helios.master.http.Responses;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
@@ -123,7 +122,8 @@ public class DeploymentGroupResource {
   public Response rollingUpdate(@PathParam("name") @Valid final String name,
                                 @Valid final RollingUpdateRequest args) {
     try {
-      model.rollingUpdate(name, args.getJob());
+      final DeploymentGroup deploymentGroup = model.getDeploymentGroup(name);
+      model.rollingUpdate(deploymentGroup, args.getJob(), null); // TODO: determine hosts
       return Response.ok(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)).build();
     } catch (DeploymentGroupDoesNotExistException e) {
       return Response.ok(new RollingUpdateResponse(

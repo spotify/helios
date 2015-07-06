@@ -304,30 +304,4 @@ public class ZooKeeperMasterModelIntegrationTest {
     exception.expect(DeploymentGroupDoesNotExistException.class);
     model.removeDeploymentGroup("my_group");
   }
-
-  @Test
-  public void testRollingUpdate() throws Exception {
-    final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableMap.of("role", "foo"), null);
-    model.addDeploymentGroup(dg);
-    model.addJob(JOB);
-    model.rollingUpdate("my_group", JOB.getId());
-    assertEquals(JOB.getId(), model.getDeploymentGroup("my_group").getJob());
-  }
-
-  @Test
-  public void testRollingUpdateDeploymentGroupNotFound() throws Exception {
-    model.addJob(JOB);
-    exception.expect(DeploymentGroupDoesNotExistException.class);
-    model.rollingUpdate("my_group", JOB.getId());
-  }
-
-  @Test
-  public void testRollingUpdateJobNotFound() throws Exception {
-    final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableMap.of("role", "foo"), null);
-    model.addDeploymentGroup(dg);
-    exception.expect(JobDoesNotExistException.class);
-    model.rollingUpdate("my_group", new JobId("foo", "0.1", "1234"));
-  }
 }

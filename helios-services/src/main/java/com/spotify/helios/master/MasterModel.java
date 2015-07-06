@@ -112,6 +112,9 @@ public interface MasterModel {
 
   void removeDeploymentGroup(String name) throws DeploymentGroupDoesNotExistException;
 
-  void rollingUpdate(String deploymentGroupName, JobId jobId)
+  void rollingUpdate(DeploymentGroup deploymentGroup, JobId jobId, List<String> hosts)
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException;
+
+  void rollingUpdateStep(DeploymentGroup deploymentGroup)
+      throws DeploymentGroupDoesNotExistException;
 }

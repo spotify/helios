@@ -22,10 +22,12 @@
 package com.spotify.helios.rollingupdate;
 
 import com.google.common.util.concurrent.AbstractIdleService;
+
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.ReactorFactory;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,7 +78,12 @@ public class RollingUpdateService extends AbstractIdleService {
     @Override
     public void run(final boolean timeout) throws InterruptedException {
       for (final DeploymentGroup dg : masterModel.getDeploymentGroups().values()) {
-
+        try {
+          masterModel.rollingUpdateStep(dg);
+        } catch (Exception e) {
+          log.warn("error processing rolling update step for deployment group: {} - {}",
+                   dg.getName(), e);
+        }
       }
     }
   }
