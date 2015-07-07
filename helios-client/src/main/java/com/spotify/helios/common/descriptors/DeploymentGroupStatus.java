@@ -49,27 +49,20 @@ public class DeploymentGroupStatus extends Descriptor {
   private final int taskIndex;
   private final String error;
   private final int version;
-
-  public static DeploymentGroupStatus of(final DeploymentGroup deploymentGroup,
-                                         final State state) {
-    return new DeploymentGroupStatus(deploymentGroup, state, EMPTY_LIST, 0, null, 0);
-  }
-
-  public static DeploymentGroupStatus of(final DeploymentGroup deploymentGroup,
-                                         final State state, final List<RolloutTask> rolloutTasks) {
-    return new DeploymentGroupStatus(deploymentGroup, state, rolloutTasks, 0, null, 0);
-  }
+  private final int successfulIterations;
 
   private DeploymentGroupStatus(
       @JsonProperty("deploymentGroup") final DeploymentGroup deploymentGroup,
       @JsonProperty("state") final State state,
       @JsonProperty("rolloutTasks") final List<RolloutTask> rolloutTasks,
       @JsonProperty("taskIndex") final int taskIndex, @JsonProperty("error") final String error,
+      @JsonProperty("successfulIterations") int successfulIterations,
       @JsonProperty("version") final int version) {
     this.deploymentGroup = checkNotNull(deploymentGroup, "deploymentGroup");
     this.state = checkNotNull(state, "state");
     this.rolloutTasks = checkNotNull(rolloutTasks, "rolloutTasks");
     this.taskIndex = taskIndex;
+    this.successfulIterations = successfulIterations;
     this.version = version;
     this.error = error;
   }
@@ -80,6 +73,7 @@ public class DeploymentGroupStatus extends Descriptor {
         .setState(state)
         .setRolloutTasks(rolloutTasks)
         .setTaskIndex(taskIndex)
+        .setSuccessfulIterations(successfulIterations)
         .setError(error)
         .setVersion(version);
   }
@@ -88,9 +82,10 @@ public class DeploymentGroupStatus extends Descriptor {
     this.deploymentGroup = checkNotNull(builder.deploymentGroup, "deploymentGroup");
     this.state = checkNotNull(builder.state, "state");
     this.rolloutTasks = checkNotNull(builder.rolloutTasks, "rolloutTasks");
-    this.taskIndex = checkNotNull(builder.taskIndex, "taskIndex");
+    this.taskIndex = builder.taskIndex;
+    this.successfulIterations = builder.successfulIterations;
     this.error = builder.error;
-    this.version = checkNotNull(builder.version, "version");
+    this.version = builder.version;
   }
 
   public DeploymentGroup getDeploymentGroup() {
@@ -107,6 +102,10 @@ public class DeploymentGroupStatus extends Descriptor {
 
   public int getTaskIndex() {
     return taskIndex;
+  }
+
+  public int getSuccessfulIterations() {
+    return successfulIterations;
   }
 
   public String getError() {
@@ -138,6 +137,9 @@ public class DeploymentGroupStatus extends Descriptor {
     if (version != that.version) {
       return false;
     }
+    if (successfulIterations != that.successfulIterations) {
+      return false;
+    }
     if (deploymentGroup != null ? !deploymentGroup.equals(that.deploymentGroup)
                                 : that.deploymentGroup != null) {
       return false;
@@ -161,6 +163,7 @@ public class DeploymentGroupStatus extends Descriptor {
     result = 31 * result + taskIndex;
     result = 31 * result + (error != null ? error.hashCode() : 0);
     result = 31 * result + version;
+    result = 31 * result + successfulIterations;
     return result;
   }
 
@@ -173,14 +176,16 @@ public class DeploymentGroupStatus extends Descriptor {
         .add("taskIndex", taskIndex)
         .add("error", error)
         .add("version", version)
+        .add("successfulIterations", successfulIterations)
         .toString();
   }
 
   public static class Builder {
     private DeploymentGroup deploymentGroup;
     private DeploymentGroupStatus.State state;
-    private List<RolloutTask> rolloutTasks;
+    private List<RolloutTask> rolloutTasks = EMPTY_LIST;
     private int taskIndex;
+    private int successfulIterations;
     private String error;
     private int version;
 
@@ -201,6 +206,11 @@ public class DeploymentGroupStatus extends Descriptor {
 
     public Builder setTaskIndex(int taskIndex) {
       this.taskIndex = taskIndex;
+      return this;
+    }
+
+    public Builder setSuccessfulIterations(int successfulIterations) {
+      this.successfulIterations = successfulIterations;
       return this;
     }
 

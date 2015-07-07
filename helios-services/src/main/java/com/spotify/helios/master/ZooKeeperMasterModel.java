@@ -444,8 +444,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     operations.add(set(Paths.configDeploymentGroup(deploymentGroup.getName()), updated));
 
     final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
-    final DeploymentGroupStatus initialStatus = DeploymentGroupStatus.of(
-        deploymentGroup, PLANNING_ROLLOUT);
+    final DeploymentGroupStatus initialStatus = DeploymentGroupStatus.newBuilder()
+        .setDeploymentGroup(deploymentGroup)
+        .setState(PLANNING_ROLLOUT)
+        .build();
     operations.add(set(statusPath, initialStatus));
 
     try {
@@ -475,8 +477,11 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     if (status.getState().equals(PLANNING_ROLLOUT)) {
       // generate the rollout plan and proceed to ROLLING_OUT
-      operations.add(set(statusPath, DeploymentGroupStatus.of(deploymentGroup, ROLLING_OUT,
-                                                              rolloutPlanner.plan())));
+      operations.add(set(statusPath, status.toBuilder()
+          .setState(ROLLING_OUT)
+          .setRolloutTasks(rolloutPlanner.plan())
+          .setTaskIndex(0)
+          .build()));
     } else if (status.getState().equals(ROLLING_OUT)) {
       final int taskIndex = status.getTaskIndex();
       final RolloutTask currentTask = status.getRolloutTasks().get(taskIndex);
@@ -564,6 +569,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       } else if (currentTask.equals(getLast(status.getRolloutTasks()))) {
         // successfully completed the last task
         operations.add(set(statusPath, status.toBuilder()
+            .setSuccessfulIterations(status.getSuccessfulIterations() + 1)
             .setState(DONE)
             .build()));
       } else {
@@ -573,7 +579,9 @@ public class ZooKeeperMasterModel implements MasterModel {
       }
     } else if (status.getState().equals(DONE)) {
       // after DONE, go back to PLANNING_ROLLOUT
-      operations.add(set(statusPath, DeploymentGroupStatus.of(deploymentGroup, PLANNING_ROLLOUT)));
+      operations.add(set(statusPath, status.toBuilder()
+          .setState(PLANNING_ROLLOUT)
+          .build()));
     }
 
     if (operations.isEmpty()) {
