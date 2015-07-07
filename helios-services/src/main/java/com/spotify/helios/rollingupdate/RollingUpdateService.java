@@ -121,7 +121,7 @@ public class RollingUpdateService extends AbstractIdleService {
         }
 
         try {
-          masterModel.rollingUpdateStep(dg, matchingHosts);
+          masterModel.rollingUpdateStep(dg, DefaultRolloutPlanner.of(dg, matchingHosts));
         } catch (Exception e) {
           log.warn("error processing rolling update step for deployment group: {} - {}",
                    dg.getName(), e);

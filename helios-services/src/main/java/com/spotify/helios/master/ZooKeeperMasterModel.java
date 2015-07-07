@@ -46,6 +46,7 @@ import com.spotify.helios.common.descriptors.RolloutTask;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.rollingupdate.RolloutPlanner;
 import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -75,14 +76,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.getLast;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.reverse;
-import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.PLANNING_ROLLOUT;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
+import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.PLANNING_ROLLOUT;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.ROLLING_OUT;
-import static com.spotify.helios.common.descriptors.RolloutTask.Action;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.RolloutTask.Action;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.check;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
@@ -459,7 +460,8 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public void rollingUpdateStep(final DeploymentGroup deploymentGroup, final List<String> hosts)
+  public void rollingUpdateStep(final DeploymentGroup deploymentGroup,
+                                final RolloutPlanner rolloutPlanner)
       throws DeploymentGroupDoesNotExistException {
     checkNotNull(deploymentGroup, "deploymentGroup");
 
@@ -473,16 +475,8 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     if (status.getState().equals(PLANNING_ROLLOUT)) {
       // generate the rollout plan and proceed to ROLLING_OUT
-      final List<RolloutTask> rolloutTasks = Lists.newArrayList();
-
-      for (final String host : hosts) {
-        rolloutTasks.add(RolloutTask.of(Action.UNDEPLOY_OLD_JOBS, host));
-        rolloutTasks.add(RolloutTask.of(Action.DEPLOY_NEW_JOB, host));
-        rolloutTasks.add(RolloutTask.of(Action.AWAIT_RUNNING, host));
-      }
-
       operations.add(set(statusPath, DeploymentGroupStatus.of(deploymentGroup, ROLLING_OUT,
-                                                              rolloutTasks)));
+                                                              rolloutPlanner.plan())));
     } else if (status.getState().equals(ROLLING_OUT)) {
       final int taskIndex = status.getTaskIndex();
       final RolloutTask currentTask = status.getRolloutTasks().get(taskIndex);
