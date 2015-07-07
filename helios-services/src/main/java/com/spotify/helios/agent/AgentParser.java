@@ -76,7 +76,13 @@ public class AgentParser extends ServiceParser {
         options.getString(dockerCertPathArg.getDest()));
 
     final Map<String, String> envVars = argToStringMap(options, envArg);
-    final Map<String, String> labels = argToStringMap(options, labelsArg);
+    final Map<String, String> labels;
+    try {
+      labels = argToStringMap(options, labelsArg);
+    } catch (IllegalArgumentException e) {
+      throw new IllegalArgumentException(e.getMessage() +
+                                         "\nLabels need to be in the format key=value.");
+    }
 
     final InetSocketAddress httpAddress = parseSocketAddress(options.getString(httpArg.getDest()));
 
@@ -217,7 +223,7 @@ public class AgentParser extends ServiceParser {
         .action(append())
         .setDefault(new ArrayList<String>())
         .nargs("+")
-        .help("labels to apply to this agent");
+        .help("labels to apply to this agent. Labels need to be in the format key=value.");
   }
 
   public AgentConfig getAgentConfig() {
