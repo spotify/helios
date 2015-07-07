@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
@@ -125,7 +126,8 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create-deployment-group", "group1", "foo=bar");
     final String output = cli("list-deployment-groups", "--json");
     final List<String> deploymentGroups = OBJECT_MAPPER.readValue(
-        output, new TypeReference<List<String>>(){});
+        output, new TypeReference<List<String>>() {
+    });
     assertEquals(Arrays.asList("group1", "group2"), deploymentGroups);
   }
 
@@ -189,7 +191,10 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create", "my_job:2", "my_image");
     assertThat(cli("abort-rolling-update", "my_group"),
                containsString("Aborted rolling-update on deployment-group my_group"));
-    // TODO(staffan): Verify status is FAILED and error set appropriately
+    final DeploymentGroupStatus status = Json.read(
+        cli("status-deployment-group", "--json", "my_group"), DeploymentGroupStatus.class);
+    assertEquals(DeploymentGroupStatus.DisplayState.FAILED, status.getDisplayState());
+    assertEquals("Aborted by user", status.getError());
   }
 
   @Test
