@@ -51,10 +51,19 @@ public class DefaultRolloutPlanner implements RolloutPlanner {
   public List<RolloutTask> plan() {
     final List<RolloutTask> rolloutTasks = Lists.newArrayList();
 
-    for (final String host : hosts) {
-      rolloutTasks.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
-      rolloutTasks.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host));
-      rolloutTasks.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
+    final int parallelism = deploymentGroup.getRolloutOptions() != null ?
+                            deploymentGroup.getRolloutOptions().getParallelism() : 1;
+
+    for (final List<String> partition : Lists.partition(hosts, parallelism)) {
+      for (final String host : partition) {
+        rolloutTasks.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
+      }
+      for (final String host : partition) {
+        rolloutTasks.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host));
+      }
+      for (final String host : partition) {
+        rolloutTasks.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
+      }
     }
 
     return ImmutableList.copyOf(rolloutTasks);

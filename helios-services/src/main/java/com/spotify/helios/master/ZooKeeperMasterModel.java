@@ -431,7 +431,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final DeploymentGroup updated = deploymentGroup.toBuilder()
         .setJob(jobId)
-        .setRolloutParams(options)
+        .setRolloutOptions(options)
         .build();
 
     if (updated.equals(deploymentGroup)) {

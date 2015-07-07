@@ -152,7 +152,7 @@ public class DeploymentGroup extends Descriptor {
     return builder.setName(name)
         .setJob(job)
         .setLabels(labels)
-        .setRolloutParams(rolloutOptions);
+        .setRolloutOptions(rolloutOptions);
   }
 
   public static class Builder implements Cloneable {
@@ -193,7 +193,7 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
-    public Builder setRolloutParams(final RolloutOptions rolloutOptions) {
+    public Builder setRolloutOptions(final RolloutOptions rolloutOptions) {
       p.rolloutOptions = rolloutOptions;
       return this;
     }
