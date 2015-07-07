@@ -26,23 +26,34 @@ import com.google.common.base.Objects;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RolloutOptions;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 public class RollingUpdateRequest {
 
   private final JobId job;
+  private final RolloutOptions rolloutOptions;
 
-  public RollingUpdateRequest(@JsonProperty("job") final JobId job) {
-    this.job = job;
+  public RollingUpdateRequest(@JsonProperty("job") final JobId job,
+                              @JsonProperty("rolloutOptions") final RolloutOptions rolloutOptions) {
+    this.job = checkNotNull(job);
+    this.rolloutOptions = rolloutOptions;
   }
 
   public JobId getJob() {
     return job;
   }
 
+  public RolloutOptions getRolloutOptions() {
+    return rolloutOptions;
+  }
+
   @Override
   public String toString() {
     return Objects.toStringHelper(getClass())
         .add("job", job)
+        .add("rolloutOptions", rolloutOptions)
         .toString();
   }
 

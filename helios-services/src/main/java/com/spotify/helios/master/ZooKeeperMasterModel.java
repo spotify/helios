@@ -42,6 +42,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -421,14 +422,20 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public void rollingUpdate(final DeploymentGroup deploymentGroup, final JobId jobId)
+  public void rollingUpdate(final DeploymentGroup deploymentGroup, final JobId jobId,
+                            final RolloutOptions options)
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException {
     checkNotNull(deploymentGroup, "deploymentGroup");
 
     log.info("rolling-update on deployment-group: name={}", deploymentGroup.getName());
 
-    if (jobId.equals(deploymentGroup.getJob())) {
-      // the deployment group already is set to the specified job ID, nothing to do.
+    final DeploymentGroup updated = deploymentGroup.toBuilder()
+        .setJob(jobId)
+        .setRolloutParams(options)
+        .build();
+
+    if (updated.equals(deploymentGroup)) {
+      // the current and desired deployment group are identical, nothing to do.
       return;
     }
 
@@ -440,7 +447,6 @@ public class ZooKeeperMasterModel implements MasterModel {
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
     final ZooKeeperClient client = provider.get("rollingUpdate");
 
-    final DeploymentGroup updated = deploymentGroup.toBuilder().setJob(jobId).build();
     operations.add(set(Paths.configDeploymentGroup(deploymentGroup.getName()), updated));
 
     final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
@@ -532,9 +538,11 @@ public class ZooKeeperMasterModel implements MasterModel {
           // job isn't running yet
 
           try {
-            if (MILLISECONDS.toMinutes(
-                System.currentTimeMillis() - client.getNode(statusPath).getStat().getMtime()) > 5) {
-              // it's been 5 minutes and this job is still not running
+            final long secondsSinceDeploy = MILLISECONDS.toSeconds(
+                System.currentTimeMillis() - client.getNode(statusPath).getStat().getMtime());
+            if (secondsSinceDeploy > deploymentGroup.getRolloutOptions().getTimeout()) {
+              // time exceeding the configured deploy timeout has passed, and this job is still not
+              // running
               taskError = new HeliosRuntimeException("timed out waiting for job to reach RUNNING");
             } else {
               return; // don't do anything right now since the 5 minutes isn't up yet

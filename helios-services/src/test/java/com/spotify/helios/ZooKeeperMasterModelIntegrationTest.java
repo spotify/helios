@@ -275,7 +275,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testAddDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableMap.of("role", "foo"), null);
+        "my_group", ImmutableMap.of("role", "foo"), null, null);
     model.addDeploymentGroup(dg);
     assertEquals(dg, model.getDeploymentGroup("my_group"));
   }
@@ -283,7 +283,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testAddExistingDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableMap.of("role", "foo"), null);
+        "my_group", ImmutableMap.of("role", "foo"), null, null);
     model.addDeploymentGroup(dg);
     exception.expect(DeploymentGroupExistsException.class);
     model.addDeploymentGroup(dg);
@@ -292,7 +292,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testRemoveDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableMap.of("role", "foo"), null);
+        "my_group", ImmutableMap.of("role", "foo"), null, null);
     model.addDeploymentGroup(dg);
     model.removeDeploymentGroup("my_group");
     exception.expect(DeploymentGroupDoesNotExistException.class);

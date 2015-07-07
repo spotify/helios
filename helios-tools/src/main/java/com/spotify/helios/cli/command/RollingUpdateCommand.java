@@ -23,6 +23,7 @@ package com.spotify.helios.cli.command;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -37,6 +38,8 @@ import java.util.concurrent.ExecutionException;
 public class RollingUpdateCommand extends WildcardJobCommand {
 
   private final Argument nameArg;
+  private final Argument timeoutArg;
+  private final Argument parallelismArg;
 
   public RollingUpdateCommand(final Subparser parser) {
     super(parser);
@@ -45,6 +48,17 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     nameArg = parser.addArgument("name")
         .help("Deployment group name");
+
+    timeoutArg = parser.addArgument("-t", "--timeout")
+        .setDefault(RolloutOptions.DEFAULT_TIMEOUT)
+        .type(Long.class)
+        .help("In seconds. Fail the deployment if a job does not come up within this timeout");
+
+    parallelismArg = parser.addArgument("-p", "--par")
+        .dest("parallelism")
+        .setDefault(RolloutOptions.DEFAULT_PARALLELISM)
+        .type(Integer.class)
+        .help("Deploy to the specified number of hosts concurrently");
   }
 
   @Override
@@ -53,12 +67,26 @@ public class RollingUpdateCommand extends WildcardJobCommand {
                              final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
     final String name = options.getString(nameArg.getDest());
+    final long timeout = options.getLong(timeoutArg.getDest());
+    final int parallelism = options.getInt(parallelismArg.getDest());
 
     if (name == null) {
       throw new IllegalArgumentException("Please specify the name of the deployment-group");
     }
 
-    final RollingUpdateResponse response = client.rollingUpdate(name, jobId).get();
+    if (timeout <= 0) {
+      throw new IllegalArgumentException("Timeout must be a strictly positive integer");
+    }
+
+    if (parallelism <= 0) {
+      throw new IllegalArgumentException("Parallelism must be a strictly positive integer");
+    }
+
+    final RolloutOptions rolloutOptions = RolloutOptions.newBuilder()
+        .setTimeout(timeout)
+        .setParallelism(parallelism)
+        .build();
+    final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions).get();
 
     if (response.getStatus() == RollingUpdateResponse.Status.OK) {
       out.println(response.toJsonString());

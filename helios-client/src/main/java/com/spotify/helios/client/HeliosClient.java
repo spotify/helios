@@ -51,6 +51,7 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
@@ -583,10 +584,10 @@ public class HeliosClient implements AutoCloseable {
   }
 
   public ListenableFuture<RollingUpdateResponse> rollingUpdate(
-      final String deploymentGroupName, final JobId jobId) {
+      final String deploymentGroupName, final JobId job, final RolloutOptions options) {
     return transform(
         request(uri(path("/deployment-group/%s/rolling-update", deploymentGroupName)),
-                "POST", new RollingUpdateRequest(jobId)),
+                "POST", new RollingUpdateRequest(job, options)),
         ConvertResponseToPojo.create(RollingUpdateResponse.class,
                                      ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }

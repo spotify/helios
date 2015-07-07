@@ -141,7 +141,7 @@ public class DeploymentGroupResource {
                                 @Valid final RollingUpdateRequest args) {
     try {
       final DeploymentGroup deploymentGroup = model.getDeploymentGroup(name);
-      model.rollingUpdate(deploymentGroup, args.getJob()); // TODO: determine hosts
+      model.rollingUpdate(deploymentGroup, args.getJob(), args.getRolloutOptions());
       return Response.ok(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)).build();
     } catch (DeploymentGroupDoesNotExistException e) {
       return Response.ok(new RollingUpdateResponse(

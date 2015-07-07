@@ -59,6 +59,7 @@ public class DeploymentGroup extends Descriptor {
   private final String name;
   private final Map<String, String> labels;
   private final JobId job;
+  private final RolloutOptions rolloutOptions;
 
   /**
    * Create a Job.
@@ -67,12 +68,15 @@ public class DeploymentGroup extends Descriptor {
    * @param job The job for the deployment group.
    * @param labels The labels that are selected for the deployment group.
    */
-  public DeploymentGroup(@JsonProperty("name") final String name,
-                         @JsonProperty("labels") final Map<String, String> labels,
-                         @JsonProperty("job") @Nullable final JobId job) {
+  public DeploymentGroup(
+      @JsonProperty("name") final String name,
+      @JsonProperty("labels") final Map<String, String> labels,
+      @JsonProperty("job") @Nullable final JobId job,
+      @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions) {
     this.name = name;
     this.labels = labels;
     this.job = job;
+    this.rolloutOptions = rolloutOptions;
   }
 
   public String getName() {
@@ -87,12 +91,16 @@ public class DeploymentGroup extends Descriptor {
     return labels;
   }
 
+  public RolloutOptions getRolloutOptions() {
+    return rolloutOptions;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -100,16 +108,23 @@ public class DeploymentGroup extends Descriptor {
       return false;
     }
 
-    DeploymentGroup that = (DeploymentGroup) o;
+    final DeploymentGroup that = (DeploymentGroup) o;
 
-    if (name != null ? !name.equals(that.name) : that.name != null) {
+    if (job != null ? !job.equals(that.job) : that.job != null) {
       return false;
     }
     if (labels != null ? !labels.equals(that.labels) : that.labels != null) {
       return false;
     }
-    return !(job != null ? !job.equals(that.job) : that.job != null);
+    if (name != null ? !name.equals(that.name) : that.name != null) {
+      return false;
+    }
+    if (rolloutOptions != null ? !rolloutOptions.equals(that.rolloutOptions)
+                              : that.rolloutOptions != null) {
+      return false;
+    }
 
+    return true;
   }
 
   @Override
@@ -117,6 +132,7 @@ public class DeploymentGroup extends Descriptor {
     int result = name != null ? name.hashCode() : 0;
     result = 31 * result + (labels != null ? labels.hashCode() : 0);
     result = 31 * result + (job != null ? job.hashCode() : 0);
+    result = 31 * result + (rolloutOptions != null ? rolloutOptions.hashCode() : 0);
     return result;
   }
 
@@ -125,7 +141,8 @@ public class DeploymentGroup extends Descriptor {
     return "DeploymentGroup{" +
            "name='" + name + '\'' +
            ", labels=" + labels +
-           ", job='" + job + '\'' +
+           ", job=" + job +
+           ", rolloutOptions=" + rolloutOptions +
            '}';
   }
 
@@ -134,7 +151,8 @@ public class DeploymentGroup extends Descriptor {
 
     return builder.setName(name)
         .setJob(job)
-        .setLabels(labels);
+        .setLabels(labels)
+        .setRolloutParams(rolloutOptions);
   }
 
   public static class Builder implements Cloneable {
@@ -150,11 +168,13 @@ public class DeploymentGroup extends Descriptor {
       public String name;
       public JobId job;
       public Map<String, String> labels;
+      public RolloutOptions rolloutOptions;
 
       private Parameters() {
         this.name = EMPTY_NAME;
         this.job = EMPTY_JOB;
         this.labels = Maps.newHashMap(EMPTY_LABELS);
+        this.rolloutOptions = null;
       }
     }
 
@@ -173,12 +193,17 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
+    public Builder setRolloutParams(final RolloutOptions rolloutOptions) {
+      p.rolloutOptions = rolloutOptions;
+      return this;
+    }
+
     public String getName() {
       return p.name;
     }
 
     public DeploymentGroup build() {
-      return new DeploymentGroup(p.name, p.labels, p.job);
+      return new DeploymentGroup(p.name, p.labels, p.job, p.rolloutOptions);
     }
   }
 

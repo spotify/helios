@@ -79,7 +79,7 @@ public class DeploymentGroupResourceTest {
   public void testGetDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
         "foo", ImmutableMap.of("role", "my_role", "foo", "bar"),
-        new JobId("my_job", "0.2", "1234"));
+        new JobId("my_job", "0.2", "1234"), null);
     when(model.getDeploymentGroup("foo")).thenReturn(dg);
 
     final Response response = resource.getDeploymentGroup("foo");
