@@ -37,7 +37,7 @@ import static java.util.Collections.EMPTY_LIST;
 public class DeploymentGroupStatus extends Descriptor {
 
   public enum State {
-    DETERMINING_HOSTS,
+    PLANNING_ROLLOUT,
     ROLLING_OUT,
     FAILED,
     DONE,
@@ -45,11 +45,9 @@ public class DeploymentGroupStatus extends Descriptor {
 
   private final DeploymentGroup deploymentGroup;
   private final State state;
-  private final List<String> hosts;
-  private final int index;
+  private final List<RolloutTask> rolloutTasks;
+  private final int taskIndex;
   private final String error;
-
-  // TODO: ignore for JSON serialization
   private final int version;
 
   public static DeploymentGroupStatus of(final DeploymentGroup deploymentGroup,
@@ -58,19 +56,20 @@ public class DeploymentGroupStatus extends Descriptor {
   }
 
   public static DeploymentGroupStatus of(final DeploymentGroup deploymentGroup,
-                                         final State state, final List<String> hosts) {
-    return new DeploymentGroupStatus(deploymentGroup, state, hosts, 0, null, 0);
+                                         final State state, final List<RolloutTask> rolloutTasks) {
+    return new DeploymentGroupStatus(deploymentGroup, state, rolloutTasks, 0, null, 0);
   }
 
-  public DeploymentGroupStatus(
+  private DeploymentGroupStatus(
       @JsonProperty("deploymentGroup") final DeploymentGroup deploymentGroup,
-      @JsonProperty("state") final State state, @JsonProperty("hosts") final List<String> hosts,
-      @JsonProperty("index") final int index, @JsonProperty("error") final String error,
+      @JsonProperty("state") final State state,
+      @JsonProperty("rolloutTasks") final List<RolloutTask> rolloutTasks,
+      @JsonProperty("taskIndex") final int taskIndex, @JsonProperty("error") final String error,
       @JsonProperty("version") final int version) {
     this.deploymentGroup = checkNotNull(deploymentGroup, "deploymentGroup");
     this.state = checkNotNull(state, "state");
-    this.hosts = checkNotNull(hosts, "hosts");
-    this.index = index;
+    this.rolloutTasks = checkNotNull(rolloutTasks, "rolloutTasks");
+    this.taskIndex = taskIndex;
     this.version = version;
     this.error = error;
   }
@@ -79,8 +78,8 @@ public class DeploymentGroupStatus extends Descriptor {
     return newBuilder()
         .setDeploymentGroup(deploymentGroup)
         .setState(state)
-        .setHosts(hosts)
-        .setIndex(index)
+        .setRolloutTasks(rolloutTasks)
+        .setTaskIndex(taskIndex)
         .setError(error)
         .setVersion(version);
   }
@@ -88,8 +87,8 @@ public class DeploymentGroupStatus extends Descriptor {
   private DeploymentGroupStatus(final Builder builder) {
     this.deploymentGroup = checkNotNull(builder.deploymentGroup, "deploymentGroup");
     this.state = checkNotNull(builder.state, "state");
-    this.hosts = checkNotNull(builder.hosts, "hosts");
-    this.index = checkNotNull(builder.index, "index");
+    this.rolloutTasks = checkNotNull(builder.rolloutTasks, "rolloutTasks");
+    this.taskIndex = checkNotNull(builder.taskIndex, "taskIndex");
     this.error = builder.error;
     this.version = checkNotNull(builder.version, "version");
   }
@@ -102,12 +101,12 @@ public class DeploymentGroupStatus extends Descriptor {
     return state;
   }
 
-  public List<String> getHosts() {
-    return hosts;
+  public List<RolloutTask> getRolloutTasks() {
+    return rolloutTasks;
   }
 
-  public int getIndex() {
-    return index;
+  public int getTaskIndex() {
+    return taskIndex;
   }
 
   public String getError() {
@@ -133,7 +132,7 @@ public class DeploymentGroupStatus extends Descriptor {
 
     DeploymentGroupStatus that = (DeploymentGroupStatus) o;
 
-    if (index != that.index) {
+    if (taskIndex != that.taskIndex) {
       return false;
     }
     if (version != that.version) {
@@ -146,7 +145,8 @@ public class DeploymentGroupStatus extends Descriptor {
     if (state != that.state) {
       return false;
     }
-    if (hosts != null ? !hosts.equals(that.hosts) : that.hosts != null) {
+    if (rolloutTasks != null ? !rolloutTasks.equals(that.rolloutTasks)
+                             : that.rolloutTasks != null) {
       return false;
     }
     return !(error != null ? !error.equals(that.error) : that.error != null);
@@ -157,8 +157,8 @@ public class DeploymentGroupStatus extends Descriptor {
   public int hashCode() {
     int result = deploymentGroup != null ? deploymentGroup.hashCode() : 0;
     result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (hosts != null ? hosts.hashCode() : 0);
-    result = 31 * result + index;
+    result = 31 * result + (rolloutTasks != null ? rolloutTasks.hashCode() : 0);
+    result = 31 * result + taskIndex;
     result = 31 * result + (error != null ? error.hashCode() : 0);
     result = 31 * result + version;
     return result;
@@ -169,8 +169,8 @@ public class DeploymentGroupStatus extends Descriptor {
     return Objects.toStringHelper(this)
         .add("deploymentGroup", deploymentGroup)
         .add("state", state)
-        .add("hosts", hosts)
-        .add("index", index)
+        .add("rolloutTasks", rolloutTasks)
+        .add("taskIndex", taskIndex)
         .add("error", error)
         .add("version", version)
         .toString();
@@ -179,8 +179,8 @@ public class DeploymentGroupStatus extends Descriptor {
   public static class Builder {
     private DeploymentGroup deploymentGroup;
     private DeploymentGroupStatus.State state;
-    private List<String> hosts;
-    private int index;
+    private List<RolloutTask> rolloutTasks;
+    private int taskIndex;
     private String error;
     private int version;
 
@@ -194,13 +194,13 @@ public class DeploymentGroupStatus extends Descriptor {
       return this;
     }
 
-    public Builder setHosts(List<String> hosts) {
-      this.hosts = hosts;
+    public Builder setRolloutTasks(List<RolloutTask> rolloutTasks) {
+      this.rolloutTasks = rolloutTasks;
       return this;
     }
 
-    public Builder setIndex(int index) {
-      this.index = index;
+    public Builder setTaskIndex(int taskIndex) {
+      this.taskIndex = taskIndex;
       return this;
     }
 

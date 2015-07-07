@@ -42,6 +42,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.RolloutTask;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
@@ -71,12 +72,14 @@ import java.util.UUID;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.getLast;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.reverse;
-import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DETERMINING_HOSTS;
+import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.PLANNING_ROLLOUT;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.ROLLING_OUT;
+import static com.spotify.helios.common.descriptors.RolloutTask.Action;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
@@ -441,7 +444,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
     final DeploymentGroupStatus initialStatus = DeploymentGroupStatus.of(
-        deploymentGroup, DETERMINING_HOSTS);
+        deploymentGroup, PLANNING_ROLLOUT);
     operations.add(set(statusPath, initialStatus));
 
     try {
@@ -468,44 +471,77 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
 
-    if (status.getState().equals(DETERMINING_HOSTS)) {
-      // set the hosts and proceed to ROLLING_OUT
-      operations.add(set(statusPath, DeploymentGroupStatus.of(
-          deploymentGroup, ROLLING_OUT, hosts)));
-    } else if (status.getState().equals(ROLLING_OUT)) {
-      final int index = status.getIndex();
+    if (status.getState().equals(PLANNING_ROLLOUT)) {
+      // generate the rollout plan and proceed to ROLLING_OUT
+      final List<RolloutTask> rolloutTasks = Lists.newArrayList();
 
-      // before processing on the current host, ensure the job is running on the previous host.
-      final boolean previousHostOk;
-      if (index == 0) {
-        // we're at the first host, there is no previous host
-        previousHostOk = true;
-      } else {
-        final String previousHost = status.getHosts().get(index - 1);
-        final Map<JobId, TaskStatus> taskStatuses = getTaskStatuses(client, previousHost);
+      for (final String host : hosts) {
+        rolloutTasks.add(RolloutTask.of(Action.DEPLOY, host));
+        rolloutTasks.add(RolloutTask.of(Action.AWAIT_RUNNING, host));
+      }
+
+      operations.add(set(statusPath, DeploymentGroupStatus.of(deploymentGroup, ROLLING_OUT,
+                                                              rolloutTasks)));
+    } else if (status.getState().equals(ROLLING_OUT)) {
+      final int taskIndex = status.getTaskIndex();
+      final RolloutTask currentTask = status.getRolloutTasks().get(taskIndex);
+      final String host = currentTask.getTarget();
+
+      Exception taskError = null;
+      if (currentTask.getAction().equals(Action.DEPLOY)) {
+        // deploy to the current host
+
+        // add undeploy ops for jobs previously deployed by this deployment group
+        for (final Deployment deployment : getTasks(client, host).values()) {
+          if (deployment.getJobId().equals(deploymentGroup.getJob())) {
+            // this deployed job is the same as the one we wanted to deploy. just leave it.
+            continue;
+          }
+
+          if (deployment.getDeployerUser().equals(deploymentGroup.getName())) {
+            try {
+              operations.addAll(getUndeployOperations(client, host, deployment.getJobId(), ""));
+            } catch (TokenVerificationException | HostNotFoundException e) {
+              taskError = e;
+              break;
+            } catch (JobNotDeployedException e) {
+              // probably somebody beat us to the punch of undeploying. that's fine.
+            }
+          }
+        }
+
+        if (taskError == null) {
+          // add deploy ops for the new job
+          final Deployment deployment = Deployment.of(deploymentGroup.getJob(), Goal.START,
+                                                      deploymentGroup.getName());
+
+          try {
+            operations.addAll(getDeployOperations(client, host, deployment, ""));
+          } catch (JobDoesNotExistException | HostNotFoundException | TokenVerificationException |
+              JobPortAllocationConflictException e) {
+            taskError = e;
+          } catch (JobAlreadyDeployedException e) {
+            // already deployed to this host. that's fine, non-fatal
+          }
+        }
+      } else if (currentTask.getAction().equals(Action.AWAIT_RUNNING)) {
+        final Map<JobId, TaskStatus> taskStatuses = getTaskStatuses(client, host);
 
         if (!taskStatuses.containsKey(deploymentGroup.getJob())) {
-          // job hasn't been deployed to the previous host. that's messed up, we shouldn't have
-          // gotten to the current host. fail.
-          operations.add(set(statusPath, status.toBuilder()
-              .setState(FAILED)
-              .setError("job somehow disappeared from host after deployment - " + previousHost)
-              .build()));
-          previousHostOk = false;
+          // job hasn't been deployed to the host. that's messed up, we shouldn't have
+          // gotten to an AWAIT_RUNNING task if the job isn't deployed. fail.
+          taskError = new HeliosRuntimeException("job disappeared from host after deployment");
         } else if (!taskStatuses.get(deploymentGroup.getJob()).getState()
             .equals(TaskStatus.State.RUNNING)) {
-          // job isn't running yet on the previous host
-          previousHostOk = false;
+          // job isn't running yet
 
           try {
             if (MILLISECONDS.toMinutes(
                 System.currentTimeMillis() - client.getNode(statusPath).getStat().getMtime()) > 5) {
-              // it's been 5 minutes and this job is still not running on the previous host.
-              // mark this deployment group as FAILED.
-              operations.add(set(statusPath, status.toBuilder()
-                  .setState(FAILED)
-                  .setError("timed out waiting for job to reach RUNNING on " + previousHost)
-                  .build()));
+              // it's been 5 minutes and this job is still not running
+              taskError = new HeliosRuntimeException("timed out waiting for job to reach RUNNING");
+            } else {
+              return; // don't do anything right now since the 5 minutes isn't up yet
             }
           } catch (KeeperException e) {
             // statusPath doesn't exist or some other ZK issue. probably this deployment group
@@ -514,95 +550,39 @@ public class ZooKeeperMasterModel implements MasterModel {
                      deploymentGroup.getName(), e);
           }
         } else {
-          // the job is running on the previous host. last thing we have to ensure is that it was
+          // the job is running on the host. last thing we have to ensure is that it was
           // deployed by this deployment group. otherwise some weird conflict has occurred and we
           // won't be able to undeploy the job on the next update.
-          final Deployment deployment = getDeployment(previousHost, deploymentGroup.getJob());
-          if ((deployment != null) &&
-              Objects.equals(deployment.getDeployerUser(), deploymentGroup.getName())) {
-            previousHostOk = true;
-          } else {
-            previousHostOk = false;
-            operations.add(set(statusPath, status.toBuilder()
-                .setState(FAILED)
-                .setError("job already deployed by someone else on host - " + previousHost)
-                .build()));
+          final Deployment deployment = getDeployment(host, deploymentGroup.getJob());
+          if (deployment == null) {
+            taskError = new HeliosRuntimeException("deployment for this job is very broken in ZK");
+          } else if (!Objects.equals(deployment.getDeployerUser(), deploymentGroup.getName())) {
+            taskError = new HeliosRuntimeException("job was already deployed, either manually or " +
+                                                   "by a different deployment group");
           }
         }
       }
 
-      if (previousHostOk) {
-        if (index >= status.getHosts().size()) {
-          // the final host was deployed to and is running. we're done, just update the status.
-          operations.add(set(statusPath, status.toBuilder().setState(DONE).build()));
-        } else {
-          // deploy to the current host
-          final String host = status.getHosts().get(status.getIndex());
-          final Map<JobId, Deployment> tasks = getTasks(client, host);
-
-          // add undeploy ops for jobs previously deployed by this deployment group
-          Exception undeployError = null;
-          for (final Deployment deployment : tasks.values()) {
-            if (deployment.getJobId().equals(deploymentGroup.getJob())) {
-              // this deployed job is the same as the one we wanted to deploy. just leave it.
-              continue;
-            }
-
-            if (deployment.getDeployerUser().equals(deploymentGroup.getName())) {
-              try {
-                operations.addAll(getUndeployOperations(client, host, deployment.getJobId(), ""));
-              } catch (TokenVerificationException | HostNotFoundException e) {
-                undeployError = e;
-                break;
-              } catch (JobNotDeployedException e) {
-                // probably somebody beat us to the punch of undeploying. that's fine.
-              }
-            }
-          }
-
-          if (undeployError != null) {
-            operations.clear();
-            operations.add(set(statusPath, status.toBuilder()
-                .setState(FAILED)
-                .setError(String.format("error undeploying from %s - %s", host,
-                                        undeployError.toString()))
-                .build()));
-          } else {
-            // add deploy ops for the new job
-            final Deployment deployment = Deployment.of(deploymentGroup.getJob(), Goal.START,
-                                                        deploymentGroup.getName());
-
-            Exception deployError;
-            try {
-              operations.addAll(getDeployOperations(client, host, deployment, ""));
-              deployError = null;
-            } catch (JobDoesNotExistException | HostNotFoundException | TokenVerificationException |
-                JobPortAllocationConflictException e) {
-              deployError = e;
-            } catch (JobAlreadyDeployedException e) {
-              // already deployed to this host. that's fine, non-fatal
-              deployError = null;
-            }
-
-            if (deployError == null) {
-              // no error, move on to the next host
-              operations.add(set(statusPath, status.toBuilder().setIndex(index + 1).build()));
-            } else {
-              operations.clear();
-              operations.add(set(statusPath, status.toBuilder()
-                  .setState(FAILED)
-                  .setError(String.format("fatal deploy error on %s - %s",
-                                          host, deployError.toString()))
-                  .build()));
-              log.error("fatal error processing a rolling update of a deployment group: {} - {}",
-                        deploymentGroup.getName(), deployError);
-            }
-          }
-        }
+      if (taskError != null) {
+        // if an error occurred, record it in the status and fail
+        operations.clear();
+        operations.add(set(statusPath, status.toBuilder()
+            .setState(FAILED)
+            .setError(taskError.toString())
+            .build()));
+      } else if (currentTask.equals(getLast(status.getRolloutTasks()))) {
+        // successfully completed the last task
+        operations.add(set(statusPath, status.toBuilder()
+            .setState(DONE)
+            .build()));
+      } else {
+        operations.add(set(statusPath, status.toBuilder()
+            .setTaskIndex(taskIndex + 1)
+            .build()));
       }
     } else if (status.getState().equals(DONE)) {
-      // after 30 seconds in DONE, go back to DETERMINING_HOSTS
-      operations.add(set(statusPath, DeploymentGroupStatus.of(deploymentGroup, DETERMINING_HOSTS)));
+      // after DONE, go back to PLANNING_ROLLOUT
+      operations.add(set(statusPath, DeploymentGroupStatus.of(deploymentGroup, PLANNING_ROLLOUT)));
     }
 
     if (operations.isEmpty()) {
