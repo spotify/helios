@@ -30,7 +30,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class RolloutTask extends Descriptor {
 
   public enum Action {
-    DEPLOY,
+    UNDEPLOY_OLD_JOBS,
+    DEPLOY_NEW_JOB,
     AWAIT_RUNNING,
   }
 

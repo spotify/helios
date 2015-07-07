@@ -476,7 +476,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       final List<RolloutTask> rolloutTasks = Lists.newArrayList();
 
       for (final String host : hosts) {
-        rolloutTasks.add(RolloutTask.of(Action.DEPLOY, host));
+        rolloutTasks.add(RolloutTask.of(Action.UNDEPLOY_OLD_JOBS, host));
+        rolloutTasks.add(RolloutTask.of(Action.DEPLOY_NEW_JOB, host));
         rolloutTasks.add(RolloutTask.of(Action.AWAIT_RUNNING, host));
       }
 
@@ -488,13 +489,11 @@ public class ZooKeeperMasterModel implements MasterModel {
       final String host = currentTask.getTarget();
 
       Exception taskError = null;
-      if (currentTask.getAction().equals(Action.DEPLOY)) {
-        // deploy to the current host
-
+      if (currentTask.getAction().equals(Action.UNDEPLOY_OLD_JOBS)) {
         // add undeploy ops for jobs previously deployed by this deployment group
         for (final Deployment deployment : getTasks(client, host).values()) {
           if (deployment.getJobId().equals(deploymentGroup.getJob())) {
-            // this deployed job is the same as the one we wanted to deploy. just leave it.
+            // this deployed job is the same as the one we want deployed. just leave it.
             continue;
           }
 
@@ -509,20 +508,18 @@ public class ZooKeeperMasterModel implements MasterModel {
             }
           }
         }
+      } else if (currentTask.getAction().equals(Action.DEPLOY_NEW_JOB)) {
+        // add deploy ops for the new job
+        final Deployment deployment = Deployment.of(deploymentGroup.getJob(), Goal.START,
+                                                    deploymentGroup.getName());
 
-        if (taskError == null) {
-          // add deploy ops for the new job
-          final Deployment deployment = Deployment.of(deploymentGroup.getJob(), Goal.START,
-                                                      deploymentGroup.getName());
-
-          try {
-            operations.addAll(getDeployOperations(client, host, deployment, ""));
-          } catch (JobDoesNotExistException | HostNotFoundException | TokenVerificationException |
-              JobPortAllocationConflictException e) {
-            taskError = e;
-          } catch (JobAlreadyDeployedException e) {
-            // already deployed to this host. that's fine, non-fatal
-          }
+        try {
+          operations.addAll(getDeployOperations(client, host, deployment, ""));
+        } catch (JobDoesNotExistException | HostNotFoundException | TokenVerificationException |
+            JobPortAllocationConflictException e) {
+          taskError = e;
+        } catch (JobAlreadyDeployedException e) {
+          // already deployed to this host. that's fine, non-fatal
         }
       } else if (currentTask.getAction().equals(Action.AWAIT_RUNNING)) {
         final Map<JobId, TaskStatus> taskStatuses = getTaskStatuses(client, host);
