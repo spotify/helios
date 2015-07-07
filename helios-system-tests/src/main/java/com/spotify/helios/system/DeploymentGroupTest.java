@@ -155,6 +155,26 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
+  public void testAgentAddedAfterRollingUpdateIsDeployed() throws Exception {
+    startDefaultAgent(testHost(), "--labels", "foo=bar");
+
+    cli("create-deployment-group", "--json", "my_group", "foo=bar");
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    assertEquals(RollingUpdateResponse.Status.OK,
+                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion, "my_group"),
+                                         RollingUpdateResponse.class).getStatus());
+
+    awaitTaskState(jobId, testHost(), TaskStatus.State.RUNNING);
+
+    // Rollout should be complete and on its second iteration at this point.
+    // Start another agent and wait for it to have the job deployed to it.
+    startDefaultAgent(testHost() + "2", "--labels", "foo=bar");
+
+    awaitTaskState(jobId, testHost() + "2", TaskStatus.State.RUNNING);
+  }
+
+  @Test
   public void testRollingUpdateGroupNotFound() throws Exception {
     cli("create-deployment-group", "--json", "my_group", "foo=bar", "baz=qux");
     cli("create", "my_job:2", "my_image");
