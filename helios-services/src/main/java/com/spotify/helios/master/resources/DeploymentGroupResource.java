@@ -151,4 +151,18 @@ public class DeploymentGroupResource {
           RollingUpdateResponse.Status.JOB_NOT_FOUND)).build();
     }
   }
+
+  @POST
+  @Path("/{name}/rolling-update/abort")
+  @Produces(APPLICATION_JSON)
+  @Timed
+  @ExceptionMetered
+  public Response abortRollingUpdate(@PathParam("name") @Valid final String name) {
+    try {
+      model.abortRollingUpdate(name);
+      return Response.noContent().build();
+    } catch (DeploymentGroupDoesNotExistException e) {
+      return Response.status(Response.Status.NOT_FOUND).build();
+    }
+  }
 }

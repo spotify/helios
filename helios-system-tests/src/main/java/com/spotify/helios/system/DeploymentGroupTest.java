@@ -162,4 +162,19 @@ public class DeploymentGroupTest extends SystemTestBase {
                  OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "my_job:2", "oops"),
                                          RollingUpdateResponse.class).getStatus());
   }
+
+  @Test
+  public void testAbortRollingUpdate() throws Exception {
+    cli("create-deployment-group", "--json", "my_group", "foo=bar", "baz=qux");
+    cli("create", "my_job:2", "my_image");
+    assertThat(cli("abort-rolling-update", "my_group"),
+               containsString("Aborted rolling-update on deployment-group my_group"));
+    // TODO(staffan): Verify status is FAILED and error set appropriately
+  }
+
+  @Test
+  public void testAbortRollingUpdateGroupNotFound() throws Exception {
+    assertThat(cli("abort-rolling-update", "my_group"),
+               containsString("Deployment-group my_group not found"));
+  }
 }

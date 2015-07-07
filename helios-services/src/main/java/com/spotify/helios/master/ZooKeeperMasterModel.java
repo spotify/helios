@@ -646,6 +646,35 @@ public class ZooKeeperMasterModel implements MasterModel {
     return RollingUpdateTaskResult.of(operations);
   }
 
+  @Override
+  public void abortRollingUpdate(final String deploymentGroupName)
+      throws DeploymentGroupDoesNotExistException {
+    checkNotNull(deploymentGroupName, "name");
+
+    log.info("abort rolling-update on deployment-group: name={}", deploymentGroupName);
+
+    final ZooKeeperClient client = provider.get("abortRollingUpdate");
+
+    final DeploymentGroup deploymentGroup = getDeploymentGroup(deploymentGroupName);
+
+    final String statusPath = Paths.statusDeploymentGroup(deploymentGroupName);
+    final DeploymentGroupStatus status = DeploymentGroupStatus.newBuilder()
+        .setDeploymentGroup(deploymentGroup)
+        .setState(FAILED)
+        .setError("Aborted by user")
+        .build();
+
+    try {
+      client.ensurePath(statusPath);
+      client.transaction(set(statusPath, status));
+    } catch (final NoNodeException e) {
+      throw new DeploymentGroupDoesNotExistException(deploymentGroupName);
+    } catch (final KeeperException e) {
+      throw new HeliosRuntimeException(
+          "abort rolling-update on deployment-group " + deploymentGroupName + " failed", e);
+    }
+  }
+
   /**
    * Returns a {@link Map} of deployment group name to {@link DeploymentGroup} objects for all of
    * the deployment groups known.
