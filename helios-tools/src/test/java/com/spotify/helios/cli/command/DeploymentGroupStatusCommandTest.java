@@ -118,7 +118,7 @@ public class DeploymentGroupStatusCommandTest {
                "Status: ROLLING_OUT" +
                "HOST UP-TO-DATE JOB STATE" +
                "host1. X %s RUNNING" +
-               "host2. %s PULLING_IMAGE" +
+               "host2. X %s PULLING_IMAGE" +
                "host3. - -",
                NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
 

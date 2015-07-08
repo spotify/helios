@@ -27,7 +27,6 @@ import com.spotify.helios.cli.Table;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -112,9 +111,8 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
     for (final DeploymentGroupStatusResponse.HostStatus hostStatus : hosts) {
       final String displayHostName = formatHostname(full, hostStatus.getHost());
 
-      final boolean done = hostStatus.getJobId() != null &&
-                           hostStatus.getJobId().equals(jobId) &&
-                           hostStatus.getState() == TaskStatus.State.RUNNING;
+      final boolean upToDate = hostStatus.getJobId() != null &&
+                               hostStatus.getJobId().equals(jobId);
 
       final String job;
       if (hostStatus.getJobId() == null) {
@@ -128,7 +126,7 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
       final String state = hostStatus.getState() != null ?
                            hostStatus.getState().toString() : "-";
 
-      table.row(displayHostName, done ? "X" : "", job, state);
+      table.row(displayHostName, upToDate ? "X" : "", job, state);
     }
 
     table.print();
