@@ -57,8 +57,6 @@ public class DefaultRolloutPlanner implements RolloutPlanner {
     for (final List<String> partition : Lists.partition(hosts, parallelism)) {
       for (final String host : partition) {
         rolloutTasks.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
-      }
-      for (final String host : partition) {
         rolloutTasks.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host));
       }
       for (final String host : partition) {
