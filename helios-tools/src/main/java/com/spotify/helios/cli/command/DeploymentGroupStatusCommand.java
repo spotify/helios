@@ -22,15 +22,13 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.base.Strings;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
-import com.spotify.helios.cli.DeploymentGroupStatusTable;
+import com.spotify.helios.cli.Table;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.RolloutTask;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -39,9 +37,10 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
+import static com.spotify.helios.cli.Output.formatHostname;
+import static com.spotify.helios.cli.Output.table;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class DeploymentGroupStatusCommand extends ControlCommand {
@@ -52,14 +51,15 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
   public DeploymentGroupStatusCommand(final Subparser parser) {
     super(parser);
 
-    parser.help("show job or host status");
+    parser.help("Show deployment-group status");
 
     nameArg = parser.addArgument("name")
+        .required(true)
         .help("Deployment group name");
 
     fullArg = parser.addArgument("-f")
         .action(storeTrue())
-        .help("Print full hostnames, job and container id's.");
+        .help("Print full hostnames and job ids.");
   }
 
   @Override
@@ -69,11 +69,7 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
     final String name = options.getString(nameArg.getDest());
     final boolean full = options.getBoolean(fullArg.getDest());
 
-    if (name == null) {
-      throw new IllegalArgumentException("Please specify a deployment group name.");
-    }
-
-    final DeploymentGroupStatus status = client.deploymentGroupStatus(name).get();
+    final DeploymentGroupStatusResponse status = client.deploymentGroupStatus(name).get();
 
     if (status == null) {
       out.printf("Unknown deployment group: %s%n", name);
@@ -83,34 +79,58 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
     if (json) {
       out.println(Json.asPrettyStringUnchecked(status));
     } else {
-      final JobId jobId = status.getDeploymentGroup().getJob();
-      final List<RolloutTask> rolloutTasks = status.getRolloutTasks();
-      final List<String> hosts = getHosts(rolloutTasks);
-      final int hostIndex = status.getHostIndex();
-      final String dgName = status.getDeploymentGroup().getName();
+      final JobId jobId = status.getJobId();
       final String error = status.getError();
 
-      out.printf("Name: %s%n", dgName);
-      out.printf("Job: %s%n", jobId);
-      out.printf("State: %s%n", status.getDisplayState());
+      out.printf("Name: %s%n", name);
+      if (full) {
+        out.printf("Job Id: %s%n", jobId);
+      } else {
+        out.printf("Job Id: %s%n", jobId.toShortString());
+      }
+      out.printf("Status: %s%n", status.getStatus());
 
       if (!Strings.isNullOrEmpty(error)) {
-        out.printf("Error: %s - %s%n%n", hosts.get(hostIndex), error);
+        out.printf("Error: %s%n%n", error);
       } else {
         out.printf("%n");
       }
 
-      new DeploymentGroupStatusTable(out, hosts, hostIndex, full).print();
+      printTable(out, jobId, status.getHostStatuses(), full);
     }
 
     return 0;
   }
 
-  private static List<String> getHosts(final List<RolloutTask> rolloutTasks) {
-    final Set<String> uniqueHosts = Sets.newLinkedHashSet();
-    for (RolloutTask task : rolloutTasks) {
-      uniqueHosts.add(task.getTarget());
+  private static void printTable(final PrintStream out,
+                                 final JobId jobId,
+                                 final List<DeploymentGroupStatusResponse.HostStatus> hosts,
+                                 final boolean full) {
+    final Table table = table(out);
+    table.row("HOST", "UP-TO-DATE", "JOB", "STATE");
+
+    for (final DeploymentGroupStatusResponse.HostStatus hostStatus : hosts) {
+      final String displayHostName = formatHostname(full, hostStatus.getHost());
+
+      final boolean done = hostStatus.getJobId() != null &&
+                           hostStatus.getJobId().equals(jobId) &&
+                           hostStatus.getState() == TaskStatus.State.RUNNING;
+
+      final String job;
+      if (hostStatus.getJobId() == null) {
+        job = "-";
+      } else if (full) {
+        job = hostStatus.getJobId().toString();
+      } else {
+        job = hostStatus.getJobId().toShortString();
+      }
+
+      final String state = hostStatus.getState() != null ?
+                           hostStatus.getState().toString() : "-";
+
+      table.row(displayHostName, done ? "X" : "", job, state);
     }
-    return Lists.newArrayList(uniqueHosts);
+
+    table.print();
   }
 }

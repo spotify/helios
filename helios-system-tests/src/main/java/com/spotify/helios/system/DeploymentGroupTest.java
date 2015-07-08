@@ -37,6 +37,7 @@ import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.master.MasterMain;
 
@@ -226,11 +227,12 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create", "my_job:2", "my_image");
     assertThat(cli("abort-rolling-update", TEST_GROUP),
                containsString("Aborted rolling-update on deployment-group my_group"));
-    final DeploymentGroupStatus status = Json.read(
-        cli("status-deployment-group", "--json", TEST_GROUP), DeploymentGroupStatus.class);
-    assertEquals(DeploymentGroupStatus.DisplayState.FAILED, status.getDisplayState());
+    final DeploymentGroupStatusResponse status = Json.read(
+        cli("status-deployment-group", "--json", TEST_GROUP), DeploymentGroupStatusResponse.class);
+    assertEquals(DeploymentGroupStatusResponse.Status.FAILED, status.getStatus());
     assertEquals("Aborted by user", status.getError());
   }
+
 
   @Test
   public void testAbortRollingUpdateGroupNotFound() throws Exception {

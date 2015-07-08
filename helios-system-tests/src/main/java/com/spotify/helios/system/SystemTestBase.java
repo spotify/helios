@@ -71,6 +71,7 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
@@ -926,16 +927,19 @@ public abstract class SystemTestBase {
     });
   }
 
-  protected DeploymentGroupStatus awaitDeploymentGroupStatus(final HeliosClient client,
-                                                            final String name,
-                                                            final DeploymentGroupStatus.State state)
+  protected DeploymentGroupStatus awaitDeploymentGroupStatus(
+      final HeliosClient client,
+      final String name,
+      final DeploymentGroupStatus.State state)
       throws Exception {
     return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<DeploymentGroupStatus>() {
       @Override
       public DeploymentGroupStatus call() throws Exception {
-        final DeploymentGroupStatus status = getOrNull(client.deploymentGroupStatus(name));
+        final DeploymentGroupStatusResponse response = getOrNull(
+            client.deploymentGroupStatus(name));
 
-        if (status != null) {
+        if (response != null) {
+          final DeploymentGroupStatus status = response.getDeploymentGroupStatus();
           if (status.getState().equals(state)) {
             return status;
           } else if (status.getState().equals(DeploymentGroupStatus.State.FAILED)) {

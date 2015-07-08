@@ -22,11 +22,19 @@
 package com.spotify.helios.master.resources;
 
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
+import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
+import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RolloutTask;
+import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateRequest;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
@@ -37,6 +45,8 @@ import com.spotify.helios.master.MasterModel;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
@@ -118,7 +128,7 @@ public class DeploymentGroupResource {
           RemoveDeploymentGroupResponse.Status.REMOVED)).build();
     } catch (final DeploymentGroupDoesNotExistException e) {
       return Response.ok(new RemoveDeploymentGroupResponse(
-              RemoveDeploymentGroupResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND)).build();
+          RemoveDeploymentGroupResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND)).build();
     }
   }
 
@@ -171,9 +181,53 @@ public class DeploymentGroupResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Response getDeploymentGroupStatus(@PathParam("name") final String name) {
+  public Response getDeploymentGroupStatus(@PathParam("name") @Valid final String name) {
     try {
-      return Response.ok(model.getDeploymentGroupStatus(name)).build();
+      final DeploymentGroupStatus deploymentGroupStatus = model.getDeploymentGroupStatus(name);
+      final DeploymentGroup deploymentGroup = model.getDeploymentGroup(name);
+      final List<DeploymentGroupStatusResponse.HostStatus> result = Lists.newArrayList();
+
+      final Set<String> hosts = Sets.newHashSet();
+      for (final RolloutTask rolloutTask : deploymentGroupStatus.getRolloutTasks()) {
+        hosts.add(rolloutTask.getTarget());
+      }
+
+      for (final String host : hosts) {
+        final HostStatus hostStatus = model.getHostStatus(host);
+        final Map<JobId, Deployment> jobs = hostStatus.getJobs();
+
+        JobId deployedJobId = null;
+        for (final Map.Entry<JobId, Deployment> entry : jobs.entrySet()) {
+          final JobId jobId = entry.getKey();
+          final Deployment deployment = entry.getValue();
+
+          if (name.equals(deployment.getDeployerUser())) {
+            // Job was deployed by deployment-group
+            deployedJobId = jobId;
+          }
+        }
+
+        TaskStatus.State state = null;
+        if (deployedJobId != null) {
+          state = hostStatus.getStatuses().get(deployedJobId).getState();
+        }
+
+        result.add(new DeploymentGroupStatusResponse.HostStatus(host, deployedJobId, state));
+      }
+
+      final DeploymentGroupStatusResponse.Status status;
+      if (deploymentGroupStatus.getState() == DeploymentGroupStatus.State.FAILED) {
+        status = DeploymentGroupStatusResponse.Status.FAILED;
+      } else if (deploymentGroupStatus.getSuccessfulIterations() > 0) {
+        status = DeploymentGroupStatusResponse.Status.ACTIVE;
+      } else {
+        status = DeploymentGroupStatusResponse.Status.ROLLING_OUT;
+      }
+
+      return Response.ok(new DeploymentGroupStatusResponse(
+          name, status, deploymentGroup.getJob(), deploymentGroupStatus.getError(),
+          result, deploymentGroupStatus))
+          .build();
     } catch (final DeploymentGroupDoesNotExistException e) {
       return Response.status(Response.Status.NOT_FOUND).build();
     }

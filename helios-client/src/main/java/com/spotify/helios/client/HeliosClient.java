@@ -47,7 +47,6 @@ import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.VersionCompatibility.Status;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -55,6 +54,7 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
@@ -573,9 +573,9 @@ public class HeliosClient implements AutoCloseable {
     });
   }
 
-  public ListenableFuture<DeploymentGroupStatus> deploymentGroupStatus(final String name) {
+  public ListenableFuture<DeploymentGroupStatusResponse> deploymentGroupStatus(final String name) {
     return get(uri(path("/deployment-group/%s/status", name)),
-               new TypeReference<DeploymentGroupStatus>() {});
+               new TypeReference<DeploymentGroupStatusResponse>() {});
   }
 
   public ListenableFuture<CreateDeploymentGroupResponse>
