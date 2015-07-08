@@ -42,23 +42,34 @@ import org.jetbrains.annotations.Nullable;
 public class Deployment extends Descriptor {
 
   public static final String EMTPY_DEPLOYER_USER = null;
+  public static final String EMPTY_DEPLOYER_MASTER = null;
+  public static final String EMPTY_DEPLOYMENT_GROUP_NAME = null;
+
   private final JobId jobId;
   private final Goal goal;
   private final String deployerUser;
+  private final String deployerMaster;
+  private final String deploymentGroupName;
 
   /**
    * Constructor
-   *
    * @param jobId The id of the job.
    * @param goal The desired state (i.e. goal) of the task/deployment.
    * @param deployerUser The user doing the deployment.
+   * @param deployerMaster The master that created this deployment.
+   * @param deploymentGroupName The deployment group this deployment is created by.
    */
   public Deployment(@JsonProperty("job") final JobId jobId,
                     @JsonProperty("goal") final Goal goal,
-                    @JsonProperty("deployerUser") @Nullable final String deployerUser) {
+                    @JsonProperty("deployerUser") @Nullable final String deployerUser,
+                    @JsonProperty("deployerMaster") @Nullable final String deployerMaster,
+                    @JsonProperty("deploymentGroupName") @Nullable final String deploymentGroupName)
+  {
     this.jobId  = jobId;
     this.goal = goal;
     this.deployerUser = deployerUser;
+    this.deploymentGroupName = deploymentGroupName;
+    this.deployerMaster = deployerMaster;
   }
 
   public static Deployment of(final JobId jobId, final Goal goal) {
@@ -75,6 +86,19 @@ public class Deployment extends Descriptor {
         .setDeployerUser(deployerUser)
         .build();
   }
+
+  public static Deployment of(final JobId jobId, final Goal goal, final String deployerUser,
+                              final String deployerMaster, final String deploymentGroupName)
+  {
+    return newBuilder()
+        .setJobId(jobId)
+        .setGoal(goal)
+        .setDeployerUser(deployerUser)
+        .setDeployerMaster(deployerMaster)
+        .setDeploymentGroupName(deploymentGroupName)
+        .build();
+  }
+
   public JobId getJobId() {
     return jobId;
   }
@@ -87,17 +111,27 @@ public class Deployment extends Descriptor {
     return deployerUser;
   }
 
+  public String getDeploymentGroupName() {
+    return deploymentGroupName;
+  }
+
+  public String getDeployerMaster() {
+    return deployerMaster;
+  }
+
   @Override
   public String toString() {
     return Objects.toStringHelper(this)
-        .add("jobId",  jobId)
+        .add("jobId", jobId)
         .add("goal", goal)
         .add("deployerUser", deployerUser)
+        .add("deployerMaster", deployerMaster)
+        .add("deploymentGroupName", deploymentGroupName)
         .toString();
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -105,20 +139,26 @@ public class Deployment extends Descriptor {
       return false;
     }
 
-    final Deployment that = (Deployment) o;
+    Deployment that = (Deployment) o;
 
-    if (goal != that.goal) {
-      return false;
-    }
     if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
       return false;
     }
-    if (deployerUser != null
-        ? !deployerUser.equals(that.deployerUser)
-        : that.deployerUser != null) {
+    if (goal != that.goal) {
       return false;
     }
-    return true;
+    if (deployerUser != null ? !deployerUser.equals(that.deployerUser)
+                             : that.deployerUser != null) {
+      return false;
+    }
+    if (deploymentGroupName != null ? !deploymentGroupName.equals(that.deploymentGroupName)
+                                    : that.deploymentGroupName != null) {
+      return false;
+    }
+    return !(deployerMaster != null ? !deployerMaster
+        .equals(that.deployerMaster)
+                                           : that.deployerMaster != null);
+
   }
 
   @Override
@@ -126,6 +166,8 @@ public class Deployment extends Descriptor {
     int result = jobId != null ? jobId.hashCode() : 0;
     result = 31 * result + (goal != null ? goal.hashCode() : 0);
     result = 31 * result + (deployerUser != null ? deployerUser.hashCode() : 0);
+    result = 31 * result + (deploymentGroupName != null ? deploymentGroupName.hashCode() : 0);
+    result = 31 * result + (deployerMaster != null ? deployerMaster.hashCode() : 0);
     return result;
   }
 
@@ -145,6 +187,8 @@ public class Deployment extends Descriptor {
     private JobId jobId;
     private Goal goal;
     private String deployerUser;
+    private String deployerMaster;
+    private String deploymentGroupName;
 
     public Builder setJobId(final JobId jobId) {
       this.jobId = jobId;
@@ -161,8 +205,18 @@ public class Deployment extends Descriptor {
       return this;
     }
 
+    public Builder setDeploymentGroupName(String deploymentGroupName) {
+      this.deploymentGroupName = deploymentGroupName;
+      return this;
+    }
+
+    public Builder setDeployerMaster(String deployerMaster) {
+      this.deployerMaster = deployerMaster;
+      return this;
+    }
+
     public Deployment build() {
-      return new Deployment(jobId, goal, deployerUser);
+      return new Deployment(jobId, goal, deployerUser, deployerMaster, deploymentGroupName);
     }
   }
 }

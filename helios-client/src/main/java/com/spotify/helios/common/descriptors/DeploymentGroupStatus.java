@@ -63,18 +63,6 @@ public class DeploymentGroupStatus extends Descriptor {
   private final int version;
   private final String error;
 
-  public static DeploymentGroupStatus of(final DeploymentGroup deploymentGroup,
-                                         final State state) {
-    return new DeploymentGroupStatus(deploymentGroup, state, displayState(state), EMPTY_LIST,
-                                     hosts(EMPTY_LIST), 0, 0, 0, null, 0);
-  }
-
-  public static DeploymentGroupStatus of(final DeploymentGroup deploymentGroup,
-                                         final State state, final List<RolloutTask> rolloutTasks) {
-    return new DeploymentGroupStatus(deploymentGroup, state, displayState(state), rolloutTasks,
-                                     hosts(rolloutTasks), 0, 0, 0, null, 0);
-  }
-
   private DeploymentGroupStatus(
       @JsonProperty("deploymentGroup") final DeploymentGroup deploymentGroup,
       @JsonProperty("state") final State state,

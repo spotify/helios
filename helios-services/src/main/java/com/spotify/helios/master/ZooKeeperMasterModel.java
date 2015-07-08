@@ -125,9 +125,15 @@ public class ZooKeeperMasterModel implements MasterModel {
       new TypeReference<Map<String, String>>() {};
 
   private final ZooKeeperClientProvider provider;
+  private final String name;
 
-  public ZooKeeperMasterModel(final ZooKeeperClientProvider provider) {
+  public  ZooKeeperMasterModel(final ZooKeeperClientProvider provider) {
+    this(provider, null);
+  }
+
+  public ZooKeeperMasterModel(final ZooKeeperClientProvider provider, @Nullable final String name) {
     this.provider = provider;
+    this.name = name;
   }
 
   /**
@@ -540,7 +546,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       result = rollingUpdateAwaitRunning(deploymentGroup, host);
     }
 
-    if (result == RollingUpdateTaskResult.TASK_IN_PROGRESS) {
+    if (result.equals(RollingUpdateTaskResult.TASK_IN_PROGRESS)) {
       // not an error, but nothing to do
       return emptyList();
     } else if (result.error != null) {
@@ -574,9 +580,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     final Map<JobId, TaskStatus> taskStatuses = getTaskStatuses(client, host);
 
     if (!taskStatuses.containsKey(deploymentGroup.getJob())) {
-      // job hasn't been deployed to the host. that's messed up, we shouldn't have
-      // gotten to an AWAIT_RUNNING task if the job isn't deployed. fail.
-      return RollingUpdateTaskResult.error("job disappeared from host after deployment");
+      // job hasn't shown up yet, probably still being written
+      return RollingUpdateTaskResult.TASK_IN_PROGRESS;
     } else if (!taskStatuses.get(deploymentGroup.getJob()).getState()
         .equals(TaskStatus.State.RUNNING)) {
       // job isn't running yet
@@ -605,7 +610,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       final Deployment deployment = getDeployment(host, deploymentGroup.getJob());
       if (deployment == null) {
         return RollingUpdateTaskResult.error("deployment for this job is very broken in ZK");
-      } else if (!Objects.equals(deployment.getDeployerUser(), deploymentGroup.getName())) {
+      } else if (!Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName())) {
         return RollingUpdateTaskResult.error("job was already deployed, either manually or by a " +
                                              "different deployment group");
       }
@@ -617,6 +622,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   private RollingUpdateTaskResult rollingUpdateDeploy(final DeploymentGroup deploymentGroup,
                                                       final String host) {
     final Deployment deployment = Deployment.of(deploymentGroup.getJob(), Goal.START,
+                                                Deployment.EMTPY_DEPLOYER_USER, this.name,
                                                 deploymentGroup.getName());
     final ZooKeeperClient client = provider.get("rollingUpdateDeploy");
 
@@ -642,9 +648,10 @@ public class ZooKeeperMasterModel implements MasterModel {
         continue;
       }
 
-      if (deployment.getDeployerUser().equals(deploymentGroup.getName())) {
+      if (Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName())) {
         try {
-          operations.addAll(getUndeployOperations(client, host, deployment.getJobId(), ""));
+          operations.addAll(getUndeployOperations(client, host, deployment.getJobId(),
+                                                  Job.EMPTY_TOKEN));
         } catch (TokenVerificationException | HostNotFoundException e) {
           return RollingUpdateTaskResult.error(e);
         } catch (JobNotDeployedException e) {
@@ -976,7 +983,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       portNodes.put(path, idJson);
     }
 
-    final Task task = new Task(job, deployment.getGoal(), deployment.getDeployerUser());
+    final Task task = new Task(job, deployment.getGoal(), deployment.getDeployerUser(),
+                               deployment.getDeployerMaster(), deployment.getDeploymentGroupName());
     final List<ZooKeeperOperation> operations = Lists.newArrayList(
         check(jobPath),
         create(portNodes),
@@ -1100,7 +1108,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     assertTaskExists(client, host, deployment.getJobId());
 
     final String path = Paths.configHostJob(host, jobId);
-    final Task task = new Task(job, deployment.getGoal(), Task.EMPTY_DEPLOYER_USER);
+    final Task task = new Task(job, deployment.getGoal(), Task.EMPTY_DEPLOYER_USER,
+                               Task.EMPTY_DEPLOYER_MASTER, Task.EMPTY_DEPOYMENT_GROUP_NAME);
     try {
       client.setData(path, task.toJsonBytes());
     } catch (Exception e) {
@@ -1141,7 +1150,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       final byte[] data = client.getData(path);
       final Task task = parse(data, Task.class);
-      return Deployment.of(jobId, task.getGoal(), task.getDeployerUser());
+      return Deployment.of(jobId, task.getGoal(), task.getDeployerUser(), task.getDeployerMaster(),
+                           task.getDeploymentGroupName());
     } catch (KeeperException.NoNodeException e) {
       return null;
     } catch (KeeperException | IOException e) {
@@ -1295,7 +1305,8 @@ public class ZooKeeperMasterModel implements MasterModel {
         try {
           final byte[] data = client.getData(containerPath);
           final Task task = parse(data, Task.class);
-          jobs.put(jobId, Deployment.of(jobId, task.getGoal(), task.getDeployerUser()));
+          jobs.put(jobId, Deployment.of(jobId, task.getGoal(), task.getDeployerUser(),
+                                        task.getDeployerMaster(), task.getDeploymentGroupName()));
         } catch (KeeperException.NoNodeException ignored) {
           log.debug("deployment config node disappeared: {}", jobIdString);
         }
@@ -1424,7 +1435,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       portNodes.put(path, idJson);
     }
 
-    final Task task = new Task(job, deployment.getGoal(), deployment.getDeployerUser());
+    final Task task = new Task(job, deployment.getGoal(), deployment.getDeployerUser(),
+                               deployment.getDeployerMaster(), deployment.getDeploymentGroupName());
     final List<ZooKeeperOperation> operations = Lists.newArrayList(
         check(jobPath),
         create(portNodes),

@@ -141,7 +141,7 @@ public class MasterService extends AbstractIdleService {
         riemannFacade, metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
-    final MasterModel model = new ZooKeeperMasterModel(zkClientProvider);
+    final MasterModel model = new ZooKeeperMasterModel(zkClientProvider, config.getName());
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
         zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);

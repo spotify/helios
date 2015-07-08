@@ -51,15 +51,16 @@ public class RollingUpdateService extends AbstractIdleService {
 
   private static final long UPDATE_INTERVAL = SECONDS.toMillis(5);
 
-  private final Reactor reactor;
   private final MasterModel masterModel;
+  private final Reactor reactor;
 
   /**
    * Create a new RollingUpdateService.
    *
    * @param reactorFactory    The factory to use for creating reactors.
    */
-  public RollingUpdateService(final MasterModel masterModel, final ReactorFactory reactorFactory) {
+  public RollingUpdateService(final MasterModel masterModel,
+                              final ReactorFactory reactorFactory) {
     this.masterModel = checkNotNull(masterModel, "masterModel");
     this.reactor = checkNotNull(reactorFactory.create("rollingupdate", new Update(),
                                                       UPDATE_INTERVAL),

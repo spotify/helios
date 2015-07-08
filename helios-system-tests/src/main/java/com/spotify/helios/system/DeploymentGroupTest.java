@@ -23,13 +23,18 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.Polling;
+import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
@@ -40,6 +45,8 @@ import org.junit.Test;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -160,6 +167,9 @@ public class DeploymentGroupTest extends SystemTestBase {
     // ensure the job is running on both agents and the deployment group reaches DONE
     awaitTaskState(jobId, firstHost, TaskStatus.State.RUNNING);
     awaitTaskState(jobId, secondHost, TaskStatus.State.RUNNING);
+
+    final Deployment deployment =  defaultClient().hostStatus(firstHost).get().getJobs().get(jobId);
+    assertEquals(TEST_GROUP, deployment.getDeploymentGroupName());
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
                                DeploymentGroupStatus.State.DONE);
 
@@ -229,28 +239,46 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
-  public void testRollingUpdateHandoff() throws Exception {
-    final List<String> hosts = Lists.newArrayList();
-    for (int i = 0; i < 10; i++) {
-      final String host = testHost() + i;
-      hosts.add(host);
+  public void testRollingUpdateCoordination() throws Exception {
+    // stop the default master
+    master.stopAsync().awaitTerminated();
 
-      startDefaultAgent(host, "--labels", TEST_LABEL);
+    // start a bunch of masters and agents
+    final Map<String, MasterMain> masters = Maps.newHashMap();
+    for (int i = 0; i < 2; i++) {
+      final String name = TEST_MASTER + i;
+      masters.put(name, startDefaultMaster("--name", name));
+    }
+
+    final Map<String, AgentMain> agents = Maps.newHashMap();
+    for (int i = 0; i < 10; i++) {
+      final String name = TEST_HOST + i;
+      agents.put(name, startDefaultAgent(name, "--labels", TEST_LABEL));
     }
 
     // create a deployment group and start rolling out
     cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
     assertEquals(RollingUpdateResponse.Status.OK,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion, TEST_GROUP),
+                 OBJECT_MAPPER.readValue(cli("rolling-update",
+                                             "--par", String.valueOf(agents.size()),
+                                             testJobNameAndVersion,
+                                             TEST_GROUP),
                                          RollingUpdateResponse.class).getStatus());
 
-    // wait until the first host has been deployed to, and then kill the master
-    awaitTaskState(jobId, hosts.get(0), TaskStatus.State.RUNNING);
-    master.stopAsync().awaitTerminated();
-
-    // start another master and make sure the rollout finishes
-    startDefaultMaster();
+    // wait until the rollout is complete
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+
+    // ensure that all masters were involved
+    final Set<String> deployingMasters = Sets.newHashSet();
+    final Map<String, HostStatus> hostStatuses = defaultClient().hostStatuses(
+        Lists.newArrayList(agents.keySet())).get();
+    for (final HostStatus status : hostStatuses.values()) {
+      for (final Deployment deployment : status.getJobs().values()) {
+        deployingMasters.add(deployment.getDeployerMaster());
+      }
+    }
+
+    assertEquals(masters.size(), deployingMasters.size());
   }
 }

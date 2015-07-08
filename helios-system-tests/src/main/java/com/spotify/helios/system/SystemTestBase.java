@@ -515,9 +515,13 @@ public abstract class SystemTestBase {
                                                      "--no-log-setup",
                                                      "--http", masterEndpoint(),
                                                      "--admin=" + masterAdminPort(),
-                                                     "--name", TEST_MASTER,
                                                      "--domain", "",
                                                      "--zk", zk.connectString());
+    if (!asList(args).contains("--name")) {
+      argsList.add("--name");
+      argsList.add(TEST_MASTER);
+    }
+
     argsList.addAll(asList(args));
 
     return argsList;
@@ -931,7 +935,15 @@ public abstract class SystemTestBase {
       public DeploymentGroupStatus call() throws Exception {
         final DeploymentGroupStatus status = getOrNull(client.deploymentGroupStatus(name));
 
-        return ((status != null) && status.getState().equals(state)) ? status : null;
+        if (status != null) {
+          if (status.getState().equals(state)) {
+            return status;
+          } else if (status.getState().equals(DeploymentGroupStatus.State.FAILED)) {
+            assertEquals(state, status.getState());
+          }
+        }
+
+        return null;
       }
     });
   }
