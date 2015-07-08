@@ -483,11 +483,21 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     if (status.getState().equals(PLANNING_ROLLOUT)) {
       // generate the rollout plan and proceed to ROLLING_OUT
-      operations.add(set(statusPath, status.toBuilder()
+      final List<RolloutTask> oldPlan = status.getRolloutTasks();
+      final List<RolloutTask> newPlan = rolloutPlanner.plan();
+
+      final DeploymentGroupStatus.Builder newStatus = status.toBuilder()
           .setState(ROLLING_OUT)
-          .setRolloutTasks(rolloutPlanner.plan())
-          .setTaskIndex(0)
-          .build()));
+          .setRolloutTasks(newPlan)
+          .setTaskIndex(0);
+
+      if (!Objects.equals(oldPlan, newPlan)) {
+        // if our plan changes (because hosts have been added or removed), reset
+        // the successful iteration counter (since our new plan has never been successful)
+        newStatus.setSuccessfulIterations(0);
+      }
+
+      operations.add(set(statusPath, newStatus.build()));
     } else if (status.getState().equals(ROLLING_OUT)) {
       // grab the current task off the rollout task list and execute it
       operations.addAll(getRolloutOperations(deploymentGroup, status));
