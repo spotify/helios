@@ -133,27 +133,47 @@ public class DeploymentGroupTest extends SystemTestBase {
 
   @Test
   public void testRollingUpdate() throws Exception {
-    startDefaultAgent(testHost(), "--labels", "foo=bar");
-    startDefaultAgent(testHost() + "2", "--labels", "foo=bar");
+    final String firstHost = testHost();
+    final String secondHost = testHost() + "2";
+    final String label = "foo=bar";
 
-    cli("create-deployment-group", "--json", "my_group", "foo=bar");
+    // start two agents
+    startDefaultAgent(firstHost, "--labels", label);
+    startDefaultAgent(secondHost, "--labels", label);
+
+    // create a deployment group  and job
+    final String deploymentGroupName = "my_group";
+    cli("create-deployment-group", "--json", deploymentGroupName, label);
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
+    // trigger a rolling update
     assertEquals(RollingUpdateResponse.Status.OK,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion, "my_group"),
+                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion,
+                                             deploymentGroupName),
                                          RollingUpdateResponse.class).getStatus());
 
-    awaitTaskState(jobId, testHost() + "2", TaskStatus.State.RUNNING);
-    Thread.sleep(10);
+    // ensure the job is running on both agents and the deployment group reaches DONE
+    awaitTaskState(jobId, firstHost, TaskStatus.State.RUNNING);
+    awaitTaskState(jobId, secondHost, TaskStatus.State.RUNNING);
+    awaitDeploymentGroupStatus(defaultClient(), deploymentGroupName,
+                               DeploymentGroupStatus.State.DONE);
 
-    final JobId secondJob = createJob(testJobName, testJobVersion + "2", BUSYBOX, IDLE_COMMAND);
+    // create a second job
+    final String secondJobVersion = testJobVersion + "2";
+    final String secondJobNameAndVersion = testJobNameAndVersion + "2";
+    final JobId secondJobId = createJob(testJobName, secondJobVersion, BUSYBOX, IDLE_COMMAND);
 
+    // trigger a rolling update to replace the first job with the second job
     assertEquals(RollingUpdateResponse.Status.OK,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion + "2",
-                                             "my_group"),
+                 OBJECT_MAPPER.readValue(cli("rolling-update", secondJobNameAndVersion,
+                                             deploymentGroupName),
                                          RollingUpdateResponse.class).getStatus());
 
-    awaitTaskState(secondJob, testHost() + "2", TaskStatus.State.RUNNING);
+    // ensure the second job rolled out fine
+    awaitTaskState(secondJobId, firstHost, TaskStatus.State.RUNNING);
+    awaitTaskState(secondJobId, secondHost, TaskStatus.State.RUNNING);
+    awaitDeploymentGroupStatus(defaultClient(), deploymentGroupName,
+                               DeploymentGroupStatus.State.DONE);
   }
 
   @Test

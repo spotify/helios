@@ -61,6 +61,7 @@ import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -712,7 +713,8 @@ public abstract class SystemTestBase {
 
     final String output = cli("status", "--host", host, "--json");
     final Map<JobId, JobStatus> statuses =
-        Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {});
+        Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {
+        });
     assertTrue(statuses.keySet().contains(jobId));
   }
 
@@ -722,7 +724,8 @@ public abstract class SystemTestBase {
 
     final String output = cli("status", "--host", host, "--json");
     final Map<JobId, JobStatus> statuses =
-        Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {});
+        Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {
+        });
     final JobStatus status = statuses.get(jobId);
     assertTrue(status == null ||
                status.getDeployments().get(host) == null);
@@ -913,6 +916,20 @@ public abstract class SystemTestBase {
         final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
         final Deployment deployment = hostStatus.getJobs().get(jobId);
         return taskStatus == null && deployment == null ? true : null;
+      }
+    });
+  }
+
+  protected DeploymentGroupStatus awaitDeploymentGroupStatus(final HeliosClient client,
+                                                            final String name,
+                                                            final DeploymentGroupStatus.State state)
+      throws Exception {
+    return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<DeploymentGroupStatus>() {
+      @Override
+      public DeploymentGroupStatus call() throws Exception {
+        final DeploymentGroupStatus status = getOrNull(client.deploymentGroupStatus(name));
+
+        return ((status != null) && status.getState().equals(state)) ? status : null;
       }
     });
   }
