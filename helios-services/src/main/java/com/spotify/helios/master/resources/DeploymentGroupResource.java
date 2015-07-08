@@ -201,7 +201,7 @@ public class DeploymentGroupResource {
           final JobId jobId = entry.getKey();
           final Deployment deployment = entry.getValue();
 
-          if (name.equals(deployment.getDeployerUser())) {
+          if (name.equals(deployment.getDeploymentGroupName())) {
             // Job was deployed by deployment-group
             deployedJobId = jobId;
           }
