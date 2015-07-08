@@ -245,7 +245,7 @@ public class DeploymentGroupTest extends SystemTestBase {
 
     // start a bunch of masters and agents
     final Map<String, MasterMain> masters = Maps.newHashMap();
-    for (int i = 0; i < 2; i++) {
+    for (int i = 0; i < 3; i++) {
       final String name = TEST_MASTER + i;
       masters.put(name, startDefaultMaster("--name", name));
     }
