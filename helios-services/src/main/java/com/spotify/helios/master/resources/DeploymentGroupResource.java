@@ -183,31 +183,34 @@ public class DeploymentGroupResource {
   @ExceptionMetered
   public Response getDeploymentGroupStatus(@PathParam("name") @Valid final String name) {
     try {
-      final DeploymentGroupStatus deploymentGroupStatus = model.getDeploymentGroupStatus(name);
       final DeploymentGroup deploymentGroup = model.getDeploymentGroup(name);
-      final List<DeploymentGroupStatusResponse.HostStatus> result = Lists.newArrayList();
+      final DeploymentGroupStatus deploymentGroupStatus = model.getDeploymentGroupStatus(name);
+
+      if (deploymentGroupStatus == null) {
+        throw new DeploymentGroupDoesNotExistException(name);
+      }
 
       final Set<String> hosts = Sets.newHashSet();
       for (final RolloutTask rolloutTask : deploymentGroupStatus.getRolloutTasks()) {
         hosts.add(rolloutTask.getTarget());
       }
 
+      final List<DeploymentGroupStatusResponse.HostStatus> result = Lists.newArrayList();
+
       for (final String host : hosts) {
         final HostStatus hostStatus = model.getHostStatus(host);
-        final Map<JobId, Deployment> jobs = hostStatus.getJobs();
 
         JobId deployedJobId = null;
-        for (final Map.Entry<JobId, Deployment> entry : jobs.entrySet()) {
-          final JobId jobId = entry.getKey();
-          final Deployment deployment = entry.getValue();
+        TaskStatus.State state = null;
 
-          if (name.equals(deployment.getDeploymentGroupName())) {
-            // Job was deployed by deployment-group
-            deployedJobId = jobId;
+        if (hostStatus != null) {
+          for (final Map.Entry<JobId, Deployment> entry : hostStatus.getJobs().entrySet()) {
+            if (name.equals(entry.getValue().getDeploymentGroupName())) {
+              deployedJobId = entry.getKey();
+            }
           }
         }
 
-        TaskStatus.State state = null;
         if (deployedJobId != null) {
           state = hostStatus.getStatuses().get(deployedJobId).getState();
         }
