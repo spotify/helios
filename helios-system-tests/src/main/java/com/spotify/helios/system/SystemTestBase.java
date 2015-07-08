@@ -523,15 +523,17 @@ public abstract class SystemTestBase {
     return argsList;
   }
 
-  protected void startDefaultMaster(String... args) throws Exception {
+  protected MasterMain startDefaultMaster(String... args) throws Exception {
     final List<String> argsList = setupDefaultMaster(args);
 
     if (argsList == null) {
-      return;
+      return null;
     }
 
-    startMaster(argsList.toArray(new String[argsList.size()]));
+    final MasterMain master = startMaster(argsList.toArray(new String[argsList.size()]));
     waitForMasterToConnectToZK();
+
+    return master;
   }
 
   protected void waitForMasterToConnectToZK() throws Exception {

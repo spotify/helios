@@ -22,6 +22,7 @@
 package com.spotify.helios.system;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,6 +33,7 @@ import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
+import com.spotify.helios.master.MasterMain;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -51,9 +53,14 @@ public class DeploymentGroupTest extends SystemTestBase {
 
   private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
+  private static final String TEST_GROUP = "my_group";
+  private static final String TEST_LABEL = "foo=bar";
+
+  private MasterMain master;
+
   @Before
   public void initialize() throws Exception {
-    startDefaultMaster();
+    master = startDefaultMaster();
 
     // Wait for master to come up
     Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
@@ -74,13 +81,13 @@ public class DeploymentGroupTest extends SystemTestBase {
   @Test
   public void testCreateDeploymentGroup() throws Exception {
     assertEquals("CREATED", Json.readTree(
-        cli("create-deployment-group", "--json", "my_group", "foo=bar", "baz=qux"))
+        cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux"))
         .get("status").asText());
-    final String output = cli("inspect-deployment-group", "--json", "my_group");
+    final String output = cli("inspect-deployment-group", "--json", TEST_GROUP);
 
     final DeploymentGroup dg = OBJECT_MAPPER.readValue(output, DeploymentGroup.class);
 
-    assertEquals("my_group", dg.getName());
+    assertEquals(TEST_GROUP, dg.getName());
     assertNull(dg.getJob());
     assertEquals(ImmutableMap.of("foo", "bar", "baz", "qux"), dg.getLabels());
   }
@@ -88,35 +95,35 @@ public class DeploymentGroupTest extends SystemTestBase {
   @Test
   public void testCreateExistingSameDeploymentGroup() throws Exception {
     assertEquals("CREATED", Json.readTree(
-        cli("create-deployment-group", "--json", "my_group", "foo=bar", "baz=qux"))
+        cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux"))
         .get("status").asText());
     assertEquals("NOT_MODIFIED", Json.readTree(
-        cli("create-deployment-group", "--json", "my_group", "foo=bar", "baz=qux"))
+        cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux"))
         .get("status").asText());
   }
 
   @Test
   public void testCreateExistingConflictingDeploymentGroup() throws Exception {
     assertEquals("CREATED", Json.readTree(
-        cli("create-deployment-group", "--json", "my_group", "foo=bar", "baz=qux"))
+        cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux"))
         .get("status").asText());
     assertEquals("CONFLICT", Json.readTree(
-        cli("create-deployment-group", "--json", "my_group", "foo=bar"))
+        cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar"))
         .get("status").asText());
   }
 
   @Test
   public void testRemoveDeploymentGroup() throws Exception {
-    cli("create-deployment-group", "--json", "my_group", "foo=bar", "baz=qux");
+    cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     assertEquals("REMOVED", Json.readTree(
-        cli("remove-deployment-group", "--json", "my_group"))
+        cli("remove-deployment-group", "--json", TEST_GROUP))
         .get("status").asText());
   }
 
   @Test
   public void testRemoveNonExistingDeploymentGroup() throws Exception {
     assertEquals("DEPLOYMENT_GROUP_NOT_FOUND", Json.readTree(
-        cli("remove-deployment-group", "--json", "my_group"))
+        cli("remove-deployment-group", "--json", TEST_GROUP))
         .get("status").asText());
   }
 
@@ -135,27 +142,25 @@ public class DeploymentGroupTest extends SystemTestBase {
   public void testRollingUpdate() throws Exception {
     final String firstHost = testHost();
     final String secondHost = testHost() + "2";
-    final String label = "foo=bar";
 
     // start two agents
-    startDefaultAgent(firstHost, "--labels", label);
-    startDefaultAgent(secondHost, "--labels", label);
+    startDefaultAgent(firstHost, "--labels", TEST_LABEL);
+    startDefaultAgent(secondHost, "--labels", TEST_LABEL);
 
     // create a deployment group  and job
-    final String deploymentGroupName = "my_group";
-    cli("create-deployment-group", "--json", deploymentGroupName, label);
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
     // trigger a rolling update
     assertEquals(RollingUpdateResponse.Status.OK,
                  OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion,
-                                             deploymentGroupName),
+                                             TEST_GROUP),
                                          RollingUpdateResponse.class).getStatus());
 
     // ensure the job is running on both agents and the deployment group reaches DONE
     awaitTaskState(jobId, firstHost, TaskStatus.State.RUNNING);
     awaitTaskState(jobId, secondHost, TaskStatus.State.RUNNING);
-    awaitDeploymentGroupStatus(defaultClient(), deploymentGroupName,
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
                                DeploymentGroupStatus.State.DONE);
 
     // create a second job
@@ -166,13 +171,13 @@ public class DeploymentGroupTest extends SystemTestBase {
     // trigger a rolling update to replace the first job with the second job
     assertEquals(RollingUpdateResponse.Status.OK,
                  OBJECT_MAPPER.readValue(cli("rolling-update", secondJobNameAndVersion,
-                                             deploymentGroupName),
+                                             TEST_GROUP),
                                          RollingUpdateResponse.class).getStatus());
 
     // ensure the second job rolled out fine
     awaitTaskState(secondJobId, firstHost, TaskStatus.State.RUNNING);
     awaitTaskState(secondJobId, secondHost, TaskStatus.State.RUNNING);
-    awaitDeploymentGroupStatus(defaultClient(), deploymentGroupName,
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
                                DeploymentGroupStatus.State.DONE);
   }
 
@@ -180,11 +185,11 @@ public class DeploymentGroupTest extends SystemTestBase {
   public void testAgentAddedAfterRollingUpdateIsDeployed() throws Exception {
     startDefaultAgent(testHost(), "--labels", "foo=bar");
 
-    cli("create-deployment-group", "--json", "my_group", "foo=bar");
+    cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar");
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
     assertEquals(RollingUpdateResponse.Status.OK,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion, "my_group"),
+                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion, TEST_GROUP),
                                          RollingUpdateResponse.class).getStatus());
 
     awaitTaskState(jobId, testHost(), TaskStatus.State.RUNNING);
@@ -198,7 +203,7 @@ public class DeploymentGroupTest extends SystemTestBase {
 
   @Test
   public void testRollingUpdateGroupNotFound() throws Exception {
-    cli("create-deployment-group", "--json", "my_group", "foo=bar", "baz=qux");
+    cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     cli("create", "my_job:2", "my_image");
     assertEquals(RollingUpdateResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND,
                  OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "my_job:2", "oops"),
@@ -207,19 +212,45 @@ public class DeploymentGroupTest extends SystemTestBase {
 
   @Test
   public void testAbortRollingUpdate() throws Exception {
-    cli("create-deployment-group", "--json", "my_group", "foo=bar", "baz=qux");
+    cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     cli("create", "my_job:2", "my_image");
-    assertThat(cli("abort-rolling-update", "my_group"),
+    assertThat(cli("abort-rolling-update", TEST_GROUP),
                containsString("Aborted rolling-update on deployment-group my_group"));
     final DeploymentGroupStatus status = Json.read(
-        cli("status-deployment-group", "--json", "my_group"), DeploymentGroupStatus.class);
+        cli("status-deployment-group", "--json", TEST_GROUP), DeploymentGroupStatus.class);
     assertEquals(DeploymentGroupStatus.DisplayState.FAILED, status.getDisplayState());
     assertEquals("Aborted by user", status.getError());
   }
 
   @Test
   public void testAbortRollingUpdateGroupNotFound() throws Exception {
-    assertThat(cli("abort-rolling-update", "my_group"),
+    assertThat(cli("abort-rolling-update", TEST_GROUP),
                containsString("Deployment-group my_group not found"));
+  }
+
+  @Test
+  public void testRollingUpdateHandoff() throws Exception {
+    final List<String> hosts = Lists.newArrayList();
+    for (int i = 0; i < 10; i++) {
+      final String host = testHost() + i;
+      hosts.add(host);
+
+      startDefaultAgent(host, "--labels", TEST_LABEL);
+    }
+
+    // create a deployment group and start rolling out
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    assertEquals(RollingUpdateResponse.Status.OK,
+                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion, TEST_GROUP),
+                                         RollingUpdateResponse.class).getStatus());
+
+    // wait until the first host has been deployed to, and then kill the master
+    awaitTaskState(jobId, hosts.get(0), TaskStatus.State.RUNNING);
+    master.stopAsync().awaitTerminated();
+
+    // start another master and make sure the rollout finishes
+    startDefaultMaster();
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
 }
