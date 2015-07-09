@@ -50,7 +50,7 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class RollingUpdateCommand extends WildcardJobCommand {
 
-  private final static long POLL_INTERVAL_MILLIS = 1000;
+  private static final long POLL_INTERVAL_MILLIS = 1000;
 
   private final Argument nameArg;
   private final Argument timeoutArg;
@@ -146,7 +146,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         break;
       }
 
-      if (status.getJobId() != jobId) {
+      if (!jobId.equals(status.getJobId())) {
         // Another rolling-update was started, overriding this one -- exit
         failed = true;
         error = "Deployment-group job id changed during rolling-update";
