@@ -22,7 +22,6 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.base.Supplier;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
