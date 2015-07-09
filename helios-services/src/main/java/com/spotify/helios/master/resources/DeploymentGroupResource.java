@@ -199,7 +199,6 @@ public class DeploymentGroupResource {
 
       for (final String host : hosts) {
         final HostStatus hostStatus = model.getHostStatus(host);
-
         JobId deployedJobId = null;
         TaskStatus.State state = null;
 
@@ -207,12 +206,13 @@ public class DeploymentGroupResource {
           for (final Map.Entry<JobId, Deployment> entry : hostStatus.getJobs().entrySet()) {
             if (name.equals(entry.getValue().getDeploymentGroupName())) {
               deployedJobId = entry.getKey();
+              final TaskStatus taskStatus = hostStatus.getStatuses().get(deployedJobId);
+              if (taskStatus != null) {
+                state = taskStatus.getState();
+              }
+              break;
             }
           }
-        }
-
-        if (deployedJobId != null) {
-          state = hostStatus.getStatuses().get(deployedJobId).getState();
         }
 
         result.add(new DeploymentGroupStatusResponse.HostStatus(host, deployedJobId, state));
@@ -233,6 +233,9 @@ public class DeploymentGroupResource {
           .build();
     } catch (final DeploymentGroupDoesNotExistException e) {
       return Response.status(Response.Status.NOT_FOUND).build();
+    } catch (Exception e) {
+      e.printStackTrace();
+      throw e;
     }
   }
 }
