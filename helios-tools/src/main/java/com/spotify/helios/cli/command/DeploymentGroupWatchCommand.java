@@ -21,9 +21,8 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 
-import com.spotify.helios.cli.Target;
 import com.spotify.helios.client.HeliosClient;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -37,15 +36,17 @@ import org.joda.time.format.DateTimeFormatter;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URI;
-import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-import static java.lang.String.format;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
-public class DeploymentGroupWatchCommand extends MultiTargetControlCommand {
+public class DeploymentGroupWatchCommand extends ControlCommand {
+
+  private static final int MAX_WIDTH = 80;
+  private static final String DATE_TIME_PATTERN = "YYYY-MM-dd HH:mm:ss";
 
   private final Argument nameArg;
+  private final Argument fullArg;
   private final Argument intervalArg;
 
   public DeploymentGroupWatchCommand(Subparser parser) {
@@ -55,6 +56,10 @@ public class DeploymentGroupWatchCommand extends MultiTargetControlCommand {
     nameArg = parser.addArgument("name")
         .help("Deployment group name");
 
+    fullArg = parser.addArgument("-f")
+        .action(storeTrue())
+        .help("Print full hostnames and job ids.");
+
     intervalArg = parser.addArgument("--interval")
         .type(Integer.class)
         .setDefault(1)
@@ -62,49 +67,35 @@ public class DeploymentGroupWatchCommand extends MultiTargetControlCommand {
   }
 
   @Override
-  int run(final Namespace options, final List<TargetAndClient> clients,
-          final PrintStream out, final boolean json, final BufferedReader stdin)
-              throws ExecutionException, InterruptedException, IOException {
+  int run(Namespace options, HeliosClient client, PrintStream out, boolean json,
+          BufferedReader stdin) throws ExecutionException, InterruptedException, IOException {
     final String name = options.getString(nameArg.getDest());
+    final boolean full = options.getBoolean(fullArg.getDest());
+    final Integer interval = options.getInt(intervalArg.getDest());
+    final DateTimeFormatter formatter = DateTimeFormat.forPattern(DATE_TIME_PATTERN);
 
-    watchDeploymentGroup(out, name, options.getInt(intervalArg.getDest()), clients);
-    return 0;
-  }
+    if (!json) {
+      out.println("Control-C to stop");
+      out.println("STATUS               HOST                           STATE");
+    }
 
-  static void watchDeploymentGroup(final PrintStream out, final String name,
-                                   final int interval, final List<TargetAndClient> clients)
-      throws InterruptedException, ExecutionException {
-    out.println("Control-C to stop");
-    out.println("STATUS               HOST                           STATE");
-    final DateTimeFormatter formatter = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss");
-    while (true) {
+    final int timestampLength = String.format("[%s UTC]", DATE_TIME_PATTERN).length();
 
+    int rc = 0;
+    while (rc == 0) {
       final Instant now = new Instant();
-      out.printf("-------------------- ------------------------------ -------- "
-          + "---------- [%s UTC]%n", now.toString(formatter));
-      for (TargetAndClient cc : clients) {
-        final Optional<Target> target = cc.getTarget();
-        if (clients.size() > 1) {
-          final String header;
-          if (target.isPresent()) {
-            final List<URI> endpoints = target.get().getEndpointSupplier().get();
-            header = format(" %s (%s)", target.get().getName(), endpoints);
-          } else {
-            header = "";
-          }
-          out.printf("---%s%n", header);
-        }
-        showReport(out, name, cc.getClient());
+      if (!json) {
+        out.printf(Strings.repeat("-", MAX_WIDTH - timestampLength - 1)
+                   + " [%s UTC]%n", now.toString(formatter));
       }
+
+      rc = DeploymentGroupStatusCommand.run0(client, out, json, name, full);
       if (out.checkError()) {
         break;
       }
+
       Thread.sleep(1000 * interval);
     }
-  }
-
-  private static void showReport(PrintStream out, final String name, final HeliosClient client)
-      throws ExecutionException, InterruptedException {
-    out.printf("%s%n", name);
+    return 0;
   }
 }
