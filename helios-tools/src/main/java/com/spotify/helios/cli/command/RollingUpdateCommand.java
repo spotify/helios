@@ -21,6 +21,8 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
@@ -52,6 +54,9 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
   private static final long POLL_INTERVAL_MILLIS = 1000;
 
+  private final SleepFunction sleepFunction;
+  private final Supplier<Long> timeSupplier;
+
   private final Argument nameArg;
   private final Argument timeoutArg;
   private final Argument parallelismArg;
@@ -59,7 +64,26 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   private final Argument rolloutTimeoutArg;
 
   public RollingUpdateCommand(final Subparser parser) {
+    this(parser, new SleepFunction() {
+      @Override
+      public void sleep(final long millis) throws InterruptedException {
+        Thread.sleep(millis);
+      }
+    }, new Supplier<Long>() {
+      @Override
+      public Long get() {
+        return System.currentTimeMillis();
+      }
+    });
+  }
+
+  @VisibleForTesting
+  RollingUpdateCommand(final Subparser parser, final SleepFunction sleepFunction,
+                       final Supplier<Long> timeSupplier) {
     super(parser);
+
+    this.sleepFunction = sleepFunction;
+    this.timeSupplier = timeSupplier;
 
     parser.help("Initiate a rolling update");
 
@@ -104,7 +128,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     checkArgument(parallelism > 0, "Parallelism must be greater than 0");
     checkArgument(rolloutTimeout > 0, "Rollout timeout must be greater than 0");
 
-    final long startTime = System.currentTimeMillis();
+    final long startTime = timeSupplier.get();
 
     final RolloutOptions rolloutOptions = RolloutOptions.newBuilder()
         .setTimeout(timeout)
@@ -178,16 +202,16 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         break;
       }
 
-      if (System.currentTimeMillis() - startTime > TimeUnit.MINUTES.toMillis(rolloutTimeout)) {
+      if (timeSupplier.get() - startTime > TimeUnit.MINUTES.toMillis(rolloutTimeout)) {
         // Rollout timed out
         timedOut = true;
         break;
       }
 
-      Thread.sleep(POLL_INTERVAL_MILLIS);
+      sleepFunction.sleep(POLL_INTERVAL_MILLIS);
     }
 
-    final double duration = (System.currentTimeMillis() - startTime) / 1000.0;
+    final double duration = (timeSupplier.get() - startTime) / 1000.0;
 
     if (json) {
       final Map<String, Object> output = Maps.newHashMap();
@@ -216,6 +240,10 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     }
 
     return (failed || timedOut) ? 1 : 0;
+  }
+
+  interface SleepFunction {
+    void sleep(long millis) throws InterruptedException;
   }
 }
 
