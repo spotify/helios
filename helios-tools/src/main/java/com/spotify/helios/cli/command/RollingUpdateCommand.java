@@ -63,7 +63,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     parser.help("Initiate a rolling update");
 
-    nameArg = parser.addArgument("name")
+    nameArg = parser.addArgument("deployment-group-name")
         .required(true)
         .help("Deployment group name");
 
@@ -85,7 +85,8 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     rolloutTimeoutArg = parser.addArgument("-T", "--rollout-timeout")
         .setDefault(60L)
         .type(Long.class)
-        .help("Exit if rolling-update takes longer than the given value (minutes)");
+        .help("Exit if rolling-update takes longer than the given value (minutes). Note that " +
+              "this will NOT abort the rolling update, it will just cause this command to exit.");
   }
 
   @Override
