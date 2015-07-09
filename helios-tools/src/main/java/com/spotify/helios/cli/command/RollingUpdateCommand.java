@@ -42,7 +42,9 @@ import java.io.PrintStream;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -54,6 +56,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   private final Argument timeoutArg;
   private final Argument parallelismArg;
   private final Argument asyncArg;
+  private final Argument rolloutTimeoutArg;
 
   public RollingUpdateCommand(final Subparser parser) {
     super(parser);
@@ -61,22 +64,28 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     parser.help("Initiate a rolling update");
 
     nameArg = parser.addArgument("name")
+        .required(true)
         .help("Deployment group name");
 
     timeoutArg = parser.addArgument("-t", "--timeout")
         .setDefault(RolloutOptions.DEFAULT_TIMEOUT)
         .type(Long.class)
-        .help("In seconds. Fail the deployment if a job does not come up within this timeout");
+        .help("Fail rollout if a job takes longer than this to reach RUNNING (seconds)");
 
     parallelismArg = parser.addArgument("-p", "--par")
         .dest("parallelism")
         .setDefault(RolloutOptions.DEFAULT_PARALLELISM)
         .type(Integer.class)
-        .help("Deploy to the specified number of hosts concurrently");
+        .help("Number of hosts to deploy to concurrently");
 
     asyncArg = parser.addArgument("--async")
         .action(storeTrue())
         .help("Don't block until rolling-update is complete");
+
+    rolloutTimeoutArg = parser.addArgument("-T", "--rollout-timeout")
+        .setDefault(60L)
+        .type(Long.class)
+        .help("Exit if rolling-update takes longer than the given value (minutes)");
   }
 
   @Override
@@ -88,18 +97,11 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final long timeout = options.getLong(timeoutArg.getDest());
     final int parallelism = options.getInt(parallelismArg.getDest());
     final boolean async = options.getBoolean(asyncArg.getDest());
+    final long rolloutTimeout = options.getLong(rolloutTimeoutArg.getDest());
 
-    if (name == null) {
-      throw new IllegalArgumentException("Please specify the name of the deployment-group");
-    }
-
-    if (timeout <= 0) {
-      throw new IllegalArgumentException("Timeout must be a strictly positive integer");
-    }
-
-    if (parallelism <= 0) {
-      throw new IllegalArgumentException("Parallelism must be a strictly positive integer");
-    }
+    checkArgument(timeout > 0, "Timeout must be greater than 0");
+    checkArgument(parallelism > 0, "Parallelism must be greater than 0");
+    checkArgument(rolloutTimeout > 0, "Rollout timeout must be greater than 0");
 
     final long startTime = System.currentTimeMillis();
 
@@ -118,31 +120,43 @@ public class RollingUpdateCommand extends WildcardJobCommand {
       return 1;
     }
 
+    if (!json) {
+      out.println(format("Rolling update%s started: %s -> %s (parallelism=%d, timeout=%d)\n",
+                         async ? " (async)" : "",
+                         name, jobId.toShortString(), parallelism, timeout));
+    }
+
     if (async) {
       if (json) {
         out.println(response.toJsonString());
-      } else {
-        out.println("Rolling update started... (async)");
       }
       return 0;
     }
 
-    out.println("Rolling update started...");
-
     String error = "";
     boolean failed = false;
+    boolean timedOut = false;
     final Set<String> reported = Sets.newHashSet();
     while (true) {
       final DeploymentGroupStatusResponse status = client.deploymentGroupStatus(name).get();
 
+      if (status == null) {
+        failed = true;
+        error = "Failed to fetch deployment-group status";
+        break;
+      }
+
       if (!json) {
         for (DeploymentGroupStatusResponse.HostStatus hostStatus : status.getHostStatuses()) {
-          final boolean done = hostStatus.getJobId() != null &&
-                               hostStatus.getJobId().equals(jobId) &&
-                               hostStatus.getState() == TaskStatus.State.RUNNING;
+          final JobId hostJobId = hostStatus.getJobId();
+          final String host = hostStatus.getHost();
+          final TaskStatus.State state = hostStatus.getState();
+          final boolean done = hostJobId != null &&
+                               hostJobId.equals(jobId) &&
+                               state == TaskStatus.State.RUNNING;
 
-          if (done && reported.add(hostStatus.getHost())) {
-            out.println(format("%s deployed (%d/%d)", hostStatus.getHost(),
+          if (done && reported.add(host)) {
+            out.println(format("%s -> %s (%d/%d)", host, state,
                                reported.size(), status.getHostStatuses().size()));
           }
         }
@@ -156,6 +170,12 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         break;
       }
 
+      if (System.currentTimeMillis() - startTime > TimeUnit.MINUTES.toMillis(rolloutTimeout)) {
+        // Rollout timed out
+        timedOut = true;
+        break;
+      }
+
       Thread.sleep(POLL_INTERVAL_MILLIS);
     }
 
@@ -163,24 +183,31 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     if (json) {
       final Map<String, Object> output = Maps.newHashMap();
-      output.put("duration", duration);
       if (failed) {
         output.put("status", "FAILED");
         output.put("error", error);
+      } else if (timedOut) {
+        output.put("status", "TIMEOUT");
       } else {
         output.put("status", "DONE");
       }
+      output.put("duration", duration);
+      output.put("parallelism", parallelism);
+      output.put("timeout", timeout);
       out.println(Json.asStringUnchecked(output));
     } else {
-      out.println(format("Duration: %.2f s", duration));
+      out.println();
       if (failed) {
         out.println(format("Failed: %s", error));
+      } else if (timedOut) {
+        out.println("Timed out! (rolling-update still in progress)");
       } else {
-        out.println("Done. ");
+        out.println("Done.");
       }
+      out.println(format("Duration: %.2f s", duration));
     }
 
-    return failed ? 1 : 0;
+    return (failed || timedOut) ? 1 : 0;
   }
 }
 
