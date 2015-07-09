@@ -125,7 +125,7 @@ public class ConfigTest {
             "SPOTIFY_POD", local);
 
         assertThat(job.getEnv(), equalTo(map));
-        assertThat(job.getImage(), equalTo("busybox"));
+        assertThat(job.getImage(), equalTo("busybox:latest"));
       }
     };
 
@@ -147,7 +147,7 @@ public class ConfigTest {
             "SPOTIFY_POD", domain,
             "SPOTIFY_SYSLOG_HOST", "10.99.0.1");
         assertThat(job.getEnv(), equalTo(map));
-        assertThat(job.getImage(), equalTo("busybox"));
+        assertThat(job.getImage(), equalTo("busybox:latest"));
 
       }
     };

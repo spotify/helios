@@ -52,7 +52,7 @@ public class IdMismatchJobCreateTest extends SystemTestBase {
     final HeliosClient client = defaultClient();
 
     final CreateJobResponse createIdMismatch = client.createJob(
-        new Job(JobId.fromString("bad:job:deadbeef"), "busyBox", IDLE_COMMAND,
+        new Job(JobId.fromString("bad:job:deadbeef"), BUSYBOX, IDLE_COMMAND,
                 EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS, EMPTY_REGISTRATION,
                 EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
                 EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,

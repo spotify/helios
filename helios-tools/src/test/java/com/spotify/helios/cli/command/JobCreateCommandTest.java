@@ -85,7 +85,7 @@ public class JobCreateCommandTest {
   @Test
   public void testValidJobCreateCommand() throws Exception {
     when(options.getString("id")).thenReturn(JOB_ID);
-    when(options.getString("image")).thenReturn("busybox");
+    when(options.getString("image")).thenReturn("busybox:latest");
     when(options.getString("exec_check")).thenReturn(EXEC_HEALTH_CHECK);
     // For some reason the mocked options.getInt() returns 0 by default.
     // Explicitly return null to check that the value from the JSON file doesn't get overwritten.
@@ -109,7 +109,7 @@ public class JobCreateCommandTest {
   @Test
   public void testInvalidJobCreateCommand() throws Exception {
     when(options.getString("id")).thenReturn(JOB_NAME);
-    when(options.getString("image")).thenReturn("busybox");
+    when(options.getString("image")).thenReturn("busybox:latest");
     final int ret = command.run(options, client, out, false, null);
     assertEquals(1, ret);
   }
@@ -117,7 +117,7 @@ public class JobCreateCommandTest {
   @Test(expected=IllegalArgumentException.class)
   public void testJobCreateCommandFailsWithInvalidFilePath() throws Exception {
     when(options.getString("id")).thenReturn(JOB_ID);
-    when(options.getString("image")).thenReturn("busybox");
+    when(options.getString("image")).thenReturn("busybox:latest");
     doReturn(new File("non/existant/file")).when(options).get("file");
     command.run(options, client, out, false, null);
   }
