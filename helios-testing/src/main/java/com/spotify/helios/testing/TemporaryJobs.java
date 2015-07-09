@@ -87,7 +87,7 @@ public class TemporaryJobs implements TestRule {
   private static final Prober DEFAULT_PROBER = new DefaultProber();
   private static final String DEFAULT_LOCAL_HOST_FILTER = ".+";
   private static final String DEFAULT_PREFIX_DIRECTORY = "/tmp/helios-temp-jobs";
-  private static final String DEFAULT_TEST_REPORT_DIRECTORY = "./helios-reports/test";
+  private static final String DEFAULT_TEST_REPORT_DIRECTORY = "target/helios-reports/test";
   private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
