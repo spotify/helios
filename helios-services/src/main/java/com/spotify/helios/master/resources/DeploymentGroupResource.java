@@ -233,9 +233,6 @@ public class DeploymentGroupResource {
           .build();
     } catch (final DeploymentGroupDoesNotExistException e) {
       return Response.status(Response.Status.NOT_FOUND).build();
-    } catch (Exception e) {
-      e.printStackTrace();
-      throw e;
     }
   }
 }
