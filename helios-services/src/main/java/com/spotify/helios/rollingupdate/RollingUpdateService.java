@@ -49,10 +49,11 @@ public class RollingUpdateService extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(RollingUpdateService.class);
 
-  private static final long UPDATE_INTERVAL = SECONDS.toMillis(5);
+  private static final long UPDATE_INTERVAL = SECONDS.toMillis(1);
 
   private final MasterModel masterModel;
-  private final Reactor reactor;
+  private final Reactor hostUpdateReactor;
+  private final Reactor rollingUpdateReactor;
 
   /**
    * Create a new RollingUpdateService.
@@ -62,26 +63,34 @@ public class RollingUpdateService extends AbstractIdleService {
   public RollingUpdateService(final MasterModel masterModel,
                               final ReactorFactory reactorFactory) {
     this.masterModel = checkNotNull(masterModel, "masterModel");
-    this.reactor = checkNotNull(reactorFactory.create("rollingupdate", new Update(),
-                                                      UPDATE_INTERVAL),
-                                "reactor");
+    checkNotNull(reactorFactory, "reactorFactory");
+
+    this.hostUpdateReactor = reactorFactory.create("hostUpdate",
+                                                   new UpdateDeploymentGroupHosts(),
+                                                   UPDATE_INTERVAL);
+    this.rollingUpdateReactor = reactorFactory.create("rollingUpdate", new RollingUpdate(),
+                                                      UPDATE_INTERVAL);
   }
 
   @Override
   protected void startUp() throws Exception {
-    reactor.startAsync().awaitRunning();
-    reactor.signal();
+    hostUpdateReactor.startAsync().awaitRunning();
+    hostUpdateReactor.signal();
+
+    rollingUpdateReactor.startAsync().awaitRunning();
+    rollingUpdateReactor.signal();
   }
 
   @Override
   protected void shutDown() throws Exception {
-    reactor.stopAsync().awaitTerminated();
+    hostUpdateReactor.stopAsync().awaitTerminated();
+    rollingUpdateReactor.stopAsync().awaitTerminated();
   }
 
   /**
-   * Starts and stops supervisors to reflect the desired state. Called by the reactor.
+   * Updates the list of hosts associated with a deployment group. Called by the hostUpdateReactor.
    */
-  private class Update implements Callback {
+  private class UpdateDeploymentGroupHosts implements Callback {
 
     @Override
     public void run(final boolean timeout) throws InterruptedException {
@@ -91,9 +100,7 @@ public class RollingUpdateService extends AbstractIdleService {
       // determine all hosts and their labels
       for (final String host : allHosts) {
         final HostStatus hostStatus = masterModel.getHostStatus(host);
-        if (hostStatus.getStatus().equals(HostStatus.Status.UP)) {
-          hostsToLabels.put(host, hostStatus.getLabels());
-        }
+        hostsToLabels.put(host, hostStatus.getLabels());
       }
 
       for (final DeploymentGroup dg : masterModel.getDeploymentGroups().values()) {
@@ -122,7 +129,25 @@ public class RollingUpdateService extends AbstractIdleService {
         }
 
         try {
-          masterModel.rollingUpdateStep(dg, DefaultRolloutPlanner.of(dg, matchingHosts));
+          masterModel.updateDeploymentGroupHosts(dg.getName(), matchingHosts);
+        } catch (Exception e) {
+          log.warn("error processing hosts update for deployment group: {} - {}",
+                   dg.getName(), e);
+        }
+      }
+    }
+  }
+
+  /**
+   * Processes rolling update tasks. Called by the rollingUpdateReactor.
+   */
+  private class RollingUpdate implements Callback {
+
+    @Override
+    public void run(final boolean timeout) throws InterruptedException {
+      for (final DeploymentGroup dg : masterModel.getDeploymentGroups().values()) {
+        try {
+          masterModel.rollingUpdateStep(dg, DefaultRolloutPlanner.of(dg));
         } catch (Exception e) {
           log.warn("error processing rolling update step for deployment group: {} - {}",
                    dg.getName(), e);

@@ -22,7 +22,6 @@
 package com.spotify.helios.master.resources;
 
 import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
@@ -31,7 +30,6 @@ import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.RolloutTask;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
@@ -46,7 +44,6 @@ import com.spotify.helios.master.MasterModel;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
@@ -190,10 +187,7 @@ public class DeploymentGroupResource {
         throw new DeploymentGroupDoesNotExistException(name);
       }
 
-      final Set<String> hosts = Sets.newHashSet();
-      for (final RolloutTask rolloutTask : deploymentGroupStatus.getRolloutTasks()) {
-        hosts.add(rolloutTask.getTarget());
-      }
+      final List<String> hosts = model.getDeploymentGroupHosts(name);
 
       final List<DeploymentGroupStatusResponse.HostStatus> result = Lists.newArrayList();
 

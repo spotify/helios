@@ -22,17 +22,22 @@
 package com.spotify.helios.rollingupdate;
 
 
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
 import org.junit.Test;
 
 import java.util.List;
+import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class DefaultRolloutPlannerTest {
 
@@ -43,11 +48,18 @@ public class DefaultRolloutPlannerTest {
                                .setParallelism(1)
                                .build())
         .build();
-    final List<String> hosts = Lists.newArrayList("agent1", "agent2", "agent3", "agent4");
+    final HostStatus statusUp = mock(HostStatus.class);
+    when(statusUp.getStatus()).thenReturn(HostStatus.Status.UP);
+    final Map<String, HostStatus> hostsAndStatuses = ImmutableMap.of(
+        "agent1", statusUp,
+        "agent2", statusUp,
+        "agent3", statusUp,
+        "agent4", statusUp
+    );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup, hosts);
+    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
 
-    final List<RolloutTask> tasks = rolloutPlanner.plan();
+    final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
     final List<RolloutTask> expected = Lists.newArrayList(
         RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent1"),
@@ -73,22 +85,29 @@ public class DefaultRolloutPlannerTest {
                                .setParallelism(2)
                                .build())
         .build();
-    final List<String> hosts = Lists.newArrayList("agent1", "agent2", "agent3", "agent4");
+    final HostStatus statusUp = mock(HostStatus.class);
+    when(statusUp.getStatus()).thenReturn(HostStatus.Status.UP);
+    final Map<String, HostStatus> hostsAndStatuses = ImmutableMap.of(
+        "agent1", statusUp,
+        "agent2", statusUp,
+        "agent3", statusUp,
+        "agent4", statusUp
+    );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup, hosts);
+    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
 
-    final List<RolloutTask> tasks = rolloutPlanner.plan();
+    final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
     final List<RolloutTask> expected = Lists.newArrayList(
         RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent1"),
-        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent2"),
         RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent1"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent2"),
         RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent2"),
         RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent1"),
         RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent2"),
         RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent3"),
-        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent4"),
         RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent3"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent4"),
         RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent4"),
         RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent3"),
         RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent4"));
@@ -103,18 +122,25 @@ public class DefaultRolloutPlannerTest {
                                .setParallelism(3)
                                .build())
         .build();
-    final List<String> hosts = Lists.newArrayList("agent1", "agent2", "agent3", "agent4");
+    final HostStatus statusUp = mock(HostStatus.class);
+    when(statusUp.getStatus()).thenReturn(HostStatus.Status.UP);
+    final Map<String, HostStatus> hostsAndStatuses = ImmutableMap.of(
+        "agent1", statusUp,
+        "agent2", statusUp,
+        "agent3", statusUp,
+        "agent4", statusUp
+    );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup, hosts);
+    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
 
-    final List<RolloutTask> tasks = rolloutPlanner.plan();
+    final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
     final List<RolloutTask> expected = Lists.newArrayList(
         RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent1"),
-        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent2"),
-        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent3"),
         RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent1"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent2"),
         RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent2"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent3"),
         RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent3"),
         RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent1"),
         RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent2"),

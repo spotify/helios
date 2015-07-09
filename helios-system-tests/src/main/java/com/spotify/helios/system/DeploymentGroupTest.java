@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
+import static com.google.common.collect.Iterables.getLast;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -155,8 +156,8 @@ public class DeploymentGroupTest extends SystemTestBase {
 
     // trigger a rolling update
     assertEquals(RollingUpdateResponse.Status.OK,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion,
-                                             TEST_GROUP),
+                 OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "--async",
+                                             testJobNameAndVersion, TEST_GROUP),
                                          RollingUpdateResponse.class).getStatus());
 
     // ensure the job is running on both agents and the deployment group reaches DONE
@@ -175,8 +176,8 @@ public class DeploymentGroupTest extends SystemTestBase {
 
     // trigger a rolling update to replace the first job with the second job
     assertEquals(RollingUpdateResponse.Status.OK,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", secondJobNameAndVersion,
-                                             TEST_GROUP),
+                 OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "--async",
+                                             secondJobNameAndVersion, TEST_GROUP),
                                          RollingUpdateResponse.class).getStatus());
 
     // ensure the second job rolled out fine
@@ -194,7 +195,8 @@ public class DeploymentGroupTest extends SystemTestBase {
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
     assertEquals(RollingUpdateResponse.Status.OK,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", testJobNameAndVersion, TEST_GROUP),
+                 OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "--async",
+                                             testJobNameAndVersion, TEST_GROUP),
                                          RollingUpdateResponse.class).getStatus());
 
     awaitTaskState(jobId, testHost(), TaskStatus.State.RUNNING);
@@ -211,7 +213,8 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     cli("create", "my_job:2", "my_image");
     assertEquals(RollingUpdateResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "my_job:2", "oops"),
+                 OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "--async", "my_job:2",
+                                             "oops"),
                                          RollingUpdateResponse.class).getStatus());
   }
 
@@ -246,7 +249,7 @@ public class DeploymentGroupTest extends SystemTestBase {
       masters.put(name, startDefaultMaster("--name", name));
     }
 
-    final Map<String, AgentMain> agents = Maps.newHashMap();
+    final Map<String, AgentMain> agents = Maps.newLinkedHashMap();
     for (int i = 0; i < 10; i++) {
       final String name = TEST_HOST + i;
       agents.put(name, startDefaultAgent(name, "--labels", TEST_LABEL));
@@ -256,14 +259,14 @@ public class DeploymentGroupTest extends SystemTestBase {
     cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
     assertEquals(RollingUpdateResponse.Status.OK,
-                 OBJECT_MAPPER.readValue(cli("rolling-update",
+                 OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "--async",
                                              "--par", String.valueOf(agents.size()),
                                              testJobNameAndVersion,
                                              TEST_GROUP),
                                          RollingUpdateResponse.class).getStatus());
 
-    // wait until the rollout is complete
-    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+    // wait until the task is running on the final agent
+    awaitTaskState(jobId, getLast(agents.keySet()), TaskStatus.State.RUNNING);
 
     // ensure that all masters were involved
     final Set<String> deployingMasters = Sets.newHashSet();

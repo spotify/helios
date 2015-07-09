@@ -21,10 +21,12 @@
 
 package com.spotify.helios.rollingupdate;
 
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
 import java.util.List;
+import java.util.Map;
 
 public interface RolloutPlanner {
-  List<RolloutTask> plan();
+  List<RolloutTask> plan(final Map<String, HostStatus> hostsAndStatuses);
 }

@@ -203,6 +203,10 @@ public class Paths {
     return STATUS_DEPLOYMENT_GROUPS.path(name);
   }
 
+  public static String statusDeploymentGroupHosts(final String name) {
+    return STATUS_DEPLOYMENT_GROUPS.path(name, HOSTS);
+  }
+
   public static String historyJobHostEventsTimestamp(final JobId jobId,
                                                      final String host,
                                                      final long timestamp) {

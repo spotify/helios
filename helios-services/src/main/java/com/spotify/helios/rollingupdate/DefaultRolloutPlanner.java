@@ -25,32 +25,38 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class DefaultRolloutPlanner implements RolloutPlanner {
 
   private final DeploymentGroup deploymentGroup;
-  private final List<String> hosts;
 
-  private DefaultRolloutPlanner(final DeploymentGroup deploymentGroup,
-                                final List<String> hosts) {
+  private DefaultRolloutPlanner(final DeploymentGroup deploymentGroup) {
     this.deploymentGroup = checkNotNull(deploymentGroup, "deploymentGroup");
-    this.hosts = checkNotNull(hosts, "hosts");
   }
 
-  public static DefaultRolloutPlanner of(final DeploymentGroup deploymentGroup,
-                                         final List<String> hosts) {
-    return new DefaultRolloutPlanner(deploymentGroup, hosts);
+  public static DefaultRolloutPlanner of(final DeploymentGroup deploymentGroup) {
+    return new DefaultRolloutPlanner(deploymentGroup);
   }
 
   @Override
-  public List<RolloutTask> plan() {
-    final List<RolloutTask> rolloutTasks = Lists.newArrayList();
+  public List<RolloutTask> plan(final Map<String, HostStatus> hostsAndStatuses) {
+    // we only care about hosts that are UP
+    final List<String> hosts = Lists.newArrayList();
+    for (final Map.Entry<String, HostStatus> entry : hostsAndStatuses.entrySet()) {
+      if (entry.getValue().getStatus().equals(HostStatus.Status.UP)) {
+        hosts.add(entry.getKey());
+      }
+    }
 
+    // generate the rollout tasks
+    final List<RolloutTask> rolloutTasks = Lists.newArrayList();
     final int parallelism = deploymentGroup.getRolloutOptions() != null ?
                             deploymentGroup.getRolloutOptions().getParallelism() : 1;
 
