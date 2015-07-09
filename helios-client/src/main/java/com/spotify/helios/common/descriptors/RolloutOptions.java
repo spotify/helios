@@ -29,8 +29,8 @@ import java.util.concurrent.TimeUnit;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RolloutOptions {
 
-  public static long DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5);
-  public static int DEFAULT_PARALLELISM = 1;
+  public static final long DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5);
+  public static final int DEFAULT_PARALLELISM = 1;
 
   private final long timeout;
   private final int parallelism;
