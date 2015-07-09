@@ -81,12 +81,6 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
-  public void testGetNonExistingDeploymentGroup() throws Exception {
-    final String output = cli("inspect-deployment-group", "--json", "not_there");
-    assertThat(output, containsString("Unknown deployment group: not_there"));
-  }
-
-  @Test
   public void testCreateDeploymentGroup() throws Exception {
     assertEquals("CREATED", Json.readTree(
         cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux"))

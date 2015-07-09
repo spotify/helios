@@ -25,7 +25,9 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.JobId;
 
@@ -56,6 +58,9 @@ public class DeploymentGroupInspectCommandTest {
   private static final Map<String, String> LABELS_MAP = ImmutableMap.of("foo", "bar", "baz", "qux");
   private static final JobId JOB = new JobId("foo-job", "0.1.0");
 
+  private static final DeploymentGroup DEPLOYMENT_GROUP =
+      DeploymentGroup.newBuilder().setName(NAME).setLabels(LABELS_MAP).setJob(JOB).build();
+
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
   private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -72,12 +77,9 @@ public class DeploymentGroupInspectCommandTest {
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("test");
     final Subparser subparser = parser.addSubparsers().addParser("inspect");
 
-    final DeploymentGroup deploymentGroup =
-        DeploymentGroup.newBuilder().setName(NAME).setLabels(LABELS_MAP).setJob(JOB).build();
-
     command = new DeploymentGroupInspectCommand(subparser);
 
-    when(client.deploymentGroup(NAME)).thenReturn(Futures.immediateFuture(deploymentGroup));
+    when(client.deploymentGroup(NAME)).thenReturn(Futures.immediateFuture(DEPLOYMENT_GROUP));
     final ListenableFuture<DeploymentGroup> nullFuture = Futures.immediateFuture(null);
     when(client.deploymentGroup(NON_EXISTENT_NAME)).thenReturn(nullFuture);
   }
@@ -96,6 +98,17 @@ public class DeploymentGroupInspectCommandTest {
   }
 
   @Test
+  public void testDeploymentGroupInspectCommandJson() throws Exception {
+    when(options.getString("name")).thenReturn(NAME);
+    final int ret = command.run(options, client, out, true, null);
+
+    assertEquals(0, ret);
+    final DeploymentGroup output = Json.read(baos.toString(), DeploymentGroup.class);
+
+    assertEquals(DEPLOYMENT_GROUP, output);
+  }
+
+  @Test
   public void testDeploymentGroupInspectCommandNotFound() throws Exception {
     when(options.getString("name")).thenReturn(NON_EXISTENT_NAME);
     final int ret = command.run(options, client, out, false, null);
@@ -103,5 +116,17 @@ public class DeploymentGroupInspectCommandTest {
     assertEquals(1, ret);
     final String output = baos.toString();
     assertThat(output, containsString("Unknown deployment group: " + NON_EXISTENT_NAME));
+  }
+
+  @Test
+  public void testDeploymentGroupInspectCommandNotFoundJson() throws Exception {
+    when(options.getString("name")).thenReturn(NON_EXISTENT_NAME);
+    final int ret = command.run(options, client, out, true, null);
+
+    assertEquals(1, ret);
+    final Map<String, Object> output = Json.read(
+        baos.toString(), new TypeReference<Map<String, Object>>() {});
+
+    assertEquals("DEPLOYMENT_GROUP_NOT_FOUND", output.get("status"));
   }
 }

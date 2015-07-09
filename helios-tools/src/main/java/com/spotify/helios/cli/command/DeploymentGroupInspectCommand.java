@@ -22,6 +22,7 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 
 import com.spotify.helios.client.HeliosClient;
@@ -48,7 +49,7 @@ public class DeploymentGroupInspectCommand extends ControlCommand {
     parser.help("inspect a deployment group");
 
     nameArg = parser.addArgument("name")
-        .nargs("?")
+        .required(true)
         .help("Deployment group name");
   }
 
@@ -56,17 +57,18 @@ public class DeploymentGroupInspectCommand extends ControlCommand {
   int run(final Namespace options, final HeliosClient client, final PrintStream out,
           final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
-
     final String name = options.getString(nameArg.getDest());
-
-    if (name == null) {
-      throw new IllegalArgumentException("Please specify a deployment group name.");
-    }
 
     final DeploymentGroup deploymentGroup = client.deploymentGroup(name).get();
 
     if (deploymentGroup == null) {
-      out.printf("Unknown deployment group: %s%n", name);
+      if (json) {
+        final Map<String, Object> output = Maps.newHashMap();
+        output.put("status", "DEPLOYMENT_GROUP_NOT_FOUND");
+        out.print(Json.asStringUnchecked(output));
+      } else {
+        out.printf("Unknown deployment group: %s%n", name);
+      }
       return 1;
     }
 
