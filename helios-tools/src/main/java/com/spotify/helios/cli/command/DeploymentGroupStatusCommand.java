@@ -22,6 +22,7 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.base.Strings;
+import com.google.common.collect.Maps;
 
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.client.HeliosClient;
@@ -36,6 +37,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 
 import static com.spotify.helios.cli.Output.formatHostname;
@@ -71,7 +73,13 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
     final DeploymentGroupStatusResponse status = client.deploymentGroupStatus(name).get();
 
     if (status == null) {
-      out.printf("Unknown deployment group: %s%n", name);
+      if (json) {
+        final Map<String, Object> output = Maps.newHashMap();
+        output.put("status", "DEPLOYMENT_GROUP_NOT_FOUND");
+        out.print(Json.asStringUnchecked(output));
+      } else {
+        out.printf("Unknown deployment group: %s%n", name);
+      }
       return 1;
     }
 
@@ -82,18 +90,13 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
       final String error = status.getError();
 
       out.printf("Name: %s%n", name);
-      if (full) {
-        out.printf("Job Id: %s%n", jobId);
-      } else {
-        out.printf("Job Id: %s%n", jobId.toShortString());
-      }
+      out.printf("Job Id: %s%n", full ? jobId : jobId.toShortString());
       out.printf("Status: %s%n", status.getStatus());
 
       if (!Strings.isNullOrEmpty(error)) {
-        out.printf("Error: %s%n%n", error);
-      } else {
-        out.printf("%n");
+        out.printf("Error: %s%n", error);
       }
+      out.printf("%n");
 
       printTable(out, jobId, status.getHostStatuses(), full);
     }
