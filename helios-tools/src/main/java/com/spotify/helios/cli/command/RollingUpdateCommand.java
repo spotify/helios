@@ -48,6 +48,8 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class RollingUpdateCommand extends WildcardJobCommand {
 
+  private final static long POLL_INTERVAL_MILLIS = 1000;
+
   private final Argument nameArg;
   private final Argument timeoutArg;
   private final Argument parallelismArg;
@@ -98,6 +100,8 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     if (parallelism <= 0) {
       throw new IllegalArgumentException("Parallelism must be a strictly positive integer");
     }
+
+    final long startTime = System.currentTimeMillis();
 
     final RolloutOptions rolloutOptions = RolloutOptions.newBuilder()
         .setTimeout(timeout)
@@ -152,11 +156,14 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         break;
       }
 
-      Thread.sleep(1000);
+      Thread.sleep(POLL_INTERVAL_MILLIS);
     }
 
+    final double duration = (System.currentTimeMillis() - startTime) / 1000.0;
+
     if (json) {
-      final Map<String, String> output = Maps.newHashMap();
+      final Map<String, Object> output = Maps.newHashMap();
+      output.put("duration", duration);
       if (failed) {
         output.put("status", "FAILED");
         output.put("error", error);
@@ -165,10 +172,11 @@ public class RollingUpdateCommand extends WildcardJobCommand {
       }
       out.println(Json.asStringUnchecked(output));
     } else {
+      out.println(format("Duration: %.2f s", duration));
       if (failed) {
         out.println(format("Failed: %s", error));
       } else {
-        out.println("Done.");
+        out.println("Done. ");
       }
     }
 
