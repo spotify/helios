@@ -62,7 +62,7 @@ public class BasicFunctionalityITCase {
 
   static final List<String> IDLE_COMMAND = asList(
       "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
-  public static final String BUSYBOX = "busybox";
+  public static final String BUSYBOX = "busybox:latest";
 
   private HeliosClient client;
   private String deployHost;

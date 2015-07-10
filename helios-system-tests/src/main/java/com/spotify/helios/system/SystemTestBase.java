@@ -140,10 +140,11 @@ public abstract class SystemTestBase {
   public static final int WAIT_TIMEOUT_SECONDS = 40;
   public static final int LONG_WAIT_SECONDS = 400;
 
-  public static final String BUSYBOX = "busybox";
-  public static final String NGINX = "rohan/nginx-alpine";
-  public static final String UHTTPD = "fnichol/docker-uhttpd";
-  public static final String ALPINE = "onescience/alpine";
+  public static final String BUSYBOX = "busybox:latest";
+  public static final String NGINX = "rohan/nginx-alpine:latest";
+  public static final String UHTTPD = "fnichol/docker-uhttpd:latest";
+  public static final String ALPINE = "onescience/alpine:latest";
+  public static final String MEMCACHED = "rohan/memcached-mini:latest";
   public static final List<String> IDLE_COMMAND = asList(
       "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
 
@@ -963,12 +964,6 @@ public abstract class SystemTestBase {
         }
       }
     });
-    try {
-      // This should fail with an exception if the container still exists
-      dockerClient.inspectContainer(containerId);
-      fail();
-    } catch (DockerException ignore) {
-    }
   }
 
   protected List<Container> listContainers(final DockerClient dockerClient, final String needle)
