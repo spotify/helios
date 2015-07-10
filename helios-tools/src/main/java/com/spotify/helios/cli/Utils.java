@@ -21,7 +21,10 @@
 
 package com.spotify.helios.cli;
 
+import com.google.common.base.Function;
+import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
@@ -102,5 +105,23 @@ public class Utils {
       }
     }
     return map;
+  }
+
+  public static <K extends Comparable<K>, V> void printMap(final PrintStream out, final String name,
+                                                    final Function<V, String> transform,
+                                                    final Map<K, V> values) {
+    out.print(name);
+    boolean first = true;
+    for (final K key : Ordering.natural().sortedCopy(values.keySet())) {
+      if (!first) {
+        out.print(Strings.repeat(" ", name.length()));
+      }
+      final V value = values.get(key);
+      out.printf("%s=%s%n", key, transform.apply(value));
+      first = false;
+    }
+    if (first) {
+      out.println();
+    }
   }
 }

@@ -46,15 +46,22 @@ import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.VersionCompatibility.Status;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.RolloutOptions;
+import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
+import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
+import com.spotify.helios.common.protocol.RollingUpdateRequest;
+import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
@@ -93,13 +100,11 @@ import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSI
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-
-import static java.net.HttpURLConnection.HTTP_OK;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
-
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.Executors.newFixedThreadPool;
@@ -487,11 +492,13 @@ public class HeliosClient implements AutoCloseable {
   }
 
   public ListenableFuture<List<String>> listHosts() {
-    return get(uri("/hosts/"), new TypeReference<List<String>>() {});
+    return get(uri("/hosts/"), new TypeReference<List<String>>() {
+    });
   }
 
   public ListenableFuture<List<String>> listMasters() {
-    return get(uri("/masters/"), new TypeReference<List<String>>() {});
+    return get(uri("/masters/"), new TypeReference<List<String>>() {
+    });
   }
 
   public ListenableFuture<VersionResponse> version() {
@@ -529,7 +536,8 @@ public class HeliosClient implements AutoCloseable {
   }
 
   public ListenableFuture<Map<JobId, Job>> jobs(final String query) {
-    return get(uri("/jobs", ImmutableMap.of("q", query)), new TypeReference<Map<JobId, Job>>() {});
+    return get(uri("/jobs", ImmutableMap.of("q", query)), new TypeReference<Map<JobId, Job>>() {
+    });
   }
 
   public ListenableFuture<Map<JobId, Job>> jobs() {
@@ -554,7 +562,49 @@ public class HeliosClient implements AutoCloseable {
     
     return transform(request(uri("/jobs/statuses"), "POST", jobs), converter);
   }
-  
+
+  public ListenableFuture<DeploymentGroup> deploymentGroup(final String name) {
+    return get(uri("/deployment-group/" + name), new TypeReference<DeploymentGroup>() {
+    });
+  }
+
+  public ListenableFuture<List<String>> listDeploymentGroups() {
+    return get(uri("/deployment-group/"), new TypeReference<List<String>>() {
+    });
+  }
+
+  public ListenableFuture<DeploymentGroupStatusResponse> deploymentGroupStatus(final String name) {
+    return get(uri(path("/deployment-group/%s/status", name)),
+               new TypeReference<DeploymentGroupStatusResponse>() {});
+  }
+
+  public ListenableFuture<CreateDeploymentGroupResponse>
+  createDeploymentGroup(final DeploymentGroup descriptor) {
+    return transform(request(uri("/deployment-group/"), "POST", descriptor),
+                     ConvertResponseToPojo.create(CreateDeploymentGroupResponse.class,
+                                                  ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+  }
+
+  public ListenableFuture<RemoveDeploymentGroupResponse> removeDeploymentGroup(final String name) {
+    return transform(request(uri("/deployment-group/" + name), "DELETE"),
+                     ConvertResponseToPojo.create(RemoveDeploymentGroupResponse.class,
+                                                  ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+  }
+
+  public ListenableFuture<RollingUpdateResponse> rollingUpdate(
+      final String deploymentGroupName, final JobId job, final RolloutOptions options) {
+    return transform(
+        request(uri(path("/deployment-group/%s/rolling-update", deploymentGroupName)),
+                "POST", new RollingUpdateRequest(job, options)),
+        ConvertResponseToPojo.create(RollingUpdateResponse.class,
+                                     ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
+  }
+
+  public ListenableFuture<Integer> abortRollingUpdate(final String deploymentGroupName) {
+    return status(request(
+        uri(path("/deployment-group/%s/rolling-update/abort", deploymentGroupName)), "POST"));
+  }
+
   private static final class ConvertResponseToPojo<T> implements AsyncFunction<Response, T> {
 
     private final JavaType javaType;

@@ -29,14 +29,17 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.codahale.metrics.MetricRegistry;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
+import com.spotify.helios.master.resources.DeploymentGroupResource;
 import com.spotify.helios.master.resources.HistoryResource;
 import com.spotify.helios.master.resources.HostsResource;
 import com.spotify.helios.master.resources.JobsResource;
 import com.spotify.helios.master.resources.MastersResource;
 import com.spotify.helios.master.resources.VersionResource;
+import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
+import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
@@ -96,6 +99,7 @@ public class MasterService extends AbstractIdleService {
   private final ZooKeeperClient zooKeeperClient;
   private final ExpiredJobReaper expiredJobReaper;
   private final CuratorClientFactory curatorClientFactory;
+  private final RollingUpdateService rollingUpdateService;
 
   private ZooKeeperRegistrar zkRegistrar;
 
@@ -137,7 +141,7 @@ public class MasterService extends AbstractIdleService {
         riemannFacade, metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
-    final MasterModel model = new ZooKeeperMasterModel(zkClientProvider);
+    final MasterModel model = new ZooKeeperMasterModel(zkClientProvider, config.getName());
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
         zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);
@@ -156,6 +160,10 @@ public class MasterService extends AbstractIdleService {
         .setMasterModel(model)
         .build();
 
+    // Set up rolling update service
+    final ReactorFactory reactorFactory = new ReactorFactory();
+    this.rollingUpdateService = new RollingUpdateService(model, reactorFactory);
+
     // Set up http server
     environment.servlets()
         .addFilter("VersionResponseFilter", VersionResponseFilter.class)
@@ -168,6 +176,7 @@ public class MasterService extends AbstractIdleService {
     environment.jersey().register(new MastersResource(model));
     environment.jersey().register(new VersionResource());
     environment.jersey().register(new UserProvider());
+    environment.jersey().register(new DeploymentGroupResource(model));
 
     final DefaultServerFactory serverFactory = ServiceUtil.createServerFactory(
         config.getHttpEndpoint(), config.getAdminPort(), false);
@@ -223,6 +232,7 @@ public class MasterService extends AbstractIdleService {
     logBanner();
     zkRegistrar.startAsync().awaitRunning();
     expiredJobReaper.startAsync().awaitRunning();
+    rollingUpdateService.startAsync().awaitRunning();
     try {
       server.start();
     } catch (Exception e) {
@@ -242,6 +252,7 @@ public class MasterService extends AbstractIdleService {
     server.stop();
     server.join();
     registrar.close();
+    rollingUpdateService.stopAsync().awaitTerminated();
     expiredJobReaper.stopAsync().awaitTerminated();
     zkRegistrar.stopAsync().awaitTerminated();
     zooKeeperClient.close();

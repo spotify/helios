@@ -42,6 +42,7 @@ com.spotify.helios.agent.AgentMain \
 --env SPOTIFY_POD='local.' \
 --env SPOTIFY_DOMAIN='local.' \
 --env HELIOS_HOST_ADDRESS=$HOST_ADDRESS \
+--labels solo=yes \
 &
 
 # Start master
