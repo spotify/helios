@@ -22,9 +22,12 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -40,9 +43,11 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.junit.Assert.assertEquals;
@@ -136,14 +141,36 @@ public class RollingUpdateCommandTest {
     assertEquals(0, ret);
 
     final String expected = (
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)" +
-        "host1 -> RUNNING (1/3)" +
-        "host2 -> RUNNING (2/3)" +
-        "host3 -> RUNNING (3/3)" +
-        "Done." +
-        "Duration: 4.00 s").replaceAll(" ", "");
+        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)\n" +
+        "\n" +
+        "host1 -> RUNNING (1/3)\n" +
+        "host2 -> RUNNING (2/3)\n" +
+        "host3 -> RUNNING (3/3)\n" +
+        "\n" +
+        "Done.\n" +
+        "Duration: 4.00 s\n");
 
-    assertEquals(expected, output.replaceAll("\\s+", ""));
+    assertEquals(expected, output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "));
+  }
+
+  @Test
+  public void testRollingUpdateAsync() throws Exception {
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(options.getBoolean("async")).thenReturn(true);
+
+    final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
+    final String output = baos.toString();
+    System.out.println(output);
+
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    assertEquals(0, ret);
+
+    final String expected =
+        "Rolling update (async) started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)\n";
+
+    assertEquals(expected, output);
   }
 
   @Test
@@ -173,13 +200,15 @@ public class RollingUpdateCommandTest {
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
     assertEquals(1, ret);
 
-    final String expected = (
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)" +
-        "host1 -> RUNNING (1/3)" +
-        "Failed: Deployment-group job id changed during rolling-update" +
-        "Duration: 2.00 s").replaceAll(" ", "");
+    final String expected =
+        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)\n" +
+        "\n" +
+        "host1 -> RUNNING (1/3)\n" +
+        "\n" +
+        "Failed: Deployment-group job id changed during rolling-update\n" +
+        "Duration: 2.00 s\n";
 
-    assertEquals(expected, output.replaceAll("\\s+", ""));
+    assertEquals(expected, output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "));
   }
 
   @Test
@@ -203,12 +232,14 @@ public class RollingUpdateCommandTest {
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
     assertEquals(1, ret);
 
-    final String expected = (
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)" +
-        "Timed out! (rolling-update still in progress)" +
-        "Duration: 601.00 s").replaceAll(" ", "");
+    final String expected =
+        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)\n" +
+        "\n" +
+        "\n" +
+        "Timed out! (rolling-update still in progress)\n" +
+        "Duration: 601.00 s\n";
 
-    assertEquals(expected, output.replaceAll("\\s+", ""));
+    assertEquals(expected, output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "));
   }
 
   @Test
@@ -232,13 +263,151 @@ public class RollingUpdateCommandTest {
     verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
     assertEquals(1, ret);
 
-    final String expected = (
-        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)" +
-        "host1 -> RUNNING (1/2)" +
-        "Failed: foobar" +
-        "Duration: 1.00 s").replaceAll(" ", "");
+    final String expected =
+        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300)\n" +
+        "\n" +
+        "host1 -> RUNNING (1/2)\n" +
+        "\n" +
+        "Failed: foobar\n" +
+        "Duration: 1.00 s\n";
 
-    assertEquals(expected, output.replaceAll("\\s+", ""));
+    assertEquals(expected, output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "));
+  }
+
+  // ----------------------------
+
+  @Test
+  public void testRollingUpdateJson() throws Exception {
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, null,
+                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
+                       makeHostStatus("host2", JOB_ID, TaskStatus.State.RUNNING),
+                       makeHostStatus("host3", JOB_ID, TaskStatus.State.RUNNING))
+    ));
+
+    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final String output = baos.toString();
+    System.out.println(output);
+
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    assertEquals(0, ret);
+
+    assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
+        "status", "DONE",
+        "duration", 0.00,
+        "parallelism", PARALLELISM,
+        "timeout", TIMEOUT));
+  }
+
+  @Test
+  public void testRollingUpdateAsyncJson() throws Exception {
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(options.getBoolean("async")).thenReturn(true);
+
+    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final String output = baos.toString();
+    System.out.println(output);
+
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    assertEquals(0, ret);
+
+    assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
+        "status", "OK",
+        "parallelism", PARALLELISM,
+        "timeout", TIMEOUT));
+  }
+
+  @Test
+  public void testRollingUpdateFailsIfJobIdChangedDuringRolloutJson() throws Exception {
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
+                       makeHostStatus("host1", null, null),
+                       makeHostStatus("host2", OLD_JOB_ID, TaskStatus.State.RUNNING),
+                       makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING)),
+        statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, NEW_JOB_ID, null,
+                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
+                       makeHostStatus("host2", JOB_ID, TaskStatus.State.STARTING),
+                       makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING))
+    ));
+
+    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final String output = baos.toString();
+    System.out.println(output);
+
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    assertEquals(1, ret);
+
+    assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
+        "status", "FAILED",
+        "error", "Deployment-group job id changed during rolling-update",
+        "duration", 1.00,
+        "parallelism", PARALLELISM,
+        "timeout", TIMEOUT));
+  }
+
+  @Test
+  public void testRollingUpdateFailsOnRolloutTimeoutJson() throws Exception {
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
+                       makeHostStatus("host1", null, null),
+                       makeHostStatus("host2", null, null)),
+        statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
+                       makeHostStatus("host1", JOB_ID, TaskStatus.State.PULLING_IMAGE),
+                       makeHostStatus("host2", null, null))
+    ));
+
+    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final String output = baos.toString();
+    System.out.println(output);
+
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    assertEquals(1, ret);
+
+    assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
+        "status", "TIMEOUT",
+        "duration", 601.00,
+        "parallelism", PARALLELISM,
+        "timeout", TIMEOUT));
+  }
+
+  @Test
+  public void testRollingUpdateFailedJson() throws Exception {
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
+                       makeHostStatus("host1", JOB_ID, TaskStatus.State.PULLING_IMAGE),
+                       makeHostStatus("host2", null, null)),
+        statusResponse(DeploymentGroupStatusResponse.Status.FAILED, "foobar",
+                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
+                       makeHostStatus("host2", null, null))
+    ));
+
+    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final String output = baos.toString();
+    System.out.println(output);
+
+    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    assertEquals(1, ret);
+
+    assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
+        "status", "FAILED",
+        "error", "foobar",
+        "duration", 1.00,
+        "parallelism", PARALLELISM,
+        "timeout", TIMEOUT));
   }
 
   private static class TimeUtil implements RollingUpdateCommand.SleepFunction, Supplier<Long> {
@@ -278,5 +447,18 @@ public class RollingUpdateCommandTest {
         final InvocationOnMock ignored) {
       return immediateFuture(responses.get(index++ % responses.size()));
     }
+  }
+
+  private static void assertJsonOutputEquals(
+      final String actual,
+      final Map<String, Object> expected) throws IOException {
+    // * Long(2) != Integer(2)
+    // * Json serializing a Long and then parsing it makes it into an Integer (in some cases?)
+    // * => Can't easily compare a map with a json-deserialized map
+    // * => Serialize and deserialize the expected value map, and compare against that
+    final TypeReference<Map<String, Object>> typeRef = new TypeReference<Map<String, Object>>() {};
+    final Map<String, Object> actualMap = Json.read(actual, typeRef);
+    final Map<String, Object> expectedMap = Json.read(Json.asString(expected), typeRef);
+    assertEquals(expectedMap, actualMap);
   }
 }
