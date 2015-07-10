@@ -217,9 +217,6 @@ public class TemporaryJobs implements TestRule {
       }
     }
 
-    if (config.hasPath("name")) {
-      builder.name(config.getString("name"));
-    }
     if (config.hasPath("version")) {
       builder.version(config.getString("version"));
     }
