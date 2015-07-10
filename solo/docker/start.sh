@@ -24,7 +24,7 @@ curl -XPUT http://127.0.0.1:4001/v2/keys/skydns/local/solo \
 
 skydns $SKYDNS_OPTS &
 
-/usr/share/zookeeper/bin/zkServer.sh start &
+/usr/share/zookeeper/bin/zkServer.sh start
 
 # Start agent
 mkdir -p /agent
