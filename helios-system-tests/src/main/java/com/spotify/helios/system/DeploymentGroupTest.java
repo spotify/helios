@@ -21,7 +21,6 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -32,7 +31,6 @@ import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -54,7 +52,6 @@ import static com.google.common.collect.Iterables.getLast;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 
@@ -79,40 +76,6 @@ public class DeploymentGroupTest extends SystemTestBase {
         return output.contains(masterName()) ? output : null;
       }
     });
-  }
-
-  @Test
-  public void testCreateDeploymentGroup() throws Exception {
-    assertEquals("CREATED", Json.readTree(
-        cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux"))
-        .get("status").asText());
-    final String output = cli("inspect-deployment-group", "--json", TEST_GROUP);
-
-    final DeploymentGroup dg = OBJECT_MAPPER.readValue(output, DeploymentGroup.class);
-
-    assertEquals(TEST_GROUP, dg.getName());
-    assertNull(dg.getJob());
-    assertEquals(ImmutableMap.of("foo", "bar", "baz", "qux"), dg.getLabels());
-  }
-
-  @Test
-  public void testCreateExistingSameDeploymentGroup() throws Exception {
-    assertEquals("CREATED", Json.readTree(
-        cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux"))
-        .get("status").asText());
-    assertEquals("NOT_MODIFIED", Json.readTree(
-        cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux"))
-        .get("status").asText());
-  }
-
-  @Test
-  public void testCreateExistingConflictingDeploymentGroup() throws Exception {
-    assertEquals("CREATED", Json.readTree(
-        cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux"))
-        .get("status").asText());
-    assertEquals("CONFLICT", Json.readTree(
-        cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar"))
-        .get("status").asText());
   }
 
   @Test
