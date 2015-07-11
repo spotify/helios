@@ -33,7 +33,7 @@ class CreateEmpty implements ZooKeeperOperation {
 
   @Override
   public void register(final CuratorTransaction transaction) throws Exception {
-    transaction.create().forPath(path);
+    transaction.create().forPath(path, new byte[0]);
   }
 
   @Override
