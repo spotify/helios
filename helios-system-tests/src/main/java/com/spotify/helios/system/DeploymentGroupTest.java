@@ -135,10 +135,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     final JobId secondJobId = createJob(testJobName, secondJobVersion, BUSYBOX, IDLE_COMMAND);
 
     // trigger a rolling update to replace the first job with the second job
-    assertEquals(RollingUpdateResponse.Status.OK,
-                 OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "--async",
-                                             secondJobNameAndVersion, TEST_GROUP),
-                                         RollingUpdateResponse.class).getStatus());
+    cli("rolling-update", "--async", secondJobNameAndVersion, TEST_GROUP);
 
     // ensure the second job rolled out fine
     awaitTaskState(secondJobId, firstHost, TaskStatus.State.RUNNING);
