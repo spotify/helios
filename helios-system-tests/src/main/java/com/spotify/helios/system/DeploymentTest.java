@@ -220,7 +220,7 @@ public class DeploymentTest extends SystemTestBase {
     Thread.sleep(5000);
     final HostStatus hostStatus = client.hostStatus(testHost()).get();
     taskStatus = hostStatus.getStatuses().get(jobId);
-    assertEquals(RUNNING, taskStatus.getState());
+    assertEquals(jobId.toString(), RUNNING, taskStatus.getState());
 
     // Undeploy the job
     final JobUndeployResponse undeployed = client.undeploy(jobId, testHost()).get();

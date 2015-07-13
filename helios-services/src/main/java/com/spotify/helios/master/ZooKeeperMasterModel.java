@@ -300,6 +300,9 @@ public class ZooKeeperMasterModel implements MasterModel {
         }
         throw new JobExistsException(id.toString());
       }
+    } catch (NoNodeException e) {
+      throw new HeliosRuntimeException("adding job " + job + " failed due to missing ZK path: " +
+                                       e.getPath(), e);
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException("adding job " + job + " failed", e);
     }
