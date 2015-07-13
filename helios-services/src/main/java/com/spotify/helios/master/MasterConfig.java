@@ -21,10 +21,10 @@
 
 package com.spotify.helios.master;
 
-import io.dropwizard.Configuration;
-
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+
+import io.dropwizard.Configuration;
 
 /**
  * The collection of the configuration info of the master.
@@ -46,6 +46,7 @@ public class MasterConfig extends Configuration {
   private int zooKeeperConnectionTimeoutMillis;
   private String zooKeeperNamespace;
   private String zooKeeperClusterId;
+  private boolean noZooKeeperMasterRegistration;
   private int adminPort;
   private InetSocketAddress httpEndpoint;
 
@@ -109,6 +110,15 @@ public class MasterConfig extends Configuration {
 
   public MasterConfig setZooKeeperClusterId(String zooKeeperClusterId) {
     this.zooKeeperClusterId = zooKeeperClusterId;
+    return this;
+  }
+
+  public boolean getNoZooKeeperMasterRegistration() {
+    return noZooKeeperMasterRegistration;
+  }
+
+  public MasterConfig setNoZooKeeperMasterRegistration(boolean noZooKeeperMasterRegistration) {
+    this.noZooKeeperMasterRegistration = noZooKeeperMasterRegistration;
     return this;
   }
 

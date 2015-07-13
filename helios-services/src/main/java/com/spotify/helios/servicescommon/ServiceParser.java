@@ -65,6 +65,7 @@ public class ServiceParser {
   private final Argument zooKeeperConnectiontimeoutArg;
   private final Argument zooKeeperNamespace;
   private final Argument zooKeeperClusterId;
+  private final Argument noZooKeeperRegistrationArg;
   private final Argument noMetricsArg;
   private final Argument statsdHostPortArg;
   private final Argument riemannHostPortArg;
@@ -118,6 +119,11 @@ public class ServiceParser {
         .type(String.class)
         .setDefault((String) null)
         .help("Optional cluster ID to ensure we are connected to the right cluster");
+
+    noZooKeeperRegistrationArg = parser.addArgument("--no-zk-registration")
+        .setDefault(SUPPRESS)
+        .action(storeTrue())
+        .help("Do not register this master in zookeeper. Useful for debugging.");
 
     noMetricsArg = parser.addArgument("--no-metrics")
         .setDefault(SUPPRESS)
@@ -228,6 +234,10 @@ public class ServiceParser {
 
   public String getZooKeeperClusterId() {
     return options.getString(zooKeeperClusterId.getDest());
+  }
+
+  public Boolean getNoZooKeeperRegistration() {
+    return fromNullable(options.getBoolean(noZooKeeperRegistrationArg.getDest())).or(false);
   }
 
   private static String getHostName() {

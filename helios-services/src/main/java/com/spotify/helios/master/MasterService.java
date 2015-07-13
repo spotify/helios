@@ -221,7 +221,9 @@ public class MasterService extends AbstractIdleService {
   @Override
   protected void startUp() throws Exception {
     logBanner();
-    zkRegistrar.startAsync().awaitRunning();
+    if (!config.getNoZooKeeperMasterRegistration()) {
+      zkRegistrar.startAsync().awaitRunning();
+    }
     expiredJobReaper.startAsync().awaitRunning();
     try {
       server.start();
