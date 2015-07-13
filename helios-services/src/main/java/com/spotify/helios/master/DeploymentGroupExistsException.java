@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Spotify AB.
+ * Copyright (c) 2015 Spotify AB.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,27 +19,22 @@
  * under the License.
  */
 
-package com.spotify.helios.servicescommon.coordination;
+package com.spotify.helios.master;
 
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import com.spotify.helios.common.HeliosException;
 
-class CreateEmpty implements ZooKeeperOperation {
+public class DeploymentGroupExistsException extends HeliosException {
 
-  private final String path;
-
-  CreateEmpty(final String path) {
-    this.path = path;
+  public DeploymentGroupExistsException(final String message) {
+    super(message);
   }
 
-  @Override
-  public void register(final CuratorTransaction transaction) throws Exception {
-    transaction.create().forPath(path, new byte[0]);
+  public DeploymentGroupExistsException(final Throwable cause) {
+    super(cause);
   }
 
-  @Override
-  public String toString() {
-    return "CreateEmpty{" +
-           "path='" + path + '\'' +
-           '}';
+  public DeploymentGroupExistsException(final String message, final Throwable cause) {
+    super(message, cause);
   }
+
 }

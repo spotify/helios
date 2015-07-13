@@ -1,6 +1,4 @@
-Reviewed by [davidxia](https://github.com/davidxia) on 2014-11-01
-
-***
+# User Manual
 
 This guide gives an overview of Helios, and what you need to know to deploy and run your Docker containers using it.
 
@@ -10,6 +8,7 @@ Note that this guide assumes that you are familiar with [Docker](http://docker.i
 * [Basic Concepts in Helios](#basic-concepts-in-helios)
 * [Install the Helios CLI](#install-the-helios-cli)
 * [Using the Helios CLI](#using-the-helios-cli)
+* [Managing Helios Agents](#managing-helios-agents)
 * [Creating Your Job](#creating-your-job)
   * [A basic job](#a-basic-job)
   * [Specifying a command to run](#specifying-a-command-to-run)
@@ -20,6 +19,7 @@ Note that this guide assumes that you are familiar with [Docker](http://docker.i
 * [Deploying Your Job](#deploying-your-job)
   * [Checking deployment status and history](#checking-deployment-status-and-history)
   * [Undeploying](#undeploying)
+  * [Using Deployment Groups](#using-deployment-groups)
 * [Once Inside The Container](#once-inside-the-container)
 
 Basic Concepts in Helios
@@ -47,7 +47,7 @@ The `helios` command is your primary interface for interacting with the Helios c
 
 When using the CLI, you'll have to specify which Helios endpoint you want to talk to. To talk to a specific Helios master, use the `-z` flag. For example, if you have a Helios master running locally on the default port:
 
-    helios -z http://localhost:5801
+    $ helios -z http://localhost:5801
 
 If you have multiple masters, you can [setup automatic master lookup](automatic_master_lookup.md).
 
@@ -58,6 +58,24 @@ If you have multiple masters, you can [setup automatic master lookup](automatic_
 This will save you from having to type the `-z` flag over and over again.
 
 If you need general help, run `helios --help`. Many Helios CLI commands also take the `--json` option, which will produce JSON results instead of human-readable ones. This is useful if you want to script Helios or incorporate it into a build process.
+
+## Managing Helios Agents
+
+### Register and Unregister Agents
+
+Register and unregister with `helios [un]register <hostname> <unqiue ID>`.
+
+### List Agents
+
+List agents with `helios hosts [optional hostname pattern]`. If your agents have labels like
+`key=value` (see below on how to label agents), you can filter on labels with 
+`helios hosts -l key1=value1 -b key2=value2`.
+
+### Label Agents
+
+You can add labels to your agents when starting the Helios agent process by passing in
+`java AgentMain ... --labels key1=value1 --labels key2=value2`. Labels are used by
+[deployment groups](#using-deployment-groups).
 
 Creating Your Job
 ---
@@ -324,6 +342,19 @@ If we view the history again, it should show something like this:
     192.168.33.10    2014-08-11 14:42:14.403    STOPPED     NO           60671498ae98
 
 We can see that the job stopped. Additionally, checking job status will show again, that the job is stopped.
+
+### Using Deployment Groups
+
+You can manage your deployments at a higher level with deployment groups. A deployment group
+determines the list and sequence of hosts to deploy, undeploys prior jobs it has deployed, and
+deploys the specified job.
+
+    $ helios create-deployment-group <group name> <label1 key1=value1> <label2 key2=value2>
+    $ helios rolling-update <job ID> <group name>
+    $ helios status-deployment-group <group name>
+
+[Here's more information](https://github.com/spotify/helios/blob/master/docs/deployment_groups.md)
+on how to use deployment groups and their motivation.
 
 Once Inside The Container
 ---

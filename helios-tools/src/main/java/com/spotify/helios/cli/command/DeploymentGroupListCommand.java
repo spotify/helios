@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Spotify AB.
+ * Copyright (c) 2015 Spotify AB.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,51 +22,45 @@
 package com.spotify.helios.cli.command;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.Json;
 
-import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
-public class HostRegisterCommand extends ControlCommand {
+public class DeploymentGroupListCommand extends ControlCommand {
 
-  private final Argument hostArg;
-  private final Argument idArg;
-
-  public HostRegisterCommand(final Subparser parser) {
+  public DeploymentGroupListCommand(final Subparser parser) {
     super(parser);
 
-    parser.help("register a host");
-
-    hostArg = parser.addArgument("host")
-        .help("The hostname of the agent you want to register with the Helios masters.");
-
-    idArg = parser.addArgument("id")
-        .help("A unique ID for this host.");
+    parser.help("list deployment groups");
   }
 
   @Override
-  int run(final Namespace options, final HeliosClient client, PrintStream out, final boolean json,
-      final BufferedReader stdin)
-          throws ExecutionException, InterruptedException {
-    final String host = options.getString(hostArg.getDest());
-    final String id = options.getString(idArg.getDest());
+  int run(final Namespace options, final HeliosClient client, final PrintStream out,
+          final boolean json, final BufferedReader stdin)
+      throws ExecutionException, InterruptedException, IOException {
 
-    out.printf("Registering host %s with id %s%n", host, id);
+    final List<String> deploymentGroups = client.listDeploymentGroups().get();
 
-    int code = 0;
-    out.printf("%s: ", host);
-    final int result = client.registerHost(host, id).get();
-    if (result == 200) {
-      out.printf("done%n");
+    if (deploymentGroups != null) {
+      if (json) {
+        out.println(Json.asPrettyStringUnchecked(deploymentGroups));
+      } else {
+        for (final String deploymentGroup : deploymentGroups) {
+          out.println(deploymentGroup);
+        }
+      }
+      return 0;
     } else {
-      out.printf("failed: %s%n", result);
-      code = 1;
+      out.println("Failed to list deployment groups");
+      return 1;
     }
-
-    return code;
   }
 }
+

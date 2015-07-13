@@ -19,27 +19,14 @@
  * under the License.
  */
 
-package com.spotify.helios.servicescommon.coordination;
+package com.spotify.helios.rollingupdate;
 
-import org.apache.curator.framework.api.transaction.CuratorTransaction;
+import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.RolloutTask;
 
-class CreateEmpty implements ZooKeeperOperation {
+import java.util.List;
+import java.util.Map;
 
-  private final String path;
-
-  CreateEmpty(final String path) {
-    this.path = path;
-  }
-
-  @Override
-  public void register(final CuratorTransaction transaction) throws Exception {
-    transaction.create().forPath(path, new byte[0]);
-  }
-
-  @Override
-  public String toString() {
-    return "CreateEmpty{" +
-           "path='" + path + '\'' +
-           '}';
-  }
+public interface RolloutPlanner {
+  List<RolloutTask> plan(final Map<String, HostStatus> hostsAndStatuses);
 }

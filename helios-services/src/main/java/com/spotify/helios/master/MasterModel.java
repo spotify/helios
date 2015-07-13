@@ -22,11 +22,15 @@
 package com.spotify.helios.master;
 
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.rollingupdate.RolloutPlanner;
 
 import java.util.List;
 import java.util.Map;
@@ -98,4 +102,28 @@ public interface MasterModel {
   List<String> getRunningMasters();
 
   List<TaskStatusEvent> getJobHistory(JobId jobId) throws JobDoesNotExistException;
+
+  void addDeploymentGroup(DeploymentGroup deploymentGroup) throws DeploymentGroupExistsException;
+
+  DeploymentGroup getDeploymentGroup(String name) throws DeploymentGroupDoesNotExistException;
+
+  Map<String, DeploymentGroup> getDeploymentGroups();
+
+  List<String> getDeploymentGroupHosts(String name) throws DeploymentGroupDoesNotExistException;
+
+  void updateDeploymentGroupHosts(String name, List<String> hosts)
+      throws DeploymentGroupDoesNotExistException;
+
+  DeploymentGroupStatus getDeploymentGroupStatus(String name)
+      throws DeploymentGroupDoesNotExistException;
+
+  void removeDeploymentGroup(String name) throws DeploymentGroupDoesNotExistException;
+
+  void rollingUpdate(DeploymentGroup deploymentGroup, JobId jobId, RolloutOptions options)
+      throws DeploymentGroupDoesNotExistException, JobDoesNotExistException;
+
+  void rollingUpdateStep(DeploymentGroup deploymentGroup, RolloutPlanner rolloutPlanner)
+      throws DeploymentGroupDoesNotExistException;
+
+  void abortRollingUpdate(String deploymentGroupName) throws DeploymentGroupDoesNotExistException;
 }
