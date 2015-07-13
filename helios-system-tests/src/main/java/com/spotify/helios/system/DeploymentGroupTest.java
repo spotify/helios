@@ -200,7 +200,13 @@ public class DeploymentGroupTest extends SystemTestBase {
     final Map<String, MasterMain> masters = Maps.newHashMap();
     for (int i = 0; i < 3; i++) {
       final String name = TEST_MASTER + i;
-      masters.put(name, startDefaultMaster("--name", name));
+      masters.put(name, startMaster("-vvvv",
+                                    "--no-log-setup",
+                                    "--http", "http://localhost:" + (masterPort() + i),
+                                    "--admin=" + (masterAdminPort() + i),
+                                    "--domain", "",
+                                    "--name", name,
+                                    "--zk", zk().connectString()));
     }
 
     final Map<String, AgentMain> agents = Maps.newLinkedHashMap();
