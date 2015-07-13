@@ -34,11 +34,14 @@ public class RolloutOptions {
 
   private final long timeout;
   private final int parallelism;
+  private final boolean migrate;
 
   public RolloutOptions(@JsonProperty("timeout") final long timeout,
-                        @JsonProperty("parallelism") final int parallelism) {
+                        @JsonProperty("parallelism") final int parallelism,
+                        @JsonProperty("migrate") final boolean migrate) {
     this.timeout = timeout;
     this.parallelism = parallelism;
+    this.migrate = migrate;
   }
 
   public static Builder newBuilder() {
@@ -48,7 +51,8 @@ public class RolloutOptions {
   public Builder toBuilder() {
     return new Builder()
         .setTimeout(timeout)
-        .setParallelism(parallelism);
+        .setParallelism(parallelism)
+        .setMigrate(migrate);
   }
 
   public long getTimeout() {
@@ -57,6 +61,10 @@ public class RolloutOptions {
 
   public int getParallelism() {
     return parallelism;
+  }
+
+  public boolean getMigrate() {
+    return migrate;
   }
 
   @Override
@@ -70,6 +78,9 @@ public class RolloutOptions {
 
     final RolloutOptions that = (RolloutOptions) o;
 
+    if (migrate != that.migrate) {
+      return false;
+    }
     if (parallelism != that.parallelism) {
       return false;
     }
@@ -84,6 +95,7 @@ public class RolloutOptions {
   public int hashCode() {
     int result = (int) (timeout ^ (timeout >>> 32));
     result = 31 * result + parallelism;
+    result = 31 * result + (migrate ? 1 : 0);
     return result;
   }
 
@@ -92,6 +104,7 @@ public class RolloutOptions {
     return "RolloutOptions{" +
            "timeout=" + timeout +
            ", parallelism=" + parallelism +
+           ", migrate=" + migrate +
            '}';
   }
 
@@ -99,15 +112,12 @@ public class RolloutOptions {
 
     private long timeout;
     private int parallelism;
-
-    public Builder(final long timeout, final int parallelism) {
-      this.timeout = timeout;
-      this.parallelism = parallelism;
-    }
+    private boolean migrate;
 
     public Builder() {
       this.timeout = DEFAULT_TIMEOUT;
       this.parallelism = DEFAULT_PARALLELISM;
+      this.migrate = false;
     }
 
 
@@ -121,8 +131,14 @@ public class RolloutOptions {
       return this;
     }
 
+    public Builder setMigrate(final boolean migrate) {
+      this.migrate = migrate;
+      return this;
+    }
+
+
     public RolloutOptions build() {
-      return new RolloutOptions(timeout, parallelism);
+      return new RolloutOptions(timeout, parallelism, migrate);
     }
   }
 }

@@ -684,12 +684,17 @@ public class ZooKeeperMasterModel implements MasterModel {
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
 
     for (final Deployment deployment : getTasks(client, host).values()) {
-      if (deployment.getJobId().equals(deploymentGroup.getJob())) {
-        // this deployed job is the same as the one we want deployed. just leave it.
-        continue;
-      }
+      final boolean isOwnedByDeploymentGroup = Objects.equals(
+          deployment.getDeploymentGroupName(), deploymentGroup.getName());
+      final boolean isSameJob = deployment.getJobId().equals(deploymentGroup.getJob());
 
-      if (Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName())) {
+      if (isOwnedByDeploymentGroup || (
+          isSameJob && deploymentGroup.getRolloutOptions().getMigrate())) {
+        if (isSameJob && isOwnedByDeploymentGroup) {
+          // this deployed job is the same as the one we want deployed. just leave it.
+          continue;
+        }
+
         try {
           operations.addAll(getUndeployOperations(client, host, deployment.getJobId(),
                                                   Job.EMPTY_TOKEN));

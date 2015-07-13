@@ -62,6 +62,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   private final Argument parallelismArg;
   private final Argument asyncArg;
   private final Argument rolloutTimeoutArg;
+  private final Argument migrateArg;
 
   public RollingUpdateCommand(final Subparser parser) {
     this(parser, new SleepFunction() {
@@ -111,6 +112,13 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .type(Long.class)
         .help("Exit if rolling-update takes longer than the given value (minutes). Note that " +
               "this will NOT abort the rolling update, it will just cause this command to exit.");
+
+    migrateArg = parser.addArgument("--migrate")
+        .setDefault(false)
+        .action(storeTrue())
+        .help("When specified a rolling-update will undeploy not only jobs previously deployed " +
+              "by the deployment-group but also jobs with the same job id. Use it ONCE when " +
+              "migrating a service to using deployment-groups");
   }
 
   @Override
@@ -123,6 +131,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final int parallelism = options.getInt(parallelismArg.getDest());
     final boolean async = options.getBoolean(asyncArg.getDest());
     final long rolloutTimeout = options.getLong(rolloutTimeoutArg.getDest());
+    final boolean migrate = options.getBoolean(migrateArg.getDest());
 
     checkArgument(timeout > 0, "Timeout must be greater than 0");
     checkArgument(parallelism > 0, "Parallelism must be greater than 0");
@@ -133,6 +142,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final RolloutOptions rolloutOptions = RolloutOptions.newBuilder()
         .setTimeout(timeout)
         .setParallelism(parallelism)
+        .setMigrate(migrate)
         .build();
     final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions).get();
 
@@ -152,13 +162,14 @@ public class RollingUpdateCommand extends WildcardJobCommand {
                          async ? "" : "\n"));
     }
 
+    final Map<String, Object> jsonOutput = Maps.newHashMap();
+    jsonOutput.put("parallelism", parallelism);
+    jsonOutput.put("timeout", timeout);
+
     if (async) {
       if (json) {
-        final Map<String, Object> output = Maps.newHashMap();
-        output.put("status", response.getStatus());
-        output.put("parallelism", parallelism);
-        output.put("timeout", timeout);
-        out.println(Json.asStringUnchecked(output));
+        jsonOutput.put("status", response.getStatus());
+        out.println(Json.asStringUnchecked(jsonOutput));
       }
       return 0;
     }
@@ -219,19 +230,16 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final double duration = (timeSupplier.get() - startTime) / 1000.0;
 
     if (json) {
-      final Map<String, Object> output = Maps.newHashMap();
       if (failed) {
-        output.put("status", "FAILED");
-        output.put("error", error);
+        jsonOutput.put("status", "FAILED");
+        jsonOutput.put("error", error);
       } else if (timedOut) {
-        output.put("status", "TIMEOUT");
+        jsonOutput.put("status", "TIMEOUT");
       } else {
-        output.put("status", "DONE");
+        jsonOutput.put("status", "DONE");
       }
-      output.put("duration", duration);
-      output.put("parallelism", parallelism);
-      output.put("timeout", timeout);
-      out.println(Json.asStringUnchecked(output));
+      jsonOutput.put("duration", duration);
+      out.println(Json.asStringUnchecked(jsonOutput));
     } else {
       out.println();
       if (failed) {

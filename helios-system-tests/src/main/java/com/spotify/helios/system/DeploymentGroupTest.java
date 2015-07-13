@@ -32,6 +32,7 @@ import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
+import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -48,12 +49,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Iterables.getLast;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-
 
 public class DeploymentGroupTest extends SystemTestBase {
 
@@ -170,6 +172,88 @@ public class DeploymentGroupTest extends SystemTestBase {
                  OBJECT_MAPPER.readValue(cli("rolling-update", "--json", "--async", "my_job:2",
                                              "oops"),
                                          RollingUpdateResponse.class).getStatus());
+  }
+
+  @Test
+  public void testRollingUpdateMigrate() throws Exception {
+    final String host = testHost();
+    startDefaultAgent(host, "--labels", TEST_LABEL);
+
+    // Manually deploy a job on the host (i.e. a job not part of the deployment group)
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    deployJob(jobId, host);
+    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+
+    // Create a deployment-group and trigger a migration rolling-update
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    cli("rolling-update", "--async", "--migrate", testJobNameAndVersion, TEST_GROUP);
+
+    // Check that the deployment's deployment-group name eventually changes to TEST_GROUP
+    // (should be null or empty before)
+    final String jobDeploymentGroup = Polling.await(
+        LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
+          @Override
+          public String call() throws Exception {
+            final Deployment deployment =
+                defaultClient().hostStatus(host).get().getJobs().get(jobId);
+            if (deployment != null && !isNullOrEmpty(deployment.getDeploymentGroupName())) {
+              return deployment.getDeploymentGroupName();
+            } else {
+              return null;
+            }
+          }
+        });
+    assertEquals(TEST_GROUP, jobDeploymentGroup);
+
+    // rolling-update should succeed & job should be running
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
+                               DeploymentGroupStatus.State.DONE);
+    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+  }
+
+  @Test
+  public void testRollingUpdateMigrateNothingToUndeploy() throws Exception {
+    final String host = testHost();
+    startDefaultAgent(host, "--labels", TEST_LABEL);
+
+    // Manually deploy a job on the host
+    final String manualJobVersion = "foo-" + testJobVersion;
+    final JobId manualJobId = createJob(testJobName, manualJobVersion, BUSYBOX, IDLE_COMMAND);
+    deployJob(manualJobId, host);
+    awaitTaskState(manualJobId, host, TaskStatus.State.RUNNING);
+
+    // create a deployment group and trigger a migration rolling-update -- with a different
+    // job that the one deployed manually! The manually deployed job should remain running on the
+    // host.
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    cli("rolling-update", "--async", "--migrate", testJobNameAndVersion, TEST_GROUP);
+
+    // rolling-update should succeed & job should be running
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
+                               DeploymentGroupStatus.State.DONE);
+    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+
+    final String jobDeploymentGroup = Polling.await(
+        LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
+          @Override
+          public String call() throws Exception {
+            final Deployment deployment =
+                defaultClient().hostStatus(host).get().getJobs().get(jobId);
+            if (deployment != null && !isNullOrEmpty(deployment.getDeploymentGroupName())) {
+              return deployment.getDeploymentGroupName();
+            } else {
+              return null;
+            }
+          }
+        });
+    assertEquals(TEST_GROUP, jobDeploymentGroup);
+
+    // Ensure that the manually deployed job is still there & running
+    final Deployment manualDeployment =
+        defaultClient().hostStatus(host).get().getJobs().get(manualJobId);
+    assertNotNull(manualDeployment);
+    assertEquals(Goal.START, manualDeployment.getGoal());
   }
 
   @Test

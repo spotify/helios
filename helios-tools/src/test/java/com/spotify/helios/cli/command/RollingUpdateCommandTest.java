@@ -83,6 +83,7 @@ public class RollingUpdateCommandTest {
     when(options.getLong("timeout")).thenReturn(TIMEOUT);
     when(options.getLong("rollout_timeout")).thenReturn(10L);
     when(options.getBoolean("async")).thenReturn(false);
+    when(options.getBoolean("migrate")).thenReturn(false);
   }
 
   private static DeploymentGroupStatusResponse.HostStatus makeHostStatus(
@@ -137,7 +138,8 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
     System.out.println(output);
 
-    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
     assertEquals(0, ret);
 
     final String expected = (
@@ -164,7 +166,8 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
     System.out.println(output);
 
-    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
     assertEquals(0, ret);
 
     final String expected =
@@ -197,7 +200,8 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
     System.out.println(output);
 
-    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
     assertEquals(1, ret);
 
     final String expected =
@@ -229,7 +233,8 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
     System.out.println(output);
 
-    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
     assertEquals(1, ret);
 
     final String expected =
@@ -260,7 +265,8 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
     System.out.println(output);
 
-    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
     assertEquals(1, ret);
 
     final String expected =
@@ -292,7 +298,8 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
     System.out.println(output);
 
-    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
@@ -313,7 +320,8 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
     System.out.println(output);
 
-    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
@@ -342,7 +350,8 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
     System.out.println(output);
 
-    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
@@ -371,7 +380,8 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
     System.out.println(output);
 
-    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
@@ -399,13 +409,41 @@ public class RollingUpdateCommandTest {
     final String output = baos.toString();
     System.out.println(output);
 
-    verify(client).rollingUpdate(GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM));
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
         "status", "FAILED",
         "error", "foobar",
         "duration", 1.00,
+        "parallelism", PARALLELISM,
+        "timeout", TIMEOUT));
+  }
+
+  @Test
+  public void testRollingUpdateMigrate() throws Exception {
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, null,
+                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING))
+    ));
+    when(options.getBoolean("migrate")).thenReturn(true);
+
+    final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
+    final String output = baos.toString();
+    System.out.println(output);
+
+    // Verify that rollingUpdate() was called with migrate=true
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, true));
+    assertEquals(0, ret);
+
+    assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
+        "status", "DONE",
+        "duration", 0.00,
         "parallelism", PARALLELISM,
         "timeout", TIMEOUT));
   }
