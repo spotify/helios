@@ -797,7 +797,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public List<String> getDeploymentGroupHosts(String name)
+  public List<String> getDeploymentGroupHosts(final String name)
       throws DeploymentGroupDoesNotExistException {
     log.error("getting deployment group hosts: {}", name);
     final ZooKeeperClient client = provider.get("getDeploymentGroupHosts");
@@ -807,7 +807,19 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new DeploymentGroupDoesNotExistException(name);
     }
 
-    return tryGetEntity(client, Paths.statusDeploymentGroupHosts(name), STRING_LIST_TYPE, "hosts");
+    try {
+      final byte[] data = client.getData(Paths.statusDeploymentGroupHosts(name));
+
+      if (data.length > 0) {
+        return Json.read(data, STRING_LIST_TYPE);
+      }
+    } catch (NoNodeException e) {
+      // not fatal
+    } catch (KeeperException | IOException e) {
+      throw new HeliosRuntimeException("reading deployment group hosts failed: " + name, e);
+    }
+
+    return emptyList();
   }
 
   /**
