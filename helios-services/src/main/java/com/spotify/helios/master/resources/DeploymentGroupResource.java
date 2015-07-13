@@ -66,8 +66,7 @@ public class DeploymentGroupResource {
   private static final CreateDeploymentGroupResponse NOT_MODIFIED_RESPONSE =
       new CreateDeploymentGroupResponse(CreateDeploymentGroupResponse.Status.NOT_MODIFIED);
   private static final CreateDeploymentGroupResponse DEPLOYMENT_GROUP_ALREADY_EXISTS_RESPONSE =
-      new CreateDeploymentGroupResponse(
-          CreateDeploymentGroupResponse.Status.CONFLICT);
+      new CreateDeploymentGroupResponse(CreateDeploymentGroupResponse.Status.CONFLICT);
 
   public DeploymentGroupResource(final MasterModel model) {
     this.model = model;

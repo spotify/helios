@@ -41,9 +41,11 @@ public class HostRegisterCommand extends ControlCommand {
 
     parser.help("register a host");
 
-    hostArg = parser.addArgument("host");
-    idArg = parser.addArgument("id");
+    hostArg = parser.addArgument("host")
+        .help("The hostname of the agent you want to register with the Helios masters.");
 
+    idArg = parser.addArgument("id")
+        .help("A unique ID for this host.");
   }
 
   @Override
