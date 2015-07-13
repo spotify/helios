@@ -178,7 +178,7 @@
               </environmentVariables>
               <systemPropertyVariables>
                 <logToFile>false</logToFile>
-                <heliosLoggingLevel>ERROR</heliosLoggingLevel>
+                <heliosLoggingLevel>INFO</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
                 <rootLoggingLevel>ERROR</rootLoggingLevel>
               </systemPropertyVariables>
