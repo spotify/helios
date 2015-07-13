@@ -100,7 +100,9 @@ public class RollingUpdateService extends AbstractIdleService {
       // determine all hosts and their labels
       for (final String host : allHosts) {
         final HostStatus hostStatus = masterModel.getHostStatus(host);
-        hostsToLabels.put(host, hostStatus.getLabels());
+        if (hostStatus != null) {
+          hostsToLabels.put(host, hostStatus.getLabels());
+        }
       }
 
       for (final DeploymentGroup dg : masterModel.getDeploymentGroups().values()) {
