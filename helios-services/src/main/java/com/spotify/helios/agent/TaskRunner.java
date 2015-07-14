@@ -69,11 +69,13 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private final Optional<HealthChecker> healthChecker;
   private Optional<ServiceRegistrationHandle> serviceRegistrationHandle;
   private Optional<String> containerId;
+  private final String containerName;
 
   private TaskRunner(final Builder builder) {
     super("TaskRunner(" + builder.taskConfig.name() + ")");
     this.delayMillis = builder.delayMillis;
     this.config = checkNotNull(builder.taskConfig, "config");
+    this.containerName = config.containerName();
     this.docker = checkNotNull(builder.docker, "docker");
     this.listener = checkNotNull(builder.listener, "listener");
     this.existingContainerId = builder.existingContainerId;
@@ -110,8 +112,8 @@ class TaskRunner extends InterruptingExecutionThreadService {
    */
   public void stop() throws InterruptedException {
     // Tell docker to stop or eventually kill the container
-    final String container = containerId.or(config.containerName());
-    
+    final String container = containerId.or(containerName);
+
     // Interrupt the thread blocking on waitContainer
     stopAsync().awaitTerminated();
 
@@ -217,9 +219,8 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     // Create container
     final ContainerConfig containerConfig = config.containerConfig(imageInfo);
-    final String name = config.containerName();
     listener.creating();
-    final ContainerCreation container = docker.createContainer(containerConfig, name);
+    final ContainerCreation container = docker.createContainer(containerConfig, containerName);
     log.info("created container: {}: {}, {}", config, container, containerConfig);
     listener.created(container.id());
 
