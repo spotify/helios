@@ -117,7 +117,12 @@ class TaskRunner extends InterruptingExecutionThreadService {
     try {
       docker.stopContainer(container, SECONDS_TO_WAIT_BEFORE_KILL);
     } catch (DockerException e) {
-      log.warn("Stopping container {} failed", container, e);
+      if ((e instanceof ContainerNotFoundException) && !containerId.isPresent()) {
+        // we tried to stop the container by name but no container of the given name existed.
+        // this isn't surprising or exceptional, just means the container wasn't started yet.
+      } else {
+        log.warn("Stopping container {} failed", container, e);
+      }
     }
   }
 
