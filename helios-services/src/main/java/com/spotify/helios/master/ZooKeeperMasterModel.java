@@ -799,7 +799,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public List<String> getDeploymentGroupHosts(final String name)
       throws DeploymentGroupDoesNotExistException {
-    log.error("getting deployment group hosts: {}", name);
+    log.debug("getting deployment group hosts: {}", name);
     final ZooKeeperClient client = provider.get("getDeploymentGroupHosts");
 
     final DeploymentGroup deploymentGroup = getDeploymentGroup(client, name);
