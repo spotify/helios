@@ -109,11 +109,12 @@ class TaskRunner extends InterruptingExecutionThreadService {
    * Stops this container.
    */
   public void stop() throws InterruptedException {
+    // Tell docker to stop or eventually kill the container
+    final String container = containerId.or(config.containerName());
+    
     // Interrupt the thread blocking on waitContainer
     stopAsync().awaitTerminated();
 
-    // Tell docker to stop or eventually kill the container
-    final String container = containerId.or(config.containerName());
     try {
       docker.stopContainer(container, SECONDS_TO_WAIT_BEFORE_KILL);
     } catch (DockerException e) {
