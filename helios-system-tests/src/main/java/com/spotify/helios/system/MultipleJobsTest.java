@@ -42,8 +42,10 @@ public class MultipleJobsTest extends SystemTestBase {
   @Test
   public void jobStatusBulk() throws Exception {
     startDefaultMaster();
-    final HeliosClient client = defaultClient();
     startDefaultAgent(testHost());
+    awaitHostRegistered(testHost(), LONG_WAIT_SECONDS, SECONDS);
+
+    final HeliosClient client = defaultClient();
     
     final Job job = Job.newBuilder()
         .setName(testJobName)
