@@ -21,12 +21,14 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -39,7 +41,6 @@ import org.mockito.ArgumentCaptor;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.util.List;
-import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,8 +54,14 @@ import static org.mockito.Mockito.when;
 public class DeploymentGroupCreateCommandTest {
 
   private static final String GROUP_NAME = "foo-group";
-  private static final Map<String, String> LABELS_MAP = ImmutableMap.of("foo", "bar", "baz", "qux");
-  private static final List<String> LABELS = ImmutableList.of("foo=bar", "baz=qux");
+  private static final List<String> HOST_SELECTORS_ARG = ImmutableList.of("foo=bar", "baz=qux");
+  private static final List<HostSelector> HOST_SELECTORS = Lists.transform(
+      HOST_SELECTORS_ARG, new Function<String, HostSelector>() {
+        @Override
+        public HostSelector apply(final String input) {
+          return HostSelector.parse(input);
+        }
+      });
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
@@ -75,7 +82,7 @@ public class DeploymentGroupCreateCommandTest {
   public void setUp() {
     // Set up default CLI arguments and options to reduce test boilerplate
     when(options.getString("name")).thenReturn(GROUP_NAME);
-    doReturn(ImmutableList.of(LABELS)).when(options).getList("labels");
+    doReturn(ImmutableList.of(HOST_SELECTORS_ARG)).when(options).getList("host_selectors");
   }
 
   @Test
@@ -87,11 +94,16 @@ public class DeploymentGroupCreateCommandTest {
     final ArgumentCaptor<DeploymentGroup> captor = ArgumentCaptor.forClass(DeploymentGroup.class);
     verify(client).createDeploymentGroup(captor.capture());
     assertEquals(GROUP_NAME, captor.getValue().getName());
-    assertEquals(LABELS_MAP, captor.getValue().getLabels());
+    assertEquals(HOST_SELECTORS, captor.getValue().getHostSelectors());
 
     final String output = baos.toString();
     assertThat(output, containsString("\"name\":\"foo-group\""));
-    assertThat(output, containsString("\"labels\":{\"baz\":\"qux\",\"foo\":\"bar\"}"));
+    assertThat(output, containsString(
+        "\"hostSelectors\":[" +
+        "{\"label\":\"foo\",\"operand\":\"bar\",\"operator\":\"EQUALS\"}," +
+        "{\"label\":\"baz\",\"operand\":\"qux\",\"operator\":\"EQUALS\"}" +
+        "]"));
+    assertThat(output, containsString("CREATED"));
   }
 
   @Test
@@ -104,7 +116,12 @@ public class DeploymentGroupCreateCommandTest {
 
     final String output = baos.toString();
     assertThat(output, containsString("\"name\":\"foo-group\""));
-    assertThat(output, containsString("\"labels\":{\"baz\":\"qux\",\"foo\":\"bar\"}"));
+    assertThat(output, containsString(
+        "\"hostSelectors\":[" +
+        "{\"label\":\"foo\",\"operand\":\"bar\",\"operator\":\"EQUALS\"}," +
+        "{\"label\":\"baz\",\"operand\":\"qux\",\"operator\":\"EQUALS\"}" +
+        "]"));
+    assertThat(output, containsString("NOT_MODIFIED"));
   }
 
   @Test
@@ -117,7 +134,11 @@ public class DeploymentGroupCreateCommandTest {
 
     final String output = baos.toString();
     assertThat(output, containsString("\"name\":\"foo-group\""));
-    assertThat(output, containsString("\"labels\":{\"baz\":\"qux\",\"foo\":\"bar\"}"));
+    assertThat(output, containsString(
+        "\"hostSelectors\":[" +
+        "{\"label\":\"foo\",\"operand\":\"bar\",\"operator\":\"EQUALS\"}," +
+        "{\"label\":\"baz\",\"operand\":\"qux\",\"operator\":\"EQUALS\"}" +
+        "]"));
     assertThat(output, containsString("CONFLICT"));
   }
 }

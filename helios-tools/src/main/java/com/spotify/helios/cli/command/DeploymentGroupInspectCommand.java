@@ -21,13 +21,12 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -76,28 +75,14 @@ public class DeploymentGroupInspectCommand extends ControlCommand {
       out.println(Json.asPrettyStringUnchecked(deploymentGroup));
     } else {
       out.printf("Name: %s%n", deploymentGroup.getName());
-      printMap(out, "Labels: ", deploymentGroup.getLabels());
+      out.printf("Host selectors:%n");
+      for (final HostSelector hostSelector : deploymentGroup.getHostSelectors()) {
+        out.printf("  %s%n", hostSelector.toPrettyString());
+      }
       out.printf("Job: %s%n", deploymentGroup.getJob());
     }
 
     return 0;
-  }
-
-  private <K extends Comparable<K>, V> void printMap(final PrintStream out, final String name,
-                                                     final Map<K, V> values) {
-    out.print(name);
-    boolean first = true;
-    for (final K key : Ordering.natural().sortedCopy(values.keySet())) {
-      if (!first) {
-        out.print(Strings.repeat(" ", name.length()));
-      }
-      final V value = values.get(key);
-      out.printf("%s=%s%n", key, value);
-      first = false;
-    }
-    if (first) {
-      out.println();
-    }
   }
 }
 

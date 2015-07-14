@@ -21,7 +21,7 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -29,8 +29,10 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.List;
 import java.util.Map;
 
+import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 
 /**
@@ -57,7 +59,7 @@ public class DeploymentGroup extends Descriptor {
   public static final JobId EMPTY_JOB = null;
 
   private final String name;
-  private final Map<String, String> labels;
+  private final List<HostSelector> hostSelectors;
   private final JobId job;
   private final RolloutOptions rolloutOptions;
 
@@ -66,15 +68,16 @@ public class DeploymentGroup extends Descriptor {
    *
    * @param name The docker name to use.
    * @param job The job for the deployment group.
-   * @param labels The labels that are selected for the deployment group.
+   * @param hostSelectors The selectors that determine which agents are part of the deployment
+   *                       group.
    */
   public DeploymentGroup(
       @JsonProperty("name") final String name,
-      @JsonProperty("labels") final Map<String, String> labels,
+      @JsonProperty("hostSelectors") final List<HostSelector> hostSelectors,
       @JsonProperty("job") @Nullable final JobId job,
       @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions) {
     this.name = name;
-    this.labels = labels;
+    this.hostSelectors = hostSelectors;
     this.job = job;
     this.rolloutOptions = rolloutOptions;
   }
@@ -87,8 +90,8 @@ public class DeploymentGroup extends Descriptor {
     return job;
   }
 
-  public Map<String, String> getLabels() {
-    return labels;
+  public List<HostSelector> getHostSelectors() {
+    return hostSelectors;
   }
 
   public RolloutOptions getRolloutOptions() {
@@ -113,14 +116,15 @@ public class DeploymentGroup extends Descriptor {
     if (job != null ? !job.equals(that.job) : that.job != null) {
       return false;
     }
-    if (labels != null ? !labels.equals(that.labels) : that.labels != null) {
+    if (hostSelectors != null ? !hostSelectors.equals(that.hostSelectors)
+                               : that.hostSelectors != null) {
       return false;
     }
     if (name != null ? !name.equals(that.name) : that.name != null) {
       return false;
     }
     if (rolloutOptions != null ? !rolloutOptions.equals(that.rolloutOptions)
-                              : that.rolloutOptions != null) {
+                               : that.rolloutOptions != null) {
       return false;
     }
 
@@ -130,7 +134,7 @@ public class DeploymentGroup extends Descriptor {
   @Override
   public int hashCode() {
     int result = name != null ? name.hashCode() : 0;
-    result = 31 * result + (labels != null ? labels.hashCode() : 0);
+    result = 31 * result + (hostSelectors != null ? hostSelectors.hashCode() : 0);
     result = 31 * result + (job != null ? job.hashCode() : 0);
     result = 31 * result + (rolloutOptions != null ? rolloutOptions.hashCode() : 0);
     return result;
@@ -140,7 +144,7 @@ public class DeploymentGroup extends Descriptor {
   public String toString() {
     return "DeploymentGroup{" +
            "name='" + name + '\'' +
-           ", labels=" + labels +
+           ", hostSelectors=" + hostSelectors +
            ", job=" + job +
            ", rolloutOptions=" + rolloutOptions +
            '}';
@@ -151,7 +155,7 @@ public class DeploymentGroup extends Descriptor {
 
     return builder.setName(name)
         .setJob(job)
-        .setLabels(labels)
+        .setHostSelectors(hostSelectors)
         .setRolloutOptions(rolloutOptions);
   }
 
@@ -167,13 +171,13 @@ public class DeploymentGroup extends Descriptor {
 
       public String name;
       public JobId job;
-      public Map<String, String> labels;
+      public List<HostSelector> hostSelectors;
       public RolloutOptions rolloutOptions;
 
       private Parameters() {
         this.name = EMPTY_NAME;
         this.job = EMPTY_JOB;
-        this.labels = Maps.newHashMap(EMPTY_LABELS);
+        this.hostSelectors = emptyList();
         this.rolloutOptions = null;
       }
     }
@@ -188,8 +192,8 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
-    public Builder setLabels(final Map<String, String> labels) {
-      p.labels = Maps.newHashMap(labels);
+    public Builder setHostSelectors(final List<HostSelector> hostSelectors) {
+      p.hostSelectors = Lists.newArrayList(hostSelectors);
       return this;
     }
 
@@ -203,7 +207,7 @@ public class DeploymentGroup extends Descriptor {
     }
 
     public DeploymentGroup build() {
-      return new DeploymentGroup(p.name, p.labels, p.job, p.rolloutOptions);
+      return new DeploymentGroup(p.name, p.hostSelectors, p.job, p.rolloutOptions);
     }
   }
 

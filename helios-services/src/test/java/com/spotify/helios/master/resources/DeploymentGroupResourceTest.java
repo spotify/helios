@@ -21,18 +21,15 @@
 
 package com.spotify.helios.master.resources;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
-import com.spotify.helios.common.protocol.RollingUpdateRequest;
-import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
-import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.MasterModel;
 
 import org.junit.Before;
@@ -41,13 +38,9 @@ import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.Arrays;
-import java.util.HashMap;
-
 import javax.ws.rs.core.Response;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -55,6 +48,10 @@ import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class DeploymentGroupResourceTest {
+
+  private static final HostSelector ROLE_SELECTOR = HostSelector.parse("role=my_role");
+  private static final HostSelector FOO_SELECTOR = HostSelector.parse("foo=bar");
+  private static final HostSelector BAZ_SELECTOR = HostSelector.parse("baz=qux");
 
   @Mock
   private MasterModel model;
@@ -78,7 +75,7 @@ public class DeploymentGroupResourceTest {
   @Test
   public void testGetDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "foo", ImmutableMap.of("role", "my_role", "foo", "bar"),
+        "foo", Lists.newArrayList(ROLE_SELECTOR, FOO_SELECTOR),
         new JobId("my_job", "0.2", "1234"), null);
     when(model.getDeploymentGroup("foo")).thenReturn(dg);
 
@@ -99,7 +96,7 @@ public class DeploymentGroupResourceTest {
   public void testCreateExistingSameDeploymentGroup() throws Exception {
     final DeploymentGroup dg = mock(DeploymentGroup.class);
     when(dg.getName()).thenReturn("foo");
-    when(dg.getLabels()).thenReturn(ImmutableMap.of("foo", "bar"));
+    when(dg.getHostSelectors()).thenReturn(Lists.newArrayList(FOO_SELECTOR));
     doThrow(new DeploymentGroupExistsException("")).when(model).addDeploymentGroup(dg);
     when(model.getDeploymentGroup("foo")).thenReturn(dg);
 
@@ -114,11 +111,11 @@ public class DeploymentGroupResourceTest {
   public void testCreateExistingConflictingDeploymentGroup() throws Exception {
     final DeploymentGroup dg = mock(DeploymentGroup.class);
     when(dg.getName()).thenReturn("foo");
-    when(dg.getLabels()).thenReturn(ImmutableMap.of("foo", "bar"));
+    when(dg.getHostSelectors()).thenReturn(Lists.newArrayList(FOO_SELECTOR));
     doThrow(new DeploymentGroupExistsException("")).when(model).addDeploymentGroup(dg);
 
     final DeploymentGroup existing = mock(DeploymentGroup.class);
-    when(existing.getLabels()).thenReturn(ImmutableMap.of("baz", "qux"));
+    when(existing.getHostSelectors()).thenReturn(Lists.newArrayList(BAZ_SELECTOR));
     when(model.getDeploymentGroup("foo")).thenReturn(existing);
 
     final Response response = resource.createDeploymentGroup(dg);
