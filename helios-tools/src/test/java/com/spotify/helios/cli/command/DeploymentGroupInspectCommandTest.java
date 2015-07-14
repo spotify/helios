@@ -21,7 +21,7 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableList;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -29,6 +29,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -43,6 +44,7 @@ import org.junit.rules.ExpectedException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -55,11 +57,12 @@ public class DeploymentGroupInspectCommandTest {
 
   private static final String NAME = "foo-group";
   private static final String NON_EXISTENT_NAME = "bar-group";
-  private static final Map<String, String> LABELS_MAP = ImmutableMap.of("foo", "bar", "baz", "qux");
   private static final JobId JOB = new JobId("foo-job", "0.1.0");
-
-  private static final DeploymentGroup DEPLOYMENT_GROUP =
-      DeploymentGroup.newBuilder().setName(NAME).setLabels(LABELS_MAP).setJob(JOB).build();
+  private static final List<HostSelector> HOST_SELECTORS = ImmutableList.of(
+      HostSelector.parse("foo=bar"),
+      HostSelector.parse("baz=qux"));
+  private static final DeploymentGroup DEPLOYMENT_GROUP = DeploymentGroup.newBuilder()
+      .setName(NAME).setHostSelectors(HOST_SELECTORS).setJob(JOB).build();
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
@@ -92,8 +95,9 @@ public class DeploymentGroupInspectCommandTest {
     assertEquals(0, ret);
     final String output = baos.toString();
     assertThat(output, containsString("Name: " + NAME));
-    assertThat(output, containsString("Labels: baz=qux"));
-    assertThat(output, containsString("foo=bar"));
+    assertThat(output, containsString("Host selectors:"));
+    assertThat(output, containsString("  foo = bar"));
+    assertThat(output, containsString("  baz = qux"));
     assertThat(output, containsString("Job: " + JOB.toString()));
   }
 

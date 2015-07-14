@@ -26,6 +26,7 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.Reactor;
@@ -38,7 +39,6 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.servicescommon.Reactor.Callback;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -114,15 +114,14 @@ public class RollingUpdateService extends AbstractIdleService {
           final String host = entry.getKey();
           final Map<String, String> hostLabels = entry.getValue();
 
-          for (Map.Entry<String, String> desiredLabel : dg.getLabels().entrySet()) {
-            final String key = desiredLabel.getKey();
+          for (final HostSelector hostSelector : dg.getHostSelectors()) {
+            final String key = hostSelector.getLabel();
             if (!hostLabels.containsKey(key)) {
               continue hostLoop;
             }
 
-            final String value = desiredLabel.getValue();
             final String hostValue = hostLabels.get(key);
-            if (isNullOrEmpty(value) ? !isNullOrEmpty(hostValue) : !value.equals(hostValue)) {
+            if (!hostSelector.matches(hostValue)) {
               continue hostLoop;
             }
           }

@@ -23,11 +23,13 @@ package com.spotify.helios.cli;
 
 import com.google.common.base.Function;
 import com.google.common.base.Strings;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.HostSelector;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -40,6 +42,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+
+import static java.lang.String.format;
 
 public class Utils {
 
@@ -123,5 +127,23 @@ public class Utils {
     if (first) {
       out.println();
     }
+  }
+
+  public static List<HostSelector> parseHostSelectors(final Namespace namespace,
+                                                      final Argument arg) {
+    final List<List<String>> args = namespace.getList(arg.getDest());
+    final List<HostSelector> ret = Lists.newArrayList();
+    if (args != null) {
+      for (final List<String> group : args) {
+        for (final String s : group) {
+          final HostSelector hostSelector = HostSelector.parse(s);
+          if (hostSelector == null) {
+            throw new IllegalArgumentException(format("Bad host selector expression: '%s'", s));
+          }
+          ret.add(hostSelector);
+        }
+      }
+    }
+    return ret;
   }
 }

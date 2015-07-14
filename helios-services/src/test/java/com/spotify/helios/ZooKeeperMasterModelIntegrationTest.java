@@ -22,12 +22,12 @@
 package com.spotify.helios;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
@@ -275,7 +275,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testAddDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableMap.of("role", "foo"), null, null);
+        "my_group", ImmutableList.of(HostSelector.parse("role=foo")), null, null);
     model.addDeploymentGroup(dg);
     assertEquals(dg, model.getDeploymentGroup("my_group"));
   }
@@ -283,7 +283,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testAddExistingDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableMap.of("role", "foo"), null, null);
+        "my_group", ImmutableList.of(HostSelector.parse("role=foo")), null, null);
     model.addDeploymentGroup(dg);
     exception.expect(DeploymentGroupExistsException.class);
     model.addDeploymentGroup(dg);
@@ -292,7 +292,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testRemoveDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableMap.of("role", "foo"), null, null);
+        "my_group", ImmutableList.of(HostSelector.parse("role=foo")), null, null);
     model.addDeploymentGroup(dg);
     model.removeDeploymentGroup("my_group");
     exception.expect(DeploymentGroupDoesNotExistException.class);

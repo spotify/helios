@@ -26,6 +26,7 @@ import com.google.common.collect.Lists;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -35,7 +36,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.util.Map;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static net.sourceforge.argparse4j.impl.Arguments.append;
@@ -44,7 +45,7 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 public class DeploymentGroupCreateCommand extends ControlCommand {
 
   private final Argument nameArg;
-  private final Argument labelsArg;
+  private final Argument hostSelectorsArg;
   private final Argument quietArg;
 
   public DeploymentGroupCreateCommand(final Subparser parser) {
@@ -56,12 +57,14 @@ public class DeploymentGroupCreateCommand extends ControlCommand {
         .required(true)
         .help("Deployment group name");
 
-    labelsArg = parser.addArgument("labels")
+    hostSelectorsArg = parser.addArgument("host_selectors")
         .action(append())
         .setDefault(Lists.newArrayList())
         .nargs("+")
-        .help("Only include hosts that match all of these labels. Separate multiple labels with "
-              + "spaces, e.g. 'foo=bar baz=qux'.");
+        .help("Host selector expression. Hosts matching this expression will be part of the " +
+              "deployment-group. Multiple conditions can be specified, separated by spaces (as " +
+              "separate arguments). If multiple conditions are given, all must be fulfilled. " +
+              "Operators supported are '=' and '!='. Example: foo=bar baz!=qux");
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
@@ -73,12 +76,12 @@ public class DeploymentGroupCreateCommand extends ControlCommand {
           final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
     final String name = options.getString(nameArg.getDest());
-    final Map<String, String> labels = Utils.argToStringMap(options, labelsArg);
+    final List<HostSelector> hostSelectors = Utils.parseHostSelectors(options, hostSelectorsArg);
     final boolean quiet = options.getBoolean(quietArg.getDest());
 
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
         .setName(name)
-        .setLabels(labels)
+        .setHostSelectors(hostSelectors)
         .build();
 
     if (!quiet && !json) {

@@ -44,6 +44,7 @@ import com.spotify.helios.master.MasterModel;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
@@ -91,7 +92,7 @@ public class DeploymentGroupResource {
         return Response.status(Response.Status.INTERNAL_SERVER_ERROR).build();
       }
 
-      if (!existing.getLabels().equals(deploymentGroup.getLabels())) {
+      if (!Objects.equals(existing.getHostSelectors(), deploymentGroup.getHostSelectors())) {
         return Response.ok(DEPLOYMENT_GROUP_ALREADY_EXISTS_RESPONSE).build();
       }
 
