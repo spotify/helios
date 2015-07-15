@@ -29,6 +29,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
@@ -51,6 +52,7 @@ import java.util.concurrent.Callable;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Iterables.getLast;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -178,6 +180,10 @@ public class DeploymentGroupTest extends SystemTestBase {
   public void testRollingUpdateMigrate() throws Exception {
     final String host = testHost();
     startDefaultAgent(host, "--labels", TEST_LABEL);
+
+    // Wait for agent to come up
+    final HeliosClient client = defaultClient();
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Manually deploy a job on the host (i.e. a job not part of the deployment group)
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);

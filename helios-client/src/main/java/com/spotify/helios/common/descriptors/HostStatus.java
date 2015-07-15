@@ -73,7 +73,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class HostStatus extends Descriptor {
 
-  public static enum Status {
+  public enum Status {
     UP,
     DOWN
   }
