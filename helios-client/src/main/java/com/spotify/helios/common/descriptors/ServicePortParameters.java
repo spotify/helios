@@ -21,9 +21,12 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.google.common.base.Objects;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.base.Objects;
+
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
@@ -56,6 +59,7 @@ import java.util.List;
  * </pre>
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ServicePortParameters extends Descriptor {
   private final List<String> tags;
 

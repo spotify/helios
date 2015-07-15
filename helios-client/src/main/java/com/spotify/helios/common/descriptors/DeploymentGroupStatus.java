@@ -34,7 +34,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 /**
  * The state of a deployment group.
  */
-@JsonIgnoreProperties({"version"})
+@JsonIgnoreProperties(value = {"version"}, ignoreUnknown = true)
 public class DeploymentGroupStatus extends Descriptor {
 
   public enum State {

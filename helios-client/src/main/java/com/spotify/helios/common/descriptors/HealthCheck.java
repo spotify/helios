@@ -21,6 +21,7 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
@@ -65,6 +66,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
     @JsonSubTypes.Type(value = HttpHealthCheck.class, name = HealthCheck.HTTP),
     @JsonSubTypes.Type(value = TcpHealthCheck.class, name = HealthCheck.TCP),
 })
+@JsonIgnoreProperties(ignoreUnknown = true)
 public abstract class HealthCheck extends Descriptor {
 
   public static final String EXEC = "exec";

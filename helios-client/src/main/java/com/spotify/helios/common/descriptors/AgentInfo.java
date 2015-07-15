@@ -21,6 +21,7 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
@@ -48,6 +49,7 @@ import java.util.List;
  * }
  * </pre>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class AgentInfo extends Descriptor {
   private final String name;
   private final String vmName;

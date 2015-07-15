@@ -24,6 +24,7 @@ package com.spotify.helios.common.descriptors;
 import com.google.common.base.Objects;
 import com.google.common.collect.ImmutableMap;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
@@ -41,6 +42,7 @@ import static java.util.Arrays.asList;
  * }
  * </pre>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ServicePorts extends Descriptor {
 
   private final Map<String, ServicePortParameters> ports;

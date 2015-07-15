@@ -23,6 +23,7 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
@@ -33,6 +34,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * Basically, a pair of {@link Job} and {@link Goal}.  This is different than {@link Deployment}
  * which has a {@link JobId} and not a {@link Job}
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Task extends Descriptor {
   public static final String EMPTY_DEPLOYER_USER = null;
   public static final String EMPTY_DEPLOYER_MASTER = null;
