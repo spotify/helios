@@ -64,7 +64,8 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
       // running netcat twice on different ports lets us verify the health check actually executed
       // because otherwise we wouldn't be able to connect to the second port.
       final TemporaryJob job = temporaryJobs.job()
-          .command("sh", "-c", "nc -l -p 4711 && nc -l -p 4712")
+          .image(ALPINE)
+          .command("sh", "-c", "nc -l -p 4711 && nc -kl -p 4712 -e true")
           .port(HEALTH_CHECK_PORT, 4711)
           .port(QUERY_PORT, 4712)
           .tcpHealthCheck(HEALTH_CHECK_PORT)
@@ -109,7 +110,8 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
       // object instead of the tcpHealthCheck convenience method
       final HealthCheck healthCheck = TcpHealthCheck.of(HEALTH_CHECK_PORT);
       final TemporaryJob job = temporaryJobs.job()
-          .command("sh", "-c", "nc -l -p 4711 && nc -l -p 4712")
+          .image(ALPINE)
+          .command("sh", "-c", "nc -l -p 4711 && nc -kl -p 4712 -e true")
           .port(HEALTH_CHECK_PORT, 4711)
           .port(QUERY_PORT, 4712)
           .healthCheck(healthCheck)
