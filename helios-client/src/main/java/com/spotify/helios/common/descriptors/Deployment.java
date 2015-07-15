@@ -23,6 +23,8 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
@@ -39,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class Deployment extends Descriptor {
 
   public static final String EMTPY_DEPLOYER_USER = null;
@@ -48,7 +51,11 @@ public class Deployment extends Descriptor {
   private final JobId jobId;
   private final Goal goal;
   private final String deployerUser;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String deployerMaster;
+
+  @JsonInclude(JsonInclude.Include.NON_NULL)
   private final String deploymentGroupName;
 
   /**
