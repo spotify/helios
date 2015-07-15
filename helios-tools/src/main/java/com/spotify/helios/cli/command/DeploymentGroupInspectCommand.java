@@ -79,7 +79,7 @@ public class DeploymentGroupInspectCommand extends ControlCommand {
       for (final HostSelector hostSelector : deploymentGroup.getHostSelectors()) {
         out.printf("  %s%n", hostSelector.toPrettyString());
       }
-      out.printf("Job: %s%n", deploymentGroup.getJob());
+      out.printf("Job: %s%n", deploymentGroup.getJobId());
     }
 
     return 0;

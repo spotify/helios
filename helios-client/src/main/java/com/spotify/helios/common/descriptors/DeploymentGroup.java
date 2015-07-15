@@ -30,10 +30,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
-import java.util.Map;
 
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 
 /**
  * Represents a Helios deployment group.
@@ -55,30 +53,29 @@ import static java.util.Collections.emptyMap;
 public class DeploymentGroup extends Descriptor {
 
   public static final String EMPTY_NAME = "";
-  public static final Map<String, String> EMPTY_LABELS = emptyMap();
-  public static final JobId EMPTY_JOB = null;
+  public static final JobId EMPTY_JOB_ID = null;
 
   private final String name;
   private final List<HostSelector> hostSelectors;
-  private final JobId job;
+  private final JobId jobId;
   private final RolloutOptions rolloutOptions;
 
   /**
    * Create a Job.
    *
    * @param name The docker name to use.
-   * @param job The job for the deployment group.
+   * @param jobId The job ID for the deployment group.
    * @param hostSelectors The selectors that determine which agents are part of the deployment
    *                       group.
    */
   public DeploymentGroup(
       @JsonProperty("name") final String name,
       @JsonProperty("hostSelectors") final List<HostSelector> hostSelectors,
-      @JsonProperty("job") @Nullable final JobId job,
+      @JsonProperty("job") @Nullable final JobId jobId,
       @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions) {
     this.name = name;
     this.hostSelectors = hostSelectors;
-    this.job = job;
+    this.jobId = jobId;
     this.rolloutOptions = rolloutOptions;
   }
 
@@ -86,8 +83,8 @@ public class DeploymentGroup extends Descriptor {
     return name;
   }
 
-  public JobId getJob() {
-    return job;
+  public JobId getJobId() {
+    return jobId;
   }
 
   public List<HostSelector> getHostSelectors() {
@@ -113,7 +110,7 @@ public class DeploymentGroup extends Descriptor {
 
     final DeploymentGroup that = (DeploymentGroup) o;
 
-    if (job != null ? !job.equals(that.job) : that.job != null) {
+    if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
       return false;
     }
     if (hostSelectors != null ? !hostSelectors.equals(that.hostSelectors)
@@ -135,7 +132,7 @@ public class DeploymentGroup extends Descriptor {
   public int hashCode() {
     int result = name != null ? name.hashCode() : 0;
     result = 31 * result + (hostSelectors != null ? hostSelectors.hashCode() : 0);
-    result = 31 * result + (job != null ? job.hashCode() : 0);
+    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     result = 31 * result + (rolloutOptions != null ? rolloutOptions.hashCode() : 0);
     return result;
   }
@@ -145,7 +142,7 @@ public class DeploymentGroup extends Descriptor {
     return "DeploymentGroup{" +
            "name='" + name + '\'' +
            ", hostSelectors=" + hostSelectors +
-           ", job=" + job +
+           ", job=" + jobId +
            ", rolloutOptions=" + rolloutOptions +
            '}';
   }
@@ -154,7 +151,7 @@ public class DeploymentGroup extends Descriptor {
     final Builder builder = newBuilder();
 
     return builder.setName(name)
-        .setJob(job)
+        .setJobId(jobId)
         .setHostSelectors(hostSelectors)
         .setRolloutOptions(rolloutOptions);
   }
@@ -170,16 +167,20 @@ public class DeploymentGroup extends Descriptor {
     private static class Parameters implements Cloneable {
 
       public String name;
-      public JobId job;
+      public JobId jobId;
       public List<HostSelector> hostSelectors;
       public RolloutOptions rolloutOptions;
 
       private Parameters() {
         this.name = EMPTY_NAME;
-        this.job = EMPTY_JOB;
+        this.jobId = EMPTY_JOB_ID;
         this.hostSelectors = emptyList();
         this.rolloutOptions = null;
       }
+    }
+
+    public String getName() {
+      return p.name;
     }
 
     public Builder setName(final String name) {
@@ -187,8 +188,12 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
-    public Builder setJob(final JobId job) {
-      p.job = job;
+    public JobId getJobId() {
+      return p.jobId;
+    }
+
+    public Builder setJobId(final JobId jobId) {
+      p.jobId = jobId;
       return this;
     }
 
@@ -202,12 +207,8 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
-    public String getName() {
-      return p.name;
-    }
-
     public DeploymentGroup build() {
-      return new DeploymentGroup(p.name, p.hostSelectors, p.job, p.rolloutOptions);
+      return new DeploymentGroup(p.name, p.hostSelectors, p.jobId, p.rolloutOptions);
     }
   }
 

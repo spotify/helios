@@ -222,7 +222,7 @@ public class DeploymentGroupResource {
       }
 
       return Response.ok(new DeploymentGroupStatusResponse(
-          name, status, deploymentGroup.getJob(), deploymentGroupStatus.getError(),
+          name, status, deploymentGroup.getJobId(), deploymentGroupStatus.getError(),
           result, deploymentGroupStatus))
           .build();
     } catch (final DeploymentGroupDoesNotExistException e) {

@@ -62,7 +62,7 @@ public class DeploymentGroupInspectCommandTest {
       HostSelector.parse("foo=bar"),
       HostSelector.parse("baz=qux"));
   private static final DeploymentGroup DEPLOYMENT_GROUP = DeploymentGroup.newBuilder()
-      .setName(NAME).setHostSelectors(HOST_SELECTORS).setJob(JOB).build();
+      .setName(NAME).setHostSelectors(HOST_SELECTORS).setJobId(JOB).build();
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
