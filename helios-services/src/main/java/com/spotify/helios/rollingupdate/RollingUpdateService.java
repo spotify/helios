@@ -21,6 +21,8 @@
 
 package com.spotify.helios.rollingupdate;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
@@ -40,6 +42,7 @@ import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.servicescommon.Reactor.Callback;
+import static java.util.Collections.emptyList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
@@ -105,29 +108,10 @@ public class RollingUpdateService extends AbstractIdleService {
         }
       }
 
+      final HostMatcher hostMatcher = new HostMatcher(hostsToLabels);
+
       for (final DeploymentGroup dg : masterModel.getDeploymentGroups().values()) {
-        final List<String> matchingHosts = Lists.newArrayList();
-
-        // determine the hosts that match the current deployment group
-        hostLoop:
-        for (final Map.Entry<String, Map<String, String>> entry : hostsToLabels.entrySet()) {
-          final String host = entry.getKey();
-          final Map<String, String> hostLabels = entry.getValue();
-
-          for (final HostSelector hostSelector : dg.getHostSelectors()) {
-            final String key = hostSelector.getLabel();
-            if (!hostLabels.containsKey(key)) {
-              continue hostLoop;
-            }
-
-            final String hostValue = hostLabels.get(key);
-            if (!hostSelector.matches(hostValue)) {
-              continue hostLoop;
-            }
-          }
-
-          matchingHosts.add(host);
-        }
+        final List<String> matchingHosts = hostMatcher.getMatchingHosts(dg);
 
         try {
           masterModel.updateDeploymentGroupHosts(dg.getName(), matchingHosts);
@@ -154,6 +138,47 @@ public class RollingUpdateService extends AbstractIdleService {
                    dg.getName(), e);
         }
       }
+    }
+  }
+
+  public static class HostMatcher {
+    private final Map<String, Map<String, String>> hostsAndLabels;
+
+    public HostMatcher(final Map<String, Map<String, String>> hostsAndLabels) {
+      this.hostsAndLabels = ImmutableMap.copyOf(checkNotNull(hostsAndLabels, "hostsAndLabels"));
+    }
+
+    public List<String> getMatchingHosts(final DeploymentGroup deploymentGroup) {
+      final List<String> matchingHosts = Lists.newArrayList();
+
+      if ((deploymentGroup.getHostSelectors() == null) ||
+          deploymentGroup.getHostSelectors().isEmpty()) {
+        log.error("skipping deployment group with no host selectors: " + deploymentGroup.getName());
+        return emptyList();
+      }
+
+      // determine the hosts that match the current deployment group
+      hostLoop:
+      for (final Map.Entry<String, Map<String, String>> entry : hostsAndLabels.entrySet()) {
+        final String host = entry.getKey();
+        final Map<String, String> hostLabels = entry.getValue();
+
+        for (final HostSelector hostSelector : deploymentGroup.getHostSelectors()) {
+          final String key = hostSelector.getLabel();
+          if (!hostLabels.containsKey(key)) {
+            continue hostLoop;
+          }
+
+          final String hostValue = hostLabels.get(key);
+          if (!hostSelector.matches(hostValue)) {
+            continue hostLoop;
+          }
+        }
+
+        matchingHosts.add(host);
+      }
+
+      return ImmutableList.copyOf(matchingHosts);
     }
   }
 }
