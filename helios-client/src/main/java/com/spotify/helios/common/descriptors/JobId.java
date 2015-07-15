@@ -26,6 +26,7 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Ordering;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 
@@ -49,6 +50,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * colon and hash value.
  */
 @JsonSerialize
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class JobId extends Descriptor implements Comparable<JobId> {
 
   private final String name;

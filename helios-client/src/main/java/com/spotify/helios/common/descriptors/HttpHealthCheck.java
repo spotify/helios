@@ -23,10 +23,12 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class HttpHealthCheck extends HealthCheck {
 
   private final String path;

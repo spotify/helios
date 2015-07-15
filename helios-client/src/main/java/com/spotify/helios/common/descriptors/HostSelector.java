@@ -21,6 +21,7 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
@@ -32,6 +33,7 @@ import java.util.regex.Pattern;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static java.lang.String.format;
 
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class HostSelector extends Descriptor {
 
   // Use java.util.function.BiPredicate when available (java 8)

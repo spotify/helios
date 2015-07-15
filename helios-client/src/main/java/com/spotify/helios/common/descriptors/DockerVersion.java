@@ -23,6 +23,7 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
@@ -42,6 +43,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  * }
  * </pre>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class DockerVersion {
 
   private final String apiVersion;

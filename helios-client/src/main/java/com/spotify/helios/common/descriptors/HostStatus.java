@@ -23,6 +23,7 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Joiner;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
@@ -69,6 +70,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * }
  * </pre>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class HostStatus extends Descriptor {
 
   public static enum Status {

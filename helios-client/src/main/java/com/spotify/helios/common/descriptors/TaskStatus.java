@@ -25,6 +25,7 @@ import com.google.common.base.Objects;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
@@ -63,6 +64,7 @@ import static java.util.Collections.emptyMap;
  * },
  * </pre>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class TaskStatus extends Descriptor {
 
   private static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();

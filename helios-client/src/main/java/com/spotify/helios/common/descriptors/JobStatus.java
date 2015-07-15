@@ -23,6 +23,7 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Map;
@@ -58,6 +59,7 @@ import static com.google.common.collect.ImmutableMap.copyOf;
  * }
  * </pre>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class JobStatus {
 
   private final Job job;

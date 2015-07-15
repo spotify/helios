@@ -23,6 +23,7 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
@@ -40,6 +41,7 @@ import org.jetbrains.annotations.Nullable;
  * }
  * </pre>
  */
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class PortMapping extends Descriptor {
 
   public static final String TCP = "tcp";
