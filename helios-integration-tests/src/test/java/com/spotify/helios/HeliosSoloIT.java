@@ -105,7 +105,7 @@ public class HeliosSoloIT {
     final TemporaryJobBuilder solo = temporaryJobs.job()
         .image(soloImage())
         .prober(new SoloStatusProber())
-        .port("helios", 5801, 55801)
+        .port("helios", 5801)
         .env("HELIOS_ID", "solo_it")
         .env("HELIOS_NAME", TEST_HOST)
         .env("HOST_ADDRESS", hostAddress)
@@ -154,14 +154,14 @@ public class HeliosSoloIT {
       // start a container that runs nginx and registers with SkyDNS
       soloTemporaryJobs.job()
           .image(NGINX)
-          .port("http", 80, 59980)
+          .port("http", 80)
           .registration("nginx", "http", "http")
           .deploy();
 
       // run a container that does SRV lookup to find the nginx service and then curl's it
       alpine = soloTemporaryJobs.job()
           .image(ALPINE)
-          .port("nc", 4711, 54711)
+          .port("nc", 4711)
           .command("sh", "-c",
                    "apk-install bind-tools " +
                    "&& export SRV=$(dig -t SRV +short _nginx._http.services.$SPOTIFY_DOMAIN) " +
