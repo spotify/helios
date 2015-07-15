@@ -38,9 +38,10 @@ import static org.junit.Assert.assertTrue;
 public class HostMatcherTest {
 
   public static final Map<String, Map<String, String>> hostsAndLabels = ImmutableMap.of(
-      "host1", (Map<String, String>) ImmutableMap.of("foo", "bar"),
+      "host3", (Map<String, String>) ImmutableMap.of("x", "y"),
+      "host11", (Map<String, String>) ImmutableMap.of("foo", "bar"),
       "host2", (Map<String, String>) ImmutableMap.of("foo", "bar"),
-      "host3", (Map<String, String>) ImmutableMap.of("x", "y")
+      "host1", (Map<String, String>) ImmutableMap.of("foo", "bar")
   );
 
   @Test
@@ -55,7 +56,7 @@ public class HostMatcherTest {
         .build();
 
     assertArrayEquals(hostMatcher.getMatchingHosts(deploymentGroup).toArray(),
-                      new String[]{"host1", "host2"});
+                      new String[]{"host1", "host2", "host11"});
   }
 
   @Test
