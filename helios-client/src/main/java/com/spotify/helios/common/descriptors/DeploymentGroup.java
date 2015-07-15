@@ -39,12 +39,25 @@ import static java.util.Collections.emptyList;
  * An sample expression of it in JSON might be:
  * <pre>
  * {
- *   "name" : "foo-group",
- *   "labels" : {
- *     "role" : "foo",
- *     "canary" : "0"
- *   },
- *   "job": "foo-service:0.1.0"
+ *   "name":"foo-group",
+ *   "job":"foo:0.1.0",
+ *   "hostSelectors":[
+ *     {
+ *       "label":"foo",
+ *       "operator":"EQUALS"
+ *       "operand":"bar",
+ *     },
+ *     {
+ *       "label":"baz",
+ *       "operator":"EQUALS"
+ *       "operand":"qux",
+ *     }
+ *   ],
+ *   "rolloutOptions":{
+ *     "migrate":false,
+ *     "parallelism":2,
+ *     "timeout":1000
+ *   }
  * }
  * </pre>
  */
@@ -197,9 +210,17 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
+    public List<HostSelector> getHostSelectors() {
+      return p.hostSelectors;
+    }
+
     public Builder setHostSelectors(final List<HostSelector> hostSelectors) {
       p.hostSelectors = Lists.newArrayList(hostSelectors);
       return this;
+    }
+
+    public RolloutOptions getRolloutOptions() {
+      return p.rolloutOptions;
     }
 
     public Builder setRolloutOptions(final RolloutOptions rolloutOptions) {
