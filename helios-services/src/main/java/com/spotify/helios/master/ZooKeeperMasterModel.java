@@ -463,7 +463,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     log.info("rolling-update on deployment-group: name={}", deploymentGroup.getName());
 
     final DeploymentGroup updated = deploymentGroup.toBuilder()
-        .setJob(jobId)
+        .setJobId(jobId)
         .setRolloutOptions(options)
         .build();
 
@@ -620,10 +620,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("rollingUpdateAwaitRunning");
     final Map<JobId, TaskStatus> taskStatuses = getTaskStatuses(client, host);
 
-    if (!taskStatuses.containsKey(deploymentGroup.getJob())) {
+    if (!taskStatuses.containsKey(deploymentGroup.getJobId())) {
       // job hasn't shown up yet, probably still being written
       return RollingUpdateTaskResult.TASK_IN_PROGRESS;
-    } else if (!taskStatuses.get(deploymentGroup.getJob()).getState()
+    } else if (!taskStatuses.get(deploymentGroup.getJobId()).getState()
         .equals(TaskStatus.State.RUNNING)) {
       // job isn't running yet
 
@@ -648,7 +648,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       // the job is running on the host. last thing we have to ensure is that it was
       // deployed by this deployment group. otherwise some weird conflict has occurred and we
       // won't be able to undeploy the job on the next update.
-      final Deployment deployment = getDeployment(host, deploymentGroup.getJob());
+      final Deployment deployment = getDeployment(host, deploymentGroup.getJobId());
       if (deployment == null) {
         return RollingUpdateTaskResult.error("deployment for this job is very broken in ZK");
       } else if (!Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName())) {
@@ -662,7 +662,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private RollingUpdateTaskResult rollingUpdateDeploy(final DeploymentGroup deploymentGroup,
                                                       final String host) {
-    final Deployment deployment = Deployment.of(deploymentGroup.getJob(), Goal.START,
+    final Deployment deployment = Deployment.of(deploymentGroup.getJobId(), Goal.START,
                                                 Deployment.EMTPY_DEPLOYER_USER, this.name,
                                                 deploymentGroup.getName());
     final ZooKeeperClient client = provider.get("rollingUpdateDeploy");
@@ -686,7 +686,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     for (final Deployment deployment : getTasks(client, host).values()) {
       final boolean isOwnedByDeploymentGroup = Objects.equals(
           deployment.getDeploymentGroupName(), deploymentGroup.getName());
-      final boolean isSameJob = deployment.getJobId().equals(deploymentGroup.getJob());
+      final boolean isSameJob = deployment.getJobId().equals(deploymentGroup.getJobId());
 
       if (isOwnedByDeploymentGroup || (
           isSameJob && deploymentGroup.getRolloutOptions().getMigrate())) {
@@ -829,7 +829,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public Job getJob(final JobId id) {
     log.debug("getting job: {}", id);
-    final ZooKeeperClient client = provider.get("getJob");
+    final ZooKeeperClient client = provider.get("getJobId");
     return getJob(client, id);
   }
 
