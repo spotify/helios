@@ -222,6 +222,10 @@ public class DeploymentGroupTest extends SystemTestBase {
     final String host = testHost();
     startDefaultAgent(host, "--labels", TEST_LABEL);
 
+    // Wait for agent to come up
+    final HeliosClient client = defaultClient();
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
     // Manually deploy a job on the host
     final String manualJobVersion = "foo-" + testJobVersion;
     final JobId manualJobId = createJob(testJobName, manualJobVersion, BUSYBOX, IDLE_COMMAND);
