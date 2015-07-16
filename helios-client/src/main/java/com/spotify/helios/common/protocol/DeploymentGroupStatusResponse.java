@@ -25,6 +25,7 @@ import com.google.common.base.Objects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -100,30 +101,27 @@ public class DeploymentGroupStatusResponse {
     }
   }
 
-  private final String name;
+  private final DeploymentGroup deploymentGroup;
   private final Status status;
   private final String error;
-  private final JobId jobId;
   private final List<HostStatus> hostStatuses;
   private final DeploymentGroupStatus deploymentGroupStatus;
 
   public DeploymentGroupStatusResponse(
-      @JsonProperty("name") final String name,
+      @JsonProperty("deploymentGroup") final DeploymentGroup deploymentGroup,
       @JsonProperty("status") final Status status,
-      @JsonProperty("jobId") final JobId jobId,
       @JsonProperty("error") final String error,
       @JsonProperty("hostStatuses") final List<HostStatus> hostStatuses,
       @JsonProperty("deploymentGroupStatus") final DeploymentGroupStatus deploymentGroupStatus) {
-    this.name = name;
+    this.deploymentGroup = deploymentGroup;
     this.status = status;
     this.error = error;
-    this.jobId = jobId;
     this.hostStatuses = hostStatuses;
     this.deploymentGroupStatus = deploymentGroupStatus;
   }
 
-  public String getName() {
-    return name;
+  public DeploymentGroup getDeploymentGroup() {
+    return deploymentGroup;
   }
 
   public Status getStatus() {
@@ -138,10 +136,6 @@ public class DeploymentGroupStatusResponse {
     return error;
   }
 
-  public JobId getJobId() {
-    return jobId;
-  }
-
   public DeploymentGroupStatus getDeploymentGroupStatus() {
     return deploymentGroupStatus;
   }
@@ -149,10 +143,9 @@ public class DeploymentGroupStatusResponse {
   @Override
   public String toString() {
     return Objects.toStringHelper(getClass())
-        .add("name", name)
+        .add("deploymentGroup", deploymentGroup)
         .add("status", status)
         .add("error", error)
-        .add("jobId", jobId)
         .add("hostStatuses", hostStatuses)
         .add("deploymentGroupStatus", deploymentGroupStatus)
         .toString();
@@ -171,26 +164,25 @@ public class DeploymentGroupStatusResponse {
       return false;
     }
 
-    final DeploymentGroupStatusResponse that = (DeploymentGroupStatusResponse) o;
+    final DeploymentGroupStatusResponse response = (DeploymentGroupStatusResponse) o;
 
-    if (deploymentGroupStatus != null ? !deploymentGroupStatus.equals(that.deploymentGroupStatus)
-                                      : that.deploymentGroupStatus != null) {
+    if (deploymentGroup != null ? !deploymentGroup.equals(response.deploymentGroup)
+                                : response.deploymentGroup != null) {
       return false;
     }
-    if (error != null ? !error.equals(that.error) : that.error != null) {
+    if (deploymentGroupStatus != null ? !deploymentGroupStatus
+        .equals(response.deploymentGroupStatus)
+                                      : response.deploymentGroupStatus != null) {
       return false;
     }
-    if (hostStatuses != null ? !hostStatuses.equals(that.hostStatuses)
-                             : that.hostStatuses != null) {
+    if (error != null ? !error.equals(response.error) : response.error != null) {
       return false;
     }
-    if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
+    if (hostStatuses != null ? !hostStatuses.equals(response.hostStatuses)
+                             : response.hostStatuses != null) {
       return false;
     }
-    if (name != null ? !name.equals(that.name) : that.name != null) {
-      return false;
-    }
-    if (status != that.status) {
+    if (status != response.status) {
       return false;
     }
 
@@ -199,10 +191,9 @@ public class DeploymentGroupStatusResponse {
 
   @Override
   public int hashCode() {
-    int result = name != null ? name.hashCode() : 0;
+    int result = deploymentGroup != null ? deploymentGroup.hashCode() : 0;
     result = 31 * result + (status != null ? status.hashCode() : 0);
     result = 31 * result + (error != null ? error.hashCode() : 0);
-    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     result = 31 * result + (hostStatuses != null ? hostStatuses.hashCode() : 0);
     result = 31 * result + (deploymentGroupStatus != null ? deploymentGroupStatus.hashCode() : 0);
     return result;
