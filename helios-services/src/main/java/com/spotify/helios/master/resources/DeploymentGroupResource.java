@@ -183,10 +183,6 @@ public class DeploymentGroupResource {
       final DeploymentGroup deploymentGroup = model.getDeploymentGroup(name);
       final DeploymentGroupStatus deploymentGroupStatus = model.getDeploymentGroupStatus(name);
 
-      if (deploymentGroupStatus == null) {
-        throw new DeploymentGroupDoesNotExistException(name);
-      }
-
       final List<String> hosts = model.getDeploymentGroupHosts(name);
 
       final List<DeploymentGroupStatusResponse.HostStatus> result = Lists.newArrayList();
@@ -213,7 +209,9 @@ public class DeploymentGroupResource {
       }
 
       final DeploymentGroupStatusResponse.Status status;
-      if (deploymentGroupStatus.getState() == DeploymentGroupStatus.State.FAILED) {
+      if (deploymentGroupStatus == null) {
+        status = DeploymentGroupStatusResponse.Status.IDLE;
+      } else if (deploymentGroupStatus.getState() == DeploymentGroupStatus.State.FAILED) {
         status = DeploymentGroupStatusResponse.Status.FAILED;
       } else if (deploymentGroupStatus.getSuccessfulIterations() > 0) {
         status = DeploymentGroupStatusResponse.Status.ACTIVE;
@@ -221,10 +219,9 @@ public class DeploymentGroupResource {
         status = DeploymentGroupStatusResponse.Status.ROLLING_OUT;
       }
 
+      final String error = deploymentGroupStatus == null ? "" : deploymentGroupStatus.getError();
       return Response.ok(new DeploymentGroupStatusResponse(
-          deploymentGroup, status, deploymentGroupStatus.getError(),
-          result, deploymentGroupStatus))
-          .build();
+          deploymentGroup, status, error, result, deploymentGroupStatus)).build();
     } catch (final DeploymentGroupDoesNotExistException e) {
       return Response.status(Response.Status.NOT_FOUND).build();
     }

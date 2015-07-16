@@ -39,7 +39,8 @@ public class DeploymentGroupStatusResponse {
   public enum Status {
     ROLLING_OUT,
     ACTIVE,
-    FAILED
+    FAILED,
+    IDLE
   }
 
   public static class HostStatus {
@@ -112,12 +113,12 @@ public class DeploymentGroupStatusResponse {
       @JsonProperty("status") final Status status,
       @JsonProperty("error") final String error,
       @JsonProperty("hostStatuses") final List<HostStatus> hostStatuses,
-      @JsonProperty("deploymentGroupStatus") final DeploymentGroupStatus deploymentGroupStatus) {
+      @JsonProperty("deploymentGroupStatus") @Nullable final DeploymentGroupStatus dgs) {
     this.deploymentGroup = deploymentGroup;
     this.status = status;
     this.error = error;
     this.hostStatuses = hostStatuses;
-    this.deploymentGroupStatus = deploymentGroupStatus;
+    this.deploymentGroupStatus = dgs;
   }
 
   public DeploymentGroup getDeploymentGroup() {
