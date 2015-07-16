@@ -11,8 +11,8 @@
   <packaging>jar</packaging>
 
   <properties>
-    <version.template.file>src/main/java/com/spotify/helios/common/Version.java.template</version.template.file>
-    <version.file>src/main/java/com/spotify/helios/common/Version.java</version.file>
+    <version.template.file>helios-client/src/main/java/com/spotify/helios/common/Version.java.template</version.template.file>
+    <version.file>helios-client/src/main/java/com/spotify/helios/common/Version.java</version.file>
   </properties>
 
   <dependencies>
@@ -69,8 +69,8 @@
     <plugins>
       <plugin>
         <groupId>com.google.code.maven-replacer-plugin</groupId>
-        <artifactId>maven-replacer-plugin</artifactId>
-        <version>1.4.0</version>
+        <artifactId>replacer</artifactId>
+        <version>1.5.3</version>
         <executions>
           <execution>
             <phase>process-sources</phase>
