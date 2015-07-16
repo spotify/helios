@@ -357,6 +357,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       final List<String> events;
       try {
         events = client.getChildren(Paths.historyJobHostEvents(jobId, host));
+      } catch (NoNodeException e) {
+        continue;
       } catch (KeeperException e) {
         throw Throwables.propagate(e);
       }

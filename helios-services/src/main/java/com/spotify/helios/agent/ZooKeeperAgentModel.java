@@ -63,7 +63,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
 
   private final PersistentPathChildrenCache<Task> tasks;
   private final ZooKeeperUpdatingPersistentDirectory taskStatuses;
-  private final QueueingHistoryWriter historyWriter;
+  private final TaskHistoryWriter historyWriter;
 
   private final String agent;
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
@@ -86,7 +86,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
                                                                     provider,
                                                                     taskStatusFile,
                                                                     Paths.statusHostJobs(host));
-    this.historyWriter = new QueueingHistoryWriter(host, client, kafkaProvider,
+    this.historyWriter = new TaskHistoryWriter(host, client, kafkaProvider,
         stateDirectory.resolve(TASK_HISTORY_FILENAME));
   }
 
@@ -148,7 +148,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
       throws InterruptedException {
     log.debug("setting task status: {}", status);
     taskStatuses.put(jobId.toString(), status.toJsonBytes());
-    historyWriter.saveHistoryItem(jobId, status);
+    historyWriter.saveHistoryItem(status);
   }
 
   /**
