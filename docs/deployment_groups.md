@@ -73,7 +73,7 @@ failure timeouts.
 
 Check on the status:
 
-    $ helios status-deployment-group foo-group
+    $ helios deployment-group-status foo-group
 
     Name: foo-group
     Job Id: foo-job:0.1.0

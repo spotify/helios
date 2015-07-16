@@ -351,7 +351,7 @@ deploys the specified job.
 
     $ helios create-deployment-group <group name> <label1 key1=value1> <label2 key2=value2>
     $ helios rolling-update <job ID> <group name>
-    $ helios status-deployment-group <group name>
+    $ helios deployment-group-status <group name>
 
 [Here's more information](https://github.com/spotify/helios/blob/master/docs/deployment_groups.md)
 on how to use deployment groups and their motivation.
