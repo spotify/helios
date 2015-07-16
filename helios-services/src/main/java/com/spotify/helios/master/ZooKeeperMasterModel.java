@@ -512,6 +512,12 @@ public class ZooKeeperMasterModel implements MasterModel {
     final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
     final DeploymentGroupStatus status = getDeploymentGroupStatus(deploymentGroup.getName());
 
+    if (status == null) {
+      // The rolling-update command hasn't been called yet for this deployment group.
+      // The deployment group status doesn't exist yet and there's nothing to do.
+      return;
+    }
+
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
 
     if (status.getState().equals(PLANNING_ROLLOUT)) {
@@ -785,7 +791,13 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     try {
       final Node node = client.getNode(Paths.statusDeploymentGroup(name));
-      final DeploymentGroupStatus status = Json.read(node.getBytes(), DeploymentGroupStatus.class);
+
+      final byte[] bytes = node.getBytes();
+      if (bytes.length == 0) {
+        return null;
+      }
+
+      final DeploymentGroupStatus status = Json.read(bytes, DeploymentGroupStatus.class);
       return status.toBuilder()
           .setVersion(node.getStat().getVersion())
           .build();

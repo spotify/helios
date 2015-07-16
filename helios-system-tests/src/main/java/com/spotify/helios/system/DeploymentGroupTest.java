@@ -177,6 +177,14 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
+  public void testStatusNoRollingUpdate() throws Exception {
+    cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
+    assertEquals(DeploymentGroupStatusResponse.Status.IDLE,
+                 OBJECT_MAPPER.readValue(cli("status-deployment-group", "--json", TEST_GROUP),
+                                         DeploymentGroupStatusResponse.class).getStatus());
+  }
+
+  @Test
   public void testRollingUpdateMigrate() throws Exception {
     final String host = testHost();
     startDefaultAgent(host, "--labels", TEST_LABEL);
