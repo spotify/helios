@@ -27,6 +27,7 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 
@@ -92,12 +93,17 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
     if (json) {
       out.println(Json.asPrettyStringUnchecked(status));
     } else {
-      final JobId jobId = status.getJobId();
+      final JobId jobId = status.getDeploymentGroup().getJobId();
       final String error = status.getError();
+      final List<HostSelector> hostSelectors = status.getDeploymentGroup().getHostSelectors();
 
       out.printf("Name: %s%n", name);
       out.printf("Job Id: %s%n", full ? jobId : jobId.toShortString());
       out.printf("Status: %s%n", status.getStatus());
+      out.printf("Host selectors:%n");
+      for (final HostSelector hostSelector : hostSelectors) {
+        out.printf("  %s%n", hostSelector.toPrettyString());
+      }
 
       if (!Strings.isNullOrEmpty(error)) {
         out.printf("Error: %s%n", error);

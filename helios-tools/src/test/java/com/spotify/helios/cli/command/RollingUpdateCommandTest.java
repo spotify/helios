@@ -28,6 +28,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -46,6 +48,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -106,7 +109,9 @@ public class RollingUpdateCommandTest {
       final DeploymentGroupStatusResponse.Status status, final JobId jobId, final String error,
       DeploymentGroupStatusResponse.HostStatus... args) {
     return new DeploymentGroupStatusResponse(
-        GROUP_NAME, status, jobId, error, Arrays.asList(args), null);
+        new DeploymentGroup(GROUP_NAME, Collections.<HostSelector>emptyList(), jobId,
+                            RolloutOptions.newBuilder().build()),
+        status, error, Arrays.asList(args), null);
   }
 
   @Test

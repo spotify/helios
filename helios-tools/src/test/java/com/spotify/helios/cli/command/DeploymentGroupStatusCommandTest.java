@@ -21,6 +21,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -28,7 +29,10 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 
@@ -57,6 +61,14 @@ import static org.mockito.Mockito.when;
 
 public class DeploymentGroupStatusCommandTest {
 
+  private static final JobId JOB_ID = new JobId("foo-job", "0.1.0");
+  private static final String GROUP_NAME = "foo-group";
+  private static final List<HostSelector> HOST_SELECTORS = ImmutableList.of(
+      HostSelector.parse("a=b"), HostSelector.parse("foo=bar"));
+  private static final RolloutOptions ROLLOUT_OPTIONS = RolloutOptions.newBuilder().build();
+  private static final DeploymentGroup DEPLOYMENT_GROUP = new DeploymentGroup(
+      GROUP_NAME, HOST_SELECTORS, JOB_ID, ROLLOUT_OPTIONS);
+
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
   private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -78,24 +90,20 @@ public class DeploymentGroupStatusCommandTest {
 
   @Test
   public void testDeploymentGroupStatus() throws Exception {
-    final String name = "foo-group";
-    final String jobName = "foo-job";
-    final String jobVersion = "0.1.0";
-    final JobId jobId = new JobId(jobName, jobVersion);
-
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host1", jobId, TaskStatus.State.RUNNING));
+        "host1", JOB_ID, TaskStatus.State.RUNNING));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host2", jobId, TaskStatus.State.PULLING_IMAGE));
+        "host2", JOB_ID, TaskStatus.State.PULLING_IMAGE));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
         "host3", null, null));
 
     final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
-        name, DeploymentGroupStatusResponse.Status.ROLLING_OUT, jobId, null, hostStatuses, null);
+        DEPLOYMENT_GROUP, DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
+        hostStatuses, null);
 
-    when(client.deploymentGroupStatus(name)).thenReturn(Futures.immediateFuture(status));
-    when(options.getString("name")).thenReturn(name);
+    when(client.deploymentGroupStatus(GROUP_NAME)).thenReturn(Futures.immediateFuture(status));
+    when(options.getString("name")).thenReturn(GROUP_NAME);
     final int ret = command.run(options, client, out, false, null);
 
     assertEquals(0, ret);
@@ -105,35 +113,34 @@ public class DeploymentGroupStatusCommandTest {
         format("Name: %s" +
                "Job Id: %s" +
                "Status: ROLLING_OUT" +
+               "Host selectors:" +
+               "  a = b" +
+               "  foo = bar" +
                "HOST UP-TO-DATE JOB STATE" +
                "host1. X %s RUNNING" +
                "host2. X %s PULLING_IMAGE" +
                "host3. - -",
-               name, jobId, jobId, jobId).replace(" ", "");
+               GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }
 
   @Test
   public void testDeploymentGroupStatusWithError() throws Exception {
-    final String name = "foo-group";
-    final String jobName = "foo-job";
-    final String jobVersion = "0.1.0";
-    final JobId jobId = new JobId(jobName, jobVersion);
-
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host1", jobId, TaskStatus.State.RUNNING));
+        "host1", JOB_ID, TaskStatus.State.RUNNING));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host2", jobId, TaskStatus.State.PULLING_IMAGE));
+        "host2", JOB_ID, TaskStatus.State.PULLING_IMAGE));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
         "host3", null, null));
 
     final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
-        name, DeploymentGroupStatusResponse.Status.ROLLING_OUT, jobId, "Oops!", hostStatuses, null);
+        DEPLOYMENT_GROUP, DeploymentGroupStatusResponse.Status.ROLLING_OUT, "Oops!",
+        hostStatuses, null);
 
-    when(client.deploymentGroupStatus(name)).thenReturn(Futures.immediateFuture(status));
-    when(options.getString("name")).thenReturn(name);
+    when(client.deploymentGroupStatus(GROUP_NAME)).thenReturn(Futures.immediateFuture(status));
+    when(options.getString("name")).thenReturn(GROUP_NAME);
     final int ret = command.run(options, client, out, false, null);
 
     assertEquals(0, ret);
@@ -143,12 +150,15 @@ public class DeploymentGroupStatusCommandTest {
         format("Name: %s" +
                "Job Id: %s" +
                "Status: ROLLING_OUT" +
+               "Host selectors:" +
+               "  a = b" +
+               "  foo = bar" +
                "Error: Oops!" +
                "HOST UP-TO-DATE JOB STATE" +
                "host1. X %s RUNNING" +
                "host2. X %s PULLING_IMAGE" +
                "host3. - -",
-               name, jobId, jobId, jobId).replace(" ", "");
+               GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }
@@ -170,24 +180,20 @@ public class DeploymentGroupStatusCommandTest {
 
   @Test
   public void testDeploymentGroupStatusJson() throws Exception {
-    final String name = "foo-group";
-    final String jobName = "foo-job";
-    final String jobVersion = "0.1.0";
-    final JobId jobId = new JobId(jobName, jobVersion);
-
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host1", jobId, TaskStatus.State.RUNNING));
+        "host1", JOB_ID, TaskStatus.State.RUNNING));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host2", jobId, TaskStatus.State.RUNNING));
+        "host2", JOB_ID, TaskStatus.State.RUNNING));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host3", jobId, TaskStatus.State.PULLING_IMAGE));
+        "host3", JOB_ID, TaskStatus.State.PULLING_IMAGE));
 
     final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
-        name, DeploymentGroupStatusResponse.Status.ROLLING_OUT, jobId, null, hostStatuses, null);
+        DEPLOYMENT_GROUP, DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
+        hostStatuses, null);
 
-    when(client.deploymentGroupStatus(name)).thenReturn(Futures.immediateFuture(status));
-    when(options.getString("name")).thenReturn(name);
+    when(client.deploymentGroupStatus(GROUP_NAME)).thenReturn(Futures.immediateFuture(status));
+    when(options.getString("name")).thenReturn(GROUP_NAME);
     final int ret = command.run(options, client, out, true, null);
 
     assertEquals(0, ret);
@@ -209,7 +215,6 @@ public class DeploymentGroupStatusCommandTest {
     assertEquals(1, ret);
     final Map<String, Object> output = Json.read(
         baos.toString(), new TypeReference<Map<String, Object>>() {});
-
 
     assertEquals("DEPLOYMENT_GROUP_NOT_FOUND", output.get("status"));
   }
