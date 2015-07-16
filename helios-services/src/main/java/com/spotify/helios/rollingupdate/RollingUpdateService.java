@@ -37,7 +37,9 @@ import com.spotify.helios.servicescommon.ReactorFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -178,6 +180,7 @@ public class RollingUpdateService extends AbstractIdleService {
         matchingHosts.add(host);
       }
 
+      Collections.sort(matchingHosts, new AlphaNumericComparator(Locale.ENGLISH));
       return ImmutableList.copyOf(matchingHosts);
     }
   }
