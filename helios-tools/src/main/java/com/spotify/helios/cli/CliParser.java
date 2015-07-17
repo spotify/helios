@@ -227,7 +227,7 @@ public class CliParser {
     new DeploymentGroupRemoveCommand(p("remove-deployment-group"));
     new DeploymentGroupListCommand(p("list-deployment-groups"));
     new DeploymentGroupInspectCommand(p("inspect-deployment-group"));
-    new DeploymentGroupStatusCommand(p("status-deployment-group"));
+    new DeploymentGroupStatusCommand(p("deployment-group-status"));
     new DeploymentGroupWatchCommand(p("watch-deployment-group"));
     new RollingUpdateCommand(p("rolling-update"));
     new RollingUpdateAbortCommand(p("abort-rolling-update"));

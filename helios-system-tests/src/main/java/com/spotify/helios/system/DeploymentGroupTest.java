@@ -180,7 +180,7 @@ public class DeploymentGroupTest extends SystemTestBase {
   public void testStatusNoRollingUpdate() throws Exception {
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     assertEquals(DeploymentGroupStatusResponse.Status.IDLE,
-                 OBJECT_MAPPER.readValue(cli("status-deployment-group", "--json", TEST_GROUP),
+                 OBJECT_MAPPER.readValue(cli("deployment-group-status", "--json", TEST_GROUP),
                                          DeploymentGroupStatusResponse.class).getStatus());
   }
 
@@ -281,7 +281,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     assertThat(cli("abort-rolling-update", TEST_GROUP),
                containsString("Aborted rolling-update on deployment-group my_group"));
     final DeploymentGroupStatusResponse status = Json.read(
-        cli("status-deployment-group", "--json", TEST_GROUP), DeploymentGroupStatusResponse.class);
+        cli("deployment-group-status", "--json", TEST_GROUP), DeploymentGroupStatusResponse.class);
     assertEquals(DeploymentGroupStatusResponse.Status.FAILED, status.getStatus());
     assertEquals("Aborted by user", status.getError());
   }
