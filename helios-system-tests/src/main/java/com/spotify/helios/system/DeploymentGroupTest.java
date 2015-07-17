@@ -83,21 +83,6 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
-  public void testRemoveDeploymentGroup() throws Exception {
-    cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
-    assertEquals("REMOVED", Json.readTree(
-        cli("remove-deployment-group", "--json", TEST_GROUP))
-        .get("status").asText());
-  }
-
-  @Test
-  public void testRemoveNonExistingDeploymentGroup() throws Exception {
-    assertEquals("DEPLOYMENT_GROUP_NOT_FOUND", Json.readTree(
-        cli("remove-deployment-group", "--json", TEST_GROUP))
-        .get("status").asText());
-  }
-
-  @Test
   public void testListDeploymentGroups() throws Exception {
     cli("create-deployment-group", "group2", "foo=bar");
     cli("create-deployment-group", "group1", "foo=bar");
