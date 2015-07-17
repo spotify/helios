@@ -125,5 +125,5 @@ public interface MasterModel {
   void rollingUpdateStep(DeploymentGroup deploymentGroup, RolloutPlanner rolloutPlanner)
       throws DeploymentGroupDoesNotExistException;
 
-  void abortRollingUpdate(String deploymentGroupName) throws DeploymentGroupDoesNotExistException;
+  void stopDeploymentGroup(String deploymentGroupName) throws DeploymentGroupDoesNotExistException;
 }
