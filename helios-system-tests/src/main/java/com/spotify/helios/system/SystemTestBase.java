@@ -178,6 +178,7 @@ public abstract class SystemTestBase {
 
   private String testHost;
   private Path agentStateDirs;
+  private Path masterStateDirs;
   private String masterName;
 
   private ZooKeeperTestManager zk;
@@ -214,6 +215,7 @@ public abstract class SystemTestBase {
     zk.ensure("/config");
     zk.ensure("/status");
     agentStateDirs = temporaryFolder.newFolder("helios-agents").toPath();
+    masterStateDirs = temporaryFolder.newFolder("helios-masters").toPath();
   }
 
   @Before
@@ -518,10 +520,17 @@ public abstract class SystemTestBase {
                                                      "--admin=" + masterAdminPort(),
                                                      "--domain", "",
                                                      "--zk", zk.connectString());
-    if (!asList(args).contains("--name")) {
-      argsList.add("--name");
-      argsList.add(TEST_MASTER);
+
+    final String name;
+    if (asList(args).contains("--name")) {
+      name = args[asList(args).indexOf("--name") + 1];
+    } else {
+      name = TEST_MASTER;
+      argsList.addAll(asList("--name", TEST_MASTER));
     }
+
+    final String stateDir = masterStateDirs.resolve(name).toString();
+    argsList.addAll(asList("--state-dir", stateDir));
 
     argsList.addAll(asList(args));
 

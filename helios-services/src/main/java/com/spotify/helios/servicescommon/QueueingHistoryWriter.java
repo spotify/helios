@@ -73,7 +73,7 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Writes historical events to ZooKeeper and sends them to Kafka. We attempt to gracefully handle
  * the case where ZK is down by persisting events in a backing file.
- * *
+ *
  * Theory of operation:
  *
  * 1. Adding an event should never block for any significant amount of time. Specifically, it
@@ -396,8 +396,7 @@ public abstract class QueueingHistoryWriter<TEvent>
     } catch (KeeperException e) {
       log.error("Error putting event into zookeeper, will retry", e);
       return false;
-    }
-    finally {
+    } finally {
       try {
         mutex.release();
       } catch (Exception e) {
