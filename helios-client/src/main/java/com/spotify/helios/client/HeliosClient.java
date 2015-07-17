@@ -600,9 +600,9 @@ public class HeliosClient implements AutoCloseable {
                                      ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }
 
-  public ListenableFuture<Integer> abortRollingUpdate(final String deploymentGroupName) {
+  public ListenableFuture<Integer> stopDeploymentGroup(final String deploymentGroupName) {
     return status(request(
-        uri(path("/deployment-group/%s/rolling-update/abort", deploymentGroupName)), "POST"));
+        uri(path("/deployment-group/%s/stop", deploymentGroupName)), "POST"));
   }
 
   private static final class ConvertResponseToPojo<T> implements AsyncFunction<Response, T> {

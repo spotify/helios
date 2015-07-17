@@ -716,13 +716,13 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public void abortRollingUpdate(final String deploymentGroupName)
+  public void stopDeploymentGroup(final String deploymentGroupName)
       throws DeploymentGroupDoesNotExistException {
     checkNotNull(deploymentGroupName, "name");
 
-    log.info("abort rolling-update on deployment-group: name={}", deploymentGroupName);
+    log.info("stop deployment-group: name={}", deploymentGroupName);
 
-    final ZooKeeperClient client = provider.get("abortRollingUpdate");
+    final ZooKeeperClient client = provider.get("stopDeploymentGroup");
 
     final DeploymentGroup deploymentGroup = getDeploymentGroup(deploymentGroupName);
 
@@ -730,7 +730,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final DeploymentGroupStatus status = DeploymentGroupStatus.newBuilder()
         .setDeploymentGroup(deploymentGroup)
         .setState(FAILED)
-        .setError("Aborted by user")
+        .setError("Stopped by user")
         .build();
 
     try {
@@ -740,7 +740,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new DeploymentGroupDoesNotExistException(deploymentGroupName);
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException(
-          "abort rolling-update on deployment-group " + deploymentGroupName + " failed", e);
+          "stop deployment-group " + deploymentGroupName + " failed", e);
     }
   }
 

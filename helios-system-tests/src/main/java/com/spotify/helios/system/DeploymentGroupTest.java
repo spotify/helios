@@ -275,21 +275,21 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
-  public void testAbortRollingUpdate() throws Exception {
+  public void testStopDeploymentGroup() throws Exception {
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     cli("create", "my_job:2", "my_image");
-    assertThat(cli("abort-rolling-update", TEST_GROUP),
-               containsString("Aborted rolling-update on deployment-group my_group"));
+    assertThat(cli("stop-deployment-group", TEST_GROUP),
+               containsString("Deployment-group my_group stopped"));
     final DeploymentGroupStatusResponse status = Json.read(
         cli("deployment-group-status", "--json", TEST_GROUP), DeploymentGroupStatusResponse.class);
     assertEquals(DeploymentGroupStatusResponse.Status.FAILED, status.getStatus());
-    assertEquals("Aborted by user", status.getError());
+    assertEquals("Stopped by user", status.getError());
   }
 
 
   @Test
-  public void testAbortRollingUpdateGroupNotFound() throws Exception {
-    assertThat(cli("abort-rolling-update", TEST_GROUP),
+  public void testStopDeploymentGroupGroupNotFound() throws Exception {
+    assertThat(cli("stop-deployment-group", TEST_GROUP),
                containsString("Deployment-group my_group not found"));
   }
 

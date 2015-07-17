@@ -160,13 +160,13 @@ public class DeploymentGroupResource {
   }
 
   @POST
-  @Path("/{name}/rolling-update/abort")
+  @Path("/{name}/stop")
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Response abortRollingUpdate(@PathParam("name") @Valid final String name) {
+  public Response stopDeploymentGroup(@PathParam("name") @Valid final String name) {
     try {
-      model.abortRollingUpdate(name);
+      model.stopDeploymentGroup(name);
       return Response.noContent().build();
     } catch (DeploymentGroupDoesNotExistException e) {
       return Response.status(Response.Status.NOT_FOUND).build();
