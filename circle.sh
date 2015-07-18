@@ -3,7 +3,7 @@
 case "$1" in
   pre_machine)
     # ensure correct level of parallelism
-    expected_nodes=5
+    expected_nodes=4
     if [ "$CIRCLE_NODE_TOTAL" -ne "$expected_nodes" ]
     then
         echo "Parallelism is set to ${CIRCLE_NODE_TOTAL}x, but we need ${expected_nodes}x."
