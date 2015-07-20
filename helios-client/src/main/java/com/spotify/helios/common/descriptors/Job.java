@@ -67,6 +67,7 @@ import static java.util.Collections.emptyMap;
  *   },
  *   "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
  *   "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
+ *   "hostname": "myhost",
  *   "networkMode" : "bridge",
  *   "ports" : {
  *     "http" : {
@@ -114,9 +115,11 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final HealthCheck EMPTY_HEALTH_CHECK = null;
   public static final List<String> EMPTY_SECURITY_OPT = emptyList();
   public static final String EMPTY_NETWORK_MODE = null;
+  public static final String EMPTY_HOSTNAME = null;
 
   private final JobId id;
   private final String image;
+  private final String hostname;
   private final List<String> command;
   private final Map<String, String> env;
   private final Resources resources;
@@ -137,6 +140,7 @@ public class Job extends Descriptor implements Comparable<Job> {
    *
    * @param id The id of the job.
    * @param image The docker image to use.
+   * @param hostname The hostname to pass to the container.
    * @param command The command to pass to the container.
    * @param env Environment variables to set
    * @param resources Resource specification for the container.
@@ -162,6 +166,7 @@ public class Job extends Descriptor implements Comparable<Job> {
    */
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
+             @JsonProperty("hostname") final String hostname,
              @JsonProperty("command") @Nullable final List<String> command,
              @JsonProperty("env") @Nullable final Map<String, String> env,
              @JsonProperty("resources") @Nullable final Resources resources,
@@ -181,6 +186,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.image = image;
 
     // Optional
+    this.hostname = Optional.fromNullable(hostname).orNull();
     this.command = Optional.fromNullable(command).or(EMPTY_COMMAND);
     this.env = Optional.fromNullable(env).or(EMPTY_ENV);
     this.resources = Optional.fromNullable(resources).orNull();
@@ -202,6 +208,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.id = id;
     this.image = p.image;
 
+    this.hostname = p.hostname;
     this.command = ImmutableList.copyOf(checkNotNull(p.command, "command"));
     this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
     this.resources = p.resources;
@@ -225,6 +232,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public String getImage() {
     return image;
+  }
+
+  public String getHostname() {
+    return hostname;
   }
 
   public List<String> getCommand() {
@@ -321,6 +332,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (image != null ? !image.equals(job.image) : job.image != null) {
       return false;
     }
+    if (hostname != null ? !hostname.equals(job.hostname) : job.hostname != null) {
+        return false;
+      }
     if (ports != null ? !ports.equals(job.ports) : job.ports != null) {
       return false;
     }
@@ -361,6 +375,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public int hashCode() {
     int result = id != null ? id.hashCode() : 0;
     result = 31 * result + (image != null ? image.hashCode() : 0);
+    result = 31 * result + (hostname != null ? hostname.hashCode() : 0);
     result = 31 * result + (expires != null ? expires.hashCode() : 0);
     result = 31 * result + (command != null ? command.hashCode() : 0);
     result = 31 * result + (env != null ? env.hashCode() : 0);
@@ -383,6 +398,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     return Objects.toStringHelper(this)
         .add("id", id)
         .add("image", image)
+        .add("hostname", hostname)
         .add("command", command)
         .add("env", env)
         .add("resources", resources)
@@ -408,6 +424,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     }
 
     return builder.setImage(image)
+        .setHostname(hostname)
         .setCommand(command)
         .setEnv(env)
         .setResources(resources)
@@ -444,6 +461,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public String name;
       public String version;
       public String image;
+      public String hostname;
       public List<String> command;
       public Map<String, String> env;
       public Resources resources;
@@ -477,6 +495,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.name = p.name;
         this.version = p.version;
         this.image = p.image;
+        this.hostname = p.hostname;
         this.command = ImmutableList.copyOf(p.command);
         this.env = Maps.newHashMap(p.env);
         this.resources = p.resources;
@@ -528,6 +547,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       p.image = image;
       return this;
     }
+
+    public Builder setHostname(final String hostname) {
+        p.hostname = hostname;
+        return this;
+      }
 
     public Builder setCommand(final List<String> command) {
       p.command = ImmutableList.copyOf(command);
@@ -619,6 +643,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public String getImage() {
       return p.image;
+    }
+
+    public String getHostname() {
+      return p.hostname;
     }
 
     public List<String> getCommand() {

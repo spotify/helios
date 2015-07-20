@@ -74,6 +74,7 @@ public class JobTest {
     final String setName = "set_name";
     final String setVersion = "set_version";
     final String setImage = "set_image";
+    final String setHostname = "set_hostname";
     final List<String> setCommand = asList("set", "command");
     final Map<String, String> setEnv = ImmutableMap.of("set", "env");
     final Map<String, PortMapping> setPorts = ImmutableMap.of("set_ports", PortMapping.of(1234));
@@ -117,6 +118,7 @@ public class JobTest {
     final String expectedName = setName;
     final String expectedVersion = setVersion;
     final String expectedImage = setImage;
+    final String expectedHostname = setHostname;
     final List<String> expectedCommand = setCommand;
     final Map<String, String> expectedEnv = concat(setEnv, addEnv);
     final Map<String, PortMapping> expectedPorts = concat(setPorts, addPorts);
@@ -136,6 +138,7 @@ public class JobTest {
     builder.setName(setName);
     builder.setVersion(setVersion);
     builder.setImage(setImage);
+    builder.setHostname(setHostname);
     builder.setCommand(setCommand);
     builder.setEnv(setEnv);
     builder.setPorts(setPorts);
@@ -152,6 +155,7 @@ public class JobTest {
     assertEquals("name", setName, builder.getName());
     assertEquals("version", setVersion, builder.getVersion());
     assertEquals("image", setImage, builder.getImage());
+    assertEquals("hostname", setHostname, builder.getHostname());
     assertEquals("command", setCommand, builder.getCommand());
     assertEquals("env", setEnv, builder.getEnv());
     assertEquals("ports", setPorts, builder.getPorts());
@@ -182,6 +186,7 @@ public class JobTest {
     assertEquals("name", expectedName, builder.getName());
     assertEquals("version", expectedVersion, builder.getVersion());
     assertEquals("image", expectedImage, builder.getImage());
+    assertEquals("hostname", expectedHostname, builder.getHostname());
     assertEquals("command", expectedCommand, builder.getCommand());
     assertEquals("env", expectedEnv, builder.getEnv());
     assertEquals("ports", expectedPorts, builder.getPorts());
@@ -198,6 +203,7 @@ public class JobTest {
     assertEquals("name", expectedName, job.getId().getName());
     assertEquals("version", expectedVersion, job.getId().getVersion());
     assertEquals("image", expectedImage, job.getImage());
+    assertEquals("hostname", expectedHostname, job.getHostname());
     assertEquals("command", expectedCommand, job.getCommand());
     assertEquals("env", expectedEnv, job.getEnv());
     assertEquals("ports", expectedPorts, job.getPorts());
@@ -217,6 +223,7 @@ public class JobTest {
     assertEquals("name", expectedName, rebuilder.getName());
     assertEquals("version", expectedVersion, rebuilder.getVersion());
     assertEquals("image", expectedImage, rebuilder.getImage());
+    assertEquals("hostname", expectedHostname, rebuilder.getHostname());
     assertEquals("command", expectedCommand, rebuilder.getCommand());
     assertEquals("env", expectedEnv, rebuilder.getEnv());
     assertEquals("ports", expectedPorts, rebuilder.getPorts());
@@ -237,6 +244,7 @@ public class JobTest {
     assertEquals("name", expectedName, cloned.getName());
     assertEquals("version", expectedVersion, cloned.getVersion());
     assertEquals("image", expectedImage, cloned.getImage());
+    assertEquals("hostname", expectedHostname, cloned.getHostname());
     assertEquals("command", expectedCommand, cloned.getCommand());
     assertEquals("env", expectedEnv, cloned.getEnv());
     assertEquals("ports", expectedPorts, cloned.getPorts());
@@ -256,6 +264,7 @@ public class JobTest {
     assertEquals("name", expectedName, clonedJob.getId().getName());
     assertEquals("version", expectedVersion, clonedJob.getId().getVersion());
     assertEquals("image", expectedImage, clonedJob.getImage());
+    assertEquals("hostname", expectedHostname, clonedJob.getHostname());
     assertEquals("command", expectedCommand, clonedJob.getCommand());
     assertEquals("env", expectedEnv, clonedJob.getEnv());
     assertEquals("ports", expectedPorts, clonedJob.getPorts());

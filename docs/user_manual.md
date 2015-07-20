@@ -141,6 +141,7 @@ the available configuration keys with an explanation of each one.
   },
   "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
   "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
+  "hostname": "myhost",
   "networkMode" : "bridge",
   "ports" : {
     "http" : {
@@ -181,6 +182,7 @@ the available configuration keys with an explanation of each one.
   below.
 * `id`: The id of the job.
 * `image`: The docker image to use.
+* `hostname`: The hostname to be passed to the container.
 * `networkMode`: Sets the networking mode for the container. Supported values are: bridge,
    host, and container:&lt;name|id&gt;. See [Docker docs](https://docs.docker.com/reference/run/#network-settings).
 * `ports`: Port mapping. Specify an endpoint name and a single port (e.g.
