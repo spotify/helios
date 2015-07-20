@@ -112,6 +112,7 @@ public class TaskConfig {
 
     builder.image(job.getImage());
     builder.cmd(job.getCommand());
+    builder.hostname(job.getHostname());
     builder.env(containerEnvStrings());
     builder.exposedPorts(containerExposedPorts());
     builder.volumes(volumes());

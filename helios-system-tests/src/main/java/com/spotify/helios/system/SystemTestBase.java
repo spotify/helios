@@ -125,6 +125,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
 import static java.lang.Integer.toHexString;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -627,8 +628,8 @@ public abstract class SystemTestBase {
                             final String image,
                             final List<String> command,
                             final Date expires) throws Exception {
-    return createJob(name, version, image, command, EMPTY_ENV, EMPTY_PORTS, EMPTY_REGISTRATION,
-                     EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, expires);
+    return createJob(name, version, image, EMPTY_HOSTNAME, command, EMPTY_ENV, EMPTY_PORTS, 
+                     EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, expires);
   }
 
   protected JobId createJob(final String name,
@@ -670,13 +671,14 @@ public abstract class SystemTestBase {
                             final Map<ServiceEndpoint, ServicePorts> registration,
                             final Integer gracePeriod,
                             final Map<String, String> volumes) throws Exception {
-    return createJob(name, version, image, command, env, ports, registration, gracePeriod, volumes,
-        EMPTY_EXPIRES);
+    return createJob(name, version, image, EMPTY_HOSTNAME, command, env, ports, registration, 
+                     gracePeriod, volumes, EMPTY_EXPIRES);
   }
 
   protected JobId createJob(final String name,
                             final String version,
                             final String image,
+                            final String hostname,
                             final List<String> command,
                             final Map<String, String> env,
                             final Map<String, PortMapping> ports,
@@ -688,6 +690,7 @@ public abstract class SystemTestBase {
                          .setName(name)
                          .setVersion(version)
                          .setImage(image)
+                         .setHostname(hostname)
                          .setCommand(command)
                          .setEnv(env)
                          .setPorts(ports)

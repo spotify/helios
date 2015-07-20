@@ -21,29 +21,16 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.JobValidator;
-import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.ExecHealthCheck;
-import com.spotify.helios.common.descriptors.HttpHealthCheck;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.common.descriptors.ServiceEndpoint;
-import com.spotify.helios.common.descriptors.ServicePorts;
-import com.spotify.helios.common.descriptors.TcpHealthCheck;
-import com.spotify.helios.common.protocol.CreateJobResponse;
-
-import net.sourceforge.argparse4j.inf.Argument;
-import net.sourceforge.argparse4j.inf.Namespace;
-import net.sourceforge.argparse4j.inf.Subparser;
-
-import org.joda.time.DateTime;
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Optional.fromNullable;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.spotify.helios.common.descriptors.PortMapping.TCP;
+import static com.spotify.helios.common.descriptors.ServiceEndpoint.HTTP;
+import static java.util.Arrays.asList;
+import static java.util.regex.Pattern.compile;
+import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.fileType;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -59,16 +46,28 @@ import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Optional.fromNullable;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.spotify.helios.common.descriptors.PortMapping.TCP;
-import static com.spotify.helios.common.descriptors.ServiceEndpoint.HTTP;
-import static java.util.Arrays.asList;
-import static java.util.regex.Pattern.compile;
-import static net.sourceforge.argparse4j.impl.Arguments.append;
-import static net.sourceforge.argparse4j.impl.Arguments.fileType;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.Namespace;
+import net.sourceforge.argparse4j.inf.Subparser;
+
+import org.joda.time.DateTime;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.JobValidator;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.ExecHealthCheck;
+import com.spotify.helios.common.descriptors.HttpHealthCheck;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePorts;
+import com.spotify.helios.common.descriptors.TcpHealthCheck;
+import com.spotify.helios.common.protocol.CreateJobResponse;
 
 public class JobCreateCommand extends ControlCommand {
 
@@ -79,6 +78,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument quietArg;
   private final Argument idArg;
   private final Argument imageArg;
+  private final Argument hostnameArg;
   private final Argument tokenArg;
   private final Argument envArg;
   private final Argument argsArg;
@@ -119,6 +119,10 @@ public class JobCreateCommand extends ControlCommand {
     imageArg = parser.addArgument("image")
         .nargs("?")
         .help("Container image");
+
+    hostnameArg = parser.addArgument("--hostname")
+         .nargs("?")
+         .help("Container hostname");
 
     tokenArg = parser.addArgument("--token")
          .nargs("?")
@@ -295,6 +299,8 @@ public class JobCreateCommand extends ControlCommand {
     if (imageIdentifier != null) {
       builder.setImage(imageIdentifier);
     }
+
+    builder.setHostname(options.getString(hostnameArg.getDest()));
 
     final List<String> command = options.getList(argsArg.getDest());
     if (command != null && !command.isEmpty()) {

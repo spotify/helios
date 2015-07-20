@@ -21,23 +21,6 @@
 
 package com.spotify.helios.common;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-
-import com.spotify.helios.common.descriptors.HealthCheck;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.common.descriptors.ServiceEndpoint;
-import com.spotify.helios.common.descriptors.ServicePortParameters;
-import com.spotify.helios.common.descriptors.ServicePorts;
-
-import org.junit.Test;
-
-import java.util.Map;
-
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
@@ -45,6 +28,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_HEALTH_CHECK;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_NETWORK_MODE;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
@@ -61,6 +45,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
+import java.util.Map;
+
+import org.junit.Test;
+
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.spotify.helios.common.descriptors.HealthCheck;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePortParameters;
+import com.spotify.helios.common.descriptors.ServicePorts;
+
 public class JobValidatorTest {
   private final HealthCheck HEALTH_CHECK =
     HealthCheck.newHttpHealthCheck().setPath("/").setPort("1").build();
@@ -68,6 +68,7 @@ public class JobValidatorTest {
       .setName("foo")
       .setVersion("1")
       .setImage("bar")
+      .setHostname("baz")
       .setEnv(ImmutableMap.of("FOO", "BAR"))
       .setPorts(ImmutableMap.of("1", PortMapping.of(1, 1),
                                 "2", PortMapping.of(2, 2)))
@@ -118,6 +119,14 @@ public class JobValidatorTest {
   }
 
   @Test
+  public void testValidHostnamesPass() {
+    final Job.Builder b = Job.newBuilder().setName("foo").setVersion("1").setImage("bar");
+    assertThat(validator.validate(b.setHostname("foo").build()), is(empty()));
+    assertThat(validator.validate(b.setHostname("17").build()), is(empty()));
+    assertThat(validator.validate(b.setHostname("foo17.bar-baz_quux").build()), is(empty()));
+  }
+
+  @Test
   public void testValidVolumesPass() {
     final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
     assertThat(validator.validate(j.toBuilder().addVolume("/foo").build()), is(empty()));
@@ -162,7 +171,7 @@ public class JobValidatorTest {
   @Test
   public void testIdMismatchFails() throws Exception {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
-                            "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS,
+                            "bar", EMPTY_HOSTNAME, EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS,
                             EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
                             EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
                             EMPTY_HEALTH_CHECK, EMPTY_SECURITY_OPT, EMPTY_NETWORK_MODE);
