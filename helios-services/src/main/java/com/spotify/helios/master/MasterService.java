@@ -21,12 +21,14 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
+import com.spotify.helios.agent.KafkaClientProvider;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
@@ -35,6 +37,7 @@ import com.spotify.helios.master.resources.HostsResource;
 import com.spotify.helios.master.resources.JobsResource;
 import com.spotify.helios.master.resources.MastersResource;
 import com.spotify.helios.master.resources.VersionResource;
+import com.spotify.helios.rollingupdate.DeploymentGroupHistoryWriter;
 import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
@@ -68,6 +71,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
@@ -92,14 +97,16 @@ public class MasterService extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(MasterService.class);
 
+  private static final String DEPLOYMENT_GROUP_HISTORY_FILENAME = "deployment-group-history.json";
+
   private final Server server;
   private final MasterConfig config;
   private final ServiceRegistrar registrar;
-  private final RiemannFacade riemannFacade;
   private final ZooKeeperClient zooKeeperClient;
   private final ExpiredJobReaper expiredJobReaper;
   private final CuratorClientFactory curatorClientFactory;
   private final RollingUpdateService rollingUpdateService;
+  private final DeploymentGroupHistoryWriter deploymentGroupHistoryWriter;
 
   private ZooKeeperRegistrar zkRegistrar;
 
@@ -113,7 +120,7 @@ public class MasterService extends AbstractIdleService {
    */
   public MasterService(final MasterConfig config, final Environment environment,
                        final CuratorClientFactory curatorClientFactory)
-      throws ConfigurationException {
+      throws ConfigurationException, IOException, InterruptedException {
     this.config = config;
     this.curatorClientFactory = curatorClientFactory;
 
@@ -122,7 +129,7 @@ public class MasterService extends AbstractIdleService {
     final MetricRegistry metricsRegistry = new MetricRegistry();
     final RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry,
         config.getRiemannHostPort(), config.getName(), "helios-master");
-    riemannFacade = riemannSupport.getFacade();
+    final RiemannFacade riemannFacade = riemannSupport.getFacade();
     log.info("Starting metrics");
     final Metrics metrics;
     if (config.isInhibitMetrics()) {
@@ -141,7 +148,26 @@ public class MasterService extends AbstractIdleService {
         riemannFacade, metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
-    final MasterModel model = new ZooKeeperMasterModel(zkClientProvider, config.getName());
+    final KafkaClientProvider kafkaClientProvider = new KafkaClientProvider(
+        config.getKafkaBrokers());
+
+    // Create state directory, if necessary
+    final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
+    if (!Files.exists(stateDirectory)) {
+      try {
+        Files.createDirectories(stateDirectory);
+      } catch (IOException e) {
+        log.error("Failed to create state directory: {}", stateDirectory, e);
+        throw Throwables.propagate(e);
+      }
+    }
+
+    this.deploymentGroupHistoryWriter = new DeploymentGroupHistoryWriter(
+        zooKeeperClient, kafkaClientProvider,
+        stateDirectory.resolve(DEPLOYMENT_GROUP_HISTORY_FILENAME));
+
+    final ZooKeeperMasterModel model =
+        new ZooKeeperMasterModel(zkClientProvider, config.getName(), deploymentGroupHistoryWriter);
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
         zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);
@@ -207,7 +233,7 @@ public class MasterService extends AbstractIdleService {
     setUpRequestLogging();
   }
 
-  private final void setUpRequestLogging() {
+  private void setUpRequestLogging() {
     // Set up request logging
     final Handler originalHandler = server.getHandler();
     final HandlerCollection handlerCollection;
@@ -235,6 +261,7 @@ public class MasterService extends AbstractIdleService {
     }
     expiredJobReaper.startAsync().awaitRunning();
     rollingUpdateService.startAsync().awaitRunning();
+    deploymentGroupHistoryWriter.startAsync().awaitRunning();
     try {
       server.start();
     } catch (Exception e) {
@@ -254,6 +281,7 @@ public class MasterService extends AbstractIdleService {
     server.stop();
     server.join();
     registrar.close();
+    deploymentGroupHistoryWriter.stopAsync().awaitTerminated();
     rollingUpdateService.stopAsync().awaitTerminated();
     expiredJobReaper.stopAsync().awaitTerminated();
     zkRegistrar.stopAsync().awaitTerminated();

@@ -35,6 +35,7 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.DeploymentGroupEvent;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostInfo;
@@ -48,6 +49,7 @@ import com.spotify.helios.common.descriptors.RolloutTask;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.rollingupdate.DeploymentGroupHistoryWriter;
 import com.spotify.helios.rollingupdate.RolloutPlanner;
 import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -129,14 +131,31 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private final ZooKeeperClientProvider provider;
   private final String name;
+  private final DeploymentGroupHistoryWriter deploymentGroupHistoryWriter;
 
-  public  ZooKeeperMasterModel(final ZooKeeperClientProvider provider) {
+  public  ZooKeeperMasterModel(final ZooKeeperClientProvider provider)
+      throws IOException, InterruptedException {
     this(provider, null);
   }
 
   public ZooKeeperMasterModel(final ZooKeeperClientProvider provider, @Nullable final String name) {
+    this(provider, name, null);
+  }
+
+  /**
+   * Constructor
+   *
+   * @param provider         {@link ZooKeeperClientProvider}
+   * @param name             The hostname of the machine running the {@link MasterModel}
+   * @param deploymentGroupHistoryWriter {@link DeploymentGroupHistoryWriter}
+   */
+  public ZooKeeperMasterModel(
+      final ZooKeeperClientProvider provider,
+      @Nullable final String name,
+      @Nullable final DeploymentGroupHistoryWriter deploymentGroupHistoryWriter) {
     this.provider = provider;
     this.name = name;
+    this.deploymentGroupHistoryWriter = deploymentGroupHistoryWriter;
   }
 
   /**
@@ -357,6 +376,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       final List<String> events;
       try {
         events = client.getChildren(Paths.historyJobHostEvents(jobId, host));
+      } catch (NoNodeException e) {
+        continue;
       } catch (KeeperException e) {
         throw Throwables.propagate(e);
       }
@@ -498,6 +519,15 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new HeliosRuntimeException(
           "rolling-update on deployment-group " + deploymentGroup.getName() + " failed", e);
     }
+
+    if (deploymentGroupHistoryWriter != null) {
+      deploymentGroupHistoryWriter.saveHistoryItem(
+          DeploymentGroupEvent.newBuilder()
+              .setDeploymentGroup(updated)
+              .setDeploymentGroupState(PLANNING_ROLLOUT)
+              .setJobId(jobId)
+              .build());
+    }
   }
 
   @Override
@@ -518,10 +548,15 @@ public class ZooKeeperMasterModel implements MasterModel {
       return;
     }
 
-    final List<ZooKeeperOperation> operations = Lists.newArrayList();
+    final RolloutOperations operations = new RolloutOperations();
 
     if (status.getState().equals(PLANNING_ROLLOUT)) {
       // generate the rollout plan and proceed to ROLLING_OUT
+      operations.addEvent(DeploymentGroupEvent.newBuilder()
+                              .setDeploymentGroup(deploymentGroup)
+                              .setDeploymentGroupState(PLANNING_ROLLOUT)
+                              .build());
+
       final Map<String, HostStatus> hostsAndStatuses = Maps.newHashMap();
       for (final String host: getDeploymentGroupHosts(deploymentGroup.getName())) {
         hostsAndStatuses.put(host, getHostStatus(host));
@@ -541,38 +576,52 @@ public class ZooKeeperMasterModel implements MasterModel {
         newStatus.setSuccessfulIterations(0);
       }
 
-      operations.add(set(statusPath, newStatus.build()));
+      operations.addOperation(set(statusPath, newStatus.build()));
     } else if (status.getState().equals(ROLLING_OUT)) {
       // grab the current task off the rollout task list and execute it
       operations.addAll(getRolloutOperations(deploymentGroup, status));
     } else if (status.getState().equals(DONE)) {
+      operations.addEvent(DeploymentGroupEvent.newBuilder()
+                              .setDeploymentGroup(deploymentGroup)
+                              .setDeploymentGroupState(DONE)
+                              .build());
+
       // after DONE, go back to PLANNING_ROLLOUT
-      operations.add(set(statusPath, status.toBuilder()
+      operations.addOperation(set(statusPath, status.toBuilder()
           .setState(PLANNING_ROLLOUT)
           .build()));
     }
 
-    if (operations.isEmpty()) {
+    if (operations.getOperations().isEmpty()) {
       return;
     }
 
     try {
-      operations.add(0, check(statusPath, status.getVersion()));
-      client.transaction(operations);
+      final List<ZooKeeperOperation> zkOperations = operations.getOperations();
+      client.transaction(Lists.asList(
+          check(statusPath, status.getVersion()),
+          zkOperations.toArray(new ZooKeeperOperation[zkOperations.size()])
+      ));
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException(
           "rolling-update on deployment-group " + deploymentGroup.getName() + " failed", e);
     }
+
+    if (deploymentGroupHistoryWriter != null) {
+      deploymentGroupHistoryWriter.saveHistoryItems(operations.getEvents());
+    }
   }
 
-  private List<ZooKeeperOperation> getRolloutOperations(final DeploymentGroup deploymentGroup,
-                                                        final DeploymentGroupStatus status) {
+  private RolloutOperations getRolloutOperations(final DeploymentGroup deploymentGroup,
+                                                 final DeploymentGroupStatus status) {
+    final RolloutOperations ops = new RolloutOperations();
+
     final int taskIndex = status.getTaskIndex();
     final RolloutTask currentTask = Iterables.get(status.getRolloutTasks(), taskIndex, null);
 
     final RollingUpdateTaskResult result;
-    if (status.getRolloutTasks().isEmpty()) {
-      // if there are no rollout tasks, then we're done by definition. this can happen
+    if (currentTask == null) {
+      // if there is no rollout task, then we're done by definition. this can happen
       // when (for example) there are no hosts in the deployment group
       result = RollingUpdateTaskResult.TASK_COMPLETE;
     } else {
@@ -595,30 +644,47 @@ public class ZooKeeperMasterModel implements MasterModel {
     final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
     if (result.equals(RollingUpdateTaskResult.TASK_IN_PROGRESS)) {
       // not an error, but nothing to do
-      return emptyList();
     } else if (result.error != null) {
       // if an error occurred, record it in the status and fail
-      return Lists.newArrayList(set(statusPath, status.toBuilder()
+      ops.addEvent(DeploymentGroupEvent.newBuilder()
+                     .setDeploymentGroup(deploymentGroup)
+                     .setDeploymentGroupState(FAILED)
+                     .build());
+      ops.addOperation(set(statusPath, status.toBuilder()
           .setState(FAILED)
           .setError(result.error.toString())
           .build()));
     } else {
-      List<ZooKeeperOperation> operations = Lists.newArrayList(result.operations);
+      for (ZooKeeperOperation op : result.operations) {
+        ops.addOperation(op);
+      }
+
+      final DeploymentGroupEvent.Builder eventBuilder = DeploymentGroupEvent.newBuilder()
+          .setDeploymentGroup(deploymentGroup)
+          .setJobId(deploymentGroup.getJobId())
+          .setRolloutTaskStatus(RolloutTask.Status.OK)
+          .setDeploymentGroupState(ROLLING_OUT);
+
+      if (currentTask != null) {
+        eventBuilder
+            .setAction(currentTask.getAction())
+            .setTarget(currentTask.getTarget());
+      }
 
       if (taskIndex + 1 >= status.getRolloutTasks().size()) {
         // successfully completed the last task
-        operations.add(set(statusPath, status.toBuilder()
+        ops.addOperation(set(statusPath, status.toBuilder()
             .setSuccessfulIterations(status.getSuccessfulIterations() + 1)
             .setState(DONE)
             .build()));
       } else {
-        operations.add(set(statusPath, status.toBuilder()
+        ops.addOperation(set(statusPath, status.toBuilder()
             .setTaskIndex(taskIndex + 1)
             .build()));
       }
-
-      return operations;
     }
+
+    return ops;
   }
 
   private RollingUpdateTaskResult rollingUpdateAwaitRunning(final DeploymentGroup deploymentGroup,
@@ -1599,6 +1665,32 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     public static RollingUpdateTaskResult error(final String error) {
       return new RollingUpdateTaskResult(null, new HeliosRuntimeException(error));
+    }
+  }
+
+  private static class RolloutOperations {
+    private final List<ZooKeeperOperation> operations = Lists.newArrayList();
+    private final List<DeploymentGroupEvent> events = Lists.newArrayList();
+
+    private void addOperation(final ZooKeeperOperation op) {
+      operations.add(op);
+    }
+
+    private void addEvent(final DeploymentGroupEvent event) {
+      events.add(event);
+    }
+
+    private void addAll(final RolloutOperations other) {
+      operations.addAll(other.getOperations());
+      events.addAll(other.getEvents());
+    }
+
+    public List<ZooKeeperOperation> getOperations() {
+      return ImmutableList.copyOf(operations);
+    }
+
+    public List<DeploymentGroupEvent> getEvents() {
+      return ImmutableList.copyOf(events);
     }
   }
 }

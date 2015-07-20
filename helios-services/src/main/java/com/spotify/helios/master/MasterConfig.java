@@ -23,6 +23,7 @@ package com.spotify.helios.master;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
+import java.util.List;
 
 import io.dropwizard.Configuration;
 
@@ -49,6 +50,8 @@ public class MasterConfig extends Configuration {
   private boolean noZooKeeperMasterRegistration;
   private int adminPort;
   private InetSocketAddress httpEndpoint;
+  private List<String> kafkaBrokers;
+  private Path stateDirectory;
 
   public String getDomain() {
     return domain;
@@ -183,6 +186,24 @@ public class MasterConfig extends Configuration {
 
   public MasterConfig setHttpEndpoint(InetSocketAddress httpEndpoint) {
     this.httpEndpoint = httpEndpoint;
+    return this;
+  }
+
+  public List<String> getKafkaBrokers() {
+    return kafkaBrokers;
+  }
+
+  public MasterConfig setKafkaBrokers(List<String> kafkaBrokers) {
+    this.kafkaBrokers = kafkaBrokers;
+    return this;
+  }
+
+  public Path getStateDirectory() {
+    return stateDirectory;
+  }
+
+  public MasterConfig setStateDirectory(final Path stateDirectory) {
+    this.stateDirectory = stateDirectory;
     return this;
   }
 

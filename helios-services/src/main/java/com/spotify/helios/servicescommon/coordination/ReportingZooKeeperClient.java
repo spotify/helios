@@ -241,7 +241,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
     try {
       return client.getState();
     } catch (KeeperException e) {
-      reporter.checkException(e, tag, "getState");
+      reporter.checkException(e, tag, "getDeploymentGroupState");
       throw e;
     }
   }

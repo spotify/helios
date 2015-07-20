@@ -39,12 +39,16 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.List;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Throwables.propagate;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
+import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.fileType;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
@@ -73,6 +77,8 @@ public class ServiceParser {
   private final Argument syslogArg;
   private final Argument logconfigArg;
   private final Argument noLogSetupArg;
+  private final Argument kafkaArg;
+  private final Argument stateDirArg;
 
   public ServiceParser(final String programName, final String description, final String... args)
       throws ArgumentParserException {
@@ -159,6 +165,15 @@ public class ServiceParser {
         .setDefault((String) null)
         .help("The sentry data source name");
 
+    kafkaArg = parser.addArgument("--kafka")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("Kafka brokers to bootstrap with");
+
+    stateDirArg = parser.addArgument("--state-dir")
+        .setDefault(".")
+        .help("Directory for persisting state locally.");
+
     addArgs(parser);
 
     try {
@@ -238,6 +253,15 @@ public class ServiceParser {
 
   public Boolean getNoZooKeeperRegistration() {
     return fromNullable(options.getBoolean(noZooKeeperRegistrationArg.getDest())).or(false);
+  }
+
+  public List<String> getKafkaBrokers() {
+    final List<String> kafkaBrokers = options.getList(kafkaArg.getDest());
+    return kafkaBrokers.isEmpty() ? null : kafkaBrokers;
+  }
+
+  public Path getStateDirectory() {
+    return Paths.get(options.getString(stateDirArg.getDest()));
   }
 
   private static String getHostName() {

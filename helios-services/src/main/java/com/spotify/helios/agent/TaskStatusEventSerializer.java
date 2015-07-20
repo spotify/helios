@@ -30,7 +30,7 @@ import java.util.Map;
 
 /**
  * Provides serialization support for KafkaProducer used for History subsystem
- * in {@link com.spotify.helios.agent.QueueingHistoryWriter}.
+ * in {@link TaskHistoryWriter}.
  */
 
 public class TaskStatusEventSerializer implements Serializer<TaskStatusEvent> {

@@ -21,6 +21,7 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.JobId;
 
 import java.util.UUID;
@@ -43,7 +44,6 @@ public class Paths {
   private static final String LABELS = "labels";
   private static final String ID = "id";
   private static final String DEPLOYMENT_GROUPS = "deployment-groups";
-  private static final String INDEX = "index";
 
   private static final PathFactory CONFIG_ID = new PathFactory("/", CONFIG, ID);
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
@@ -58,6 +58,8 @@ public class Paths {
       "/", STATUS, DEPLOYMENT_GROUPS);
 
   private static final PathFactory HISTORY_JOBS = new PathFactory("/", HISTORY, JOBS);
+  private static final PathFactory HISTORY_DEPLOYMENT_GROUPS =
+      new PathFactory("/", HISTORY, DEPLOYMENT_GROUPS);
   private static final String CREATION_PREFIX = "creation-";
 
   public static String configHosts() {
@@ -231,5 +233,13 @@ public class Paths {
 
   public static String historyJobs() {
     return HISTORY_JOBS.path();
+  }
+
+  public static String historyDeploymentGroups() {
+    return HISTORY_DEPLOYMENT_GROUPS.path();
+  }
+
+  public static String historyDeploymentGroup(final DeploymentGroup group) {
+    return HISTORY_DEPLOYMENT_GROUPS.path(group.getName());
   }
 }

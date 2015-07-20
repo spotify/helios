@@ -53,17 +53,17 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.Polling.await;
-import static com.spotify.helios.agent.QueueingHistoryWriter.MAX_NUMBER_STATUS_EVENTS_TO_RETAIN;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static org.apache.zookeeper.KeeperException.ConnectionLossException;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.AdditionalAnswers.delegatesTo;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
-public class QueueingHistoryWriterTest {
+public class TaskHistoryWriterTest {
 
   private static final long TIMESTAMP = 8675309L;
   private static final String HOSTNAME = "hostname";
@@ -84,7 +84,7 @@ public class QueueingHistoryWriterTest {
   private ZooKeeperTestManager zk;
   private DefaultZooKeeperClient client;
   private KafkaClientProvider kafkaProvider;
-  private QueueingHistoryWriter writer;
+  private TaskHistoryWriter writer;
   private ZooKeeperMasterModel masterModel;
   private Path agentStateDirs;
 
@@ -113,21 +113,21 @@ public class QueueingHistoryWriterTest {
 
   private void makeWriter(ZooKeeperClient client, KafkaClientProvider kafkaProvider)
           throws Exception {
-    writer = new QueueingHistoryWriter(HOSTNAME, client, kafkaProvider,
+    writer = new TaskHistoryWriter(HOSTNAME, client, kafkaProvider,
         agentStateDirs.resolve("task-history.json"));
     writer.startUp();
   }
 
   @Test
   public void testZooKeeperErrorDoesntLoseItemsReally() throws Exception {
-    final ZooKeeperClient mockClient = mock(ZooKeeperClient.class);
+    final ZooKeeperClient mockClient = mock(ZooKeeperClient.class, delegatesTo(client));
     makeWriter(mockClient, kafkaProvider);
     final String path = Paths.historyJobHostEventsTimestamp(JOB_ID, HOSTNAME, TIMESTAMP);
     final KeeperException exc = new ConnectionLossException();
     // make save operations fail
     doThrow(exc).when(mockClient).createAndSetData(path, TASK_STATUS.toJsonBytes());
 
-    writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP);
+    writer.saveHistoryItem(TASK_STATUS, TIMESTAMP);
     // wait up to 10s for it to fail twice -- and make sure I mocked it correctly.
     verify(mockClient, timeout(10000).atLeast(2)).createAndSetData(path, TASK_STATUS.toJsonBytes());
 
@@ -147,7 +147,7 @@ public class QueueingHistoryWriterTest {
 
   @Test
   public void testSimpleWorkage() throws Exception {
-    writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP);
+    writer.saveHistoryItem(TASK_STATUS, TIMESTAMP);
 
     final TaskStatusEvent historyItem = Iterables.getOnlyElement(awaitHistoryItems());
     assertEquals(JOB_ID, historyItem.getStatus().getJob().getId());
@@ -166,7 +166,7 @@ public class QueueingHistoryWriterTest {
   @Test
   public void testWriteWithZooKeeperDown() throws Exception {
     zk.stop();
-    writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP);
+    writer.saveHistoryItem(TASK_STATUS, TIMESTAMP);
     zk.start();
     final TaskStatusEvent historyItem = Iterables.getOnlyElement(awaitHistoryItems());
     assertEquals(JOB_ID, historyItem.getStatus().getJob().getId());
@@ -175,7 +175,7 @@ public class QueueingHistoryWriterTest {
   @Test
   public void testWriteWithZooKeeperDownAndInterveningCrash() throws Exception {
     zk.stop();
-    writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP);
+    writer.saveHistoryItem(TASK_STATUS, TIMESTAMP);
     // simulate a crash by recreating the writer
     writer.stopAsync().awaitTerminated();
     makeWriter(client, kafkaProvider);
@@ -189,8 +189,8 @@ public class QueueingHistoryWriterTest {
     // And that it keeps the correct items!
 
     // Save a superflouous number of events
-    for (int i = 0; i < MAX_NUMBER_STATUS_EVENTS_TO_RETAIN + 20; i++) {
-      writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP + i);
+    for (int i = 0; i < writer.getMaxEventsPerPath() + 20; i++) {
+      writer.saveHistoryItem(TASK_STATUS, TIMESTAMP + i);
       Thread.sleep(50);  // just to allow other stuff a chance to run in the background
     }
     // Should converge to 30 items
@@ -202,13 +202,13 @@ public class QueueingHistoryWriterTest {
           return null;
         }
         final List<TaskStatusEvent> events = masterModel.getJobHistory(JOB_ID);
-        if (events.size() == MAX_NUMBER_STATUS_EVENTS_TO_RETAIN) {
+        if (events.size() == writer.getMaxEventsPerPath()) {
           return events;
         }
         return null;
       }
     });
-    assertEquals(TIMESTAMP + MAX_NUMBER_STATUS_EVENTS_TO_RETAIN + 19,
+    assertEquals(TIMESTAMP + writer.getMaxEventsPerPath() + 19,
         Iterables.getLast(events).getTimestamp());
     assertEquals(TIMESTAMP + 20, Iterables.get(events, 0).getTimestamp());
   }

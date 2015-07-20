@@ -32,7 +32,6 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.net.InetSocketAddress;
-import java.nio.file.Paths;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -55,7 +54,6 @@ public class AgentParser extends ServiceParser {
   private Argument noHttpArg;
   private Argument httpArg;
   private Argument adminArg;
-  private Argument stateDirArg;
   private Argument dockerArg;
   private Argument dockerCertPathArg;
   private Argument envArg;
@@ -64,7 +62,6 @@ public class AgentParser extends ServiceParser {
   private Argument agentIdArg;
   private Argument dnsArg;
   private Argument bindArg;
-  private Argument kafkaArg;
   private Argument labelsArg;
 
   public AgentParser(final String... args) throws ArgumentParserException {
@@ -103,8 +100,6 @@ public class AgentParser extends ServiceParser {
       throw new IllegalArgumentException("Bad port range: " + portRangeString);
     }
 
-    final List<String> kafkaBrokers = options.getList(kafkaArg.getDest());
-
     this.agentConfig = new AgentConfig()
         .setName(getName())
         .setZooKeeperConnectionString(getZooKeeperConnectString())
@@ -117,7 +112,7 @@ public class AgentParser extends ServiceParser {
         .setDockerHost(dockerHost)
         .setInhibitMetrics(getInhibitMetrics())
         .setRedirectToSyslog(options.getString(syslogRedirectToArg.getDest()))
-        .setStateDirectory(Paths.get(options.getString(stateDirArg.getDest())))
+        .setStateDirectory(getStateDirectory())
         .setStatsdHostPort(getStatsdHostPort())
         .setRiemannHostPort(getRiemannHostPort())
         .setPortRange(start, end)
@@ -127,7 +122,7 @@ public class AgentParser extends ServiceParser {
         .setAdminPort(options.getInt(adminArg.getDest()))
         .setHttpEndpoint(httpAddress)
         .setNoHttp(options.getBoolean(noHttpArg.getDest()))
-        .setKafkaBrokers(kafkaBrokers.isEmpty() ? null : kafkaBrokers)
+        .setKafkaBrokers(getKafkaBrokers())
         .setLabels(labels);
 
     final String explicitId = options.getString(agentIdArg.getDest());
@@ -179,10 +174,6 @@ public class AgentParser extends ServiceParser {
     agentIdArg = parser.addArgument("--id")
         .help("Agent unique ID. Generated and persisted on first run if not specified.");
 
-    stateDirArg = parser.addArgument("--state-dir")
-        .setDefault(".")
-        .help("Directory for persisting agent state locally.");
-
     dockerArg = parser.addArgument("--docker")
         .setDefault(DockerHost.fromEnv().host())
         .help("docker endpoint");
@@ -213,11 +204,6 @@ public class AgentParser extends ServiceParser {
         .action(append())
         .setDefault(new ArrayList<String>())
         .help("volumes to bind to all containers");
-
-    kafkaArg = parser.addArgument("--kafka")
-        .action(append())
-        .setDefault(new ArrayList<String>())
-        .help("Kafka brokers to bootstrap with");
 
     labelsArg = parser.addArgument("--labels")
         .action(append())
