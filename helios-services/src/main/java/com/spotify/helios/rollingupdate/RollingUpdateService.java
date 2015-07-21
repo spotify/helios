@@ -118,8 +118,7 @@ public class RollingUpdateService extends AbstractIdleService {
         try {
           masterModel.updateDeploymentGroupHosts(dg.getName(), matchingHosts);
         } catch (Exception e) {
-          log.warn("error processing hosts update for deployment group: {} - {}",
-                   dg.getName(), e);
+          log.warn("error processing hosts update for deployment group: {} - {}", dg.getName(), e);
         }
       }
     }
