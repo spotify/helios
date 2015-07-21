@@ -45,7 +45,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * </pre>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DeploymentGroupEvent {
+public class DeploymentGroupEvent extends Descriptor {
 
   private final RolloutTask.Action action;
   private final JobId jobId;
