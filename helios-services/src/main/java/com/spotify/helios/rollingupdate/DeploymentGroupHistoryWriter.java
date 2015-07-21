@@ -67,7 +67,7 @@ public class DeploymentGroupHistoryWriter extends QueueingHistoryWriter<Deployme
 
   @Override
   protected byte[] toBytes(final DeploymentGroupEvent deploymentGroupEvent) {
-    return new byte[0];
+    return deploymentGroupEvent.toJsonBytes();
   }
 
   public DeploymentGroupHistoryWriter(final ZooKeeperClient client,
