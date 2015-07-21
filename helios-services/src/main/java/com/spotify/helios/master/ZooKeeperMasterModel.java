@@ -693,26 +693,31 @@ public class ZooKeeperMasterModel implements MasterModel {
     final Map<JobId, TaskStatus> taskStatuses = getTaskStatuses(client, host);
 
     if (!taskStatuses.containsKey(deploymentGroup.getJobId())) {
-      // job hasn't shown up yet, probably still being written
+      // Handle cases where agent has not written job status to zookeeper.
+
+      // If job is not listed under /config/hosts node, it may have been deployed successfully and
+      // then manually undeployed. The job will not get redeployed, so treat this as a failure.
+      final Deployment deployment = getDeployment(host, deploymentGroup.getJobId());
+      if (deployment == null) {
+        return RollingUpdateTaskResult.error(
+            "Job unexpectedly undeployed. Perhaps it was manually undeployed?");
+      }
+
+      // Check if we've exceeded the timeout for the rollout operation.
+      if (isRolloutTimedOut(deploymentGroup, client)) {
+        return RollingUpdateTaskResult.error("timed out while retrieving job status");
+      }
+
+      // We haven't detected any errors, so assume the agent will write the status soon.
       return RollingUpdateTaskResult.TASK_IN_PROGRESS;
     } else if (!taskStatuses.get(deploymentGroup.getJobId()).getState()
         .equals(TaskStatus.State.RUNNING)) {
       // job isn't running yet
 
-      try {
-        final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
-        final long secondsSinceDeploy = MILLISECONDS.toSeconds(
-            System.currentTimeMillis() - client.getNode(statusPath).getStat().getMtime());
-        if (secondsSinceDeploy > deploymentGroup.getRolloutOptions().getTimeout()) {
-          // time exceeding the configured deploy timeout has passed, and this job is still not
-          // running
-          return RollingUpdateTaskResult.error("timed out waiting for job to reach RUNNING");
-        }
-      } catch (KeeperException e) {
-        // statusPath doesn't exist or some other ZK issue. probably this deployment group
-        // was removed.
-        log.warn("error determining deployment group modification time: {} - {}",
-                 deploymentGroup.getName(), e);
+      if (isRolloutTimedOut(deploymentGroup, client)) {
+        // time exceeding the configured deploy timeout has passed, and this job is still not
+        // running
+        return RollingUpdateTaskResult.error("timed out waiting for job to reach RUNNING");
       }
 
       return RollingUpdateTaskResult.TASK_IN_PROGRESS;
@@ -722,13 +727,30 @@ public class ZooKeeperMasterModel implements MasterModel {
       // won't be able to undeploy the job on the next update.
       final Deployment deployment = getDeployment(host, deploymentGroup.getJobId());
       if (deployment == null) {
-        return RollingUpdateTaskResult.error("deployment for this job is very broken in ZK");
+        return RollingUpdateTaskResult.error(
+            "deployment for this job not found in zookeeper. Perhaps it was manually undeployed?");
       } else if (!Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName())) {
         return RollingUpdateTaskResult.error("job was already deployed, either manually or by a " +
                                              "different deployment group");
       }
 
       return RollingUpdateTaskResult.TASK_COMPLETE;
+    }
+  }
+
+  private boolean isRolloutTimedOut(final DeploymentGroup deploymentGroup,
+                                    final ZooKeeperClient client) {
+    try {
+      final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
+      final long secondsSinceDeploy = MILLISECONDS.toSeconds(
+          System.currentTimeMillis() - client.getNode(statusPath).getStat().getMtime());
+      return secondsSinceDeploy > deploymentGroup.getRolloutOptions().getTimeout();
+    } catch (KeeperException e) {
+      // statusPath doesn't exist or some other ZK issue. probably this deployment group
+      // was removed.
+      log.warn("error determining deployment group modification time: {} - {}",
+               deploymentGroup.getName(), e);
+      return false;
     }
   }
 
