@@ -37,10 +37,10 @@ import com.spotify.helios.master.resources.HostsResource;
 import com.spotify.helios.master.resources.JobsResource;
 import com.spotify.helios.master.resources.MastersResource;
 import com.spotify.helios.master.resources.VersionResource;
-import com.spotify.helios.rollingupdate.DeploymentGroupHistoryWriter;
 import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
@@ -62,6 +62,8 @@ import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -97,8 +99,6 @@ public class MasterService extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(MasterService.class);
 
-  private static final String DEPLOYMENT_GROUP_HISTORY_FILENAME = "deployment-group-history.json";
-
   private final Server server;
   private final MasterConfig config;
   private final ServiceRegistrar registrar;
@@ -106,7 +106,6 @@ public class MasterService extends AbstractIdleService {
   private final ExpiredJobReaper expiredJobReaper;
   private final CuratorClientFactory curatorClientFactory;
   private final RollingUpdateService rollingUpdateService;
-  private final DeploymentGroupHistoryWriter deploymentGroupHistoryWriter;
 
   private ZooKeeperRegistrar zkRegistrar;
 
@@ -162,12 +161,13 @@ public class MasterService extends AbstractIdleService {
       }
     }
 
-    this.deploymentGroupHistoryWriter = new DeploymentGroupHistoryWriter(
-        zooKeeperClient, kafkaClientProvider,
-        stateDirectory.resolve(DEPLOYMENT_GROUP_HISTORY_FILENAME));
+    // Make a KafkaProducer for events that can be serialized to an array of bytes,
+    // and wrap it in our KafkaSender.
+    final KafkaSender kafkaSender = new KafkaSender(
+        kafkaClientProvider.getProducer(new StringSerializer(), new ByteArraySerializer()));
 
     final ZooKeeperMasterModel model =
-        new ZooKeeperMasterModel(zkClientProvider, config.getName(), deploymentGroupHistoryWriter);
+        new ZooKeeperMasterModel(zkClientProvider, config.getName(), kafkaSender);
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
         zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);
@@ -261,7 +261,6 @@ public class MasterService extends AbstractIdleService {
     }
     expiredJobReaper.startAsync().awaitRunning();
     rollingUpdateService.startAsync().awaitRunning();
-    deploymentGroupHistoryWriter.startAsync().awaitRunning();
     try {
       server.start();
     } catch (Exception e) {
@@ -281,7 +280,6 @@ public class MasterService extends AbstractIdleService {
     server.stop();
     server.join();
     registrar.close();
-    deploymentGroupHistoryWriter.stopAsync().awaitTerminated();
     rollingUpdateService.stopAsync().awaitTerminated();
     expiredJobReaper.stopAsync().awaitTerminated();
     zkRegistrar.stopAsync().awaitTerminated();
