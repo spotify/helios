@@ -463,7 +463,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public void updateDeploymentGroupHosts(String name, List<String> hosts)
       throws DeploymentGroupDoesNotExistException {
-    log.info("updating deployment-group hosts: name={}", name);
+    log.debug("updating deployment-group hosts: name={}", name);
     final ZooKeeperClient client = provider.get("updateDeploymentGroupHosts");
     try {
       client.setData(Paths.statusDeploymentGroupHosts(name), Json.asBytes(hosts));
@@ -526,7 +526,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException {
     checkNotNull(deploymentGroup, "deploymentGroup");
 
-    log.info("rolling-update step on deployment-group: name={}", deploymentGroup.getName());
+    log.debug("rolling-update step on deployment-group: name={}", deploymentGroup.getName());
 
     final ZooKeeperClient client = provider.get("rollingUpdateStep");
     final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
