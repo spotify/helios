@@ -593,8 +593,13 @@ public class ZooKeeperMasterModel implements MasterModel {
           zkOperations.toArray(new ZooKeeperOperation[zkOperations.size()])
       ));
     } catch (final KeeperException e) {
-      throw new HeliosRuntimeException(
-          "rolling-update on deployment-group " + deploymentGroup.getName() + " failed", e);
+      if ((e instanceof KeeperException.BadVersionException) && e.getPath().equals(statusPath)) {
+        // some other master beat us in processing this rolling update step. not exceptional
+      }
+      else {
+        throw new HeliosRuntimeException(
+            "rolling-update on deployment-group " + deploymentGroup.getName() + " failed", e);
+      }
     }
 
     if (deploymentGroupHistoryWriter != null) {
