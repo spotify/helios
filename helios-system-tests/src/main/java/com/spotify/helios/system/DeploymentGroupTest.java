@@ -323,4 +323,28 @@ public class DeploymentGroupTest extends SystemTestBase {
 
     assertEquals(masters.size(), deployingMasters.size());
   }
+
+  @Test
+  public void testIdenticalRollouts() throws Exception {
+    // This verifies that calling rolling-update on a failed deployment group will initiate a
+    // new rollout and bring the group status out of the failed state. Previously calling
+    // rolling-update on a failed deployment group would have no effect unless you changed the job
+    // ID or a rollout option.
+
+    // create the deployment group and job
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    // trigger a rolling update
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+
+    // stop the deployment group to put it in a failed state
+    cli("stop-deployment-group", TEST_GROUP);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.FAILED);
+
+    // trigger another rolling update with the same params as before and verify it reaches done
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+  }
 }

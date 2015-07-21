@@ -488,11 +488,6 @@ public class ZooKeeperMasterModel implements MasterModel {
         .setRolloutOptions(options)
         .build();
 
-    if (updated.equals(deploymentGroup)) {
-      // the current and desired deployment group are identical, nothing to do.
-      return;
-    }
-
     if (getJob(jobId) == null) {
       throw new JobDoesNotExistException(jobId);
     }
