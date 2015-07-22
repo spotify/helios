@@ -43,7 +43,6 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
-import com.spotify.helios.servicescommon.KafkaRecord;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
@@ -51,6 +50,7 @@ import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.rollingupdate.RolloutPlanner;
+import com.spotify.helios.servicescommon.KafkaRecord;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -542,7 +542,7 @@ public class ZooKeeperMasterModel implements MasterModel {
                               .setDeploymentGroupState(PLANNING_ROLLOUT)
                               .build());
 
-      final Map<String, HostStatus> hostsAndStatuses = Maps.newHashMap();
+      final Map<String, HostStatus> hostsAndStatuses = Maps.newLinkedHashMap();
       for (final String host: getDeploymentGroupHosts(deploymentGroup.getName())) {
         hostsAndStatuses.put(host, getHostStatus(host));
       }
