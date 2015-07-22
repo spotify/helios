@@ -23,7 +23,6 @@ package com.spotify.helios.rollingupdate;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import com.spotify.helios.agent.KafkaClientProvider;
 import com.spotify.helios.common.descriptors.DeploymentGroupEvent;
 import com.spotify.helios.servicescommon.QueueingHistoryWriter;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -43,8 +42,6 @@ public class DeploymentGroupHistoryWriter extends QueueingHistoryWriter<Deployme
 
   private static final Logger log = LoggerFactory.getLogger(DeploymentGroupHistoryWriter.class);
 
-  private static final String KAFKA_TOPIC = "HeliosDeploymentGroupEvents";
-
   @Override
   protected String getKey(final DeploymentGroupEvent event) {
     return event.getDeploymentGroup().getName();
@@ -53,11 +50,6 @@ public class DeploymentGroupHistoryWriter extends QueueingHistoryWriter<Deployme
   @Override
   protected long getTimestamp(final DeploymentGroupEvent event) {
     return event.getTimestamp();
-  }
-
-  @Override
-  protected String getKafkaTopic() {
-    return KAFKA_TOPIC;
   }
 
   @Override
@@ -71,10 +63,9 @@ public class DeploymentGroupHistoryWriter extends QueueingHistoryWriter<Deployme
   }
 
   public DeploymentGroupHistoryWriter(final ZooKeeperClient client,
-                                      final KafkaClientProvider kafkaProvider,
                                       final Path backingFile)
       throws IOException, InterruptedException {
-    super(client, backingFile, kafkaProvider);
+    super(client, backingFile);
   }
 
   public void saveHistoryItem(final DeploymentGroupEvent event) {

@@ -38,8 +38,6 @@ import java.nio.file.Path;
  */
 public class TaskHistoryWriter extends QueueingHistoryWriter<TaskStatusEvent> {
 
-  private static final String KAFKA_TOPIC = "HeliosEvents";
-
   private final String hostname;
 
   @Override
@@ -58,20 +56,14 @@ public class TaskHistoryWriter extends QueueingHistoryWriter<TaskStatusEvent> {
   }
 
   @Override
-  protected String getKafkaTopic() {
-    return KAFKA_TOPIC;
-  }
-
-  @Override
   protected String getZkEventsPath(TaskStatusEvent event) {
     final JobId jobId = event.getStatus().getJob().getId();
     return Paths.historyJobHostEvents(jobId, hostname);
   }
 
   public TaskHistoryWriter(final String hostname, final ZooKeeperClient client,
-                           final KafkaClientProvider kafkaProvider,
                            final Path backingFile) throws IOException, InterruptedException {
-    super(client, backingFile, kafkaProvider);
+    super(client, backingFile);
     this.hostname = hostname;
   }
 
