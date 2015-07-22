@@ -29,6 +29,9 @@ import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.servicescommon.KafkaRecord;
+import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.PersistentPathChildrenCache;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -36,6 +39,8 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory;
 
 import org.apache.curator.framework.state.ConnectionState;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +69,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private final PersistentPathChildrenCache<Task> tasks;
   private final ZooKeeperUpdatingPersistentDirectory taskStatuses;
   private final TaskHistoryWriter historyWriter;
+  private final KafkaSender kafkaSender;
 
   private final String agent;
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
@@ -86,8 +92,11 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
                                                                     provider,
                                                                     taskStatusFile,
                                                                     Paths.statusHostJobs(host));
-    this.historyWriter = new TaskHistoryWriter(host, client, kafkaProvider,
-        stateDirectory.resolve(TASK_HISTORY_FILENAME));
+    this.historyWriter = new TaskHistoryWriter(
+        host, client, stateDirectory.resolve(TASK_HISTORY_FILENAME));
+
+    this.kafkaSender = new KafkaSender(
+        kafkaProvider.getProducer(new StringSerializer(), new ByteArraySerializer()));
   }
 
   @Override
@@ -149,6 +158,8 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     log.debug("setting task status: {}", status);
     taskStatuses.put(jobId.toString(), status.toJsonBytes());
     historyWriter.saveHistoryItem(status);
+    final TaskStatusEvent event = new TaskStatusEvent(status, System.currentTimeMillis(), agent);
+    kafkaSender.send(KafkaRecord.of(TaskStatusEvent.KAFKA_TOPIC, event.toJsonBytes()));
   }
 
   /**

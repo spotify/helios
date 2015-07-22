@@ -22,7 +22,6 @@
 package com.spotify.helios.servicescommon;
 
 import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
@@ -32,16 +31,10 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.helios.agent.KafkaClientProvider;
 import com.spotify.helios.servicescommon.coordination.PathFactory;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 import org.apache.curator.framework.recipes.locks.InterProcessMutex;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
-import org.apache.kafka.common.serialization.Serializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
@@ -57,13 +50,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -71,7 +61,7 @@ import static com.google.common.base.Preconditions.checkState;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * Writes historical events to ZooKeeper and sends them to Kafka. We attempt to gracefully handle
+ * Writes historical events to ZooKeeper. We attempt to gracefully handle
  * the case where ZK is down by persisting events in a backing file.
  *
  * Theory of operation:
@@ -105,8 +95,6 @@ public abstract class QueueingHistoryWriter<TEvent>
   private final ZooKeeperClient client;
   private final PersistentAtomicReference<ConcurrentMap<String, Deque<TEvent>>> backingStore;
 
-  private final Optional<KafkaProducer<String, TEvent>> kafkaProducer;
-
   /**
    * Get the key associated with an event.
    * @param event
@@ -120,12 +108,6 @@ public abstract class QueueingHistoryWriter<TEvent>
    * @return Timestamp for the event.
    */
   protected abstract long getTimestamp(TEvent event);
-
-  /**
-   * Get the Kafka topic for events sent to Kafka.
-   * @return Topic string.
-   */
-  protected abstract String getKafkaTopic();
 
   /**
    * Get the path at which events should be stored. Generally the path will differ based on
@@ -153,8 +135,7 @@ public abstract class QueueingHistoryWriter<TEvent>
     return DEFAULT_MAX_QUEUE_SIZE;
   }
 
-  public QueueingHistoryWriter(final ZooKeeperClient client, final Path backingFile,
-                               final KafkaClientProvider kafkaProvider)
+  public QueueingHistoryWriter(final ZooKeeperClient client, final Path backingFile)
       throws IOException, InterruptedException {
     this.client = checkNotNull(client, "client");
     this.backingStore = PersistentAtomicReference.create(
@@ -166,14 +147,6 @@ public abstract class QueueingHistoryWriter<TEvent>
           }
         });
     this.events = backingStore.get();
-
-    if (kafkaProvider != null) {
-      // Get the Kafka Producer suitable for TaskStatus events.
-      this.kafkaProducer = kafkaProvider.getProducer(
-          new StringSerializer(), new KafkaEventSerializer());
-    } else {
-      this.kafkaProducer = Optional.absent();
-    }
 
     // Clean out any errant null values.  Normally shouldn't have any, but we did have a few
     // where it happened, and this will make sure we can get out of a bad state if we get into it.
@@ -200,15 +173,10 @@ public abstract class QueueingHistoryWriter<TEvent>
   protected void shutDown() throws Exception {
     zkWriterExecutor.shutdownNow();
     zkWriterExecutor.awaitTermination(1, TimeUnit.MINUTES);
-
-    if (kafkaProducer.isPresent()) {
-      // Otherwise it enters an infinite loop for some reason.
-      kafkaProducer.get().close();
-    }
   }
 
   /**
-   * Add an event to the queue to be written to ZooKeeper and optionally sent to Kafka.
+   * Add an event to the queue to be written to ZooKeeper.
    * @param event
    * @throws InterruptedException
    */
@@ -346,13 +314,7 @@ public abstract class QueueingHistoryWriter<TEvent>
         return;
       }
 
-      if (tryWriteToZooKeeper(event)) {
-        // managed to write to ZK. also send to kafka if we need to. we do it like this
-        // to avoid sending duplicate events to kafka in case ZK write fails.
-        if (kafkaProducer.isPresent()) {
-          sendToKafka(event);
-        }
-      } else {
+      if (!tryWriteToZooKeeper(event)) {
         putBack(event);
       }
     }
@@ -407,17 +369,6 @@ public abstract class QueueingHistoryWriter<TEvent>
     return true;
   }
 
-  private void sendToKafka(TEvent event) {
-    try {
-      final Future<RecordMetadata> future = kafkaProducer.get().send(
-          new ProducerRecord<String, TEvent>(getKafkaTopic(), event));
-      final RecordMetadata metadata = future.get(5, TimeUnit.SECONDS);
-      log.debug("Sent an event to Kafka, meta: {}", metadata);
-    } catch (ExecutionException | InterruptedException | TimeoutException e) {
-      log.error("Unable to send an event to Kafka", e);
-    }
-  }
-
   private void trimStatusEvents(final List<String> events, final String eventsPath) {
     // All this to sort numerically instead of lexically....
     final List<Long> eventsAsLongs = Lists.newArrayList(Iterables.transform(events,
@@ -437,18 +388,5 @@ public abstract class QueueingHistoryWriter<TEvent>
             + " execution will fix", e);
       }
     }
-  }
-
-  public class KafkaEventSerializer implements Serializer<TEvent> {
-    @Override
-    public void configure(final Map<String, ?> configs, final boolean isKey) { }
-
-    @Override
-    public byte[] serialize(final String topic, final TEvent value) {
-      return toBytes(value);
-    }
-
-    @Override
-    public void close() { }
   }
 }
