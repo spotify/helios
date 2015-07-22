@@ -19,62 +19,67 @@
  * under the License.
  */
 
-package com.spotify.helios.agent;
+package com.spotify.helios.rollingupdate;
 
 import com.google.common.annotations.VisibleForTesting;
 
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.common.descriptors.DeploymentGroupEvent;
 import com.spotify.helios.servicescommon.QueueingHistoryWriter;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 
 /**
- * Writes task history to ZK.
+ * Writes rolling update history to ZK.
  */
-public class TaskHistoryWriter extends QueueingHistoryWriter<TaskStatusEvent> {
+public class DeploymentGroupHistoryWriter extends QueueingHistoryWriter<DeploymentGroupEvent> {
 
-  private final String hostname;
+  private static final Logger log = LoggerFactory.getLogger(DeploymentGroupHistoryWriter.class);
 
   @Override
-  protected String getKey(final TaskStatusEvent event) {
-    return event.getStatus().getJob().getId().toString();
+  protected String getKey(final DeploymentGroupEvent event) {
+    return event.getDeploymentGroup().getName();
   }
 
   @Override
-  protected long getTimestamp(final TaskStatusEvent event) {
+  protected long getTimestamp(final DeploymentGroupEvent event) {
     return event.getTimestamp();
   }
 
   @Override
-  protected byte[] toBytes(final TaskStatusEvent event) {
-    return event.getStatus().toJsonBytes();
+  protected String getZkEventsPath(final DeploymentGroupEvent event) {
+    return Paths.historyDeploymentGroup(event.getDeploymentGroup());
   }
 
   @Override
-  protected String getZkEventsPath(TaskStatusEvent event) {
-    final JobId jobId = event.getStatus().getJob().getId();
-    return Paths.historyJobHostEvents(jobId, hostname);
+  protected byte[] toBytes(final DeploymentGroupEvent deploymentGroupEvent) {
+    return deploymentGroupEvent.toJsonBytes();
   }
 
-  public TaskHistoryWriter(final String hostname, final ZooKeeperClient client,
-                           final Path backingFile) throws IOException, InterruptedException {
+  public DeploymentGroupHistoryWriter(final ZooKeeperClient client,
+                                      final Path backingFile)
+      throws IOException, InterruptedException {
     super(client, backingFile);
-    this.hostname = hostname;
   }
 
-  public void saveHistoryItem(final TaskStatus status)
-      throws InterruptedException {
-    saveHistoryItem(status, System.currentTimeMillis());
+  public void saveHistoryItem(final DeploymentGroupEvent event) {
+    try {
+      add(event);
+    } catch (InterruptedException e) {
+      log.error("error saving deployment group event: {} - {}", event, e);
+    }
   }
 
-  public void saveHistoryItem(final TaskStatus status, long timestamp)
-      throws InterruptedException {
-    add(new TaskStatusEvent(status, timestamp, hostname));
+  public void saveHistoryItems(final List<DeploymentGroupEvent> events) {
+    for (final DeploymentGroupEvent e : events) {
+      saveHistoryItem(e);
+    }
   }
 
   @Override @VisibleForTesting
