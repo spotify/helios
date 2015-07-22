@@ -43,14 +43,15 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.servicescommon.KafkaRecord;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
-import com.spotify.helios.rollingupdate.DeploymentGroupHistoryWriter;
 import com.spotify.helios.rollingupdate.RolloutPlanner;
+import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -130,7 +131,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private final ZooKeeperClientProvider provider;
   private final String name;
-  private final DeploymentGroupHistoryWriter deploymentGroupHistoryWriter;
+  private final KafkaSender kafkaSender;
 
   public  ZooKeeperMasterModel(final ZooKeeperClientProvider provider)
       throws IOException, InterruptedException {
@@ -143,18 +144,17 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   /**
    * Constructor
-   *
    * @param provider         {@link ZooKeeperClientProvider}
    * @param name             The hostname of the machine running the {@link MasterModel}
-   * @param deploymentGroupHistoryWriter {@link DeploymentGroupHistoryWriter}
+   * @param kafkaSender      {@link KafkaSender}
    */
   public ZooKeeperMasterModel(
       final ZooKeeperClientProvider provider,
       @Nullable final String name,
-      @Nullable final DeploymentGroupHistoryWriter deploymentGroupHistoryWriter) {
+      @Nullable final KafkaSender kafkaSender) {
     this.provider = provider;
     this.name = name;
-    this.deploymentGroupHistoryWriter = deploymentGroupHistoryWriter;
+    this.kafkaSender = kafkaSender;
   }
 
   /**
@@ -602,8 +602,10 @@ public class ZooKeeperMasterModel implements MasterModel {
       }
     }
 
-    if (deploymentGroupHistoryWriter != null) {
-      deploymentGroupHistoryWriter.saveHistoryItems(opsEvents.getEvents());
+    if (kafkaSender != null) {
+      for (final DeploymentGroupEvent event : opsEvents.getEvents()) {
+        kafkaSender.send(KafkaRecord.of(DeploymentGroupEvent.KAFKA_TOPIC, event.toJsonBytes()));
+      }
     }
   }
 

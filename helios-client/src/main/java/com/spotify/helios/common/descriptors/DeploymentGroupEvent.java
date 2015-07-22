@@ -46,6 +46,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DeploymentGroupEvent extends Descriptor {
 
+  public static final String KAFKA_TOPIC = "HeliosDeploymentGroupEvents";
+
   private final RolloutTask.Action action;
   private final String target;
   private final RolloutTask.Status rolloutTaskStatus;
