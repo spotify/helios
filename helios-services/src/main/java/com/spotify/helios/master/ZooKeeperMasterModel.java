@@ -593,8 +593,11 @@ public class ZooKeeperMasterModel implements MasterModel {
           zkOperations.toArray(new ZooKeeperOperation[zkOperations.size()])
       ));
     } catch (final KeeperException e) {
-      if ((e instanceof KeeperException.BadVersionException) && e.getPath().equals(statusPath)) {
-        // some other master beat us in processing this rolling update step. not exceptional
+      if (e instanceof KeeperException.BadVersionException) {
+        // some other master beat us in processing this rolling update step. not exceptional.
+        // ideally we would check the path in the exception, but curator doesn't provide a path
+        // for exceptions thrown as part of a transaction.
+        log.debug("error saving rolling-update operations: {}", e);
       }
       else {
         throw new HeliosRuntimeException(
