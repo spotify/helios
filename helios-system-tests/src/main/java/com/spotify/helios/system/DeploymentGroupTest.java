@@ -21,6 +21,8 @@
 
 package com.spotify.helios.system;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -95,25 +97,33 @@ public class DeploymentGroupTest extends SystemTestBase {
 
   @Test
   public void testRollingUpdate() throws Exception {
-    final String firstHost = testHost();
-    final String secondHost = testHost() + "2";
+    final List<String> hosts = ImmutableList.of(
+        "dc1-" + testHost() + "-a1.dc1.example.com",
+        "dc1-" + testHost() + "-a2.dc1.example.com",
+        "dc2-" + testHost() + "-a1.dc2.example.com",
+        "dc2-" + testHost() + "-a3.dc2.example.com",
+        "dc3-" + testHost() + "-a4.dc3.example.com"
+    );
 
-    // start two agents
-    startDefaultAgent(firstHost, "--labels", TEST_LABEL);
-    startDefaultAgent(secondHost, "--labels", TEST_LABEL);
+    // start agents
+    for (final String host : hosts) {
+      startDefaultAgent(host, "--labels", TEST_LABEL);
+    }
 
-    // create a deployment group  and job
+    // create a deployment group and job
     cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
     // trigger a rolling update
     cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
 
-    // ensure the job is running on both agents and the deployment group reaches DONE
-    awaitTaskState(jobId, firstHost, TaskStatus.State.RUNNING);
-    awaitTaskState(jobId, secondHost, TaskStatus.State.RUNNING);
+    // ensure the job is running on all agents and the deployment group reaches DONE
+    for (final String host : hosts) {
+      awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+    }
 
-    final Deployment deployment =  defaultClient().hostStatus(firstHost).get().getJobs().get(jobId);
+    final Deployment deployment =
+        defaultClient().hostStatus(hosts.get(0)).get().getJobs().get(jobId);
     assertEquals(TEST_GROUP, deployment.getDeploymentGroupName());
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
                                DeploymentGroupStatus.State.DONE);
@@ -124,13 +134,19 @@ public class DeploymentGroupTest extends SystemTestBase {
     final JobId secondJobId = createJob(testJobName, secondJobVersion, BUSYBOX, IDLE_COMMAND);
 
     // trigger a rolling update to replace the first job with the second job
-    cli("rolling-update", "--async", secondJobNameAndVersion, TEST_GROUP);
+    final String output = cli("rolling-update", secondJobNameAndVersion, TEST_GROUP);
+
+    // Check that the hosts in the output are ordered
+    final List<String> lines = Lists.newArrayList(Splitter.on("\n").split(output));
+    for (int i = 0; i < hosts.size(); i++) {
+      assertThat(lines.get(i + 2), containsString(hosts.get(i)));
+    }
 
     // ensure the second job rolled out fine
-    awaitTaskState(secondJobId, firstHost, TaskStatus.State.RUNNING);
-    awaitTaskState(secondJobId, secondHost, TaskStatus.State.RUNNING);
-    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
-                               DeploymentGroupStatus.State.DONE);
+    for (final String host : hosts) {
+      awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
+    }
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
 
   @Test
