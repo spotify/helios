@@ -638,7 +638,6 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       final DeploymentGroupEvent.Builder eventBuilder = DeploymentGroupEvent.newBuilder()
           .setDeploymentGroup(deploymentGroup)
-          .setJobId(deploymentGroup.getJobId())
           .setRolloutTaskStatus(RolloutTask.Status.OK)
           .setDeploymentGroupState(ROLLING_OUT);
 
