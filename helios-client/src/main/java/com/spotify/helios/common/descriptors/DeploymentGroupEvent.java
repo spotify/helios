@@ -35,7 +35,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
  * <pre>
  * {
  *   "action" : DEPLOY_NEW_JOB,
- *   "job" : foo:0.1.0,
  *   "target": "myhost"
  *   "rolloutTaskStatus" : OK,
  *   "deploymentGroup" : { #... see definition of DeploymentGroup },
@@ -48,7 +47,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class DeploymentGroupEvent extends Descriptor {
 
   private final RolloutTask.Action action;
-  private final JobId jobId;
   private final String target;
   private final RolloutTask.Status rolloutTaskStatus;
   private final DeploymentGroup deploymentGroup;
@@ -59,7 +57,6 @@ public class DeploymentGroupEvent extends Descriptor {
    * Constructor.
    *
    * @param action {@link RolloutTask.Action}.
-   * @param jobId  {@link JobId}.
    * @param target The target of the action.
    * @param rolloutTaskStatus  The status of the task at the point of the event.
    *                           See {@link RolloutTask.Status}
@@ -69,14 +66,12 @@ public class DeploymentGroupEvent extends Descriptor {
    */
   public DeploymentGroupEvent(
       @JsonProperty("action") final RolloutTask.Action action,
-      @JsonProperty("job") final JobId jobId,
       @JsonProperty("target") final String target,
       @JsonProperty("rolloutTaskStatus") final RolloutTask.Status rolloutTaskStatus,
       @JsonProperty("deploymentGroup") final DeploymentGroup deploymentGroup,
       @JsonProperty("deploymentGroupState") final DeploymentGroupStatus.State deploymentGroupState,
       @JsonProperty("timestamp") final long timestamp) {
     this.action = action;
-    this.jobId = jobId;
     this.target = target;
     this.rolloutTaskStatus = rolloutTaskStatus;
     this.deploymentGroup = deploymentGroup;
@@ -87,21 +82,16 @@ public class DeploymentGroupEvent extends Descriptor {
   private DeploymentGroupEvent(final Builder builder) {
     this.deploymentGroup = checkNotNull(builder.deploymentGroup);
     this.deploymentGroupState = checkNotNull(builder.deploymentGroupState);
-    this.timestamp = System.currentTimeMillis();
 
     // Optional
     this.action = builder.action;
-    this.jobId = builder.jobId;
     this.target = builder.target;
     this.rolloutTaskStatus = builder.rolloutTaskStatus;
+    this.timestamp = builder.timestamp != null ? builder.timestamp : System.currentTimeMillis();
   }
 
   public RolloutTask.Action getAction() {
     return action;
-  }
-
-  public JobId getJobId() {
-    return jobId;
   }
 
   public String getTarget() {
@@ -131,19 +121,14 @@ public class DeploymentGroupEvent extends Descriptor {
   public static class Builder {
 
     private RolloutTask.Action action;
-    private JobId jobId;
     private String target;
     private RolloutTask.Status rolloutTaskStatus;
     private DeploymentGroup deploymentGroup;
     private DeploymentGroupStatus.State deploymentGroupState;
+    private Long timestamp;
 
     public Builder setAction(final RolloutTask.Action action) {
       this.action = action;
-      return this;
-    }
-
-    public Builder setJobId(final JobId jobId) {
-      this.jobId = jobId;
       return this;
     }
 
@@ -167,6 +152,11 @@ public class DeploymentGroupEvent extends Descriptor {
       return this;
     }
 
+    public Builder setTimestamp(final long timestamp) {
+      this.timestamp = timestamp;
+      return this;
+    }
+
     public DeploymentGroupEvent build() {
       return new DeploymentGroupEvent(this);
     }
@@ -176,7 +166,6 @@ public class DeploymentGroupEvent extends Descriptor {
   public String toString() {
     return Objects.toStringHelper(DeploymentGroupEvent.class)
         .add("action", action)
-        .add("jobId", jobId)
         .add("target", target)
         .add("rolloutTaskStatus", rolloutTaskStatus)
         .add("deploymentGroup", deploymentGroup)
@@ -202,9 +191,6 @@ public class DeploymentGroupEvent extends Descriptor {
     if (action != that.action) {
       return false;
     }
-    if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
-      return false;
-    }
     if (target != null ? !target.equals(that.target) : that.target != null) {
       return false;
     }
@@ -222,7 +208,6 @@ public class DeploymentGroupEvent extends Descriptor {
   @Override
   public int hashCode() {
     int result = action != null ? action.hashCode() : 0;
-    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     result = 31 * result + (target != null ? target.hashCode() : 0);
     result = 31 * result + (rolloutTaskStatus != null ? rolloutTaskStatus.hashCode() : 0);
     result = 31 * result + (deploymentGroup != null ? deploymentGroup.hashCode() : 0);
