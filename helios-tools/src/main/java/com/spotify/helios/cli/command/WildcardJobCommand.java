@@ -43,7 +43,11 @@ abstract class WildcardJobCommand extends ControlCommand {
   private final Argument jobArg;
 
   public WildcardJobCommand(final Subparser parser) {
-    super(parser);
+    this(parser, false);
+  }
+
+  public WildcardJobCommand(final Subparser parser, final boolean shortCircuit) {
+    super(parser, shortCircuit);
 
     jobArg = parser.addArgument("job")
         .help("Job id.");

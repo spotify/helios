@@ -81,7 +81,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   @VisibleForTesting
   RollingUpdateCommand(final Subparser parser, final SleepFunction sleepFunction,
                        final Supplier<Long> timeSupplier) {
-    super(parser);
+    super(parser, true);
 
     this.sleepFunction = sleepFunction;
     this.timeSupplier = timeSupplier;
