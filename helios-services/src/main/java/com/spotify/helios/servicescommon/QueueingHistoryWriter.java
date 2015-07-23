@@ -34,7 +34,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.servicescommon.coordination.PathFactory;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
-import org.apache.curator.framework.recipes.locks.InterProcessMutex;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
@@ -47,7 +46,6 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -88,7 +86,6 @@ public abstract class QueueingHistoryWriter<TEvent>
   private final ScheduledExecutorService zkWriterExecutor =
       MoreExecutors.getExitingScheduledExecutorService(
           (ScheduledThreadPoolExecutor) Executors.newScheduledThreadPool(1), 0, SECONDS);
-  private final Map<String, InterProcessMutex> mutexes = Maps.newHashMap();
 
   private final ConcurrentMap<String, Deque<TEvent>> events;
   private final AtomicInteger count;
@@ -323,19 +320,6 @@ public abstract class QueueingHistoryWriter<TEvent>
   private boolean tryWriteToZooKeeper(TEvent event) {
     final String eventsPath = getZkEventsPath(event);
 
-    if (!mutexes.containsKey(eventsPath)) {
-      mutexes.put(eventsPath, new InterProcessMutex(client.getCuratorFramework(),
-                                                    eventsPath + "_lock"));
-    }
-
-    final InterProcessMutex mutex = mutexes.get(eventsPath);
-    try {
-      mutex.acquire();
-    } catch (Exception e) {
-      log.error("error acquiring lock for event {} - {}", getKey(event), e);
-      return false;
-    }
-
     try {
       log.debug("writing queued event to zookeeper {} {}", getKey(event),
                 getTimestamp(event));
@@ -358,12 +342,6 @@ public abstract class QueueingHistoryWriter<TEvent>
     } catch (KeeperException e) {
       log.error("Error putting event into zookeeper, will retry", e);
       return false;
-    } finally {
-      try {
-        mutex.release();
-      } catch (Exception e) {
-        log.error("error releasing lock for event {} - {}", getKey(event), e);
-      }
     }
 
     return true;
