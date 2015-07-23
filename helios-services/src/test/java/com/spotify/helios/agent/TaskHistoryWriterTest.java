@@ -51,6 +51,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.spotify.helios.Polling.await;
 import static com.spotify.helios.common.descriptors.Goal.START;
@@ -118,26 +119,34 @@ public class TaskHistoryWriterTest {
   @Test
   public void testZooKeeperErrorDoesntLoseItemsReally() throws Exception {
     final ZooKeeperClient mockClient = mock(ZooKeeperClient.class, delegatesTo(client));
-    makeWriter(mockClient);
     final String path = Paths.historyJobHostEventsTimestamp(JOB_ID, HOSTNAME, TIMESTAMP);
-    final KeeperException exc = new ConnectionLossException();
+
     // make save operations fail
-    doThrow(exc).when(mockClient).createAndSetData(path, TASK_STATUS.toJsonBytes());
+    final AtomicBoolean throwExceptionOnCreateAndSet = new AtomicBoolean(true);
+    final KeeperException exc = new ConnectionLossException();
+
+    doAnswer(new Answer<Void>() {
+      @Override
+      public Void answer(InvocationOnMock invocation) throws Throwable {
+        if (throwExceptionOnCreateAndSet.get()) {
+          throw exc;
+        } else {
+          client.createAndSetData(
+              (String) invocation.getArguments()[0],
+              (byte[]) invocation.getArguments()[1]);
+          return null;
+        }
+      }
+    }).when(mockClient).createAndSetData(path, TASK_STATUS.toJsonBytes());
+
+    makeWriter(mockClient);
 
     writer.saveHistoryItem(TASK_STATUS, TIMESTAMP);
     // wait up to 10s for it to fail twice -- and make sure I mocked it correctly.
     verify(mockClient, timeout(10000).atLeast(2)).createAndSetData(path, TASK_STATUS.toJsonBytes());
 
     // now make the client work
-    doAnswer(new Answer<Void>() {
-      @Override
-      public Void answer(InvocationOnMock invocation) throws Throwable {
-        client.createAndSetData(
-          (String) invocation.getArguments()[0],
-          (byte[]) invocation.getArguments()[1]);
-        return null;
-      }
-    }).when(mockClient).createAndSetData(path, TASK_STATUS.toJsonBytes());
+    throwExceptionOnCreateAndSet.set(false);
 
     awaitHistoryItems();
   }
