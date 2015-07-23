@@ -593,8 +593,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         // ideally we would check the path in the exception, but curator doesn't provide a path
         // for exceptions thrown as part of a transaction.
         log.debug("error saving rolling-update operations: {}", e);
-      }
-      else {
+      } else {
         throw new HeliosRuntimeException(
             "rolling-update on deployment-group " + deploymentGroup.getName() + " failed", e);
       }
