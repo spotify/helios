@@ -793,8 +793,8 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       if (isOwnedByDeploymentGroup || (
           isSameJob && deploymentGroup.getRolloutOptions().getMigrate())) {
-        if (isSameJob && isOwnedByDeploymentGroup) {
-          // this deployed job is the same as the one we want deployed. just leave it.
+        if (isSameJob && isOwnedByDeploymentGroup && deployment.getGoal().equals(Goal.START)) {
+          // The job we want deployed is already deployed and set to run, so just leave it.
           continue;
         }
 
@@ -1279,6 +1279,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final JobId jobId = deployment.getJobId();
     final Job job = getJob(client, jobId);
+    final Deployment existingDeployment = getDeployment(host, jobId);
 
     if (job == null) {
       throw new JobNotDeployedException(host, jobId);
@@ -1289,8 +1290,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     assertTaskExists(client, host, deployment.getJobId());
 
     final String path = Paths.configHostJob(host, jobId);
-    final Task task = new Task(job, deployment.getGoal(), Task.EMPTY_DEPLOYER_USER,
-                               Task.EMPTY_DEPLOYER_MASTER, Task.EMPTY_DEPOYMENT_GROUP_NAME);
+    final Task task = new Task(job, deployment.getGoal(),
+                               existingDeployment.getDeployerUser(),
+                               existingDeployment.getDeployerMaster(),
+                               existingDeployment.getDeploymentGroupName());
     try {
       client.setData(path, task.toJsonBytes());
     } catch (Exception e) {
