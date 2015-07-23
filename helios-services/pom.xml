@@ -151,11 +151,6 @@
     </dependency>
     <dependency>
       <groupId>com.spotify</groupId>
-      <artifactId>helios-client</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.spotify</groupId>
       <artifactId>helios-service-registration</artifactId>
       <version>${project.version}</version>
     </dependency>
