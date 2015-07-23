@@ -774,7 +774,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       return RollingUpdateTaskResult.of(getDeployOperations(client, host, deployment,
                                                             Job.EMPTY_TOKEN));
-    } catch (JobDoesNotExistException | HostNotFoundException | TokenVerificationException |
+    } catch (JobDoesNotExistException | TokenVerificationException |
         JobPortAllocationConflictException e) {
       return RollingUpdateTaskResult.error(e);
     } catch (JobAlreadyDeployedException e) {
@@ -1594,7 +1594,7 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                        final String host,
                                                        final Deployment deployment,
                                                        final String token)
-      throws JobDoesNotExistException, JobAlreadyDeployedException, HostNotFoundException,
+      throws JobDoesNotExistException, JobAlreadyDeployedException,
              JobPortAllocationConflictException, TokenVerificationException {
     final JobId id = deployment.getJobId();
     final Job job = getJob(id);
@@ -1634,6 +1634,21 @@ public class ZooKeeperMasterModel implements MasterModel {
       operations.add(create(taskCreationPath));
     } catch (KeeperException e) {
       throw new HeliosRuntimeException("reading existing task description failed", e);
+    }
+
+    // Check for static port collisions
+    for (final int port : staticPorts) {
+      final String path = Paths.configHostPort(host, port);
+      try {
+        if (client.stat(path) == null) {
+          continue;
+        }
+        final byte[] b = client.getData(path);
+        final JobId existingJobId = parse(b, JobId.class);
+        throw new JobPortAllocationConflictException(id, existingJobId, host, port);
+      } catch (KeeperException | IOException ex) {
+        throw new HeliosRuntimeException("checking port allocations failed", e);
+      }
     }
 
     return ImmutableList.copyOf(operations);
