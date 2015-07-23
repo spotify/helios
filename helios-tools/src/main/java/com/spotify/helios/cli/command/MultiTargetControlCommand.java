@@ -39,6 +39,11 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * Abstract class for commands that need to operate on multiple domains in parallel.
+ * This is in contrast to a normal {@link ControlCommand}, which can operate on multiple
+ * domains but does so sequentially.
+ */
 public abstract class MultiTargetControlCommand implements CliCommand {
   MultiTargetControlCommand(final Subparser parser) {
     parser.setDefault("command", this).defaultHelp(true);
