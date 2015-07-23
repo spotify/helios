@@ -537,11 +537,6 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     if (status.getState().equals(PLANNING_ROLLOUT)) {
       // generate the rollout plan and proceed to ROLLING_OUT
-      opsEvents.addEvent(DeploymentGroupEvent.newBuilder()
-                              .setDeploymentGroup(deploymentGroup)
-                              .setDeploymentGroupState(PLANNING_ROLLOUT)
-                              .build());
-
       final Map<String, HostStatus> hostsAndStatuses = Maps.newLinkedHashMap();
       for (final String host: getDeploymentGroupHosts(deploymentGroup.getName())) {
         hostsAndStatuses.put(host, getHostStatus(host));
@@ -566,10 +561,13 @@ public class ZooKeeperMasterModel implements MasterModel {
       // grab the current task off the rollout task list and execute it
       opsEvents.addAll(getRolloutOperations(deploymentGroup, status));
     } else if (status.getState().equals(DONE)) {
-      opsEvents.addEvent(DeploymentGroupEvent.newBuilder()
-                              .setDeploymentGroup(deploymentGroup)
-                              .setDeploymentGroupState(DONE)
-                              .build());
+      if (status.getSuccessfulIterations() == 1) {
+        // this is the first successful iteration
+        opsEvents.addEvent(DeploymentGroupEvent.newBuilder()
+                               .setDeploymentGroup(deploymentGroup)
+                               .setDeploymentGroupState(DONE)
+                               .build());
+      }
 
       // after DONE, go back to PLANNING_ROLLOUT
       opsEvents.addOperation(set(statusPath, status.toBuilder()
@@ -587,6 +585,12 @@ public class ZooKeeperMasterModel implements MasterModel {
           check(statusPath, status.getVersion()),
           zkOperations.toArray(new ZooKeeperOperation[zkOperations.size()])
       ));
+
+      if (kafkaSender != null) {
+        for (final DeploymentGroupEvent event : opsEvents.getEvents()) {
+          kafkaSender.send(KafkaRecord.of(DeploymentGroupEvent.KAFKA_TOPIC, event.toJsonBytes()));
+        }
+      }
     } catch (final KeeperException e) {
       if (e instanceof KeeperException.BadVersionException) {
         // some other master beat us in processing this rolling update step. not exceptional.
@@ -596,12 +600,6 @@ public class ZooKeeperMasterModel implements MasterModel {
       } else {
         throw new HeliosRuntimeException(
             "rolling-update on deployment-group " + deploymentGroup.getName() + " failed", e);
-      }
-    }
-
-    if (kafkaSender != null) {
-      for (final DeploymentGroupEvent event : opsEvents.getEvents()) {
-        kafkaSender.send(KafkaRecord.of(DeploymentGroupEvent.KAFKA_TOPIC, event.toJsonBytes()));
       }
     }
   }
@@ -635,18 +633,22 @@ public class ZooKeeperMasterModel implements MasterModel {
         opsEvents.addOperation(op);
       }
 
-      final DeploymentGroupEvent.Builder eventBuilder = DeploymentGroupEvent.newBuilder()
-          .setDeploymentGroup(deploymentGroup)
-          .setRolloutTaskStatus(RolloutTask.Status.OK)
-          .setDeploymentGroupState(ROLLING_OUT);
+      if (!result.operations.isEmpty()) {
+        // if we're actually doing any operations, then record an event
 
-      if (currentTask != null) {
-        eventBuilder
-            .setAction(currentTask.getAction())
-            .setTarget(currentTask.getTarget());
+        final DeploymentGroupEvent.Builder eventBuilder = DeploymentGroupEvent.newBuilder()
+            .setDeploymentGroup(deploymentGroup)
+            .setRolloutTaskStatus(RolloutTask.Status.OK)
+            .setDeploymentGroupState(ROLLING_OUT);
+
+        if (currentTask != null) {
+          eventBuilder
+              .setAction(currentTask.getAction())
+              .setTarget(currentTask.getTarget());
+        }
+
+        opsEvents.addEvent(eventBuilder.build());
       }
-
-      opsEvents.addEvent(eventBuilder.build());
 
       if (taskIndex + 1 >= status.getRolloutTasks().size()) {
         // successfully completed the last task
