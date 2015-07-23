@@ -44,12 +44,17 @@ import static java.lang.String.format;
 
 public abstract class ControlCommand implements CliCommand {
 
-  public static final int BATCH_SIZE = 10;
-  public static final int QUEUE_SIZE = 1000;
+  // If true and multiple domains are passed in, will abort the command on the first non-zero
+  // exit code returned for a domain. If false, the command will keep running.
+  private final boolean shortCircuit;
 
   ControlCommand(final Subparser parser) {
+    this(parser, false);
+  }
 
+  ControlCommand(final Subparser parser, final boolean shortCircuit) {
     parser.setDefault("command", this).defaultHelp(true);
+    this.shortCircuit = shortCircuit;
   }
 
   @Override
@@ -57,7 +62,7 @@ public abstract class ControlCommand implements CliCommand {
                  final PrintStream err, final String username, final boolean json,
                  final BufferedReader stdin)
       throws IOException, InterruptedException {
-    boolean successful = true;
+    boolean allSuccessful = true;
 
     boolean isFirst = true;
 
@@ -86,7 +91,11 @@ public abstract class ControlCommand implements CliCommand {
         }
       }
 
-      successful &= run(options, target, out, err, username, json, stdin);
+      final boolean successful = run(options, target, out, err, username, json, stdin);
+      if (shortCircuit && !successful) {
+        return 1;
+      }
+      allSuccessful &= successful;
 
       if (targets.size() > 1) {
         if (!json) {
@@ -101,7 +110,7 @@ public abstract class ControlCommand implements CliCommand {
       }
     }
 
-    return successful ? 0 : 1;
+    return allSuccessful ? 0 : 1;
   }
 
   /**
