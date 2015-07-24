@@ -150,9 +150,9 @@ public abstract class SystemTestBase {
   public static final List<String> IDLE_COMMAND = asList(
       "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
 
-  public final String testTag = "test_" + toHexString(ThreadLocalRandom.current().nextInt());
+  public final String testTag = "test_" + randomHexString();
   public final String testJobName = "job_" + testTag;
-  public final String testJobVersion = "v" + toHexString(ThreadLocalRandom.current().nextInt());
+  public final String testJobVersion = "v" + randomHexString();
   public final String testJobNameAndVersion = testJobName + ":" + testJobVersion;
 
   public static final DockerHost DOCKER_HOST = DockerHost.fromEnv();
@@ -1050,5 +1050,9 @@ public abstract class SystemTestBase {
 
   protected void assertJobEquals(final Job expected, final Job actual) {
     assertEquals(expected.toBuilder().setHash(actual.getId().getHash()).build(), actual);
+  }
+
+  protected static String randomHexString() {
+    return toHexString(ThreadLocalRandom.current().nextInt());
   }
 }

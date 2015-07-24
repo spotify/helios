@@ -38,6 +38,7 @@ import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
@@ -57,6 +58,7 @@ import static com.google.common.collect.Iterables.getLast;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -361,6 +363,50 @@ public class DeploymentGroupTest extends SystemTestBase {
 
     // trigger another rolling update with the same params as before and verify it reaches done
     cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+  }
+
+  @Test
+  public void testStoppedJob() throws Exception {
+    final String host = testHost();
+    startDefaultAgent(host, "--labels", TEST_LABEL);
+
+    // Wait for agent to come up
+    final HeliosClient client = defaultClient();
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    // Create the deployment group and two jobs
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    final JobId firstJobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    final String secondJobVersion = randomHexString();
+    final String secondJobNameAndVersion = testJobName + ":" + secondJobVersion;
+    final JobId secondJobId = createJob(testJobName, secondJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    // Trigger a rolling update of the first job
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+    awaitTaskState(firstJobId, host, TaskStatus.State.RUNNING);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+
+    // Stop the job
+    cli("stop", testJobNameAndVersion, host);
+    awaitTaskState(firstJobId, host, TaskStatus.State.STOPPED);
+
+    // Trigger a rolling update, replacing the first job with the second.
+    // Verify the first job is undeployed and the second job is running.
+    cli("rolling-update", "--async", secondJobNameAndVersion, TEST_GROUP);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+    awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
+    final JobStatus status = client.jobStatus(firstJobId).get();
+    assertThat(status.getDeployments().isEmpty(), is(true));
+
+    // Stop the job
+    cli("stop", secondJobNameAndVersion, host);
+    awaitTaskState(secondJobId, host, TaskStatus.State.STOPPED);
+
+    // Trigger a rolling update of the same job, and verify the job gets started. This takes
+    // a different code path than when replacing a different job, which we tested above.
+    cli("rolling-update", "--async", secondJobNameAndVersion, TEST_GROUP);
+    awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
 }
