@@ -153,7 +153,7 @@ public class JobValidator {
     final Set<String> errors = Sets.newHashSet();
 
     if (image == null) {
-      errors.add(format("Image was not specified."));
+      errors.add("Image was not specified.");
     } else {
       // Validate image name
       validateImageReference(image, errors);
@@ -173,7 +173,7 @@ public class JobValidator {
     final JobId jobId = job.getId();
 
     if (jobId == null) {
-      errors.add(format("Job id was not specified."));
+      errors.add("Job id was not specified.");
       return errors;
     }
 
@@ -194,7 +194,7 @@ public class JobValidator {
 
     final String jobIdName = jobId.getName();
     if (jobIdName == null || jobIdName.isEmpty()) {
-      errors.add(format("Job name was not specified."));
+      errors.add("Job name was not specified.");
       return errors;
     }
 
@@ -323,11 +323,11 @@ public class JobValidator {
       try {
         port = Integer.valueOf(parts[1]);
       } catch (NumberFormatException e) {
-        errors.add(String.format("Invalid port in endpoint: \"%s\"", endpoint));
+        errors.add(format("Invalid port in endpoint: \"%s\"", endpoint));
         return false;
       }
       if (port < 0 || port > 65535) {
-        errors.add(String.format("Invalid port in endpoint: \"%s\"", endpoint));
+        errors.add(format("Invalid port in endpoint: \"%s\"", endpoint));
         return false;
       }
     }
@@ -338,7 +338,7 @@ public class JobValidator {
     if (IPV4_PATTERN.matcher(address).matches()) {
       return true;
     } else if (!DOMAIN_PATTERN.matcher(address).matches() || DIGIT_PERIOD.matcher(address).find()) {
-      errors.add(String.format("Invalid domain name: \"%s\"", address));
+      errors.add(format("Invalid domain name: \"%s\"", address));
       return false;
     }
     return true;
