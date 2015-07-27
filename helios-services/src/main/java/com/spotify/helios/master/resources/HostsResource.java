@@ -61,6 +61,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.FORBIDDEN;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST_NOT_FOUND;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.INVALID_ID;
@@ -140,6 +141,7 @@ public class HostsResource {
   /**
    * Returns various status information about the host.
    * @param host The host id.
+   * @param statusFilter An optional status filter.
    * @return The host status.
    */
   @GET
@@ -147,13 +149,22 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Optional<HostStatus> hostStatus(@PathParam("id") final String host) {
-    return Optional.fromNullable(model.getHostStatus(host));
+  public Optional<HostStatus> hostStatus(
+      @PathParam("id") final String host,
+      @QueryParam("status") @DefaultValue("") final String statusFilter) {
+    final HostStatus status = model.getHostStatus(host);
+    if (status != null &&
+        (isNullOrEmpty(statusFilter) || statusFilter.equals(status.getStatus().toString()))) {
+      return Optional.of(status);
+    } else {
+      return Optional.absent();
+    }
   }
 
   /**
    * Returns various status information about the hosts.
    * @param hosts The hosts.
+   * @param statusFilter An optional status filter.
    * @return The response.
    */
   @POST
@@ -161,12 +172,16 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Map<String, HostStatus> hostStatuses(final List<String> hosts) {
+  public Map<String, HostStatus> hostStatuses(
+      final List<String> hosts,
+      @QueryParam("status") @DefaultValue("") final String statusFilter) {
     final Map<String, HostStatus> statuses = Maps.newHashMap();
     for (final String current : hosts) {
       final HostStatus status = model.getHostStatus(current);
       if (status != null) {
-        statuses.put(current, status);
+        if (isNullOrEmpty(statusFilter) || statusFilter.equals(status.getStatus().toString())) {
+          statuses.put(current, status);
+        }
       }
     }
     return statuses;

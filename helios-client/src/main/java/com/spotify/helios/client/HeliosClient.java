@@ -441,15 +441,25 @@ public class HeliosClient implements AutoCloseable {
   }
 
   public ListenableFuture<HostStatus> hostStatus(final String host) {
-    return get(uri(path("/hosts/%s/status", host)), HostStatus.class);
+    return hostStatus(host, Collections.<String, String>emptyMap());
+  }
+
+  public ListenableFuture<HostStatus>
+  hostStatus(final String host, final Map<String, String> queryParams) {
+    return get(uri(path("/hosts/%s/status", host), queryParams), HostStatus.class);
   }
 
   public ListenableFuture<Map<String, HostStatus>> hostStatuses(final List<String> hosts) {
+    return hostStatuses(hosts, Collections.<String, String>emptyMap());
+  }
+
+  public ListenableFuture<Map<String, HostStatus>>
+  hostStatuses(final List<String> hosts, final Map<String, String> queryParams) {
     final ConvertResponseToPojo<Map<String, HostStatus>> converter = ConvertResponseToPojo.create(
         TypeFactory.defaultInstance().constructMapType(Map.class, String.class, HostStatus.class),
         ImmutableSet.of(HTTP_OK));
 
-    return transform(request(uri("/hosts/statuses"), "POST", hosts), converter);
+    return transform(request(uri("/hosts/statuses", queryParams), "POST", hosts), converter);
   }
 
   public ListenableFuture<Integer> registerHost(final String host, final String id) {

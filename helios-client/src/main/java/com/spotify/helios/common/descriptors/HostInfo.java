@@ -290,7 +290,6 @@ public class HostInfo extends Descriptor {
     }
   }
 
-
   @Override
   public String toString() {
     return Objects.toStringHelper(this)
@@ -309,5 +308,85 @@ public class HostInfo extends Descriptor {
         .add("dockerHost", dockerHost)
         .add("dockerCertPath", dockerCertPath)
         .toString();
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    HostInfo hostInfo = (HostInfo) o;
+
+    if (cpus != hostInfo.cpus) {
+      return false;
+    }
+    if (Double.compare(hostInfo.loadAvg, loadAvg) != 0) {
+      return false;
+    }
+    if (memoryTotalBytes != hostInfo.memoryTotalBytes) {
+      return false;
+    }
+    if (memoryFreeBytes != hostInfo.memoryFreeBytes) {
+      return false;
+    }
+    if (swapTotalBytes != hostInfo.swapTotalBytes) {
+      return false;
+    }
+    if (swapFreeBytes != hostInfo.swapFreeBytes) {
+      return false;
+    }
+    if (hostname != null ? !hostname.equals(hostInfo.hostname) : hostInfo.hostname != null) {
+      return false;
+    }
+    if (uname != null ? !uname.equals(hostInfo.uname) : hostInfo.uname != null) {
+      return false;
+    }
+    if (architecture != null ? !architecture.equals(hostInfo.architecture)
+                             : hostInfo.architecture != null) {
+      return false;
+    }
+    if (osName != null ? !osName.equals(hostInfo.osName) : hostInfo.osName != null) {
+      return false;
+    }
+    if (osVersion != null ? !osVersion.equals(hostInfo.osVersion) : hostInfo.osVersion != null) {
+      return false;
+    }
+    if (dockerVersion != null ? !dockerVersion.equals(hostInfo.dockerVersion)
+                              : hostInfo.dockerVersion != null) {
+      return false;
+    }
+    if (dockerHost != null ? !dockerHost.equals(hostInfo.dockerHost)
+                           : hostInfo.dockerHost != null) {
+      return false;
+    }
+    return !(dockerCertPath != null ? !dockerCertPath.equals(hostInfo.dockerCertPath)
+                                    : hostInfo.dockerCertPath != null);
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result;
+    long temp;
+    result = hostname != null ? hostname.hashCode() : 0;
+    result = 31 * result + (uname != null ? uname.hashCode() : 0);
+    result = 31 * result + (architecture != null ? architecture.hashCode() : 0);
+    result = 31 * result + (osName != null ? osName.hashCode() : 0);
+    result = 31 * result + (osVersion != null ? osVersion.hashCode() : 0);
+    result = 31 * result + cpus;
+    temp = Double.doubleToLongBits(loadAvg);
+    result = 31 * result + (int) (temp ^ (temp >>> 32));
+    result = 31 * result + (int) (memoryTotalBytes ^ (memoryTotalBytes >>> 32));
+    result = 31 * result + (int) (memoryFreeBytes ^ (memoryFreeBytes >>> 32));
+    result = 31 * result + (int) (swapTotalBytes ^ (swapTotalBytes >>> 32));
+    result = 31 * result + (int) (swapFreeBytes ^ (swapFreeBytes >>> 32));
+    result = 31 * result + (dockerVersion != null ? dockerVersion.hashCode() : 0);
+    result = 31 * result + (dockerHost != null ? dockerHost.hashCode() : 0);
+    result = 31 * result + (dockerCertPath != null ? dockerCertPath.hashCode() : 0);
+    return result;
   }
 }

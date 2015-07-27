@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 
+import com.spotify.helios.cli.TestUtils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
@@ -42,7 +43,6 @@ import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -97,7 +97,7 @@ public class JobListCommandTest {
 
     assertEquals(0, ret);
 
-    assertEquals(expectedOrder, readJobIdsFromOutput(false));
+    assertEquals(expectedOrder, TestUtils.readFirstColumnFromOutput(baos.toString(), false));
   }
 
   @Test
@@ -108,25 +108,6 @@ public class JobListCommandTest {
 
     assertEquals(0, ret);
 
-    assertEquals(expectedOrder, readJobIdsFromOutput(true));
+    assertEquals(expectedOrder, TestUtils.readFirstColumnFromOutput(baos.toString(), true));
   }
-
-  /**
-   * Parse the output from the command to determine the jobIds that were output, in order. This is
-   * a little dicey since it needs to know the format of what the command is outputting to the
-   * PrintStream.
-   */
-  private List<String> readJobIdsFromOutput(final boolean skipFirstRow) {
-    final String output = baos.toString();
-    final List<String> jobIds = new ArrayList<>();
-    for (final String line : output.split("\n")) {
-      String jobId = line.split(" ")[0];
-      jobIds.add(jobId);
-    }
-    if (skipFirstRow) {
-      return jobIds.subList(1, jobIds.size());
-    }
-    return jobIds;
-  }
-
 }

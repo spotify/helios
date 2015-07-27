@@ -21,8 +21,10 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
+import com.google.common.collect.Collections2;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -45,6 +47,8 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -70,10 +74,23 @@ public class HostListCommand extends ControlCommand {
   private final Argument quietArg;
   private final Argument patternArg;
   private final Argument fullArg;
+  private final Argument statusArg;
   private final Argument labelsArg;
+
+  private final String statusChoicesString;
 
   public HostListCommand(final Subparser parser) {
     super(parser);
+
+    Collection<String> statusChoices = Collections2.transform(
+        Arrays.asList(HostStatus.Status.values()), new Function<HostStatus.Status, String>() {
+          @Override
+          public String apply(final HostStatus.Status input) {
+            return input.toString();
+          }
+        });
+
+    statusChoicesString = Joiner.on(", ").join(statusChoices);
 
     parser.help("list hosts");
 
@@ -89,6 +106,11 @@ public class HostListCommand extends ControlCommand {
     fullArg = parser.addArgument("-f")
         .action(storeTrue())
         .help("Print full host names.");
+
+    statusArg = parser.addArgument("--status")
+        .nargs("?")
+        .choices(statusChoices.toArray(new String[statusChoices.size()]))
+        .help("Filter hosts by its status. Valid statuses are: " + statusChoicesString);
 
     labelsArg = parser.addArgument("-l", "--labels")
         .action(append())
@@ -107,6 +129,19 @@ public class HostListCommand extends ControlCommand {
         .from(client.listHosts().get())
         .filter(containsPattern(pattern))
         .toList();
+
+    final Map<String, String> queryParams = Maps.newHashMap();
+    final String statusFilter = options.getString(statusArg.getDest());
+    if (!isNullOrEmpty(statusFilter)) {
+      try {
+        HostStatus.Status.valueOf(statusFilter);
+        queryParams.put("status", statusFilter);
+      } catch (IllegalArgumentException ignored) {
+        throw new IllegalArgumentException(
+            "Invalid status. Valid statuses are: " + statusChoicesString);
+      }
+    }
+
     final boolean full = options.getBoolean(fullArg.getDest());
     final boolean quiet = options.getBoolean(quietArg.getDest());
 
@@ -131,7 +166,7 @@ public class HostListCommand extends ControlCommand {
 
     if (selectedLabels != null && !selectedLabels.isEmpty() && json) {
       System.err.println("Warning: filtering by label is not supported for JSON output. Not doing"
-          + " any filtering by label.");
+                         + " any filtering by label.");
     }
 
     if (quiet) {
@@ -145,15 +180,15 @@ public class HostListCommand extends ControlCommand {
     } else {
       final Map<String, ListenableFuture<HostStatus>> statuses = Maps.newTreeMap();
       try {
-        final Map<String, HostStatus> hostStatuses = client.hostStatuses(hosts).get();
+        final Map<String, HostStatus> hostStatuses = client.hostStatuses(hosts, queryParams).get();
         for (final Entry<String, HostStatus> entry : hostStatuses.entrySet()) {
           statuses.put(entry.getKey(), Futures.immediateFuture(entry.getValue()));
         }
       } catch (ExecutionException e) {
         System.err.println("Warning: masters failed batch status fetching.  Falling back to"
-            + " slower host status method");
+                           + " slower host status method");
         for (final String host : hosts) {
-          statuses.put(host, client.hostStatus(host));
+          statuses.put(host, client.hostStatus(host, queryParams));
         }
       }
       if (json) {
