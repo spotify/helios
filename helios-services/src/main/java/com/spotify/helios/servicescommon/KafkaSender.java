@@ -57,7 +57,7 @@ public class KafkaSender {
         final RecordMetadata metadata = future.get(KAFKA_SEND_TIMEOUT, TimeUnit.SECONDS);
         log.debug("Sent an event to Kafka, meta: {}", metadata);
       } catch (ExecutionException | InterruptedException | TimeoutException e) {
-        log.error("Unable to send an event to Kafka", e);
+        log.warn("Unable to send an event to Kafka", e);
       }
     } else {
       log.debug("KafkaProducer isn't set. Not sending anything.");
