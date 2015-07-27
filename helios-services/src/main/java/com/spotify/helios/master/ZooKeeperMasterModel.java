@@ -78,6 +78,7 @@ import java.util.UUID;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
@@ -624,9 +625,11 @@ public class ZooKeeperMasterModel implements MasterModel {
                        .setDeploymentGroup(deploymentGroup)
                        .setDeploymentGroupState(FAILED)
                        .build());
+      final String errMsg = isNullOrEmpty(result.host) ? result.error.getMessage() :
+                            result.host + ": " + result.error.getMessage();
       opsEvents.addOperation(set(statusPath, status.toBuilder()
           .setState(FAILED)
-          .setError(result.error.toString())
+          .setError(errMsg)
           .build()));
     } else {
       for (ZooKeeperOperation op : result.operations) {
@@ -698,7 +701,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private RollingUpdateTaskResult rollingUpdateAwaitRunning(final DeploymentGroup deploymentGroup,
-                                            final String host) {
+                                                            final String host) {
     final ZooKeeperClient client = provider.get("rollingUpdateAwaitRunning");
     final Map<JobId, TaskStatus> taskStatuses = getTaskStatuses(client, host);
 
@@ -710,12 +713,12 @@ public class ZooKeeperMasterModel implements MasterModel {
       final Deployment deployment = getDeployment(host, deploymentGroup.getJobId());
       if (deployment == null) {
         return RollingUpdateTaskResult.error(
-            "Job unexpectedly undeployed. Perhaps it was manually undeployed?");
+            "Job unexpectedly undeployed. Perhaps it was manually undeployed?", host);
       }
 
       // Check if we've exceeded the timeout for the rollout operation.
       if (isRolloutTimedOut(deploymentGroup, client)) {
-        return RollingUpdateTaskResult.error("timed out while retrieving job status");
+        return RollingUpdateTaskResult.error("timed out while retrieving job status", host);
       }
 
       // We haven't detected any errors, so assume the agent will write the status soon.
@@ -727,7 +730,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       if (isRolloutTimedOut(deploymentGroup, client)) {
         // time exceeding the configured deploy timeout has passed, and this job is still not
         // running
-        return RollingUpdateTaskResult.error("timed out waiting for job to reach RUNNING");
+        return RollingUpdateTaskResult.error("timed out waiting for job to reach RUNNING", host);
       }
 
       return RollingUpdateTaskResult.TASK_IN_PROGRESS;
@@ -738,10 +741,11 @@ public class ZooKeeperMasterModel implements MasterModel {
       final Deployment deployment = getDeployment(host, deploymentGroup.getJobId());
       if (deployment == null) {
         return RollingUpdateTaskResult.error(
-            "deployment for this job not found in zookeeper. Perhaps it was manually undeployed?");
+            "deployment for this job not found in zookeeper. " +
+            "Perhaps it was manually undeployed?", host);
       } else if (!Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName())) {
-        return RollingUpdateTaskResult.error("job was already deployed, either manually or by a " +
-                                             "different deployment group");
+        return RollingUpdateTaskResult.error(
+            "job was already deployed, either manually or by a different deployment group", host);
       }
 
       return RollingUpdateTaskResult.TASK_COMPLETE;
@@ -776,7 +780,7 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                             Job.EMPTY_TOKEN));
     } catch (JobDoesNotExistException | HostNotFoundException | TokenVerificationException |
         JobPortAllocationConflictException e) {
-      return RollingUpdateTaskResult.error(e);
+      return RollingUpdateTaskResult.error(e, host);
     } catch (JobAlreadyDeployedException e) {
      return RollingUpdateTaskResult.TASK_COMPLETE;
     }
@@ -803,7 +807,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           operations.addAll(getUndeployOperations(client, host, deployment.getJobId(),
                                                   Job.EMPTY_TOKEN));
         } catch (TokenVerificationException | HostNotFoundException e) {
-          return RollingUpdateTaskResult.error(e);
+          return RollingUpdateTaskResult.error(e, host);
         } catch (JobNotDeployedException e) {
           // probably somebody beat us to the punch of undeploying. that's fine.
         }
@@ -1653,6 +1657,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   private static class RollingUpdateTaskResult {
     private final List<ZooKeeperOperation> operations;
     private final Exception error;
+    private final String host;
 
     public static final RollingUpdateTaskResult TASK_IN_PROGRESS = of(null);
 
@@ -1673,7 +1678,10 @@ public class ZooKeeperMasterModel implements MasterModel {
       if (operations != null ? !operations.equals(that.operations) : that.operations != null) {
         return false;
       }
-      return !(error != null ? !error.equals(that.error) : that.error != null);
+      if (error != null ? !error.equals(that.error) : that.error != null) {
+        return false;
+      }
+      return !(host != null ? !host.equals(that.host) : that.host != null);
 
     }
 
@@ -1681,25 +1689,36 @@ public class ZooKeeperMasterModel implements MasterModel {
     public int hashCode() {
       int result = operations != null ? operations.hashCode() : 0;
       result = 31 * result + (error != null ? error.hashCode() : 0);
+      result = 31 * result + (host != null ? host.hashCode() : 0);
       return result;
     }
 
     private RollingUpdateTaskResult(final List<ZooKeeperOperation> operations,
-                                    final Exception error) {
+                                    final Exception error,
+                                    final String host) {
       this.operations = operations;
       this.error = error;
+      this.host = host;
     }
 
     public static RollingUpdateTaskResult of(final List<ZooKeeperOperation> operations) {
-      return new RollingUpdateTaskResult(operations, null);
+      return new RollingUpdateTaskResult(operations, null, null);
     }
 
     public static RollingUpdateTaskResult error(final Exception error) {
-      return new RollingUpdateTaskResult(null, error);
+      return RollingUpdateTaskResult.error(error, null);
+    }
+
+    public static RollingUpdateTaskResult error(final Exception error, final String host) {
+      return new RollingUpdateTaskResult(null, error, host);
     }
 
     public static RollingUpdateTaskResult error(final String error) {
-      return new RollingUpdateTaskResult(null, new HeliosRuntimeException(error));
+      return RollingUpdateTaskResult.error(error, null);
+    }
+
+    public static RollingUpdateTaskResult error(final String error, final String host) {
+      return new RollingUpdateTaskResult(null, new HeliosRuntimeException(error), host);
     }
   }
 
