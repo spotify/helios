@@ -124,17 +124,18 @@ public class SyslogRedirectionTest extends SystemTestBase {
 
       docker.pull(ALPINE);
 
+      final HostConfig hostConfig = HostConfig.builder()
+          .publishAllPorts(true)
+          .build();
       final ContainerConfig config = ContainerConfig.builder()
           .image(ALPINE) // includes busybox with netcat with udp support
           .cmd(asList("nc", "-p", port, "-l", "-u"))
           .exposedPorts(ImmutableSet.of(expose))
-          .build();
-      final HostConfig hostConfig = HostConfig.builder()
-          .publishAllPorts(true)
+          .hostConfig(hostConfig)
           .build();
       final ContainerCreation creation = docker.createContainer(config, testTag + "_syslog");
       final String syslogContainerId = creation.id();
-      docker.startContainer(syslogContainerId, hostConfig);
+      docker.startContainer(syslogContainerId);
 
       final ContainerInfo containerInfo = docker.inspectContainer(syslogContainerId);
       assertThat(containerInfo.state().running(), equalTo(true));

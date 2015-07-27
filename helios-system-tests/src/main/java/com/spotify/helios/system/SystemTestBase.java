@@ -277,18 +277,19 @@ public abstract class SystemTestBase {
       }
 
       // Start a container with an exposed port
-      final ContainerConfig config = ContainerConfig.builder()
-          .image(BUSYBOX)
-          .cmd("nc", "-p", "4711", "-lle", "cat")
-          .exposedPorts(ImmutableSet.of("4711/tcp"))
-          .build();
       final HostConfig hostConfig = HostConfig.builder()
           .portBindings(ImmutableMap.of("4711/tcp",
                                         asList(PortBinding.of("0.0.0.0", probePort))))
           .build();
+      final ContainerConfig config = ContainerConfig.builder()
+          .image(BUSYBOX)
+          .cmd("nc", "-p", "4711", "-lle", "cat")
+          .exposedPorts(ImmutableSet.of("4711/tcp"))
+          .hostConfig(hostConfig)
+          .build();
       final ContainerCreation creation = docker.createContainer(config, testTag + "-probe");
       final String containerId = creation.id();
-      docker.startContainer(containerId, hostConfig);
+      docker.startContainer(containerId);
 
       // Wait for container to come up
       Polling.await(5, SECONDS, new Callable<Object>() {

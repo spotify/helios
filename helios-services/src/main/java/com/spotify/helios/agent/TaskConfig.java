@@ -29,6 +29,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
+
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
@@ -43,6 +44,7 @@ import com.spotify.helios.common.descriptors.ServicePortParameters;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,7 +57,6 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.Arrays.asList;
 
 /**
  * Provides docker container configuration for running a task.
@@ -115,14 +116,6 @@ public class TaskConfig {
     builder.env(containerEnvStrings());
     builder.exposedPorts(containerExposedPorts());
     builder.volumes(volumes());
-
-    final Resources resources = job.getResources();
-    if (resources != null) {
-      builder.memory(resources.getMemory());
-      builder.memorySwap(resources.getMemorySwap());
-      builder.cpuset(resources.getCpuset());
-      builder.cpuShares(resources.getCpuShares());
-    }
 
     for (final ContainerDecorator decorator : containerDecorators) {
       decorator.decorateContainerConfig(job, imageInfo, builder);
@@ -281,7 +274,7 @@ public class TaskConfig {
         binding.hostPort(externalPort.toString());
       }
       final String entry = containerPort(mapping.getInternalPort(), mapping.getProtocol());
-      bindings.put(entry, asList(binding));
+      bindings.put(entry, Collections.singletonList(binding));
     }
     return bindings;
   }
@@ -297,6 +290,14 @@ public class TaskConfig {
         .dns(dns)
         .securityOpt(securityOpt.toArray(new String[securityOpt.size()]))
         .networkMode(networkMode);
+
+    final Resources resources = job.getResources();
+    if (resources != null) {
+      builder.memory(resources.getMemory());
+      builder.memorySwap(resources.getMemorySwap());
+      builder.cpusetCpus(resources.getCpuset());
+      builder.cpuShares(resources.getCpuShares());
+    }
 
     for (final ContainerDecorator decorator : containerDecorators) {
       decorator.decorateHostConfig(builder);
