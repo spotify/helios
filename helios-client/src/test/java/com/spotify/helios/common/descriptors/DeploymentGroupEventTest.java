@@ -27,6 +27,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 
+import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.ROLLING_OUT;
 import static org.junit.Assert.assertEquals;
 
 public class DeploymentGroupEventTest {
@@ -51,20 +52,25 @@ public class DeploymentGroupEventTest {
 
   @Test
   public void testJsonParsing() throws IOException {
-    final String json = "{\"action\":\"AWAIT_RUNNING\",\"deploymentGroup\":{\""
-                        + "hostSelectors\":[],\"name\":\"" + GROUP_NAME + "\",\"jobId\":"
-                        + "\"" + JOB_ID.toString() + "\"},\"deploymentGroupState\":\"ROLLING_OUT\","
-                        + "\"rolloutTaskStatus\":\"OK\",\"target\":\"" + TARGET + "\","
-                        + "\"timestamp\":" + TIMESTAMP + "}";
+    final String json = "{\"action\":\"AWAIT_RUNNING\",\"deploymentGroupStatus\":"
+                                + "{\"deploymentGroup\":{\"hostSelectors\":[],\"name\":\""
+                                + GROUP_NAME + "\",\"jobId\":\"" + JOB_ID + "\"},"
+                                + "\"error\":null,\"rolloutTasks\":[],\"state\":\"ROLLING_OUT\","
+                                + "\"successfulIterations\":0,\"taskIndex\":0},"
+                                + "\"rolloutTaskStatus\":\"OK\",\"target\":\"" + TARGET + "\","
+                                + "\"timestamp\":" + TIMESTAMP + "}";
     final DeploymentGroupEvent event = Json.read(json, DeploymentGroupEvent.class);
 
+    final DeploymentGroupStatus status = DeploymentGroupStatus.newBuilder()
+        .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .setState(ROLLING_OUT)
+        .build();
 
     final DeploymentGroupEvent expectedEvent = DeploymentGroupEvent.newBuilder()
         .setAction(RolloutTask.Action.AWAIT_RUNNING)
         .setTarget(TARGET)
         .setRolloutTaskStatus(RolloutTask.Status.OK)
-        .setDeploymentGroup(DEPLOYMENT_GROUP)
-        .setDeploymentGroupState(DeploymentGroupStatus.State.ROLLING_OUT)
+        .setDeploymentGroupStatus(status)
         .setTimestamp(TIMESTAMP)
         .build();
 
@@ -73,19 +79,24 @@ public class DeploymentGroupEventTest {
 
   @Test
   public void testJsonSerialization() throws IOException {
-    final String expectedJson = "{\"action\":\"AWAIT_RUNNING\",\"deploymentGroup\":{\""
-                                + "hostSelectors\":[],\"name\":\"foo-group\",\"jobId\":"
-                                + "\"" + JOB_ID.toString() + "\"},\"deploymentGroupState\":"
-                                + "\"ROLLING_OUT\","
+    final String expectedJson = "{\"action\":\"AWAIT_RUNNING\",\"deploymentGroupStatus\":"
+                                + "{\"deploymentGroup\":{\"hostSelectors\":[],\"name\":\""
+                                + GROUP_NAME + "\",\"jobId\":\"" + JOB_ID + "\"},"
+                                + "\"error\":null,\"rolloutTasks\":[],\"state\":\"ROLLING_OUT\","
+                                + "\"successfulIterations\":0,\"taskIndex\":0},"
                                 + "\"rolloutTaskStatus\":\"OK\",\"target\":\"" + TARGET + "\","
                                 + "\"timestamp\":" + TIMESTAMP + "}";
+
+    final DeploymentGroupStatus status = DeploymentGroupStatus.newBuilder()
+        .setState(ROLLING_OUT)
+        .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .build();
 
     final DeploymentGroupEvent event = DeploymentGroupEvent.newBuilder()
         .setAction(RolloutTask.Action.AWAIT_RUNNING)
         .setTarget(TARGET)
         .setRolloutTaskStatus(RolloutTask.Status.OK)
-        .setDeploymentGroup(DEPLOYMENT_GROUP)
-        .setDeploymentGroupState(DeploymentGroupStatus.State.ROLLING_OUT)
+        .setDeploymentGroupStatus(status)
         .setTimestamp(TIMESTAMP)
         .build();
 
