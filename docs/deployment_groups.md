@@ -86,4 +86,4 @@ Check on the status:
 
 See more deployment group commands with `helios -h`.
 
-  [1]: https://github.com/spotify/helios/blob/master/docs/user_manual#label-agents.md
+  [1]: https://github.com/spotify/helios/blob/master/docs/user_manual.md#label-agents
