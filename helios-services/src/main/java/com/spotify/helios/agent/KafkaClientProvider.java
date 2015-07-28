@@ -28,6 +28,8 @@ import com.google.common.collect.ImmutableMap;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.common.serialization.Serializer;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nullable;
 import javax.validation.constraints.NotNull;
@@ -35,6 +37,9 @@ import javax.validation.constraints.NotNull;
 import java.util.List;
 
 public class KafkaClientProvider {
+
+  private static final Logger log = LoggerFactory.getLogger(KafkaClientProvider.class);
+
   private static final String KAFKA_HELIOS_CLIENT_ID = "Helios";
   private static final String KAFKA_QUORUM_PARAMETER = "1";
 
@@ -60,13 +65,18 @@ public class KafkaClientProvider {
 
   public <K, V> Optional<KafkaProducer<K, V>> getProducer(@NotNull final Serializer<K> ks,
                                                           @NotNull final Serializer<V> vs) {
-    return partialConfigs.transform(
-        new Function<ImmutableMap<String, Object>, KafkaProducer<K, V>>() {
-      @Nullable
-      @Override
-      public KafkaProducer<K, V> apply(ImmutableMap<String, Object> input) {
-        return new KafkaProducer<>(input, ks, vs);
-      }
-    });
+    try {
+      return partialConfigs.transform(
+          new Function<ImmutableMap<String, Object>, KafkaProducer<K, V>>() {
+            @Nullable
+            @Override
+            public KafkaProducer<K, V> apply(ImmutableMap<String, Object> input) {
+              return new KafkaProducer<>(input, ks, vs);
+            }
+          });
+    } catch (final Exception e) {
+      log.warn("error while generating KafkaProducer - {}", e);
+      return Optional.absent();
+    }
   }
 }
