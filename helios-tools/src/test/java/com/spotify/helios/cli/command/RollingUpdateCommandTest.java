@@ -90,11 +90,6 @@ public class RollingUpdateCommandTest {
   }
 
   private static DeploymentGroupStatusResponse.HostStatus makeHostStatus(
-      final String host, final TaskStatus.State state) {
-    return makeHostStatus(host, null, state);
-  }
-
-  private static DeploymentGroupStatusResponse.HostStatus makeHostStatus(
       final String host, final JobId jobId, final TaskStatus.State state) {
     return new DeploymentGroupStatusResponse.HostStatus(host, jobId, state);
   }
@@ -141,7 +136,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
@@ -169,7 +163,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
@@ -203,7 +196,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
@@ -236,7 +228,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
@@ -268,7 +259,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
@@ -301,7 +291,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
@@ -323,7 +312,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
@@ -353,7 +341,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
@@ -383,7 +370,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
@@ -412,7 +398,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID, new RolloutOptions(TIMEOUT, PARALLELISM, false));
@@ -439,7 +424,6 @@ public class RollingUpdateCommandTest {
 
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
     final String output = baos.toString();
-    System.out.println(output);
 
     // Verify that rollingUpdate() was called with migrate=true
     verify(client).rollingUpdate(
