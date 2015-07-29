@@ -37,8 +37,8 @@ import static com.google.common.base.Preconditions.checkNotNull;
  *   "action" : DEPLOY_NEW_JOB,
  *   "target": "myhost"
  *   "rolloutTaskStatus" : OK,
- *   "deploymentGroup" : { #... see definition of DeploymentGroup },
- *   "deploymentGroupState" : ROLLING_OUT,
+ *   "deploymentGroup" :
+ *   "deploymentGroupStatus" : { #... see definition of DeploymentGroupStatus },
  *   "timestamp" : 1410308461448
  * }
  * </pre>
@@ -51,8 +51,7 @@ public class DeploymentGroupEvent extends Descriptor {
   private final RolloutTask.Action action;
   private final String target;
   private final RolloutTask.Status rolloutTaskStatus;
-  private final DeploymentGroup deploymentGroup;
-  private final DeploymentGroupStatus.State deploymentGroupState;
+  private final DeploymentGroupStatus deploymentGroupStatus;
   private final long timestamp;
 
   /**
@@ -62,28 +61,24 @@ public class DeploymentGroupEvent extends Descriptor {
    * @param target The target of the action.
    * @param rolloutTaskStatus  The status of the task at the point of the event.
    *                           See {@link RolloutTask.Status}
-   * @param deploymentGroup {@link DeploymentGroup}
-   * @param deploymentGroupState {@link DeploymentGroupStatus.State}
+   * @param deploymentGroupStatus {@link DeploymentGroupStatus}
    * @param timestamp The timestamp of the event.
    */
   public DeploymentGroupEvent(
       @JsonProperty("action") final RolloutTask.Action action,
       @JsonProperty("target") final String target,
       @JsonProperty("rolloutTaskStatus") final RolloutTask.Status rolloutTaskStatus,
-      @JsonProperty("deploymentGroup") final DeploymentGroup deploymentGroup,
-      @JsonProperty("deploymentGroupState") final DeploymentGroupStatus.State deploymentGroupState,
+      @JsonProperty("deploymentGroupStatus") final DeploymentGroupStatus deploymentGroupStatus,
       @JsonProperty("timestamp") final long timestamp) {
     this.action = action;
     this.target = target;
     this.rolloutTaskStatus = rolloutTaskStatus;
-    this.deploymentGroup = deploymentGroup;
-    this.deploymentGroupState = deploymentGroupState;
+    this.deploymentGroupStatus = deploymentGroupStatus;
     this.timestamp = timestamp;
   }
 
   private DeploymentGroupEvent(final Builder builder) {
-    this.deploymentGroup = checkNotNull(builder.deploymentGroup);
-    this.deploymentGroupState = checkNotNull(builder.deploymentGroupState);
+    this.deploymentGroupStatus = checkNotNull(builder.deploymentGroupStatus);
 
     // Optional
     this.action = builder.action;
@@ -104,12 +99,8 @@ public class DeploymentGroupEvent extends Descriptor {
     return rolloutTaskStatus;
   }
 
-  public DeploymentGroup getDeploymentGroup() {
-    return deploymentGroup;
-  }
-
-  public DeploymentGroupStatus.State getDeploymentGroupState() {
-    return deploymentGroupState;
+  public DeploymentGroupStatus getDeploymentGroupStatus() {
+    return deploymentGroupStatus;
   }
 
   public long getTimestamp() {
@@ -125,8 +116,7 @@ public class DeploymentGroupEvent extends Descriptor {
     private RolloutTask.Action action;
     private String target;
     private RolloutTask.Status rolloutTaskStatus;
-    private DeploymentGroup deploymentGroup;
-    private DeploymentGroupStatus.State deploymentGroupState;
+    private DeploymentGroupStatus deploymentGroupStatus;
     private Long timestamp;
 
     public Builder setAction(final RolloutTask.Action action) {
@@ -144,13 +134,8 @@ public class DeploymentGroupEvent extends Descriptor {
       return this;
     }
 
-    public Builder setDeploymentGroup(final DeploymentGroup deploymentGroup) {
-      this.deploymentGroup = deploymentGroup;
-      return this;
-    }
-
-    public Builder setDeploymentGroupState(final DeploymentGroupStatus.State deploymentGroupState) {
-      this.deploymentGroupState = deploymentGroupState;
+    public Builder setDeploymentGroupStatus(final DeploymentGroupStatus deploymentGroupStatus) {
+      this.deploymentGroupStatus = deploymentGroupStatus;
       return this;
     }
 
@@ -170,8 +155,7 @@ public class DeploymentGroupEvent extends Descriptor {
         .add("action", action)
         .add("target", target)
         .add("rolloutTaskStatus", rolloutTaskStatus)
-        .add("deploymentGroup", deploymentGroup)
-        .add("deploymentGroupState", deploymentGroupState)
+        .add("deploymentGroupStatus", deploymentGroupStatus)
         .add("timestamp", timestamp)
         .toString();
   }
@@ -199,12 +183,12 @@ public class DeploymentGroupEvent extends Descriptor {
     if (rolloutTaskStatus != that.rolloutTaskStatus) {
       return false;
     }
-    if (deploymentGroup != null ? !deploymentGroup.equals(that.deploymentGroup)
-                                : that.deploymentGroup != null) {
+    if (deploymentGroupStatus != null ? !deploymentGroupStatus.equals(that.deploymentGroupStatus)
+                                      : that.deploymentGroupStatus != null) {
       return false;
     }
-    return deploymentGroupState == that.deploymentGroupState;
 
+    return true;
   }
 
   @Override
@@ -212,8 +196,7 @@ public class DeploymentGroupEvent extends Descriptor {
     int result = action != null ? action.hashCode() : 0;
     result = 31 * result + (target != null ? target.hashCode() : 0);
     result = 31 * result + (rolloutTaskStatus != null ? rolloutTaskStatus.hashCode() : 0);
-    result = 31 * result + (deploymentGroup != null ? deploymentGroup.hashCode() : 0);
-    result = 31 * result + (deploymentGroupState != null ? deploymentGroupState.hashCode() : 0);
+    result = 31 * result + (deploymentGroupStatus != null ? deploymentGroupStatus.hashCode() : 0);
     result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
     return result;
   }

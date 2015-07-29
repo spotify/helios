@@ -565,8 +565,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       if (status.getSuccessfulIterations() == 1) {
         // this is the first successful iteration
         opsEvents.addEvent(DeploymentGroupEvent.newBuilder()
-                               .setDeploymentGroup(deploymentGroup)
-                               .setDeploymentGroupState(DONE)
+                               .setDeploymentGroupStatus(status)
                                .build());
       }
 
@@ -622,8 +621,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     if (result.error != null) {
       // if an error occurred, record it in the status and fail
       opsEvents.addEvent(DeploymentGroupEvent.newBuilder()
-                       .setDeploymentGroup(deploymentGroup)
-                       .setDeploymentGroupState(FAILED)
+                       .setDeploymentGroupStatus(status.toBuilder().setState(FAILED).build())
                        .build());
       final String errMsg = isNullOrEmpty(result.host) ? result.error.getMessage() :
                             result.host + ": " + result.error.getMessage();
@@ -640,9 +638,8 @@ public class ZooKeeperMasterModel implements MasterModel {
         // if we're actually doing any operations, then record an event
 
         final DeploymentGroupEvent.Builder eventBuilder = DeploymentGroupEvent.newBuilder()
-            .setDeploymentGroup(deploymentGroup)
             .setRolloutTaskStatus(RolloutTask.Status.OK)
-            .setDeploymentGroupState(ROLLING_OUT);
+            .setDeploymentGroupStatus(status.toBuilder().setState(ROLLING_OUT).build());
 
         if (currentTask != null) {
           eventBuilder
