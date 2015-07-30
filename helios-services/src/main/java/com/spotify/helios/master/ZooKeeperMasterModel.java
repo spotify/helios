@@ -85,6 +85,7 @@ import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.PLANNING_ROLLOUT;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.ROLLING_OUT;
+import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.START_ROLLING_UPDATE;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
@@ -501,13 +502,20 @@ public class ZooKeeperMasterModel implements MasterModel {
     final String statusPath = Paths.statusDeploymentGroup(deploymentGroup.getName());
     final DeploymentGroupStatus initialStatus = DeploymentGroupStatus.newBuilder()
         .setDeploymentGroup(deploymentGroup)
-        .setState(PLANNING_ROLLOUT)
+        .setState(START_ROLLING_UPDATE)
         .build();
     operations.add(set(statusPath, initialStatus));
 
     try {
       client.ensurePath(statusPath);
       client.transaction(operations);
+
+      if (kafkaSender != null) {
+        final DeploymentGroupEvent event = DeploymentGroupEvent.newBuilder()
+            .setDeploymentGroupStatus(initialStatus)
+            .build();
+        kafkaSender.send(KafkaRecord.of(DeploymentGroupEvent.KAFKA_TOPIC, event.toJsonBytes()));
+      }
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(deploymentGroup.getName());
     } catch (final KeeperException e) {
@@ -536,7 +544,8 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final RolloutOpsEvents opsEvents = new RolloutOpsEvents();
 
-    if (status.getState().equals(PLANNING_ROLLOUT)) {
+    final DeploymentGroupStatus.State state = status.getState();
+    if (state.equals(START_ROLLING_UPDATE) || state.equals(PLANNING_ROLLOUT)) {
       // generate the rollout plan and proceed to ROLLING_OUT
       final Map<String, HostStatus> hostsAndStatuses = Maps.newLinkedHashMap();
       for (final String host: getDeploymentGroupHosts(deploymentGroup.getName())) {
@@ -569,7 +578,7 @@ public class ZooKeeperMasterModel implements MasterModel {
                                .build());
       }
 
-      // after DONE, go back to PLANNING_ROLLOUT
+      // after DONE, go to PLANNING_ROLLOUT
       opsEvents.addOperation(set(statusPath, status.toBuilder()
           .setState(PLANNING_ROLLOUT)
           .build()));
