@@ -775,7 +775,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       return RollingUpdateTaskResult.of(getDeployOperations(client, host, deployment,
                                                             Job.EMPTY_TOKEN));
-    } catch (JobDoesNotExistException | TokenVerificationException e) {
+    } catch (JobDoesNotExistException | TokenVerificationException | HostNotFoundException e) {
       return RollingUpdateTaskResult.error(e);
     } catch (JobAlreadyDeployedException e) {
      return RollingUpdateTaskResult.TASK_COMPLETE;
@@ -1597,7 +1597,9 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                        final String host,
                                                        final Deployment deployment,
                                                        final String token)
-      throws JobDoesNotExistException, JobAlreadyDeployedException, TokenVerificationException {
+      throws JobDoesNotExistException, JobAlreadyDeployedException, TokenVerificationException,
+             HostNotFoundException {
+    assertHostExists(client, host);
     final JobId id = deployment.getJobId();
     final Job job = getJob(id);
 
