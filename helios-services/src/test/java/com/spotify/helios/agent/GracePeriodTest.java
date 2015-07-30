@@ -32,7 +32,6 @@ import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
 import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.ContainerState;
-import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
@@ -242,7 +241,7 @@ public class GracePeriodTest {
 
     final SettableFuture<Void> startFuture = SettableFuture.create();
     doAnswer(futureAnswer(startFuture))
-        .when(docker).startContainer(eq(containerId), any(HostConfig.class));
+        .when(docker).startContainer(eq(containerId));
 
     final ImageInfo imageInfo = new ImageInfo();
     when(docker.inspectImage(IMAGE)).thenReturn(imageInfo);
@@ -287,7 +286,7 @@ public class GracePeriodTest {
     assertEquals(JOB.getId().toShortString(), shortJobIdFromContainerName(containerName));
 
     // Verify that the container is started
-    verify(docker, timeout(30000)).startContainer(eq(containerId), any(HostConfig.class));
+    verify(docker, timeout(30000)).startContainer(eq(containerId));
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
                                                        .setJob(JOB)

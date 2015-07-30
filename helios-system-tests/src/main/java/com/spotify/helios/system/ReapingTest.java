@@ -32,6 +32,7 @@ import com.spotify.helios.client.HeliosClient;
 import org.junit.Test;
 
 import java.security.SecureRandom;
+import java.util.Collections;
 import java.util.List;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
@@ -70,7 +71,7 @@ public class ReapingTest extends SystemTestBase {
     // With LXC, killing a container results in exit code 0.
     // In docker 1.5 killing a container results in exit code 137, in previous versions it's -1.
     final List<Integer> expectedExitCodes = docker.info().executionDriver().startsWith("lxc-") ?
-                                            asList(0) : asList(-1, 137);
+                                            Collections.singletonList(0) : asList(-1, 137);
 
     // Wait for the agent to kill the container
     final ContainerExit exit1 = docker.waitContainer(intruder1);
@@ -91,13 +92,14 @@ public class ReapingTest extends SystemTestBase {
   private void startContainer(final String name)
       throws DockerException, InterruptedException {
     docker.pull(BUSYBOX);
+    final HostConfig hostConfig = HostConfig.builder().build();
     final ContainerConfig config = ContainerConfig.builder()
         .image(BUSYBOX)
         .cmd(IDLE_COMMAND)
+        .hostConfig(hostConfig)
         .build();
-    final HostConfig hostConfig = HostConfig.builder().build();
     final ContainerCreation creation = docker.createContainer(config, name);
     final String containerId = creation.id();
-    docker.startContainer(containerId, hostConfig);
+    docker.startContainer(containerId);
   }
 }
