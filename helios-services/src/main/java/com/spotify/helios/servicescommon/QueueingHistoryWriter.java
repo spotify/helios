@@ -46,6 +46,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Deque;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executors;
@@ -94,14 +95,14 @@ public abstract class QueueingHistoryWriter<TEvent>
 
   /**
    * Get the key associated with an event.
-   * @param event
+   * @param event Event to save to ZooKeeper.
    * @return Key for the event.
    */
   protected abstract String getKey(TEvent event);
 
   /**
    * Get the Unix timestamp for an event.
-   * @param event
+   * @param event Event to save to ZooKeeper.
    * @return Timestamp for the event.
    */
   protected abstract long getTimestamp(TEvent event);
@@ -113,7 +114,7 @@ public abstract class QueueingHistoryWriter<TEvent>
    *
    * All events will be stored as children of the returned path.
    *
-   * @param event
+   * @param event Event to save to ZooKeeper.
    * @return A ZooKeeper path.
    */
   protected abstract String getZkEventsPath(TEvent event);
@@ -148,7 +149,7 @@ public abstract class QueueingHistoryWriter<TEvent>
     // Clean out any errant null values.  Normally shouldn't have any, but we did have a few
     // where it happened, and this will make sure we can get out of a bad state if we get into it.
     final ImmutableSet<String> curKeys = ImmutableSet.copyOf(this.events.keySet());
-    for (Object key : curKeys) {
+    for (final String key : curKeys) {
       if (this.events.get(key) == null) {
         this.events.remove(key);
       }
@@ -174,7 +175,7 @@ public abstract class QueueingHistoryWriter<TEvent>
 
   /**
    * Add an event to the queue to be written to ZooKeeper.
-   * @param event
+   * @param event Event to save to ZooKeeper.
    * @throws InterruptedException
    */
   protected void add(TEvent event) throws InterruptedException {
@@ -210,7 +211,7 @@ public abstract class QueueingHistoryWriter<TEvent>
       final Deque<TEvent> deque = events.get(key);
       if (deque == null) {  // try more assertively to get a deque
         final ConcurrentLinkedDeque<TEvent> newDeque =
-            new ConcurrentLinkedDeque<TEvent>();
+            new ConcurrentLinkedDeque<>();
         events.put(key, newDeque);
         return newDeque;
       }
@@ -287,13 +288,19 @@ public abstract class QueueingHistoryWriter<TEvent>
     // within the same job id.  Whether this is the best strategy (as opposed to fullest deque)
     // is arguable.
     TEvent current = null;
-    for (Deque<TEvent> queue : events.values()) {
+    for (final Map.Entry<String, Deque<TEvent>> entry : events.entrySet()) {
+      final Deque<TEvent> queue = entry.getValue();
       if (queue == null) {
         continue;
       }
       final TEvent event = queue.peek();
-      if (current == null || (getTimestamp(event) < getTimestamp(current))) {
-        current = event;
+      try {
+        if (current == null || (getTimestamp(event) < getTimestamp(current))) {
+          current = event;
+        }
+      } catch (ClassCastException e) {
+        // There was bad data. Remove it from the events Map.
+        events.remove(entry.getKey());
       }
     }
     return current;

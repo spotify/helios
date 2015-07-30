@@ -157,7 +157,14 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
       throws InterruptedException {
     log.debug("setting task status: {}", status);
     taskStatuses.put(jobId.toString(), status.toJsonBytes());
-    historyWriter.saveHistoryItem(status);
+    try {
+      historyWriter.saveHistoryItem(status);
+    } catch (Exception e) {
+      // Log error here and keep going as saving task history is not critical.
+      // This is to prevent bad data in the queue from screwing up the actually important Helios
+      // agent operations.
+      log.error("Error saving task status {} to ZooKeeper: {}", status, e);
+    }
     final TaskStatusEvent event = new TaskStatusEvent(status, System.currentTimeMillis(), agent);
     kafkaSender.send(KafkaRecord.of(TaskStatusEvent.KAFKA_TOPIC, event.toJsonBytes()));
   }
