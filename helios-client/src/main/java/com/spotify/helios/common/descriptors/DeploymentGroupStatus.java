@@ -38,6 +38,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class DeploymentGroupStatus extends Descriptor {
 
   public enum State {
+    START_ROLLING_UPDATE,
     PLANNING_ROLLOUT,
     ROLLING_OUT,
     FAILED,
