@@ -21,10 +21,7 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.Sets;
-
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.Json;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -32,11 +29,8 @@ import net.sourceforge.argparse4j.inf.Subparser;
 
 import java.io.BufferedReader;
 import java.io.PrintStream;
-import java.util.List;
-import java.util.SortedSet;
 import java.util.concurrent.ExecutionException;
 
-import static com.spotify.helios.cli.Output.formatHostname;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class MasterListCommand extends ControlCommand {
@@ -57,20 +51,12 @@ public class MasterListCommand extends ControlCommand {
           final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException {
 
-    final List<String> masters = client.listMasters().get();
     final boolean full = options.getBoolean(fullArg.getDest());
 
-    final SortedSet<String> sortedMasters = Sets.newTreeSet();
-
     if (json) {
-      for (final String host : masters) {
-        sortedMasters.add(formatHostname(full, host));
-      }
-      out.println(Json.asPrettyStringUnchecked(sortedMasters));
+      out.println(client.listMastersJson(full).get());
     } else {
-      for (final String host : masters) {
-        out.println(formatHostname(full, host));
-      }
+      out.println(client.listMasters(full).get());
     }
 
     return 0;
