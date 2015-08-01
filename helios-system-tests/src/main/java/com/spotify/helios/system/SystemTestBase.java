@@ -81,6 +81,7 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -127,6 +128,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static java.lang.Integer.toHexString;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -279,7 +281,7 @@ public abstract class SystemTestBase {
       // Start a container with an exposed port
       final HostConfig hostConfig = HostConfig.builder()
           .portBindings(ImmutableMap.of("4711/tcp",
-                                        asList(PortBinding.of("0.0.0.0", probePort))))
+                                        singletonList(PortBinding.of("0.0.0.0", probePort))))
           .build();
       final ContainerConfig config = ContainerConfig.builder()
           .image(BUSYBOX)
@@ -467,7 +469,7 @@ public abstract class SystemTestBase {
   protected HeliosClient client(final String user, final String endpoint) {
     final HeliosClient client = HeliosClient.newBuilder()
         .setUser(user)
-        .setEndpoints(asList(URI.create(endpoint)))
+        .setEndpoints(singletonList(URI.create(endpoint)))
         .build();
     clients.add(client);
     return client;
@@ -498,6 +500,10 @@ public abstract class SystemTestBase {
   }
 
   protected List<String> setupDefaultMaster(String... args) throws Exception {
+    return setupDefaultMaster(0, args);
+  }
+
+  protected List<String> setupDefaultMaster(final int offset, String... args) throws Exception {
     if (isIntegration()) {
       checkArgument(args.length == 0,
                     "cannot start default master in integration test with arguments passed");
@@ -515,18 +521,20 @@ public abstract class SystemTestBase {
     curator.newNamespaceAwareEnsurePath(Paths.configId(zkClusterId))
         .ensure(curator.getZookeeperClient());
 
-    final List<String> argsList = Lists.newArrayList("-vvvv",
-                                                     "--no-log-setup",
-                                                     "--http", masterEndpoint(),
-                                                     "--admin=" + masterAdminPort(),
-                                                     "--domain", "",
-                                                     "--zk", zk.connectString());
+    final List<String> argsList = Lists.newArrayList(
+        "-vvvv",
+        "--no-log-setup",
+        "--http", "http://localhost:" + (masterPort() + offset),
+        "--admin=" + (masterAdminPort() + offset),
+        "--domain", "",
+        "--zk", zk.connectString()
+    );
 
     final String name;
     if (asList(args).contains("--name")) {
       name = args[asList(args).indexOf("--name") + 1];
     } else {
-      name = TEST_MASTER;
+      name = TEST_MASTER + offset;
       argsList.addAll(asList("--name", TEST_MASTER));
     }
 
@@ -539,7 +547,11 @@ public abstract class SystemTestBase {
   }
 
   protected MasterMain startDefaultMaster(String... args) throws Exception {
-    final List<String> argsList = setupDefaultMaster(args);
+    return startDefaultMaster(0, args);
+  }
+
+  protected MasterMain startDefaultMaster(final int offset, String... args) throws Exception {
+    final List<String> argsList = setupDefaultMaster(offset, args);
 
     if (argsList == null) {
       return null;
@@ -549,6 +561,20 @@ public abstract class SystemTestBase {
     waitForMasterToConnectToZK();
 
     return master;
+  }
+
+  protected Map<String, MasterMain> startDefaultMasters(final int numMasters, String... args)
+      throws Exception {
+    final Map<String, MasterMain> masters = Maps.newHashMap();
+
+    for (int i = 0; i < numMasters; i++) {
+      final String name = TEST_MASTER + i;
+      final List<String> argsList = Lists.newArrayList(args);
+      argsList.addAll(asList("--name", name));
+      masters.put(name, startDefaultMaster(i, argsList.toArray(new String[argsList.size()])));
+    }
+
+    return masters;
   }
 
   protected void waitForMasterToConnectToZK() throws Exception {
@@ -966,7 +992,7 @@ public abstract class SystemTestBase {
       throws ExecutionException, InterruptedException {
     return Futures.withFallback(future, new FutureFallback<T>() {
       @Override
-      public ListenableFuture<T> create(final Throwable t) throws Exception {
+      public ListenableFuture<T> create(@NotNull final Throwable t) throws Exception {
         return Futures.immediateFuture(null);
       }
     }).get();
