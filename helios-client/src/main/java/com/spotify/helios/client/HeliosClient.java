@@ -72,7 +72,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
@@ -359,25 +358,13 @@ public class HeliosClient implements AutoCloseable {
       connection.setDoOutput(true);
       connection.getOutputStream().write(entity);
     }
-    setRequestMethod(connection, method);
+    connection.setRequestMethod(method);
     connection.getResponseCode();
     return connection;
   }
 
   private int positive(final int value) {
     return value < 0 ? value + Integer.MAX_VALUE : value;
-  }
-
-  private void setRequestMethod(final HttpURLConnection connection, final String method) {
-    // Nasty workaround for ancient HttpURLConnection only supporting few methods
-    final Class<?> httpURLConnectionClass = connection.getClass();
-    try {
-      final Field methodField = httpURLConnectionClass.getSuperclass().getDeclaredField("method");
-      methodField.setAccessible(true);
-      methodField.set(connection, method);
-    } catch (NoSuchFieldException | IllegalAccessException e) {
-      throw Throwables.propagate(e);
-    }
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final TypeReference<T> typeReference) {
