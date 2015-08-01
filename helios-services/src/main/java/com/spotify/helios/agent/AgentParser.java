@@ -31,7 +31,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,7 +81,8 @@ public class AgentParser extends ServiceParser {
                                          "\nLabels need to be in the format key=value.");
     }
 
-    final InetSocketAddress httpAddress = parseSocketAddress(options.getString(httpArg.getDest()));
+    final URI httpAddress = parseUriAddress(options.getString(httpArg.getDest()));
+    final URI adminAddress = parseUriAddress(options.getString(adminArg.getDest()));
 
     final String portRangeString = options.getString(portRangeArg.getDest());
     final List<String> parts = Splitter.on(':').splitToList(portRangeString);
@@ -119,8 +120,8 @@ public class AgentParser extends ServiceParser {
         .setSentryDsn(getSentryDsn())
         .setServiceRegistryAddress(getServiceRegistryAddress())
         .setServiceRegistrarPlugin(getServiceRegistrarPlugin())
-        .setAdminPort(options.getInt(adminArg.getDest()))
-        .setHttpEndpoint(httpAddress)
+        .setAdminUriEndpoint(adminAddress)
+        .setUriEndpoint(httpAddress)
         .setNoHttp(options.getBoolean(noHttpArg.getDest()))
         .setKafkaBrokers(getKafkaBrokers())
         .setLabels(labels);
@@ -164,12 +165,11 @@ public class AgentParser extends ServiceParser {
 
     httpArg = parser.addArgument("--http")
         .setDefault("http://0.0.0.0:5803")
-        .help("http endpoint");
+        .help("http[s] endpoint");
 
     adminArg = parser.addArgument("--admin")
-        .type(Integer.class)
-        .setDefault(5804)
-        .help("admin http port");
+        .setDefault("http://0.0.0.0:5804")
+        .help("admin http[s] port");
 
     agentIdArg = parser.addArgument("--id")
         .help("Agent unique ID. Generated and persisted on first run if not specified.");

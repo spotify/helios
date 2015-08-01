@@ -23,12 +23,12 @@ package com.spotify.helios.agent;
 
 import com.spotify.helios.servicescommon.DockerHost;
 
-import io.dropwizard.Configuration;
-
-import java.net.InetSocketAddress;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+
+import io.dropwizard.Configuration;
 
 /**
  * The configuration of the Helios agent.
@@ -56,8 +56,8 @@ public class AgentConfig extends Configuration {
   private Path serviceRegistrarPlugin;
   private String id;
   private List<String> dns;
-  private int adminPort;
-  private InetSocketAddress httpEndpoint;
+  private URI adminUriEndpoint;
+  private URI uriEndpoint;
   private boolean noHttp;
   private List<String> binds;
   private List<String> kafkaBrokers;
@@ -247,22 +247,22 @@ public class AgentConfig extends Configuration {
     return this;
   }
 
-  public AgentConfig setAdminPort(int adminPort) {
-    this.adminPort = adminPort;
+  public AgentConfig setAdminUriEndpoint(URI adminUriEndpoint) {
+    this.adminUriEndpoint = adminUriEndpoint;
     return this;
   }
 
-  public AgentConfig setHttpEndpoint(InetSocketAddress httpEndpoint) {
-    this.httpEndpoint = httpEndpoint;
+  public AgentConfig setUriEndpoint(URI uriEndpoint) {
+    this.uriEndpoint = uriEndpoint;
     return this;
   }
 
-  public int getAdminPort() {
-    return adminPort;
+  public URI getAdminUriEndpoint() {
+    return adminUriEndpoint;
   }
 
-  public InetSocketAddress getHttpEndpoint() {
-    return httpEndpoint;
+  public URI getUriEndpoint() {
+    return uriEndpoint;
   }
 
   public AgentConfig setNoHttp(boolean noHttp) {

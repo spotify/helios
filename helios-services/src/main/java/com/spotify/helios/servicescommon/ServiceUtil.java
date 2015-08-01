@@ -21,36 +21,63 @@
 
 package com.spotify.helios.servicescommon;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+
+import com.spotify.helios.common.HeliosRuntimeException;
+
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
 
 import io.dropwizard.jetty.ConnectorFactory;
 import io.dropwizard.jetty.HttpConnectorFactory;
+import io.dropwizard.jetty.HttpsConnectorFactory;
 import io.dropwizard.server.DefaultServerFactory;
 
-import java.net.InetSocketAddress;
-import java.util.Collections;
-
 public class ServiceUtil {
-  public static DefaultServerFactory createServerFactory(final InetSocketAddress httpEndpoint,
-                                                         final int adminPort,
-                                                         final boolean noHttp) {
-    // TODO(drewc) be more flexible on the httpEndpoint -- make it a URI -- so if/when we support
-    // SSL, it'll *just work*
 
+  private static final List<String> VALID_PROTOCOLS = ImmutableList.of("http", "https");
+
+  public static DefaultServerFactory createServerFactory(final URI endpoint,
+                                                         final URI adminEndpoint,
+                                                         final boolean noHttp) {
     final DefaultServerFactory serverFactory = new DefaultServerFactory();
     if (noHttp) {
       serverFactory.setApplicationConnectors(Collections.<ConnectorFactory>emptyList());
       serverFactory.setAdminConnectors(Collections.<ConnectorFactory>emptyList());
     } else {
-      final HttpConnectorFactory serviceConnector = new HttpConnectorFactory();
-      serviceConnector.setPort(httpEndpoint.getPort());
-      serviceConnector.setBindHost(httpEndpoint.getHostString());
+      final String endpointScheme = endpoint.getScheme();
+      final HttpConnectorFactory serviceConnector = getServiceConnector(endpointScheme);
+      serviceConnector.setPort(endpoint.getPort());
+      serviceConnector.setBindHost(endpoint.getHost());
       serverFactory.setApplicationConnectors(ImmutableList.<ConnectorFactory>of(serviceConnector));
 
-      final HttpConnectorFactory adminConnector = new HttpConnectorFactory();
-      adminConnector.setPort(adminPort);
+      final String adminEndpointScheme = adminEndpoint.getScheme();
+      final HttpConnectorFactory adminConnector = getServiceConnector(adminEndpointScheme);
+      adminConnector.setPort(adminEndpoint.getPort());
+      serviceConnector.setBindHost(adminEndpoint.getHost());
       serverFactory.setAdminConnectors(ImmutableList.<ConnectorFactory>of(adminConnector));
     }
+
     return serverFactory;
+  }
+
+  private static HttpConnectorFactory getServiceConnector(final String scheme) {
+    final HttpConnectorFactory serviceConnector;
+    switch (scheme) {
+      case "http":
+        serviceConnector = new HttpConnectorFactory();
+        break;
+      case "https":
+        serviceConnector = new HttpsConnectorFactory();
+        break;
+      default:
+        throw new HeliosRuntimeException(String.format(
+            "Unrecognized server endpoint scheme of '%s'. Must be one of %s.",
+            scheme, Joiner.on(", ").join(VALID_PROTOCOLS)));
+    }
+
+    return serviceConnector;
   }
 }

@@ -35,7 +35,6 @@ import net.sourceforge.argparse4j.inf.Namespace;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -277,14 +276,11 @@ public class ServiceParser {
     }
   }
 
-  protected InetSocketAddress parseSocketAddress(final String addressString) {
-    final InetSocketAddress address;
+  protected URI parseUriAddress(final String addressString) {
     try {
-      final URI u = new URI(addressString);
-      address = new InetSocketAddress(u.getHost(), u.getPort());
+      return new URI(addressString);
     } catch (URISyntaxException e) {
-      throw new IllegalArgumentException("Bad address: " + addressString, e);
+      throw new IllegalArgumentException("Bad URI address: " + addressString, e);
     }
-    return address;
   }
 }
