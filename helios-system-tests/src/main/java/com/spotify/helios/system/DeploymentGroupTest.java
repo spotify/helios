@@ -302,17 +302,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     master.stopAsync().awaitTerminated();
 
     // start a bunch of masters and agents
-    final Map<String, MasterMain> masters = Maps.newHashMap();
-    for (int i = 0; i < 3; i++) {
-      final String name = TEST_MASTER + i;
-      masters.put(name, startMaster("-vvvv",
-                                    "--no-log-setup",
-                                    "--http", "http://localhost:" + (masterPort() + i),
-                                    "--admin=" + (masterAdminPort() + i),
-                                    "--domain", "",
-                                    "--name", name,
-                                    "--zk", zk().connectString()));
-    }
+    final Map<String, MasterMain> masters = startDefaultMasters(3);
 
     final Map<String, AgentMain> agents = Maps.newLinkedHashMap();
     for (int i = 0; i < 10; i++) {
