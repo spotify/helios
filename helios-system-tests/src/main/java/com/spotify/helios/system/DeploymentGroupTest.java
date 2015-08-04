@@ -399,4 +399,80 @@ public class DeploymentGroupTest extends SystemTestBase {
     awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
+
+  @Test
+  public void testRollingUpdateWithOverlap() throws Exception {
+    // create and start agents
+    final List<String> hosts = ImmutableList.of(
+        "dc1-" + testHost() + "-a1.dc1.example.com",
+        "dc1-" + testHost() + "-a2.dc1.example.com",
+        "dc2-" + testHost() + "-a1.dc2.example.com",
+        "dc2-" + testHost() + "-a3.dc2.example.com",
+        "dc3-" + testHost() + "-a4.dc3.example.com"
+    );
+    for (final String host : hosts) {
+      startDefaultAgent(host, "--labels", TEST_LABEL);
+    }
+
+    // create a deployment group
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+
+    // create and roll out a first job
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    cli("rolling-update", "--async", "--overlap", testJobNameAndVersion, TEST_GROUP);
+
+    for (final String host : hosts) {
+      awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+    }
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+
+    // create and roll out a second job
+    final String secondJobVersion = testJobVersion + "2";
+    final String secondJobNameAndVersion = testJobNameAndVersion + "2";
+    final JobId secondJobId = createJob(testJobName, secondJobVersion, BUSYBOX, IDLE_COMMAND);
+    cli("rolling-update", "--async", "--overlap", secondJobNameAndVersion, TEST_GROUP);
+
+    for (final String host : hosts) {
+      awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
+    }
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+  }
+
+  @Test
+  public void testRollingUpdateWithOverlapAndParallelism() throws Exception {
+    // create and start agents
+    final List<String> hosts = ImmutableList.of(
+        "dc1-" + testHost() + "-a1.dc1.example.com",
+        "dc1-" + testHost() + "-a2.dc1.example.com",
+        "dc2-" + testHost() + "-a1.dc2.example.com",
+        "dc2-" + testHost() + "-a3.dc2.example.com",
+        "dc3-" + testHost() + "-a4.dc3.example.com"
+    );
+    for (final String host : hosts) {
+      startDefaultAgent(host, "--labels", TEST_LABEL);
+    }
+
+    // create a deployment group
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+
+    // create and roll out a first job
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    cli("rolling-update", "--async", "-p", "2", "--overlap", testJobNameAndVersion, TEST_GROUP);
+
+    for (final String host : hosts) {
+      awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+    }
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+
+    // create and roll out a second job
+    final String secondJobVersion = testJobVersion + "2";
+    final String secondJobNameAndVersion = testJobNameAndVersion + "2";
+    final JobId secondJobId = createJob(testJobName, secondJobVersion, BUSYBOX, IDLE_COMMAND);
+    cli("rolling-update", "--async", "-p", "2", "--overlap", secondJobNameAndVersion, TEST_GROUP);
+
+    for (final String host : hosts) {
+      awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
+    }
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+  }
 }
