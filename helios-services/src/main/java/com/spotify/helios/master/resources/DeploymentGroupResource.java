@@ -213,10 +213,10 @@ public class DeploymentGroupResource {
         status = DeploymentGroupStatusResponse.Status.IDLE;
       } else if (deploymentGroupStatus.getState() == DeploymentGroupStatus.State.FAILED) {
         status = DeploymentGroupStatusResponse.Status.FAILED;
-      } else if (deploymentGroupStatus.getSuccessfulIterations() > 0) {
-        status = DeploymentGroupStatusResponse.Status.ACTIVE;
-      } else {
+      } else if (deploymentGroupStatus.getState() == DeploymentGroupStatus.State.ROLLING_OUT) {
         status = DeploymentGroupStatusResponse.Status.ROLLING_OUT;
+      } else {
+        status = DeploymentGroupStatusResponse.Status.ACTIVE;
       }
 
       final String error = deploymentGroupStatus == null ? "" : deploymentGroupStatus.getError();

@@ -30,7 +30,6 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
-import com.spotify.helios.rollingupdate.RolloutPlanner;
 
 import java.util.List;
 import java.util.Map;
@@ -122,8 +121,7 @@ public interface MasterModel {
   void rollingUpdate(DeploymentGroup deploymentGroup, JobId jobId, RolloutOptions options)
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException;
 
-  void rollingUpdateStep(DeploymentGroup deploymentGroup, RolloutPlanner rolloutPlanner)
-      throws DeploymentGroupDoesNotExistException;
+  void rollingUpdateStep();
 
   void stopDeploymentGroup(String deploymentGroupName) throws DeploymentGroupDoesNotExistException;
 }

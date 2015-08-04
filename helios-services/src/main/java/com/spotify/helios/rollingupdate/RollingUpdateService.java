@@ -55,6 +55,7 @@ public class RollingUpdateService extends AbstractIdleService {
   private static final Logger log = LoggerFactory.getLogger(RollingUpdateService.class);
 
   private static final long UPDATE_INTERVAL = SECONDS.toMillis(1);
+  private static final long HOST_UPDATE_INTERVAL = SECONDS.toMillis(1);
 
   private final MasterModel masterModel;
   private final Reactor hostUpdateReactor;
@@ -72,7 +73,7 @@ public class RollingUpdateService extends AbstractIdleService {
 
     this.hostUpdateReactor = reactorFactory.create("hostUpdate",
                                                    new UpdateDeploymentGroupHosts(),
-                                                   UPDATE_INTERVAL);
+                                                   HOST_UPDATE_INTERVAL);
     this.rollingUpdateReactor = reactorFactory.create("rollingUpdate", new RollingUpdate(),
                                                       UPDATE_INTERVAL);
   }
@@ -131,13 +132,10 @@ public class RollingUpdateService extends AbstractIdleService {
 
     @Override
     public void run(final boolean timeout) throws InterruptedException {
-      for (final DeploymentGroup dg : masterModel.getDeploymentGroups().values()) {
-        try {
-          masterModel.rollingUpdateStep(dg, DefaultRolloutPlanner.of(dg));
-        } catch (Exception e) {
-          log.warn("error processing rolling update step for deployment group: {} - {}",
-                   dg.getName(), e);
-        }
+      try {
+        masterModel.rollingUpdateStep();
+      } catch (Exception e) {
+        log.error("error processing rolling update step: {}", e);
       }
     }
   }
