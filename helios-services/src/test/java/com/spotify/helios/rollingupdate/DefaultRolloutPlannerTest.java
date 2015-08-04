@@ -151,4 +151,75 @@ public class DefaultRolloutPlannerTest {
 
     assertEquals(expected, tasks);
   }
+
+  @Test
+  public void testOverlapRollout() {
+    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+        .setRolloutOptions(RolloutOptions.newBuilder().setOverlap(true).build())
+        .build();
+    final HostStatus statusUp = mock(HostStatus.class);
+    when(statusUp.getStatus()).thenReturn(HostStatus.Status.UP);
+    final Map<String, HostStatus> hostsAndStatuses = ImmutableMap.of(
+        "agent1", statusUp,
+        "agent2", statusUp,
+        "agent3", statusUp,
+        "agent4", statusUp
+    );
+
+    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
+
+    final List<RolloutTask> expected = Lists.newArrayList(
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent1"),
+        RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent1"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent1"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent2"),
+        RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent2"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent2"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent3"),
+        RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent3"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent3"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent4"),
+        RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent4"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent4"));
+
+    assertEquals(expected, tasks);
+  }
+
+  @Test
+  public void testOverlapParallelRollout() {
+    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+        .setRolloutOptions(RolloutOptions.newBuilder()
+                               .setOverlap(true)
+                               .setParallelism(2)
+                               .build())
+        .build();
+    final HostStatus statusUp = mock(HostStatus.class);
+    when(statusUp.getStatus()).thenReturn(HostStatus.Status.UP);
+    final Map<String, HostStatus> hostsAndStatuses = ImmutableMap.of(
+        "agent1", statusUp,
+        "agent2", statusUp,
+        "agent3", statusUp,
+        "agent4", statusUp
+    );
+
+    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
+
+    final List<RolloutTask> expected = Lists.newArrayList(
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent1"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent2"),
+        RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent1"),
+        RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent2"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent1"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent2"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent3"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "agent4"),
+        RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent3"),
+        RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "agent4"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent3"),
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "agent4"));
+
+    assertEquals(expected, tasks);
+  }
 }
