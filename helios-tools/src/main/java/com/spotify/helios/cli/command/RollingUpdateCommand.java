@@ -166,7 +166,8 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     }
 
     if (!json) {
-      out.println(format("Rolling update%s started: %s -> %s (parallelism=%d, timeout=%d, overlap=%b)%s",
+      out.println(format("Rolling update%s started: %s -> %s " +
+                         "(parallelism=%d, timeout=%d, overlap=%b)%s",
                          async ? " (async)" : "",
                          name, jobId.toShortString(), parallelism, timeout, overlap,
                          async ? "" : "\n"));
