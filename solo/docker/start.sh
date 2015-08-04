@@ -43,6 +43,7 @@ com.spotify.helios.agent.AgentMain \
 --env SPOTIFY_DOMAIN='local.' \
 --env HELIOS_HOST_ADDRESS=$HOST_ADDRESS \
 --labels solo=yes \
+$HELIOS_AGENT_OPTS \
 &
 
 # Start master
@@ -54,6 +55,7 @@ java -cp '/*' \
 com.spotify.helios.master.MasterMain \
 --service-registrar-plugin /usr/share/helios/lib/plugins/helios-skydns-0.1.jar \
 --domain '' \
+$HELIOS_MASTER_OPTS \
 &
 
 # Sleep or execute command line
