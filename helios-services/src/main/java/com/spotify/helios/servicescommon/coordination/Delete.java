@@ -23,11 +23,11 @@ package com.spotify.helios.servicescommon.coordination;
 
 import org.apache.curator.framework.api.transaction.CuratorTransaction;
 
-class Delete implements ZooKeeperOperation {
+public class Delete implements ZooKeeperOperation {
 
   private final String path;
 
-  Delete(final String path) {
+  public Delete(final String path) {
     this.path = path;
   }
 
@@ -41,5 +41,28 @@ class Delete implements ZooKeeperOperation {
     return "Delete{" +
            "path='" + path + '\'' +
            '}';
+  }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final Delete delete = (Delete) o;
+
+    if (path != null ? !path.equals(delete.path) : delete.path != null) {
+      return false;
+    }
+
+    return true;
+  }
+
+  @Override
+  public int hashCode() {
+    return path != null ? path.hashCode() : 0;
   }
 }

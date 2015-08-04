@@ -26,7 +26,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
@@ -42,8 +41,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.servicescommon.Reactor.Callback;
@@ -58,16 +55,11 @@ public class RollingUpdateService extends AbstractIdleService {
   private static final Logger log = LoggerFactory.getLogger(RollingUpdateService.class);
 
   private static final long UPDATE_INTERVAL = SECONDS.toMillis(1);
+  private static final long HOST_UPDATE_INTERVAL = SECONDS.toMillis(1);
 
   private final MasterModel masterModel;
   private final Reactor hostUpdateReactor;
   private final Reactor rollingUpdateReactor;
-
-  private final ExecutorService rollingUpdateExecutor = Executors.newFixedThreadPool(
-      5, new ThreadFactoryBuilder()
-          .setNameFormat("helios-rollingupdate-%d")
-          .setDaemon(true)
-          .build());
 
   /**
    * Create a new RollingUpdateService.
@@ -81,7 +73,7 @@ public class RollingUpdateService extends AbstractIdleService {
 
     this.hostUpdateReactor = reactorFactory.create("hostUpdate",
                                                    new UpdateDeploymentGroupHosts(),
-                                                   UPDATE_INTERVAL);
+                                                   HOST_UPDATE_INTERVAL);
     this.rollingUpdateReactor = reactorFactory.create("rollingUpdate", new RollingUpdate(),
                                                       UPDATE_INTERVAL);
   }
@@ -140,18 +132,10 @@ public class RollingUpdateService extends AbstractIdleService {
 
     @Override
     public void run(final boolean timeout) throws InterruptedException {
-      for (final DeploymentGroup dg : masterModel.getDeploymentGroups().values()) {
-        rollingUpdateExecutor.execute(new Runnable() {
-          @Override
-          public void run() {
-            try {
-              masterModel.rollingUpdateStep(dg, DefaultRolloutPlanner.of(dg));
-            } catch (Exception e) {
-              log.warn("error processing rolling update step for deployment group: {} - {}",
-                       dg.getName(), e);
-            }
-          }
-        });
+      try {
+        masterModel.rollingUpdateStep();
+      } catch (Exception e) {
+        log.error("error processing rolling update step: {}", e);
       }
     }
   }

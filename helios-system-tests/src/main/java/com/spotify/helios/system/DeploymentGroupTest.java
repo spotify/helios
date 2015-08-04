@@ -45,6 +45,7 @@ import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.master.MasterMain;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
@@ -112,9 +113,19 @@ public class DeploymentGroupTest extends SystemTestBase {
       startDefaultAgent(host, "--labels", TEST_LABEL);
     }
 
+    // Wait for agents to come up
+    final HeliosClient client = defaultClient();
+    for (final String host : hosts) {
+      awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+    }
+
     // create a deployment group and job
     cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    // TODO: fix this!
+    // Wait to make sure the host-update has run
+    Thread.sleep(1000);
 
     // trigger a rolling update
     cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
@@ -127,8 +138,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     final Deployment deployment =
         defaultClient().hostStatus(hosts.get(0)).get().getJobs().get(jobId);
     assertEquals(TEST_GROUP, deployment.getDeploymentGroupName());
-    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
-                               DeploymentGroupStatus.State.DONE);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
 
     // create a second job
     final String secondJobVersion = testJobVersion + "2";
@@ -402,7 +412,6 @@ public class DeploymentGroupTest extends SystemTestBase {
 
   @Test
   public void testRollingUpdateWithOverlap() throws Exception {
-    // create and start agents
     final List<String> hosts = ImmutableList.of(
         "dc1-" + testHost() + "-a1.dc1.example.com",
         "dc1-" + testHost() + "-a2.dc1.example.com",
@@ -410,6 +419,7 @@ public class DeploymentGroupTest extends SystemTestBase {
         "dc2-" + testHost() + "-a3.dc2.example.com",
         "dc3-" + testHost() + "-a4.dc3.example.com"
     );
+    // start agents
     for (final String host : hosts) {
       startDefaultAgent(host, "--labels", TEST_LABEL);
     }
@@ -437,6 +447,62 @@ public class DeploymentGroupTest extends SystemTestBase {
     }
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
+
+  @Ignore
+  @Test
+  public void testRollingUpdatePerformance() throws Exception {
+    final List<String> hosts = ImmutableList.of(
+        "dc1-" + testHost() + "-a1.dc1.example.com",
+        "dc1-" + testHost() + "-a2.dc1.example.com",
+        "dc2-" + testHost() + "-a1.dc2.example.com",
+        "dc2-" + testHost() + "-a3.dc2.example.com",
+        "dc3-" + testHost() + "-a4.dc3.example.com"
+    );
+
+    // start agents
+    for (final String host : hosts) {
+      startDefaultAgent(host, "--labels", TEST_LABEL);
+    }
+
+    // Wait for agents to come up
+    final HeliosClient client = defaultClient();
+    for (final String host : hosts) {
+      awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+    }
+
+    for (int i = 0; i < 50; ++i) {
+      cli("create-deployment-group", "--json", TEST_GROUP + "-" + i, "tol=ahdsksajd");
+      cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP + "-" + i);
+    }
+
+    // create a deployment group and job
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    // TODO: fix this!
+    // Wait for the host-updater
+    Thread.sleep(2000);
+
+    // trigger a rolling update
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+
+    final long t0 = System.currentTimeMillis();
+
+    // ensure the job is running on all agents and the deployment group reaches DONE
+    for (final String host : hosts) {
+      awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+    }
+
+    final Deployment deployment =
+        defaultClient().hostStatus(hosts.get(0)).get().getJobs().get(jobId);
+    assertEquals(TEST_GROUP, deployment.getDeploymentGroupName());
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
+                               DeploymentGroupStatus.State.DONE);
+
+    System.out.printf("1 active / 0 inactive: Time to roll out: %.2f s\n",
+                      (System.currentTimeMillis() - t0) / 1000.0);
+  }
+
 
   @Test
   public void testRollingUpdateWithOverlapAndParallelism() throws Exception {
