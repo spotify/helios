@@ -829,6 +829,9 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final ZooKeeperClient client = provider.get("stopDeploymentGroup");
 
+    // TODO(staffan): This is stupid, but required for correct behaviour right now.
+    final DeploymentGroup deploymentGroup = getDeploymentGroup(deploymentGroupName);
+
     // Delete deployment group tasks (if any) and set DG state to FAILED
     final DeploymentGroupStatus status = DeploymentGroupStatus.newBuilder()
         .setState(FAILED)
