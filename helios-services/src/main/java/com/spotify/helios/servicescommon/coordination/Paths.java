@@ -43,7 +43,6 @@ public class Paths {
   private static final String LABELS = "labels";
   private static final String ID = "id";
   private static final String DEPLOYMENT_GROUPS = "deployment-groups";
-  private static final String INDEX = "index";
 
   private static final PathFactory CONFIG_ID = new PathFactory("/", CONFIG, ID);
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);

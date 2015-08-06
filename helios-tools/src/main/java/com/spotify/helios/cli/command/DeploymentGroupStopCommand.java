@@ -36,14 +36,14 @@ import javax.ws.rs.core.Response;
 
 import static java.lang.String.format;
 
-public class RollingUpdateAbortCommand extends ControlCommand {
+public class DeploymentGroupStopCommand extends ControlCommand {
 
   private final Argument nameArg;
 
-  public RollingUpdateAbortCommand(final Subparser parser) {
+  public DeploymentGroupStopCommand(final Subparser parser) {
     super(parser);
 
-    parser.help("Abort a rolling-update");
+    parser.help("Stop a deployment-group or abort a rolling-update");
 
     nameArg = parser.addArgument("name")
         .required(true)
@@ -56,18 +56,18 @@ public class RollingUpdateAbortCommand extends ControlCommand {
       throws ExecutionException, InterruptedException, IOException {
     final String name = options.getString(nameArg.getDest());
 
-    final int status = client.abortRollingUpdate(name).get();
+    final int status = client.stopDeploymentGroup(name).get();
 
     // TODO(staffam): Support json output
 
     if (status == Response.Status.NO_CONTENT.getStatusCode()) {
-      out.println(format("Aborted rolling-update on deployment-group %s", name));
+      out.println(format("Deployment-group %s stopped", name));
       return 0;
     } else if (status == Response.Status.NOT_FOUND.getStatusCode()) {
       out.println(format("Deployment-group %s not found", name));
       return 1;
     } else {
-      out.println(format("Failed to abort rolling-update on deployment-group %s. Status: %d",
+      out.println(format("Failed to stop deployment-group %s. Status: %d",
                          name, status));
       return 1;
     }

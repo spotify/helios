@@ -33,6 +33,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 
+import static java.lang.String.format;
+
 public class DeploymentGroupRemoveCommand extends ControlCommand {
 
   private final Argument nameArg;
@@ -40,9 +42,10 @@ public class DeploymentGroupRemoveCommand extends ControlCommand {
   public DeploymentGroupRemoveCommand(final Subparser parser) {
     super(parser);
 
-    parser.help("remove a deployment group");
+    parser.help("remove a deployment-group. Note that this does not undeploy jobs previously " +
+                "deployed by the deployment-group");
 
-    nameArg = parser.addArgument("name")
+    nameArg = parser.addArgument("deployment-group-name")
         .required(true)
         .help("Deployment group name");
   }
@@ -51,31 +54,28 @@ public class DeploymentGroupRemoveCommand extends ControlCommand {
   int run(final Namespace options, final HeliosClient client, final PrintStream out,
           final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException, IOException {
-
     final String name = options.getString(nameArg.getDest());
 
-    if (name == null) {
-      throw new IllegalArgumentException("Please specify a name and at least one label.");
-    }
-
-    final RemoveDeploymentGroupResponse status =
-        client.removeDeploymentGroup(name).get();
+    final RemoveDeploymentGroupResponse status = client.removeDeploymentGroup(name).get();
 
     if (status == null) {
       throw new RuntimeException("The Helios master could not remove the given deployment group.");
     }
 
-    if (status.getStatus() != RemoveDeploymentGroupResponse.Status.REMOVED) {
+    final boolean failed = status.getStatus() != RemoveDeploymentGroupResponse.Status.REMOVED;
+
+    if (json) {
       out.println(status.toJsonString());
-      return 0;
     } else {
-      if (!json) {
-        out.println("Failed: " + status);
+      if (failed) {
+        out.println(format("Failed to remove deployment-group %s, status: %s",
+                           name, status.getStatus()));
       } else {
-        out.println(status.toJsonString());
+        out.println(format("Deployment-group %s removed", name));
       }
-      return 1;
     }
+
+    return failed ? 1 : 0;
   }
 }
 

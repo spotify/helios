@@ -1,6 +1,6 @@
 # Deployment Groups
 
-A deployment group is set of hosts with configuration and state on the masters that helps you deploy
+A deployment group is a set of hosts with configuration and state on the masters that helps you deploy
 Helios jobs to agents more easily. It determines the list and sequence of hosts to deploy,
 undeploys prior jobs it has deployed, and deploys the specified job.
 
@@ -86,4 +86,4 @@ Check on the status:
 
 See more deployment group commands with `helios -h`.
 
-  [1]: https://github.com/spotify/helios/blob/master/docs/user_manual#label-agents.md
+  [1]: https://github.com/spotify/helios/blob/master/docs/user_manual.md#label-agents

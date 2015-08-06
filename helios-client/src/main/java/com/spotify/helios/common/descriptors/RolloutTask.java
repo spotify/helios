@@ -37,6 +37,11 @@ public class RolloutTask extends Descriptor {
     AWAIT_RUNNING,
   }
 
+  public enum Status {
+    OK,
+    FAILED
+  }
+
   private final Action action;
   private final String target;
 

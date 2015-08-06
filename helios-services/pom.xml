@@ -151,11 +151,6 @@
     </dependency>
     <dependency>
       <groupId>com.spotify</groupId>
-      <artifactId>helios-client</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>com.spotify</groupId>
       <artifactId>helios-service-registration</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -291,7 +286,7 @@
     <dependency>
       <groupId>com.spotify</groupId>
       <artifactId>docker-client</artifactId>
-      <version>2.7.26</version>
+      <version>3.1.0</version>
       <classifier>shaded</classifier>
     </dependency>
     <dependency>

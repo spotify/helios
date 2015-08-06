@@ -19,29 +19,31 @@
  * under the License.
  */
 
-package com.spotify.helios.agent;
-
-import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.TaskStatusEvent;
-
-import org.apache.kafka.common.serialization.Serializer;
-
-import java.util.Map;
+package com.spotify.helios.servicescommon;
 
 /**
- * Provides serialization support for KafkaProducer used for History subsystem
- * in {@link com.spotify.helios.agent.QueueingHistoryWriter}.
+ * This class represents a Kafka record whose data is an array of bytes.
  */
+public class KafkaRecord {
 
-public class TaskStatusEventSerializer implements Serializer<TaskStatusEvent> {
-    @Override
-    public void configure(final Map<String, ?> configs, final boolean isKey) { }
+  private final String topic;
+  private final byte[] data;
 
-    @Override
-    public byte[] serialize(final String topic, final TaskStatusEvent value) {
-        return Json.asBytesUnchecked(value);
-    }
+  private KafkaRecord(final String topic, final byte[] data) {
+    this.topic = topic;
+    this.data = data;
+  }
 
-    @Override
-    public void close() { }
+  public String getKafkaTopic() {
+    return topic;
+  }
+
+  public byte[] getKafkaData() {
+    return data;
+  }
+
+  public static KafkaRecord of(final String topic, final byte[] data) {
+    return new KafkaRecord(topic, data);
+  }
+
 }

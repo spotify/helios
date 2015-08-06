@@ -26,10 +26,14 @@ import com.google.common.collect.Lists;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
+import com.spotify.helios.common.protocol.RollingUpdateRequest;
+import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
+import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.MasterModel;
 
 import org.junit.Before;
@@ -41,6 +45,7 @@ import org.mockito.runners.MockitoJUnitRunner;
 import javax.ws.rs.core.Response;
 
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -144,14 +149,14 @@ public class DeploymentGroupResourceTest {
         RemoveDeploymentGroupResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND), response.getEntity());
   }
 
-  /*
   @Test
   public void testRollingUpdateDeploymentGroupDoesNotExist() throws Exception {
-    doThrow(new DeploymentGroupDoesNotExistException(""))
-        .when(model).rollingUpdate(anyString(), any(JobId.class));
+    doThrow(new DeploymentGroupDoesNotExistException("")).when(model).rollingUpdate(
+        any(DeploymentGroup.class), any(JobId.class), any(RolloutOptions.class));
 
     final Response response = resource.rollingUpdate(
-        "foo", new RollingUpdateRequest(new JobId("foo", "0.3", "1234")));
+        "foo", new RollingUpdateRequest(new JobId("foo", "0.3", "1234"),
+                                        RolloutOptions.newBuilder().build()));
 
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     assertEquals(new RollingUpdateResponse(RollingUpdateResponse.Status.DEPLOYMENT_GROUP_NOT_FOUND),
@@ -160,15 +165,15 @@ public class DeploymentGroupResourceTest {
 
   @Test
   public void testRollingUpdateJobDoesNotExist() throws Exception {
-    doThrow(new JobDoesNotExistException(""))
-        .when(model).rollingUpdate(anyString(), any(JobId.class));
+    doThrow(new JobDoesNotExistException("")).when(model).rollingUpdate(
+        any(DeploymentGroup.class), any(JobId.class), any(RolloutOptions.class));
 
     final Response response = resource.rollingUpdate(
-        "foo", new RollingUpdateRequest(new JobId("foo", "0.3", "1234")));
+        "foo", new RollingUpdateRequest(new JobId("foo", "0.3", "1234"),
+                                        RolloutOptions.newBuilder().build()));
 
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
     assertEquals(new RollingUpdateResponse(RollingUpdateResponse.Status.JOB_NOT_FOUND),
                  response.getEntity());
   }
-  */
 }

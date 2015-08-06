@@ -21,12 +21,14 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
+import com.spotify.helios.agent.KafkaClientProvider;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
@@ -38,6 +40,7 @@ import com.spotify.helios.master.resources.VersionResource;
 import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
@@ -59,6 +62,8 @@ import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -68,6 +73,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
@@ -95,7 +102,6 @@ public class MasterService extends AbstractIdleService {
   private final Server server;
   private final MasterConfig config;
   private final ServiceRegistrar registrar;
-  private final RiemannFacade riemannFacade;
   private final ZooKeeperClient zooKeeperClient;
   private final ExpiredJobReaper expiredJobReaper;
   private final CuratorClientFactory curatorClientFactory;
@@ -113,7 +119,7 @@ public class MasterService extends AbstractIdleService {
    */
   public MasterService(final MasterConfig config, final Environment environment,
                        final CuratorClientFactory curatorClientFactory)
-      throws ConfigurationException {
+      throws ConfigurationException, IOException, InterruptedException {
     this.config = config;
     this.curatorClientFactory = curatorClientFactory;
 
@@ -122,7 +128,7 @@ public class MasterService extends AbstractIdleService {
     final MetricRegistry metricsRegistry = new MetricRegistry();
     final RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry,
         config.getRiemannHostPort(), config.getName(), "helios-master");
-    riemannFacade = riemannSupport.getFacade();
+    final RiemannFacade riemannFacade = riemannSupport.getFacade();
     log.info("Starting metrics");
     final Metrics metrics;
     if (config.isInhibitMetrics()) {
@@ -141,7 +147,27 @@ public class MasterService extends AbstractIdleService {
         riemannFacade, metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
-    final MasterModel model = new ZooKeeperMasterModel(zkClientProvider, config.getName());
+    final KafkaClientProvider kafkaClientProvider = new KafkaClientProvider(
+        config.getKafkaBrokers());
+
+    // Create state directory, if necessary
+    final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
+    if (!Files.exists(stateDirectory)) {
+      try {
+        Files.createDirectories(stateDirectory);
+      } catch (IOException e) {
+        log.error("Failed to create state directory: {}", stateDirectory, e);
+        throw Throwables.propagate(e);
+      }
+    }
+
+    // Make a KafkaProducer for events that can be serialized to an array of bytes,
+    // and wrap it in our KafkaSender.
+    final KafkaSender kafkaSender = new KafkaSender(
+        kafkaClientProvider.getProducer(new StringSerializer(), new ByteArraySerializer()));
+
+    final ZooKeeperMasterModel model =
+        new ZooKeeperMasterModel(zkClientProvider, config.getName(), kafkaSender);
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
         zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);
@@ -207,7 +233,7 @@ public class MasterService extends AbstractIdleService {
     setUpRequestLogging();
   }
 
-  private final void setUpRequestLogging() {
+  private void setUpRequestLogging() {
     // Set up request logging
     final Handler originalHandler = server.getHandler();
     final HandlerCollection handlerCollection;

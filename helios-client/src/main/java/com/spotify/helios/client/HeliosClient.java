@@ -302,7 +302,7 @@ public class HeliosClient implements AutoCloseable {
       if (endpoints.isEmpty()) {
         throw new RuntimeException("failed to resolve master");
       }
-      log.debug("endpoint uris are {}", endpoints);
+      log.info("endpoint uris are {}", endpoints);
       for (int i = 0; i < endpoints.size() && currentTimeMillis() < deadline; i++) {
         final URI endpoint = endpoints.get(positive(offset + i) % endpoints.size());
         final String fullpath = endpoint.getPath() + uri.getPath();
@@ -316,7 +316,7 @@ public class HeliosClient implements AutoCloseable {
 
         final URI realUri = new URI("http", host + ":" + port, fullpath, uri.getQuery(), null);
         try {
-          log.debug("connecting to {}", realUri);
+          log.info("connecting to {}", realUri);
           return connect0(realUri, method, entity, headers);
         } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
           // UnknownHostException happens if we can't resolve hostname into IP address.
@@ -600,9 +600,9 @@ public class HeliosClient implements AutoCloseable {
                                      ImmutableSet.of(HTTP_OK, HTTP_BAD_REQUEST)));
   }
 
-  public ListenableFuture<Integer> abortRollingUpdate(final String deploymentGroupName) {
+  public ListenableFuture<Integer> stopDeploymentGroup(final String deploymentGroupName) {
     return status(request(
-        uri(path("/deployment-group/%s/rolling-update/abort", deploymentGroupName)), "POST"));
+        uri(path("/deployment-group/%s/stop", deploymentGroupName)), "POST"));
   }
 
   private static final class ConvertResponseToPojo<T> implements AsyncFunction<Response, T> {

@@ -81,6 +81,7 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -128,6 +129,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
 import static java.lang.Integer.toHexString;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -151,9 +153,9 @@ public abstract class SystemTestBase {
   public static final List<String> IDLE_COMMAND = asList(
       "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
 
-  public final String testTag = "test_" + toHexString(ThreadLocalRandom.current().nextInt());
+  public final String testTag = "test_" + randomHexString();
   public final String testJobName = "job_" + testTag;
-  public final String testJobVersion = "v" + toHexString(ThreadLocalRandom.current().nextInt());
+  public final String testJobVersion = "v" + randomHexString();
   public final String testJobNameAndVersion = testJobName + ":" + testJobVersion;
 
   public static final DockerHost DOCKER_HOST = DockerHost.fromEnv();
@@ -179,6 +181,7 @@ public abstract class SystemTestBase {
 
   private String testHost;
   private Path agentStateDirs;
+  private Path masterStateDirs;
   private String masterName;
 
   private ZooKeeperTestManager zk;
@@ -215,6 +218,7 @@ public abstract class SystemTestBase {
     zk.ensure("/config");
     zk.ensure("/status");
     agentStateDirs = temporaryFolder.newFolder("helios-agents").toPath();
+    masterStateDirs = temporaryFolder.newFolder("helios-masters").toPath();
   }
 
   @Before
@@ -276,18 +280,19 @@ public abstract class SystemTestBase {
       }
 
       // Start a container with an exposed port
+      final HostConfig hostConfig = HostConfig.builder()
+          .portBindings(ImmutableMap.of("4711/tcp",
+                                        singletonList(PortBinding.of("0.0.0.0", probePort))))
+          .build();
       final ContainerConfig config = ContainerConfig.builder()
           .image(BUSYBOX)
           .cmd("nc", "-p", "4711", "-lle", "cat")
           .exposedPorts(ImmutableSet.of("4711/tcp"))
-          .build();
-      final HostConfig hostConfig = HostConfig.builder()
-          .portBindings(ImmutableMap.of("4711/tcp",
-                                        asList(PortBinding.of("0.0.0.0", probePort))))
+          .hostConfig(hostConfig)
           .build();
       final ContainerCreation creation = docker.createContainer(config, testTag + "-probe");
       final String containerId = creation.id();
-      docker.startContainer(containerId, hostConfig);
+      docker.startContainer(containerId);
 
       // Wait for container to come up
       Polling.await(5, SECONDS, new Callable<Object>() {
@@ -465,7 +470,7 @@ public abstract class SystemTestBase {
   protected HeliosClient client(final String user, final String endpoint) {
     final HeliosClient client = HeliosClient.newBuilder()
         .setUser(user)
-        .setEndpoints(asList(URI.create(endpoint)))
+        .setEndpoints(singletonList(URI.create(endpoint)))
         .build();
     clients.add(client);
     return client;
@@ -496,6 +501,10 @@ public abstract class SystemTestBase {
   }
 
   protected List<String> setupDefaultMaster(String... args) throws Exception {
+    return setupDefaultMaster(0, args);
+  }
+
+  protected List<String> setupDefaultMaster(final int offset, String... args) throws Exception {
     if (isIntegration()) {
       checkArgument(args.length == 0,
                     "cannot start default master in integration test with arguments passed");
@@ -513,16 +522,25 @@ public abstract class SystemTestBase {
     curator.newNamespaceAwareEnsurePath(Paths.configId(zkClusterId))
         .ensure(curator.getZookeeperClient());
 
-    final List<String> argsList = Lists.newArrayList("-vvvv",
-                                                     "--no-log-setup",
-                                                     "--http", masterEndpoint(),
-                                                     "--admin=" + masterAdminPort(),
-                                                     "--domain", "",
-                                                     "--zk", zk.connectString());
-    if (!asList(args).contains("--name")) {
-      argsList.add("--name");
-      argsList.add(TEST_MASTER);
+    final List<String> argsList = Lists.newArrayList(
+        "-vvvv",
+        "--no-log-setup",
+        "--http", "http://localhost:" + (masterPort() + offset),
+        "--admin=" + (masterAdminPort() + offset),
+        "--domain", "",
+        "--zk", zk.connectString()
+    );
+
+    final String name;
+    if (asList(args).contains("--name")) {
+      name = args[asList(args).indexOf("--name") + 1];
+    } else {
+      name = TEST_MASTER + offset;
+      argsList.addAll(asList("--name", TEST_MASTER));
     }
+
+    final String stateDir = masterStateDirs.resolve(name).toString();
+    argsList.addAll(asList("--state-dir", stateDir));
 
     argsList.addAll(asList(args));
 
@@ -530,7 +548,11 @@ public abstract class SystemTestBase {
   }
 
   protected MasterMain startDefaultMaster(String... args) throws Exception {
-    final List<String> argsList = setupDefaultMaster(args);
+    return startDefaultMaster(0, args);
+  }
+
+  protected MasterMain startDefaultMaster(final int offset, String... args) throws Exception {
+    final List<String> argsList = setupDefaultMaster(offset, args);
 
     if (argsList == null) {
       return null;
@@ -540,6 +562,20 @@ public abstract class SystemTestBase {
     waitForMasterToConnectToZK();
 
     return master;
+  }
+
+  protected Map<String, MasterMain> startDefaultMasters(final int numMasters, String... args)
+      throws Exception {
+    final Map<String, MasterMain> masters = Maps.newHashMap();
+
+    for (int i = 0; i < numMasters; i++) {
+      final String name = TEST_MASTER + i;
+      final List<String> argsList = Lists.newArrayList(args);
+      argsList.addAll(asList("--name", name));
+      masters.put(name, startDefaultMaster(i, argsList.toArray(new String[argsList.size()])));
+    }
+
+    return masters;
   }
 
   protected void waitForMasterToConnectToZK() throws Exception {
@@ -959,7 +995,7 @@ public abstract class SystemTestBase {
       throws ExecutionException, InterruptedException {
     return Futures.withFallback(future, new FutureFallback<T>() {
       @Override
-      public ListenableFuture<T> create(final Throwable t) throws Exception {
+      public ListenableFuture<T> create(@NotNull final Throwable t) throws Exception {
         return Futures.immediateFuture(null);
       }
     }).get();
@@ -1044,5 +1080,9 @@ public abstract class SystemTestBase {
 
   protected void assertJobEquals(final Job expected, final Job actual) {
     assertEquals(expected.toBuilder().setHash(actual.getId().getHash()).build(), actual);
+  }
+
+  protected static String randomHexString() {
+    return toHexString(ThreadLocalRandom.current().nextInt());
   }
 }

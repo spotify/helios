@@ -62,7 +62,9 @@ public class MasterParser extends ServiceParser {
         .setServiceRegistryAddress(getServiceRegistryAddress())
         .setServiceRegistrarPlugin(getServiceRegistrarPlugin())
         .setAdminPort(options.getInt(adminArg.getDest()))
-        .setHttpEndpoint(httpAddress);
+        .setHttpEndpoint(httpAddress)
+        .setKafkaBrokers(getKafkaBrokers())
+        .setStateDirectory(getStateDirectory());
 
     this.masterConfig = config;
   }

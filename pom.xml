@@ -173,6 +173,7 @@
               <forkCount>4</forkCount>
               <reuseForks>false</reuseForks>
               <argLine>${surefireArgLine}</argLine>
+              <rerunFailingTestsCount>2</rerunFailingTestsCount>
               <environmentVariables>
                 <HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>2</HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>
               </environmentVariables>

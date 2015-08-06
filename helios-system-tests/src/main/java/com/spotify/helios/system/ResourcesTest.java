@@ -21,8 +21,11 @@
 
 package com.spotify.helios.system;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
+
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.messages.ContainerConfig;
+import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.Info;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -39,9 +42,11 @@ import org.junit.Test;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.lang.System.getenv;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.text.IsEmptyString.isEmptyOrNullString;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeThat;
 
 public class ResourcesTest extends SystemTestBase {
 
@@ -51,7 +56,7 @@ public class ResourcesTest extends SystemTestBase {
   private static final Long MEMORY = 10485760L;
   private static final Long MEMORY_SWAP = 10485763L;
   private static final Long CPU_SHARES = 512L;
-  private static final String CPUSET = "0-1";
+  private static final String CPUSET_CPUS = "0-1";
 
   @Before
   public void setup() throws Exception {
@@ -64,21 +69,18 @@ public class ResourcesTest extends SystemTestBase {
         .setName(testJobName)
         .setVersion(testJobVersion)
         .setImage(BUSYBOX)
-        .setResources(new Resources(MEMORY, MEMORY_SWAP, CPU_SHARES, CPUSET))
+        .setResources(new Resources(MEMORY, MEMORY_SWAP, CPU_SHARES, CPUSET_CPUS))
         .setCommand(IDLE_COMMAND)
         .setCreatingUser(TEST_USER)
         .build();
-
-    try (final DockerClient docker = getNewDockerClient()) {
-      // Only run this test if limits are actually supported
-      final Info info = docker.info();
-      assumeTrue(info.memoryLimit());
-      assumeTrue(info.swapLimit());
-    }
   }
 
   @Test
   public void testClient() throws Exception {
+    // Doesn't work on CircleCI because their lxc-driver can't set cpus
+    // See output of `docker run --cpuset-cpus 0-1 busybox true`
+    assumeThat(getenv("CIRCLECI"), isEmptyOrNullString());
+
     final CreateJobResponse created = client.createJob(job).get();
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
@@ -99,13 +101,28 @@ public class ResourcesTest extends SystemTestBase {
 
     try (final DockerClient docker = getNewDockerClient()) {
 
-      final ContainerConfig containerConfig =
-          docker.inspectContainer(taskStatus.getContainerId()).config();
+      final HostConfig hostConfig =
+          docker.inspectContainer(taskStatus.getContainerId()).hostConfig();
 
-      assertEquals(MEMORY, containerConfig.memory());
-      assertEquals(MEMORY_SWAP, containerConfig.memorySwap());
-      assertEquals(CPU_SHARES, containerConfig.cpuShares());
-      assertEquals(CPUSET, containerConfig.cpuset());
+      assertEquals(CPU_SHARES, hostConfig.cpuShares());
+      assertEquals(CPUSET_CPUS, hostConfig.cpusetCpus());
+
+      final Info info = docker.info();
+      final Iterable<String> split = Splitter.on(".").split(docker.version().apiVersion());
+      //noinspection ConstantConditions
+      final int major = Integer.parseInt(Iterables.get(split, 0, "0"));
+      //noinspection ConstantConditions
+      final int minor = Integer.parseInt(Iterables.get(split, 1, "0"));
+
+      // TODO (dxia) This doesn't work on docker < 1.7 ie docker API < 1.19 for some reason.
+      if (major >= 1 && minor >= 19) {
+        if (info.memoryLimit()) {
+          assertEquals(MEMORY, hostConfig.memory());
+        }
+        if (info.swapLimit()) {
+          assertEquals(MEMORY_SWAP, hostConfig.memorySwap());
+        }
+      }
     }
   }
 }

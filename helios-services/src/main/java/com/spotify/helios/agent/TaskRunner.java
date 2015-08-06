@@ -218,17 +218,20 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
 
     // Create container
-    final ContainerConfig containerConfig = config.containerConfig(imageInfo);
+    final HostConfig hostConfig = config.hostConfig();
+    final ContainerConfig containerConfig = config.containerConfig(imageInfo)
+        .toBuilder()
+        .hostConfig(hostConfig)
+        .build();
     listener.creating();
     final ContainerCreation container = docker.createContainer(containerConfig, containerName);
     log.info("created container: {}: {}, {}", config, container, containerConfig);
     listener.created(container.id());
 
     // Start container
-    final HostConfig hostConfig = config.hostConfig();
     log.info("starting container: {}: {} {}", config, container.id(), hostConfig);
     listener.starting();
-    docker.startContainer(container.id(), hostConfig);
+    docker.startContainer(container.id());
     log.info("started container: {}: {}", config, container.id());
     listener.started();
 
@@ -282,7 +285,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
   }
 
-  public static interface Listener {
+  public interface Listener {
 
     void failed(Throwable t);
 

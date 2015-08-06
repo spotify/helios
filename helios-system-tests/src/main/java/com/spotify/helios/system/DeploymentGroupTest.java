@@ -21,6 +21,8 @@
 
 package com.spotify.helios.system;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
@@ -36,6 +38,7 @@ import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
@@ -55,6 +58,7 @@ import static com.google.common.collect.Iterables.getLast;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
@@ -83,21 +87,6 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
-  public void testRemoveDeploymentGroup() throws Exception {
-    cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
-    assertEquals("REMOVED", Json.readTree(
-        cli("remove-deployment-group", "--json", TEST_GROUP))
-        .get("status").asText());
-  }
-
-  @Test
-  public void testRemoveNonExistingDeploymentGroup() throws Exception {
-    assertEquals("DEPLOYMENT_GROUP_NOT_FOUND", Json.readTree(
-        cli("remove-deployment-group", "--json", TEST_GROUP))
-        .get("status").asText());
-  }
-
-  @Test
   public void testListDeploymentGroups() throws Exception {
     cli("create-deployment-group", "group2", "foo=bar");
     cli("create-deployment-group", "group1", "foo=bar");
@@ -110,25 +99,33 @@ public class DeploymentGroupTest extends SystemTestBase {
 
   @Test
   public void testRollingUpdate() throws Exception {
-    final String firstHost = testHost();
-    final String secondHost = testHost() + "2";
+    final List<String> hosts = ImmutableList.of(
+        "dc1-" + testHost() + "-a1.dc1.example.com",
+        "dc1-" + testHost() + "-a2.dc1.example.com",
+        "dc2-" + testHost() + "-a1.dc2.example.com",
+        "dc2-" + testHost() + "-a3.dc2.example.com",
+        "dc3-" + testHost() + "-a4.dc3.example.com"
+    );
 
-    // start two agents
-    startDefaultAgent(firstHost, "--labels", TEST_LABEL);
-    startDefaultAgent(secondHost, "--labels", TEST_LABEL);
+    // start agents
+    for (final String host : hosts) {
+      startDefaultAgent(host, "--labels", TEST_LABEL);
+    }
 
-    // create a deployment group  and job
+    // create a deployment group and job
     cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
     // trigger a rolling update
     cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
 
-    // ensure the job is running on both agents and the deployment group reaches DONE
-    awaitTaskState(jobId, firstHost, TaskStatus.State.RUNNING);
-    awaitTaskState(jobId, secondHost, TaskStatus.State.RUNNING);
+    // ensure the job is running on all agents and the deployment group reaches DONE
+    for (final String host : hosts) {
+      awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+    }
 
-    final Deployment deployment =  defaultClient().hostStatus(firstHost).get().getJobs().get(jobId);
+    final Deployment deployment =
+        defaultClient().hostStatus(hosts.get(0)).get().getJobs().get(jobId);
     assertEquals(TEST_GROUP, deployment.getDeploymentGroupName());
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
                                DeploymentGroupStatus.State.DONE);
@@ -139,13 +136,19 @@ public class DeploymentGroupTest extends SystemTestBase {
     final JobId secondJobId = createJob(testJobName, secondJobVersion, BUSYBOX, IDLE_COMMAND);
 
     // trigger a rolling update to replace the first job with the second job
-    cli("rolling-update", "--async", secondJobNameAndVersion, TEST_GROUP);
+    final String output = cli("rolling-update", secondJobNameAndVersion, TEST_GROUP);
+
+    // Check that the hosts in the output are ordered
+    final List<String> lines = Lists.newArrayList(Splitter.on("\n").split(output));
+    for (int i = 0; i < hosts.size(); i++) {
+      assertThat(lines.get(i + 2), containsString(hosts.get(i)));
+    }
 
     // ensure the second job rolled out fine
-    awaitTaskState(secondJobId, firstHost, TaskStatus.State.RUNNING);
-    awaitTaskState(secondJobId, secondHost, TaskStatus.State.RUNNING);
-    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
-                               DeploymentGroupStatus.State.DONE);
+    for (final String host : hosts) {
+      awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
+    }
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
 
   @Test
@@ -275,21 +278,21 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
-  public void testAbortRollingUpdate() throws Exception {
+  public void testStopDeploymentGroup() throws Exception {
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     cli("create", "my_job:2", "my_image");
-    assertThat(cli("abort-rolling-update", TEST_GROUP),
-               containsString("Aborted rolling-update on deployment-group my_group"));
+    assertThat(cli("stop-deployment-group", TEST_GROUP),
+               containsString("Deployment-group my_group stopped"));
     final DeploymentGroupStatusResponse status = Json.read(
         cli("deployment-group-status", "--json", TEST_GROUP), DeploymentGroupStatusResponse.class);
     assertEquals(DeploymentGroupStatusResponse.Status.FAILED, status.getStatus());
-    assertEquals("Aborted by user", status.getError());
+    assertEquals("Stopped by user", status.getError());
   }
 
 
   @Test
-  public void testAbortRollingUpdateGroupNotFound() throws Exception {
-    assertThat(cli("abort-rolling-update", TEST_GROUP),
+  public void testStopDeploymentGroupGroupNotFound() throws Exception {
+    assertThat(cli("stop-deployment-group", TEST_GROUP),
                containsString("Deployment-group my_group not found"));
   }
 
@@ -299,17 +302,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     master.stopAsync().awaitTerminated();
 
     // start a bunch of masters and agents
-    final Map<String, MasterMain> masters = Maps.newHashMap();
-    for (int i = 0; i < 3; i++) {
-      final String name = TEST_MASTER + i;
-      masters.put(name, startMaster("-vvvv",
-                                    "--no-log-setup",
-                                    "--http", "http://localhost:" + (masterPort() + i),
-                                    "--admin=" + (masterAdminPort() + i),
-                                    "--domain", "",
-                                    "--name", name,
-                                    "--zk", zk().connectString()));
-    }
+    final Map<String, MasterMain> masters = startDefaultMasters(3);
 
     final Map<String, AgentMain> agents = Maps.newLinkedHashMap();
     for (int i = 0; i < 10; i++) {
@@ -337,5 +330,73 @@ public class DeploymentGroupTest extends SystemTestBase {
     }
 
     assertEquals(masters.size(), deployingMasters.size());
+  }
+
+  @Test
+  public void testIdenticalRollouts() throws Exception {
+    // This verifies that calling rolling-update on a failed deployment group will initiate a
+    // new rollout and bring the group status out of the failed state. Previously calling
+    // rolling-update on a failed deployment group would have no effect unless you changed the job
+    // ID or a rollout option.
+
+    // create the deployment group and job
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    // trigger a rolling update
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+
+    // stop the deployment group to put it in a failed state
+    cli("stop-deployment-group", TEST_GROUP);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.FAILED);
+
+    // trigger another rolling update with the same params as before and verify it reaches done
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+  }
+
+  @Test
+  public void testStoppedJob() throws Exception {
+    final String host = testHost();
+    startDefaultAgent(host, "--labels", TEST_LABEL);
+
+    // Wait for agent to come up
+    final HeliosClient client = defaultClient();
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    // Create the deployment group and two jobs
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    final JobId firstJobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    final String secondJobVersion = randomHexString();
+    final String secondJobNameAndVersion = testJobName + ":" + secondJobVersion;
+    final JobId secondJobId = createJob(testJobName, secondJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    // Trigger a rolling update of the first job
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+    awaitTaskState(firstJobId, host, TaskStatus.State.RUNNING);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+
+    // Stop the job
+    cli("stop", testJobNameAndVersion, host);
+    awaitTaskState(firstJobId, host, TaskStatus.State.STOPPED);
+
+    // Trigger a rolling update, replacing the first job with the second.
+    // Verify the first job is undeployed and the second job is running.
+    cli("rolling-update", "--async", secondJobNameAndVersion, TEST_GROUP);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+    awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
+    final JobStatus status = client.jobStatus(firstJobId).get();
+    assertThat(status.getDeployments().isEmpty(), is(true));
+
+    // Stop the job
+    cli("stop", secondJobNameAndVersion, host);
+    awaitTaskState(secondJobId, host, TaskStatus.State.STOPPED);
+
+    // Trigger a rolling update of the same job, and verify the job gets started. This takes
+    // a different code path than when replacing a different job, which we tested above.
+    cli("rolling-update", "--async", secondJobNameAndVersion, TEST_GROUP);
+    awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
 }
