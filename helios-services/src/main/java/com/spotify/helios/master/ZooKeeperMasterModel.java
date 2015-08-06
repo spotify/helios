@@ -671,8 +671,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
           tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
       final RolloutTask task = tasks.getRolloutTasks().get(tasks.getTaskIndex());
-      final RollingUpdateOp op =
-          processRollingUpdateTask(client, opFactory, task, tasks.getDeploymentGroup());
+      RollingUpdateOp op = processRollingUpdateTask(
+          client, opFactory, task, tasks.getDeploymentGroup());
 
       if (!op.operations().isEmpty()) {
         final List<ZooKeeperOperation> ops = Lists.newArrayList();
