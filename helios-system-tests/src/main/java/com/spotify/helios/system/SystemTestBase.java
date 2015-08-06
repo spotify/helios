@@ -738,6 +738,13 @@ public abstract class SystemTestBase {
   }
 
   protected JobId createJob(final Job job) throws Exception {
+    final String createOutput = createJobRawOutput(job);
+    final String jobId = WHITESPACE.trimFrom(createOutput);
+
+    return JobId.fromString(jobId);
+  }
+
+  protected String createJobRawOutput(final Job job) throws Exception {
     final String name = job.getId().getName();
     checkArgument(name.contains(testTag), "Job name must contain testTag to enable cleanup");
 
@@ -746,10 +753,7 @@ public abstract class SystemTestBase {
     Files.write(serializedConfig, configFile, Charsets.UTF_8);
 
     final List<String> args = ImmutableList.of("-q", "-f", configFile.getAbsolutePath());
-    final String createOutput = cli("create", args);
-    final String jobId = WHITESPACE.trimFrom(createOutput);
-
-    return JobId.fromString(jobId);
+    return cli("create", args);
   }
 
   protected void deployJob(final JobId jobId, final String host)
