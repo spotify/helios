@@ -34,16 +34,15 @@ import com.spotify.helios.servicescommon.coordination.SetData;
 import com.spotify.helios.servicescommon.coordination.Delete;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
-import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.verify;
 
 public class RollingUpdateOpFactoryTest {
 
@@ -58,18 +57,7 @@ public class RollingUpdateOpFactoryTest {
   private static final Map<String, Object> TASK_EVENT =
       ImmutableMap.<String, Object>of("foo", "task_event");
 
-  private DeploymentGroupEventFactory eventFactory;
-
-  @Before
-  public void setUp() {
-    eventFactory = mock(DeploymentGroupEventFactory.class);
-    when(eventFactory.rollingUpdateDone(any(DeploymentGroup.class))).thenReturn(DONE_EVENT);
-    when(eventFactory.rollingUpdateFailed(
-        any(DeploymentGroup.class), any(RolloutTask.class), anyString()))
-        .thenReturn(FAILED_EVENT);
-    when(eventFactory.rollingUpdateTaskSucceeded(any(DeploymentGroup.class), any(RolloutTask.class)))
-        .thenReturn(TASK_EVENT);
-  }
+  private final DeploymentGroupEventFactory eventFactory = mock(DeploymentGroupEventFactory.class);
 
   @Test
   public void testNextTaskNoOps() {
@@ -114,7 +102,8 @@ public class RollingUpdateOpFactoryTest {
     final ZooKeeperOperation mockOp = mock(ZooKeeperOperation.class);
     final RollingUpdateOp op = opFactory.nextTask(Lists.newArrayList(mockOp));
 
-    // A nexTask op with no ZK operations should result advancing the task index
+    // A nexTask op with ZK operations should result in advancing the task index
+    // and also contain the specified ZK operations
     assertEquals(
         ImmutableSet.of(
             mockOp,
@@ -127,7 +116,9 @@ public class RollingUpdateOpFactoryTest {
 
     // This is not a no-op -> an event should be emitted
     assertEquals(1, op.events().size());
-    assertEquals(TASK_EVENT, op.events().get(0));
+    verify(eventFactory).rollingUpdateTaskSucceeded(
+        DEPLOYMENT_GROUP,
+        deploymentGroupTasks.getRolloutTasks().get(deploymentGroupTasks.getTaskIndex()));
   }
 
   @Test
@@ -160,7 +151,7 @@ public class RollingUpdateOpFactoryTest {
 
     // ...and that an event is emitted
     assertEquals(1, op.events().size());
-    assertEquals(DONE_EVENT, op.events().get(0));
+    verify(eventFactory).rollingUpdateDone(DEPLOYMENT_GROUP);
   }
 
   @Test
@@ -178,9 +169,9 @@ public class RollingUpdateOpFactoryTest {
         deploymentGroupTasks, eventFactory);
     final RollingUpdateOp op = opFactory.error("foo", "host1");
 
-    // When state -> DONE we expected
+    // When state -> FAILED we expected
     //  * deployment group tasks are deleted
-    //  * deployment group status is updated (to DONE)
+    //  * deployment group status is updated (to FAILED)
     assertEquals(
         ImmutableSet.of(
             new SetData("/status/deployment-groups/my_group", DeploymentGroupStatus.newBuilder()
@@ -193,7 +184,10 @@ public class RollingUpdateOpFactoryTest {
 
     // ...and that an event is emitted
     assertEquals(1, op.events().size());
-    assertEquals(FAILED_EVENT, op.events().get(0));
+    verify(eventFactory).rollingUpdateFailed(
+        eq(DEPLOYMENT_GROUP),
+        eq(deploymentGroupTasks.getRolloutTasks().get(deploymentGroupTasks.getTaskIndex())),
+        anyString());
   }
 
   @Test
