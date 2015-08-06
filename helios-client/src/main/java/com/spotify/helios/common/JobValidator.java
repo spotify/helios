@@ -196,7 +196,7 @@ public class JobValidator {
     final Set<String> errors = Sets.newHashSet();
 
     final String jobIdName = jobId.getName();
-    if (jobIdName == null || jobIdName.isEmpty()) {
+    if (isNullOrEmpty(jobIdName)) {
       errors.add("Job name was not specified.");
       return errors;
     }
@@ -219,7 +219,7 @@ public class JobValidator {
     final Set<String> errors = Sets.newHashSet();
 
     // we're fine if no hostname is set
-    if (hostname == null || hostname.isEmpty()) {
+    if (isNullOrEmpty(hostname)) {
         return errors;
     }
 
@@ -236,7 +236,7 @@ public class JobValidator {
   private Set<String> validateJobVersion(final String jobIdVersion, final JobId recomputedId) {
     final Set<String> errors = Sets.newHashSet();
 
-    if (jobIdVersion == null || jobIdVersion.isEmpty()) {
+    if (isNullOrEmpty(jobIdVersion)) {
       errors.add(format("Job version was not specified in job id [%s].", recomputedId));
       return errors;
     }
@@ -258,7 +258,7 @@ public class JobValidator {
   private Set<String> validateJobHash(final String jobIdHash, final JobId recomputedId) {
     final Set<String> errors = Sets.newHashSet();
 
-    if (jobIdHash == null || jobIdHash.isEmpty()) {
+    if (isNullOrEmpty(jobIdHash)) {
       errors.add(format("Job hash was not specified in job id [%s].", recomputedId));
       return errors;
     }
