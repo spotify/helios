@@ -21,9 +21,20 @@
 
 package com.spotify.helios.common;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.lang.String.format;
+import static java.util.regex.Pattern.compile;
+
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.regex.Pattern;
+
 import com.google.common.base.Joiner;
 import com.google.common.collect.Sets;
-
 import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
@@ -34,21 +45,12 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.regex.Pattern;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.lang.String.format;
-import static java.util.regex.Pattern.compile;
-
 public class JobValidator {
 
   public static final Pattern NAME_VERSION_PATTERN = Pattern.compile("[0-9a-zA-Z-_.]+");
+
+  public static final Pattern HOSTNAME_PATTERN =
+      Pattern.compile("^([a-z0-9][a-z0-9-]{0,62}$)");
 
   public static final Pattern DOMAIN_PATTERN =
       Pattern.compile("^(?:(?:[a-zA-Z0-9]|(?:[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]))" +
@@ -70,6 +72,7 @@ public class JobValidator {
 
     errors.addAll(validateJobId(job));
     errors.addAll(validateJobImage(job.getImage()));
+    errors.addAll(validateJobHostName(job.getHostname()));
 
     // Check that there's not external port collision
     final Set<Integer> externalPorts = Sets.newHashSet();
@@ -193,7 +196,7 @@ public class JobValidator {
     final Set<String> errors = Sets.newHashSet();
 
     final String jobIdName = jobId.getName();
-    if (jobIdName == null || jobIdName.isEmpty()) {
+    if (isNullOrEmpty(jobIdName)) {
       errors.add("Job name was not specified.");
       return errors;
     }
@@ -212,10 +215,28 @@ public class JobValidator {
     return errors;
   }
 
+  private Set<String> validateJobHostName(final String hostname) {
+    final Set<String> errors = Sets.newHashSet();
+
+    // we're fine if no hostname is set
+    if (isNullOrEmpty(hostname)) {
+        return errors;
+    }
+
+    // Check that the job name contains only allowed characters
+    if (!HOSTNAME_PATTERN.matcher(hostname).matches()) {
+      errors.add(
+          format("Invalid hostname (%s), only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63",
+              hostname));
+    }
+
+    return errors;
+  }
+
   private Set<String> validateJobVersion(final String jobIdVersion, final JobId recomputedId) {
     final Set<String> errors = Sets.newHashSet();
 
-    if (jobIdVersion == null || jobIdVersion.isEmpty()) {
+    if (isNullOrEmpty(jobIdVersion)) {
       errors.add(format("Job version was not specified in job id [%s].", recomputedId));
       return errors;
     }
@@ -237,7 +258,7 @@ public class JobValidator {
   private Set<String> validateJobHash(final String jobIdHash, final JobId recomputedId) {
     final Set<String> errors = Sets.newHashSet();
 
-    if (jobIdHash == null || jobIdHash.isEmpty()) {
+    if (isNullOrEmpty(jobIdHash)) {
       errors.add(format("Job hash was not specified in job id [%s].", recomputedId));
       return errors;
     }

@@ -21,23 +21,6 @@
 
 package com.spotify.helios.common;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-
-import com.spotify.helios.common.descriptors.HealthCheck;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.common.descriptors.ServiceEndpoint;
-import com.spotify.helios.common.descriptors.ServicePortParameters;
-import com.spotify.helios.common.descriptors.ServicePorts;
-
-import org.junit.Test;
-
-import java.util.Map;
-
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
@@ -45,6 +28,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_HEALTH_CHECK;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_NETWORK_MODE;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
@@ -61,6 +45,22 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
+import java.util.Map;
+
+import org.junit.Test;
+
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.spotify.helios.common.descriptors.HealthCheck;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.ServiceEndpoint;
+import com.spotify.helios.common.descriptors.ServicePortParameters;
+import com.spotify.helios.common.descriptors.ServicePorts;
+
 public class JobValidatorTest {
   private final HealthCheck HEALTH_CHECK =
     HealthCheck.newHttpHealthCheck().setPath("/").setPort("1").build();
@@ -68,6 +68,7 @@ public class JobValidatorTest {
       .setName("foo")
       .setVersion("1")
       .setImage("bar")
+      .setHostname("baz")
       .setEnv(ImmutableMap.of("FOO", "BAR"))
       .setPorts(ImmutableMap.of("1", PortMapping.of(1, 1),
                                 "2", PortMapping.of(2, 2)))
@@ -118,6 +119,18 @@ public class JobValidatorTest {
   }
 
   @Test
+  public void testValidHostnamesPass() {
+    final Job.Builder b = Job.newBuilder().setName("foo").setVersion("1").setImage("bar");
+    assertThat(validator.validate(b.setHostname("foo").build()), is(empty()));
+    assertThat(validator.validate(b.setHostname("17").build()), is(empty()));
+    // 63 chars
+    assertThat(validator.validate(b.setHostname(Strings.repeat("hostname", 7) + "hostnam").build()),
+               is(empty()));
+    assertThat(validator.validate(b.setHostname("a").build()), is(empty()));
+    assertThat(validator.validate(b.setHostname("foo17bar-baz-quux").build()), is(empty()));
+  }
+
+  @Test
   public void testValidVolumesPass() {
     final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar").build();
     assertThat(validator.validate(j.toBuilder().addVolume("/foo").build()), is(empty()));
@@ -162,7 +175,7 @@ public class JobValidatorTest {
   @Test
   public void testIdMismatchFails() throws Exception {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
-                            "bar", EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS,
+                            "bar", EMPTY_HOSTNAME, EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS,
                             EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
                             EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
                             EMPTY_HEALTH_CHECK, EMPTY_SECURITY_OPT, EMPTY_NETWORK_MODE);
@@ -267,6 +280,33 @@ public class JobValidatorTest {
                             "size between 4 and 30"),
                  validator.validate(b.setImage(foos + "/bar").build()));
   }
+
+   @Test
+   public void testInValidHostnamesFail() {
+     final Job.Builder b = Job.newBuilder().setName("foo").setVersion("1").setImage("bar");
+
+     // 64 chars
+     final String toolonghostname = Strings.repeat("hostname", 8);
+     assertEquals(newHashSet("Invalid hostname (" + toolonghostname + "), " +
+                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+         validator.validate(b.setHostname(toolonghostname).build()));
+
+     assertEquals(newHashSet("Invalid hostname (%/ RJU&%(=N/U), " +
+                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+         validator.validate(b.setHostname("%/ RJU&%(=N/U").build()));
+
+     assertEquals(newHashSet("Invalid hostname (-), " +
+                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+         validator.validate(b.setHostname("-").build()));
+
+     assertEquals(newHashSet("Invalid hostname (foo17.bar-baz_quux), " +
+                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+         validator.validate(b.setHostname("foo17.bar-baz_quux").build()));
+
+     assertEquals(newHashSet("Invalid hostname (D34DB33F), " +
+                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+         validator.validate(b.setHostname("D34DB33F").build()));
+   }
 
   @Test
   public void testInvalidVolumesFail() {

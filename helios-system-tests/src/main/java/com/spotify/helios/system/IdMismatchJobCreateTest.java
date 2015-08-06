@@ -21,28 +21,28 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_HEALTH_CHECK;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_NETWORK_MODE;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION_DOMAIN;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_RESOURCES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_SECURITY_OPT;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
+import static org.junit.Assert.assertEquals;
+
+import org.junit.Test;
+
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.CreateJobResponse;
-
-import org.junit.Test;
-
-import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_HEALTH_CHECK;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_NETWORK_MODE;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_RESOURCES;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_SECURITY_OPT;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION_DOMAIN;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
-
-import static org.junit.Assert.assertEquals;
 
 public class IdMismatchJobCreateTest extends SystemTestBase {
 
@@ -52,7 +52,7 @@ public class IdMismatchJobCreateTest extends SystemTestBase {
     final HeliosClient client = defaultClient();
 
     final CreateJobResponse createIdMismatch = client.createJob(
-        new Job(JobId.fromString("bad:job:deadbeef"), BUSYBOX, IDLE_COMMAND,
+        new Job(JobId.fromString("bad:job:deadbeef"), BUSYBOX, EMPTY_HOSTNAME, IDLE_COMMAND,
                 EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS, EMPTY_REGISTRATION,
                 EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
                 EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
