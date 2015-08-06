@@ -21,7 +21,6 @@
 
 package com.spotify.helios.rollingupdate;
 
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 
@@ -30,13 +29,11 @@ import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
-import com.spotify.helios.servicescommon.coordination.SetData;
 import com.spotify.helios.servicescommon.coordination.Delete;
+import com.spotify.helios.servicescommon.coordination.SetData;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import org.junit.Test;
-
-import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.anyString;
@@ -50,12 +47,6 @@ public class RollingUpdateOpFactoryTest {
       .setName("my_group")
       .setRolloutOptions(RolloutOptions.newBuilder().build())
       .build();
-  private static final Map<String, Object> DONE_EVENT =
-      ImmutableMap.<String, Object>of("foo", "done_event");
-  private static final Map<String, Object> FAILED_EVENT =
-      ImmutableMap.<String, Object>of("foo", "fail_event");
-  private static final Map<String, Object> TASK_EVENT =
-      ImmutableMap.<String, Object>of("foo", "task_event");
 
   private final DeploymentGroupEventFactory eventFactory = mock(DeploymentGroupEventFactory.class);
 
