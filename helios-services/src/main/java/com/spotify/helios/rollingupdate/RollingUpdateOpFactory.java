@@ -86,7 +86,7 @@ public class RollingUpdateOpFactory {
       // Only emit an event if the task resulted in taking in action. If there are no ZK operations
       // the task was effectively a no-op.
       if (!operations.isEmpty()) {
-        events.add(eventFactory.rollingUpdateTaskOk(deploymentGroup, task));
+        events.add(eventFactory.rollingUpdateTaskSucceeded(deploymentGroup, task));
       }
     }
 
