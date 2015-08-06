@@ -124,7 +124,8 @@ public class JobValidatorTest {
     assertThat(validator.validate(b.setHostname("foo").build()), is(empty()));
     assertThat(validator.validate(b.setHostname("17").build()), is(empty()));
     // 63 chars
-    assertThat(validator.validate(b.setHostname("hostnamehostnamehostnamehostnamehostnamehostnamehostnamehostnam").build()), is(empty()));
+    assertThat(validator.validate(b.setHostname(Strings.repeat("hostname", 7) + "hostnam").build()),
+               is(empty()));
     assertThat(validator.validate(b.setHostname("a").build()), is(empty()));
     assertThat(validator.validate(b.setHostname("foo17bar-baz-quux").build()), is(empty()));
   }
@@ -286,17 +287,25 @@ public class JobValidatorTest {
 
      // 64 chars
      final String toolonghostname = Strings.repeat("hostname", 8);
-     assertEquals(newHashSet("Invalid hostname (" + toolonghostname + "), only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+     assertEquals(newHashSet("Invalid hostname (" + toolonghostname + "), " +
+                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
          validator.validate(b.setHostname(toolonghostname).build()));
 
-     assertEquals(newHashSet("Invalid hostname (%/ RJU&%(=N/U), only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+     assertEquals(newHashSet("Invalid hostname (%/ RJU&%(=N/U), " +
+                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
          validator.validate(b.setHostname("%/ RJU&%(=N/U").build()));
 
-     assertEquals(newHashSet("Invalid hostname (-), only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+     assertEquals(newHashSet("Invalid hostname (-), " +
+                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
          validator.validate(b.setHostname("-").build()));
 
-     assertEquals(newHashSet("Invalid hostname (foo17.bar-baz_quux), only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+     assertEquals(newHashSet("Invalid hostname (foo17.bar-baz_quux), " +
+                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
          validator.validate(b.setHostname("foo17.bar-baz_quux").build()));
+
+     assertEquals(newHashSet("Invalid hostname (D34DB33F), " +
+                             "only [a-z0-9][a-z0-9-] are allowed, size between 1 and 63"),
+         validator.validate(b.setHostname("D34DB33F").build()));
    }
 
   @Test

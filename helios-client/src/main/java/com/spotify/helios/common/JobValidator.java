@@ -50,7 +50,7 @@ public class JobValidator {
   public static final Pattern NAME_VERSION_PATTERN = Pattern.compile("[0-9a-zA-Z-_.]+");
 
   public static final Pattern HOSTNAME_PATTERN =
-      Pattern.compile("^([a-zA-Z0-9][a-zA-Z0-9-]{0,62}$)");
+      Pattern.compile("^([a-z0-9][a-z0-9-]{0,62}$)");
 
   public static final Pattern DOMAIN_PATTERN =
       Pattern.compile("^(?:(?:[a-zA-Z0-9]|(?:[a-zA-Z0-9][a-zA-Z0-9\\-]*[a-zA-Z0-9]))" +
