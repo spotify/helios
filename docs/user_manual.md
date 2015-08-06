@@ -182,6 +182,7 @@ the available configuration keys with an explanation of each one.
   below.
 * `id`: The id of the job.
 * `image`: The docker image to use.
+* `hostname`: The hostname to be passed to the container.
 * `networkMode`: Sets the networking mode for the container. Supported values are: bridge,
    host, and container:&lt;name|id&gt;. See [Docker docs](https://docs.docker.com/reference/run/#network-settings).
 * `ports`: Port mapping. Specify an endpoint name and a single port (e.g.
