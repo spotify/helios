@@ -67,7 +67,7 @@ public class RollingUpdateOpFactoryTest {
     when(eventFactory.rollingUpdateFailed(
         any(DeploymentGroup.class), any(RolloutTask.class), anyString()))
         .thenReturn(FAILED_EVENT);
-    when(eventFactory.rollingUpdateTaskOk(any(DeploymentGroup.class), any(RolloutTask.class)))
+    when(eventFactory.rollingUpdateTaskSucceeded(any(DeploymentGroup.class), any(RolloutTask.class)))
         .thenReturn(TASK_EVENT);
   }
 

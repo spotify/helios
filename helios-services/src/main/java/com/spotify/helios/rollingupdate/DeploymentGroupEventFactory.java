@@ -25,6 +25,7 @@ import com.google.common.collect.Maps;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
 import java.util.Map;
@@ -36,9 +37,10 @@ public class DeploymentGroupEventFactory {
     HOSTS_CHANGED
   }
 
-  public Map<String, Object> rollingUpdateTaskOk(final DeploymentGroup deploymentGroup,
-                                                 final RolloutTask task) {
+  public Map<String, Object> rollingUpdateTaskSucceeded(final DeploymentGroup deploymentGroup,
+                                                        final RolloutTask task) {
     final Map<String, Object> ev = Maps.newHashMap();
+    ev.put("eventType", "rollingUpdateTaskSucceeded");
     ev.put("timestamp", System.currentTimeMillis());
     ev.put("deploymentGroupName", deploymentGroup.getName());
     ev.put("action", task.getAction());
@@ -48,16 +50,20 @@ public class DeploymentGroupEventFactory {
   }
 
   public Map<String, Object> rollingUpdateStarted(final DeploymentGroup deploymentGroup,
-                                                  final RollingUpdateReason reason) {
+                                                  final RollingUpdateReason reason,
+                                                  final JobId jobId) {
     final Map<String, Object> ev = Maps.newHashMap();
+    ev.put("eventType", "rollingUpdateStarted");
     ev.put("timestamp", System.currentTimeMillis());
     ev.put("deploymentGroupName", deploymentGroup.getName());
     ev.put("reason", reason);
+    ev.put("jobId", jobId.toString());
     return ev;
   }
 
   public Map<String, Object> rollingUpdateDone(final DeploymentGroup deploymentGroup) {
     final Map<String, Object> ev = Maps.newHashMap();
+    ev.put("eventType", "rollingUpdateDone");
     ev.put("timestamp", System.currentTimeMillis());
     ev.put("deploymentGroupName", deploymentGroup.getName());
     ev.put("state", DeploymentGroupStatus.State.DONE);
@@ -68,6 +74,7 @@ public class DeploymentGroupEventFactory {
                                                  final RolloutTask task,
                                                  final String error) {
     final Map<String, Object> ev = Maps.newHashMap();
+    ev.put("eventType", "rollingUpdateFailed");
     ev.put("timestamp", System.currentTimeMillis());
     ev.put("deploymentGroupName", deploymentGroup.getName());
     ev.put("state", DeploymentGroupStatus.State.FAILED);

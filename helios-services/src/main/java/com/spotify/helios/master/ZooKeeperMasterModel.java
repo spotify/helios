@@ -543,7 +543,8 @@ public class ZooKeeperMasterModel implements MasterModel {
             KAFKA_TOPIC,
             Json.asBytesUnchecked(
                 DEPLOYMENT_GROUP_EVENT_FACTORY.rollingUpdateStarted(
-                    deploymentGroup, DeploymentGroupEventFactory.RollingUpdateReason.MANUAL))));
+                    deploymentGroup, DeploymentGroupEventFactory.RollingUpdateReason.MANUAL,
+                    jobId))));
       }
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(deploymentGroup.getName());
