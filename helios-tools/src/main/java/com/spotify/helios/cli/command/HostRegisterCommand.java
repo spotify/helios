@@ -31,6 +31,8 @@ import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.util.concurrent.ExecutionException;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
+
 public class HostRegisterCommand extends ControlCommand {
 
   private final Argument hostArg;
@@ -54,6 +56,11 @@ public class HostRegisterCommand extends ControlCommand {
           throws ExecutionException, InterruptedException {
     final String host = options.getString(hostArg.getDest());
     final String id = options.getString(idArg.getDest());
+
+    if (isNullOrEmpty(host) || isNullOrEmpty(id)) {
+      out.printf("You must specify the hostname and id.");
+      return 1;
+    }
 
     out.printf("Registering host %s with id %s%n", host, id);
 

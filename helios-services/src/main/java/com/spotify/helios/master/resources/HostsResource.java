@@ -30,6 +30,7 @@ import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
+import com.spotify.helios.common.protocol.HostRegisterResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
@@ -61,6 +62,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.FORBIDDEN;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST_NOT_FOUND;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.INVALID_ID;
@@ -108,7 +110,11 @@ public class HostsResource {
   @Timed
   @ExceptionMetered
   public Response.Status put(@PathParam("host") final String host,
-                             @QueryParam("id") final String id) {
+                             @QueryParam("id") @DefaultValue("") final String id) {
+    if (isNullOrEmpty(id)) {
+      throw badRequest(new HostRegisterResponse(HostRegisterResponse.Status.INVALID_ID, host));
+    }
+
     model.registerHost(host, id);
     log.info("added host {}", host);
     return Response.Status.OK;

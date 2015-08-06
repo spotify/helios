@@ -66,6 +66,7 @@ import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,6 +108,7 @@ import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -200,8 +202,8 @@ public class HeliosClient implements AutoCloseable {
     final byte[] entityBytes;
     headers.put(VersionCompatibility.HELIOS_VERSION_HEADER, asList(Version.POM_VERSION));
     if (entity != null) {
-      headers.put("Content-Type", asList("application/json"));
-      headers.put("Charset", asList("utf-8"));
+      headers.put("Content-Type", singletonList("application/json"));
+      headers.put("Charset", singletonList("utf-8"));
       entityBytes = Json.asBytesUnchecked(entity);
     } else {
       entityBytes = new byte[]{};
@@ -508,7 +510,7 @@ public class HeliosClient implements AutoCloseable {
         request(uri("/version/"), "GET"),
         new FutureFallback<Response>() {
           @Override
-          public ListenableFuture<Response> create(Throwable t) throws Exception {
+          public ListenableFuture<Response> create(@NotNull Throwable t) throws Exception {
             return immediateFuture(null);
           }
         }
@@ -518,7 +520,7 @@ public class HeliosClient implements AutoCloseable {
         futureWithFallback,
         new AsyncFunction<Response, VersionResponse>() {
           @Override
-          public ListenableFuture<VersionResponse> apply(Response reply) throws Exception {
+          public ListenableFuture<VersionResponse> apply(@NotNull Response reply) throws Exception {
             final String masterVersion =
                 reply == null ? "Unable to connect to master" :
                 reply.status == HTTP_OK ? Json.read(reply.payload, String.class) :
@@ -630,7 +632,7 @@ public class HeliosClient implements AutoCloseable {
     }
 
     @Override
-    public ListenableFuture<T> apply(final Response reply)
+    public ListenableFuture<T> apply(@NotNull final Response reply)
         throws HeliosException {
       if (reply.status == HTTP_NOT_FOUND && !decodeableStatusCodes.contains(HTTP_NOT_FOUND)) {
         return immediateFuture(null);
