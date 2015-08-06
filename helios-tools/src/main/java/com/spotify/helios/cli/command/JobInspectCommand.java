@@ -126,6 +126,7 @@ public class JobInspectCommand extends WildcardJobCommand {
     } else {
       out.printf("Id: %s%n", job.getId());
       out.printf("Image: %s%n", job.getImage());
+      out.printf("Hostname: %s%n", job.getHostname());
       out.printf("Command: %s%n", quote(job.getCommand()));
       printMap(out, "Env:   ", QUOTE, job.getEnv());
       out.printf("Health check: %s%n", formatHealthCheck(job.getHealthCheck()));
