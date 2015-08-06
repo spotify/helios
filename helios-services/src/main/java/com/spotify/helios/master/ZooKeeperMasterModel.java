@@ -134,7 +134,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       STRING_LIST_TYPE =
       new TypeReference<List<String>>() {};
 
-  private static final String KAFKA_TOPIC = "HeliosDeploymentGroupEvents";
+  private static final String DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC = "HeliosDeploymentGroupEvents";
   private static final DeploymentGroupEventFactory DEPLOYMENT_GROUP_EVENT_FACTORY =
       new DeploymentGroupEventFactory();
 
@@ -540,7 +540,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       if (kafkaSender != null) {
         kafkaSender.send(KafkaRecord.of(
-            KAFKA_TOPIC,
+            DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC,
             Json.asBytesUnchecked(
                 DEPLOYMENT_GROUP_EVENT_FACTORY.rollingUpdateStarted(
                     deploymentGroup, DeploymentGroupEventFactory.RollingUpdateReason.MANUAL,
@@ -688,7 +688,8 @@ public class ZooKeeperMasterModel implements MasterModel {
           // Emit events
           if (kafkaSender != null) {
             for (final Map<String, Object> event : op.events()) {
-              kafkaSender.send(KafkaRecord.of(KAFKA_TOPIC, Json.asBytesUnchecked(event)));
+              kafkaSender.send(KafkaRecord.of(
+                  DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, Json.asBytesUnchecked(event)));
             }
           }
         } catch (KeeperException.BadVersionException e) {
