@@ -55,10 +55,12 @@ public class RollingUpdateService extends AbstractIdleService {
   private static final Logger log = LoggerFactory.getLogger(RollingUpdateService.class);
 
   private static final long UPDATE_INTERVAL = SECONDS.toMillis(1);
+  private static final int NUM_REACTORS = 10;
 
   private final MasterModel masterModel;
   private final Reactor hostUpdateReactor;
-  private final Reactor rollingUpdateReactor;
+  private final List<Reactor> rollingUpdateReactors =
+      Lists.newArrayListWithExpectedSize(NUM_REACTORS);
 
   /**
    * Create a new RollingUpdateService.
@@ -70,11 +72,13 @@ public class RollingUpdateService extends AbstractIdleService {
     this.masterModel = checkNotNull(masterModel, "masterModel");
     checkNotNull(reactorFactory, "reactorFactory");
 
-    this.hostUpdateReactor = reactorFactory.create("hostUpdate",
-                                                   new UpdateDeploymentGroupHosts(),
-                                                   UPDATE_INTERVAL);
-    this.rollingUpdateReactor = reactorFactory.create("rollingUpdate", new RollingUpdate(),
-                                                      UPDATE_INTERVAL);
+    this.hostUpdateReactor = reactorFactory.create(
+        "hostUpdate", new UpdateDeploymentGroupHosts(), UPDATE_INTERVAL);
+
+    for (int i = 0; i < NUM_REACTORS; i++) {
+      this.rollingUpdateReactors.add(reactorFactory.create(
+          "rollingUpdate", new RollingUpdate(), UPDATE_INTERVAL));
+    }
   }
 
   @Override
@@ -82,14 +86,21 @@ public class RollingUpdateService extends AbstractIdleService {
     hostUpdateReactor.startAsync().awaitRunning();
     hostUpdateReactor.signal();
 
-    rollingUpdateReactor.startAsync().awaitRunning();
-    rollingUpdateReactor.signal();
+    for (int i = 0; i < NUM_REACTORS; i++) {
+      final Reactor rollingUpdateReactor = rollingUpdateReactors.get(i);
+      rollingUpdateReactor.startAsync().awaitRunning();
+      rollingUpdateReactor.signal();
+    }
   }
 
   @Override
   protected void shutDown() throws Exception {
     hostUpdateReactor.stopAsync().awaitTerminated();
-    rollingUpdateReactor.stopAsync().awaitTerminated();
+
+    for (int i = 0; i < NUM_REACTORS; i++) {
+      final Reactor rollingUpdateReactor = rollingUpdateReactors.get(i);
+      rollingUpdateReactor.stopAsync().awaitTerminated();
+    }
   }
 
   /**
