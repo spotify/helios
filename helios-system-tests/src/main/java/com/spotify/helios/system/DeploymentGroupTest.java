@@ -305,7 +305,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     final Map<String, MasterMain> masters = startDefaultMasters(3);
 
     final Map<String, AgentMain> agents = Maps.newLinkedHashMap();
-    for (int i = 0; i < 10; i++) {
+    for (int i = 0; i < 20; i++) {
       final String name = TEST_HOST + i;
       agents.put(name, startDefaultAgent(name, "--labels", TEST_LABEL));
     }

@@ -26,6 +26,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
@@ -41,6 +42,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.spotify.helios.servicescommon.Reactor.Callback;
@@ -59,6 +62,12 @@ public class RollingUpdateService extends AbstractIdleService {
   private final MasterModel masterModel;
   private final Reactor hostUpdateReactor;
   private final Reactor rollingUpdateReactor;
+
+  private final ExecutorService rollingUpdateExecutor = Executors.newFixedThreadPool(
+      5, new ThreadFactoryBuilder()
+          .setNameFormat("helios-rollingupdate-%d")
+          .setDaemon(true)
+          .build());
 
   /**
    * Create a new RollingUpdateService.
@@ -132,12 +141,17 @@ public class RollingUpdateService extends AbstractIdleService {
     @Override
     public void run(final boolean timeout) throws InterruptedException {
       for (final DeploymentGroup dg : masterModel.getDeploymentGroups().values()) {
-        try {
-          masterModel.rollingUpdateStep(dg, DefaultRolloutPlanner.of(dg));
-        } catch (Exception e) {
-          log.warn("error processing rolling update step for deployment group: {} - {}",
-                   dg.getName(), e);
-        }
+        rollingUpdateExecutor.execute(new Runnable() {
+          @Override
+          public void run() {
+            try {
+              masterModel.rollingUpdateStep(dg, DefaultRolloutPlanner.of(dg));
+            } catch (Exception e) {
+              log.warn("error processing rolling update step for deployment group: {} - {}",
+                       dg.getName(), e);
+            }
+          }
+        });
       }
     }
   }
