@@ -59,17 +59,40 @@ public class DefaultRolloutPlanner implements RolloutPlanner {
     final List<RolloutTask> rolloutTasks = Lists.newArrayList();
     final int parallelism = deploymentGroup.getRolloutOptions() != null ?
                             deploymentGroup.getRolloutOptions().getParallelism() : 1;
+    final boolean overlap = deploymentGroup.getRolloutOptions() != null &&
+                            deploymentGroup.getRolloutOptions().getOverlap();
 
     for (final List<String> partition : Lists.partition(hosts, parallelism)) {
-      for (final String host : partition) {
-        rolloutTasks.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
-        rolloutTasks.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host));
-      }
-      for (final String host : partition) {
-        rolloutTasks.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
-      }
+      rolloutTasks.addAll(overlap ? rolloutTasksWithOverlap(partition) : rolloutTasks(partition));
     }
 
     return ImmutableList.copyOf(rolloutTasks);
   }
+
+  private List<RolloutTask> rolloutTasks(final List<String> hosts) {
+    final ImmutableList.Builder<RolloutTask> result = ImmutableList.builder();
+    for (final String host : hosts) {
+      result.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
+      result.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host));
+    }
+    for (final String host : hosts) {
+      result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
+    }
+    return result.build();
+  }
+
+  private List<RolloutTask> rolloutTasksWithOverlap(final List<String> hosts) {
+    final ImmutableList.Builder<RolloutTask> result = ImmutableList.builder();
+    for (final String host : hosts) {
+      result.add(RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, host));
+    }
+    for (final String host : hosts) {
+      result.add(RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, host));
+    }
+    for (final String host : hosts) {
+      result.add(RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, host));
+    }
+    return result.build();
+  }
+
 }

@@ -35,13 +35,16 @@ public class RolloutOptions {
   private final long timeout;
   private final int parallelism;
   private final boolean migrate;
+  private final boolean overlap;
 
   public RolloutOptions(@JsonProperty("timeout") final long timeout,
                         @JsonProperty("parallelism") final int parallelism,
-                        @JsonProperty("migrate") final boolean migrate) {
+                        @JsonProperty("migrate") final boolean migrate,
+                        @JsonProperty("overlap") boolean overlap) {
     this.timeout = timeout;
     this.parallelism = parallelism;
     this.migrate = migrate;
+    this.overlap = overlap;
   }
 
   public static Builder newBuilder() {
@@ -67,6 +70,10 @@ public class RolloutOptions {
     return migrate;
   }
 
+  public boolean getOverlap() {
+    return overlap;
+  }
+
   @Override
   public boolean equals(final Object o) {
     if (this == o) {
@@ -87,6 +94,9 @@ public class RolloutOptions {
     if (timeout != that.timeout) {
       return false;
     }
+    if (overlap != that.overlap) {
+      return false;
+    }
 
     return true;
   }
@@ -96,6 +106,7 @@ public class RolloutOptions {
     int result = (int) (timeout ^ (timeout >>> 32));
     result = 31 * result + parallelism;
     result = 31 * result + (migrate ? 1 : 0);
+    result = 31 * result + (overlap ? 1 : 0);
     return result;
   }
 
@@ -105,6 +116,7 @@ public class RolloutOptions {
            "timeout=" + timeout +
            ", parallelism=" + parallelism +
            ", migrate=" + migrate +
+           ", overlap=" + overlap +
            '}';
   }
 
@@ -113,11 +125,13 @@ public class RolloutOptions {
     private long timeout;
     private int parallelism;
     private boolean migrate;
+    private boolean overlap;
 
     public Builder() {
       this.timeout = DEFAULT_TIMEOUT;
       this.parallelism = DEFAULT_PARALLELISM;
       this.migrate = false;
+      this.overlap = false;
     }
 
 
@@ -136,9 +150,13 @@ public class RolloutOptions {
       return this;
     }
 
+    public Builder setOverlap(final boolean overlap) {
+      this.overlap = overlap;
+      return this;
+    }
 
     public RolloutOptions build() {
-      return new RolloutOptions(timeout, parallelism, migrate);
+      return new RolloutOptions(timeout, parallelism, migrate, overlap);
     }
   }
 }
