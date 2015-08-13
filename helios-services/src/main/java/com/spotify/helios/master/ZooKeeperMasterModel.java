@@ -1122,7 +1122,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final List<String> children = client.getChildren(parent);
     for (final String child : children) {
       if (Paths.isConfigJobCreation(id, parent, child)) {
-        return Paths.configJobCreationId(id, parent, child);
+        return Paths.configJobCreationId(child);
       }
     }
     return null;

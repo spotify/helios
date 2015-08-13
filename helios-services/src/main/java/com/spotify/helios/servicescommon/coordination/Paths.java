@@ -91,7 +91,7 @@ public class Paths {
     return child.startsWith(CREATION_PREFIX);
   }
 
-  public static UUID configJobCreationId(final JobId id, final String parent, final String child) {
+  public static UUID configJobCreationId(final String child) {
     return UUID.fromString(child.substring(CREATION_PREFIX.length()));
   }
 
