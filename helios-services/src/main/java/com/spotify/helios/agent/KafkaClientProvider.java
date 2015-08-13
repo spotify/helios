@@ -54,7 +54,8 @@ public class KafkaClientProvider {
         return ImmutableMap.<String, Object>of(
             "bootstrap.servers", Joiner.on(',').join(input),
             "acks", KAFKA_QUORUM_PARAMETER,
-            "client.id", KAFKA_HELIOS_CLIENT_ID);
+            "client.id", KAFKA_HELIOS_CLIENT_ID,
+            "metadata.fetch.timeout.ms", 5000);
       }
     });
   }
