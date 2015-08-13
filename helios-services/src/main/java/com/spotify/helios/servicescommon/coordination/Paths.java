@@ -86,8 +86,7 @@ public class Paths {
     return CONFIG_DEPLOYMENT_GROUPS.path(name);
   }
 
-  public static boolean isConfigJobCreation(final JobId id, final String parent,
-                                            final String child) {
+  public static boolean isConfigJobCreation(final String child) {
     return child.startsWith(CREATION_PREFIX);
   }
 
