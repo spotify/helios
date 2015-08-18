@@ -493,14 +493,28 @@ public class ZooKeeperMasterModel implements MasterModel {
         client.ensurePath(Paths.statusDeploymentGroup(name));
         client.ensurePath(Paths.statusDeploymentGroupTasks(name));
         final DeploymentGroup deploymentGroup = getDeploymentGroup(name);
+        KafkaRecord event = null;
+
         if (deploymentGroup.getJobId() != null) {
           final DeploymentGroupStatus deploymentGroupStatus = getDeploymentGroupStatus(name);
           if (deploymentGroupStatus == null || deploymentGroupStatus.getState() != FAILED) {
             ops.addAll(getInitRollingUpdateOps(deploymentGroup, hosts));
+
+            event = KafkaRecord.of(
+                DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC,
+                Json.asBytesUnchecked(
+                    DEPLOYMENT_GROUP_EVENT_FACTORY.rollingUpdateStarted(
+                        deploymentGroup,
+                        DeploymentGroupEventFactory.RollingUpdateReason.HOSTS_CHANGED,
+                        deploymentGroup.getJobId())));
           }
         }
 
         client.transaction(ops);
+
+        if (kafkaSender != null && event != null) {
+          kafkaSender.send(event);
+        }
       }
     } catch (NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(name, e);
