@@ -192,7 +192,7 @@ public class DeploymentGroupResource {
         JobId deployedJobId = null;
         TaskStatus.State state = null;
 
-        if (hostStatus != null) {
+        if (hostStatus != null && hostStatus.getStatus().equals(HostStatus.Status.UP)) {
           for (final Map.Entry<JobId, Deployment> entry : hostStatus.getJobs().entrySet()) {
             if (name.equals(entry.getValue().getDeploymentGroupName())) {
               deployedJobId = entry.getKey();
