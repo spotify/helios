@@ -1650,7 +1650,6 @@ public class ZooKeeperMasterModel implements MasterModel {
     final byte[] idJson = id.toJsonBytes();
     for (final int port : staticPorts) {
       final String path = Paths.configHostPort(host, port);
-      checkForPortConflicts(client, host, port, id);
       portNodes.put(path, idJson);
     }
 
@@ -1667,6 +1666,12 @@ public class ZooKeeperMasterModel implements MasterModel {
       // if we get here the node exists already
       throw new JobAlreadyDeployedException(host, id);
     } catch (NoNodeException e) {
+      // Check for port collisions after checking whether the job is already deployed to the host.
+      // This is to prevent us from telling the user a misleading error message about port conflicts
+      // if the real reason of the failure is that the job is already deployed.
+      for (final int port : staticPorts) {
+        checkForPortConflicts(client, host, port, id);
+      }
       operations.add(create(taskPath, task));
       operations.add(create(taskCreationPath));
     } catch (KeeperException e) {
