@@ -696,8 +696,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           // for exceptions thrown as part of a transaction.
           log.debug("error saving rolling-update operations: {}", e);
         } catch (KeeperException e) {
-          throw new HeliosRuntimeException(
-              "rolling-update on deployment-group " + deploymentGroupName + " failed", e);
+          log.error("rolling-update on deployment-group {} failed", deploymentGroupName, e);
         }
       }
     }
