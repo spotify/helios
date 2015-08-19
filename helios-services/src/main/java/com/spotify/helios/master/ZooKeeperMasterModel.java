@@ -785,7 +785,8 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     try {
       return opFactory.nextTask(getDeployOperations(client, host, deployment, Job.EMPTY_TOKEN));
-    } catch (JobDoesNotExistException | TokenVerificationException | HostNotFoundException e) {
+    } catch (JobDoesNotExistException | TokenVerificationException | HostNotFoundException |
+        JobPortAllocationConflictException e) {
       return opFactory.error(e, host);
     } catch (JobAlreadyDeployedException e) {
       // Nothing to do
@@ -1243,17 +1244,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       // Check for static port collisions
       for (final int port : staticPorts) {
-        final String path = Paths.configHostPort(host, port);
-        try {
-          if (client.stat(path) == null) {
-            continue;
-          }
-          final byte[] b = client.getData(path);
-          final JobId existingJobId = parse(b, JobId.class);
-          throw new JobPortAllocationConflictException(id, existingJobId, host, port);
-        } catch (KeeperException | IOException ex) {
-          throw new HeliosRuntimeException("checking port allocations failed", e);
-        }
+        checkForPortConflicts(client, host, port, id);
       }
 
       // Catch all for logic and ephemeral issues
@@ -1625,7 +1616,7 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                        final Deployment deployment,
                                                        final String token)
       throws JobDoesNotExistException, JobAlreadyDeployedException, TokenVerificationException,
-             HostNotFoundException {
+             HostNotFoundException, JobPortAllocationConflictException {
     assertHostExists(client, host);
     final JobId id = deployment.getJobId();
     final Job job = getJob(id);
@@ -1645,6 +1636,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final byte[] idJson = id.toJsonBytes();
     for (final int port : staticPorts) {
       final String path = Paths.configHostPort(host, port);
+      checkForPortConflicts(client, host, port, id);
       portNodes.put(path, idJson);
     }
 
@@ -1675,6 +1667,22 @@ public class ZooKeeperMasterModel implements MasterModel {
     checkNotNull(token, "token");
     if (!token.equals(job.getToken())) {
       throw new TokenVerificationException(job.getId());
+    }
+  }
+
+  private static void
+  checkForPortConflicts(final ZooKeeperClient client, final String host, final int port,
+                        final JobId jobId) throws JobPortAllocationConflictException {
+    try {
+      final String path = Paths.configHostPort(host, port);
+      if (client.stat(path) == null) {
+        return;
+      }
+      final byte[] b = client.getData(path);
+      final JobId existingJobId = parse(b, JobId.class);
+      throw new JobPortAllocationConflictException(jobId, existingJobId, host, port);
+    } catch (KeeperException | IOException ex) {
+      throw new HeliosRuntimeException("checking port allocations failed", ex);
     }
   }
 
