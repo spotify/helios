@@ -669,36 +669,39 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       log.debug("rolling-update step on deployment-group: name={}", deploymentGroupName);
 
-      RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
-          tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
-      final RolloutTask task = tasks.getRolloutTasks().get(tasks.getTaskIndex());
-      RollingUpdateOp op = processRollingUpdateTask(
-          client, opFactory, task, tasks.getDeploymentGroup());
+      try {
+        RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
+            tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
+        final RolloutTask task = tasks.getRolloutTasks().get(tasks.getTaskIndex());
+        RollingUpdateOp op = processRollingUpdateTask(
+            client, opFactory, task, tasks.getDeploymentGroup());
 
-      if (!op.operations().isEmpty()) {
-        final List<ZooKeeperOperation> ops = Lists.newArrayList();
-        ops.add(check(Paths.statusDeploymentGroupTasks(deploymentGroupName),
-                      versionedTasks.version()));
-        ops.addAll(op.operations());
-        try {
-          client.transaction(ops);
+        if (!op.operations().isEmpty()) {
+          final List<ZooKeeperOperation> ops = Lists.newArrayList();
+          ops.add(check(Paths.statusDeploymentGroupTasks(deploymentGroupName),
+                        versionedTasks.version()));
+          ops.addAll(op.operations());
+          try {
+            client.transaction(ops);
 
-          // Emit events
-          if (kafkaSender != null) {
-            for (final Map<String, Object> event : op.events()) {
-              kafkaSender.send(KafkaRecord.of(
-                  DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, Json.asBytesUnchecked(event)));
+            // Emit events
+            if (kafkaSender != null) {
+              for (final Map<String, Object> event : op.events()) {
+                kafkaSender.send(KafkaRecord.of(
+                    DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, Json.asBytesUnchecked(event)));
+              }
             }
+          } catch (KeeperException.BadVersionException e) {
+            // some other master beat us in processing this rolling update step. not exceptional.
+            // ideally we would check the path in the exception, but curator doesn't provide a path
+            // for exceptions thrown as part of a transaction.
+            log.debug("error saving rolling-update operations: {}", e);
+          } catch (KeeperException e) {
+            log.error("rolling-update on deployment-group {} failed", deploymentGroupName, e);
           }
-        } catch (KeeperException.BadVersionException e) {
-          // some other master beat us in processing this rolling update step. not exceptional.
-          // ideally we would check the path in the exception, but curator doesn't provide a path
-          // for exceptions thrown as part of a transaction.
-          log.debug("error saving rolling-update operations: {}", e);
-        } catch (KeeperException e) {
-          throw new HeliosRuntimeException(
-              "rolling-update on deployment-group " + deploymentGroupName + " failed", e);
         }
+      } catch (final Exception e) {
+        log.error("error processing rolling update step for {}", deploymentGroupName, e);
       }
     }
   }
