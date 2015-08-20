@@ -13,7 +13,8 @@ Note that this guide assumes that you are familiar with [Docker](http://docker.i
   * [A basic job](#a-basic-job)
   * [Specifying a command to run](#specifying-a-command-to-run)
   * [Passing environment variables](#passing-environment-variables)
-  * [Using a helios job config file](#using-a-helios-job-config-file)
+  * [Using a Helios job config file](#using-a-helios-job-config-file)
+  * [All Helios Job Options](#all-helios-job-options)
   * [Health Checks](#health-checks)
   * [Specifying an Access Token](#specifying-an-access-token)
 * [Deploying Your Job](#deploying-your-job)
@@ -123,8 +124,10 @@ The last line of output in the command output is the canonical job ID. Most time
 `helios create -d <DOMAINS> -f <HELIOS_JOB_CONFIG_FILE_PATH> <MORE> <CLI> <ARGS>` will merge
 job parameters in the file `<HELIOS_JOB_CONFIG_FILE_PATH>` with other command line arguments. CLI
 args take precedence. The job configuration file should be valid JSON with a schema that matches the
-output of `helios inspect -d <DOMAINS> <EXISTING_JOB_NAME> --json`. Here's an example that uses all
-the available configuration keys with an explanation of each one.
+output of `helios inspect -d <DOMAINS> <EXISTING_JOB_NAME> --json`. See the next section for an
+example that uses all the available configuration keys with an explanation of each one.
+
+### All Helios Job Options
 
 ```
 {
