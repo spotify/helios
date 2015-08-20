@@ -198,6 +198,74 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
+  public void testRollingUpdateFailsIfSameJobDeployedByOtherDg() throws Exception {
+    final String host = testHost();
+    startDefaultAgent(host, "--labels", TEST_LABEL);
+
+    // Wait for agent to come up
+    final HeliosClient client = defaultClient();
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    cli("create-deployment-group", "--json", TEST_GROUP + "2", TEST_LABEL);
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+
+    // TODO: fix this!
+    // Wait for the host-updater
+    Thread.sleep(2000);
+
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP + "2");
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP + "2",
+                               DeploymentGroupStatus.State.DONE);
+
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
+                               DeploymentGroupStatus.State.FAILED);
+  }
+
+  @Test
+  public void testRollingUpdateTakesOwnershipOfManuallyDeployedJob() throws Exception {
+    final String host = testHost();
+    startDefaultAgent(host, "--labels", TEST_LABEL);
+
+    // Wait for agent to come up
+    final HeliosClient client = defaultClient();
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    // Manually deploy a job on the host (i.e. a job not part of the deployment group)
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    deployJob(jobId, host);
+    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+
+    // Create a deployment-group and trigger a migration rolling-update
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+
+    // Check that the deployment's deployment-group name eventually changes to TEST_GROUP
+    // (should be null or empty before)
+    final String jobDeploymentGroup = Polling.await(
+        LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
+          @Override
+          public String call() throws Exception {
+            final Deployment deployment =
+                defaultClient().hostStatus(host).get().getJobs().get(jobId);
+            if (deployment != null && !isNullOrEmpty(deployment.getDeploymentGroupName())) {
+              return deployment.getDeploymentGroupName();
+            } else {
+              return null;
+            }
+          }
+        });
+    assertEquals(TEST_GROUP, jobDeploymentGroup);
+
+    // rolling-update should succeed & job should be running
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
+                               DeploymentGroupStatus.State.DONE);
+    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+  }
+
+  @Test
   public void testRollingUpdateMigrate() throws Exception {
     final String host = testHost();
     startDefaultAgent(host, "--labels", TEST_LABEL);
