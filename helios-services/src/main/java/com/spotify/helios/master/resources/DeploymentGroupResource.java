@@ -203,9 +203,9 @@ public class DeploymentGroupResource {
               break;
             }
           }
-        }
 
-        result.add(new DeploymentGroupStatusResponse.HostStatus(host, deployedJobId, state));
+          result.add(new DeploymentGroupStatusResponse.HostStatus(host, deployedJobId, state));
+        }
       }
 
       final DeploymentGroupStatusResponse.Status status;
