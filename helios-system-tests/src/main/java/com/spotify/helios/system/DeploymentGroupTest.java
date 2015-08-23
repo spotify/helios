@@ -541,4 +541,38 @@ public class DeploymentGroupTest extends SystemTestBase {
     }
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
+
+  @Test
+  public void testRollingUpdateWithFailureThreshold() throws Exception {
+    // create and start agents
+    final List<String> hosts = ImmutableList.of(
+        "dc1-" + testHost() + "-a1.dc1.example.com",
+        "dc1-" + testHost() + "-a2.dc1.example.com",
+        "dc2-" + testHost() + "-a1.dc2.example.com"
+    );
+    for (final String host : hosts) {
+      startDefaultAgent(host, "--labels", TEST_LABEL);
+    }
+
+    // Wait for agents to come up
+    final HeliosClient client = defaultClient();
+    for (final String host : hosts) {
+      awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+    }
+
+    // create a deployment group
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+
+    // create and deploy the job to the first host. The rollout will fail on this host.
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    deployJob(jobId, hosts.get(0));
+    awaitTaskState(jobId, hosts.get(0), TaskStatus.State.RUNNING);
+
+    cli("rolling-update", "--async", "--failure-threshold", "50", testJobNameAndVersion,
+        TEST_GROUP);
+
+    awaitTaskState(jobId, hosts.get(1), TaskStatus.State.RUNNING, 100, SECONDS);
+    awaitTaskState(jobId, hosts.get(2), TaskStatus.State.RUNNING, 100, SECONDS);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+  }
 }

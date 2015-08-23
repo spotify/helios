@@ -64,6 +64,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   private final Argument rolloutTimeoutArg;
   private final Argument migrateArg;
   private final Argument overlapArg;
+  private final Argument failureThresholdArg;
 
   public RollingUpdateCommand(final Subparser parser) {
     this(parser, new SleepFunction() {
@@ -127,6 +128,11 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .help("When specified a rolling-update will, for every host, first deploy the new " +
               "version of a job before undeploying the old one. Note that the command will fail " +
               "if the job contains static port assignments.");
+
+    failureThresholdArg = parser.addArgument("--failure-threshold")
+        .setDefault(RolloutOptions.DEFAULT_FAILURE_THRESHOLD)
+        .type(Integer.class)
+        .help("The percentage of failed deployments that will stop the rolling update.");
   }
 
   @Override
@@ -141,10 +147,13 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final long rolloutTimeout = options.getLong(rolloutTimeoutArg.getDest());
     final boolean migrate = options.getBoolean(migrateArg.getDest());
     final boolean overlap = options.getBoolean(overlapArg.getDest());
+    final int failureThreshold = options.getInt(failureThresholdArg.getDest());
 
     checkArgument(timeout > 0, "Timeout must be greater than 0");
     checkArgument(parallelism > 0, "Parallelism must be greater than 0");
     checkArgument(rolloutTimeout > 0, "Rollout timeout must be greater than 0");
+    checkArgument(failureThreshold > 0 && failureThreshold < 100,
+                  "Failure threshold must be between 0 and 100");
 
     final long startTime = timeSupplier.get();
 
@@ -153,6 +162,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .setParallelism(parallelism)
         .setMigrate(migrate)
         .setOverlap(overlap)
+        .setFailureThreshold(failureThreshold)
         .build();
     final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions).get();
 
@@ -167,16 +177,17 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     if (!json) {
       out.println(format("Rolling update%s started: %s -> %s " +
-                         "(parallelism=%d, timeout=%d, overlap=%b)%s",
+                         "(parallelism=%d, timeout=%d, overlap=%b, failure threshold=%d)%s",
                          async ? " (async)" : "",
                          name, jobId.toShortString(), parallelism, timeout, overlap,
-                         async ? "" : "\n"));
+                         failureThreshold, async ? "" : "\n"));
     }
 
     final Map<String, Object> jsonOutput = Maps.newHashMap();
     jsonOutput.put("parallelism", parallelism);
     jsonOutput.put("timeout", timeout);
     jsonOutput.put("overlap", overlap);
+    jsonOutput.put("failureThreshold", failureThreshold);
 
     if (async) {
       if (json) {

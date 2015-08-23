@@ -46,19 +46,23 @@ public class RollingUpdateOpFactory {
   private final DeploymentGroupTasks tasks;
   private final DeploymentGroup deploymentGroup;
   private final DeploymentGroupEventFactory eventFactory;
+  private final int numTargets;
+  private String failedTarget = null;
 
   public RollingUpdateOpFactory(final DeploymentGroupTasks tasks,
-                                final DeploymentGroupEventFactory eventFactory) {
+                                final DeploymentGroupEventFactory eventFactory,
+                                final int numTargets) {
     this.tasks = tasks;
     this.deploymentGroup = tasks.getDeploymentGroup();
     this.eventFactory = eventFactory;
+    this.numTargets = numTargets;
   }
 
-  public RollingUpdateOp nextTask() {
-    return nextTask(Collections.<ZooKeeperOperation>emptyList());
+  public RollingUpdateOp nextTaskandMarkFailed() {
+    return nextTaskandMarkFailed(Collections.<ZooKeeperOperation>emptyList());
   }
 
-  public RollingUpdateOp nextTask(final List<ZooKeeperOperation> operations) {
+  public RollingUpdateOp nextTaskandMarkFailed(final List<ZooKeeperOperation> operations) {
     final List<ZooKeeperOperation> ops = Lists.newArrayList(operations);
     final List<Map<String, Object>> events = Lists.newArrayList();
 
@@ -72,18 +76,25 @@ public class RollingUpdateOpFactory {
 
       // We are done -> delete tasks & update status
       ops.add(delete(Paths.statusDeploymentGroupTasks(deploymentGroup.getName())));
-      ops.add(set(Paths.statusDeploymentGroup(deploymentGroup.getName()),
-                  status));
+      ops.add(set(Paths.statusDeploymentGroup(deploymentGroup.getName()), status));
 
       // Emit an event signalling that we're DONE!
       events.add(eventFactory.rollingUpdateDone(deploymentGroup));
     } else {
+      final DeploymentGroupTasks.Builder taskBuilder = tasks.toBuilder();
+
+      if (!isNullOrEmpty(failedTarget)) {
+        taskBuilder.addFailedTarget(failedTarget);
+        // Emit a task FAILED event
+        events.add(eventFactory.rollingUpdateTaskFailed(deploymentGroup, task));
+      }
+
       ops.add(
-          set(Paths.statusDeploymentGroupTasks(deploymentGroup.getName()), tasks.toBuilder()
+          set(Paths.statusDeploymentGroupTasks(deploymentGroup.getName()), taskBuilder
               .setTaskIndex(tasks.getTaskIndex() + 1)
               .build()));
 
-      // Only emit an event if the task resulted in taking in action. If there are no ZK operations
+      // Only emit an event if the task resulted in taking an action. If there are no ZK operations
       // the task was effectively a no-op.
       if (!operations.isEmpty()) {
         events.add(eventFactory.rollingUpdateTaskSucceeded(deploymentGroup, task));
@@ -128,5 +139,16 @@ public class RollingUpdateOpFactory {
 
   public RollingUpdateOp error(final Exception e, final String host) {
     return error(e.getMessage(), host);
+  }
+
+  public void failTask() {
+    final RolloutTask task = tasks.getRolloutTasks().get(tasks.getTaskIndex());
+    this.failedTarget = task.getTarget();
+  }
+
+  public boolean isOverFailureThreshold() {
+    final int newFailedTarget = (isNullOrEmpty(failedTarget)) ? 0 : 1;
+    return ((float) (tasks.getFailedTargets().size() + newFailedTarget) / numTargets * 100)
+           > deploymentGroup.getRolloutOptions().getFailureThreshold();
   }
 }
