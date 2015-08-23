@@ -940,7 +940,13 @@ public abstract class SystemTestBase {
 
   protected TaskStatus awaitTaskState(final JobId jobId, final String host,
                                       final TaskStatus.State state) throws Exception {
-    return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
+    return awaitTaskState(jobId, host, state, LONG_WAIT_SECONDS, SECONDS);
+  }
+
+  protected TaskStatus awaitTaskState(final JobId jobId, final String host,
+                                      final TaskStatus.State state, final int timeout,
+                                      final TimeUnit timeUnit) throws Exception {
+    return Polling.await(timeout, timeUnit, new Callable<TaskStatus>() {
       @Override
       public TaskStatus call() throws Exception {
         final String output = cli("status", "--json", "--job", jobId.toString());

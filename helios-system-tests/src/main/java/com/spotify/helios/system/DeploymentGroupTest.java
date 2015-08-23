@@ -591,36 +591,36 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
-  public void testRollingUpdateWithToken() throws Exception {
-    final String host = testHost();
-    startDefaultAgent(host, "--labels", TEST_LABEL);
+  public void testRollingUpdateWithFailureThreshold() throws Exception {
+    // create and start agents
+    final List<String> hosts = ImmutableList.of(
+        "dc1-" + testHost() + "-a1.dc1.example.com",
+        "dc1-" + testHost() + "-a2.dc1.example.com",
+        "dc2-" + testHost() + "-a1.dc2.example.com"
+    );
+    for (final String host : hosts) {
+      startDefaultAgent(host, "--labels", TEST_LABEL);
+    }
 
-    // Wait for agent to come up
+    // Wait for agents to come up
     final HeliosClient client = defaultClient();
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+    for (final String host : hosts) {
+      awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+    }
 
-    // Manually deploy a job with a token on the host (i.e. a job not part of the deployment group)
-    final Job job = Job.newBuilder()
-        .setName(testJobName)
-        .setVersion(testJobVersion)
-        .setImage(BUSYBOX)
-        .setCommand(IDLE_COMMAND)
-        .setToken(TOKEN)
-        .build();
-    final JobId jobId = createJob(job);
-
-    // Create a deployment-group and trigger a migration rolling-update
+    // create a deployment group
     cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
-    cli("rolling-update", "--async", "--token", TOKEN, testJobNameAndVersion, TEST_GROUP);
 
-    // rolling-update should succeed & job should be running
-    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
-    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+    // create and deploy the job to the first host. The rollout will fail on this host.
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    deployJob(jobId, hosts.get(0));
+    awaitTaskState(jobId, hosts.get(0), TaskStatus.State.RUNNING);
 
-    // Check that we cannot manually undeploy the job with a token
-    final String output = cli("undeploy", jobId.toString(), host);
-    assertThat(output, containsString("FORBIDDEN"));
+    cli("rolling-update", "--async", "--failure-threshold", "50", testJobNameAndVersion,
+        TEST_GROUP);
+
+    awaitTaskState(jobId, hosts.get(1), TaskStatus.State.RUNNING, 100, SECONDS);
+    awaitTaskState(jobId, hosts.get(2), TaskStatus.State.RUNNING, 100, SECONDS);
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
-    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
   }
 }
