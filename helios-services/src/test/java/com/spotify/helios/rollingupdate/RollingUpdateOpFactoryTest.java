@@ -43,6 +43,8 @@ import java.util.Map;
 import static com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason.HOSTS_CHANGED;
 import static com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason.MANUAL;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
@@ -68,7 +70,7 @@ public class RollingUpdateOpFactoryTest {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL);
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL, hosts.size());
 
     // Two ZK operations should return:
     // * delete the tasks
@@ -105,7 +107,7 @@ public class RollingUpdateOpFactoryTest {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL);
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL, hosts.size());
 
     // Two ZK operations should return:
     // * set the task index to 0
@@ -145,7 +147,7 @@ public class RollingUpdateOpFactoryTest {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, HOSTS_CHANGED);
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, HOSTS_CHANGED, hosts.size());
 
     // Two ZK operations should return:
     // * set the task index to 0
@@ -178,6 +180,7 @@ public class RollingUpdateOpFactoryTest {
             RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1"),
             RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1")))
         .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .setNumTargets(1)
         .build();
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
@@ -190,7 +193,8 @@ public class RollingUpdateOpFactoryTest {
                              deploymentGroupTasks.toBuilder()
                                  .setTaskIndex(1)
                                  .build()
-                                 .toJsonBytes()), op.operations().get(0));
+                                 .toJsonBytes()),
+                 op.operations().get(0));
 
     // No events should be generated
     assertEquals(0, op.events().size());
@@ -205,6 +209,7 @@ public class RollingUpdateOpFactoryTest {
             RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1"),
             RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1")))
         .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .setNumTargets(1)
         .build();
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
@@ -212,7 +217,7 @@ public class RollingUpdateOpFactoryTest {
     final ZooKeeperOperation mockOp = mock(ZooKeeperOperation.class);
     final RollingUpdateOp op = opFactory.nextTask(Lists.newArrayList(mockOp));
 
-    // A nexTask op with ZK operations should result in advancing the task index
+    // A nextTask op with ZK operations should result in advancing the task index
     // and also contain the specified ZK operations
     assertEquals(
         ImmutableSet.of(
@@ -240,6 +245,7 @@ public class RollingUpdateOpFactoryTest {
             RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1"),
             RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1")))
         .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .setNumTargets(1)
         .build();
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
@@ -273,11 +279,13 @@ public class RollingUpdateOpFactoryTest {
             RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1"),
             RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1")))
         .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .setNumTargets(1)
         .build();
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.error("foo", "host1", RollingUpdateError.HOST_NOT_FOUND);
+    final RollingUpdateOp op =
+        opFactory.taskError("foo", "host1", RollingUpdateError.HOST_NOT_FOUND);
 
     final Map<String, Object> failEvent = Maps.newHashMap();
     when(eventFactory.rollingUpdateTaskFailed(
@@ -313,6 +321,166 @@ public class RollingUpdateOpFactoryTest {
   }
 
   @Test
+  public void testTaskError() {
+    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+        .setName("my_group")
+        .setRolloutOptions(RolloutOptions.newBuilder().setFailureThreshold((float) 51).build())
+        .build();
+
+    final DeploymentGroupTasks deploymentGroupTasks = DeploymentGroupTasks.newBuilder()
+        .setTaskIndex(0)
+        .setRolloutTasks(Lists.newArrayList(
+            RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "host1"),
+            RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1"),
+            RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1"),
+            RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "host2"),
+            RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host2"),
+            RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host2")))
+        .setDeploymentGroup(deploymentGroup)
+        .setNumTargets(2)
+        .build();
+
+    final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
+        deploymentGroupTasks, eventFactory);
+    final RollingUpdateOp op =
+        opFactory.taskError("foo", "host1", RollingUpdateError.HOST_NOT_FOUND);
+
+    final Map<String, Object> failEvent = Maps.newHashMap();
+    when(eventFactory.rollingUpdateTaskFailed(
+        any(DeploymentGroup.class), any(RolloutTask.class),
+        anyString(), any(RollingUpdateError.class))).thenReturn(failEvent);
+
+    // A nextTask op with ZK operations should result in advancing the task index,
+    // adding a failed target, and contain the specified ZK operations.
+    assertEquals(
+        ImmutableSet.of(
+            new SetData("/status/deployment-group-tasks/my_group",
+                        deploymentGroupTasks.toBuilder()
+                            .setTaskIndex(1)
+                            .addFailedTarget("host1")
+                            .build()
+                            .toJsonBytes())),
+        ImmutableSet.copyOf(op.operations()));
+
+    // ...and that a rolling-update failed event is emitted
+    assertEquals(1, op.events().size());
+
+    verify(eventFactory).rollingUpdateTaskFailed(
+        eq(deploymentGroup),
+        eq(deploymentGroupTasks.getRolloutTasks().get(deploymentGroupTasks.getTaskIndex())),
+        anyString(),
+        eq(RollingUpdateError.HOST_NOT_FOUND));
+  }
+
+  @Test
+  public void testTaskErrorTransitionToDone() {
+    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+        .setName("my_group")
+        .setRolloutOptions(RolloutOptions.newBuilder().setFailureThreshold((float) 100).build())
+        .build();
+
+    final DeploymentGroupTasks deploymentGroupTasks = DeploymentGroupTasks.newBuilder()
+        .setTaskIndex(2)
+        .setRolloutTasks(Lists.newArrayList(
+            RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "host1"),
+            RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1"),
+            RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1")))
+        .setDeploymentGroup(deploymentGroup)
+        .setNumTargets(1)
+        .build();
+
+    final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
+        deploymentGroupTasks, eventFactory);
+    final RollingUpdateOp op =
+        opFactory.taskError("foo", "host1", RollingUpdateError.HOST_NOT_FOUND);
+
+    final Map<String, Object> failEvent = Maps.newHashMap();
+    when(eventFactory.rollingUpdateTaskFailed(
+        any(DeploymentGroup.class), any(RolloutTask.class),
+        anyString(), any(RollingUpdateError.class))).thenReturn(failEvent);
+
+    // When state -> DONE we expect
+    //  * deployment group tasks are deleted
+    //  * deployment group status is updated (to DONE)
+    //  * deployment group tasks is updated (failed target is added)
+    assertEquals(
+        ImmutableSet.of(
+            new SetData("/status/deployment-groups/my_group", DeploymentGroupStatus.newBuilder()
+                .setState(DeploymentGroupStatus.State.DONE)
+                .setError(null)
+                .build()
+                .toJsonBytes()),
+            new Delete("/status/deployment-group-tasks/my_group")),
+        ImmutableSet.copyOf(op.operations()));
+
+    // ...and that a failed-task event and a rolling-update failed event are emitted
+    assertEquals(2, op.events().size());
+
+    verify(eventFactory).rollingUpdateTaskFailed(
+        eq(deploymentGroup),
+        eq(deploymentGroupTasks.getRolloutTasks().get(deploymentGroupTasks.getTaskIndex())),
+        anyString(),
+        eq(RollingUpdateError.HOST_NOT_FOUND));
+
+    verify(eventFactory).rollingUpdateDone(deploymentGroup);
+  }
+
+  @Test
+  public void testTaskErrorTransitionToFailed() {
+    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+        .setName("my_group")
+        .setRolloutOptions(RolloutOptions.newBuilder().setFailureThreshold((float) 0).build())
+        .build();
+
+    final DeploymentGroupTasks deploymentGroupTasks = DeploymentGroupTasks.newBuilder()
+        .setTaskIndex(2)
+        .setRolloutTasks(Lists.newArrayList(
+            RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "host1"),
+            RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1"),
+            RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1")))
+        .setDeploymentGroup(deploymentGroup)
+        .setNumTargets(1)
+        .build();
+
+    final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
+        deploymentGroupTasks, eventFactory);
+    final RollingUpdateOp op =
+        opFactory.taskError("foo", "host1", RollingUpdateError.HOST_NOT_FOUND);
+
+    final Map<String, Object> failEvent = Maps.newHashMap();
+    when(eventFactory.rollingUpdateTaskFailed(
+        any(DeploymentGroup.class), any(RolloutTask.class),
+        anyString(), any(RollingUpdateError.class))).thenReturn(failEvent);
+
+    // When state -> DONE we expect
+    //  * deployment group tasks are deleted
+    //  * deployment group status is updated (to FAILED)
+    assertEquals(
+        ImmutableSet.of(
+            new SetData("/status/deployment-groups/my_group", DeploymentGroupStatus.newBuilder()
+                .setState(DeploymentGroupStatus.State.FAILED)
+                .setError("host1: foo")
+                .build()
+                .toJsonBytes()),
+            new Delete("/status/deployment-group-tasks/my_group")),
+        ImmutableSet.copyOf(op.operations()));
+
+    // ...and that a failed-task event and a rolling-update failed event are emitted
+    assertEquals(2, op.events().size());
+
+    verify(eventFactory).rollingUpdateTaskFailed(
+        eq(deploymentGroup),
+        eq(deploymentGroupTasks.getRolloutTasks().get(deploymentGroupTasks.getTaskIndex())),
+        anyString(),
+        eq(RollingUpdateError.HOST_NOT_FOUND),
+        eq(Collections.<String, Object>emptyMap()));
+
+    verify(eventFactory).rollingUpdateFailed(
+        eq(deploymentGroup),
+        eq(failEvent));
+  }
+
+  @Test
   public void testYield() {
     final DeploymentGroupTasks deploymentGroupTasks = DeploymentGroupTasks.newBuilder()
         .setTaskIndex(0)
@@ -321,6 +489,7 @@ public class RollingUpdateOpFactoryTest {
             RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1"),
             RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1")))
         .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .setNumTargets(1)
         .build();
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
@@ -329,5 +498,14 @@ public class RollingUpdateOpFactoryTest {
 
     assertEquals(0, op.operations().size());
     assertEquals(0, op.events().size());
+  }
+
+  @Test
+  public void testIsOverFailureThreshold() {
+    assertTrue(RollingUpdateOpFactory.isOverFailureThreshold(1, 1, 0));
+    assertFalse(RollingUpdateOpFactory.isOverFailureThreshold(1, 1, 100));
+    assertTrue(RollingUpdateOpFactory.isOverFailureThreshold(1, 2, 50));
+    assertFalse(RollingUpdateOpFactory.isOverFailureThreshold(1, 2, 51));
+    assertTrue(RollingUpdateOpFactory.isOverFailureThreshold(1, 0, 0));
   }
 }

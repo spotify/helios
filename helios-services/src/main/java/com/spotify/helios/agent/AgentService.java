@@ -62,10 +62,6 @@ import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import io.dropwizard.configuration.ConfigurationException;
-import io.dropwizard.lifecycle.Managed;
-import io.dropwizard.setup.Environment;
-
 import java.io.IOException;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -75,6 +71,10 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+
+import io.dropwizard.configuration.ConfigurationException;
+import io.dropwizard.lifecycle.Managed;
+import io.dropwizard.setup.Environment;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Strings.isNullOrEmpty;
