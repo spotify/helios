@@ -158,7 +158,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     log.debug("setting task status: {}", status);
     taskStatuses.put(jobId.toString(), status.toJsonBytes());
     try {
-      historyWriter.saveHistoryItem(status);
+      historyWriter.saveHistoryItem(jobId, status);
     } catch (Exception e) {
       // Log error here and keep going as saving task history is not critical.
       // This is to prevent bad data in the queue from screwing up the actually important Helios
