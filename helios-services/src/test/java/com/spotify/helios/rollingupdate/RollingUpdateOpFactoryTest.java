@@ -23,6 +23,7 @@ package com.spotify.helios.rollingupdate;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
@@ -35,11 +36,15 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import org.junit.Test;
 
+import java.util.Map;
+
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class RollingUpdateOpFactoryTest {
 
@@ -158,7 +163,12 @@ public class RollingUpdateOpFactoryTest {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.error("foo", "host1");
+    final RollingUpdateOp op = opFactory.error("foo", "host1", RollingUpdateError.HOST_NOT_FOUND);
+
+    final Map<String, Object> failEvent = Maps.newHashMap();
+    when(eventFactory.rollingUpdateTaskFailed(
+        any(DeploymentGroup.class), any(RolloutTask.class),
+        anyString(), any(RollingUpdateError.class))).thenReturn(failEvent);
 
     // When state -> FAILED we expected
     //  * deployment group tasks are deleted
@@ -173,12 +183,18 @@ public class RollingUpdateOpFactoryTest {
             new Delete("/status/deployment-group-tasks/my_group")),
         ImmutableSet.copyOf(op.operations()));
 
-    // ...and that an event is emitted
-    assertEquals(1, op.events().size());
-    verify(eventFactory).rollingUpdateFailed(
+    // ...and that a failed-task event and a rolling-update failed event are emitted
+    assertEquals(2, op.events().size());
+
+    verify(eventFactory).rollingUpdateTaskFailed(
         eq(DEPLOYMENT_GROUP),
         eq(deploymentGroupTasks.getRolloutTasks().get(deploymentGroupTasks.getTaskIndex())),
-        anyString());
+        anyString(),
+        eq(RollingUpdateError.HOST_NOT_FOUND));
+
+    verify(eventFactory).rollingUpdateFailed(
+        eq(DEPLOYMENT_GROUP),
+        eq(failEvent));
   }
 
   @Test
