@@ -31,20 +31,24 @@ public class RolloutOptions {
 
   public static final long DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5);
   public static final int DEFAULT_PARALLELISM = 1;
+  public static final int DEFAULT_FAILURE_THRESHOLD = 1;
 
   private final long timeout;
   private final int parallelism;
   private final boolean migrate;
   private final boolean overlap;
+  private final int failureThreshold;
 
   public RolloutOptions(@JsonProperty("timeout") final long timeout,
                         @JsonProperty("parallelism") final int parallelism,
                         @JsonProperty("migrate") final boolean migrate,
-                        @JsonProperty("overlap") boolean overlap) {
+                        @JsonProperty("overlap") boolean overlap,
+                        @JsonProperty("failureThreshold") final int failureThreshold) {
     this.timeout = timeout;
     this.parallelism = parallelism;
     this.migrate = migrate;
     this.overlap = overlap;
+    this.failureThreshold = failureThreshold;
   }
 
   public static Builder newBuilder() {
@@ -55,7 +59,8 @@ public class RolloutOptions {
     return new Builder()
         .setTimeout(timeout)
         .setParallelism(parallelism)
-        .setMigrate(migrate);
+        .setMigrate(migrate)
+        .setFailureThreshold(failureThreshold);
   }
 
   public long getTimeout() {
@@ -72,6 +77,10 @@ public class RolloutOptions {
 
   public boolean getOverlap() {
     return overlap;
+  }
+
+  public int getFailureThreshold() {
+    return failureThreshold;
   }
 
   @Override
@@ -97,6 +106,9 @@ public class RolloutOptions {
     if (overlap != that.overlap) {
       return false;
     }
+    if (failureThreshold != that.failureThreshold) {
+      return false;
+    }
 
     return true;
   }
@@ -107,6 +119,7 @@ public class RolloutOptions {
     result = 31 * result + parallelism;
     result = 31 * result + (migrate ? 1 : 0);
     result = 31 * result + (overlap ? 1 : 0);
+    result = 31 * result + failureThreshold;
     return result;
   }
 
@@ -117,6 +130,7 @@ public class RolloutOptions {
            ", parallelism=" + parallelism +
            ", migrate=" + migrate +
            ", overlap=" + overlap +
+           ", failure threshold=" + failureThreshold +
            '}';
   }
 
@@ -126,12 +140,14 @@ public class RolloutOptions {
     private int parallelism;
     private boolean migrate;
     private boolean overlap;
+    private int failureThreshold;
 
     public Builder() {
       this.timeout = DEFAULT_TIMEOUT;
       this.parallelism = DEFAULT_PARALLELISM;
       this.migrate = false;
       this.overlap = false;
+      this.failureThreshold = DEFAULT_FAILURE_THRESHOLD;
     }
 
 
@@ -155,8 +171,13 @@ public class RolloutOptions {
       return this;
     }
 
+    public Builder setFailureThreshold(final int failureThreshold) {
+      this.failureThreshold = failureThreshold;
+      return this;
+    }
+
     public RolloutOptions build() {
-      return new RolloutOptions(timeout, parallelism, migrate, overlap);
+      return new RolloutOptions(timeout, parallelism, migrate, overlap, failureThreshold);
     }
   }
 }

@@ -62,8 +62,8 @@ public class RollingUpdateOpFactoryTest {
         .build();
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
-        deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.nextTask();
+        deploymentGroupTasks, eventFactory, 1);
+    final RollingUpdateOp op = opFactory.nextTaskandMarkFailed();
 
     // A nexTask op with no ZK operations should result advancing the task index
     assertEquals(1, op.operations().size());
@@ -89,9 +89,9 @@ public class RollingUpdateOpFactoryTest {
         .build();
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
-        deploymentGroupTasks, eventFactory);
+        deploymentGroupTasks, eventFactory, 1);
     final ZooKeeperOperation mockOp = mock(ZooKeeperOperation.class);
-    final RollingUpdateOp op = opFactory.nextTask(Lists.newArrayList(mockOp));
+    final RollingUpdateOp op = opFactory.nextTaskandMarkFailed(Lists.newArrayList(mockOp));
 
     // A nexTask op with ZK operations should result in advancing the task index
     // and also contain the specified ZK operations
@@ -124,8 +124,8 @@ public class RollingUpdateOpFactoryTest {
         .build();
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
-        deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.nextTask();
+        deploymentGroupTasks, eventFactory, 1);
+    final RollingUpdateOp op = opFactory.nextTaskandMarkFailed();
 
     // When state -> DONE we expected
     //  * deployment group tasks are deleted
@@ -157,7 +157,7 @@ public class RollingUpdateOpFactoryTest {
         .build();
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
-        deploymentGroupTasks, eventFactory);
+        deploymentGroupTasks, eventFactory, 1);
     final RollingUpdateOp op = opFactory.error("foo", "host1");
 
     // When state -> FAILED we expected
@@ -193,7 +193,7 @@ public class RollingUpdateOpFactoryTest {
         .build();
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
-        deploymentGroupTasks, eventFactory);
+        deploymentGroupTasks, eventFactory, 1);
     final RollingUpdateOp op = opFactory.yield();
 
     assertEquals(0, op.operations().size());

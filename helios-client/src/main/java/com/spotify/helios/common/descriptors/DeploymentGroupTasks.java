@@ -22,42 +22,51 @@
 package com.spotify.helios.common.descriptors;
 
 import com.google.common.base.Objects;
+import com.google.common.base.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class DeploymentGroupTasks extends Descriptor {
 
+  private static final Set<String> EMPTY_FAILED_TARGETS = Collections.emptySet();
+
   private final List<RolloutTask> rolloutTasks;
   private final int taskIndex;
   private final DeploymentGroup deploymentGroup;
+  private final Set<String> failedTargets;
 
   private DeploymentGroupTasks(
       @JsonProperty("rolloutTasks") final List<RolloutTask> rolloutTasks,
       @JsonProperty("taskIndex") final int taskIndex,
-      @JsonProperty("deploymentGroup") final DeploymentGroup deploymentGroup) {
+      @JsonProperty("deploymentGroup") final DeploymentGroup deploymentGroup,
+      @JsonProperty("failedTargets") Set<String> failedTargets) {
     this.rolloutTasks = checkNotNull(rolloutTasks, "rolloutTasks");
     this.taskIndex = taskIndex;
     this.deploymentGroup = deploymentGroup;
+    this.failedTargets = failedTargets;
   }
 
   public Builder toBuilder() {
     return newBuilder()
         .setRolloutTasks(rolloutTasks)
         .setTaskIndex(taskIndex)
-        .setDeploymentGroup(deploymentGroup);
+        .setDeploymentGroup(deploymentGroup)
+        .setFailedTargets(failedTargets);
   }
 
   private DeploymentGroupTasks(final Builder builder) {
     this.rolloutTasks = checkNotNull(builder.rolloutTasks, "rolloutTasks");
     this.taskIndex = builder.taskIndex;
     this.deploymentGroup = checkNotNull(builder.deploymentGroup, "deploymentGroup");
+    this.failedTargets = Optional.fromNullable(builder.failedTargets).or(EMPTY_FAILED_TARGETS);
   }
 
   public List<RolloutTask> getRolloutTasks() {
@@ -70,6 +79,10 @@ public class DeploymentGroupTasks extends Descriptor {
 
   public DeploymentGroup getDeploymentGroup() {
     return deploymentGroup;
+  }
+
+  public Set<String> getFailedTargets() {
+    return failedTargets;
   }
 
   public static Builder newBuilder() {
@@ -98,6 +111,10 @@ public class DeploymentGroupTasks extends Descriptor {
                              : that.rolloutTasks != null) {
       return false;
     }
+    if (failedTargets != null ? !failedTargets.equals(that.failedTargets)
+                              : that.failedTargets != null) {
+      return false;
+    }
 
     return true;
   }
@@ -107,6 +124,7 @@ public class DeploymentGroupTasks extends Descriptor {
     int result = rolloutTasks != null ? rolloutTasks.hashCode() : 0;
     result = 31 * result + taskIndex;
     result = 31 * result + (deploymentGroup != null ? deploymentGroup.hashCode() : 0);
+    result = 31 * result + (failedTargets != null ? failedTargets.hashCode() : 0);
     return result;
   }
 
@@ -116,6 +134,7 @@ public class DeploymentGroupTasks extends Descriptor {
         .add("rolloutTasks", rolloutTasks)
         .add("taskIndex", taskIndex)
         .add("deploymentGroup", deploymentGroup)
+        .add("failedTargets", failedTargets)
         .toString();
   }
 
@@ -123,6 +142,7 @@ public class DeploymentGroupTasks extends Descriptor {
     private List<RolloutTask> rolloutTasks = Collections.emptyList();
     private int taskIndex;
     private DeploymentGroup deploymentGroup;
+    private Set<String> failedTargets;
 
     public Builder setRolloutTasks(List<RolloutTask> rolloutTasks) {
       this.rolloutTasks = rolloutTasks;
@@ -137,6 +157,20 @@ public class DeploymentGroupTasks extends Descriptor {
     public Builder setDeploymentGroup(final DeploymentGroup deploymentGroup) {
       this.deploymentGroup = deploymentGroup;
       return this;
+    }
+
+    public Builder setFailedTargets(Set<String> failedTargets) {
+      this.failedTargets = failedTargets;
+      return this;
+    }
+
+    public Builder addFailedTarget(String failedTarget) {
+      this.failedTargets.add(failedTarget);
+      return this;
+    }
+
+    public Set<String> getFailedTargets() {
+      return this.failedTargets;
     }
 
     public DeploymentGroupTasks build() {

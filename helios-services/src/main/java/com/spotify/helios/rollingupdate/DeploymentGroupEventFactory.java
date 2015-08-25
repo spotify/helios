@@ -49,6 +49,18 @@ public class DeploymentGroupEventFactory {
     return ev;
   }
 
+  public Map<String, Object> rollingUpdateTaskFailed(final DeploymentGroup deploymentGroup,
+                                                     final RolloutTask task) {
+    final Map<String, Object> ev = Maps.newHashMap();
+    ev.put("eventType", "rollingUpdateTaskFailed");
+    ev.put("timestamp", System.currentTimeMillis());
+    ev.put("deploymentGroupName", deploymentGroup.getName());
+    ev.put("action", task.getAction());
+    ev.put("target", task.getTarget());
+    ev.put("result", RolloutTask.Status.FAILED);
+    return ev;
+  }
+
   public Map<String, Object> rollingUpdateStarted(final DeploymentGroup deploymentGroup,
                                                   final RollingUpdateReason reason,
                                                   final JobId jobId) {
