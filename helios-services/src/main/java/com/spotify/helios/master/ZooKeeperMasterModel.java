@@ -809,7 +809,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       return opFactory.error(e, host, RollingUpdateError.TOKEN_VERIFICATION_ERROR);
     } catch (HostNotFoundException e) {
       return opFactory.error(e, host, RollingUpdateError.HOST_NOT_FOUND);
-    } catch(JobPortAllocationConflictException e) {
+    } catch (JobPortAllocationConflictException e) {
       return opFactory.error(e, host, RollingUpdateError.PORT_CONFLICT);
     } catch (JobAlreadyDeployedException e) {
       // Nothing to do
