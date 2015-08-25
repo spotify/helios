@@ -22,6 +22,7 @@
 package com.spotify.helios.master;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -818,9 +819,11 @@ public class ZooKeeperMasterModel implements MasterModel {
       final boolean isOwnedByDeploymentGroup = Objects.equals(
           deployment.getDeploymentGroupName(), deploymentGroup.getName());
       final boolean isSameJob = deployment.getJobId().equals(deploymentGroup.getJobId());
+      final boolean isManuallyDeployed = Strings.isNullOrEmpty(deployment.getDeploymentGroupName());
 
       if (isOwnedByDeploymentGroup || (
-          isSameJob && deploymentGroup.getRolloutOptions().getMigrate())) {
+          isSameJob && (isManuallyDeployed ||
+                        deploymentGroup.getRolloutOptions().getMigrate()))) {
         if (isSameJob && isOwnedByDeploymentGroup && deployment.getGoal().equals(Goal.START)) {
           // The job we want deployed is already deployed and set to run, so just leave it.
           continue;
