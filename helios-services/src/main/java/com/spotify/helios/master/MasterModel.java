@@ -102,6 +102,8 @@ public interface MasterModel {
 
   List<TaskStatusEvent> getJobHistory(JobId jobId) throws JobDoesNotExistException;
 
+  List<TaskStatusEvent> getJobHistory(JobId jobId, String host) throws JobDoesNotExistException;
+
   void addDeploymentGroup(DeploymentGroup deploymentGroup) throws DeploymentGroupExistsException;
 
   DeploymentGroup getDeploymentGroup(String name) throws DeploymentGroupDoesNotExistException;

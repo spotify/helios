@@ -21,6 +21,7 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -85,6 +86,7 @@ import java.util.UUID;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
@@ -99,6 +101,7 @@ import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -361,18 +364,30 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   /**
-   * Given a jobId, returns the N most recent events in it's history in the cluster.
+   * Given a jobId, returns the N most recent events in its history in the cluster.
    */
   @Override
   public List<TaskStatusEvent> getJobHistory(final JobId jobId) throws JobDoesNotExistException {
+    return getJobHistory(jobId, null);
+  }
+
+  /**
+   * Given a jobId and host, returns the N most recent events in its history on that host in the
+   * cluster.
+   */
+  @Override
+  public List<TaskStatusEvent> getJobHistory(final JobId jobId, final String host)
+      throws JobDoesNotExistException {
     final Job descriptor = getJob(jobId);
     if (descriptor == null) {
       throw new JobDoesNotExistException(jobId);
     }
     final ZooKeeperClient client = provider.get("getJobHistory");
     final List<String> hosts;
+
     try {
-      hosts = client.getChildren(Paths.historyJobHosts(jobId));
+      hosts = (!isNullOrEmpty(host)) ? singletonList(host) :
+              client.getChildren(Paths.historyJobHosts(jobId));
     } catch (NoNodeException e) {
       return emptyList();
     } catch (KeeperException e) {
@@ -381,10 +396,10 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final List<TaskStatusEvent> jsEvents = Lists.newArrayList();
 
-    for (String host : hosts) {
+    for (String h : hosts) {
       final List<String> events;
       try {
-        events = client.getChildren(Paths.historyJobHostEvents(jobId, host));
+        events = client.getChildren(Paths.historyJobHostEvents(jobId, h));
       } catch (NoNodeException e) {
         continue;
       } catch (KeeperException e) {
@@ -394,9 +409,9 @@ public class ZooKeeperMasterModel implements MasterModel {
       for (String event : events) {
         try {
           byte[] data = client.getData(Paths.historyJobHostEventsTimestamp(
-              jobId, host, Long.valueOf(event)));
+              jobId, h, Long.valueOf(event)));
           final TaskStatus status = Json.read(data, TaskStatus.class);
-          jsEvents.add(new TaskStatusEvent(status, Long.valueOf(event), host));
+          jsEvents.add(new TaskStatusEvent(status, Long.valueOf(event), h));
         } catch (NoNodeException e) { // ignore, it went away before we read it
         } catch (KeeperException | IOException e) {
           throw Throwables.propagate(e);
@@ -723,14 +738,15 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                     final RollingUpdateOpFactory opFactory,
                                                     final DeploymentGroup deploymentGroup,
                                                     final String host) {
-    final Map<JobId, TaskStatus> taskStatuses = getTaskStatuses(client, host);
+    final TaskStatus taskStatus = getTaskStatus(client, host, deploymentGroup.getJobId());
+    final JobId jobId = deploymentGroup.getJobId();
 
-    if (!taskStatuses.containsKey(deploymentGroup.getJobId())) {
+    if (taskStatus == null) {
       // Handle cases where agent has not written job status to zookeeper.
 
       // If job is not listed under /config/hosts node, it may have been deployed successfully and
       // then manually undeployed. The job will not get redeployed, so treat this as a failure.
-      final Deployment deployment = getDeployment(host, deploymentGroup.getJobId());
+      final Deployment deployment = getDeployment(host, jobId);
       if (deployment == null) {
         return opFactory.error(
             "Job unexpectedly undeployed. Perhaps it was manually undeployed?", host,
@@ -745,15 +761,15 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       // We haven't detected any errors, so assume the agent will write the status soon.
       return opFactory.yield();
-    } else if (!taskStatuses.get(deploymentGroup.getJobId()).getState()
-        .equals(TaskStatus.State.RUNNING)) {
+    } else if (!taskStatus.getState().equals(TaskStatus.State.RUNNING)) {
       // job isn't running yet
 
       if (isRolloutTimedOut(client, deploymentGroup)) {
-        // time exceeding the configured deploy timeout has passed, and this job is still not
-        // running
+        // We exceeded the configured deploy timeout, and this job is still not running
+        final List<TaskStatus.State> previousJobStates = getPreviousJobStates(jobId, host, 10);
         final Map<String, Object> metadata = Maps.newHashMap();
-        metadata.put("jobState", taskStatuses.get(deploymentGroup.getJobId()).getState());
+        metadata.put("jobState", taskStatus.getState());
+        metadata.put("previousJobStates", previousJobStates);
         return opFactory.error("timed out waiting for job to reach RUNNING", host,
                                RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
                                metadata);
@@ -1719,4 +1735,28 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  private List<TaskStatus.State> getPreviousJobStates(final JobId jobId,
+                                                      final String host,
+                                                      final int maxStates) {
+    List<TaskStatus.State> previousStates;
+    try {
+      final List<TaskStatusEvent> jobHistory = getJobHistory(jobId, host);
+      jobHistory.subList(0, Math.min(maxStates, jobHistory.size()));
+      Function<TaskStatusEvent, TaskStatus.State> statusesToStrings =
+          new Function<TaskStatusEvent, TaskStatus.State>() {
+            @Override
+            public TaskStatus.State apply(@Nullable TaskStatusEvent input) {
+              if (input != null) {
+                return input.getStatus().getState();
+              }
+              return null;
+            }
+          };
+      previousStates = Lists.transform(jobHistory, statusesToStrings);
+    } catch (JobDoesNotExistException ignored) {
+      previousStates = emptyList();
+    }
+
+    return previousStates;
+  }
 }
