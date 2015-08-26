@@ -200,7 +200,7 @@ public class HeliosClient implements AutoCloseable {
                                              final Object entity) {
     final Map<String, List<String>> headers = Maps.newHashMap();
     final byte[] entityBytes;
-    headers.put(VersionCompatibility.HELIOS_VERSION_HEADER, asList(Version.POM_VERSION));
+    headers.put(VersionCompatibility.HELIOS_VERSION_HEADER, singletonList(Version.POM_VERSION));
     if (entity != null) {
       headers.put("Content-Type", singletonList("application/json"));
       headers.put("Charset", singletonList("utf-8"));
@@ -508,8 +508,19 @@ public class HeliosClient implements AutoCloseable {
     });
   }
 
+  public ListenableFuture<String> listMastersJson(final Boolean fullHostname) {
+    return transform(request(uri("/masters", ImmutableMap.of("full", fullHostname.toString())),
+                             "GET"), new ConvertResponseToString());
+  }
+
   public ListenableFuture<List<String>> listMasters() {
-    return get(uri("/masters/"), new TypeReference<List<String>>() {
+    return listMasters(false);
+  }
+
+  public ListenableFuture<List<String>> listMasters(final Boolean fullHostname) {
+    final String fullParam = fullHostname ? "1" : "0";
+    return get(uri("/masters/", ImmutableMap.of("full", fullParam)),
+               new TypeReference<List<String>>() {
     });
   }
 
@@ -659,6 +670,44 @@ public class HeliosClient implements AutoCloseable {
       final T result;
       try {
         result = Json.read(reply.payload, javaType);
+      } catch (IOException e) {
+        throw new HeliosException("bad reply: " + reply, e);
+      }
+
+      return immediateFuture(result);
+    }
+  }
+
+  private static final class ConvertResponseToString implements AsyncFunction<Response, String> {
+
+    private final Set<Integer> decodeableStatusCodes;
+
+    public ConvertResponseToString() {
+      this(ImmutableSet.of(HTTP_OK));
+    }
+
+    public ConvertResponseToString(final Set<Integer> decodeableStatusCodes) {
+      this.decodeableStatusCodes = decodeableStatusCodes;
+    }
+
+    @Override
+    public ListenableFuture<String> apply(@NotNull final Response reply)
+        throws HeliosException {
+      if (reply.status == HTTP_NOT_FOUND && !decodeableStatusCodes.contains(HTTP_NOT_FOUND)) {
+        return immediateFuture(null);
+      }
+
+      if (!decodeableStatusCodes.contains(reply.status)) {
+        throw new HeliosException("request failed: " + reply);
+      }
+
+      if (reply.payload.length == 0) {
+        throw new HeliosException("bad reply: " + reply);
+      }
+
+      final String result;
+      try {
+        result = new String(reply.payload, "UTF-8");
       } catch (IOException e) {
         throw new HeliosException("bad reply: " + reply, e);
       }

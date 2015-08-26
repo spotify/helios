@@ -218,13 +218,14 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("getRunningMasters");
     try {
       final List<String> masters = client.getChildren(Paths.statusMaster());
-      final ImmutableList.Builder<String> upMasters = ImmutableList.builder();
+      final List<String> upMasters = Lists.newArrayList();
       for (final String master : masters) {
         if (client.exists(Paths.statusMasterUp(master)) != null) {
           upMasters.add(master);
         }
       }
-      return upMasters.build();
+      Collections.sort(upMasters);
+      return upMasters;
     } catch (KeeperException e) {
       throw new HeliosRuntimeException("listing masters failed", e);
     }

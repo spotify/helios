@@ -21,15 +21,20 @@
 
 package com.spotify.helios.master.resources;
 
-import com.spotify.helios.master.MasterModel;
+import com.google.common.collect.Lists;
+
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
+import com.spotify.helios.master.MasterModel;
+import com.spotify.helios.servicescommon.Output;
 
 import java.util.List;
 
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -50,7 +55,16 @@ public class MastersResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public List<String> list() {
-    return model.getRunningMasters();
+  public List<String> list(@QueryParam("full") @DefaultValue("0") final String full) {
+    final List<String> masters = model.getRunningMasters();
+    final boolean fullB = Boolean.parseBoolean(full);
+    if (fullB) {
+      return masters;
+    }
+    final List<String> formattedMasters = Lists.newArrayList();
+    for (final String master : masters) {
+      formattedMasters.add(Output.shortHostname(master));
+    }
+    return formattedMasters;
   }
 }
