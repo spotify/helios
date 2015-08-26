@@ -97,7 +97,7 @@ public class DeploymentGroupEventFactory {
                                                  final Map<String, Object> failEvent) {
     final Map<String, Object> ev = createEvent("rollingUpdateFinished", deploymentGroup);
     ev.put("success", 0);
-    ev.put("failEvent", failEvent);
+    ev.put("failedTask", failEvent);
     return ev;
   }
 }
