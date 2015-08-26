@@ -36,6 +36,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Map;
 
 import static org.junit.Assert.assertEquals;
@@ -190,7 +191,8 @@ public class RollingUpdateOpFactoryTest {
         eq(DEPLOYMENT_GROUP),
         eq(deploymentGroupTasks.getRolloutTasks().get(deploymentGroupTasks.getTaskIndex())),
         anyString(),
-        eq(RollingUpdateError.HOST_NOT_FOUND));
+        eq(RollingUpdateError.HOST_NOT_FOUND),
+        eq(Collections.<String, Object>emptyMap()));
 
     verify(eventFactory).rollingUpdateFailed(
         eq(DEPLOYMENT_GROUP),

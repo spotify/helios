@@ -752,8 +752,11 @@ public class ZooKeeperMasterModel implements MasterModel {
       if (isRolloutTimedOut(client, deploymentGroup)) {
         // time exceeding the configured deploy timeout has passed, and this job is still not
         // running
+        final Map<String, Object> metadata = Maps.newHashMap();
+        metadata.put("jobState", taskStatuses.get(deploymentGroup.getJobId()).getState());
         return opFactory.error("timed out waiting for job to reach RUNNING", host,
-                               RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING);
+                               RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
+                               metadata);
       }
 
       return opFactory.yield();

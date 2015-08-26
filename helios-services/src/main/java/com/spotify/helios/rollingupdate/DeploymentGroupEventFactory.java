@@ -26,6 +26,7 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
+import java.util.Collections;
 import java.util.Map;
 
 public class DeploymentGroupEventFactory {
@@ -55,7 +56,17 @@ public class DeploymentGroupEventFactory {
                                                      final RolloutTask task,
                                                      final String error,
                                                      final RollingUpdateError errorCode) {
+    return rollingUpdateTaskFailed(deploymentGroup, task, error, errorCode,
+                                   Collections.<String, Object>emptyMap());
+  }
+
+  public Map<String, Object> rollingUpdateTaskFailed(final DeploymentGroup deploymentGroup,
+                                                     final RolloutTask task,
+                                                     final String error,
+                                                     final RollingUpdateError errorCode,
+                                                     final Map<String, Object> metadata) {
     final Map<String, Object> ev = createEvent("rollingUpdateTaskResult", deploymentGroup);
+    ev.putAll(metadata);
     ev.put("success", 0);
     ev.put("error", error);
     ev.put("errorCode", errorCode);

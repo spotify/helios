@@ -104,7 +104,8 @@ public class RollingUpdateOpFactory {
   }
 
   public RollingUpdateOp error(final String msg, final String host,
-                               final RollingUpdateError errorCode) {
+                               final RollingUpdateError errorCode,
+                               final Map<String, Object> metadata) {
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
     final String errMsg = isNullOrEmpty(host) ? msg : host + ": " + msg;
 
@@ -122,12 +123,17 @@ public class RollingUpdateOpFactory {
     // Emit a FAILED event and a failed task event
     final List<Map<String, Object>> events = Lists.newArrayList();
     final Map<String, Object> taskEv = eventFactory.rollingUpdateTaskFailed(
-        deploymentGroup, task, errMsg, errorCode);
+        deploymentGroup, task, errMsg, errorCode, metadata);
     events.add(taskEv);
     events.add(eventFactory.rollingUpdateFailed(deploymentGroup, taskEv));
 
     return new RollingUpdateOp(ImmutableList.copyOf(operations),
                                ImmutableList.copyOf(events));
+  }
+
+  public RollingUpdateOp error(final String msg, final String host,
+                               final RollingUpdateError errorCode) {
+    return error(msg, host, errorCode, Collections.<String, Object>emptyMap());
   }
 
   public RollingUpdateOp error(final Exception e, final String host,
