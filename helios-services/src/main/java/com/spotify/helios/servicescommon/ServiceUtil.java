@@ -51,12 +51,26 @@ public class ServiceUtil {
       final HttpConnectorFactory serviceConnector = getServiceConnector(endpointScheme);
       serviceConnector.setPort(endpoint.getPort());
       serviceConnector.setBindHost(endpoint.getHost());
+      if (serviceConnector instanceof HttpsConnectorFactory) {
+        final HttpsConnectorFactory serviceConnector1 = (HttpsConnectorFactory) serviceConnector;
+        serviceConnector1.setKeyStorePath("keystore.jks");
+        serviceConnector1.setKeyStorePassword("helios");
+        serviceConnector1.setTrustStorePath(
+            "/Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home/jre/lib/security/cacerts");
+      }
       serverFactory.setApplicationConnectors(ImmutableList.<ConnectorFactory>of(serviceConnector));
 
       final String adminEndpointScheme = adminEndpoint.getScheme();
       final HttpConnectorFactory adminConnector = getServiceConnector(adminEndpointScheme);
       adminConnector.setPort(adminEndpoint.getPort());
-      serviceConnector.setBindHost(adminEndpoint.getHost());
+      adminConnector.setBindHost(adminEndpoint.getHost());
+      if (adminConnector instanceof HttpsConnectorFactory) {
+        final HttpsConnectorFactory adminConnector1 = (HttpsConnectorFactory) adminConnector;
+        adminConnector1.setKeyStorePath("keystore.jks");
+        adminConnector1.setKeyStorePassword("helios");
+        adminConnector1.setTrustStorePath(
+            "/Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home/jre/lib/security/cacerts");
+      }
       serverFactory.setAdminConnectors(ImmutableList.<ConnectorFactory>of(adminConnector));
     }
 

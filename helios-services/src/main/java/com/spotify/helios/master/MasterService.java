@@ -269,8 +269,8 @@ public class MasterService extends AbstractIdleService {
     }
 
     final ServiceRegistration serviceRegistration = ServiceRegistration.newBuilder()
-        .endpoint("helios", "http", config.getUriEndpoint().getPort(),
-            config.getDomain(), config.getName())
+        .endpoint("helios", config.getUriEndpoint().getScheme(), config.getUriEndpoint().getPort(),
+                  config.getDomain(), config.getName())
         .build();
     registrar.register(serviceRegistration);
   }
