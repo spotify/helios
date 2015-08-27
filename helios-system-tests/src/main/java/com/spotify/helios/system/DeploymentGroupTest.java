@@ -150,6 +150,9 @@ public class DeploymentGroupTest extends SystemTestBase {
     // trigger a rolling update to replace the first job with the second job
     final String output = cli("rolling-update", secondJobNameAndVersion, TEST_GROUP);
 
+    assertThat(output,
+               containsString("parallelism=1, timeout=300, overlap=false, failure threshold=0.00"));
+
     // Check that the hosts in the output are ordered
     final List<String> lines = Lists.newArrayList(Splitter.on("\n").split(output));
     for (int i = 0; i < hosts.size(); i++) {
@@ -616,11 +619,22 @@ public class DeploymentGroupTest extends SystemTestBase {
     deployJob(jobId, hosts.get(0));
     awaitTaskState(jobId, hosts.get(0), TaskStatus.State.RUNNING);
 
-    cli("rolling-update", "--async", "--failure-threshold", "50", testJobNameAndVersion,
-        TEST_GROUP);
+    final String output =
+        cli("rolling-update", "--failure-threshold", "50", testJobNameAndVersion, TEST_GROUP);
 
-    awaitTaskState(jobId, hosts.get(1), TaskStatus.State.RUNNING, 100, SECONDS);
-    awaitTaskState(jobId, hosts.get(2), TaskStatus.State.RUNNING, 100, SECONDS);
+    final String expected = (
+        "(parallelism=1, timeout=300, overlap=false, failure threshold=50.00)\n"
+        + "\n"
+        + "dc1-test-host-a1.dc1.example.com -> RUNNING (1/3)\n"
+        + "dc1-test-host-a2.dc1.example.com -> RUNNING (2/3)\n"
+        + "dc2-test-host-a1.dc2.example.com -> RUNNING (3/3)\n"
+        + "\n"
+        + "Done.");
+
+    assertThat(output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "), containsString(expected));
+
+    awaitTaskState(jobId, hosts.get(1), TaskStatus.State.RUNNING);
+    awaitTaskState(jobId, hosts.get(2), TaskStatus.State.RUNNING);
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
 }

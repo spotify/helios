@@ -65,7 +65,9 @@ public class DeploymentGroupStatusCommandTest {
   private static final String GROUP_NAME = "foo-group";
   private static final List<HostSelector> HOST_SELECTORS = ImmutableList.of(
       HostSelector.parse("a=b"), HostSelector.parse("foo=bar"));
-  private static final RolloutOptions ROLLOUT_OPTIONS = RolloutOptions.newBuilder().build();
+  private static final float FAILURE_THRESHOLD = 50;
+  private static final RolloutOptions ROLLOUT_OPTIONS =
+      RolloutOptions.newBuilder().setFailureThreshold(FAILURE_THRESHOLD).build();
   private static final DeploymentGroup DEPLOYMENT_GROUP = new DeploymentGroup(
       GROUP_NAME, HOST_SELECTORS, JOB_ID, ROLLOUT_OPTIONS);
 
@@ -116,11 +118,12 @@ public class DeploymentGroupStatusCommandTest {
                "Host selectors:" +
                "  a = b" +
                "  foo = bar" +
+               "Failure threshold: %.2f" +
                "HOST UP-TO-DATE JOB STATE" +
                "host1. X %s RUNNING" +
                "host2. X %s PULLING_IMAGE" +
                "host3. - -",
-               GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
+               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }
@@ -193,12 +196,13 @@ public class DeploymentGroupStatusCommandTest {
                "Host selectors:" +
                "  a = b" +
                "  foo = bar" +
+               "Failure threshold: %.2f" +
                "Error: Oops!" +
                "HOST UP-TO-DATE JOB STATE" +
                "host1. X %s RUNNING" +
                "host2. X %s PULLING_IMAGE" +
                "host3. - -",
-               GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
+               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }

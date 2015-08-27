@@ -54,6 +54,8 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 public class RollingUpdateCommand extends WildcardJobCommand {
 
   private static final long POLL_INTERVAL_MILLIS = 1000;
+  private static final Set<TaskStatus.State> TERMINAL_TASK_STATES =
+      Sets.newHashSet(TaskStatus.State.RUNNING);
 
   private final SleepFunction sleepFunction;
   private final Supplier<Long> timeSupplier;
@@ -225,7 +227,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
           final TaskStatus.State state = hostStatus.getState();
           final boolean done = hostJobId != null &&
                                hostJobId.equals(jobId) &&
-                               state == TaskStatus.State.RUNNING;
+                               TERMINAL_TASK_STATES.contains(state);
 
           if (done && reported.add(host)) {
             out.println(format("%s -> %s (%d/%d)", host, state,

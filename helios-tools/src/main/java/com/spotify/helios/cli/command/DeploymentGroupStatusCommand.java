@@ -27,6 +27,7 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
@@ -93,9 +94,10 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
     if (json) {
       out.println(Json.asPrettyStringUnchecked(status));
     } else {
-      final JobId jobId = status.getDeploymentGroup().getJobId();
+      final DeploymentGroup deploymentGroup = status.getDeploymentGroup();
+      final JobId jobId = deploymentGroup.getJobId();
       final String error = status.getError();
-      final List<HostSelector> hostSelectors = status.getDeploymentGroup().getHostSelectors();
+      final List<HostSelector> hostSelectors = deploymentGroup.getHostSelectors();
 
       out.printf("Name: %s%n", name);
       out.printf("Job Id: %s%n", full ? jobId : (jobId == null ? null : jobId.toShortString()));
@@ -104,6 +106,8 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
       for (final HostSelector hostSelector : hostSelectors) {
         out.printf("  %s%n", hostSelector.toPrettyString());
       }
+      out.printf("Failure threshold: %.2f%n",
+                 deploymentGroup.getRolloutOptions().getFailureThreshold());
 
       if (!Strings.isNullOrEmpty(error)) {
         out.printf("Error: %s%n", error);
