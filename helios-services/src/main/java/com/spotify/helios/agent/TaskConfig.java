@@ -75,8 +75,6 @@ public class TaskConfig {
   private final String namespace;
   private final String defaultRegistrationDomain;
   private final List<String> dns;
-  private final List<String> securityOpt;
-  private final String networkMode;
 
   private TaskConfig(final Builder builder) {
     this.host = checkNotNull(builder.host, "host");
@@ -88,8 +86,6 @@ public class TaskConfig {
     this.defaultRegistrationDomain = checkNotNull(builder.defaultRegistrationDomain,
         "defaultRegistrationDomain");
     this.dns = checkNotNull(builder.dns, "dns");
-    this.securityOpt = checkNotNull(builder.securityOpt, "securityOpt");
-    this.networkMode = checkNotNull(builder.networkMode, "networkMode");
   }
 
   /**
@@ -285,12 +281,13 @@ public class TaskConfig {
    * @return The host configuration.
    */
   public HostConfig hostConfig() {
+    final List<String> securityOpt = job.getSecurityOpt();
     final HostConfig.Builder builder = HostConfig.builder()
         .binds(binds())
         .portBindings(portBindings())
         .dns(dns)
         .securityOpt(securityOpt.toArray(new String[securityOpt.size()]))
-        .networkMode(networkMode);
+        .networkMode(job.getNetworkMode());
 
     final Resources resources = job.getResources();
     if (resources != null) {
@@ -375,8 +372,6 @@ public class TaskConfig {
     private String namespace;
     private String defaultRegistrationDomain = "";
     private List<String> dns = Collections.emptyList();
-    private List<String> securityOpt = Collections.emptyList();
-    private String networkMode = "";
 
     public Builder host(final String host) {
       this.host = host;
@@ -418,16 +413,6 @@ public class TaskConfig {
       return this;
     }
 
-    public Builder securityOpt(final List<String> securityOpt) {
-      this.securityOpt = securityOpt;
-      return this;
-    }
-
-    public Builder networkMode(final String networkMode) {
-      this.networkMode = networkMode;
-      return this;
-    }
-
     public TaskConfig build() {
       return new TaskConfig(this);
     }
@@ -442,9 +427,7 @@ public class TaskConfig {
         .add("envVars", envVars)
         .add("containerDecorators", containerDecorators)
         .add("defaultRegistrationDomain", defaultRegistrationDomain)
-        .add("securityOpt", securityOpt)
         .add("dns", dns)
-        .add("networkMode", networkMode)
         .toString();
   }
 }

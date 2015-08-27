@@ -46,7 +46,7 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_HEALTH_CHECK;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_NETWORK_MODE;
+import static com.spotify.helios.common.descriptors.Job.DEFAULT_NETWORK_MODE;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION_DOMAIN;
@@ -179,7 +179,7 @@ public class JobValidatorTest {
                             "bar", EMPTY_HOSTNAME, EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS,
                             EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
                             EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
-                            EMPTY_HEALTH_CHECK, EMPTY_SECURITY_OPT, EMPTY_NETWORK_MODE);
+                            EMPTY_HEALTH_CHECK, EMPTY_SECURITY_OPT, DEFAULT_NETWORK_MODE);
     final JobId recomputedId = job.toBuilder().build().getId();
     assertEquals(ImmutableSet.of("Id hash mismatch: " + job.getId().getHash()
         + " != " + recomputedId.getHash()), validator.validate(job));
@@ -343,6 +343,48 @@ public class JobValidatorTest {
         .addPort("a", PortMapping.of(1, 1))
         .build();
     assertEquals(1, validator.validate(jobWithWrongPort).size());
+  }
+
+  @Test
+  public void testValidNetworkModesPass() {
+    Job job = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("foobar")
+        .setNetworkMode("bridge")
+        .build();
+
+    assertEquals(0, validator.validate(job).size());
+
+    job = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("foobar")
+        .setNetworkMode("host")
+        .build();
+
+    assertEquals(0, validator.validate(job).size());
+
+    job = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("foobar")
+        .setNetworkMode("container:foo")
+        .build();
+
+    assertEquals(0, validator.validate(job).size());
+  }
+
+  @Test
+  public void testInvalidNetworkModeFail() {
+    final Job job = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("foobar")
+        .setNetworkMode("chocolate")
+        .build();
+
+    assertEquals(1, validator.validate(job).size());
   }
   
   @Test

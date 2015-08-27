@@ -114,7 +114,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final String EMPTY_TOKEN = "";
   public static final HealthCheck EMPTY_HEALTH_CHECK = null;
   public static final List<String> EMPTY_SECURITY_OPT = emptyList();
-  public static final String EMPTY_NETWORK_MODE = null;
+  public static final String DEFAULT_NETWORK_MODE = "bridge";
   public static final String EMPTY_HOSTNAME = null;
 
   private final JobId id;
