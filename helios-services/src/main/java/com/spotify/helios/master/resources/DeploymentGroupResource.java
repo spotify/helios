@@ -194,8 +194,11 @@ public class DeploymentGroupResource {
 
         if (hostStatus != null && hostStatus.getStatus().equals(HostStatus.Status.UP)) {
           for (final Map.Entry<JobId, Deployment> entry : hostStatus.getJobs().entrySet()) {
-            if (name.equals(entry.getValue().getDeploymentGroupName())) {
-              deployedJobId = entry.getKey();
+            deployedJobId = entry.getKey();
+            if (name.equals(entry.getValue().getDeploymentGroupName()) ||
+                // Job was already deployed, either manually or by a different deployment group.
+                // Show this in the output so user knows it failed on this host.
+                deploymentGroup.getJobId().equals(deployedJobId)) {
               final TaskStatus taskStatus = hostStatus.getStatuses().get(deployedJobId);
               if (taskStatus != null) {
                 state = taskStatus.getState();

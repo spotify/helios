@@ -70,7 +70,7 @@ public class RollingUpdateOpFactoryTest {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL, hosts.size());
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL, 0);
 
     // Two ZK operations should return:
     // * delete the tasks
@@ -107,7 +107,7 @@ public class RollingUpdateOpFactoryTest {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL, hosts.size());
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL, 1);
 
     // Two ZK operations should return:
     // * set the task index to 0
@@ -147,7 +147,7 @@ public class RollingUpdateOpFactoryTest {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, HOSTS_CHANGED, hosts.size());
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, HOSTS_CHANGED, 1);
 
     // Two ZK operations should return:
     // * set the task index to 0
