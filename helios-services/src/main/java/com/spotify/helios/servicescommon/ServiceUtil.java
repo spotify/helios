@@ -21,36 +21,77 @@
 
 package com.spotify.helios.servicescommon;
 
+import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
+
+import com.spotify.helios.common.HeliosRuntimeException;
+
+import java.net.URI;
+import java.util.Collections;
+import java.util.List;
 
 import io.dropwizard.jetty.ConnectorFactory;
 import io.dropwizard.jetty.HttpConnectorFactory;
+import io.dropwizard.jetty.HttpsConnectorFactory;
 import io.dropwizard.server.DefaultServerFactory;
 
-import java.net.InetSocketAddress;
-import java.util.Collections;
-
 public class ServiceUtil {
-  public static DefaultServerFactory createServerFactory(final InetSocketAddress httpEndpoint,
-                                                         final int adminPort,
-                                                         final boolean noHttp) {
-    // TODO(drewc) be more flexible on the httpEndpoint -- make it a URI -- so if/when we support
-    // SSL, it'll *just work*
 
+  private static final List<String> VALID_PROTOCOLS = ImmutableList.of("http", "https");
+
+  public static DefaultServerFactory createServerFactory(final URI endpoint,
+                                                         final URI adminEndpoint,
+                                                         final boolean noHttp) {
     final DefaultServerFactory serverFactory = new DefaultServerFactory();
     if (noHttp) {
       serverFactory.setApplicationConnectors(Collections.<ConnectorFactory>emptyList());
       serverFactory.setAdminConnectors(Collections.<ConnectorFactory>emptyList());
     } else {
-      final HttpConnectorFactory serviceConnector = new HttpConnectorFactory();
-      serviceConnector.setPort(httpEndpoint.getPort());
-      serviceConnector.setBindHost(httpEndpoint.getHostString());
+      final String endpointScheme = endpoint.getScheme();
+      final HttpConnectorFactory serviceConnector = getServiceConnector(endpointScheme);
+      serviceConnector.setPort(endpoint.getPort());
+      serviceConnector.setBindHost(endpoint.getHost());
+      if (serviceConnector instanceof HttpsConnectorFactory) {
+        final HttpsConnectorFactory serviceConnector1 = (HttpsConnectorFactory) serviceConnector;
+        serviceConnector1.setKeyStorePath("keystore.jks");
+        serviceConnector1.setKeyStorePassword("helios");
+        serviceConnector1.setTrustStorePath(
+            "/Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home/jre/lib/security/cacerts");
+      }
       serverFactory.setApplicationConnectors(ImmutableList.<ConnectorFactory>of(serviceConnector));
 
-      final HttpConnectorFactory adminConnector = new HttpConnectorFactory();
-      adminConnector.setPort(adminPort);
+      final String adminEndpointScheme = adminEndpoint.getScheme();
+      final HttpConnectorFactory adminConnector = getServiceConnector(adminEndpointScheme);
+      adminConnector.setPort(adminEndpoint.getPort());
+      adminConnector.setBindHost(adminEndpoint.getHost());
+      if (adminConnector instanceof HttpsConnectorFactory) {
+        final HttpsConnectorFactory adminConnector1 = (HttpsConnectorFactory) adminConnector;
+        adminConnector1.setKeyStorePath("keystore.jks");
+        adminConnector1.setKeyStorePassword("helios");
+        adminConnector1.setTrustStorePath(
+            "/Library/Java/JavaVirtualMachines/jdk1.7.0_45.jdk/Contents/Home/jre/lib/security/cacerts");
+      }
       serverFactory.setAdminConnectors(ImmutableList.<ConnectorFactory>of(adminConnector));
     }
+
     return serverFactory;
+  }
+
+  private static HttpConnectorFactory getServiceConnector(final String scheme) {
+    final HttpConnectorFactory serviceConnector;
+    switch (scheme) {
+      case "http":
+        serviceConnector = new HttpConnectorFactory();
+        break;
+      case "https":
+        serviceConnector = new HttpsConnectorFactory();
+        break;
+      default:
+        throw new HeliosRuntimeException(String.format(
+            "Unrecognized server endpoint scheme of '%s'. Must be one of %s.",
+            scheme, Joiner.on(", ").join(VALID_PROTOCOLS)));
+    }
+
+    return serviceConnector;
   }
 }

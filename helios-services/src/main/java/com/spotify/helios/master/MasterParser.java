@@ -28,7 +28,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
-import java.net.InetSocketAddress;
+import java.net.URI;
 
 /**
  * Parses command-line arguments to produce the {@link MasterConfig}.
@@ -44,9 +44,10 @@ public class MasterParser extends ServiceParser {
     super("helios-master", "Spotify Helios Master", args);
 
     final Namespace options = getNamespace();
-    final InetSocketAddress httpAddress = parseSocketAddress(options.getString(httpArg.getDest()));
+    final URI httpAddress = parseUriAddress(options.getString(httpArg.getDest()));
+    final URI adminAddress = parseUriAddress(options.getString(adminArg.getDest()));
 
-    final MasterConfig config = new MasterConfig()
+    this.masterConfig = new MasterConfig()
         .setZooKeeperConnectString(getZooKeeperConnectString())
         .setZooKeeperSessionTimeoutMillis(getZooKeeperSessionTimeoutMillis())
         .setZooKeeperConnectionTimeoutMillis(getZooKeeperConnectionTimeoutMillis())
@@ -61,24 +62,21 @@ public class MasterParser extends ServiceParser {
         .setSentryDsn(getSentryDsn())
         .setServiceRegistryAddress(getServiceRegistryAddress())
         .setServiceRegistrarPlugin(getServiceRegistrarPlugin())
-        .setAdminPort(options.getInt(adminArg.getDest()))
-        .setHttpEndpoint(httpAddress)
+        .setAdminUriEndpoint(adminAddress)
+        .setUriEndpoint(httpAddress)
         .setKafkaBrokers(getKafkaBrokers())
         .setStateDirectory(getStateDirectory());
-
-    this.masterConfig = config;
   }
 
   @Override
   protected void addArgs(final ArgumentParser parser) {
     httpArg = parser.addArgument("--http")
         .setDefault("http://0.0.0.0:5801")
-        .help("http endpoint");
+        .help("http[s] endpoint");
 
     adminArg = parser.addArgument("--admin")
-        .type(Integer.class)
-        .setDefault(5802)
-        .help("admin http port");
+        .setDefault("http://0.0.0.0:5802")
+        .help("admin http[s] port");
   }
 
   public MasterConfig getMasterConfig() {

@@ -68,7 +68,7 @@ public class MasterMain extends ServiceMain {
   @Override
   protected void startUp() throws Exception {
     service = new MasterService(masterConfig, createEnvironment("helios-master"),
-        curatorClientFactory);
+                                curatorClientFactory);
     service.startAsync().awaitRunning();
   }
 

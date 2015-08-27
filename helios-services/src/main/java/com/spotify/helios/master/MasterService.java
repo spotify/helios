@@ -205,7 +205,7 @@ public class MasterService extends AbstractIdleService {
     environment.jersey().register(new DeploymentGroupResource(model));
 
     final DefaultServerFactory serverFactory = ServiceUtil.createServerFactory(
-        config.getHttpEndpoint(), config.getAdminPort(), false);
+        config.getUriEndpoint(), config.getAdminUriEndpoint(), false);
 
     final RequestLogFactory requestLog = new RequestLogFactory();
     requestLog.setAppenders(ImmutableList.<AppenderFactory>of());
@@ -269,8 +269,8 @@ public class MasterService extends AbstractIdleService {
     }
 
     final ServiceRegistration serviceRegistration = ServiceRegistration.newBuilder()
-        .endpoint("helios", "http", config.getHttpEndpoint().getPort(),
-            config.getDomain(), config.getName())
+        .endpoint("helios", config.getUriEndpoint().getScheme(), config.getUriEndpoint().getPort(),
+                  config.getDomain(), config.getName())
         .build();
     registrar.register(serviceRegistration);
   }
