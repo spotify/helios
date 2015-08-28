@@ -26,6 +26,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -79,6 +80,7 @@ import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.List;
@@ -90,6 +92,8 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -117,7 +121,9 @@ public class HeliosClient implements AutoCloseable {
   private static final Logger log = LoggerFactory.getLogger(HeliosClient.class);
   private static final long RETRY_TIMEOUT_MILLIS = SECONDS.toMillis(60);
   private static final long HTTP_TIMEOUT_MILLIS = SECONDS.toMillis(10);
-
+  private static final List<String> VALID_PROTOCOLS = ImmutableList.of("http", "https");
+  private static final String VALID_PROTOCOLS_STR =
+      String.format("[%s]", Joiner.on("|").join(VALID_PROTOCOLS));
 
   private final AtomicBoolean versionWarningLogged = new AtomicBoolean();
 
@@ -200,7 +206,8 @@ public class HeliosClient implements AutoCloseable {
                                              final Object entity) {
     final Map<String, List<String>> headers = Maps.newHashMap();
     final byte[] entityBytes;
-    headers.put(VersionCompatibility.HELIOS_VERSION_HEADER, asList(Version.POM_VERSION));
+    headers.put(VersionCompatibility.HELIOS_VERSION_HEADER,
+                Collections.singletonList(Version.POM_VERSION));
     if (entity != null) {
       headers.put("Content-Type", singletonList("application/json"));
       headers.put("Charset", singletonList("utf-8"));
@@ -309,14 +316,16 @@ public class HeliosClient implements AutoCloseable {
         final URI endpoint = endpoints.get(positive(offset + i) % endpoints.size());
         final String fullpath = endpoint.getPath() + uri.getPath();
 
+        final String scheme = endpoint.getScheme();
         final String host = endpoint.getHost();
         final int port = endpoint.getPort();
-        if (host == null || port == -1) {
-          throw new HeliosException("Master endpoints must be of the form "
-                                    + "\"http[s]://heliosmaster.domain.net:<port>\"");
+        if (!VALID_PROTOCOLS.contains(scheme) || host == null || port == -1) {
+          throw new HeliosException(String.format(
+              "Master endpoints must be of the form \"%s://heliosmaster.domain.net:<port>\"",
+              VALID_PROTOCOLS_STR));
         }
 
-        final URI realUri = new URI("http", host + ":" + port, fullpath, uri.getQuery(), null);
+        final URI realUri = new URI(scheme, host + ":" + port, fullpath, uri.getQuery(), null);
         try {
           log.debug("connecting to {}", realUri);
           return connect0(realUri, method, entity, headers);
@@ -346,8 +355,9 @@ public class HeliosClient implements AutoCloseable {
     } else {
       log.debug("req: {} {} {} {}", method, uri, headers.size(), entity.length);
     }
-    final HttpURLConnection connection;
-    connection = (HttpURLConnection) uri.toURL().openConnection();
+
+    final URLConnection urlConnection = uri.toURL().openConnection();
+    final HttpURLConnection connection = (HttpURLConnection) urlConnection;
     connection.setRequestProperty("Accept-Encoding", "gzip");
     connection.setInstanceFollowRedirects(false);
     connection.setConnectTimeout((int) HTTP_TIMEOUT_MILLIS);
@@ -361,7 +371,11 @@ public class HeliosClient implements AutoCloseable {
       connection.setDoOutput(true);
       connection.getOutputStream().write(entity);
     }
-    setRequestMethod(connection, method);
+    if (urlConnection instanceof HttpsURLConnection) {
+      setRequestMethod(connection, method, true);
+    } else {
+      setRequestMethod(connection, method, false);
+    }
     connection.getResponseCode();
     return connection;
   }
@@ -370,11 +384,16 @@ public class HeliosClient implements AutoCloseable {
     return value < 0 ? value + Integer.MAX_VALUE : value;
   }
 
-  private void setRequestMethod(final HttpURLConnection connection, final String method) {
+  private void setRequestMethod(final HttpURLConnection connection,
+                                final String method,
+                                final boolean isHttps) {
     // Nasty workaround for ancient HttpURLConnection only supporting few methods
     final Class<?> httpURLConnectionClass = connection.getClass();
     try {
-      final Field methodField = httpURLConnectionClass.getSuperclass().getDeclaredField("method");
+      final Field methodField =
+          isHttps ?
+          httpURLConnectionClass.getSuperclass().getSuperclass().getDeclaredField("method") :
+          httpURLConnectionClass.getSuperclass().getDeclaredField("method");
       methodField.setAccessible(true);
       methodField.set(connection, method);
     } catch (NoSuchFieldException | IllegalAccessException e) {
