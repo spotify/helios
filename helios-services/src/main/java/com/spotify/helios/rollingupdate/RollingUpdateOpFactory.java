@@ -28,6 +28,7 @@ import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
 import com.spotify.helios.common.descriptors.RolloutTask;
+import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
@@ -38,6 +39,7 @@ import java.util.Map;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
+import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.ROLLING_OUT;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
 
@@ -52,6 +54,38 @@ public class RollingUpdateOpFactory {
     this.tasks = tasks;
     this.deploymentGroup = tasks.getDeploymentGroup();
     this.eventFactory = eventFactory;
+  }
+
+  public RollingUpdateOp start(final DeploymentGroup deploymentGroup,
+                               final RollingUpdateReason reason) {
+    final List<ZooKeeperOperation> ops = Lists.newArrayList();
+    final List<Map<String, Object>> events = Lists.newArrayList();
+
+    final List<RolloutTask> rolloutTasks = tasks.getRolloutTasks();
+    events.add(eventFactory.rollingUpdateStarted(deploymentGroup, reason));
+
+    final DeploymentGroupStatus status;
+    if (rolloutTasks.isEmpty()) {
+      status = DeploymentGroupStatus.newBuilder()
+          .setState(DONE)
+          .build();
+      ops.add(delete(Paths.statusDeploymentGroupTasks(deploymentGroup.getName())));
+      events.add(eventFactory.rollingUpdateDone(deploymentGroup));
+    } else {
+      final DeploymentGroupTasks tasks = DeploymentGroupTasks.newBuilder()
+          .setRolloutTasks(rolloutTasks)
+          .setTaskIndex(0)
+          .setDeploymentGroup(deploymentGroup)
+          .build();
+      status = DeploymentGroupStatus.newBuilder()
+          .setState(ROLLING_OUT)
+          .build();
+      ops.add(set(Paths.statusDeploymentGroupTasks(deploymentGroup.getName()), tasks));
+    }
+
+    ops.add(set(Paths.statusDeploymentGroup(deploymentGroup.getName()), status));
+
+    return new RollingUpdateOp(ImmutableList.copyOf(ops), ImmutableList.copyOf(events));
   }
 
   public RollingUpdateOp nextTask() {

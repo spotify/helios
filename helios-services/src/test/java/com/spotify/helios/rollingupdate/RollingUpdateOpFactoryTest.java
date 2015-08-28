@@ -36,9 +36,12 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import org.junit.Test;
 
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Map;
 
+import static com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason.HOSTS_CHANGED;
+import static com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason.MANUAL;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -55,6 +58,116 @@ public class RollingUpdateOpFactoryTest {
       .build();
 
   private final DeploymentGroupEventFactory eventFactory = mock(DeploymentGroupEventFactory.class);
+
+  @Test
+  public void testStartManualNoHosts() {
+    // Create a DeploymentGroupTasks object with no rolloutTasks (defaults to empty list).
+    final DeploymentGroupTasks deploymentGroupTasks = DeploymentGroupTasks.newBuilder()
+        .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .build();
+
+    final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
+        deploymentGroupTasks, eventFactory);
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL);
+
+    // Two ZK operations should return:
+    // * delete the tasks
+    // * set the status to DONE
+    assertEquals(
+        ImmutableSet.of(
+            new Delete("/status/deployment-group-tasks/my_group"),
+            new SetData("/status/deployment-groups/my_group", DeploymentGroupStatus.newBuilder()
+                .setState(DeploymentGroupStatus.State.DONE)
+                .setError(null)
+                .build()
+                .toJsonBytes())),
+        ImmutableSet.copyOf(op.operations()));
+
+    // Two events should return: rollingUpdateStarted and rollingUpdateDone
+    assertEquals(2, op.events().size());
+    verify(eventFactory).rollingUpdateStarted(DEPLOYMENT_GROUP, MANUAL);
+    verify(eventFactory).rollingUpdateDone(DEPLOYMENT_GROUP);
+  }
+
+  @Test
+  public void testStartManualWithHosts() {
+    // Create a DeploymentGroupTasks object with some rolloutTasks.
+    final ArrayList<RolloutTask> rolloutTasks = Lists.newArrayList(
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "host1"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1"),
+        RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1")
+    );
+    final DeploymentGroupTasks deploymentGroupTasks = DeploymentGroupTasks.newBuilder()
+        .setTaskIndex(0)
+        .setRolloutTasks(rolloutTasks)
+        .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .build();
+
+    final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
+        deploymentGroupTasks, eventFactory);
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL);
+
+    // Two ZK operations should return:
+    // * set the task index to 0
+    // * set the status to ROLLING_OUT
+    assertEquals(
+        ImmutableSet.of(
+            new SetData("/status/deployment-group-tasks/my_group", DeploymentGroupTasks.newBuilder()
+                .setRolloutTasks(rolloutTasks)
+                .setTaskIndex(0)
+                .setDeploymentGroup(DEPLOYMENT_GROUP)
+                .build()
+                .toJsonBytes()),
+            new SetData("/status/deployment-groups/my_group", DeploymentGroupStatus.newBuilder()
+                .setState(DeploymentGroupStatus.State.ROLLING_OUT)
+                .build()
+                .toJsonBytes())),
+        ImmutableSet.copyOf(op.operations()));
+
+    // Two events should return: rollingUpdateStarted and rollingUpdateDone
+    assertEquals(1, op.events().size());
+    verify(eventFactory).rollingUpdateStarted(DEPLOYMENT_GROUP, MANUAL);
+  }
+
+  @Test
+  public void testStartHostsChanged() {
+    // Create a DeploymentGroupTasks object with some rolloutTasks.
+    final ArrayList<RolloutTask> rolloutTasks = Lists.newArrayList(
+        RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "host1"),
+        RolloutTask.of(RolloutTask.Action.DEPLOY_NEW_JOB, "host1"),
+        RolloutTask.of(RolloutTask.Action.AWAIT_RUNNING, "host1")
+    );
+    final DeploymentGroupTasks deploymentGroupTasks = DeploymentGroupTasks.newBuilder()
+        .setTaskIndex(0)
+        .setRolloutTasks(rolloutTasks)
+        .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .build();
+
+    final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
+        deploymentGroupTasks, eventFactory);
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, HOSTS_CHANGED);
+
+    // Two ZK operations should return:
+    // * set the task index to 0
+    // * another to set the status to ROLLING_OUT
+    assertEquals(
+        ImmutableSet.of(
+            new SetData("/status/deployment-group-tasks/my_group", DeploymentGroupTasks.newBuilder()
+                .setRolloutTasks(rolloutTasks)
+                .setTaskIndex(0)
+                .setDeploymentGroup(DEPLOYMENT_GROUP)
+                .build()
+                .toJsonBytes()),
+            new SetData("/status/deployment-groups/my_group", DeploymentGroupStatus.newBuilder()
+                .setState(DeploymentGroupStatus.State.ROLLING_OUT)
+                .build()
+                .toJsonBytes())),
+        ImmutableSet.copyOf(op.operations()));
+
+    // Two events should return: rollingUpdateStarted and rollingUpdateDone
+    assertEquals(1, op.events().size());
+    verify(eventFactory).rollingUpdateStarted(DEPLOYMENT_GROUP, HOSTS_CHANGED);
+  }
 
   @Test
   public void testNextTaskNoOps() {
