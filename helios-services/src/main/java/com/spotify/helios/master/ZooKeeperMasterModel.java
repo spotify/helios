@@ -39,7 +39,6 @@ import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
 import com.spotify.helios.common.descriptors.Goal;
-import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -59,6 +58,7 @@ import com.spotify.helios.rollingupdate.RolloutPlanner;
 import com.spotify.helios.servicescommon.KafkaRecord;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.VersionedValue;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
 import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -69,10 +69,13 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.KeeperException.NotEmptyException;
+import org.apache.zookeeper.data.Stat;
+import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -92,7 +95,6 @@ import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
 import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
@@ -116,16 +118,6 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperMasterModel.class);
 
-  public static final Map<JobId, TaskStatus> EMPTY_STATUSES = emptyMap();
-  public static final TypeReference<HostInfo>
-      HOST_INFO_TYPE =
-      new TypeReference<HostInfo>() {};
-  public static final TypeReference<AgentInfo>
-      AGENT_INFO_TYPE =
-      new TypeReference<AgentInfo>() {};
-  public static final TypeReference<Map<String, String>>
-      STRING_MAP_TYPE =
-      new TypeReference<Map<String, String>>() {};
   public static final TypeReference<List<String>>
       STRING_LIST_TYPE =
       new TypeReference<List<String>>() {};
@@ -1306,111 +1298,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public HostStatus getHostStatus(final String host) {
     final ZooKeeperClient client = provider.get("getHostStatus");
-
-    try {
-      stat = client.exists(Paths.configHostId(host));
-    } catch (KeeperException e) {
-      throw new HeliosRuntimeException("Failed to check host status", e);
-    }
-
-    if (stat == null) {
-      return null;
-    }
-
-    final boolean up = checkHostUp(client, host);
-    final HostInfo hostInfo = getHostInfo(client, host);
-    final AgentInfo agentInfo = getAgentInfo(client, host);
-    final Map<JobId, Deployment> tasks = getTasks(client, host);
-    final Map<JobId, TaskStatus> statuses = getTaskStatuses(client, host);
-    final Map<String, String> environment = getEnvironment(client, host);
-    final Map<String, String> labels = getLabels(client, host);
-
-    return HostStatus.newBuilder()
-        .setJobs(tasks)
-        .setStatuses(fromNullable(statuses).or(EMPTY_STATUSES))
-        .setHostInfo(hostInfo)
-        .setAgentInfo(agentInfo)
-        .setStatus(up ? UP : DOWN)
-        .setEnvironment(environment)
-        .setLabels(labels)
-        .build();
-  }
-
-  private <T> T tryGetEntity(final ZooKeeperClient client, String path, TypeReference<T> type,
-                             String name) {
-    try {
-      final byte[] data = client.getData(path);
-      return Json.read(data, type);
-    } catch (NoNodeException e) {
-      return null;
-    } catch (KeeperException | IOException e) {
-      throw new HeliosRuntimeException("reading " + name + " info failed", e);
-    }
-  }
-
-  private Map<String, String> getEnvironment(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostEnvVars(host), STRING_MAP_TYPE, "environment");
-  }
-
-  private Map<String, String> getLabels(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostLabels(host), STRING_MAP_TYPE, "labels");
-  }
-
-  private AgentInfo getAgentInfo(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostAgentInfo(host), AGENT_INFO_TYPE, "agent info");
-  }
-
-  private HostInfo getHostInfo(final ZooKeeperClient client, final String host) {
-    return tryGetEntity(client, Paths.statusHostInfo(host), HOST_INFO_TYPE, "host info");
-  }
-
-  private boolean checkHostUp(final ZooKeeperClient client, final String host) {
-    try {
-      final Stat stat = client.exists(Paths.statusHostUp(host));
-      return stat != null;
-    } catch (KeeperException e) {
-      throw new HeliosRuntimeException("getting host " + host + " up status failed", e);
-    }
-  }
-
-  private Map<JobId, TaskStatus> getTaskStatuses(final ZooKeeperClient client, final String host) {
-    final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
-    final List<JobId> jobIds = listHostJobs(client, host);
-    for (final JobId jobId : jobIds) {
-      TaskStatus status;
-      try {
-        status = getTaskStatus(client, host, jobId);
-      } catch (HeliosRuntimeException e) {
-        // Skip this task status so we can return other available information instead of failing the
-        // entire thing.
-        status = null;
-      }
-
-      if (status != null) {
-        statuses.put(jobId, status);
-      } else {
-        log.debug("Task {} status missing for host {}", jobId, host);
-      }
-    }
-
-    return statuses;
-  }
-
-  private List<JobId> listHostJobs(final ZooKeeperClient client, final String host) {
-    final List<String> jobIdStrings;
-    final String folder = Paths.statusHostJobs(host);
-    try {
-      jobIdStrings = client.getChildren(folder);
-    } catch (KeeperException.NoNodeException e) {
-      return null;
-    } catch (KeeperException e) {
-      throw new HeliosRuntimeException("List tasks for host failed: " + host, e);
-    }
-    final ImmutableList.Builder<JobId> jobIds = ImmutableList.builder();
-    for (String jobIdString : jobIdStrings) {
-      jobIds.add(JobId.fromString(jobIdString));
-    }
-    return jobIds.build();
+    return ZooKeeperRegistrarUtil.getHostStatus(client, host);
   }
 
   @Nullable
