@@ -53,6 +53,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.rollingupdate.DefaultRolloutPlanner;
 import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory;
+import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason;
 import com.spotify.helios.rollingupdate.RollingUpdateError;
 import com.spotify.helios.rollingupdate.RollingUpdateOp;
 import com.spotify.helios.rollingupdate.RollingUpdateOpFactory;
@@ -89,12 +90,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.reverse;
-import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
-import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.ROLLING_OUT;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason.HOSTS_CHANGED;
+import static com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason.MANUAL;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.check;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
@@ -509,26 +510,25 @@ public class ZooKeeperMasterModel implements MasterModel {
         client.ensurePath(Paths.statusDeploymentGroup(name));
         client.ensurePath(Paths.statusDeploymentGroupTasks(name));
         final DeploymentGroup deploymentGroup = getDeploymentGroup(name);
-        KafkaRecord event = null;
+        ImmutableList<Map<String, Object>> events = ImmutableList.of();
 
         if (deploymentGroup.getJobId() != null) {
           final DeploymentGroupStatus deploymentGroupStatus = getDeploymentGroupStatus(name);
           if (deploymentGroupStatus == null || deploymentGroupStatus.getState() != FAILED) {
-            ops.addAll(getInitRollingUpdateOps(deploymentGroup, hosts));
-
-            event = KafkaRecord.of(
-                DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC,
-                Json.asBytesUnchecked(
-                    DEPLOYMENT_GROUP_EVENT_FACTORY.rollingUpdateStarted(
-                        deploymentGroup,
-                        DeploymentGroupEventFactory.RollingUpdateReason.HOSTS_CHANGED)));
+            final RollingUpdateOp op =
+                getInitRollingUpdateOps(deploymentGroup, hosts, HOSTS_CHANGED);
+            ops.addAll(op.operations());
+            events = op.events();
           }
         }
 
         client.transaction(ops);
 
-        if (kafkaSender != null && event != null) {
-          kafkaSender.send(event);
+        if (kafkaSender != null) {
+          for (final Map<String, Object> event : events) {
+            kafkaSender.send(KafkaRecord.of(
+                DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, Json.asBytesUnchecked(event)));
+          }
         }
       }
     } catch (NoNodeException e) {
@@ -560,7 +560,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("rollingUpdate");
 
     operations.add(set(Paths.configDeploymentGroup(updated.getName()), updated));
-    operations.addAll(getInitRollingUpdateOps(updated));
+    final RollingUpdateOp op = getInitRollingUpdateOps(updated, MANUAL);
+    operations.addAll(op.operations());
 
     try {
       client.ensurePath(Paths.statusDeploymentGroup(updated.getName()));
@@ -568,11 +569,10 @@ public class ZooKeeperMasterModel implements MasterModel {
       client.transaction(operations);
 
       if (kafkaSender != null) {
-        kafkaSender.send(KafkaRecord.of(
-            DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC,
-            Json.asBytesUnchecked(
-                DEPLOYMENT_GROUP_EVENT_FACTORY.rollingUpdateStarted(
-                    updated, DeploymentGroupEventFactory.RollingUpdateReason.MANUAL))));
+        for (final Map<String, Object> event : op.events()) {
+          kafkaSender.send(KafkaRecord.of(
+              DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, Json.asBytesUnchecked(event)));
+        }
       }
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(deploymentGroup.getName());
@@ -582,17 +582,16 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  private List<ZooKeeperOperation> getInitRollingUpdateOps(final DeploymentGroup deploymentGroup)
+  private RollingUpdateOp getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
+                                                  final RollingUpdateReason reason)
       throws DeploymentGroupDoesNotExistException {
     final List<String> hosts = getDeploymentGroupHosts(deploymentGroup.getName());
-    return getInitRollingUpdateOps(deploymentGroup, hosts);
+    return getInitRollingUpdateOps(deploymentGroup, hosts, reason);
   }
 
-  private List<ZooKeeperOperation> getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
-                                                           final List<String> hosts)
-      throws DeploymentGroupDoesNotExistException {
-    final List<ZooKeeperOperation> ops = Lists.newArrayList();
-
+  private RollingUpdateOp getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
+                                                  final List<String> hosts,
+                                                  final RollingUpdateReason reason) {
     final Map<String, HostStatus> hostsAndStatuses = Maps.newLinkedHashMap();
     for (final String host : hosts) {
       hostsAndStatuses.put(host, getHostStatus(host));
@@ -600,28 +599,15 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
     final List<RolloutTask> rolloutTasks = rolloutPlanner.plan(hostsAndStatuses);
+    final DeploymentGroupTasks tasks = DeploymentGroupTasks.newBuilder()
+        .setRolloutTasks(rolloutTasks)
+        .setTaskIndex(0)
+        .setDeploymentGroup(deploymentGroup)
+        .build();
 
-    final DeploymentGroupStatus status;
-    if (rolloutTasks.isEmpty()) {
-      status = DeploymentGroupStatus.newBuilder()
-          .setState(DONE)
-          .build();
-      ops.add(delete(Paths.statusDeploymentGroupTasks(deploymentGroup.getName())));
-    } else {
-      final DeploymentGroupTasks tasks = DeploymentGroupTasks.newBuilder()
-          .setRolloutTasks(rolloutTasks)
-          .setTaskIndex(0)
-          .setDeploymentGroup(deploymentGroup)
-          .build();
-      status = DeploymentGroupStatus.newBuilder()
-          .setState(ROLLING_OUT)
-          .build();
-      ops.add(set(Paths.statusDeploymentGroupTasks(deploymentGroup.getName()), tasks));
-    }
-
-    ops.add(set(Paths.statusDeploymentGroup(deploymentGroup.getName()), status));
-
-    return ImmutableList.copyOf(ops);
+    final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
+        tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
+    return opFactory.start(deploymentGroup, reason);
   }
 
   private Map<String, VersionedValue<DeploymentGroupTasks>> getDeploymentGroupTasks(
@@ -698,7 +684,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       log.debug("rolling-update step on deployment-group: name={}", deploymentGroupName);
 
       try {
-        RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
+        final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
             tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
         final RolloutTask task = tasks.getRolloutTasks().get(tasks.getTaskIndex());
         RollingUpdateOp op = processRollingUpdateTask(
