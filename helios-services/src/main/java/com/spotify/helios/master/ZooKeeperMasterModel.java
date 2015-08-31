@@ -179,7 +179,6 @@ public class ZooKeeperMasterModel implements MasterModel {
    */
   @Override
   public void registerHost(final String host, final String id) {
-    log.info("registering host: {}", host);
     final ZooKeeperClient client = provider.get("registerHost");
     try {
       ZooKeeperRegistrarUtil.registerHost(client, Paths.configHostId(host), host, id);
@@ -629,7 +628,8 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                     final RollingUpdateOpFactory opFactory,
                                                     final DeploymentGroup deploymentGroup,
                                                     final String host) {
-    final TaskStatus taskStatus = getTaskStatus(client, host, deploymentGroup.getJobId());
+    final TaskStatus taskStatus =
+        ZooKeeperRegistrarUtil.getTaskStatus(client, host, deploymentGroup.getJobId());
     final JobId jobId = deploymentGroup.getJobId();
 
     if (taskStatus == null) {
@@ -980,7 +980,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ImmutableMap.Builder<String, Deployment> deployments = ImmutableMap.builder();
     final ImmutableMap.Builder<String, TaskStatus> taskStatuses = ImmutableMap.builder();
     for (final String host : hosts) {
-      final TaskStatus taskStatus = getTaskStatus(client, host, jobId);
+      final TaskStatus taskStatus = ZooKeeperRegistrarUtil.getTaskStatus(client, host, jobId);
       if (taskStatus != null) {
         taskStatuses.put(host, taskStatus);
       }
@@ -1323,7 +1323,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final HostInfo hostInfo = getHostInfo(client, host);
     final AgentInfo agentInfo = getAgentInfo(client, host);
     final Map<JobId, Deployment> tasks = getTasks(client, host);
-    final Map<JobId, TaskStatus> statuses = getTaskStatuses(client, host);
+    final Map<JobId, TaskStatus> statuses = ZooKeeperRegistrarUtil.getTaskStatuses(client, host);
     final Map<String, String> environment = getEnvironment(client, host);
     final Map<String, String> labels = getLabels(client, host);
 
@@ -1372,61 +1372,6 @@ public class ZooKeeperMasterModel implements MasterModel {
       return stat != null;
     } catch (KeeperException e) {
       throw new HeliosRuntimeException("getting host " + host + " up status failed", e);
-    }
-  }
-
-  private Map<JobId, TaskStatus> getTaskStatuses(final ZooKeeperClient client, final String host) {
-    final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
-    final List<JobId> jobIds = listHostJobs(client, host);
-    for (final JobId jobId : jobIds) {
-      TaskStatus status;
-      try {
-        status = getTaskStatus(client, host, jobId);
-      } catch (HeliosRuntimeException e) {
-        // Skip this task status so we can return other available information instead of failing the
-        // entire thing.
-        status = null;
-      }
-
-      if (status != null) {
-        statuses.put(jobId, status);
-      } else {
-        log.debug("Task {} status missing for host {}", jobId, host);
-      }
-    }
-
-    return statuses;
-  }
-
-  private List<JobId> listHostJobs(final ZooKeeperClient client, final String host) {
-    final List<String> jobIdStrings;
-    final String folder = Paths.statusHostJobs(host);
-    try {
-      jobIdStrings = client.getChildren(folder);
-    } catch (KeeperException.NoNodeException e) {
-      return null;
-    } catch (KeeperException e) {
-      throw new HeliosRuntimeException("List tasks for host failed: " + host, e);
-    }
-    final ImmutableList.Builder<JobId> jobIds = ImmutableList.builder();
-    for (String jobIdString : jobIdStrings) {
-      jobIds.add(JobId.fromString(jobIdString));
-    }
-    return jobIds.build();
-  }
-
-  @Nullable
-  private TaskStatus getTaskStatus(final ZooKeeperClient client, final String host,
-                                   final JobId jobId) {
-    final String containerPath = Paths.statusHostJob(host, jobId);
-    try {
-      final byte[] data = client.getData(containerPath);
-      return parse(data, TaskStatus.class);
-    } catch (NoNodeException ignored) {
-      return null;
-    } catch (KeeperException | IOException e) {
-      throw new HeliosRuntimeException("Getting task " + jobId + " status " +
-                                       "for host " + host + " failed", e);
     }
   }
 
