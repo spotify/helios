@@ -22,6 +22,7 @@
 package com.spotify.helios.system;
 
 import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -84,7 +85,10 @@ public class CliJobCreationTest extends SystemTestBase {
         .setPorts(ports)
         .setRegistration(registration)
         .setVolumes(volumes)
-        .setCreatingUser(TEST_USER);
+        .setCreatingUser(TEST_USER)
+        .setToken("foo-token")
+        .setNetworkMode("host")
+        .setSecurityOpt(ImmutableList.of("label:user:dxia", "apparmor:foo"));
     final Job job = builder.build();
     final String jobConfigJsonString = job.toJsonString();
 
