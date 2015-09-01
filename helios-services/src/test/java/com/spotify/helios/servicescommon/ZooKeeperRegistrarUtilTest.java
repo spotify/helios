@@ -27,6 +27,8 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
+import com.spotify.helios.servicescommon.coordination.Paths;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -38,6 +40,9 @@ import java.util.UUID;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static org.mockito.Matchers.anyListOf;
+import java.util.UUID;
+
+import static com.google.common.base.Charsets.UTF_8;
 import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)

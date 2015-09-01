@@ -99,7 +99,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
 
     // Touch the host ID node in ZK so that later on AgentZooKeeperRegistrar can know how long a
     // host has been down.
-    hostIdUpdater.touch();
+    //hostIdUpdater.touch();
   }
 
   private DockerVersion dockerVersion() throws InterruptedException {
