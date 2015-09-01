@@ -22,7 +22,6 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 
 import com.spotify.helios.client.HeliosClient;
@@ -58,7 +57,7 @@ public class JobCreateCommandTest {
   private static final String JOB_ID = JOB_NAME + ":123";
   private static final String EXEC_HEALTH_CHECK = "touch /this";
   private static final List<String> SECURITY_OPT =
-      Lists.newArrayList("label:user:dxia", "apparmor:foo");
+      ImmutableList.of("label:user:dxia", "apparmor:foo");
   private static final String NETWORK_MODE = "host";
 
   private final Namespace options = mock(Namespace.class);
