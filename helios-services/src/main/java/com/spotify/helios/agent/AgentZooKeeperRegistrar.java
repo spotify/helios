@@ -42,7 +42,6 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
 import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode.Mode.EPHEMERAL;
 
 /**
@@ -53,21 +52,23 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
   private static final Logger log = LoggerFactory.getLogger(AgentZooKeeperRegistrar.class);
 
   private static final byte[] EMPTY_BYTES = new byte[]{};
-  private static final int AGENT_REGISTRATION_TTL_MINUTES = 10;
-  private static final long AGENT_REGISTRATION_TTL_MILLIS =
-      TimeUnit.MILLISECONDS.convert(AGENT_REGISTRATION_TTL_MINUTES, TimeUnit.MINUTES);
-
 
   private final Service agentService;
   private final String name;
   private final String id;
+  private final long zooKeeperRegistrationTtlMillis;
+  private Clock clock;
 
   private PersistentEphemeralNode upNode;
 
-  public AgentZooKeeperRegistrar(final Service agentService, final String name, final String id) {
+  public AgentZooKeeperRegistrar(final Service agentService, final String name, final String id,
+                                 final int zooKeeperRegistrationTtlMinutes) {
     this.agentService = agentService;
     this.name = name;
     this.id = id;
+    this.zooKeeperRegistrationTtlMillis =
+        TimeUnit.MILLISECONDS.convert(zooKeeperRegistrationTtlMinutes, TimeUnit.MINUTES);
+    this.clock = new SystemClock();
   }
 
   @Override
@@ -101,25 +102,20 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
       final String existingId = bytes == null ? "" : new String(bytes, UTF_8);
       if (!id.equals(existingId)) {
         final long mtime = client.stat(idPath).getMtime();
-        if ((currentTimeMillis() - mtime) > AGENT_REGISTRATION_TTL_MILLIS) {
-          log.info("Another agent has already registered as '{}', but its ID node was last " +
-                   "updated more than {} minutes ago. I\'m deregistering the agent with the old " +
-                   "ID of {} and replacing it with this new agent with ID '{}'.",
-                   name, AGENT_REGISTRATION_TTL_MINUTES, existingId, id);
-          ZooKeeperRegistrarUtil.deregisterHost(client, name);
-          ZooKeeperRegistrarUtil.registerHost(client, idPath, name, id);
-        } else {
+        if ((clock.now().getMillis() - mtime) < zooKeeperRegistrationTtlMillis) {
           final String message = format("Another agent already registered as '%s' " +
                                         "(local=%s remote=%s).", name, id, existingId);
           log.error(message);
           agentService.stopAsync();
           return;
         }
-        final String message = format("Another agent already registered as '%s' " +
-                                      "(local=%s remote=%s).", name, id, existingId);
-        log.error(message);
-        agentService.stopAsync();
-        return;
+
+        log.info("Another agent has already registered as '{}', but its ID node was last " +
+                 "updated more than {} milliseconds ago. I\'m deregistering the agent with the "
+                 + "old ID of {} and replacing it with this new agent with ID '{}'.",
+                 name, zooKeeperRegistrationTtlMillis, existingId, id);
+        ZooKeeperRegistrarUtil.deregisterHost(client, name);
+        ZooKeeperRegistrarUtil.registerHost(client, idPath, name, id);
       } else {
         log.info("Matching agent id node already present, not registering agent {}: {}", id, name);
       }

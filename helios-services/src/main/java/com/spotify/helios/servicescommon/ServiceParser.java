@@ -207,7 +207,7 @@ public class ServiceParser {
   }
 
   public Path getServiceRegistrarPlugin() {
-    final File plugin = (File) options.get(serviceRegistrarPluginArg.getDest());
+    final File plugin = options.get(serviceRegistrarPluginArg.getDest());
     return plugin != null ? plugin.toPath() : null;
   }
 

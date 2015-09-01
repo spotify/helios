@@ -39,6 +39,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -59,7 +60,7 @@ public class DeregisterTest extends SystemTestBase {
   }
 
   @Test
-  public void test() throws Exception {
+  public void testDeregister() throws Exception {
     startDefaultMaster();
     final String host = testHost();
     final AgentMain agent = startDefaultAgent(host);
@@ -101,5 +102,28 @@ public class DeregisterTest extends SystemTestBase {
     // Verify that it's possible to remove the job
     final JobDeleteResponse deleteResponse = client.deleteJob(jobId).get();
     assertEquals(JobDeleteResponse.Status.OK, deleteResponse.getStatus());
+  }
+
+  @Test
+  public void testRegistrationResolution() throws Exception {
+    startDefaultMaster();
+    final String host = testHost();
+    AgentMain agent = startDefaultAgent(host);
+
+    final HeliosClient client = defaultClient();
+
+    // Wait for agent to come up
+    awaitHostRegistered(client, host, LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+
+    // Kill off agent
+    agent.stopAsync().awaitTerminated();
+    awaitHostStatus(client, host, DOWN, LONG_WAIT_SECONDS, SECONDS);
+
+    // Start a new agent with the same hostname but have it generate a different ID
+    resetAgentStateDir();
+    startDefaultAgent(testHost(), "--zk-registration-ttl", "0");
+    awaitHostRegistered(client, host, LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
   }
 }
