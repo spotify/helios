@@ -56,9 +56,7 @@ import static java.util.Collections.emptyList;
  *   "rolloutOptions":{
  *     "migrate":false,
  *     "parallelism":2,
- *     "timeout":1000,
- *     "overlap":true,
- *     "token": "insecure-access-token"
+ *     "timeout":1000
  *   }
  * }
  * </pre>

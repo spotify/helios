@@ -756,19 +756,9 @@ public abstract class SystemTestBase {
     return cli("create", args);
   }
 
-  protected void deployJob(final JobId jobId, final String host) throws Exception {
-    deployJob(jobId, host, null);
-  }
-
-  protected void deployJob(final JobId jobId, final String host, final String token)
+  protected void deployJob(final JobId jobId, final String host)
       throws Exception {
-    final List<String> deployArgs = Lists.newArrayList(jobId.toString(), host);
-
-    if (token != null) {
-      deployArgs.addAll(ImmutableList.of("--token", token));
-    }
-
-    final String deployOutput = cli("deploy", deployArgs);
+    final String deployOutput = cli("deploy", jobId.toString(), host);
     assertThat(deployOutput, containsString(host + ": done"));
 
     final String output = cli("status", "--host", host, "--json");
@@ -787,7 +777,8 @@ public abstract class SystemTestBase {
         Json.readUnchecked(output, new TypeReference<Map<JobId, JobStatus>>() {
         });
     final JobStatus status = statuses.get(jobId);
-    assertTrue(status == null || status.getDeployments().get(host) == null);
+    assertTrue(status == null ||
+               status.getDeployments().get(host) == null);
   }
 
   protected String startJob(final JobId jobId, final String host) throws Exception {

@@ -687,7 +687,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
             tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
         final RolloutTask task = tasks.getRolloutTasks().get(tasks.getTaskIndex());
-        final RollingUpdateOp op = processRollingUpdateTask(
+        RollingUpdateOp op = processRollingUpdateTask(
             client, opFactory, task, tasks.getDeploymentGroup());
 
         if (!op.operations().isEmpty()) {
@@ -807,8 +807,7 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                 deploymentGroup.getName());
 
     try {
-      return opFactory.nextTask(getDeployOperations(
-          client, host, deployment, deploymentGroup.getRolloutOptions().getToken()));
+      return opFactory.nextTask(getDeployOperations(client, host, deployment, Job.EMPTY_TOKEN));
     } catch (JobDoesNotExistException e) {
       return opFactory.error(e, host, RollingUpdateError.JOB_NOT_FOUND);
     } catch (TokenVerificationException e) {
@@ -833,18 +832,17 @@ public class ZooKeeperMasterModel implements MasterModel {
       final boolean isOwnedByDeploymentGroup = Objects.equals(
           deployment.getDeploymentGroupName(), deploymentGroup.getName());
       final boolean isSameJob = deployment.getJobId().equals(deploymentGroup.getJobId());
-      final RolloutOptions rolloutOptions = deploymentGroup.getRolloutOptions();
 
       if (isOwnedByDeploymentGroup || (
-          isSameJob && rolloutOptions.getMigrate())) {
+          isSameJob && deploymentGroup.getRolloutOptions().getMigrate())) {
         if (isSameJob && isOwnedByDeploymentGroup && deployment.getGoal().equals(Goal.START)) {
           // The job we want deployed is already deployed and set to run, so just leave it.
           continue;
         }
 
         try {
-          operations.addAll(getUndeployOperations(
-              client, host, deployment.getJobId(), rolloutOptions.getToken()));
+          operations.addAll(getUndeployOperations(client, host, deployment.getJobId(),
+                                                  Job.EMPTY_TOKEN));
         } catch (TokenVerificationException e) {
           return opFactory.error(e, host, RollingUpdateError.TOKEN_VERIFICATION_ERROR);
         } catch (HostNotFoundException e) {
