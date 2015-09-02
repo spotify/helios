@@ -625,9 +625,10 @@ public class DeploymentGroupTest extends SystemTestBase {
     final String expected = (
         "(parallelism=1, timeout=300, overlap=false, failure threshold=50.00)\n"
         + "\n"
-        + "dc1-test-host-a1.dc1.example.com -> RUNNING (1/3)\n"
-        + "dc1-test-host-a2.dc1.example.com -> RUNNING (2/3)\n"
-        + "dc2-test-host-a1.dc2.example.com -> RUNNING (3/3)\n"
+        + "dc1-test-host-a1.dc1.example.com -> FAILED Job already deployed either manually or by a "
+        + "different deployment group. (1/3)\n"
+        + "dc1-test-host-a2.dc1.example.com -> DONE (2/3)\n"
+        + "dc2-test-host-a1.dc2.example.com -> DONE (3/3)\n"
         + "\n"
         + "Done.");
 

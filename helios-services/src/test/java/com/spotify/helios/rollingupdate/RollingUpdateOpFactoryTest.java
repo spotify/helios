@@ -118,6 +118,7 @@ public class RollingUpdateOpFactoryTest {
                 .setRolloutTasks(rolloutTasks)
                 .setTaskIndex(0)
                 .setDeploymentGroup(DEPLOYMENT_GROUP)
+                .setNumTargets(1)
                 .build()
                 .toJsonBytes()),
             new SetData("/status/deployment-groups/my_group", DeploymentGroupStatus.newBuilder()
@@ -158,6 +159,7 @@ public class RollingUpdateOpFactoryTest {
                 .setRolloutTasks(rolloutTasks)
                 .setTaskIndex(0)
                 .setDeploymentGroup(DEPLOYMENT_GROUP)
+                .setNumTargets(1)
                 .build()
                 .toJsonBytes()),
             new SetData("/status/deployment-groups/my_group", DeploymentGroupStatus.newBuilder()

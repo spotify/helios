@@ -125,7 +125,7 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
                                  final List<DeploymentGroupStatusResponse.HostStatus> hosts,
                                  final boolean full) {
     final Table table = table(out);
-    table.row("HOST", "UP-TO-DATE", "JOB", "STATE");
+    table.row("HOST", "UP-TO-DATE", "JOB", "JOB STATE", "ROLLOUT STATE");
 
     for (final DeploymentGroupStatusResponse.HostStatus hostStatus : hosts) {
       final String displayHostName = formatHostname(full, hostStatus.getHost());
@@ -142,10 +142,12 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
         job = hostStatus.getJobId().toShortString();
       }
 
-      final String state = hostStatus.getState() != null ?
-                           hostStatus.getState().toString() : "-";
+      final String taskState = hostStatus.getTaskState() != null ?
+                              hostStatus.getTaskState().toString() : "-";
+      final String rolloutState = hostStatus.getRolloutState() != null ?
+                                  hostStatus.getRolloutState().toString() : "-";
 
-      table.row(displayHostName, upToDate ? "X" : "", job, state);
+      table.row(displayHostName, upToDate ? "X" : "", job, taskState, rolloutState);
     }
 
     table.print();

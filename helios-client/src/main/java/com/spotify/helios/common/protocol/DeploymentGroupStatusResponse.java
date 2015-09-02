@@ -43,18 +43,30 @@ public class DeploymentGroupStatusResponse {
     IDLE
   }
 
+  public enum RolloutState {
+    PENDING,
+    DONE,
+    FAILED
+  }
+
   public static class HostStatus {
 
     private final String host;
     private final JobId jobId;
-    private final TaskStatus.State state;
+    private final TaskStatus.State taskState;
+    private final RolloutState rolloutState;
+    private final String errMsg;
 
     public HostStatus(@JsonProperty("host") final String host,
                       @JsonProperty("jobId") @Nullable final JobId jobId,
-                      @JsonProperty("state") @Nullable final TaskStatus.State state) {
+                      @JsonProperty("taskState") @Nullable final TaskStatus.State taskState,
+                      @JsonProperty("rolloutState") @Nullable final RolloutState rolloutState,
+                      @JsonProperty("errMsg") @Nullable final String errMsg) {
       this.host = host;
       this.jobId = jobId;
-      this.state = state;
+      this.taskState = taskState;
+      this.rolloutState = rolloutState;
+      this.errMsg = errMsg;
     }
 
     public String getHost() {
@@ -65,8 +77,16 @@ public class DeploymentGroupStatusResponse {
       return jobId;
     }
 
-    public TaskStatus.State getState() {
-      return state;
+    public TaskStatus.State getTaskState() {
+      return taskState;
+    }
+
+    public RolloutState getRolloutState() {
+      return rolloutState;
+    }
+
+    public String getErrMsg() {
+      return errMsg;
     }
 
     @Override
@@ -86,7 +106,13 @@ public class DeploymentGroupStatusResponse {
       if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
         return false;
       }
-      if (state != that.state) {
+      if (taskState != that.taskState) {
+        return false;
+      }
+      if (rolloutState != that.rolloutState) {
+        return false;
+      }
+      if (errMsg != null ? !errMsg.equals(that.errMsg) : that.errMsg != null) {
         return false;
       }
 
@@ -97,7 +123,9 @@ public class DeploymentGroupStatusResponse {
     public int hashCode() {
       int result = host != null ? host.hashCode() : 0;
       result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
-      result = 31 * result + (state != null ? state.hashCode() : 0);
+      result = 31 * result + (taskState != null ? taskState.hashCode() : 0);
+      result = 31 * result + (rolloutState != null ? rolloutState.hashCode() : 0);
+      result = 31 * result + (errMsg != null ? errMsg.hashCode() : 0);
       return result;
     }
   }

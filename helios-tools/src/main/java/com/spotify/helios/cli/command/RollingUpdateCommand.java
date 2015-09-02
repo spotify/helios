@@ -30,8 +30,8 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
-import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse.RolloutState;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -54,8 +54,8 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 public class RollingUpdateCommand extends WildcardJobCommand {
 
   private static final long POLL_INTERVAL_MILLIS = 1000;
-  private static final Set<TaskStatus.State> TERMINAL_TASK_STATES =
-      Sets.newHashSet(TaskStatus.State.RUNNING);
+  private static final Set<RolloutState> TERMINAL_ROLLOUT_STATES =
+      Sets.newHashSet(RolloutState.DONE, RolloutState.FAILED);
 
   private final SleepFunction sleepFunction;
   private final Supplier<Long> timeSupplier;
@@ -224,14 +224,19 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         for (DeploymentGroupStatusResponse.HostStatus hostStatus : status.getHostStatuses()) {
           final JobId hostJobId = hostStatus.getJobId();
           final String host = hostStatus.getHost();
-          final TaskStatus.State state = hostStatus.getState();
+          final RolloutState rolloutState = hostStatus.getRolloutState();
           final boolean done = hostJobId != null &&
                                hostJobId.equals(jobId) &&
-                               TERMINAL_TASK_STATES.contains(state);
+                               TERMINAL_ROLLOUT_STATES.contains(rolloutState);
 
           if (done && reported.add(host)) {
-            out.println(format("%s -> %s (%d/%d)", host, state,
-                               reported.size(), status.getHostStatuses().size()));
+            if (rolloutState == RolloutState.DONE) {
+              out.println(format("%s -> %s (%d/%d)", host, rolloutState,
+                                 reported.size(), status.getHostStatuses().size()));
+            } else {
+              out.println(format("%s -> %s %s (%d/%d)", host, rolloutState, hostStatus.getErrMsg(),
+                                 reported.size(), status.getHostStatuses().size()));
+            }
           }
         }
       }

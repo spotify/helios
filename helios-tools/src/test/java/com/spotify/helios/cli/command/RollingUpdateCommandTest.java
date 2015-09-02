@@ -32,8 +32,9 @@ import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
-import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse.RolloutState;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -94,8 +95,19 @@ public class RollingUpdateCommandTest {
   }
 
   private static DeploymentGroupStatusResponse.HostStatus makeHostStatus(
-      final String host, final JobId jobId, final TaskStatus.State state) {
-    return new DeploymentGroupStatusResponse.HostStatus(host, jobId, state);
+      final String host, final JobId jobId, final State state) {
+    return makeHostStatus(host, jobId, state, null);
+  }
+
+  private static DeploymentGroupStatusResponse.HostStatus makeHostStatus(
+      final String host, final JobId jobId, final State state, final RolloutState rolloutState) {
+    return makeHostStatus(host, jobId, state, rolloutState, null);
+  }
+
+  private static DeploymentGroupStatusResponse.HostStatus
+  makeHostStatus(final String host, final JobId jobId, final State state,
+                 final RolloutState rolloutState, final String errMsg) {
+    return new DeploymentGroupStatusResponse.HostStatus(host, jobId, state, rolloutState, errMsg);
   }
 
   private static DeploymentGroupStatusResponse statusResponse(
@@ -122,20 +134,20 @@ public class RollingUpdateCommandTest {
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null),
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
                        makeHostStatus("host1", null, null),
-                       makeHostStatus("host2", OLD_JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING)),
+                       makeHostStatus("host2", OLD_JOB_ID, State.RUNNING),
+                       makeHostStatus("host3", OLD_JOB_ID, State.RUNNING)),
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host2", JOB_ID, TaskStatus.State.PULLING_IMAGE),
-                       makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING)),
+                       makeHostStatus("host1", JOB_ID, State.RUNNING, RolloutState.DONE),
+                       makeHostStatus("host2", JOB_ID, State.PULLING_IMAGE, RolloutState.PENDING),
+                       makeHostStatus("host3", OLD_JOB_ID, State.RUNNING)),
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host2", JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host3", JOB_ID, TaskStatus.State.CREATING)),
+                       makeHostStatus("host1", JOB_ID, State.RUNNING, RolloutState.DONE),
+                       makeHostStatus("host2", JOB_ID, State.RUNNING, RolloutState.DONE),
+                       makeHostStatus("host3", JOB_ID, State.CREATING, RolloutState.PENDING)),
         statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host2", JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host3", JOB_ID, TaskStatus.State.RUNNING))
+                       makeHostStatus("host1", JOB_ID, State.RUNNING, RolloutState.DONE),
+                       makeHostStatus("host2", JOB_ID, State.RUNNING, RolloutState.DONE),
+                       makeHostStatus("host3", JOB_ID, State.RUNNING, RolloutState.DONE))
     ));
 
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
@@ -150,9 +162,9 @@ public class RollingUpdateCommandTest {
         "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
         + "overlap=false, failure threshold=0.00)\n" +
         "\n" +
-        "host1 -> RUNNING (1/3)\n" +
-        "host2 -> RUNNING (2/3)\n" +
-        "host3 -> RUNNING (3/3)\n" +
+        "host1 -> DONE (1/3)\n" +
+        "host2 -> DONE (2/3)\n" +
+        "host3 -> DONE (3/3)\n" +
         "\n" +
         "Done.\n" +
         "Duration: 4.00 s\n");
@@ -190,16 +202,16 @@ public class RollingUpdateCommandTest {
     when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
                        makeHostStatus("host1", null, null),
-                       makeHostStatus("host2", OLD_JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING)),
+                       makeHostStatus("host2", OLD_JOB_ID, State.RUNNING),
+                       makeHostStatus("host3", OLD_JOB_ID, State.RUNNING)),
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host2", JOB_ID, TaskStatus.State.PULLING_IMAGE),
-                       makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING)),
+                       makeHostStatus("host1", JOB_ID, State.RUNNING, RolloutState.DONE),
+                       makeHostStatus("host2", JOB_ID, State.PULLING_IMAGE, RolloutState.PENDING),
+                       makeHostStatus("host3", OLD_JOB_ID, State.RUNNING)),
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, NEW_JOB_ID, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host2", JOB_ID, TaskStatus.State.STARTING),
-                       makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING))
+                       makeHostStatus("host1", JOB_ID, State.RUNNING, RolloutState.DONE),
+                       makeHostStatus("host2", JOB_ID, State.STARTING, RolloutState.PENDING),
+                       makeHostStatus("host3", OLD_JOB_ID, State.RUNNING))
     ));
 
     final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
@@ -214,7 +226,7 @@ public class RollingUpdateCommandTest {
         "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
         + "overlap=false, failure threshold=0.00)\n" +
         "\n" +
-        "host1 -> RUNNING (1/3)\n" +
+        "host1 -> DONE (1/3)\n" +
         "\n" +
         "Failed: Deployment-group job id changed during rolling-update\n" +
         "Duration: 2.00 s\n";
@@ -232,7 +244,7 @@ public class RollingUpdateCommandTest {
                        makeHostStatus("host1", null, null),
                        makeHostStatus("host2", null, null)),
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.PULLING_IMAGE),
+                       makeHostStatus("host1", JOB_ID, State.PULLING_IMAGE),
                        makeHostStatus("host2", null, null))
     ));
 
@@ -262,10 +274,10 @@ public class RollingUpdateCommandTest {
 
     when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.PULLING_IMAGE),
+                       makeHostStatus("host1", JOB_ID, State.PULLING_IMAGE, RolloutState.PENDING),
                        makeHostStatus("host2", null, null)),
         statusResponse(DeploymentGroupStatusResponse.Status.FAILED, "foobar",
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
+                       makeHostStatus("host1", JOB_ID, State.RUNNING, RolloutState.DONE),
                        makeHostStatus("host2", null, null))
     ));
 
@@ -281,7 +293,7 @@ public class RollingUpdateCommandTest {
         "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
         + "overlap=false, failure threshold=0.00)\n" +
         "\n" +
-        "host1 -> RUNNING (1/2)\n" +
+        "host1 -> DONE (1/2)\n" +
         "\n" +
         "Failed: foobar\n" +
         "Duration: 1.00 s\n";
@@ -298,9 +310,9 @@ public class RollingUpdateCommandTest {
 
     when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
         statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host2", JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host3", JOB_ID, TaskStatus.State.RUNNING))
+                       makeHostStatus("host1", JOB_ID, State.RUNNING),
+                       makeHostStatus("host2", JOB_ID, State.RUNNING),
+                       makeHostStatus("host3", JOB_ID, State.RUNNING))
     ));
 
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
@@ -352,12 +364,12 @@ public class RollingUpdateCommandTest {
     when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
                        makeHostStatus("host1", null, null),
-                       makeHostStatus("host2", OLD_JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING)),
+                       makeHostStatus("host2", OLD_JOB_ID, State.RUNNING),
+                       makeHostStatus("host3", OLD_JOB_ID, State.RUNNING)),
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, NEW_JOB_ID, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
-                       makeHostStatus("host2", JOB_ID, TaskStatus.State.STARTING),
-                       makeHostStatus("host3", OLD_JOB_ID, TaskStatus.State.RUNNING))
+                       makeHostStatus("host1", JOB_ID, State.RUNNING),
+                       makeHostStatus("host2", JOB_ID, State.STARTING),
+                       makeHostStatus("host3", OLD_JOB_ID, State.RUNNING))
     ));
 
     final int ret = command.runWithJobId(options, client, out, true, JOB_ID, null);
@@ -389,7 +401,7 @@ public class RollingUpdateCommandTest {
                        makeHostStatus("host1", null, null),
                        makeHostStatus("host2", null, null)),
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.PULLING_IMAGE),
+                       makeHostStatus("host1", JOB_ID, State.PULLING_IMAGE),
                        makeHostStatus("host2", null, null))
     ));
 
@@ -418,10 +430,10 @@ public class RollingUpdateCommandTest {
 
     when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
         statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.PULLING_IMAGE),
+                       makeHostStatus("host1", JOB_ID, State.PULLING_IMAGE),
                        makeHostStatus("host2", null, null)),
         statusResponse(DeploymentGroupStatusResponse.Status.FAILED, "foobar",
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING),
+                       makeHostStatus("host1", JOB_ID, State.RUNNING),
                        makeHostStatus("host2", null, null))
     ));
 
@@ -451,7 +463,7 @@ public class RollingUpdateCommandTest {
 
     when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
         statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING))
+                       makeHostStatus("host1", JOB_ID, State.RUNNING))
     ));
     when(options.getBoolean("migrate")).thenReturn(true);
 
@@ -481,7 +493,7 @@ public class RollingUpdateCommandTest {
 
     when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
         statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, null,
-                       makeHostStatus("host1", JOB_ID, TaskStatus.State.RUNNING))
+                       makeHostStatus("host1", JOB_ID, State.RUNNING))
     ));
     when(options.getBoolean("overlap")).thenReturn(true);
 
@@ -502,6 +514,55 @@ public class RollingUpdateCommandTest {
         .put("overlap", true)
         .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD_PERCENTAGE)
         .build());
+  }
+
+  @Test
+  public void testRollingUpdateFailureThreshold() throws Exception {
+    when(options.getFloat("failure_threshold")).thenReturn((float) 50);
+
+    when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
+        .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).then(new ResponseAnswer(
+        statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null),
+        statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
+                       makeHostStatus("host1", null, null),
+                       makeHostStatus("host2", OLD_JOB_ID, State.RUNNING),
+                       makeHostStatus("host3", OLD_JOB_ID, State.RUNNING)),
+        statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
+                       makeHostStatus("host1", JOB_ID, State.FAILED, RolloutState.FAILED, "health check failed"),
+                       makeHostStatus("host2", JOB_ID, State.PULLING_IMAGE, RolloutState.PENDING),
+                       makeHostStatus("host3", OLD_JOB_ID, State.RUNNING)),
+        statusResponse(DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
+                       makeHostStatus("host1", JOB_ID, State.FAILED, RolloutState.FAILED, "health check failed"),
+                       makeHostStatus("host2", JOB_ID, State.RUNNING, RolloutState.DONE),
+                       makeHostStatus("host3", JOB_ID, State.CREATING, RolloutState.PENDING)),
+        statusResponse(DeploymentGroupStatusResponse.Status.ACTIVE, null,
+                       makeHostStatus("host1", JOB_ID, State.FAILED, RolloutState.FAILED, "health check failed"),
+                       makeHostStatus("host2", JOB_ID, State.RUNNING, RolloutState.DONE),
+                       makeHostStatus("host3", JOB_ID, State.RUNNING, RolloutState.DONE))
+    ));
+
+    final int ret = command.runWithJobId(options, client, out, false, JOB_ID, null);
+    final String output = baos.toString();
+
+    verify(client).rollingUpdate(
+        GROUP_NAME, JOB_ID,
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, (float) 50));
+    assertEquals(0, ret);
+
+    final String expected = (
+        "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
+        + "overlap=false, failure threshold=50.00)\n" +
+        "\n" +
+        "host1 -> FAILED health check failed (1/3)\n" +
+        "host2 -> DONE (2/3)\n" +
+        "host3 -> DONE (3/3)\n" +
+        "\n" +
+        "Done.\n" +
+        "Duration: 4.00 s\n");
+
+    assertEquals(expected, output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "));
   }
 
   private static class TimeUtil implements RollingUpdateCommand.SleepFunction, Supplier<Long> {
