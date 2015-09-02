@@ -62,7 +62,6 @@ import java.util.regex.Pattern;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.descriptors.PortMapping.TCP;
 import static com.spotify.helios.common.descriptors.ServiceEndpoint.HTTP;
 import static java.util.Arrays.asList;
@@ -128,7 +127,7 @@ public class JobCreateCommand extends ControlCommand {
 
     tokenArg = parser.addArgument("--token")
          .nargs("?")
-         .setDefault(EMPTY_TOKEN)
+         .setDefault("")
          .help("Insecure access token meant to prevent accidental changes to your job " +
                "(e.g. undeploys).");
 

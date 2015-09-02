@@ -63,7 +63,6 @@ import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.FORBIDDEN;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST_NOT_FOUND;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.INVALID_ID;
@@ -209,14 +208,14 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public JobDeployResponse jobPut(
-      @PathParam("host") final String host,
-      @PathParam("job") final JobId jobId,
-      @Valid final Deployment deployment,
-      @RequestUser final String username,
-      @QueryParam("token") @DefaultValue(EMPTY_TOKEN) final String token) {
+  public JobDeployResponse jobPut(@PathParam("host") final String host,
+                                  @PathParam("job") final JobId jobId,
+                                  @Valid final Deployment deployment,
+                                  @RequestUser final String username,
+                                  @QueryParam("token") @DefaultValue("") final String token) {
     if (!jobId.isFullyQualified()) {
-      throw badRequest(new JobDeployResponse(JobDeployResponse.Status.INVALID_ID, host, jobId));
+      throw badRequest(new JobDeployResponse(JobDeployResponse.Status.INVALID_ID, host,
+                                             jobId));
     }
     try {
       final Deployment actualDeployment = deployment.toBuilder().setDeployerUser(username).build();

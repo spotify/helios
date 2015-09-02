@@ -37,7 +37,6 @@ import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -71,7 +70,6 @@ public class DeploymentGroupTest extends SystemTestBase {
 
   private static final String TEST_GROUP = "my_group";
   private static final String TEST_LABEL = "foo=bar";
-  private static final String TOKEN = "foo-token";
 
   private MasterMain master;
 
@@ -235,55 +233,8 @@ public class DeploymentGroupTest extends SystemTestBase {
     assertEquals(TEST_GROUP, jobDeploymentGroup);
 
     // rolling-update should succeed & job should be running
-    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
-    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
-  }
-
-  @Test
-  public void testRollingUpdateMigrateWithToken() throws Exception {
-    final String host = testHost();
-    startDefaultAgent(host, "--labels", TEST_LABEL);
-
-    // Wait for agent to come up
-    final HeliosClient client = defaultClient();
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
-
-    // Manually deploy a job with a token on the host (i.e. a job not part of the deployment group)
-    final Job job = Job.newBuilder()
-        .setName(testJobName)
-        .setVersion(testJobVersion)
-        .setImage(BUSYBOX)
-        .setCommand(IDLE_COMMAND)
-        .setToken(TOKEN)
-        .build();
-    final JobId jobId = createJob(job);
-    deployJob(jobId, host, TOKEN);
-    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
-
-    // Create a deployment-group and trigger a migration rolling-update
-    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
-    cli("rolling-update", "--async", "--migrate", "--token", TOKEN, testJobNameAndVersion,
-        TEST_GROUP);
-
-    // Check that the deployment's deployment-group name eventually changes to TEST_GROUP
-    // (should be null or empty before)
-    final String jobDeploymentGroup = Polling.await(
-        LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
-          @Override
-          public String call() throws Exception {
-            final Deployment deployment =
-                defaultClient().hostStatus(host).get().getJobs().get(jobId);
-            if (deployment != null && !isNullOrEmpty(deployment.getDeploymentGroupName())) {
-              return deployment.getDeploymentGroupName();
-            } else {
-              return null;
-            }
-          }
-        });
-    assertEquals(TEST_GROUP, jobDeploymentGroup);
-
-    // rolling-update should succeed & job should be running
-    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP,
+                               DeploymentGroupStatus.State.DONE);
     awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
   }
 
@@ -552,6 +503,7 @@ public class DeploymentGroupTest extends SystemTestBase {
                       (System.currentTimeMillis() - t0) / 1000.0);
   }
 
+
   @Test
   public void testRollingUpdateWithOverlapAndParallelism() throws Exception {
     // create and start agents
@@ -588,39 +540,5 @@ public class DeploymentGroupTest extends SystemTestBase {
       awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
     }
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
-  }
-
-  @Test
-  public void testRollingUpdateWithToken() throws Exception {
-    final String host = testHost();
-    startDefaultAgent(host, "--labels", TEST_LABEL);
-
-    // Wait for agent to come up
-    final HeliosClient client = defaultClient();
-    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
-
-    // Manually deploy a job with a token on the host (i.e. a job not part of the deployment group)
-    final Job job = Job.newBuilder()
-        .setName(testJobName)
-        .setVersion(testJobVersion)
-        .setImage(BUSYBOX)
-        .setCommand(IDLE_COMMAND)
-        .setToken(TOKEN)
-        .build();
-    final JobId jobId = createJob(job);
-
-    // Create a deployment-group and trigger a migration rolling-update
-    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
-    cli("rolling-update", "--async", "--token", TOKEN, testJobNameAndVersion, TEST_GROUP);
-
-    // rolling-update should succeed & job should be running
-    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
-    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
-
-    // Check that we cannot manually undeploy the job with a token
-    final String output = cli("undeploy", jobId.toString(), host);
-    assertThat(output, containsString("FORBIDDEN"));
-    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
-    awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
   }
 }
