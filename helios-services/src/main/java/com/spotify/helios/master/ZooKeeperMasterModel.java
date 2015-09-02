@@ -85,6 +85,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -807,8 +808,9 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                 deploymentGroup.getName());
 
     try {
-      return opFactory.nextTask(getDeployOperations(
-          client, host, deployment, deploymentGroup.getRolloutOptions().getToken()));
+      final String token =
+          firstNonNull(deploymentGroup.getRolloutOptions().getToken(), Job.EMPTY_TOKEN);
+      return opFactory.nextTask(getDeployOperations(client, host, deployment, token));
     } catch (JobDoesNotExistException e) {
       return opFactory.error(e, host, RollingUpdateError.JOB_NOT_FOUND);
     } catch (TokenVerificationException e) {
@@ -843,8 +845,9 @@ public class ZooKeeperMasterModel implements MasterModel {
         }
 
         try {
-          operations.addAll(getUndeployOperations(
-              client, host, deployment.getJobId(), rolloutOptions.getToken()));
+          final String token =
+              firstNonNull(deploymentGroup.getRolloutOptions().getToken(), Job.EMPTY_TOKEN);
+          operations.addAll(getUndeployOperations( client, host, deployment.getJobId(), token));
         } catch (TokenVerificationException e) {
           return opFactory.error(e, host, RollingUpdateError.TOKEN_VERIFICATION_ERROR);
         } catch (HostNotFoundException e) {
@@ -1607,8 +1610,9 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private List<ZooKeeperOperation> getUndeployOperations(final ZooKeeperClient client,
-                                                        final String host, final JobId jobId,
-                                                        final String token)
+                                                         final String host,
+                                                         final JobId jobId,
+                                                         final String token)
       throws HostNotFoundException, JobNotDeployedException, TokenVerificationException {
     assertHostExists(client, host);
 
