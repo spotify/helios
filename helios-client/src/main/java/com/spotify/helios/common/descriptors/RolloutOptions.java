@@ -21,8 +21,12 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.google.common.base.Optional;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.TimeUnit;
 
@@ -74,12 +78,12 @@ public class RolloutOptions {
                         @JsonProperty("parallelism") final int parallelism,
                         @JsonProperty("migrate") final boolean migrate,
                         @JsonProperty("overlap") boolean overlap,
-                        @JsonProperty("token") String token) {
+                        @JsonProperty("token") @Nullable String token) {
     this.timeout = timeout;
     this.parallelism = parallelism;
     this.migrate = migrate;
     this.overlap = overlap;
-    this.token = token;
+    this.token = Optional.fromNullable(token).or(EMPTY_TOKEN);
   }
 
   public static Builder newBuilder() {
