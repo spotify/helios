@@ -98,7 +98,7 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
       final List<HostSelector> hostSelectors = status.getDeploymentGroup().getHostSelectors();
 
       out.printf("Name: %s%n", name);
-      out.printf("Job Id: %s%n", full ? jobId : jobId.toShortString());
+      out.printf("Job Id: %s%n", full ? jobId : (jobId == null ? null : jobId.toShortString()));
       out.printf("Status: %s%n", status.getStatus());
       out.printf("Host selectors:%n");
       for (final HostSelector hostSelector : hostSelectors) {
