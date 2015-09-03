@@ -126,6 +126,46 @@ public class DeploymentGroupStatusCommandTest {
   }
 
   @Test
+  public void testDeploymentGroupStatusBeforeRollingUpdate() throws Exception {
+    final DeploymentGroup deploymentGroupWithNoJob = new DeploymentGroup(
+        GROUP_NAME, HOST_SELECTORS, null, ROLLOUT_OPTIONS);
+
+    final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
+    hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
+        "host1", null, null));
+    hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
+        "host2", null, null));
+    hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
+        "host3", null, null));
+
+    final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
+        deploymentGroupWithNoJob, DeploymentGroupStatusResponse.Status.IDLE, null,
+        hostStatuses, null);
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).thenReturn(Futures.immediateFuture(status));
+    when(options.getString("name")).thenReturn(GROUP_NAME);
+    final int ret = command.run(options, client, out, false, null);
+
+    assertEquals(0, ret);
+    final String output = baos.toString().replaceAll("\\s+", "");
+
+    final String expected =
+        format("Name: %s" +
+               "Job Id: null" +
+               "Status: IDLE" +
+               "Host selectors:" +
+               "  a = b" +
+               "  foo = bar" +
+               "HOST UP-TO-DATE JOB STATE" +
+               "host1. - -" +
+               "host2. - -" +
+               "host3. - -",
+               GROUP_NAME).replace(" ", "");
+
+    assertEquals(expected, output);
+  }
+
+  @Test
   public void testDeploymentGroupStatusWithError() throws Exception {
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
