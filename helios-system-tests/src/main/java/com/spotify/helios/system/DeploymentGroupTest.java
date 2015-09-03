@@ -150,8 +150,8 @@ public class DeploymentGroupTest extends SystemTestBase {
     // trigger a rolling update to replace the first job with the second job
     final String output = cli("rolling-update", secondJobNameAndVersion, TEST_GROUP);
 
-    assertThat(output,
-               containsString("parallelism=1, timeout=300, overlap=false, failure threshold=0.00"));
+    assertThat(output, containsString("parallelism=1, timeout=300, overlap=false, token=, "
+                                      + "failure threshold=0.00"));
 
     // Check that the hosts in the output are ordered
     final List<String> lines = Lists.newArrayList(Splitter.on("\n").split(output));
@@ -623,7 +623,7 @@ public class DeploymentGroupTest extends SystemTestBase {
         cli("rolling-update", "--failure-threshold", "0.5", testJobNameAndVersion, TEST_GROUP);
 
     final String expected = (
-        "(parallelism=1, timeout=300, overlap=false, failure threshold=0.50)\n"
+        "(parallelism=1, timeout=300, overlap=false, token=, failure threshold=0.50)\n"
         + "\n"
         + "dc1-test-host-a1.dc1.example.com -> FAILED Job already deployed either manually or by a "
         + "different deployment group. (1/3)\n"

@@ -57,7 +57,8 @@ import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
  *     "parallelism": 2,
  *     "timeout": 1000,
  *     "overlap": true,
- *     "token": "insecure-access-token"
+ *     "token": "insecure-access-token",
+ *     "failureThreshold": 0.5
  *   }
  * }
  * </pre>
@@ -76,12 +77,13 @@ public class RolloutOptions {
   private final String token;
   private final float failureThreshold;
 
-  public RolloutOptions(@JsonProperty("timeout") final long timeout,
-                        @JsonProperty("parallelism") final int parallelism,
-                        @JsonProperty("migrate") final boolean migrate,
-                        @JsonProperty("overlap") boolean overlap,
-                        @JsonProperty("token") @Nullable String token,
-                        @JsonProperty("failureThreshold") @Nullable final Float failureThreshold) {
+  public RolloutOptions(
+      @JsonProperty("timeout") final long timeout,
+      @JsonProperty("parallelism") final int parallelism,
+      @JsonProperty("migrate") final boolean migrate,
+      @JsonProperty("overlap") boolean overlap,
+      @JsonProperty("token") @Nullable String token,
+      @JsonProperty("failureThreshold") @Nullable final Float failureThreshold) {
     this.timeout = timeout;
     this.parallelism = parallelism;
     this.migrate = migrate;
@@ -99,6 +101,7 @@ public class RolloutOptions {
         .setTimeout(timeout)
         .setParallelism(parallelism)
         .setMigrate(migrate)
+        .setToken(token)
         .setFailureThreshold(failureThreshold);
   }
 
@@ -116,6 +119,10 @@ public class RolloutOptions {
 
   public boolean getOverlap() {
     return overlap;
+  }
+
+  public String getToken() {
+    return token;
   }
 
   public float getFailureThreshold() {
@@ -145,6 +152,9 @@ public class RolloutOptions {
     if (overlap != that.overlap) {
       return false;
     }
+    if (token != null ? !token.equals(that.token) : that.token != null) {
+      return false;
+    }
     if (failureThreshold != that.failureThreshold) {
       return false;
     }
@@ -158,7 +168,8 @@ public class RolloutOptions {
     result = 31 * result + parallelism;
     result = 31 * result + (migrate ? 1 : 0);
     result = 31 * result + (overlap ? 1 : 0);
-    result = (int) (31 * result + failureThreshold);
+    result = 31 * result + (token != null ? token.hashCode() : 0);
+    result = 31 * result + (failureThreshold != +0.0f ? Float.floatToIntBits(failureThreshold) : 0);
     return result;
   }
 
@@ -169,6 +180,7 @@ public class RolloutOptions {
            ", parallelism=" + parallelism +
            ", migrate=" + migrate +
            ", overlap=" + overlap +
+           ", token=" + token +
            ", failure threshold=" + failureThreshold +
            '}';
   }
@@ -179,6 +191,7 @@ public class RolloutOptions {
     private int parallelism;
     private boolean migrate;
     private boolean overlap;
+    private String token;
     private Float failureThreshold;
 
     public Builder() {
@@ -186,6 +199,7 @@ public class RolloutOptions {
       this.parallelism = DEFAULT_PARALLELISM;
       this.migrate = false;
       this.overlap = false;
+      this.token = EMPTY_TOKEN;
       this.failureThreshold = DEFAULT_FAILURE_THRESHOLD;
     }
 
@@ -210,13 +224,18 @@ public class RolloutOptions {
       return this;
     }
 
+    public Builder setToken(final String token) {
+      this.token = token;
+      return this;
+    }
+
     public Builder setFailureThreshold(final Float failureThreshold) {
       this.failureThreshold = failureThreshold;
       return this;
     }
 
     public RolloutOptions build() {
-      return new RolloutOptions(timeout, parallelism, migrate, overlap, failureThreshold);
+      return new RolloutOptions(timeout, parallelism, migrate, overlap, token, failureThreshold);
     }
   }
 }

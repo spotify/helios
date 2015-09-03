@@ -67,6 +67,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   private final Argument rolloutTimeoutArg;
   private final Argument migrateArg;
   private final Argument overlapArg;
+  private final Argument tokenArg;
   private final Argument failureThresholdArg;
 
   public RollingUpdateCommand(final Subparser parser) {
@@ -132,6 +133,12 @@ public class RollingUpdateCommand extends WildcardJobCommand {
               "version of a job before undeploying the old one. Note that the command will fail " +
               "if the job contains static port assignments.");
 
+    tokenArg = parser.addArgument("--token")
+        .nargs("?")
+        .setDefault(EMPTY_TOKEN)
+        .help("Insecure access token meant to prevent accidental changes to your job " +
+              "(e.g. undeploys).");
+
     failureThresholdArg = parser.addArgument("--failure-threshold")
         .setDefault(RolloutOptions.DEFAULT_FAILURE_THRESHOLD)
         .type(Float.class)
@@ -151,6 +158,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final long rolloutTimeout = options.getLong(rolloutTimeoutArg.getDest());
     final boolean migrate = options.getBoolean(migrateArg.getDest());
     final boolean overlap = options.getBoolean(overlapArg.getDest());
+    final String token = options.getString(tokenArg.getDest());
     final Float failureThreshold = options.getFloat(failureThresholdArg.getDest());
 
     checkArgument(timeout > 0, "Timeout must be greater than 0");
@@ -166,6 +174,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .setParallelism(parallelism)
         .setMigrate(migrate)
         .setOverlap(overlap)
+        .setToken(token)
         .setFailureThreshold(failureThreshold)
         .build();
     final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions).get();
@@ -181,16 +190,18 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     if (!json) {
       out.println(format("Rolling update%s started: %s -> %s " +
-                         "(parallelism=%d, timeout=%d, overlap=%b, failure threshold=%.2f)%s",
+                         "(parallelism=%d, timeout=%d, overlap=%b, token=%s, " +
+                         "failure threshold=%.2f)%s",
                          async ? " (async)" : "",
                          name, jobId.toShortString(), parallelism, timeout, overlap,
-                         failureThreshold, async ? "" : "\n"));
+                         (token == null) ? "null" : token, failureThreshold, async ? "" : "\n"));
     }
 
     final Map<String, Object> jsonOutput = Maps.newHashMap();
     jsonOutput.put("parallelism", parallelism);
     jsonOutput.put("timeout", timeout);
     jsonOutput.put("overlap", overlap);
+    jsonOutput.put("token", token);
     jsonOutput.put("failureThreshold", failureThreshold);
 
     if (async) {

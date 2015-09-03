@@ -137,11 +137,11 @@ public class DeploymentGroupStatusCommandTest {
 
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host1", null, null));
+        "host1", null, null, null, null));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host2", null, null));
+        "host2", null, null, null, null));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host3", null, null));
+        "host3", null, null, null, null));
 
     final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
         deploymentGroupWithNoJob, DeploymentGroupStatusResponse.Status.IDLE, null,
@@ -161,11 +161,13 @@ public class DeploymentGroupStatusCommandTest {
                "Host selectors:" +
                "  a = b" +
                "  foo = bar" +
-               "HOST UP-TO-DATE JOB STATE" +
-               "host1. - -" +
-               "host2. - -" +
-               "host3. - -",
-               GROUP_NAME).replace(" ", "");
+               "Failure threshold: %.2f" +
+               "Failure rate: %.2f" +
+               "HOST UP-TO-DATE JOB JOB STATE ROLLOUT STATE" +
+               "host1. - - -" +
+               "host2. - - -" +
+               "host3. - - -",
+               GROUP_NAME, FAILURE_THRESHOLD, 0f).replace(" ", "");
 
     assertEquals(expected, output);
   }
