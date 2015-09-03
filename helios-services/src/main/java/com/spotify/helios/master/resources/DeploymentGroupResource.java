@@ -33,6 +33,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse.RolloutState;
 import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateRequest;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
@@ -186,25 +187,39 @@ public class DeploymentGroupResource {
       final List<String> hosts = model.getDeploymentGroupHosts(name);
 
       final List<DeploymentGroupStatusResponse.HostStatus> result = Lists.newArrayList();
+      int numFailedTargets = 0;
 
       for (final String host : hosts) {
         final HostStatus hostStatus = model.getHostStatus(host);
         JobId deployedJobId = null;
         TaskStatus.State state = null;
+        RolloutState rolloutState = null;
+        String errMsg = null;
 
         if (hostStatus != null && hostStatus.getStatus().equals(HostStatus.Status.UP)) {
           for (final Map.Entry<JobId, Deployment> entry : hostStatus.getJobs().entrySet()) {
+            deployedJobId = entry.getKey();
+            final TaskStatus taskStatus = hostStatus.getStatuses().get(deployedJobId);
+            if (taskStatus != null) {
+              state = taskStatus.getState();
+            }
             if (name.equals(entry.getValue().getDeploymentGroupName())) {
-              deployedJobId = entry.getKey();
-              final TaskStatus taskStatus = hostStatus.getStatuses().get(deployedJobId);
-              if (taskStatus != null) {
-                state = taskStatus.getState();
+              rolloutState = RolloutState.DONE;
+              break;
+            } else if (deploymentGroup.getJobId() != null &&
+                       deploymentGroup.getJobId().equals(deployedJobId)) {
+              if (!((float) numFailedTargets / hosts.size() >
+                    deploymentGroup.getRolloutOptions().getFailureThreshold())) {
+                rolloutState = RolloutState.FAILED;
+                errMsg = "Job already deployed either manually or by a different deployment group.";
+                numFailedTargets++;
               }
               break;
             }
           }
 
-          result.add(new DeploymentGroupStatusResponse.HostStatus(host, deployedJobId, state));
+          result.add(new DeploymentGroupStatusResponse.HostStatus(
+              host, deployedJobId, state, rolloutState, errMsg));
         }
       }
 

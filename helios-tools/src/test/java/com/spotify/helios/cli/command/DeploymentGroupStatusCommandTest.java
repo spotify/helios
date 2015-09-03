@@ -35,6 +35,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse.RolloutState;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -65,7 +66,9 @@ public class DeploymentGroupStatusCommandTest {
   private static final String GROUP_NAME = "foo-group";
   private static final List<HostSelector> HOST_SELECTORS = ImmutableList.of(
       HostSelector.parse("a=b"), HostSelector.parse("foo=bar"));
-  private static final RolloutOptions ROLLOUT_OPTIONS = RolloutOptions.newBuilder().build();
+  private static final float FAILURE_THRESHOLD = 50;
+  private static final RolloutOptions ROLLOUT_OPTIONS =
+      RolloutOptions.newBuilder().setFailureThreshold(FAILURE_THRESHOLD).build();
   private static final DeploymentGroup DEPLOYMENT_GROUP = new DeploymentGroup(
       GROUP_NAME, HOST_SELECTORS, JOB_ID, ROLLOUT_OPTIONS);
 
@@ -92,11 +95,11 @@ public class DeploymentGroupStatusCommandTest {
   public void testDeploymentGroupStatus() throws Exception {
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host1", JOB_ID, TaskStatus.State.RUNNING));
+        "host1", JOB_ID, TaskStatus.State.RUNNING, RolloutState.DONE, null));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host2", JOB_ID, TaskStatus.State.PULLING_IMAGE));
+        "host2", JOB_ID, TaskStatus.State.PULLING_IMAGE, RolloutState.PENDING, null));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host3", null, null));
+        "host3", null, null, null, null));
 
     final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
         DEPLOYMENT_GROUP, DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
@@ -116,11 +119,13 @@ public class DeploymentGroupStatusCommandTest {
                "Host selectors:" +
                "  a = b" +
                "  foo = bar" +
-               "HOST UP-TO-DATE JOB STATE" +
-               "host1. X %s RUNNING" +
-               "host2. X %s PULLING_IMAGE" +
-               "host3. - -",
-               GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
+               "Failure threshold: %.2f" +
+               "Failure rate: %.2f" +
+               "HOST UP-TO-DATE JOB JOB STATE ROLLOUT STATE" +
+               "host1. X %s RUNNING DONE" +
+               "host2. X %s PULLING_IMAGE PENDING" +
+               "host3. - - -",
+               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, 0f, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }
@@ -169,11 +174,11 @@ public class DeploymentGroupStatusCommandTest {
   public void testDeploymentGroupStatusWithError() throws Exception {
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host1", JOB_ID, TaskStatus.State.RUNNING));
+        "host1", JOB_ID, TaskStatus.State.RUNNING, RolloutState.DONE, null));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host2", JOB_ID, TaskStatus.State.PULLING_IMAGE));
+        "host2", JOB_ID, TaskStatus.State.PULLING_IMAGE, RolloutState.PENDING, null));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host3", null, null));
+        "host3", null, null, null, null));
 
     final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
         DEPLOYMENT_GROUP, DeploymentGroupStatusResponse.Status.ROLLING_OUT, "Oops!",
@@ -193,12 +198,14 @@ public class DeploymentGroupStatusCommandTest {
                "Host selectors:" +
                "  a = b" +
                "  foo = bar" +
+               "Failure threshold: %.2f" +
+               "Failure rate: %.2f" +
                "Error: Oops!" +
-               "HOST UP-TO-DATE JOB STATE" +
-               "host1. X %s RUNNING" +
-               "host2. X %s PULLING_IMAGE" +
-               "host3. - -",
-               GROUP_NAME, JOB_ID, JOB_ID, JOB_ID).replace(" ", "");
+               "HOST UP-TO-DATE JOB JOB STATE ROLLOUT STATE" +
+               "host1. X %s RUNNING DONE" +
+               "host2. X %s PULLING_IMAGE PENDING" +
+               "host3. - - -",
+               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, 0f, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }
@@ -222,11 +229,11 @@ public class DeploymentGroupStatusCommandTest {
   public void testDeploymentGroupStatusJson() throws Exception {
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host1", JOB_ID, TaskStatus.State.RUNNING));
+        "host1", JOB_ID, TaskStatus.State.RUNNING, RolloutState.DONE, null));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host2", JOB_ID, TaskStatus.State.RUNNING));
+        "host2", JOB_ID, TaskStatus.State.RUNNING, RolloutState.DONE, null));
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
-        "host3", JOB_ID, TaskStatus.State.PULLING_IMAGE));
+        "host3", JOB_ID, TaskStatus.State.PULLING_IMAGE, RolloutState.PENDING, null));
 
     final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
         DEPLOYMENT_GROUP, DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
@@ -257,5 +264,45 @@ public class DeploymentGroupStatusCommandTest {
         baos.toString(), new TypeReference<Map<String, Object>>() {});
 
     assertEquals("DEPLOYMENT_GROUP_NOT_FOUND", output.get("status"));
+  }
+
+  @Test
+  public void testDeploymentGroupStatusWithFailureThreshold() throws Exception {
+    final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
+    hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
+        "host1", JOB_ID, TaskStatus.State.RUNNING, RolloutState.FAILED, null));
+    hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
+        "host2", JOB_ID, TaskStatus.State.PULLING_IMAGE, RolloutState.PENDING, null));
+    hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
+        "host3", null, null, null, null));
+
+    final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
+        DEPLOYMENT_GROUP, DeploymentGroupStatusResponse.Status.ROLLING_OUT, "Oops!",
+        hostStatuses, null);
+
+    when(client.deploymentGroupStatus(GROUP_NAME)).thenReturn(Futures.immediateFuture(status));
+    when(options.getString("name")).thenReturn(GROUP_NAME);
+    final int ret = command.run(options, client, out, false, null);
+
+    assertEquals(0, ret);
+    final String output = baos.toString().replaceAll("\\s+", "");
+
+    final String expected =
+        format("Name: %s" +
+               "Job Id: %s" +
+               "Status: ROLLING_OUT" +
+               "Host selectors:" +
+               "  a = b" +
+               "  foo = bar" +
+               "Failure threshold: %.2f" +
+               "Failure rate: %.2f" +
+               "Error: Oops!" +
+               "HOST UP-TO-DATE JOB JOB STATE ROLLOUT STATE" +
+               "host1. X %s RUNNING FAILED" +
+               "host2. X %s PULLING_IMAGE PENDING" +
+               "host3. - - -",
+               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, .33f, JOB_ID, JOB_ID).replace(" ", "");
+
+    assertEquals(expected, output);
   }
 }

@@ -27,9 +27,12 @@ import com.google.common.collect.Maps;
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse.HostStatus;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse.RolloutState;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -93,9 +96,10 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
     if (json) {
       out.println(Json.asPrettyStringUnchecked(status));
     } else {
-      final JobId jobId = status.getDeploymentGroup().getJobId();
+      final DeploymentGroup deploymentGroup = status.getDeploymentGroup();
+      final JobId jobId = deploymentGroup.getJobId();
       final String error = status.getError();
-      final List<HostSelector> hostSelectors = status.getDeploymentGroup().getHostSelectors();
+      final List<HostSelector> hostSelectors = deploymentGroup.getHostSelectors();
 
       out.printf("Name: %s%n", name);
       out.printf("Job Id: %s%n", full ? jobId : (jobId == null ? null : jobId.toShortString()));
@@ -104,13 +108,21 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
       for (final HostSelector hostSelector : hostSelectors) {
         out.printf("  %s%n", hostSelector.toPrettyString());
       }
+      out.printf("Failure threshold: %.2f%n",
+                 deploymentGroup.getRolloutOptions().getFailureThreshold());
+
+
+      final List<HostStatus> hostStatuses = status.getHostStatuses();
+      final int numFailed = getNumFailedTargets(hostStatuses);
+
+      out.printf("Failure rate: %.2f%n", (float) numFailed / hostStatuses.size());
 
       if (!Strings.isNullOrEmpty(error)) {
         out.printf("Error: %s%n", error);
       }
       out.printf("%n");
 
-      printTable(out, jobId, status.getHostStatuses(), full);
+      printTable(out, jobId, hostStatuses, full);
     }
 
     return 0;
@@ -118,12 +130,12 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
 
   private static void printTable(final PrintStream out,
                                  final JobId jobId,
-                                 final List<DeploymentGroupStatusResponse.HostStatus> hosts,
+                                 final List<HostStatus> hosts,
                                  final boolean full) {
     final Table table = table(out);
-    table.row("HOST", "UP-TO-DATE", "JOB", "STATE");
+    table.row("HOST", "UP-TO-DATE", "JOB", "JOB STATE", "ROLLOUT STATE");
 
-    for (final DeploymentGroupStatusResponse.HostStatus hostStatus : hosts) {
+    for (final HostStatus hostStatus : hosts) {
       final String displayHostName = formatHostname(full, hostStatus.getHost());
 
       final boolean upToDate = hostStatus.getJobId() != null &&
@@ -138,12 +150,24 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
         job = hostStatus.getJobId().toShortString();
       }
 
-      final String state = hostStatus.getState() != null ?
-                           hostStatus.getState().toString() : "-";
+      final String taskState = hostStatus.getTaskState() != null ?
+                              hostStatus.getTaskState().toString() : "-";
+      final String rolloutState = hostStatus.getRolloutState() != null ?
+                                  hostStatus.getRolloutState().toString() : "-";
 
-      table.row(displayHostName, upToDate ? "X" : "", job, state);
+      table.row(displayHostName, upToDate ? "X" : "", job, taskState, rolloutState);
     }
 
     table.print();
+  }
+
+  private static int getNumFailedTargets(final List<HostStatus> hostStatuses) {
+    int numFailed = 0;
+    for (final HostStatus hostStatus : hostStatuses) {
+      if (hostStatus.getRolloutState() == RolloutState.FAILED) {
+        numFailed++;
+      }
+    }
+    return numFailed;
   }
 }

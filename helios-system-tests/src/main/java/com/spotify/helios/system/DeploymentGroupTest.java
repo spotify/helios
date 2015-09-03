@@ -148,6 +148,9 @@ public class DeploymentGroupTest extends SystemTestBase {
     // trigger a rolling update to replace the first job with the second job
     final String output = cli("rolling-update", secondJobNameAndVersion, TEST_GROUP);
 
+    assertThat(output,
+               containsString("parallelism=1, timeout=300, overlap=false, failure threshold=0.00"));
+
     // Check that the hosts in the output are ordered
     final List<String> lines = Lists.newArrayList(Splitter.on("\n").split(output));
     for (int i = 0; i < hosts.size(); i++) {
@@ -539,6 +542,52 @@ public class DeploymentGroupTest extends SystemTestBase {
     for (final String host : hosts) {
       awaitTaskState(secondJobId, host, TaskStatus.State.RUNNING);
     }
+    awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
+  }
+
+  @Test
+  public void testRollingUpdateWithFailureThreshold() throws Exception {
+    // create and start agents
+    final List<String> hosts = ImmutableList.of(
+        "dc1-" + testHost() + "-a1.dc1.example.com",
+        "dc1-" + testHost() + "-a2.dc1.example.com",
+        "dc2-" + testHost() + "-a1.dc2.example.com"
+    );
+    for (final String host : hosts) {
+      startDefaultAgent(host, "--labels", TEST_LABEL);
+    }
+
+    // Wait for agents to come up
+    final HeliosClient client = defaultClient();
+    for (final String host : hosts) {
+      awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+    }
+
+    // create a deployment group
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+
+    // create and deploy the job to the first host. The rollout will fail on this host.
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    deployJob(jobId, hosts.get(0));
+    awaitTaskState(jobId, hosts.get(0), TaskStatus.State.RUNNING);
+
+    final String output =
+        cli("rolling-update", "--failure-threshold", "50", testJobNameAndVersion, TEST_GROUP);
+
+    final String expected = (
+        "(parallelism=1, timeout=300, overlap=false, failure threshold=0.50)\n"
+        + "\n"
+        + "dc1-test-host-a1.dc1.example.com -> FAILED Job already deployed either manually or by a "
+        + "different deployment group. (1/3)\n"
+        + "dc1-test-host-a2.dc1.example.com -> DONE (2/3)\n"
+        + "dc2-test-host-a1.dc2.example.com -> DONE (3/3)\n"
+        + "\n"
+        + "Done.");
+
+    assertThat(output.replaceAll("\\p{Blank}+|(?:\\p{Blank})$", " "), containsString(expected));
+
+    awaitTaskState(jobId, hosts.get(1), TaskStatus.State.RUNNING);
+    awaitTaskState(jobId, hosts.get(2), TaskStatus.State.RUNNING);
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
 }

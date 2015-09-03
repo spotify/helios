@@ -82,6 +82,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -607,7 +608,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
-    return opFactory.start(deploymentGroup, reason);
+    return opFactory.start(deploymentGroup, reason, hosts.size());
   }
 
   private Map<String, VersionedValue<DeploymentGroupTasks>> getDeploymentGroupTasks(
@@ -649,9 +650,14 @@ public class ZooKeeperMasterModel implements MasterModel {
   private RollingUpdateOp processRollingUpdateTask(final ZooKeeperClient client,
                                                    final RollingUpdateOpFactory opFactory,
                                                    final RolloutTask task,
-                                                   final DeploymentGroup deploymentGroup) {
+                                                   final DeploymentGroup deploymentGroup,
+                                                   final Set<String> failedTargets) {
     final RolloutTask.Action action = task.getAction();
     final String host = task.getTarget();
+
+    if (failedTargets.contains(host)) {
+      return opFactory.nextTask();
+    }
 
     switch (action) {
       case UNDEPLOY_OLD_JOBS:
@@ -688,7 +694,7 @@ public class ZooKeeperMasterModel implements MasterModel {
             tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
         final RolloutTask task = tasks.getRolloutTasks().get(tasks.getTaskIndex());
         RollingUpdateOp op = processRollingUpdateTask(
-            client, opFactory, task, tasks.getDeploymentGroup());
+            client, opFactory, task, tasks.getDeploymentGroup(), tasks.getFailedTargets());
 
         if (!op.operations().isEmpty()) {
           final List<ZooKeeperOperation> ops = Lists.newArrayList();
@@ -734,15 +740,15 @@ public class ZooKeeperMasterModel implements MasterModel {
       // then manually undeployed. The job will not get redeployed, so treat this as a failure.
       final Deployment deployment = getDeployment(host, jobId);
       if (deployment == null) {
-        return opFactory.error(
+        return opFactory.taskError(
             "Job unexpectedly undeployed. Perhaps it was manually undeployed?", host,
             RollingUpdateError.JOB_UNEXPECTEDLY_UNDEPLOYED);
       }
 
       // Check if we've exceeded the timeout for the rollout operation.
       if (isRolloutTimedOut(client, deploymentGroup)) {
-        return opFactory.error("timed out while retrieving job status", host,
-                               RollingUpdateError.TIMED_OUT_RETRIEVING_JOB_STATUS);
+        return opFactory.taskError("timed out while retrieving job status", host,
+                                   RollingUpdateError.TIMED_OUT_RETRIEVING_JOB_STATUS);
       }
 
       // We haven't detected any errors, so assume the agent will write the status soon.
@@ -756,9 +762,9 @@ public class ZooKeeperMasterModel implements MasterModel {
         final Map<String, Object> metadata = Maps.newHashMap();
         metadata.put("jobState", taskStatus.getState());
         metadata.put("previousJobStates", previousJobStates);
-        return opFactory.error("timed out waiting for job to reach RUNNING", host,
-                               RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
-                               metadata);
+        return opFactory.taskError("timed out waiting for job to reach RUNNING", host,
+                                   RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
+                                   metadata);
       }
 
       return opFactory.yield();
@@ -768,12 +774,12 @@ public class ZooKeeperMasterModel implements MasterModel {
       // won't be able to undeploy the job on the next update.
       final Deployment deployment = getDeployment(host, deploymentGroup.getJobId());
       if (deployment == null) {
-        return opFactory.error(
+        return opFactory.taskError(
             "deployment for this job not found in zookeeper. " +
             "Perhaps it was manually undeployed?", host,
             RollingUpdateError.JOB_UNEXPECTEDLY_UNDEPLOYED);
       } else if (!Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName())) {
-        return opFactory.error(
+        return opFactory.taskError(
             "job was already deployed, either manually or by a different deployment group", host,
             RollingUpdateError.JOB_ALREADY_DEPLOYED);
       }
@@ -809,15 +815,14 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       return opFactory.nextTask(getDeployOperations(client, host, deployment, Job.EMPTY_TOKEN));
     } catch (JobDoesNotExistException e) {
-      return opFactory.error(e, host, RollingUpdateError.JOB_NOT_FOUND);
+      return opFactory.taskError(e, host, RollingUpdateError.JOB_NOT_FOUND);
     } catch (TokenVerificationException e) {
-      return opFactory.error(e, host, RollingUpdateError.TOKEN_VERIFICATION_ERROR);
+      return opFactory.taskError(e, host, RollingUpdateError.TOKEN_VERIFICATION_ERROR);
     } catch (HostNotFoundException e) {
-      return opFactory.error(e, host, RollingUpdateError.HOST_NOT_FOUND);
+      return opFactory.taskError(e, host, RollingUpdateError.HOST_NOT_FOUND);
     } catch (JobPortAllocationConflictException e) {
-      return opFactory.error(e, host, RollingUpdateError.PORT_CONFLICT);
+      return opFactory.taskError(e, host, RollingUpdateError.PORT_CONFLICT);
     } catch (JobAlreadyDeployedException e) {
-      // Nothing to do
       return opFactory.nextTask();
     }
   }
@@ -844,9 +849,9 @@ public class ZooKeeperMasterModel implements MasterModel {
           operations.addAll(getUndeployOperations(client, host, deployment.getJobId(),
                                                   Job.EMPTY_TOKEN));
         } catch (TokenVerificationException e) {
-          return opFactory.error(e, host, RollingUpdateError.TOKEN_VERIFICATION_ERROR);
+          return opFactory.taskError(e, host, RollingUpdateError.TOKEN_VERIFICATION_ERROR);
         } catch (HostNotFoundException e) {
-          return opFactory.error(e, host, RollingUpdateError.HOST_NOT_FOUND);
+          return opFactory.taskError(e, host, RollingUpdateError.HOST_NOT_FOUND);
         } catch (JobNotDeployedException e) {
           // probably somebody beat us to the punch of undeploying. that's fine.
         }
