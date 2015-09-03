@@ -326,7 +326,7 @@ public class RollingUpdateOpFactoryTest {
   public void testTaskError() {
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
         .setName("my_group")
-        .setRolloutOptions(RolloutOptions.newBuilder().setFailureThreshold((float) 51).build())
+        .setRolloutOptions(RolloutOptions.newBuilder().setFailureThreshold(0.51f).build())
         .build();
 
     final DeploymentGroupTasks deploymentGroupTasks = DeploymentGroupTasks.newBuilder()
@@ -505,9 +505,9 @@ public class RollingUpdateOpFactoryTest {
   @Test
   public void testIsOverFailureThreshold() {
     assertTrue(RollingUpdateOpFactory.isOverFailureThreshold(1, 1, 0));
-    assertFalse(RollingUpdateOpFactory.isOverFailureThreshold(1, 1, 100));
-    assertTrue(RollingUpdateOpFactory.isOverFailureThreshold(1, 2, 50));
-    assertFalse(RollingUpdateOpFactory.isOverFailureThreshold(1, 2, 51));
+    assertFalse(RollingUpdateOpFactory.isOverFailureThreshold(1, 1, 1));
+    assertTrue(RollingUpdateOpFactory.isOverFailureThreshold(1, 2, 0.5f));
+    assertFalse(RollingUpdateOpFactory.isOverFailureThreshold(1, 2, 0.51f));
     assertTrue(RollingUpdateOpFactory.isOverFailureThreshold(1, 0, 0));
   }
 }

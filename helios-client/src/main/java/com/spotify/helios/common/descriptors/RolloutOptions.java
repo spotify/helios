@@ -67,7 +67,7 @@ public class RolloutOptions {
 
   public static final long DEFAULT_TIMEOUT = TimeUnit.MINUTES.toSeconds(5);
   public static final int DEFAULT_PARALLELISM = 1;
-  public static final float DEFAULT_FAILURE_THRESHOLD_PERCENTAGE = 0;
+  public static final float DEFAULT_FAILURE_THRESHOLD = 0;
 
   private final long timeout;
   private final int parallelism;
@@ -87,8 +87,7 @@ public class RolloutOptions {
     this.migrate = migrate;
     this.overlap = overlap;
     this.token = Optional.fromNullable(token).or(EMPTY_TOKEN);
-    this.failureThreshold = Optional.fromNullable(failureThreshold).or(
-        DEFAULT_FAILURE_THRESHOLD_PERCENTAGE);
+    this.failureThreshold = Optional.fromNullable(failureThreshold).or(DEFAULT_FAILURE_THRESHOLD);
   }
 
   public static Builder newBuilder() {
@@ -187,7 +186,7 @@ public class RolloutOptions {
       this.parallelism = DEFAULT_PARALLELISM;
       this.migrate = false;
       this.overlap = false;
-      this.failureThreshold = DEFAULT_FAILURE_THRESHOLD_PERCENTAGE;
+      this.failureThreshold = DEFAULT_FAILURE_THRESHOLD;
     }
 
 

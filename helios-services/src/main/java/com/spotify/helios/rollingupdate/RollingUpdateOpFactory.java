@@ -202,12 +202,12 @@ public class RollingUpdateOpFactory {
   static boolean isOverFailureThreshold(final int numFailedTargets,
                                         final int numTargets,
                                         final float failureThreshold) {
-    if (failureThreshold >= 100) {
+    if (failureThreshold >= 1) {
       return false;
     }
     if (numTargets <= 0) {
       return true;
     }
-    return (((float) numFailedTargets) / numTargets * 100) >= failureThreshold;
+    return (((float) numFailedTargets) / numTargets) >= failureThreshold;
   }
 }

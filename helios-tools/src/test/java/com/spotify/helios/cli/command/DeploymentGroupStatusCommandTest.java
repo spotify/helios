@@ -120,11 +120,12 @@ public class DeploymentGroupStatusCommandTest {
                "  a = b" +
                "  foo = bar" +
                "Failure threshold: %.2f" +
+               "Failure rate: %.2f" +
                "HOST UP-TO-DATE JOB JOB STATE ROLLOUT STATE" +
                "host1. X %s RUNNING DONE" +
                "host2. X %s PULLING_IMAGE PENDING" +
                "host3. - - -",
-               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, JOB_ID, JOB_ID).replace(" ", "");
+               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, 0f, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }
@@ -198,12 +199,13 @@ public class DeploymentGroupStatusCommandTest {
                "  a = b" +
                "  foo = bar" +
                "Failure threshold: %.2f" +
+               "Failure rate: %.2f" +
                "Error: Oops!" +
                "HOST UP-TO-DATE JOB JOB STATE ROLLOUT STATE" +
                "host1. X %s RUNNING DONE" +
                "host2. X %s PULLING_IMAGE PENDING" +
                "host3. - - -",
-               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, JOB_ID, JOB_ID).replace(" ", "");
+               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, 0f, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }
@@ -293,12 +295,13 @@ public class DeploymentGroupStatusCommandTest {
                "  a = b" +
                "  foo = bar" +
                "Failure threshold: %.2f" +
+               "Failure rate: %.2f" +
                "Error: Oops!" +
                "HOST UP-TO-DATE JOB JOB STATE ROLLOUT STATE" +
                "host1. X %s RUNNING FAILED" +
                "host2. X %s PULLING_IMAGE PENDING" +
                "host3. - - -",
-               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, JOB_ID, JOB_ID).replace(" ", "");
+               GROUP_NAME, JOB_ID, FAILURE_THRESHOLD, .33f, JOB_ID, JOB_ID).replace(" ", "");
 
     assertEquals(expected, output);
   }

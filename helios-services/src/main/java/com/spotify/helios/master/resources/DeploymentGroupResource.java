@@ -187,6 +187,7 @@ public class DeploymentGroupResource {
       final List<String> hosts = model.getDeploymentGroupHosts(name);
 
       final List<DeploymentGroupStatusResponse.HostStatus> result = Lists.newArrayList();
+      int numFailedTargets = 0;
 
       for (final String host : hosts) {
         final HostStatus hostStatus = model.getHostStatus(host);
@@ -207,8 +208,12 @@ public class DeploymentGroupResource {
               break;
             } else if (deploymentGroup.getJobId() != null &&
                        deploymentGroup.getJobId().equals(deployedJobId)) {
-              rolloutState = RolloutState.FAILED;
-              errMsg = "Job already deployed either manually or by a different deployment group.";
+              if (!((float) numFailedTargets / hosts.size() >
+                    deploymentGroup.getRolloutOptions().getFailureThreshold())) {
+                rolloutState = RolloutState.FAILED;
+                errMsg = "Job already deployed either manually or by a different deployment group.";
+                numFailedTargets++;
+              }
               break;
             }
           }

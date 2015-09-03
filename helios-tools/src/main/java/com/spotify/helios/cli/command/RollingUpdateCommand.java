@@ -133,9 +133,10 @@ public class RollingUpdateCommand extends WildcardJobCommand {
               "if the job contains static port assignments.");
 
     failureThresholdArg = parser.addArgument("--failure-threshold")
-        .setDefault(RolloutOptions.DEFAULT_FAILURE_THRESHOLD_PERCENTAGE)
+        .setDefault(RolloutOptions.DEFAULT_FAILURE_THRESHOLD)
         .type(Float.class)
-        .help("The percentage of failed deployments that will stop the rolling update.");
+        .help("The percentage of failed deployments that will stop the rolling update. "
+              + "Must be a number between 0 and 1.");
   }
 
   @Override
@@ -155,8 +156,8 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     checkArgument(timeout > 0, "Timeout must be greater than 0");
     checkArgument(parallelism > 0, "Parallelism must be greater than 0");
     checkArgument(rolloutTimeout > 0, "Rollout timeout must be greater than 0");
-    checkArgument(failureThreshold >= 0 && failureThreshold <= 100,
-                  "Failure threshold must be between 0 and 100, inclusive.");
+    checkArgument(failureThreshold >= 0 && failureThreshold <= 1,
+                  "Failure threshold must be between 0 and 1, inclusive.");
 
     final long startTime = timeSupplier.get();
 
@@ -233,7 +234,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
             if (rolloutState == RolloutState.DONE) {
               out.println(format("%s -> %s (%d/%d)", host, rolloutState,
                                  reported.size(), status.getHostStatuses().size()));
-            } else {
+            } else if (rolloutState == RolloutState.FAILED) {
               out.println(format("%s -> %s %s (%d/%d)", host, rolloutState, hostStatus.getErrMsg(),
                                  reported.size(), status.getHostStatuses().size()));
             }

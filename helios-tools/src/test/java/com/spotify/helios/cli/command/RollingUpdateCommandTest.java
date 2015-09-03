@@ -54,7 +54,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
-import static com.spotify.helios.common.descriptors.RolloutOptions.DEFAULT_FAILURE_THRESHOLD_PERCENTAGE;
+import static com.spotify.helios.common.descriptors.RolloutOptions.DEFAULT_FAILURE_THRESHOLD;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -91,7 +91,7 @@ public class RollingUpdateCommandTest {
     when(options.getBoolean("async")).thenReturn(false);
     when(options.getBoolean("migrate")).thenReturn(false);
     when(options.getBoolean("overlap")).thenReturn(false);
-    when(options.getFloat("failure_threshold")).thenReturn(DEFAULT_FAILURE_THRESHOLD_PERCENTAGE);
+    when(options.getFloat("failure_threshold")).thenReturn(DEFAULT_FAILURE_THRESHOLD);
   }
 
   private static DeploymentGroupStatusResponse.HostStatus makeHostStatus(
@@ -155,7 +155,7 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(0, ret);
 
     final String expected = (
@@ -184,7 +184,7 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(0, ret);
 
     final String expected =
@@ -219,7 +219,7 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(1, ret);
 
     final String expected =
@@ -253,7 +253,7 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(1, ret);
 
     final String expected =
@@ -286,7 +286,7 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(1, ret);
 
     final String expected =
@@ -320,7 +320,7 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -329,7 +329,7 @@ public class RollingUpdateCommandTest {
         .put("parallelism", PARALLELISM)
         .put("timeout", TIMEOUT)
         .put("overlap", false)
-        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD_PERCENTAGE)
+        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD)
         .build());
   }
 
@@ -345,7 +345,7 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>of(
@@ -353,7 +353,7 @@ public class RollingUpdateCommandTest {
         "parallelism", PARALLELISM,
         "timeout", TIMEOUT,
         "overlap", false,
-        "failureThreshold", DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        "failureThreshold", DEFAULT_FAILURE_THRESHOLD));
   }
 
   @Test
@@ -377,7 +377,7 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -387,7 +387,7 @@ public class RollingUpdateCommandTest {
         .put("parallelism", PARALLELISM)
         .put("timeout", TIMEOUT)
         .put("overlap", false)
-        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD_PERCENTAGE)
+        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD)
         .build());
   }
 
@@ -410,7 +410,7 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -419,7 +419,7 @@ public class RollingUpdateCommandTest {
         .put("parallelism", PARALLELISM)
         .put("timeout", TIMEOUT)
         .put("overlap", false)
-        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD_PERCENTAGE)
+        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD)
         .build());
   }
 
@@ -442,7 +442,7 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(1, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -452,7 +452,7 @@ public class RollingUpdateCommandTest {
         .put("parallelism", PARALLELISM)
         .put("timeout", TIMEOUT)
         .put("overlap", false)
-        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD_PERCENTAGE)
+        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD)
         .build());
   }
 
@@ -473,7 +473,7 @@ public class RollingUpdateCommandTest {
     // Verify that rollingUpdate() was called with migrate=true
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, true, false, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, true, false, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -482,7 +482,7 @@ public class RollingUpdateCommandTest {
         .put("parallelism", PARALLELISM)
         .put("timeout", TIMEOUT)
         .put("overlap", false)
-        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD_PERCENTAGE)
+        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD)
         .build());
   }
   
@@ -503,7 +503,7 @@ public class RollingUpdateCommandTest {
     // Verify that rollingUpdate() was called with migrate=true
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, true, DEFAULT_FAILURE_THRESHOLD_PERCENTAGE));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, true, DEFAULT_FAILURE_THRESHOLD));
     assertEquals(0, ret);
 
     assertJsonOutputEquals(output, ImmutableMap.<String, Object>builder()
@@ -512,13 +512,13 @@ public class RollingUpdateCommandTest {
         .put("parallelism", PARALLELISM)
         .put("timeout", TIMEOUT)
         .put("overlap", true)
-        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD_PERCENTAGE)
+        .put("failureThreshold", DEFAULT_FAILURE_THRESHOLD)
         .build());
   }
 
   @Test
   public void testRollingUpdateFailureThreshold() throws Exception {
-    when(options.getFloat("failure_threshold")).thenReturn((float) 50);
+    when(options.getFloat("failure_threshold")).thenReturn(0.5f);
 
     when(client.rollingUpdate(anyString(), any(JobId.class), any(RolloutOptions.class)))
         .thenReturn(immediateFuture(new RollingUpdateResponse(RollingUpdateResponse.Status.OK)));
@@ -548,12 +548,12 @@ public class RollingUpdateCommandTest {
 
     verify(client).rollingUpdate(
         GROUP_NAME, JOB_ID,
-        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, (float) 50));
+        new RolloutOptions(TIMEOUT, PARALLELISM, false, false, 0.5f));
     assertEquals(0, ret);
 
     final String expected = (
         "Rolling update started: my_group -> foo:2:1212121 (parallelism=1, timeout=300, "
-        + "overlap=false, failure threshold=50.00)\n" +
+        + "overlap=false, failure threshold=0.50)\n" +
         "\n" +
         "host1 -> FAILED health check failed (1/3)\n" +
         "host2 -> DONE (2/3)\n" +

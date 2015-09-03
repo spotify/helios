@@ -620,10 +620,10 @@ public class DeploymentGroupTest extends SystemTestBase {
     awaitTaskState(jobId, hosts.get(0), TaskStatus.State.RUNNING);
 
     final String output =
-        cli("rolling-update", "--failure-threshold", "50", testJobNameAndVersion, TEST_GROUP);
+        cli("rolling-update", "--failure-threshold", "0.5", testJobNameAndVersion, TEST_GROUP);
 
     final String expected = (
-        "(parallelism=1, timeout=300, overlap=false, failure threshold=50.00)\n"
+        "(parallelism=1, timeout=300, overlap=false, failure threshold=0.50)\n"
         + "\n"
         + "dc1-test-host-a1.dc1.example.com -> FAILED Job already deployed either manually or by a "
         + "different deployment group. (1/3)\n"
