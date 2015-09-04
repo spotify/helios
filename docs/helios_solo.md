@@ -11,7 +11,7 @@ Install & Run
 
 ### OS X
 
-Install Docker using [Boot2Docker](http://boot2docker.io/) or
+Install [docker-machine](https://docs.docker.com/machine/) or
 another similar solution. Configure it correctly and **start the service** so that commands like
 `docker info` and `docker ps` work. Then run the below.
 
@@ -79,7 +79,7 @@ $ helios-solo deploy test:1 solo
 $ helios-solo status
 
 # Undeploy job
-$ helios-solo undeploy -a -f test:1
+$ helios-solo undeploy -a --yes test:1
 
 # Remove job
 $ helios-solo remove test:1

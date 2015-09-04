@@ -142,8 +142,7 @@ Build & Test
 ------------
 
 First, make sure you have Docker installed locally. If you're using OS X, we
-recommend using [Boot2Docker](http://boot2docker.io/) or
-[docker-machine](https://docs.docker.com/machine/).
+recommend using [docker-machine](https://docs.docker.com/machine/).
 
 Actually building Helios and running its tests should be a simple matter
 of running:
