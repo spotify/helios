@@ -79,7 +79,7 @@ $ helios-solo deploy test:1 solo
 $ helios-solo status
 
 # Undeploy job
-$ helios-solo undeploy -a -f test:1
+$ helios-solo undeploy -a --yes test:1
 
 # Remove job
 $ helios-solo remove test:1
