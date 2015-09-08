@@ -131,7 +131,7 @@ public class CliParser {
       throw e;
     }
 
-    this.command = (CliCommand) options.get("command");
+    this.command = options.get("command");
     final String username = options.getString(globalArgs.usernameArg.getDest());
     this.username = (username == null) ? cliConfig.getUsername() : username;
     this.json = equal(options.getBoolean(globalArgs.jsonArg.getDest()), true);
