@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.util.concurrent.Futures;
 
+import com.spotify.helios.authentication.HeliosAuthException;
 import com.spotify.helios.cli.TestUtils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.AgentInfo;
@@ -108,7 +109,7 @@ public class HostListCommandTest {
 
 
   @Before
-  public void setUp() throws ParseException {
+  public void setUp() throws ParseException, HeliosAuthException {
     // use a real, dummy Subparser impl to avoid having to mock out every single call
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("test");
     final Subparser subparser = parser.addSubparsers().addParser("hosts");

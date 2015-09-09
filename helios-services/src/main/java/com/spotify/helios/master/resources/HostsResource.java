@@ -26,6 +26,7 @@ import com.google.common.collect.Maps;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
+import com.spotify.helios.authentication.User;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -62,6 +63,8 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
 
+import io.dropwizard.auth.Auth;
+
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.FORBIDDEN;
@@ -92,7 +95,7 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public List<String> list() {
+  public List<String> list(@Auth User user) {
     return model.listHosts();
   }
 

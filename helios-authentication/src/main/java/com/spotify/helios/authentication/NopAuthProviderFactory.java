@@ -19,21 +19,25 @@
  * under the License.
  */
 
-package com.spotify.helios.cli.command;
+package com.spotify.helios.authentication;
 
-import com.spotify.helios.cli.Target;
-
-import net.sourceforge.argparse4j.inf.Namespace;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 
-public interface CliCommand {
-  int run(final Namespace options, final List<Target> targets, final PrintStream out,
-          final PrintStream err, final String username, final boolean json,
-          final Path authPlugin, final Path privateKeyPath, final BufferedReader stdin)
-              throws IOException, InterruptedException;
+/**
+ * A factory for {@link NopServerAuthProvider} and {@link NopClientAuthProvider}
+ */
+public class NopAuthProviderFactory implements AuthProviderFactory {
+
+  @Override
+  public ServerAuthProvider createServerAuthProvider(final String serverName, final String secret) {
+    return new NopServerAuthProvider();
+  }
+
+  @Override
+  public ClientAuthProvider createClientAuthProvider(final Path keyPath,
+                                                     final List<URI> authServerUris) {
+    return new NopClientAuthProvider();
+  }
 }

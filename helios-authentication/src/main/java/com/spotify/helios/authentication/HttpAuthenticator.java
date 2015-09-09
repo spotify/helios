@@ -19,21 +19,18 @@
  * under the License.
  */
 
-package com.spotify.helios.cli.command;
+package com.spotify.helios.authentication;
 
-import com.spotify.helios.cli.Target;
+public interface HttpAuthenticator {
 
-import net.sourceforge.argparse4j.inf.Namespace;
+  String getHttpAuthHeaderKey();
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Path;
-import java.util.List;
+  String createChallenge(String request) throws HeliosAuthException;
 
-public interface CliCommand {
-  int run(final Namespace options, final List<Target> targets, final PrintStream out,
-          final PrintStream err, final String username, final boolean json,
-          final Path authPlugin, final Path privateKeyPath, final BufferedReader stdin)
-              throws IOException, InterruptedException;
+  String createToken(String response) throws HeliosAuthException;
+
+  AuthHeader parseHttpAuthHeaderValue(String header) throws HeliosAuthException;
+
+  String badAuthHeaderMsg();
+
 }

@@ -16,11 +16,11 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>com.spotify.docgenerator</groupId>
-      <artifactId>scanner</artifactId>
-      <version>0.0.1</version>
-    </dependency>
+    <!--<dependency>-->
+      <!--<groupId>com.spotify.docgenerator</groupId>-->
+      <!--<artifactId>scanner</artifactId>-->
+      <!--<version>0.0.1</version>-->
+    <!--</dependency>-->
     <!--compile deps-->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
@@ -35,12 +35,27 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.6</version>
+      <version>1.7.7</version>
     </dependency>
     <dependency>
       <groupId>dnsjava</groupId>
       <artifactId>dnsjava</artifactId>
       <version>2.1.6</version>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
+      <version>1.10</version>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>helios-authentication</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>crtauth</artifactId>
+      <version>0.2.0</version>
     </dependency>
 
     <!-- test deps -->
@@ -62,7 +77,16 @@
       <version>1.3</version>
       <scope>test</scope>
     </dependency>
-
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>helios-crtauth</artifactId>
+      <version>0.1.0-SNAPSHOT</version>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>crtauth-agent-signer</artifactId>
+      <version>0.1.0</version>
+    </dependency>
   </dependencies>
 
   <build>

@@ -19,21 +19,29 @@
  * under the License.
  */
 
-package com.spotify.helios.cli.command;
+package com.spotify.helios.authentication;
 
-import com.spotify.helios.cli.Target;
-
-import net.sourceforge.argparse4j.inf.Namespace;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.net.URI;
 import java.nio.file.Path;
 import java.util.List;
 
-public interface CliCommand {
-  int run(final Namespace options, final List<Target> targets, final PrintStream out,
-          final PrintStream err, final String username, final boolean json,
-          final Path authPlugin, final Path privateKeyPath, final BufferedReader stdin)
-              throws IOException, InterruptedException;
+/**
+ * A factory for {@link ServerAuthProvider} and {@link ClientAuthProvider} instances
+ * and the entry point for authentication plugins.
+ * {@link AuthProviderLoader} loads plugins by using {@link java.util.ServiceLoader}
+ * to look up {@link AuthProviderFactory} from jar files and class loaders.
+ */
+public interface AuthProviderFactory {
+
+  /**
+   * Create an authenticator. The secret format and semantics are implementation dependent.
+   *
+   * @param serverName The name of the server using this {@link ServerAuthProvider}
+   * @param secret A secret for the authenticator.
+   * @return An {@link ServerAuthProvider }
+   */
+  ServerAuthProvider createServerAuthProvider(String serverName, String secret);
+
+  ClientAuthProvider createClientAuthProvider(Path keyPath, List<URI> authServerUris);
 }
+

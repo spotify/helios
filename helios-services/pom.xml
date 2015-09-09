@@ -135,6 +135,11 @@
       <version>0.7.1</version>
     </dependency>
     <dependency>
+      <groupId>io.dropwizard</groupId>
+      <artifactId>dropwizard-auth</artifactId>
+      <version>0.7.1</version>
+    </dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.jaxrs</groupId>
       <artifactId>jackson-jaxrs-json-provider</artifactId>
       <version>2.4.1</version>
@@ -160,9 +165,14 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>helios-authentication</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.8</version>
+      <version>1.10</version>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -256,7 +266,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.6</version>
+      <version>1.7.7</version>
     </dependency>
     <dependency>
       <groupId>net.sourceforge.argparse4j</groupId>

@@ -28,7 +28,11 @@ import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
+import java.io.File;
 import java.net.InetSocketAddress;
+import java.nio.file.Path;
+
+import static net.sourceforge.argparse4j.impl.Arguments.fileType;
 
 /**
  * Parses command-line arguments to produce the {@link MasterConfig}.
@@ -37,13 +41,15 @@ public class MasterParser extends ServiceParser {
 
   private final MasterConfig masterConfig;
 
+  private final Namespace options;
   private Argument httpArg;
   private Argument adminArg;
+  private Argument authPluginArg;
 
   public MasterParser(final String... args) throws ArgumentParserException {
     super("helios-master", "Spotify Helios Master", args);
 
-    final Namespace options = getNamespace();
+    options = getNamespace();
     final InetSocketAddress httpAddress = parseSocketAddress(options.getString(httpArg.getDest()));
 
     final MasterConfig config = new MasterConfig()
@@ -64,9 +70,16 @@ public class MasterParser extends ServiceParser {
         .setAdminPort(options.getInt(adminArg.getDest()))
         .setHttpEndpoint(httpAddress)
         .setKafkaBrokers(getKafkaBrokers())
-        .setStateDirectory(getStateDirectory());
+        .setStateDirectory(getStateDirectory())
+        .setAuthPlugin(getAuthPlugin())
+        .setAuthSecret(System.getenv("HELIOS_AUTH_SECRET"));
 
     this.masterConfig = config;
+  }
+
+  private Path getAuthPlugin() {
+    final File plugin = options.get(authPluginArg.getDest());
+    return plugin != null ? plugin.toPath() : null;
   }
 
   @Override
@@ -79,6 +92,10 @@ public class MasterParser extends ServiceParser {
         .type(Integer.class)
         .setDefault(5802)
         .help("admin http port");
+
+    authPluginArg = parser.addArgument("--auth-plugin")
+        .type(fileType().verifyExists().verifyCanRead())
+        .help("Path to authenticator plugin.");
   }
 
   public MasterConfig getMasterConfig() {

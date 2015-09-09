@@ -19,21 +19,20 @@
  * under the License.
  */
 
-package com.spotify.helios.cli.command;
+package com.spotify.helios.authentication;
 
-import com.spotify.helios.cli.Target;
+import com.google.common.base.Optional;
 
-import net.sourceforge.argparse4j.inf.Namespace;
+import io.dropwizard.auth.AuthenticationException;
+import io.dropwizard.auth.Authenticator;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Path;
-import java.util.List;
+/**
+ * A nop authenticator that does nothing. Useful as an alternative to null.
+ */
+public class NopAuthenticator implements Authenticator {
 
-public interface CliCommand {
-  int run(final Namespace options, final List<Target> targets, final PrintStream out,
-          final PrintStream err, final String username, final boolean json,
-          final Path authPlugin, final Path privateKeyPath, final BufferedReader stdin)
-              throws IOException, InterruptedException;
+  @Override
+  public Optional authenticate(Object credentials) throws AuthenticationException {
+    return null;
+  }
 }

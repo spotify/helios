@@ -29,8 +29,11 @@ import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
 import com.spotify.helios.agent.KafkaClientProvider;
+import com.spotify.helios.authentication.ServerAuthProvider;
+import com.spotify.helios.authentication.AuthProviders;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
+import com.spotify.helios.master.resources.AuthResource;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
 import com.spotify.helios.master.resources.HistoryResource;
 import com.spotify.helios.master.resources.HostsResource;
@@ -189,6 +192,12 @@ public class MasterService extends AbstractIdleService {
     // Set up rolling update service
     final ReactorFactory reactorFactory = new ReactorFactory();
     this.rollingUpdateService = new RollingUpdateService(model, reactorFactory);
+
+    // Set up authentication
+    final ServerAuthProvider serverAuthProvider = AuthProviders.createServerAuthProvider(
+        config.getAuthPlugin(), config.getName(), config.getAuthSecret());
+    environment.jersey().register(serverAuthProvider.getInjectableProvider());
+    environment.jersey().register(new AuthResource(serverAuthProvider.getHttpAuthenticator()));
 
     // Set up http server
     environment.servlets()

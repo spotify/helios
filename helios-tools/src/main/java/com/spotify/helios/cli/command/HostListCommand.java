@@ -31,6 +31,7 @@ import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import com.spotify.helios.authentication.HeliosAuthException;
 import com.spotify.helios.cli.Table;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
@@ -123,7 +124,7 @@ public class HostListCommand extends ControlCommand {
   @Override
   int run(final Namespace options, final HeliosClient client, final PrintStream out,
           final boolean json, final BufferedReader stdin)
-      throws ExecutionException, InterruptedException {
+      throws ExecutionException, InterruptedException, HeliosAuthException {
     final String pattern = options.getString(patternArg.getDest());
     final List<String> hosts = FluentIterable
         .from(client.listHosts().get())

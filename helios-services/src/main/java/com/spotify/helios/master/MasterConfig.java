@@ -52,6 +52,8 @@ public class MasterConfig extends Configuration {
   private InetSocketAddress httpEndpoint;
   private List<String> kafkaBrokers;
   private Path stateDirectory;
+  private Path authPlugin;
+  private String authSecret;
 
   public String getDomain() {
     return domain;
@@ -204,6 +206,24 @@ public class MasterConfig extends Configuration {
 
   public MasterConfig setStateDirectory(final Path stateDirectory) {
     this.stateDirectory = stateDirectory;
+    return this;
+  }
+
+  public Path getAuthPlugin() {
+    return authPlugin;
+  }
+
+  public MasterConfig setAuthPlugin(final Path authPlugin) {
+    this.authPlugin = authPlugin;
+    return this;
+  }
+
+  public String getAuthSecret() {
+    return authSecret;
+  }
+
+  public MasterConfig setAuthSecret(final String authSecret) {
+    this.authSecret = authSecret;
     return this;
   }
 

@@ -23,6 +23,7 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.base.Joiner;
 
+import com.spotify.helios.authentication.HeliosAuthException;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
@@ -70,7 +71,7 @@ public class HostDeregisterCommand extends ControlCommand {
   @Override
   int run(final Namespace options, final HeliosClient client, final PrintStream out,
           final boolean json, final BufferedReader stdin)
-      throws ExecutionException, InterruptedException, IOException {
+      throws ExecutionException, InterruptedException, IOException, HeliosAuthException {
     final String host = options.getString(hostArg.getDest());
     final boolean yes = options.getBoolean(yesArg.getDest());
     final boolean force = options.getBoolean(forceArg.getDest());

@@ -19,21 +19,17 @@
  * under the License.
  */
 
-package com.spotify.helios.cli.command;
+package com.spotify.helios.authentication;
 
-import com.spotify.helios.cli.Target;
+public class NopAuthHeader implements AuthHeader {
 
-import net.sourceforge.argparse4j.inf.Namespace;
+  @Override
+  public String getValue() {
+    return null;
+  }
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Path;
-import java.util.List;
-
-public interface CliCommand {
-  int run(final Namespace options, final List<Target> targets, final PrintStream out,
-          final PrintStream err, final String username, final boolean json,
-          final Path authPlugin, final Path privateKeyPath, final BufferedReader stdin)
-              throws IOException, InterruptedException;
+  @Override
+  public Action getAction() {
+    return null;
+  }
 }

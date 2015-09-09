@@ -19,21 +19,22 @@
  * under the License.
  */
 
-package com.spotify.helios.cli.command;
+package com.spotify.helios.authentication;
 
-import com.spotify.helios.cli.Target;
+import com.sun.jersey.api.model.Parameter;
+import com.sun.jersey.spi.inject.InjectableProvider;
 
-import net.sourceforge.argparse4j.inf.Namespace;
+import io.dropwizard.auth.Auth;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Path;
-import java.util.List;
+public class NopServerAuthProvider implements ServerAuthProvider {
 
-public interface CliCommand {
-  int run(final Namespace options, final List<Target> targets, final PrintStream out,
-          final PrintStream err, final String username, final boolean json,
-          final Path authPlugin, final Path privateKeyPath, final BufferedReader stdin)
-              throws IOException, InterruptedException;
+  @Override
+  public InjectableProvider<Auth, Parameter> getInjectableProvider() {
+    return new NopInjectableProvider();
+  }
+
+  @Override
+  public HttpAuthenticator getHttpAuthenticator() {
+    return new NopHttpAuthenticator();
+  }
 }

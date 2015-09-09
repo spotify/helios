@@ -23,6 +23,7 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.base.Throwables;
 
+import com.spotify.helios.authentication.HeliosAuthException;
 import com.spotify.helios.cli.Target;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
@@ -34,6 +35,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
@@ -60,7 +62,7 @@ public abstract class ControlCommand implements CliCommand {
   @Override
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
                  final PrintStream err, final String username, final boolean json,
-                 final BufferedReader stdin)
+                 final Path authPlugin, final Path privateKeyPath, final BufferedReader stdin)
       throws IOException, InterruptedException {
     boolean allSuccessful = true;
 
@@ -91,7 +93,8 @@ public abstract class ControlCommand implements CliCommand {
         }
       }
 
-      final boolean successful = run(options, target, out, err, username, json, stdin);
+      final boolean successful =
+          run(options, target, out, err, username, json, authPlugin, privateKeyPath, stdin);
       if (shortCircuit && !successful) {
         return 1;
       }
@@ -119,10 +122,10 @@ public abstract class ControlCommand implements CliCommand {
    */
   private boolean run(final Namespace options, final Target target, final PrintStream out,
                       final PrintStream err, final String username, final boolean json,
-                      final BufferedReader stdin)
+                      final Path authPlugin, final Path privateKeyPath, final BufferedReader stdin)
       throws InterruptedException, IOException {
 
-    final HeliosClient client = Utils.getClient(target, err, username);
+    final HeliosClient client = Utils.getClient(target, err, username, authPlugin, privateKeyPath);
     if (client == null) {
       return false;
     }
@@ -141,6 +144,10 @@ public abstract class ControlCommand implements CliCommand {
         throw Throwables.propagate(cause);
       }
       return false;
+    } catch (HeliosAuthException e) {
+      err.println("Failed to authenticate with master " + target);
+      err.println(e.toString());
+      return false;
     } finally {
       client.close();
     }
@@ -148,5 +155,5 @@ public abstract class ControlCommand implements CliCommand {
 
   abstract int run(final Namespace options, final HeliosClient client, PrintStream out,
                    final boolean json, BufferedReader stdin)
-      throws ExecutionException, InterruptedException, IOException;
+      throws ExecutionException, InterruptedException, IOException, HeliosAuthException;
 }
