@@ -31,6 +31,7 @@ import com.spotify.helios.cli.command.DeploymentGroupInspectCommand;
 import com.spotify.helios.cli.command.DeploymentGroupListCommand;
 import com.spotify.helios.cli.command.DeploymentGroupRemoveCommand;
 import com.spotify.helios.cli.command.DeploymentGroupStatusCommand;
+import com.spotify.helios.cli.command.DeploymentGroupStopCommand;
 import com.spotify.helios.cli.command.DeploymentGroupWatchCommand;
 import com.spotify.helios.cli.command.HostDeregisterCommand;
 import com.spotify.helios.cli.command.HostListCommand;
@@ -47,7 +48,6 @@ import com.spotify.helios.cli.command.JobStopCommand;
 import com.spotify.helios.cli.command.JobUndeployCommand;
 import com.spotify.helios.cli.command.JobWatchCommand;
 import com.spotify.helios.cli.command.MasterListCommand;
-import com.spotify.helios.cli.command.DeploymentGroupStopCommand;
 import com.spotify.helios.cli.command.RollingUpdateCommand;
 import com.spotify.helios.cli.command.VersionCommand;
 import com.spotify.helios.common.LoggingConfig;
@@ -75,7 +75,6 @@ import static com.google.common.base.Objects.equal;
 import static com.google.common.base.Predicates.equalTo;
 import static com.google.common.base.Predicates.not;
 import static com.google.common.collect.Iterables.addAll;
-import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Iterables.filter;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -131,7 +130,7 @@ public class CliParser {
       throw e;
     }
 
-    this.command = (CliCommand) options.get("command");
+    this.command = options.get("command");
     final String username = options.getString(globalArgs.usernameArg.getDest());
     this.username = (username == null) ? cliConfig.getUsername() : username;
     this.json = equal(options.getBoolean(globalArgs.jsonArg.getDest()), true);
@@ -141,8 +140,7 @@ public class CliParser {
 
     // Merge domains and explicit endpoints into master endpoints
     final List<String> explicitEndpoints = options.getList(globalArgs.masterArg.getDest());
-    final List<String> sitesArguments = options.getList(globalArgs.sitesArg.getDest());
-    final List<String> domainsArguments = options.getList(globalArgs.domainsArg.getDest());
+    final List<String> domains = options.getList(globalArgs.domainsArg.getDest());
     final String srvName = options.getString(globalArgs.srvNameArg.getDest());
 
     // Order of target precedence:
@@ -152,7 +150,6 @@ public class CliParser {
     // 4. domains from config file
 
     // TODO (dano): complex, refactor and unit test it
-    final List<String> domains = ImmutableList.copyOf(concat(domainsArguments, sitesArguments));
     this.targets = computeTargets(parser, explicitEndpoints, domains, srvName);
   }
 
@@ -266,7 +263,6 @@ public class CliParser {
   private static class GlobalArgs {
 
     private final Argument masterArg;
-    private final Argument sitesArg;
     private final Argument domainsArg;
     private final Argument srvNameArg;
     private final Argument usernameArg;
@@ -289,11 +285,6 @@ public class CliParser {
       masterArg = addArgument("-z", "--master")
           .action(append())
           .help("master endpoints");
-
-      sitesArg = addArgument("-s", "--sites")
-          .setDefault(new ArrayList<>())
-          .action(append())
-          .help("sites. Deprecated, please use -d/--domains instead.");
 
       domainsArg = addArgument("-d", "--domains")
           .setDefault(new ArrayList<>())

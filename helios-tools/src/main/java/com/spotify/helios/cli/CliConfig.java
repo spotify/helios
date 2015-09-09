@@ -45,7 +45,6 @@ public class CliConfig {
 
   private static final String HTTP_SCHEME = "http";
   private static final String DOMAIN_SCHEME = "domain";
-  private static final String DEPRECATED_SITE_SCHEME = "site";
   private static final String MASTER_ENDPOINTS_KEY = "masterEndpoints";
   private static final String DOMAINS_KEY = "domains";
   private static final String SRV_NAME_KEY = "srvName";
@@ -153,7 +152,6 @@ public class CliConfig {
       configFromEnvVar = configFromEnvVar.withValue(SRV_NAME_KEY, config.getValue(SRV_NAME_KEY));
     }
 
-    // TODO (dxia) Remove DEPRECATED_SITE_SCHEME after a period of time
     final String scheme = uri.getScheme();
     if (isNullOrEmpty(scheme)) {
       throw new RuntimeException("Your environment variable HELIOS_MASTER=" + master +
@@ -162,7 +160,6 @@ public class CliConfig {
 
     switch (scheme) {
       case DOMAIN_SCHEME:
-      case DEPRECATED_SITE_SCHEME:
         configFromEnvVar = configFromEnvVar.withValue(
             DOMAINS_KEY, ConfigValueFactory.fromIterable(ImmutableList.of(uri.getHost())));
         break;
