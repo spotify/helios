@@ -63,6 +63,7 @@ public class Utils {
     try {
       endpoints = target.getEndpointSupplier().get();
     } catch (Exception ignore) {
+      err.println(ignore.getMessage());
       // TODO (dano): Nasty. Refactor target to propagate resolution failure in a checked manner.
     }
     if (endpoints.size() == 0) {
