@@ -21,7 +21,7 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -292,7 +292,7 @@ public class HostInfo extends Descriptor {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("hostname", hostname)
         .add("uname", uname)
         .add("architecture", architecture)

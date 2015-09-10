@@ -85,7 +85,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Objects.firstNonNull;
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;

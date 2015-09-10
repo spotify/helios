@@ -21,7 +21,7 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DockerClient;
@@ -41,7 +41,7 @@ import java.io.InterruptedIOException;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.util.concurrent.MoreExecutors.sameThreadExecutor;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -338,7 +338,7 @@ public class Supervisor {
       log.debug("starting job (delay={}): {}", delay, job);
       runner = runnerFactory.create(delay, containerId, new TaskListener());
       runner.startAsync();
-      runner.resultFuture().addListener(reactor.signalRunnable(), sameThreadExecutor());
+      runner.resultFuture().addListener(reactor.signalRunnable(), directExecutor());
     }
   }
 
@@ -428,7 +428,7 @@ public class Supervisor {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("job", job)
         .add("currentCommand", currentCommand)
         .add("performedCommand", performedCommand)

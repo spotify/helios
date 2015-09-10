@@ -78,9 +78,9 @@ import com.spotify.helios.master.MasterMain;
 import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
-import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.glassfish.jersey.client.ClientResponse;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -123,10 +123,10 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
 import static java.lang.Integer.toHexString;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -1015,7 +1015,7 @@ public abstract class SystemTestBase {
   }
 
   protected String readLogFully(final ClientResponse logs) throws IOException {
-    final LogReader logReader = new LogReader(logs.getEntityInputStream());
+    final LogReader logReader = new LogReader(logs.getEntityStream());
     StringBuilder stringBuilder = new StringBuilder();
     LogMessage logMessage;
     while ((logMessage = logReader.nextMessage()) != null) {

@@ -21,7 +21,7 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
@@ -143,7 +143,7 @@ public class DeploymentGroupStatusResponse {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(getClass())
+    return MoreObjects.toStringHelper(getClass())
         .add("deploymentGroup", deploymentGroup)
         .add("status", status)
         .add("error", error)

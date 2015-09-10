@@ -21,7 +21,7 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 
@@ -171,7 +171,7 @@ public class TaskStatus extends Descriptor {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("job", job)
         .add("goal", goal)
         .add("state", state)
