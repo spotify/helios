@@ -142,11 +142,8 @@ public class JobStatusCommand extends ControlCommand {
       String domainsSwitchString = "";
 
       final List<String> domains = options.get("domains");
-      final List<String> sites = options.get("sites");
       if (domains.size() > 0) {
         domainsSwitchString = "-d " + Joiner.on(",").join(domains);
-      } else if (sites.size() > 0) {
-        domainsSwitchString = "-d " + Joiner.on(",").join(sites);
       }
       out.printf("There are no jobs deployed to hosts with the host pattern '%s'%n" +
                  "Run 'helios %s hosts %s' to check your host exists and is up.%n",
