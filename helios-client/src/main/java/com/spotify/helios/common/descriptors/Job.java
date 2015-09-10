@@ -21,7 +21,7 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -395,7 +395,7 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("id", id)
         .add("image", image)
         .add("hostname", hostname)

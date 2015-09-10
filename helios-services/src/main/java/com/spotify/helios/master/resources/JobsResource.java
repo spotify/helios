@@ -39,7 +39,6 @@ import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.master.TokenVerificationException;
 import com.spotify.helios.servicescommon.statistics.MasterMetrics;
-import com.sun.jersey.api.core.InjectParam;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -125,7 +124,7 @@ public class JobsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public Optional<Job> get(@InjectParam @PathParam("id") @Valid final JobId id) {
+  public Optional<Job> get(@PathParam("id") @Valid final JobId id) {
     if (!id.isFullyQualified()) {
       throw badRequest("Invalid id");
     }

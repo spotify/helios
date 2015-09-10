@@ -34,13 +34,13 @@
     <dependency>
       <groupId>joda-time</groupId>
       <artifactId>joda-time</artifactId>
-      <version>2.3</version>
+      <version>2.7</version>
     </dependency>
-	<dependency>
-	    <groupId>com.typesafe</groupId>
-	    <artifactId>config</artifactId>
-	    <version>1.2.1</version>
-	</dependency>
+    <dependency>
+      <groupId>com.typesafe</groupId>
+      <artifactId>config</artifactId>
+      <version>1.2.1</version>
+    </dependency>
 
     <!--test deps-->
     <dependency>

@@ -21,7 +21,7 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -420,7 +420,7 @@ public class TaskConfig {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("job", job)
         .add("host", host)
         .add("ports", ports)

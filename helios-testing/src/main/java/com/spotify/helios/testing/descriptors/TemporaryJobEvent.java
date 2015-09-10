@@ -21,7 +21,7 @@
 
 package com.spotify.helios.testing.descriptors;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -97,7 +97,7 @@ public class TemporaryJobEvent {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("timestamp", timestamp)
         .add("duration", duration)
         .add("testClassName", testClassName)
