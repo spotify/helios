@@ -23,6 +23,12 @@ Creating a deployment with the same name and labels as an existing one will succ
 "not modified" response. Creating a deployment group with the same name but different labels as an
 existing one will return an error stating that the deployment group already exists.
 
+### Updating the definition
+
+To change the definition of a deployment group, such as adding/removing host
+selectors, you will need to remove the group, create it again with the same
+name and new host selectors, and then run `rolling-update --migrate` again.
+
 ### Inspect
 
 Inspect the deployment group:
