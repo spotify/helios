@@ -63,6 +63,7 @@ public class AgentParser extends ServiceParser {
   private Argument dnsArg;
   private Argument bindArg;
   private Argument labelsArg;
+  private Argument zkRegistrationTtlMinutesArg;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -107,6 +108,7 @@ public class AgentParser extends ServiceParser {
         .setZooKeeperConnectionTimeoutMillis(getZooKeeperConnectionTimeoutMillis())
         .setZooKeeperNamespace(getZooKeeperNamespace())
         .setZooKeeperClusterId(getZooKeeperClusterId())
+        .setZooKeeperRegistrationTtlMinutes(options.getInt(zkRegistrationTtlMinutesArg.getDest()))
         .setDomain(getDomain())
         .setEnvVars(envVars)
         .setDockerHost(dockerHost)
@@ -210,6 +212,15 @@ public class AgentParser extends ServiceParser {
         .setDefault(new ArrayList<String>())
         .nargs("+")
         .help("labels to apply to this agent. Labels need to be in the format key=value.");
+
+    zkRegistrationTtlMinutesArg = parser.addArgument("--zk-registration-ttl")
+        .type(Integer.class)
+        .setDefault(10)
+        .help("Number of minutes that this agent must be DOWN (i.e. not periodically check-in with "
+              + "ZooKeeper) before another agent with the same hostname but lacking the "
+              + "registration ID of this one can automatically deregister this one and register "
+              + "itself. This is useful when the agent loses its registration ID and you don't "
+              + "want to waste time debugging why the master lists your agent as constantly DOWN.");
   }
 
   public AgentConfig getAgentConfig() {

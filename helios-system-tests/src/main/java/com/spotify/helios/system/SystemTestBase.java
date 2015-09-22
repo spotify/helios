@@ -107,6 +107,7 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
@@ -1097,5 +1098,9 @@ public abstract class SystemTestBase {
 
   protected static String randomHexString() {
     return toHexString(ThreadLocalRandom.current().nextInt());
+  }
+
+  protected void resetAgentStateDir() throws IOException {
+    agentStateDirs = temporaryFolder.newFolder(UUID.randomUUID().toString()).toPath();
   }
 }

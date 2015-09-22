@@ -26,6 +26,8 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
 import com.spotify.helios.agent.RetryIntervalPolicy;
 import com.spotify.helios.agent.RetryScheduler;
+import com.spotify.helios.master.HostNotFoundException;
+import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -100,17 +102,20 @@ public class ZooKeeperRegistrar extends AbstractIdleService {
     public void run(final boolean timeout) throws InterruptedException {
       final RetryScheduler retryScheduler = retryIntervalPolicy.newScheduler();
       while (isAlive()) {
+        final long sleep = retryScheduler.nextMillis();
+
         try {
           eventListener.tryToRegister(client);
           return;
         } catch (KeeperException e) {
-          final long sleep = retryScheduler.nextMillis();
           if (e instanceof ConnectionLossException) {
             log.warn("ZooKeeper connection lost, retrying registration in {} ms", sleep);
           } else {
             log.error("ZooKeeper registration failed, retrying in {} ms", sleep, e);
           }
           Thread.sleep(sleep);
+        } catch (HostNotFoundException | HostStillInUseException e) {
+          log.error("ZooKeeper deregistration of old hostname failed, retrying in {} ms", sleep, e);
         }
       }
     }
