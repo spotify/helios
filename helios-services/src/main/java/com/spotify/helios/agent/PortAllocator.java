@@ -26,6 +26,11 @@ import com.google.common.collect.Sets;
 
 import com.spotify.helios.common.descriptors.PortMapping;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.net.ServerSocket;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,6 +43,8 @@ import java.util.Set;
  * index wraps around from the start of the port range.
  */
 public class PortAllocator {
+
+  private static final Logger log = LoggerFactory.getLogger(Agent.class);
 
   /**
    * Index for port allocation. Reused between allocations so we do not immediately reuse ports.
@@ -105,7 +112,7 @@ public class PortAllocator {
       Integer port = null;
       for (int i = start; i < end; i++) {
         final int candidate = next();
-        if (!used.contains(candidate)) {
+        if (!used.contains(candidate) && portAvailable(candidate)) {
           port = candidate;
           break;
         }
@@ -131,5 +138,31 @@ public class PortAllocator {
       i = start;
     }
     return i++;
+  }
+
+  /**
+   * Check if the port is available on the host. This is racy but it's better than nothing.
+   * @param port Port number to check.
+   * @return True if port is available. False otherwise.
+   */
+  private boolean portAvailable(final int port) {
+    boolean available = false;
+
+    ServerSocket s = null;
+    try {
+      s = new ServerSocket(port);
+      available = true;
+    } catch (IOException ignored) {
+    } finally {
+      if (s != null) {
+        try {
+          s.close();
+        } catch (IOException e) {
+          log.error("Couldn't close socket on port {} when checking availability: {}", port, e);
+        }
+      }
+    }
+
+    return available;
   }
 }

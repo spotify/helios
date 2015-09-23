@@ -28,6 +28,8 @@ import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.junit.Test;
 
+import java.net.ServerSocket;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,12 +40,12 @@ public class PortAllocatorTest {
 
   @Test
   public void testAllocate() throws Exception {
-    final PortAllocator sut = new PortAllocator(10, 20);
+    final PortAllocator sut = new PortAllocator(20000, 20010);
     final Map<String, PortMapping> mapping = ImmutableMap.of("p1", PortMapping.of(17),
                                                              "p2", PortMapping.of(18, 18));
     final Set<Integer> used = ImmutableSet.of(10, 11);
     final Map<String, Integer> allocation = sut.allocate(mapping, used);
-    assertEquals(ImmutableMap.of("p1", 12, "p2", 18), allocation);
+    assertEquals(ImmutableMap.of("p1", 20000, "p2", 18), allocation);
   }
 
   @Test
@@ -70,11 +72,24 @@ public class PortAllocatorTest {
 
   @Test
   public void verifyStaticPortsNotCheckedAgainstRange() throws Exception {
-    final PortAllocator sut = new PortAllocator(10, 11);
+    final PortAllocator sut = new PortAllocator(20000, 20001);
     final Map<String, PortMapping> mapping = ImmutableMap.of("p1", PortMapping.of(1),
                                                              "p2", PortMapping.of(18, 18));
     final Set<Integer> used = ImmutableSet.of();
     final Map<String, Integer> allocation = sut.allocate(mapping, used);
-    assertEquals(ImmutableMap.of("p1", 10, "p2", 18), allocation);
+    assertEquals(ImmutableMap.of("p1", 20000, "p2", 18), allocation);
+  }
+
+  @Test
+  public void testAllocateCheckSystem() throws Exception {
+    final PortAllocator sut = new PortAllocator(20000, 20010);
+    final Map<String, PortMapping> mapping = ImmutableMap.of("p1", PortMapping.of(17),
+                                                             "p2", PortMapping.of(18, 20001));
+    final Set<Integer> used = Collections.emptySet();
+
+    // Occupy a port and check that Helios doesn't use it.
+    new ServerSocket(20000);
+    final Map<String, Integer> allocation = sut.allocate(mapping, used);
+    assertEquals(ImmutableMap.of("p1", 20002, "p2", 20001), allocation);
   }
 }
