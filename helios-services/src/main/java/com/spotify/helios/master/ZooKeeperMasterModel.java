@@ -61,6 +61,7 @@ import com.spotify.helios.rollingupdate.RolloutPlanner;
 import com.spotify.helios.servicescommon.KafkaRecord;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.VersionedValue;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
 import com.spotify.helios.servicescommon.coordination.Node;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -84,7 +85,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -182,19 +182,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     log.info("registering host: {}", host);
     final ZooKeeperClient client = provider.get("registerHost");
     try {
-      // TODO (dano): this code is replicated in AgentZooKeeperRegistrar
-
-      // This would've been nice to do in a transaction but PathChildrenCache ensures paths
-      // so we can't know what paths already exist so assembling a suitable transaction is too
-      // painful.
-      client.ensurePath(Paths.configHost(host));
-      client.ensurePath(Paths.configHostJobs(host));
-      client.ensurePath(Paths.configHostPorts(host));
-      client.ensurePath(Paths.statusHost(host));
-      client.ensurePath(Paths.statusHostJobs(host));
-
-      // Finish registration by creating the id node last
-      client.createAndSetData(Paths.configHostId(host), id.getBytes(UTF_8));
+      ZooKeeperRegistrarUtil.registerHost(client, Paths.configHostId(host), host, id);
     } catch (Exception e) {
       throw new HeliosRuntimeException("registering host " + host + " failed", e);
     }
@@ -242,92 +230,8 @@ public class ZooKeeperMasterModel implements MasterModel {
   @Override
   public void deregisterHost(final String host)
       throws HostNotFoundException, HostStillInUseException {
-    log.info("deregistering host: {}", host);
     final ZooKeeperClient client = provider.get("deregisterHost");
-    // TODO (dano): handle retry failures
-    try {
-      final List<ZooKeeperOperation> operations = Lists.newArrayList();
-
-      // Remove all jobs deployed to this host
-      final List<JobId> jobs = listHostJobs(client, host);
-
-      if (jobs == null) {
-        if (client.exists(Paths.configHost(host)) == null) {
-          throw new HostNotFoundException("host [" + host + "] does not exist");
-        }
-      }
-
-      if (jobs != null) {
-        for (final JobId job : jobs) {
-          final String hostJobPath = Paths.configHostJob(host, job);
-
-          final List<String> nodes = safeListRecursive(client, hostJobPath);
-          for (final String node : reverse(nodes)) {
-            operations.add(delete(node));
-          }
-          if (client.exists(Paths.configJobHost(job, host)) != null) {
-            operations.add(delete(Paths.configJobHost(job, host)));
-          }
-          // Clean out the history for each job
-          final List<String> history = safeListRecursive(client, Paths.historyJobHost(job, host));
-          for (final String s : reverse(history)) {
-            operations.add(delete(s));
-          }
-        }
-      }
-      operations.add(delete(Paths.configHostJobs(host)));
-
-      // Remove the host status
-      final List<String> nodes = safeListRecursive(client, Paths.statusHost(host));
-      for (final String node : reverse(nodes)) {
-        operations.add(delete(node));
-      }
-
-      // Remove port allocations
-      final List<String> ports = safeGetChildren(client, Paths.configHostPorts(host));
-      for (final String port : ports) {
-        operations.add(delete(Paths.configHostPort(host, Integer.valueOf(port))));
-      }
-      operations.add(delete(Paths.configHostPorts(host)));
-
-      // Remove host id
-      final String idPath = Paths.configHostId(host);
-      if (client.exists(idPath) != null) {
-        operations.add(delete(idPath));
-      }
-
-      // Remove host config root
-      operations.add(delete(Paths.configHost(host)));
-
-      client.transaction(operations);
-    } catch (NotEmptyException e) {
-      final HostStatus hostStatus = getHostStatus(host);
-      final List<JobId> jobs = hostStatus != null
-                               ? ImmutableList.copyOf(hostStatus.getJobs().keySet())
-                               : Collections.<JobId>emptyList();
-      throw new HostStillInUseException(host, jobs);
-    } catch (NoNodeException e) {
-      throw new HostNotFoundException(host);
-    } catch (KeeperException e) {
-      throw new HeliosRuntimeException(e);
-    }
-  }
-
-  private List<String> safeGetChildren(final ZooKeeperClient client, final String path) {
-    try {
-      return client.getChildren(path);
-    } catch (KeeperException ignore) {
-      return ImmutableList.of();
-    }
-  }
-
-  private List<String> safeListRecursive(final ZooKeeperClient client, final String path)
-      throws KeeperException {
-    try {
-      return client.listRecursive(path);
-    } catch (NoNodeException e) {
-      return ImmutableList.of();
-    }
+    ZooKeeperRegistrarUtil.deregisterHost(client, host);
   }
 
   /**
@@ -847,7 +751,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         try {
           final String token =
               firstNonNull(deploymentGroup.getRolloutOptions().getToken(), Job.EMPTY_TOKEN);
-          operations.addAll(getUndeployOperations( client, host, deployment.getJobId(), token));
+          operations.addAll(getUndeployOperations(client, host, deployment.getJobId(), token));
         } catch (TokenVerificationException e) {
           return opFactory.error(e, host, RollingUpdateError.TOKEN_VERIFICATION_ERROR);
         } catch (HostNotFoundException e) {
