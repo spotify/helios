@@ -239,4 +239,43 @@ public class DeploymentTest extends SystemTestBase {
     // Verify that a nonexistent job returns JOB_NOT_FOUND
     assertEquals(JobDeleteResponse.Status.JOB_NOT_FOUND, client.deleteJob(jobId).get().getStatus());
   }
+
+  @Test
+  public void testJobWithDigest() throws Exception {
+    startDefaultMaster();
+
+    final HeliosClient client = defaultClient();
+    startDefaultAgent(testHost());
+
+    // Create a job
+    final Job job = Job.newBuilder()
+        .setName(testJobName)
+        .setVersion(testJobVersion)
+        .setImage(BUSYBOX_WITH_DIGEST)
+        .setCommand(IDLE_COMMAND)
+        .setCreatingUser(TEST_USER)
+        .build();
+    final JobId jobId = job.getId();
+    final CreateJobResponse created = client.createJob(job).get();
+    assertEquals(CreateJobResponse.Status.OK, created.getStatus());
+
+    // Try querying for the job
+    final Map<JobId, Job> matchJobs = client.jobs(testJobName).get();
+    assertEquals(ImmutableMap.of(jobId, job), matchJobs);
+    assertEquals(BUSYBOX_WITH_DIGEST, matchJobs.get(jobId).getImage());
+
+    // Wait for agent to come up
+    awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    // Deploy the job on the agent
+    final Deployment deployment = Deployment.of(jobId, START, TEST_USER);
+    final JobDeployResponse deployed = client.deploy(deployment, testHost()).get();
+    assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
+
+    // Wait for the job to run
+    TaskStatus taskStatus;
+    taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
+    assertEquals(job, taskStatus.getJob());
+  }
 }

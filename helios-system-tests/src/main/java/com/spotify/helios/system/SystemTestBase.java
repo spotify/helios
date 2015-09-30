@@ -146,6 +146,8 @@ public abstract class SystemTestBase {
   public static final int LONG_WAIT_SECONDS = 400;
 
   public static final String BUSYBOX = "busybox:latest";
+  public static final String BUSYBOX_WITH_DIGEST =
+      "busybox@sha256:16a2a52884c2a9481ed267c2d46483eac7693b813a63132368ab098a71303f8a";
   public static final String NGINX = "rohan/nginx-alpine:latest";
   public static final String UHTTPD = "fnichol/docker-uhttpd:latest";
   public static final String ALPINE = "onescience/alpine:latest";
