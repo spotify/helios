@@ -117,6 +117,18 @@ public class JobValidatorTest {
                is(empty()));
     assertThat(validator.validate(b.setImage("registry.test.net.:80/fooo/bar").build()),
                is(empty()));
+    assertThat(
+        validator.validate(b.setImage(
+            "namespace/foo@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
+                               .build()), is(empty()));
+    assertThat(
+        validator.validate(b.setImage(
+            "foo.net/bar@sha256:2c26b46b68ffc68ff99b453c1d30413413422d706483bfa0f98a5e886266e7ae")
+                               .build()), is(empty()));
+    assertThat(
+        validator.validate(b.setImage(
+            "foo@tarsum.v1+sha256:6c3c624b58dbbcd3c0dd82b4c53f04194d1247c6eebdaab7c610cf7d66709b3b")
+                               .build()), is(empty()));
   }
 
   @Test
@@ -220,6 +232,15 @@ public class JobValidatorTest {
 
     assertEquals(newHashSet("Tag cannot be empty"),
                  validator.validate(b.setImage("repo:").build()));
+
+    assertEquals(newHashSet("Digest cannot be empty"),
+                 validator.validate(b.setImage("foo@").build()));
+
+    assertEquals(newHashSet("Illegal digest: \":123\""),
+                 validator.validate(b.setImage("foo@:123").build()));
+
+    assertEquals(newHashSet("Illegal digest: \"sha256:\""),
+                 validator.validate(b.setImage("foo@sha256:").build()));
 
     assertFalse(validator.validate(b.setImage("repo:/").build()).isEmpty());
 
