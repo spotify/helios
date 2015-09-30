@@ -24,6 +24,7 @@ package com.spotify.helios.agent;
 import com.google.common.util.concurrent.Service;
 
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarEventListener;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
@@ -85,19 +86,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
     final Stat stat = client.exists(idPath);
     if (stat == null) {
       log.debug("Agent id node not present, registering agent {}: {}", id, name);
-
-      // This would've been nice to do in a transaction but PathChildrenCache ensures paths
-      // so we can't know what paths already exist so assembling a suitable transaction is too
-      // painful.
-      client.ensurePath(Paths.configHost(name));
-      client.ensurePath(Paths.configHost(name));
-      client.ensurePath(Paths.configHostJobs(name));
-      client.ensurePath(Paths.configHostPorts(name));
-      client.ensurePath(Paths.statusHost(name));
-      client.ensurePath(Paths.statusHostJobs(name));
-
-      // Finish registration by creating the id node last
-      client.createAndSetData(idPath, id.getBytes(UTF_8));
+      ZooKeeperRegistrarUtil.registerHost(client, idPath, name, id);
     } else {
       final byte[] bytes = client.getData(idPath);
       final String existingId = bytes == null ? "" : new String(bytes, UTF_8);
