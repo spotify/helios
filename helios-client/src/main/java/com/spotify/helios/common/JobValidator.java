@@ -287,9 +287,16 @@ public class JobValidator {
 
     final String repo;
     final String tag;
+    final String digest;
 
+    final int lastAtSign = imageRef.lastIndexOf('@');
     final int lastColon = imageRef.lastIndexOf(':');
-    if (lastColon != -1 && !(tag = imageRef.substring(lastColon + 1)).contains("/")) {
+
+    if (lastAtSign != -1) {
+      repo = imageRef.substring(0, lastAtSign);
+      digest = imageRef.substring(lastAtSign + 1);
+      valid &= validateDigest(digest, errors);
+    } else if (lastColon != -1 && !(tag = imageRef.substring(lastColon + 1)).contains("/")) {
       repo = imageRef.substring(0, lastColon);
       valid &= validateTag(tag, errors);
     } else {
@@ -337,6 +344,23 @@ public class JobValidator {
       valid = false;
     }
     return valid;
+  }
+
+  private boolean validateDigest(final String digest, final Collection<String> errors) {
+    if (digest.isEmpty()) {
+      errors.add("Digest cannot be empty");
+      return false;
+    }
+
+    final int firstColon = digest.indexOf(':');
+    final int lastColon = digest.lastIndexOf(':');
+
+    if ((firstColon <= 0 ) || (firstColon != lastColon) || (firstColon == digest.length() - 1)) {
+      errors.add(format("Illegal digest: \"%s\"", digest));
+      return false;
+    }
+
+    return true;
   }
 
   private boolean validateEndpoint(final String endpoint, final Collection<String> errors) {
