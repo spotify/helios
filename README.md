@@ -168,10 +168,9 @@ load balancing strategies.
 
 Production Readiness
 --------------------
-We at Spotify are running this in production now (as of early July
-2014) with a money-generating service, so we trust it.  Whether you
-should trust it to not cause smoking holes in your infrastructure is
-up to you.
+We at Spotify are running Helios in production (as of October 2015) with dozens
+of critical backend services, so we trust it.  Whether you should trust it to
+not cause smoking holes in your infrastructure is up to you.
 
 
 Why Helios?
