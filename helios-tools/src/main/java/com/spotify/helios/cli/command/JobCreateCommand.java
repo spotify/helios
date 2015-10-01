@@ -53,6 +53,7 @@ import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -65,6 +66,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
 import static com.spotify.helios.common.descriptors.PortMapping.TCP;
 import static com.spotify.helios.common.descriptors.ServiceEndpoint.HTTP;
+import static java.lang.String.format;
 import static java.util.Arrays.asList;
 import static java.util.regex.Pattern.compile;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
@@ -95,6 +97,7 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument healthCheckTcpArg;
   private final Argument securityOptArg;
   private final Argument networkModeArg;
+  private final Argument metadataArg;
 
   public JobCreateCommand(final Subparser parser) {
     super(parser);
@@ -136,6 +139,11 @@ public class JobCreateCommand extends ControlCommand {
         .action(append())
         .setDefault(new ArrayList<String>())
         .help("Environment variables");
+
+    metadataArg = parser.addArgument("-m", "--metadata")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("Metadata (key-value pairs) to associate with job");
 
     portArg = parser.addArgument("-p", "--port")
         .action(append())
@@ -319,14 +327,15 @@ public class JobCreateCommand extends ControlCommand {
       env.putAll(builder.getEnv());
       // Add environmental variables passed in via CLI
       // Overwrite any redundant keys to make CLI args take precedence
-      for (final String s : envList) {
-        final String[] parts = s.split("=", 2);
-        if (parts.length != 2) {
-          throw new IllegalArgumentException("Bad environment variable: " + s);
-        }
-        env.put(parts[0], parts[1]);
-      }
+      env.putAll(parseListOfPairs(envList, "environment variable"));
+
       builder.setEnv(env);
+    }
+
+    final List<String> metadataList = options.getList(metadataArg.getDest());
+    if (!metadataList.isEmpty()) {
+      // TODO (mbrown): values from job conf file (which maybe involves dereferencing env vars?)
+      builder.setMetadata(parseListOfPairs(metadataList, "metadata"));
     }
 
     // Parse port mappings
@@ -521,6 +530,29 @@ public class JobCreateCommand extends ControlCommand {
       }
       return 1;
     }
+  }
+
+  private static Map<String, String> parseListOfPairs(final List<String> list,
+                                                      final String fieldName) {
+    return parseListOfPairs(list, fieldName, "=");
+  }
+
+  private static Map<String, String> parseListOfPairs(final List<String> list,
+                                                      final String fieldName,
+                                                      final String delimiter) {
+    final Map<String, String> pairs = new HashMap<>();
+    for (final String s : list) {
+      final String[] parts = s.split(delimiter, 2);
+      if (parts.length != 2) {
+        throw new IllegalArgumentException(
+            format("Bad format for %s: '%s', expecting %s-delimited pairs",
+                fieldName,
+                s,
+                delimiter));
+      }
+      pairs.put(parts[0], parts[1]);
+    }
+    return pairs;
   }
 
   private Integer nullOrInteger(final String s) {
