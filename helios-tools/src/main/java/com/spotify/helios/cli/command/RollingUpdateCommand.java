@@ -30,8 +30,8 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
-import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse.RolloutState;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -54,6 +54,8 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 public class RollingUpdateCommand extends WildcardJobCommand {
 
   private static final long POLL_INTERVAL_MILLIS = 1000;
+  private static final Set<RolloutState> TERMINAL_ROLLOUT_STATES =
+      Sets.newHashSet(RolloutState.DONE, RolloutState.FAILED);
 
   private final SleepFunction sleepFunction;
   private final Supplier<Long> timeSupplier;
@@ -66,6 +68,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
   private final Argument migrateArg;
   private final Argument overlapArg;
   private final Argument tokenArg;
+  private final Argument failureThresholdArg;
 
   public RollingUpdateCommand(final Subparser parser) {
     this(parser, new SleepFunction() {
@@ -135,6 +138,12 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .setDefault(EMPTY_TOKEN)
         .help("Insecure access token meant to prevent accidental changes to your job " +
               "(e.g. undeploys).");
+
+    failureThresholdArg = parser.addArgument("--failure-threshold")
+        .setDefault(RolloutOptions.DEFAULT_FAILURE_THRESHOLD)
+        .type(Float.class)
+        .help("The percentage of failed deployments that will stop the rolling update. "
+              + "Must be a number between 0 and 1.");
   }
 
   @Override
@@ -150,10 +159,13 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     final boolean migrate = options.getBoolean(migrateArg.getDest());
     final boolean overlap = options.getBoolean(overlapArg.getDest());
     final String token = options.getString(tokenArg.getDest());
+    final Float failureThreshold = options.getFloat(failureThresholdArg.getDest());
 
     checkArgument(timeout > 0, "Timeout must be greater than 0");
     checkArgument(parallelism > 0, "Parallelism must be greater than 0");
     checkArgument(rolloutTimeout > 0, "Rollout timeout must be greater than 0");
+    checkArgument(failureThreshold >= 0 && failureThreshold <= 1,
+                  "Failure threshold must be between 0 and 1, inclusive.");
 
     final long startTime = timeSupplier.get();
 
@@ -163,6 +175,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         .setMigrate(migrate)
         .setOverlap(overlap)
         .setToken(token)
+        .setFailureThreshold(failureThreshold)
         .build();
     final RollingUpdateResponse response = client.rollingUpdate(name, jobId, rolloutOptions).get();
 
@@ -177,10 +190,11 @@ public class RollingUpdateCommand extends WildcardJobCommand {
 
     if (!json) {
       out.println(format("Rolling update%s started: %s -> %s " +
-                         "(parallelism=%d, timeout=%d, overlap=%b, token=%s)%s",
+                         "(parallelism=%d, timeout=%d, overlap=%b, token=%s, " +
+                         "failure threshold=%.2f)%s",
                          async ? " (async)" : "",
-                         name, jobId.toShortString(), parallelism, timeout, overlap, token,
-                         async ? "" : "\n"));
+                         name, jobId.toShortString(), parallelism, timeout, overlap,
+                         (token == null) ? "null" : token, failureThreshold, async ? "" : "\n"));
     }
 
     final Map<String, Object> jsonOutput = Maps.newHashMap();
@@ -188,6 +202,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
     jsonOutput.put("timeout", timeout);
     jsonOutput.put("overlap", overlap);
     jsonOutput.put("token", token);
+    jsonOutput.put("failureThreshold", failureThreshold);
 
     if (async) {
       if (json) {
@@ -221,14 +236,19 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         for (DeploymentGroupStatusResponse.HostStatus hostStatus : status.getHostStatuses()) {
           final JobId hostJobId = hostStatus.getJobId();
           final String host = hostStatus.getHost();
-          final TaskStatus.State state = hostStatus.getState();
+          final RolloutState rolloutState = hostStatus.getRolloutState();
           final boolean done = hostJobId != null &&
                                hostJobId.equals(jobId) &&
-                               state == TaskStatus.State.RUNNING;
+                               TERMINAL_ROLLOUT_STATES.contains(rolloutState);
 
           if (done && reported.add(host)) {
-            out.println(format("%s -> %s (%d/%d)", host, state,
-                               reported.size(), status.getHostStatuses().size()));
+            if (rolloutState == RolloutState.DONE) {
+              out.println(format("%s -> %s (%d/%d)", host, rolloutState,
+                                 reported.size(), status.getHostStatuses().size()));
+            } else if (rolloutState == RolloutState.FAILED) {
+              out.println(format("%s -> %s %s (%d/%d)", host, rolloutState, hostStatus.getErrMsg(),
+                                 reported.size(), status.getHostStatuses().size()));
+            }
           }
         }
       }
