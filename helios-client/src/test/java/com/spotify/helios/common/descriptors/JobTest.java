@@ -370,12 +370,31 @@ public class JobTest {
         .setVersion("17")
         .build();
 
+     removeFieldAndParse(job, "env");
+  }
+
+  @Test
+  public void verifyCanParseJobWithMissingMetadata() throws Exception {
+    final Job job = Job.newBuilder()
+        .setCommand(asList("foo", "bar"))
+        .setImage("foobar:4711")
+        .setName("foozbarz")
+        .setVersion("17")
+        .build();
+
+    removeFieldAndParse(job, "metadata");
+  }
+
+  private static void removeFieldAndParse(final Job job, final String... fieldNames) throws Exception {
     final String jobJson = job.toJsonString();
 
     final ObjectMapper objectMapper = new ObjectMapper();
     final Map<String, Object> fields = objectMapper.readValue(
         jobJson, new TypeReference<Map<String, Object>>() {});
-    fields.remove("env");
+
+    for (String field : fieldNames) {
+      fields.remove(field);
+    }
     final String modifiedJobJson = objectMapper.writeValueAsString(fields);
 
     final Job parsedJob = parse(modifiedJobJson, Job.class);

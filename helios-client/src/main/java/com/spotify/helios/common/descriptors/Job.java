@@ -68,6 +68,9 @@ import static java.util.Collections.emptyMap;
  *   "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
  *   "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
  *   "hostname": "myhost",
+ *   "metadata": {
+ *     "foo": "bar
+ *   },
  *   "networkMode" : "bridge",
  *   "ports" : {
  *     "http" : {
@@ -116,6 +119,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final List<String> EMPTY_SECURITY_OPT = emptyList();
   public static final String DEFAULT_NETWORK_MODE = "bridge";
   public static final String EMPTY_HOSTNAME = null;
+  public static final Map<String, String> EMPTY_METADATA = emptyMap();
 
   private final JobId id;
   private final String image;
@@ -134,6 +138,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final HealthCheck healthCheck;
   private final List<String> securityOpt;
   private final String networkMode;
+  private final Map<String, String> metadata;
 
   /**
    * Create a Job.
@@ -181,7 +186,8 @@ public class Job extends Descriptor implements Comparable<Job> {
              @JsonProperty("token") @Nullable String token,
              @JsonProperty("healthCheck") @Nullable HealthCheck healthCheck,
              @JsonProperty("securityOpt") @Nullable final List<String> securityOpt,
-             @JsonProperty("networkMode") @Nullable final String networkMode) {
+             @JsonProperty("networkMode") @Nullable final String networkMode,
+             @JsonProperty("metadata") @Nullable final Map<String, String> metadata) {
     this.id = id;
     this.image = image;
 
@@ -202,6 +208,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.healthCheck = Optional.fromNullable(healthCheck).orNull();
     this.securityOpt = Optional.fromNullable(securityOpt).or(EMPTY_SECURITY_OPT);
     this.networkMode = Optional.fromNullable(networkMode).orNull();
+    this.metadata = Optional.fromNullable(metadata).or(EMPTY_METADATA);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -224,6 +231,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.healthCheck = p.healthCheck;
     this.securityOpt = p.securityOpt;
     this.networkMode = p.networkMode;
+    this.metadata = ImmutableMap.copyOf(p.metadata);
   }
 
   public JobId getId() {
@@ -292,6 +300,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public String getNetworkMode() {
     return networkMode;
+  }
+
+  public Map<String, String> getMetadata() {
+    return metadata;
   }
 
   public static Builder newBuilder() {
@@ -367,6 +379,9 @@ public class Job extends Descriptor implements Comparable<Job> {
     if (networkMode != null ? !networkMode.equals(job.networkMode) : job.networkMode != null) {
       return false;
     }
+    if (metadata != null ? !metadata.equals(job.metadata) : job.metadata != null) {
+      return false;
+    }
 
     return true;
   }
@@ -390,6 +405,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (healthCheck != null ? healthCheck.hashCode() : 0);
     result = 31 * result + (securityOpt != null ? securityOpt.hashCode() : 0);
     result = 31 * result + (networkMode != null ? networkMode.hashCode() : 0);
+    result = 31 * result + (metadata != null ? metadata.hashCode() : 0);
     return result;
   }
 
@@ -412,6 +428,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("healthCheck", healthCheck)
         .add("securityOpt", securityOpt)
         .add("networkMode", networkMode)
+        .add("metadata", metadata)
         .toString();
   }
 
@@ -438,7 +455,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setToken(token)
         .setHealthCheck(healthCheck)
         .setSecurityOpt(securityOpt)
-        .setNetworkMode(networkMode);
+        .setNetworkMode(networkMode)
+        .setMetadata(metadata);
   }
 
   public static class Builder implements Cloneable {
@@ -475,6 +493,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public HealthCheck healthCheck;
       public List<String> securityOpt;
       public String networkMode;
+      public Map<String, String> metadata;
 
       private Parameters() {
         this.command = EMPTY_COMMAND;
@@ -489,6 +508,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.token = EMPTY_TOKEN;
         this.healthCheck = EMPTY_HEALTH_CHECK;
         this.securityOpt = EMPTY_SECURITY_OPT;
+        this.metadata = EMPTY_METADATA;
       }
 
       private Parameters(final Parameters p) {
@@ -510,6 +530,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.healthCheck = p.healthCheck;
         this.securityOpt = p.securityOpt;
         this.networkMode = p.networkMode;
+        this.metadata = p.metadata;
       }
     }
 
@@ -633,6 +654,16 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setMetadata(final Map<String, String> metadata) {
+      p.metadata = metadata;
+      return this;
+    }
+
+    public Builder addMetadata(final String name, final String value) {
+      p.metadata.put(name, value);
+      return this;
+    }
+
     public String getName() {
       return p.name;
     }
@@ -699,6 +730,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public String getNetworkMode() {
       return p.networkMode;
+    }
+
+    public Map<String, String> getMetadata() {
+      return ImmutableMap.copyOf(p.metadata);
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})
