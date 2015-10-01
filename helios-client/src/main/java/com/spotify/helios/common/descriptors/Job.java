@@ -508,7 +508,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.token = EMPTY_TOKEN;
         this.healthCheck = EMPTY_HEALTH_CHECK;
         this.securityOpt = EMPTY_SECURITY_OPT;
-        this.metadata = EMPTY_METADATA;
+        this.metadata = Maps.newHashMap();
       }
 
       private Parameters(final Parameters p) {
@@ -655,7 +655,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     }
 
     public Builder setMetadata(final Map<String, String> metadata) {
-      p.metadata = metadata;
+      p.metadata = Maps.newHashMap(metadata);
       return this;
     }
 
