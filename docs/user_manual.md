@@ -129,7 +129,7 @@ example that uses all the available configuration keys with an explanation of ea
 
 ### All Helios Job Options
 
-```
+```json
 {
   "command" : [ "server", "serverconfig.yaml" ],
   "env" : {
@@ -174,48 +174,126 @@ example that uses all the available configuration keys with an explanation of ea
 }
 ```
 
-* `command`: The command line arguments to pass to the container (default: []).
-* `env`: Environment variables (default: []).
-* `expires`: An ISO-8601 string representing the date/time when this job should expire. The job
-  will be undeployed from all hosts and removed at this time. E.g. 2014-06-01T12:00:00Z
-  (default: null).
-* `gracePeriod`: If is specified, Helios will unregister from service discovery and wait the specified
-  number of seconds before undeploying, default 0 seconds.
-* `healthCheck`: A health check Helios will execute on the container. See the health checks section
-  below.
-* `id`: The id of the job.
-* `image`: The docker image to use.
-* `hostname`: The hostname to be passed to the container.
-* `networkMode`: Sets the networking mode for the container. Supported values are: bridge,
-   host, and container:&lt;name|id&gt;. See [Docker docs](https://docs.docker.com/reference/run/#network-settings).
-* `ports`: Port mapping. Specify an endpoint name and a single port (e.g.
-  `{"http": {"internalPort": 8080}}`) for dynamic port mapping and `{"http": {"internalPort": 8080,
-  "externalPort": 80}}` for static port mapping. E.g., `{"foo": {"internalPort": 4711}}`  will  map
-  the internal port 4711 of the container to an arbitrary external port on the host. Specifying
-  `{"foo": {"internalPort": 4711, "externalPort": 80}}` will map internal port 4711  of the
-  container to port 80 on the host. The protocol will be TCP by default. For UDP, add
-  `"protocol": udp`. E.g. `{"quic": {"internalPort": 80, "protocol": "udp"}}` or
-  `{"dns": {"internalPort": 53, "externalPort": 53, "protocol": "udp"}}`. The endpoint name can be
-  used when specifying service registration using `registration`. (default: [])
-* `registration`: Service discovery registration. Specify a service name, the port name and a protocol
-  on the format service/protocol=port. E.g. `{"website/tcp": {"ports": {"http": {}}}}` will register
-  the port named http with the protocol tcp. Protocol is optional and default is tcp. If there is
-  only one port mapping, this will be used by default and it will be enough to specify only the
-  service name, e.g. `{"wordpress": {}}`. (default: {})
-* `registrationDomain`: If set, overrides the default domain in which discovery serviceregistration
-  occurs. What is allowed here will vary based upon the discovery service plugin used.
-  (default: "").
-* `securityOpt`: A list of strings denoting security options for running Docker containers,
-   i.e. `docker run --security-opt`. See [Docker docs](https://docs.docker.com/reference/run/#security-configuration).
-* `token`: Insecure access token meant to prevent accidental changes to your job (e.g. undeploys).
-* `volumes`: Container volumes. Specify either a single path to create a data volume, or a source path
-  and a container path to mount a file or directory from the host. The container path can be
-  suffixed with "rw" or "ro" to create a read-write or read-only volume, respectively.
-  Format: `"[container-path]:[rw|ro]":[host-path]`. (default: {}).
+All fields are optional except for `id` and `image`.
 
-A current best practice is to save all your job creation parameters in
-version-controlled files in your project directory. This allows you to tie
-your Helios job params to changes in your application code.
+Note that the recommended best practice is to save all your job creation
+parameters in version-controlled files in your project directory. This allows
+you to tie your Helios job params to changes in your application code.
+
+#### command
+The command(s) to pass to the container. Optional.
+
+#### env
+Environment variables. Optional.
+
+#### expires
+An ISO-8601 string representing the date/time when this job should expire. The
+job will be undeployed from all hosts and removed at this time. 
+
+Example value: `2014-06-01T12:00:00Z`
+
+Optional, if not specified the job does not expire.
+
+#### gracePeriod
+If is specified, Helios will unregister from service discovery and wait the
+specified number of seconds before undeploying. Optional, defaults to `0` for
+no grace period.
+
+#### healthCheck
+A health check Helios will execute on the container. See the health checks
+section below. Optional.
+
+#### id
+The id of the job. Required.
+
+#### image
+The docker image to use. Required.
+
+#### hostname
+The hostname to be passed to the container. Optional.
+
+#### networkMode
+Sets the networking mode for the container. 
+
+Supported values are: 
+  - `bridge`
+  - `host`
+  - `container:<name|id>`. 
+  
+For further reference see [Docker docs](https://docs.docker.com/reference/run/#network-settings).
+
+#### ports
+Specifies how ports inside the container should be mapped/published to the host
+the container runs on. Port mappings are optional, by default nothing is mapped
+to the host.
+
+Specify an endpoint name and a single port (e.g.  `{"http": {"internalPort":
+8080}}`) for dynamic port mapping (i.e. Docker chooses the external port).
+
+For static port mapping, specify the internal and external ports like `{"http":
+{"internalPort": 8080, "externalPort": 80}}`.
+  
+For example, `{"foo": {"internalPort": 4711}}`  will  map the internal port
+4711 of the container to an arbitrary external port on the host. 
+  
+Specifying `{"foo": {"internalPort": 4711, "externalPort": 80}}` will map
+internal port 4711  of the container to port 80 on the host. 
+
+The protocol will be TCP by default. For UDP, add `"protocol": udp`, for
+example `{"quic": {"internalPort": 80, "protocol": "udp"}}` or
+`{"dns": {"internalPort": 53, "externalPort": 53, "protocol": "udp"}}`. 
+
+The name of the endpoint specified in the port mapping will be used if
+specifying service registration using the `registration` below.
+
+#### registration
+Service discovery registration. Optional, by default no ports/services are
+registered. 
+
+Specify a service name, the port name and a protocol in the format
+`service/protocol=port`. 
+
+For example `{"website/tcp": {"ports": {"http": {}}}}` will register a service
+named `website` with the port named `http` (referring to the `ports` section)
+with the protocol `tcp`.
+
+Protocol is optional and defaults as `tcp`. If there is only one port mapping,
+this will be used by default and it will be enough to specify only the service
+name, e.g. `{"wordpress": {}}`.
+
+#### registrationDomain
+If set, overrides the default domain in which discovery service registration
+occurs. Optional.
+
+What is allowed here will vary based upon the discovery service plugin used.
+
+#### securityOpt
+Optional. A list of strings denoting security options for running Docker
+containers, e.g. `docker run --security-opt <value...>`. 
+   
+For more details, see the [Docker
+docs](https://docs.docker.com/reference/run/#security-configuration).
+
+#### token
+Insecure access token meant to prevent accidental changes to your job (e.g.
+undeploys). Optional.
+
+If specified, the token value must be used in all interactions with the Helios
+CLI when managing instances of the job, for example when undeploying a running
+container.
+
+
+#### volumes
+Container volumes. Optional. 
+
+Specify either a single path to create a data volume, or a source path and a
+container path to mount a file or directory from the host. 
+  
+The container path can be suffixed with "rw" or "ro" to create a read-write or
+read-only volume, respectively.
+
+Format: `[container-path]:[rw|ro]":[host-path]`.
+
 
 ### Health Checks
 
