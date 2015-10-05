@@ -27,6 +27,7 @@ import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -35,6 +36,7 @@ import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -43,7 +45,9 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class DeregisterTest extends SystemTestBase {
 
@@ -108,6 +112,37 @@ public class DeregisterTest extends SystemTestBase {
   public void testRegistrationResolution() throws Exception {
     startDefaultMaster();
     final String host = testHost();
+    AgentMain agent = startDefaultAgent(host, "--labels", "num=1");
+
+    final HeliosClient client = defaultClient();
+
+    // Wait for agent to come up
+    // We wait because LabelReporter only reports labels once every second. :(
+    Thread.sleep(1000);
+    awaitHostRegistered(client, host, LONG_WAIT_SECONDS, SECONDS);
+    final HostStatus hostStatus1 = awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+    assertThat(hostStatus1.getLabels(), Matchers.hasEntry("num", "1"));
+
+    // Kill off agent
+    agent.stopAsync().awaitTerminated();
+    awaitHostStatus(client, host, DOWN, LONG_WAIT_SECONDS, SECONDS);
+
+    // Start a new agent with the same hostname but have it generate a different ID
+    resetAgentStateDir();
+
+    // Set TTL to 0 so new agent will deregister previous one.
+    startDefaultAgent(testHost(), "--zk-registration-ttl", "0");
+
+    // Check that the new host is registered
+    awaitHostRegistered(client, host, LONG_WAIT_SECONDS, SECONDS);
+    final HostStatus hostStatus2 = awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+    assertThat(hostStatus2.getLabels(), not(Matchers.hasEntry("num", "1")));
+  }
+
+  @Test
+  public void testRegistrationResolutionTtlNotExpired() throws Exception {
+    startDefaultMaster();
+    final String host = testHost() + "2";
     AgentMain agent = startDefaultAgent(host);
 
     final HeliosClient client = defaultClient();
@@ -122,8 +157,12 @@ public class DeregisterTest extends SystemTestBase {
 
     // Start a new agent with the same hostname but have it generate a different ID
     resetAgentStateDir();
-    startDefaultAgent(testHost(), "--zk-registration-ttl", "0");
-    awaitHostRegistered(client, host, LONG_WAIT_SECONDS, SECONDS);
-    awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+    // Set TTL to a large number so new agent will not deregister previous one.
+    startDefaultAgent(testHost(), "--zk-registration-ttl", "9999");
+    awaitHostRegistered(client, host, 10, SECONDS);
+
+    // Check that the new host didn't register
+    final String output = cli("hosts", host, "--status", "UP");
+    assertThat(output, not(Matchers.containsString(host)));
   }
 }

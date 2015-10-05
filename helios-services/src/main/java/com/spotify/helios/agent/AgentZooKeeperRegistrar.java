@@ -92,6 +92,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
   public void tryToRegister(ZooKeeperClient client)
       throws KeeperException, HostStillInUseException, HostNotFoundException {
     final String idPath = Paths.configHostId(name);
+    final String hostInfoPath = Paths.statusHostInfo(name);
 
     final Stat stat = client.exists(idPath);
     if (stat == null) {
@@ -101,7 +102,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener 
       final byte[] bytes = client.getData(idPath);
       final String existingId = bytes == null ? "" : new String(bytes, UTF_8);
       if (!id.equals(existingId)) {
-        final long mtime = client.stat(idPath).getMtime();
+        final long mtime = client.stat(hostInfoPath).getMtime();
         if ((clock.now().getMillis() - mtime) < zooKeeperRegistrationTtlMillis) {
           final String message = format("Another agent already registered as '%s' " +
                                         "(local=%s remote=%s).", name, id, existingId);

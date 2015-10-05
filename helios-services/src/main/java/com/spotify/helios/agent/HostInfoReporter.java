@@ -54,7 +54,6 @@ public class HostInfoReporter extends InterruptingScheduledService {
 
   private final OperatingSystemMXBean operatingSystemMXBean;
   private final ZooKeeperNodeUpdater nodeUpdater;
-  private final ZooKeeperNodeUpdater hostIdUpdater;
   private final int interval;
   private final TimeUnit timeUnit;
   private final DockerClient dockerClient;
@@ -65,8 +64,6 @@ public class HostInfoReporter extends InterruptingScheduledService {
                                               "operatingSystemMXBean");
     this.nodeUpdater = builder.nodeUpdaterFactory.create(
         Paths.statusHostInfo(checkNotNull(builder.host, "host")));
-    this.hostIdUpdater = builder.nodeUpdaterFactory.create(
-        Paths.configHostId(checkNotNull(builder.host, "host")));
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
     this.dockerHost = checkNotNull(builder.dockerHost, "dockerHost");
     this.interval = builder.interval;
@@ -96,10 +93,6 @@ public class HostInfoReporter extends InterruptingScheduledService {
         .build();
 
     nodeUpdater.update(hostInfo.toJsonBytes());
-
-    // Touch the host ID node in ZK so that later on AgentZooKeeperRegistrar can know how long a
-    // host has been down.
-    //hostIdUpdater.touch();
   }
 
   private DockerVersion dockerVersion() throws InterruptedException {

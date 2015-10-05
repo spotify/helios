@@ -26,6 +26,4 @@ import java.io.IOException;
 public interface NodeUpdater {
 
   boolean update(byte[] bytes) throws IOException;
-
-  boolean touch() throws IOException;
 }
