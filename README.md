@@ -1,4 +1,4 @@
-Helios [![Circle CI](https://circleci.com/gh/spotify/helios/tree/master.png?style=badge)](https://circleci.com/gh/spotify/helios/tree/master) [![Slack Status](http://slackin.spotify.com/badge.svg)](http://slackin.spotify.com)
+Helios [![Circle CI](https://circleci.com/gh/spotify/helios/tree/master.png?style=badge)](https://circleci.com/gh/spotify/helios/tree/master) [![Slack Status](http://slackin.spotify.com/badge.svg)](http://slackin.spotify.com) [![Searchable with Codota](https://img.shields.io/badge/Codota-available-brightgreen.svg)](http://www.codota.com/xref/#/github_spotify_helios_5612e5f19b224403007e2fd6/findUsages)
 ======
 
 Helios is a Docker orchestration platform for deploying and managing
@@ -255,6 +255,8 @@ respectively.
 The Helios services use [Dropwizard](http://dropwizard.io) which is a
 bundle of Jetty, Jersey, Jackson, Yammer Metrics, Guava, Logback and
 other Java libraries.
+
+You may [search and navigate this codebase using Codota semantic code search](http://www.codota.com/xref/#/github_spotify_helios_5612e5f19b224403007e2fd6/findUsages).
 
 
 Community Ideas
