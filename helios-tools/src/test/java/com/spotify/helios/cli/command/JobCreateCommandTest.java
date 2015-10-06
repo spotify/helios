@@ -21,10 +21,16 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.Futures;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.protocol.CreateJobResponse;
@@ -41,11 +47,16 @@ import org.mockito.ArgumentMatcher;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.PrintStream;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doReturn;
@@ -71,6 +82,7 @@ public class JobCreateCommandTest {
   final CreateJobResponse okResponse =
       new CreateJobResponse(CreateJobResponse.Status.OK, Collections.<String>emptyList(), "12345");
 
+  private Map<String, String> envVars = Maps.newHashMap();
 
   @Before
   public void setUp() {
@@ -78,7 +90,14 @@ public class JobCreateCommandTest {
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("test");
     final Subparser subparser = parser.addSubparsers().addParser("create");
 
-    command = new JobCreateCommand(subparser);
+    Supplier<Map<String, String>> envVarSupplier = new Supplier<Map<String, String>>() {
+      @Override
+      public Map<String, String> get() {
+        return ImmutableMap.copyOf(envVars);
+      }
+    };
+
+    command = new JobCreateCommand(subparser, envVarSupplier);
 
     when(client.createJob(jobWhoseNameIs(JOB_NAME))).thenReturn(Futures.immediateFuture(okResponse));
   }
@@ -139,6 +158,42 @@ public class JobCreateCommandTest {
     when(options.getString("image")).thenReturn("busybox:latest");
     doReturn(new File("non/existant/file")).when(options).get("file");
     command.run(options, client, out, false, null);
+  }
+
+  /**
+   * Test that when the environment variables we have defaults for are set, they are picked up in
+   * the job metadata.
+   */
+  @Test
+  public void testMetadataPicksUpEnvVars() throws Exception {
+    envVars.put("GIT_COMMIT", "abcdef1234");
+
+    when(options.getString("id")).thenReturn(JOB_ID);
+    when(options.getString("image")).thenReturn("busybox:latest");
+
+    when(options.getList("metadata")).thenReturn(Lists.<Object>newArrayList("foo=bar"));
+
+    final int ret = command.run(options, client, out, false, null);
+
+    assertEquals(0, ret);
+    final String output = baos.toString();
+
+    final String expectedOutputPrefix = "Creating job: ";
+    assertThat(output, startsWith(expectedOutputPrefix));
+
+    final ObjectMapper objectMapper = new ObjectMapper();
+
+    final String jsonFromOutput = output.split("\n")[0].substring(expectedOutputPrefix.length());
+    final JsonNode jsonNode = objectMapper.readTree(jsonFromOutput);
+
+    final ArrayList<String> fieldNames = Lists.newArrayList(jsonNode.fieldNames());
+    assertThat(fieldNames, hasItem("metadata"));
+
+    assertThat(jsonNode.get("metadata").isObject(), equalTo(true));
+
+    final ObjectNode metadataNode = (ObjectNode) jsonNode.get("metadata");
+    assertThat(metadataNode.get("foo").asText(), equalTo("bar"));
+    assertThat(metadataNode.get("GIT_COMMIT").asText(), equalTo("abcdef1234"));
   }
 
   private static Job jobWhoseNameIs(final String name) {
