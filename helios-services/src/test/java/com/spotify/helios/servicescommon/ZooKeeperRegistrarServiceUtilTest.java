@@ -46,7 +46,7 @@ import static com.google.common.base.Charsets.UTF_8;
 import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ZooKeeperRegistrarUtilTest {
+public class ZooKeeperRegistrarServiceUtilTest {
 
   private static final String HOSTNAME = "host";
   private static final String ID = UUID.randomUUID().toString();

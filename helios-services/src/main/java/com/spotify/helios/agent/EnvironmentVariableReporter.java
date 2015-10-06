@@ -27,6 +27,7 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
@@ -42,16 +43,20 @@ public class EnvironmentVariableReporter extends InterruptingScheduledService {
 
   private final Map<String, String> envVars;
   private final ZooKeeperNodeUpdater nodeUpdater;
+  private final CountDownLatch zkRegistrationSignal;
 
   public EnvironmentVariableReporter(final String host, final Map<String, String> envVars,
-                                     final NodeUpdaterFactory nodeUpdaterFactory) {
+                                     final NodeUpdaterFactory nodeUpdaterFactory,
+                                     final CountDownLatch zkRegistrationSignal) {
     this.envVars = envVars;
     this.nodeUpdater = nodeUpdaterFactory.create(Paths.statusHostEnvVars(host));
+    this.zkRegistrationSignal = zkRegistrationSignal;
   }
 
 
   @Override
-  protected void runOneIteration() {
+  protected void runOneIteration() throws InterruptedException {
+    zkRegistrationSignal.await();
     final boolean succesful = nodeUpdater.update(Json.asBytesUnchecked(envVars));
     if (succesful) {
       stopAsync();

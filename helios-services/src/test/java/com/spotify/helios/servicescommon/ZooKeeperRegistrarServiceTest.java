@@ -50,7 +50,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
-public class ZooKeeperRegistrarTest {
+public class ZooKeeperRegistrarServiceTest {
 
   @Mock ZooKeeperClient zkClient;
   @Mock Listenable<ConnectionStateListener> connectionStateListenerListenable;
@@ -74,8 +74,8 @@ public class ZooKeeperRegistrarTest {
   @Test
   public void testAllGood() throws Exception {
 
-    final ZooKeeperRegistrar init = new ZooKeeperRegistrar(
-        zkClient, new ZooKeeperRegistrarEventListener() {
+    final ZooKeeperRegistrarService init = new ZooKeeperRegistrarService(
+        zkClient, new ZooKeeperRegistrar() {
 
       @Override
       public void startUp() throws Exception {
@@ -101,8 +101,8 @@ public class ZooKeeperRegistrarTest {
 
     final SettableFuture<Void> shutdownComplete = SettableFuture.create();
 
-    final ZooKeeperRegistrar init = new ZooKeeperRegistrar(
-        zkClient, new ZooKeeperRegistrarEventListener() {
+    final ZooKeeperRegistrarService init = new ZooKeeperRegistrarService(
+        zkClient, new ZooKeeperRegistrar() {
 
       @Override
       public void startUp() throws Exception {
@@ -134,8 +134,8 @@ public class ZooKeeperRegistrarTest {
 
     final AtomicInteger counter = new AtomicInteger(0);
 
-    final ZooKeeperRegistrar init = new ZooKeeperRegistrar(
-        zkClient, new ZooKeeperRegistrarEventListener() {
+    final ZooKeeperRegistrarService init = new ZooKeeperRegistrarService(
+        zkClient, new ZooKeeperRegistrar() {
 
       @Override
       public void startUp() throws Exception {
@@ -153,7 +153,7 @@ public class ZooKeeperRegistrarTest {
 
         complete.set(null);
       }
-    }, retryIntervalPolicy
+    }, null, retryIntervalPolicy
     );
 
     init.startUp();
@@ -167,8 +167,8 @@ public class ZooKeeperRegistrarTest {
 
     final AtomicInteger counter = new AtomicInteger(0);
 
-    final ZooKeeperRegistrar init =
-        new ZooKeeperRegistrar(zkClient, new ZooKeeperRegistrarEventListener() {
+    final ZooKeeperRegistrarService init =
+        new ZooKeeperRegistrarService(zkClient, new ZooKeeperRegistrar() {
 
           @Override
           public void startUp() throws Exception {
@@ -187,7 +187,7 @@ public class ZooKeeperRegistrarTest {
             complete.set(null);
 
           }
-        }, retryIntervalPolicy);
+        }, null, retryIntervalPolicy);
 
     init.startUp();
 

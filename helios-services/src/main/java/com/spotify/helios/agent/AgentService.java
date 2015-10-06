@@ -41,7 +41,7 @@ import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.ServiceUtil;
-import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrarService;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -70,6 +70,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import io.dropwizard.configuration.ConfigurationException;
@@ -110,7 +111,7 @@ public class AgentService extends AbstractIdleService implements Managed {
   private final Metrics metrics;
   private final ServiceRegistrar serviceRegistrar;
 
-  private ZooKeeperRegistrar zkRegistrar;
+  private ZooKeeperRegistrarService zkRegistrar;
 
   /**
    * Create a new agent instance.
@@ -178,7 +179,13 @@ public class AgentService extends AbstractIdleService implements Managed {
       environment.lifecycle().manage(riemannSupport);
     }
 
-    this.zooKeeperClient = setupZookeeperClient(config, id);
+    // This CountDownLatch will signal EnvironmentVariableReporter and LabelReporter when to report
+    // data to ZK. They only report once and then stop, so we need to tell them when to start
+    // reporting otherwise they'll race with ZooKeeperRegistrarService and might have their data
+    // erased if they are too fast.
+    final CountDownLatch zkRegistrationSignal = new CountDownLatch(1);
+
+    this.zooKeeperClient = setupZookeeperClient(config, id, zkRegistrationSignal);
     final DockerHealthChecker dockerHealthChecker = new DockerHealthChecker(
         metrics.getSupervisorMetrics(), TimeUnit.SECONDS, 30, riemannFacade);
     environment.lifecycle().manage(dockerHealthChecker);
@@ -238,12 +245,11 @@ public class AgentService extends AbstractIdleService implements Managed {
         .setHost(config.getName())
         .build();
 
-    this.environmentVariableReporter = new EnvironmentVariableReporter(config.getName(),
-                                                                       config.getEnvVars(),
-                                                                       nodeUpdaterFactory);
+    this.environmentVariableReporter = new EnvironmentVariableReporter(
+        config.getName(), config.getEnvVars(), nodeUpdaterFactory, zkRegistrationSignal);
 
-    this.labelReporter = new LabelReporter(config.getName(), config.getLabels(),
-        nodeUpdaterFactory);
+    this.labelReporter = new LabelReporter(
+        config.getName(), config.getLabels(), nodeUpdaterFactory, zkRegistrationSignal);
 
     final String namespace = "helios-" + id;
 
@@ -301,7 +307,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       environment.lifecycle().manage(this);
 
       this.server = ServiceUtil.createServerFactory(config.getHttpEndpoint(), config.getAdminPort(),
-          config.getNoHttp())
+                                                    config.getNoHttp())
           .build(environment);
     } else {
       this.server = null;
@@ -315,7 +321,8 @@ public class AgentService extends AbstractIdleService implements Managed {
    * @param config The service configuration.
    * @return A zookeeper client.
    */
-  private ZooKeeperClient setupZookeeperClient(final AgentConfig config, final String id) {
+  private ZooKeeperClient setupZookeeperClient(final AgentConfig config, final String id,
+                                               final CountDownLatch zkRegistrationSignal) {
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
     final CuratorFramework curator = new CuratorClientFactoryImpl().newClient(
         config.getZooKeeperConnectionString(),
@@ -329,8 +336,11 @@ public class AgentService extends AbstractIdleService implements Managed {
     client.start();
 
     // Register the agent
-    zkRegistrar = new ZooKeeperRegistrar(client, new AgentZooKeeperRegistrar(
-        this, config.getName(), id, config.getZooKeeperRegistrationTtlMinutes()));
+    zkRegistrar = new ZooKeeperRegistrarService(
+        client,
+        new AgentZooKeeperRegistrar(this, config.getName(),
+                                    id, config.getZooKeeperRegistrationTtlMinutes()),
+        zkRegistrationSignal);
 
     return client;
   }

@@ -25,7 +25,7 @@ import com.google.common.util.concurrent.Service;
 
 import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.master.HostStillInUseException;
-import com.spotify.helios.servicescommon.ZooKeeperRegistrarEventListener;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -47,7 +47,7 @@ import static org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode
 /**
  * Persistently tries to register with ZK in the face of a ZK outage.
  */
-public class AgentZooKeeperRegistrar implements ZooKeeperRegistrarEventListener {
+public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
 
   private static final Logger log = LoggerFactory.getLogger(AgentZooKeeperRegistrar.class);
 
