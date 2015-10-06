@@ -21,6 +21,8 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
@@ -93,6 +95,16 @@ public class JobCreateCommand extends ControlCommand {
       "GIT_COMMIT", "GIT_COMMIT"
   );
 
+  // allow the retrieval of environment variables to be swapped out with a different Supplier for
+  // testing purposes
+  private static final Supplier<Map<String, String>> DEFAULT_ENV_VAR_SUPPLIER =
+      new Supplier<Map<String, String>>() {
+        @Override
+        public Map<String, String> get() {
+          return System.getenv();
+        }
+      };
+
   private final Argument fileArg;
   private final Argument templateArg;
   private final Argument quietArg;
@@ -114,8 +126,18 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument securityOptArg;
   private final Argument networkModeArg;
   private final Argument metadataArg;
+  private final Supplier<Map<String, String>> envVarSupplier;
 
   public JobCreateCommand(final Subparser parser) {
+    this(parser, DEFAULT_ENV_VAR_SUPPLIER);
+  }
+
+  @VisibleForTesting
+  /**
+   * Allows the supplier of environment variables to be swapped out for testing, for example to
+   * avoid unexpected environment variables being present during testing.
+   */
+  protected JobCreateCommand(final Subparser parser, Supplier<Map<String, String>> envVarSupplier) {
     super(parser);
 
     parser.help("create a job");
@@ -235,6 +257,8 @@ public class JobCreateCommand extends ControlCommand {
     networkModeArg = parser.addArgument("--network-mode")
         .help("Sets the networking mode for the container. Supported values are: bridge, host, and "
               + "container:<name|id>. Docker defaults to bridge.");
+
+    this.envVarSupplier = envVarSupplier;
   }
 
   @Override
@@ -560,11 +584,13 @@ public class JobCreateCommand extends ControlCommand {
 
     final Builder<String, String> builder = ImmutableMap.builder();
 
+    final Map<String, String> envVars = envVarSupplier.get();
+
     for (final Map.Entry<String, String> entry : DEFAULT_METADATA_ENVVARS.entrySet()) {
       final String envKey = entry.getKey();
       final String metadataKey = entry.getValue();
 
-      final String envValue = System.getenv(envKey);
+      final String envValue = envVars.get(envKey);
       if (envValue != null) {
         builder.put(metadataKey, envValue);
       }
