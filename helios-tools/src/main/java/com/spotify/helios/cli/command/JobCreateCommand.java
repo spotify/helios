@@ -88,7 +88,7 @@ public class JobCreateCommand extends ControlCommand {
    *
    * @see #defaultMetadata()
    */
-  private static final Map<String, String> DEFAULT_METADATA_ENVVARS = ImmutableMap.of(
+  public static final Map<String, String> DEFAULT_METADATA_ENVVARS = ImmutableMap.of(
       // GIT_COMMIT is set by the Git plugin in Jenkins, so for jobs created in
       // Jenkins this will automatically set GIT_COMMIT = the sha1 of the
       // working tree

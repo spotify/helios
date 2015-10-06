@@ -58,12 +58,14 @@ import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
+import com.spotify.helios.cli.command.JobCreateCommand;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.Job.Builder;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -123,10 +125,10 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
 import static java.lang.Integer.toHexString;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
@@ -1094,7 +1096,29 @@ public abstract class SystemTestBase {
   }
 
   protected void assertJobEquals(final Job expected, final Job actual) {
-    assertEquals(expected.toBuilder().setHash(actual.getId().getHash()).build(), actual);
+    final Builder expectedBuilder = expected.toBuilder();
+
+    // hack to make sure that any environment variables that were folded into the created job
+    // because of environment variables set at runtime on the test-running-agent are removed
+    // from the actual when we assert the equality below
+    final Builder actualBuilder = actual.toBuilder();
+    final Map<String, String> metadata = Maps.newHashMap(actual.getMetadata());
+    for (Map.Entry<String, String> entry : JobCreateCommand.DEFAULT_METADATA_ENVVARS.entrySet()) {
+      final String envVar = entry.getKey();
+      final String metadataKey = entry.getValue();
+      final String envValue = System.getenv(envVar);
+      if (envValue != null
+          && actual.getMetadata().containsKey(metadataKey)
+          && actual.getMetadata().get(metadataKey).equals(envValue)) {
+        metadata.remove(metadataKey);
+      }
+    }
+    actualBuilder.setMetadata(metadata);
+
+    // copy the hash
+    expectedBuilder.setHash(actualBuilder.build().getId().getHash());
+
+    assertEquals(expectedBuilder.build(), actualBuilder.build());
   }
 
   protected static String randomHexString() {
