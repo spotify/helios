@@ -22,6 +22,7 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.Futures;
 
 import com.spotify.helios.client.HeliosClient;
@@ -90,15 +91,20 @@ public class JobCreateCommandTest {
     // For some reason the mocked options.getInt() returns 0 by default.
     // Explicitly return null to check that the value from the JSON file doesn't get overwritten.
     when(options.getInt("grace_period")).thenReturn(null);
+    // TODO (mbrown): this path is weird when running from IntelliJ, should be changed to not
+    // care about CWD
     doReturn(new File("src/main/resources/job_config.json")).when(options).get("file");
     doReturn(SECURITY_OPT).when(options).getList("security_opt");
     when(options.getString("network_mode")).thenReturn(NETWORK_MODE);
+    when(options.getList("metadata")).thenReturn(Lists.<Object>newArrayList("a=1", "b=2"));
+
     final int ret = command.run(options, client, out, false, null);
 
     assertEquals(0, ret);
     final String output = baos.toString();
     assertThat(output, containsString(
         "\"env\":{\"JVM_ARGS\":\"-Ddw.feature.randomFeatureFlagEnabled=true\"}"));
+    assertThat(output, containsString("\"metadata\":{\"a\":\"1\",\"b\":\"2\"},"));
     assertThat(output, containsString("\"gracePeriod\":100"));
     assertThat(output, containsString(
         "\"healthCheck\":{\"type\":\"exec\",\"command\":[\"touch\",\"/this\"],\"type\":\"exec\"},"));

@@ -355,7 +355,7 @@ public class JobValidator {
     final int firstColon = digest.indexOf(':');
     final int lastColon = digest.lastIndexOf(':');
 
-    if ((firstColon <= 0 ) || (firstColon != lastColon) || (firstColon == digest.length() - 1)) {
+    if ((firstColon <= 0) || (firstColon != lastColon) || (firstColon == digest.length() - 1)) {
       errors.add(format("Illegal digest: \"%s\"", digest));
       return false;
     }

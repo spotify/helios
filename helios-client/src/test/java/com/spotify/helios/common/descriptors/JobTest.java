@@ -36,7 +36,6 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -44,9 +43,11 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertThat;
 
 public class JobTest {
 
@@ -290,6 +291,25 @@ public class JobTest {
     return b.build();
   }
 
+  /** Verify the Builder allows calling addFoo() before setFoo() for collection types. */
+  @Test
+  public void testBuilderAddBeforeSet() throws Exception {
+    final Job job = Job.newBuilder()
+        .addEnv("env", "var")
+        .addMetadata("meta", "data")
+        .addPort("http", PortMapping.of(80, 8000))
+        .addRegistration(ServiceEndpoint.of("foo", "http"), ServicePorts.of("http"))
+        .addVolume("/foo", "/bar")
+        .build();
+
+    assertThat(job.getEnv(), hasEntry("env","var"));
+    assertThat(job.getMetadata(), hasEntry("meta","data"));
+    assertThat(job.getPorts(), hasEntry("http", PortMapping.of(80, 8000)));
+    assertThat(job.getRegistration(),
+        hasEntry(ServiceEndpoint.of("foo", "http"), ServicePorts.of("http")));
+    assertThat(job.getVolumes(), hasEntry("/foo", "/bar"));
+  }
+
   @Test
   public void verifySha1ID() throws IOException {
     final Map<String, Object> expectedConfig = map("command", asList("foo", "bar"),
@@ -370,12 +390,31 @@ public class JobTest {
         .setVersion("17")
         .build();
 
+     removeFieldAndParse(job, "env");
+  }
+
+  @Test
+  public void verifyCanParseJobWithMissingMetadata() throws Exception {
+    final Job job = Job.newBuilder()
+        .setCommand(asList("foo", "bar"))
+        .setImage("foobar:4711")
+        .setName("foozbarz")
+        .setVersion("17")
+        .build();
+
+    removeFieldAndParse(job, "metadata");
+  }
+
+  private static void removeFieldAndParse(final Job job, final String... fieldNames) throws Exception {
     final String jobJson = job.toJsonString();
 
     final ObjectMapper objectMapper = new ObjectMapper();
     final Map<String, Object> fields = objectMapper.readValue(
         jobJson, new TypeReference<Map<String, Object>>() {});
-    fields.remove("env");
+
+    for (String field : fieldNames) {
+      fields.remove(field);
+    }
     final String modifiedJobJson = objectMapper.writeValueAsString(fields);
 
     final Job parsedJob = parse(modifiedJobJson, Job.class);
@@ -387,6 +426,7 @@ public class JobTest {
   public void verifyJobIsImmutable() {
     final List<String> expectedCommand = ImmutableList.of("foo");
     final Map<String, String> expectedEnv = ImmutableMap.of("e1", "1");
+    final Map<String, String> expectedMetadata = ImmutableMap.of("foo", "bar");
     final Map<String, PortMapping> expectedPorts = ImmutableMap.of("p1", PortMapping.of(1, 2));
     final Map<ServiceEndpoint, ServicePorts> expectedRegistration =
         ImmutableMap.of(ServiceEndpoint.of("foo", "tcp"), ServicePorts.of("p1"));
@@ -394,13 +434,15 @@ public class JobTest {
 
     final List<String> mutableCommand = Lists.newArrayList(expectedCommand);
     final Map<String, String> mutableEnv = Maps.newHashMap(expectedEnv);
+    final Map<String, String> mutableMetadata = Maps.newHashMap(expectedMetadata);
     final Map<String, PortMapping> mutablePorts = Maps.newHashMap(expectedPorts);
-    final HashMap<ServiceEndpoint, ServicePorts> mutableRegistration =
+    final Map<ServiceEndpoint, ServicePorts> mutableRegistration =
         Maps.newHashMap(expectedRegistration);
 
     final Job.Builder builder = Job.newBuilder()
         .setCommand(mutableCommand)
         .setEnv(mutableEnv)
+        .setMetadata(mutableMetadata)
         .setPorts(mutablePorts)
         .setImage("foobar:4711")
         .setName("foozbarz")
@@ -412,17 +454,20 @@ public class JobTest {
 
     mutableCommand.add("bar");
     mutableEnv.put("e2", "2");
+    mutableMetadata.put("some", "thing");
     mutablePorts.put("p2", PortMapping.of(3, 4));
     mutableRegistration.put(ServiceEndpoint.of("bar", "udp"), ServicePorts.of("p2"));
 
-    builder.addPort("added_port", PortMapping.of(4711));
     builder.addEnv("added_env", "FOO");
+    builder.addMetadata("added", "data");
+    builder.addPort("added_port", PortMapping.of(4711));
     builder.addRegistration(ServiceEndpoint.of("added_reg", "added_proto"),
                             ServicePorts.of("added_port"));
     builder.setGracePeriod(480);
 
     assertEquals(expectedCommand, job.getCommand());
     assertEquals(expectedEnv, job.getEnv());
+    assertEquals(expectedMetadata, job.getMetadata());
     assertEquals(expectedPorts, job.getPorts());
     assertEquals(expectedRegistration, job.getRegistration());
     assertEquals(expectedGracePeriod, job.getGracePeriod());
