@@ -147,6 +147,7 @@ public class JobsResource {
                                 @RequestUser final String username) {
     final Job.Builder clone = job.toBuilder()
         .setCreatingUser(username)
+        .setCreated(System.currentTimeMillis())
         // If the job had a hash coming in, preserve it
         .setHash(job.getId().getHash());
     final Job actualJob = clone.build();

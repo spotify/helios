@@ -46,6 +46,5 @@ public class JobCreateTest extends SystemTestBase {
                                                  .setHostname("$%^&")
                                                  .build());
     assertThat(output, Matchers.containsString("Invalid hostname "));
-
   }
 }

@@ -46,6 +46,7 @@ import java.util.concurrent.Callable;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class CliJobCreationTest extends SystemTestBase {
@@ -118,11 +119,16 @@ public class CliJobCreationTest extends SystemTestBase {
   @Test
   public void testSuccessJsonOutput() throws Exception {
     // Creating a valid job should return JSON with status OK
-    String output = cli("create", "--json", testJobNameAndVersion, BUSYBOX);
-    CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
+    final String output = cli("create", "--json", testJobNameAndVersion, BUSYBOX);
+    final CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
     assertEquals(CreateJobResponse.Status.OK, createJobResponse.getStatus());
     assertEquals(new ArrayList<String>(), createJobResponse.getErrors());
     assertTrue(createJobResponse.getId().startsWith(testJobNameAndVersion));
+
+    // Check the master has set the created field
+    final String output2 = cli("inspect", testJobNameAndVersion, "--json");
+    final Job job = Json.read(output2, Job.class);
+    assertNotNull(job.getCreated());
   }
 
   @Test

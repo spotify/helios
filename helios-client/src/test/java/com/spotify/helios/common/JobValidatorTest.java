@@ -39,6 +39,7 @@ import org.junit.Test;
 import java.util.Map;
 
 import static com.google.common.collect.Sets.newHashSet;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATED;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
@@ -189,7 +190,8 @@ public class JobValidatorTest {
   @Test
   public void testIdMismatchFails() throws Exception {
     final Job job = new Job(JobId.fromString("foo:bar:badf00d"),
-                            "bar", EMPTY_HOSTNAME, EMPTY_COMMAND, EMPTY_ENV, EMPTY_RESOURCES, EMPTY_PORTS,
+                            "bar", EMPTY_HOSTNAME, EMPTY_CREATED, EMPTY_COMMAND, EMPTY_ENV,
+                            EMPTY_RESOURCES, EMPTY_PORTS,
                             EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
                             EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
                             EMPTY_HEALTH_CHECK, EMPTY_SECURITY_OPT, DEFAULT_NETWORK_MODE,

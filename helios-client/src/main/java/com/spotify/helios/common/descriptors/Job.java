@@ -54,6 +54,7 @@ import static java.util.Collections.emptyMap;
  * An sample expression of it in JSON might be:
  * <pre>
  * {
+ *   "created" : 1410308461448,
  *   "command" : [ "server", "serverconfig.yaml" ],
  *   "env" : {
  *     "JVM_ARGS" : "-Ddw.feature.randomFeatureFlagEnabled=true"
@@ -106,6 +107,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Map<String, String> EMPTY_ENV = emptyMap();
   public static final Resources EMPTY_RESOURCES = null;
   public static final Map<String, PortMapping> EMPTY_PORTS = emptyMap();
+  public static final Long EMPTY_CREATED = null;
   public static final List<String> EMPTY_COMMAND = emptyList();
   public static final Map<ServiceEndpoint, ServicePorts> EMPTY_REGISTRATION = emptyMap();
   public static final Integer EMPTY_GRACE_PERIOD = null;
@@ -124,6 +126,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final JobId id;
   private final String image;
   private final String hostname;
+  private final Long created;
   private final List<String> command;
   private final Map<String, String> env;
   private final Resources resources;
@@ -146,6 +149,8 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param id The id of the job.
    * @param image The docker image to use.
    * @param hostname The hostname to pass to the container.
+   * @param created The timestamp in milliseconds of when the job was created.
+   *                This should only be set by the server.
    * @param command The command to pass to the container.
    * @param env Environment variables to set
    * @param resources Resource specification for the container.
@@ -172,6 +177,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public Job(@JsonProperty("id") final JobId id,
              @JsonProperty("image") final String image,
              @JsonProperty("hostname") final String hostname,
+             @JsonProperty("created") @Nullable final Long created,
              @JsonProperty("command") @Nullable final List<String> command,
              @JsonProperty("env") @Nullable final Map<String, String> env,
              @JsonProperty("resources") @Nullable final Resources resources,
@@ -193,6 +199,7 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     // Optional
     this.hostname = Optional.fromNullable(hostname).orNull();
+    this.created = Optional.fromNullable(created).orNull();
     this.command = Optional.fromNullable(command).or(EMPTY_COMMAND);
     this.env = Optional.fromNullable(env).or(EMPTY_ENV);
     this.resources = Optional.fromNullable(resources).orNull();
@@ -216,6 +223,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.image = p.image;
 
     this.hostname = p.hostname;
+    this.created = p.created;
     this.command = ImmutableList.copyOf(checkNotNull(p.command, "command"));
     this.env = ImmutableMap.copyOf(checkNotNull(p.env, "env"));
     this.resources = p.resources;
@@ -244,6 +252,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   public String getHostname() {
     return hostname;
+  }
+
+  public Long getCreated() {
+    return created;
   }
 
   public List<String> getCommand() {
@@ -326,6 +338,9 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     final Job job = (Job) o;
 
+    if (created != null ? !created.equals(job.created) : job.created != null) {
+      return false;
+    }
     if (command != null ? !command.equals(job.command) : job.command != null) {
       return false;
     }
@@ -392,6 +407,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     result = 31 * result + (image != null ? image.hashCode() : 0);
     result = 31 * result + (hostname != null ? hostname.hashCode() : 0);
     result = 31 * result + (expires != null ? expires.hashCode() : 0);
+    result = 31 * result + (created != null ? created.hashCode() : 0);
     result = 31 * result + (command != null ? command.hashCode() : 0);
     result = 31 * result + (env != null ? env.hashCode() : 0);
     result = 31 * result + (resources != null ? resources.hashCode() : 0);
@@ -415,6 +431,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         .add("id", id)
         .add("image", image)
         .add("hostname", hostname)
+        .add("created", created)
         .add("command", command)
         .add("env", env)
         .add("resources", resources)
@@ -442,6 +459,7 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     return builder.setImage(image)
         .setHostname(hostname)
+        .setCreated(created)
         .setCommand(command)
         .setEnv(env)
         .setResources(resources)
@@ -480,6 +498,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public String version;
       public String image;
       public String hostname;
+      public Long created;
       public List<String> command;
       public Map<String, String> env;
       public Resources resources;
@@ -496,6 +515,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Map<String, String> metadata;
 
       private Parameters() {
+        this.created = EMPTY_CREATED;
         this.command = EMPTY_COMMAND;
         this.env = Maps.newHashMap(EMPTY_ENV);
         this.resources = EMPTY_RESOURCES;
@@ -516,6 +536,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.version = p.version;
         this.image = p.image;
         this.hostname = p.hostname;
+        this.created = p.created;
         this.command = ImmutableList.copyOf(p.command);
         this.env = Maps.newHashMap(p.env);
         this.resources = p.resources;
@@ -536,6 +557,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       private Parameters withoutMetaParameters() {
         final Parameters clone = new Parameters(this);
         clone.creatingUser = null;
+        clone.created = null;
 
         return clone;
       }
@@ -580,6 +602,11 @@ public class Job extends Descriptor implements Comparable<Job> {
         p.hostname = hostname;
         return this;
       }
+
+    public Builder setCreated(final Long created) {
+      p.created = created;
+      return this;
+    }
 
     public Builder setCommand(final List<String> command) {
       p.command = ImmutableList.copyOf(command);

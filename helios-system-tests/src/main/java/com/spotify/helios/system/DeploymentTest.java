@@ -171,13 +171,13 @@ public class DeploymentTest extends SystemTestBase {
     assertTrue(noMatchJobs.isEmpty());
 
     final Map<JobId, Job> matchJobs1 = client.jobs(testJobName).get();
-    assertEquals(ImmutableMap.of(jobId, job), matchJobs1);
+    assertJobsEqual(ImmutableMap.of(jobId, job), matchJobs1);
 
     final Map<JobId, Job> matchJobs2 = client.jobs(testJobName + ":" + testJobVersion).get();
-    assertEquals(ImmutableMap.of(jobId, job), matchJobs2);
+    assertJobsEqual(ImmutableMap.of(jobId, job), matchJobs2);
 
     final Map<JobId, Job> matchJobs3 = client.jobs(job.getId().toString()).get();
-    assertEquals(ImmutableMap.of(jobId, job), matchJobs3);
+    assertJobsEqual(ImmutableMap.of(jobId, job), matchJobs3);
 
     // Wait for agent to come up
     awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
@@ -212,7 +212,7 @@ public class DeploymentTest extends SystemTestBase {
     // Wait for the job to run
     TaskStatus taskStatus;
     taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
-    assertEquals(job, taskStatus.getJob());
+    assertJobEquals(job, taskStatus.getJob());
 
     assertEquals(JobDeleteResponse.Status.STILL_IN_USE, client.deleteJob(jobId).get().getStatus());
 
@@ -261,7 +261,7 @@ public class DeploymentTest extends SystemTestBase {
 
     // Try querying for the job
     final Map<JobId, Job> matchJobs = client.jobs(testJobName).get();
-    assertEquals(ImmutableMap.of(jobId, job), matchJobs);
+    assertJobsEqual(ImmutableMap.of(jobId, job), matchJobs);
     assertEquals(BUSYBOX_WITH_DIGEST, matchJobs.get(jobId).getImage());
 
     // Wait for agent to come up
@@ -276,6 +276,6 @@ public class DeploymentTest extends SystemTestBase {
     // Wait for the job to run
     TaskStatus taskStatus;
     taskStatus = awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
-    assertEquals(job, taskStatus.getJob());
+    assertJobEquals(job, taskStatus.getJob());
   }
 }
