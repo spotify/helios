@@ -661,6 +661,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         final Map<String, Object> metadata = Maps.newHashMap();
         metadata.put("jobState", taskStatus.getState());
         metadata.put("previousJobStates", previousJobStates);
+        metadata.put("throttleState", taskStatus.getThrottled());
         return opFactory.error("timed out waiting for job to reach RUNNING", host,
                                RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
                                metadata);
