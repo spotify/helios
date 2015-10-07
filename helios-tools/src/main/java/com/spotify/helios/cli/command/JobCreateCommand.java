@@ -21,7 +21,11 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -77,6 +81,30 @@ public class JobCreateCommand extends ControlCommand {
 
   private static final JobValidator JOB_VALIDATOR = new JobValidator();
 
+  /**
+   * If any of the keys of this map are set as environment variables (i.e. an environment variable
+   * of GIT_COMMIT_ID=abcdef is set when this command is run), then an entry will be added to the
+   * job's metadata map with with key=this-maps-value, value=environment variable value.
+   *
+   * @see #defaultMetadata()
+   */
+  public static final Map<String, String> DEFAULT_METADATA_ENVVARS = ImmutableMap.of(
+      // GIT_COMMIT is set by the Git plugin in Jenkins, so for jobs created in
+      // Jenkins this will automatically set GIT_COMMIT = the sha1 of the
+      // working tree
+      "GIT_COMMIT", "GIT_COMMIT"
+  );
+
+  // allow the retrieval of environment variables to be swapped out with a different Supplier for
+  // testing purposes
+  private static final Supplier<Map<String, String>> DEFAULT_ENV_VAR_SUPPLIER =
+      new Supplier<Map<String, String>>() {
+        @Override
+        public Map<String, String> get() {
+          return System.getenv();
+        }
+      };
+
   private final Argument fileArg;
   private final Argument templateArg;
   private final Argument quietArg;
@@ -98,8 +126,18 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument securityOptArg;
   private final Argument networkModeArg;
   private final Argument metadataArg;
+  private final Supplier<Map<String, String>> envVarSupplier;
 
   public JobCreateCommand(final Subparser parser) {
+    this(parser, DEFAULT_ENV_VAR_SUPPLIER);
+  }
+
+  @VisibleForTesting
+  /**
+   * Allows the supplier of environment variables to be swapped out for testing, for example to
+   * avoid unexpected environment variables being present during testing.
+   */
+  protected JobCreateCommand(final Subparser parser, Supplier<Map<String, String>> envVarSupplier) {
     super(parser);
 
     parser.help("create a job");
@@ -219,6 +257,8 @@ public class JobCreateCommand extends ControlCommand {
     networkModeArg = parser.addArgument("--network-mode")
         .help("Sets the networking mode for the container. Supported values are: bridge, host, and "
               + "container:<name|id>. Docker defaults to bridge.");
+
+    this.envVarSupplier = envVarSupplier;
   }
 
   @Override
@@ -321,6 +361,7 @@ public class JobCreateCommand extends ControlCommand {
     }
 
     final List<String> envList = options.getList(envArg.getDest());
+    // TODO (mbrown): does this mean that env config is only added when there is a CLI flag too?
     if (!envList.isEmpty()) {
       final Map<String, String> env = Maps.newHashMap();
       // Add environmental variables from helios job configuration file
@@ -332,11 +373,14 @@ public class JobCreateCommand extends ControlCommand {
       builder.setEnv(env);
     }
 
+    Map<String, String> metadata = Maps.newHashMap();
+    metadata.putAll(defaultMetadata());
     final List<String> metadataList = options.getList(metadataArg.getDest());
     if (!metadataList.isEmpty()) {
       // TODO (mbrown): values from job conf file (which maybe involves dereferencing env vars?)
-      builder.setMetadata(parseListOfPairs(metadataList, "metadata"));
+      metadata.putAll(parseListOfPairs(metadataList, "metadata"));
     }
+    builder.setMetadata(metadata);
 
     // Parse port mappings
     final List<String> portSpecs = options.getList(portArg.getDest());
@@ -530,6 +574,29 @@ public class JobCreateCommand extends ControlCommand {
       }
       return 1;
     }
+  }
+
+  /**
+   * Metadata to associate with jobs by default. Currently sets some metadata based upon environment
+   * variables set when the CLI command is run.
+   */
+  private Map<String, String> defaultMetadata() {
+
+    final Builder<String, String> builder = ImmutableMap.builder();
+
+    final Map<String, String> envVars = envVarSupplier.get();
+
+    for (final Map.Entry<String, String> entry : DEFAULT_METADATA_ENVVARS.entrySet()) {
+      final String envKey = entry.getKey();
+      final String metadataKey = entry.getValue();
+
+      final String envValue = envVars.get(envKey);
+      if (envValue != null) {
+        builder.put(metadataKey, envValue);
+      }
+    }
+
+    return builder.build();
   }
 
   private static Map<String, String> parseListOfPairs(final List<String> list,

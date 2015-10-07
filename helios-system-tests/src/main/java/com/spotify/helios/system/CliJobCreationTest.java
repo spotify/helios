@@ -204,7 +204,7 @@ public class CliJobCreationTest extends SystemTestBase {
       Job.Builder actualJobBuilder = actualJob.toBuilder();
       builder.setName(testJobName).setVersion(testJobVersion).setImage(BUSYBOX)
           .setEnv(ImmutableMap.of(redundantEnvKey, "FOOD"));
-      assertEquals(builder.build(), actualJobBuilder.build());
+      assertJobEquals(builder.build(), actualJobBuilder.build());
     }
   }
 }
