@@ -178,13 +178,11 @@ public class TaskHistoryWriter extends AbstractIdleService implements Runnable {
     }
   }
 
-  public void saveHistoryItem(final JobId jobId, final TaskStatus status)
-      throws InterruptedException {
-    saveHistoryItem(jobId, status, System.currentTimeMillis());
+  public void saveHistoryItem(final TaskStatus status) throws InterruptedException {
+    saveHistoryItem(status, System.currentTimeMillis());
   }
 
-  public void saveHistoryItem(final JobId jobId, final TaskStatus status, long timestamp)
-      throws InterruptedException {
+  public void saveHistoryItem(final TaskStatus status, long timestamp) throws InterruptedException {
     add(new TaskStatusEvent(status, timestamp, hostname));
   }
 
