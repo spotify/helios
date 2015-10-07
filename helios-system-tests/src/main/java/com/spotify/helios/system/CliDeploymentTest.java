@@ -121,7 +121,7 @@ public class CliDeploymentTest extends SystemTestBase {
             testJobName + ":" + testJobVersion + "-cloned")));
     final String clonedInspectOutput = cli("inspect", "--json", clonedJobId.toString());
     final Job clonedParsed = Json.read(clonedInspectOutput, Job.class);
-    assertJobEquals(expectedCloned, clonedParsed);
+    assertEquals(expectedCloned, clonedParsed);
 
     // Verify that port mapping and environment variables are correct
     final String statusString = cli("status", "--job", jobId.toString(), "--json");
