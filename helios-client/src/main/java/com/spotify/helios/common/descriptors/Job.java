@@ -774,6 +774,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return new Job(id, p);
     }
 
+    public Job buildWithoutHash() {
+      final JobId id = new JobId(p.name, p.version);
+      return new Job(id, p);
+    }
+
     private String hex(final byte[] bytes) {
       return BaseEncoding.base16().lowerCase().encode(bytes);
     }

@@ -47,6 +47,8 @@ import static org.hamcrest.Matchers.hasEntry;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 
 public class JobTest {
@@ -502,5 +504,17 @@ public class JobTest {
     final Job newJob = builder.setRegistration(newRegistration).build();
 
     assertNotEquals(job.getId().getHash(), newJob.getId().getHash());
+  }
+
+  @Test
+  public void testBuildWithoutHash() {
+    final Job.Builder builder = Job.newBuilder()
+        .setCommand(asList("foo", "bar"))
+        .setImage("foobar:4711")
+        .setName("foozbarz")
+        .setVersion("17");
+
+    assertNull(builder.buildWithoutHash().getId().getHash());
+    assertNotNull(builder.build().getId().getHash());
   }
 }
