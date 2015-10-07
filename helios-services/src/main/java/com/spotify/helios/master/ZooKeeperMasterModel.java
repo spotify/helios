@@ -1056,6 +1056,15 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new HeliosRuntimeException("removing job " + id + " failed", e);
     }
 
+    // Delete job history on a best effort basis
+    try {
+      client.deleteRecursive(Paths.historyJob(id));
+    } catch (NoNodeException ignored) {
+      // There's no history for this job
+    } catch (KeeperException e) {
+      log.warn("error removing job history for job {}: {}", id, e);
+    }
+
     return job;
   }
 
