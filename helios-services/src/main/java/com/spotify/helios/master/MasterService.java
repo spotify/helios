@@ -47,7 +47,7 @@ import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.ServiceUtil;
-import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrarService;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -107,7 +107,7 @@ public class MasterService extends AbstractIdleService {
   private final CuratorClientFactory curatorClientFactory;
   private final RollingUpdateService rollingUpdateService;
 
-  private ZooKeeperRegistrar zkRegistrar;
+  private ZooKeeperRegistrarService zkRegistrar;
 
   /**
    * Create a new service instance. Initializes the control interface and the worker.
@@ -308,10 +308,11 @@ public class MasterService extends AbstractIdleService {
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy,
         config.getZooKeeperNamespace());
-    final ZooKeeperClient client = new DefaultZooKeeperClient(curator,
-                                                              config.getZooKeeperClusterId());
+    final ZooKeeperClient client =
+        new DefaultZooKeeperClient(curator, config.getZooKeeperClusterId());
     client.start();
-    zkRegistrar = new ZooKeeperRegistrar(client, new MasterZooKeeperRegistrar(config.getName()));
+    zkRegistrar = new ZooKeeperRegistrarService(
+        client, new MasterZooKeeperRegistrar(config.getName()));
 
     return client;
   }

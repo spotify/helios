@@ -179,7 +179,6 @@ public class ZooKeeperMasterModel implements MasterModel {
    */
   @Override
   public void registerHost(final String host, final String id) {
-    log.info("registering host: {}", host);
     final ZooKeeperClient client = provider.get("registerHost");
     try {
       ZooKeeperRegistrarUtil.registerHost(client, Paths.configHostId(host), host, id);

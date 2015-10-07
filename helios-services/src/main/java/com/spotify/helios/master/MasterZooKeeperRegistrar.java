@@ -21,7 +21,7 @@
 
 package com.spotify.helios.master;
 
-import com.spotify.helios.servicescommon.ZooKeeperRegistrarEventListener;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
@@ -39,7 +39,7 @@ import static com.google.common.base.Optional.fromNullable;
  * Responsible for registering the Helios master with ZooKeeper.  Will continue to attempt to
  * register in the background in the event that ZK is down when the master starts.
  */
-public class MasterZooKeeperRegistrar implements ZooKeeperRegistrarEventListener {
+public class MasterZooKeeperRegistrar implements ZooKeeperRegistrar {
 
   private static final Logger log = LoggerFactory.getLogger(MasterZooKeeperRegistrar.class);
 
