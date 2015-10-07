@@ -71,6 +71,16 @@ public class JobValidator {
 
   public static final List<String> VALID_NETWORK_MODES = ImmutableList.of("bridge", "host");
 
+  private final boolean shouldValidateJobHash;
+
+  public JobValidator() {
+    this(true);
+  }
+
+  public JobValidator(final boolean shouldValidateJobHash) {
+    this.shouldValidateJobHash = shouldValidateJobHash;
+  }
+
   public Set<String> validate(final Job job) {
     final Set<String> errors = Sets.newHashSet();
 
@@ -192,7 +202,10 @@ public class JobValidator {
 
     errors.addAll(validateJobName(jobId, recomputedId));
     errors.addAll(validateJobVersion(jobIdVersion, recomputedId));
-    errors.addAll(validateJobHash(jobIdHash, recomputedId));
+
+    if (this.shouldValidateJobHash) {
+      errors.addAll(validateJobHash(jobIdHash, recomputedId));
+    }
 
     return errors;
   }

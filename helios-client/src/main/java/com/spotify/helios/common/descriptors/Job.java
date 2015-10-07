@@ -532,6 +532,13 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.networkMode = p.networkMode;
         this.metadata = p.metadata;
       }
+
+      private Parameters withoutMetaParameters() {
+        final Parameters clone = new Parameters(this);
+        clone.creatingUser = null;
+
+        return clone;
+      }
     }
 
     public Builder setRegistrationDomain(final String domain) {
@@ -745,7 +752,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     public Job build() {
       final String configHash;
       try {
-        configHash = hex(Json.sha1digest(p));
+        configHash = hex(Json.sha1digest(p.withoutMetaParameters()));
       } catch (IOException e) {
         throw propagate(e);
       }
@@ -764,6 +771,11 @@ public class Job extends Descriptor implements Comparable<Job> {
 
       final JobId id = new JobId(p.name, p.version, hash);
 
+      return new Job(id, p);
+    }
+
+    public Job buildWithoutHash() {
+      final JobId id = new JobId(p.name, p.version);
       return new Job(id, p);
     }
 

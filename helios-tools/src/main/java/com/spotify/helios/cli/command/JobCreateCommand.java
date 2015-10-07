@@ -79,7 +79,7 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class JobCreateCommand extends ControlCommand {
 
-  private static final JobValidator JOB_VALIDATOR = new JobValidator();
+  private static final JobValidator JOB_VALIDATOR = new JobValidator(false);
 
   /**
    * If any of the keys of this map are set as environment variables (i.e. an environment variable
@@ -533,7 +533,10 @@ public class JobCreateCommand extends ControlCommand {
       builder.setToken(token);
     }
 
-    final Job job = builder.build();
+    // We build without a hash here because we want the hash to be calculated server-side.
+    // This allows different CLI versions to be cross-compatible with different master versions
+    // that have either more or fewer job parameters.
+    final Job job = builder.buildWithoutHash();
 
     final Collection<String> errors = JOB_VALIDATOR.validate(job);
     if (!errors.isEmpty()) {
@@ -563,7 +566,7 @@ public class JobCreateCommand extends ControlCommand {
       if (json) {
         out.println(status.toJsonString());
       } else {
-        out.println(job.getId());
+        out.println(status.getId());
       }
       return 0;
     } else {
