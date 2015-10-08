@@ -21,6 +21,7 @@
 
 package com.spotify.helios.cli;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -53,6 +54,7 @@ public class CliConfig {
   private static final String CONFIG_PATH = CONFIG_DIR + File.separator + CONFIG_FILE;
   public static final List<String> EMPTY_STRING_LIST = Collections.emptyList();
 
+  @VisibleForTesting
   static Map<String, String> environment = System.getenv();
 
   private final String username;
