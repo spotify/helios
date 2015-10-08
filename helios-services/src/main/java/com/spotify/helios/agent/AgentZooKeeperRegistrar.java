@@ -23,6 +23,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.util.concurrent.Service;
 
+import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
@@ -37,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -108,7 +110,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
                                         "(local=%s remote=%s).", name, id, existingId);
           log.error(message);
           agentService.stopAsync();
-          return;
+          throw new HostStillInUseException(name, Collections.<JobId>emptyList());
         }
 
         log.info("Another agent has already registered as '{}', but its ID node was last " +
