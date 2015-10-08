@@ -141,7 +141,7 @@ public class TaskHistoryWriterTest {
 
     makeWriter(mockClient);
 
-    writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP);
+    writer.saveHistoryItem(TASK_STATUS, TIMESTAMP);
     // wait up to 10s for it to fail twice -- and make sure I mocked it correctly.
     verify(mockClient, timeout(10000).atLeast(2)).createAndSetData(path, TASK_STATUS.toJsonBytes());
 
@@ -153,7 +153,7 @@ public class TaskHistoryWriterTest {
 
   @Test
   public void testSimpleWorkage() throws Exception {
-    writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP);
+    writer.saveHistoryItem(TASK_STATUS, TIMESTAMP);
 
     final TaskStatusEvent historyItem = Iterables.getOnlyElement(awaitHistoryItems());
     assertEquals(JOB_ID, historyItem.getStatus().getJob().getId());
@@ -172,7 +172,7 @@ public class TaskHistoryWriterTest {
   @Test
   public void testWriteWithZooKeeperDown() throws Exception {
     zk.stop();
-    writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP);
+    writer.saveHistoryItem(TASK_STATUS, TIMESTAMP);
     zk.start();
     final TaskStatusEvent historyItem = Iterables.getOnlyElement(awaitHistoryItems());
     assertEquals(JOB_ID, historyItem.getStatus().getJob().getId());
@@ -181,7 +181,7 @@ public class TaskHistoryWriterTest {
   @Test
   public void testWriteWithZooKeeperDownAndInterveningCrash() throws Exception {
     zk.stop();
-    writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP);
+    writer.saveHistoryItem(TASK_STATUS, TIMESTAMP);
     // simulate a crash by recreating the writer
     writer.stopAsync().awaitTerminated();
     makeWriter(client);
@@ -196,7 +196,7 @@ public class TaskHistoryWriterTest {
 
     // Save a superflouous number of events
     for (int i = 0; i < TaskHistoryWriter.MAX_NUMBER_STATUS_EVENTS_TO_RETAIN + 20; i++) {
-      writer.saveHistoryItem(JOB_ID, TASK_STATUS, TIMESTAMP + i);
+      writer.saveHistoryItem(TASK_STATUS, TIMESTAMP + i);
       Thread.sleep(50);  // just to allow other stuff a chance to run in the background
     }
     // Should converge to 30 items
