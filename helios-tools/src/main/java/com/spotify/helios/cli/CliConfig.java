@@ -21,7 +21,6 @@
 
 package com.spotify.helios.cli;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -53,9 +52,6 @@ public class CliConfig {
   private static final String CONFIG_FILE = "config";
   private static final String CONFIG_PATH = CONFIG_DIR + File.separator + CONFIG_FILE;
   public static final List<String> EMPTY_STRING_LIST = Collections.emptyList();
-
-  @VisibleForTesting
-  static Map<String, String> environment = System.getenv();
 
   private final String username;
   private final List<String> domains;
@@ -109,11 +105,12 @@ public class CliConfig {
    * @throws IOException        If the file exists but could not be read
    * @throws URISyntaxException If a HELIOS_MASTER env var is present and doesn't parse as a URI
    */
-  public static CliConfig fromUserConfig() throws IOException, URISyntaxException {
+  public static CliConfig fromUserConfig(final Map<String, String> environmentVariables)
+      throws IOException, URISyntaxException {
     final String userHome = System.getProperty("user.home");
     final String defaults = userHome + File.separator + CONFIG_PATH;
     final File defaultsFile = new File(defaults);
-    return fromFile(defaultsFile);
+    return fromFile(defaultsFile, environmentVariables);
   }
 
   /**
@@ -126,18 +123,24 @@ public class CliConfig {
    * @throws IOException        If the file exists but could not be read
    * @throws URISyntaxException If a HELIOS_MASTER env var is present and doesn't parse as a URI
    */
-  public static CliConfig fromFile(final File defaultsFile) throws IOException, URISyntaxException {
+  public static CliConfig fromFile(final File defaultsFile,
+                                   final Map<String, String> environmentVariables)
+      throws IOException, URISyntaxException {
+
     final Config config;
     if (defaultsFile.exists() && defaultsFile.canRead()) {
       config = ConfigFactory.parseFile(defaultsFile);
     } else {
       config = ConfigFactory.empty();
     }
-    return fromEnvVar(config);
+    return fromEnvVar(config, environmentVariables);
   }
 
-  public static CliConfig fromEnvVar(final Config config) throws URISyntaxException {
-    final String master = environment.get("HELIOS_MASTER");
+  public static CliConfig fromEnvVar(final Config config,
+                                     final Map<String, String> environmentVariables)
+      throws URISyntaxException {
+
+    final String master = environmentVariables.get("HELIOS_MASTER");
     if (master == null) {
       return fromConfig(config);
     }

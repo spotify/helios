@@ -3,10 +3,8 @@ package com.spotify.helios.cli;
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -33,14 +31,6 @@ public class CliParserTest {
   private static final String[] DOMAINS = {"foo", "bar", "baz"};
   private static final String SERVICE = "foo-service";
   private static final String SRV = "helios";
-
-  @Before
-  public void init() {
-    // TODO (dxia) For some reason CliConfig.java:59 never gets called here, but it's called when
-    // running CliConfigTest. If I don't clear the environment attribute, there's a stray key -> val
-    // of "HELIOS_MASTER" -> "domain://foo" left behind from somewhere that screws up the tests.
-    CliConfig.environment = ImmutableMap.of();
-  }
 
   @Test
   public void testComputeTargetsSingleEndpoint() throws Exception {
