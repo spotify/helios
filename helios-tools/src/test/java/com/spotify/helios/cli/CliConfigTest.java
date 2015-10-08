@@ -7,6 +7,7 @@ import com.google.common.collect.ImmutableMap;
 import com.typesafe.config.ConfigException;
 
 import org.hamcrest.Matchers;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -32,6 +33,14 @@ public class CliConfigTest {
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   @Rule public final ExpectedException expectedEx = ExpectedException.none();
+
+  @Before
+   public void setUp() {
+    // ignore any environment variables that happen to be set on the JVM running these tests,
+    // for the random case where someone already has HELIOS_MASTER set but a test expects it to
+    // not be set.
+    CliConfig.environment = ImmutableMap.of();
+  }
 
   @Test
   public void testSite() throws Exception {
