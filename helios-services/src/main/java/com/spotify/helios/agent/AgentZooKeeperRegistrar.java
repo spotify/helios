@@ -102,19 +102,26 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
       final byte[] bytes = client.getData(idPath);
       final String existingId = bytes == null ? "" : new String(bytes, UTF_8);
       if (!id.equals(existingId)) {
-        final long mtime = client.stat(hostInfoPath).getMtime();
-        if ((clock.now().getMillis() - mtime) < zooKeeperRegistrationTtlMillis) {
-          final String message = format("Another agent already registered as '%s' " +
-                                        "(local=%s remote=%s).", name, id, existingId);
-          log.error(message);
-          agentService.stopAsync();
-          return;
+        final Stat hostInfoStat = client.stat(hostInfoPath);
+        if (hostInfoStat != null) {
+          final long mtime = hostInfoStat.getMtime();
+          if ((clock.now().getMillis() - mtime) < zooKeeperRegistrationTtlMillis) {
+            final String message = format("Another agent already registered as '%s' " +
+                                          "(local=%s remote=%s).", name, id, existingId);
+            log.error(message);
+            agentService.stopAsync();
+            return;
+          }
+
+          log.info("Another agent has already registered as '{}', but its ID node was last " +
+                   "updated more than {} milliseconds ago. I\'m deregistering the agent with the "
+                   + "old ID of {} and replacing it with this new agent with ID '{}'.",
+                   name, zooKeeperRegistrationTtlMillis, existingId, id);
+        } else {
+          log.info("Another agent has registered as '{}', but it never updated '{}' in ZooKeeper. "
+                   + "I'll assume it's dead and deregister it.", name, hostInfoPath);
         }
 
-        log.info("Another agent has already registered as '{}', but its ID node was last " +
-                 "updated more than {} milliseconds ago. I\'m deregistering the agent with the "
-                 + "old ID of {} and replacing it with this new agent with ID '{}'.",
-                 name, zooKeeperRegistrationTtlMillis, existingId, id);
         ZooKeeperRegistrarUtil.deregisterHost(client, name);
         ZooKeeperRegistrarUtil.registerHost(client, idPath, name, id);
       } else {
