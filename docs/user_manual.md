@@ -145,6 +145,9 @@ example that uses all the available configuration keys with an explanation of ea
   "id" : "myservice:0.5:3539b7bc2235d53f79e6e8511942bbeaa8816265",
   "image" : "myregistry:80/janedoe/myservice:0.5-98c6ff4",
   "hostname": "myhost",
+  "metadata": { 
+    "foo": "bar"
+  },
   "networkMode" : "bridge",
   "ports" : {
     "http" : {
@@ -211,6 +214,15 @@ The docker image to use. Required.
 
 #### hostname
 The hostname to be passed to the container. Optional.
+
+#### metadata
+Arbitrary key-value pairs that can be stored with the Job. Optional.
+
+The Helios service does not act on these metadata labels, but will store them
+and return them in any request to view/inspect the job.
+
+If the environment variable `GIT_COMMIT` is set, the helios CLI command
+`helios create` will set a metadata field for `"GIT_COMMIT": <the value>`.
 
 #### networkMode
 Sets the networking mode for the container. 
