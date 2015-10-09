@@ -40,6 +40,8 @@ import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.concurrent.TimeoutException;
+
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
@@ -120,6 +122,8 @@ public class DeregisterTest extends SystemTestBase {
     final HostStatus hostStatus1 =
         awaitHostStatusWithLabels(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
     assertThat(hostStatus1.getLabels(), Matchers.hasEntry("num", "1"));
+    // Wait for agent to be UP and report HostInfo
+    awaitHostStatusWithHostInfo(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Kill off agent
     agent.stopAsync().awaitTerminated();
@@ -137,17 +141,18 @@ public class DeregisterTest extends SystemTestBase {
     assertThat(hostStatus2.getLabels(), Matchers.hasEntry("num", "2"));
   }
 
-  @Test(expected = IllegalStateException.class)
+  @Test(expected = TimeoutException.class)
   public void testRegistrationResolutionTtlNotExpired() throws Exception {
     startDefaultMaster();
-    final String host = testHost() + "2";
+    final String host = testHost();
     AgentMain agent = startDefaultAgent(host);
 
     final HeliosClient client = defaultClient();
 
     // Wait for agent to come up
     awaitHostRegistered(client, host, LONG_WAIT_SECONDS, SECONDS);
-    awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+    // Wait for agent to be UP and report HostInfo
+    awaitHostStatusWithHostInfo(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Kill off agent
     agent.stopAsync().awaitTerminated();
@@ -157,7 +162,13 @@ public class DeregisterTest extends SystemTestBase {
     resetAgentStateDir();
 
     // Set TTL to a large number so new agent will not deregister previous one.
-    // This should throw IllegalStateException as this agent will fail to start as it can't register
-    startDefaultAgent(host, "--zk-registration-ttl", "9999");
+    // This might throw IllegalStateException as this agent will fail to start since it can't
+    // register. This exception sometimes occurs and sometimes doesn't. We ignore that and
+    // instead check for the TimeoutException while polling for it being UP.
+    try {
+      startDefaultAgent(host, "--zk-registration-ttl", "9999");
+    } catch (IllegalStateException ignored) {
+    }
+    awaitHostStatus(client, host, UP, 10, SECONDS);
   }
 }

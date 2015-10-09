@@ -959,6 +959,22 @@ public abstract class SystemTestBase {
     });
   }
 
+  protected HostStatus awaitHostStatusWithHostInfo(final HeliosClient client, final String host,
+                                                   final HostStatus.Status status,
+                                                   final int timeout,
+                                                   final TimeUnit timeUnit) throws Exception {
+    return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
+      @Override
+      public HostStatus call() throws Exception {
+        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
+        if (hostStatus == null || hostStatus.getHostInfo() == null) {
+          return null;
+        }
+        return (hostStatus.getStatus() == status) ? hostStatus : null;
+      }
+    });
+  }
+
   protected TaskStatus awaitTaskState(final JobId jobId, final String host,
                                       final TaskStatus.State state) throws Exception {
     return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<TaskStatus>() {
