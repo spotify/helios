@@ -108,7 +108,7 @@ public class CliParser {
         .version(format("%s%nTested on Docker %s", NAME_AND_VERSION, TESTED_DOCKER_VERSION))
         .description(format("%s%n%n%s%n%s", NAME_AND_VERSION, HELP_ISSUES, HELP_WIKI));
 
-    cliConfig = CliConfig.fromUserConfig();
+    cliConfig = CliConfig.fromUserConfig(System.getenv());
 
     final GlobalArgs globalArgs = addGlobalArgs(parser, cliConfig, true);
 
