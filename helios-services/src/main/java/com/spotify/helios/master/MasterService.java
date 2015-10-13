@@ -24,7 +24,10 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
-import com.spotify.helios.servicescommon.KafkaClientProvider;
+import com.spotify.helios.auth.AuthenticationPlugin;
+import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
+import com.spotify.helios.auth.AuthenticatorLoader;
+import com.spotify.helios.auth.ServerAuthenticationConfig;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
@@ -36,6 +39,7 @@ import com.spotify.helios.master.resources.VersionResource;
 import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -202,6 +206,18 @@ public class MasterService extends AbstractIdleService {
     environment.jersey().register(new VersionResource());
     environment.jersey().register(new UserProvider());
     environment.jersey().register(new DeploymentGroupResource(model));
+
+    if (config.isAuthenticationEnabled()) {
+      // Set up authentication
+      final ServerAuthenticationConfig authConfig = config.getAuthenticationConfig();
+      final AuthenticationPlugin<?> authPlugin = AuthenticatorLoader.load(authConfig);
+      final ServerAuthentication<?> authentication = authPlugin.serverAuthentication();
+
+      environment.jersey().register(authentication.authProvider());
+
+      // register any additional resources needed by the plugin
+      authentication.registerAdditionalJerseyComponents(environment.jersey());
+    }
 
     final DefaultServerFactory serverFactory = ServiceUtil.createServerFactory(
         config.getHttpEndpoint(), config.getAdminPort(), false);
