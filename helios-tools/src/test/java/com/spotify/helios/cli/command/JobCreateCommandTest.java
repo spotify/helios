@@ -121,6 +121,7 @@ public class JobCreateCommandTest {
 
     assertEquals(0, ret);
     final String output = baos.toString();
+    assertThat(output, containsString("\"created\":null"));
     assertThat(output, containsString(
         "\"env\":{\"JVM_ARGS\":\"-Ddw.feature.randomFeatureFlagEnabled=true\"}"));
     assertThat(output, containsString("\"metadata\":{\"a\":\"1\",\"b\":\"2\"},"));
@@ -129,6 +130,7 @@ public class JobCreateCommandTest {
         "\"healthCheck\":{\"type\":\"exec\",\"command\":[\"touch\",\"/this\"],\"type\":\"exec\"},"));
     assertThat(output, containsString("\"securityOpt\":[\"label:user:dxia\",\"apparmor:foo\"]"));
     assertThat(output, containsString("\"networkMode\":\"host\""));
+    assertThat(output, containsString("\"expires\":null"));
   }
 
   @Test

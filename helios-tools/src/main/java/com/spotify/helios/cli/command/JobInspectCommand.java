@@ -46,15 +46,18 @@ import java.io.BufferedReader;
 import java.io.PrintStream;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
 
 public class JobInspectCommand extends WildcardJobCommand {
 
-  private static final DateFormat DATE_FORMATTER = new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z");
+  private static final DateFormat DATE_FORMATTER =
+      new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z");
 
   private static final Function<String, String> QUOTE = new Function<String, String>() {
     @Override
@@ -107,7 +110,12 @@ public class JobInspectCommand extends WildcardJobCommand {
 
   public JobInspectCommand(final Subparser parser) {
     super(parser);
+    parser.help("print the configuration of a job");
+  }
 
+  public JobInspectCommand(final Subparser parser, final TimeZone timeZone) {
+    super(parser);
+    DATE_FORMATTER.setTimeZone(timeZone);
     parser.help("print the configuration of a job");
   }
 
@@ -131,7 +139,7 @@ public class JobInspectCommand extends WildcardJobCommand {
       out.printf("Id: %s%n", job.getId());
       out.printf("Image: %s%n", job.getImage());
       out.printf("Created: %s%n",
-                 job.getCreated() == null ? "" : DATE_FORMATTER.format(job.getCreated()));
+                 job.getCreated() == null ? "" : DATE_FORMATTER.format(new Date(job.getCreated())));
       out.printf("Expires: %s%n",
                  job.getExpires() == null ? "never" : DATE_FORMATTER.format(job.getExpires()));
       out.printf("Hostname: %s%n", job.getHostname());
