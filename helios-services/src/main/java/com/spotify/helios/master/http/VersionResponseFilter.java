@@ -23,6 +23,7 @@ package com.spotify.helios.master.http;
 
 import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.common.VersionCompatibility.Status;
+import com.spotify.helios.servicescommon.statistics.MasterMetrics;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,6 +57,12 @@ public class VersionResponseFilter implements Filter {
 
   private static final PomVersion SERVER_VERSION = PomVersion.parse(POM_VERSION);
 
+  private final MasterMetrics metrics;
+
+  public VersionResponseFilter(MasterMetrics metrics) {
+    this.metrics = metrics;
+  }
+
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
       throws IOException, ServletException {
@@ -87,6 +94,8 @@ public class VersionResponseFilter implements Filter {
       httpResponse.sendError(400, "Helios client version format is bogus - expect n.n.n");
       return;
     }
+
+    metrics.clientVersion(clientVersion.toString());
 
     final Status status = getStatus(SERVER_VERSION, clientVersion);
     httpResponse.addHeader(HELIOS_VERSION_STATUS_HEADER, status.toString());

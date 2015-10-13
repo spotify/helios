@@ -23,9 +23,9 @@ package com.spotify.helios.servicescommon.statistics;
 
 import com.google.common.collect.Maps;
 
-import com.spotify.helios.servicescommon.MasterRequestMetrics;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
+import com.spotify.helios.servicescommon.MasterRequestMetrics;
 
 import java.util.Map;
 
@@ -72,6 +72,12 @@ public class MasterMetricsImpl implements MasterMetrics {
       requestMetrics.put(name, m);
     }
     return m;
+  }
+
+  @Override
+  public void clientVersion(final String version) {
+    final String name = name(group, TYPE + "_meter_client_version", version);
+    registry.meter(name).mark();
   }
 
   @Override

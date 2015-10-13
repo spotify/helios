@@ -29,6 +29,8 @@ public interface MasterMetrics {
 
   void badRequest(String name);
 
+  void clientVersion(String version);
+
   void jobsInJobList(int count);
 
   void jobsHistoryEventSize(int count);
