@@ -21,7 +21,7 @@
 
 package com.spotify.helios.authentication;
 
-public class NopHttpAuthenticator implements HttpAuthenticator {
+class NopHttpAuthenticator implements HttpAuthenticator {
 
   @Override
   public String getHttpAuthHeaderKey() {

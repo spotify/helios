@@ -21,6 +21,10 @@
 
 package com.spotify.helios.authentication;
 
+/**
+ * Used by Helios clients to get an authentication token with which to communicate with Helios
+ * masters.
+ */
 public interface AuthClient {
 
   String getToken(String username) throws HeliosAuthException;

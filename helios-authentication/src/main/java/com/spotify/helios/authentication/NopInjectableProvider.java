@@ -35,7 +35,7 @@ import io.dropwizard.auth.Authenticator;
 /**
  * A nop authenticator that does nothing. Useful as an alternative to null.
  */
-public class NopInjectableProvider implements InjectableProvider<Auth, Parameter> {
+class NopInjectableProvider implements InjectableProvider<Auth, Parameter> {
 
   private final Authenticator authenticator;
 

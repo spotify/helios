@@ -29,7 +29,7 @@ import io.dropwizard.auth.Authenticator;
 /**
  * A nop authenticator that does nothing. Useful as an alternative to null.
  */
-public class NopAuthenticator implements Authenticator {
+class NopAuthenticator implements Authenticator {
 
   @Override
   public Optional authenticate(Object credentials) throws AuthenticationException {

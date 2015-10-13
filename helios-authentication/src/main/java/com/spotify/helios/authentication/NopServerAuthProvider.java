@@ -26,7 +26,7 @@ import com.sun.jersey.spi.inject.InjectableProvider;
 
 import io.dropwizard.auth.Auth;
 
-public class NopServerAuthProvider implements ServerAuthProvider {
+class NopServerAuthProvider implements ServerAuthProvider {
 
   @Override
   public InjectableProvider<Auth, Parameter> getInjectableProvider() {

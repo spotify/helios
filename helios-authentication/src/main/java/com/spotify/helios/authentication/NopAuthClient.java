@@ -21,7 +21,7 @@
 
 package com.spotify.helios.authentication;
 
-public class NopAuthClient implements AuthClient {
+class NopAuthClient implements AuthClient {
 
   @Override
   public String getToken(final String username) {

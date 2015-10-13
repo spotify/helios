@@ -23,6 +23,9 @@ package com.spotify.helios.authentication;
 
 import java.security.Principal;
 
+/**
+ * An object that represents an authenticated user.
+ */
 public class User implements Principal {
   private final String name;
 

@@ -28,7 +28,7 @@ import java.util.List;
 /**
  * A factory for {@link NopServerAuthProvider} and {@link NopClientAuthProvider}
  */
-public class NopAuthProviderFactory implements AuthProviderFactory {
+class NopAuthProviderFactory implements AuthProviderFactory {
 
   @Override
   public ServerAuthProvider createServerAuthProvider(final String serverName, final String secret) {

@@ -21,7 +21,7 @@
 
 package com.spotify.helios.authentication;
 
-public class NopAuthHeader implements AuthHeader {
+class NopAuthHeader implements AuthHeader {
 
   @Override
   public String getValue() {
