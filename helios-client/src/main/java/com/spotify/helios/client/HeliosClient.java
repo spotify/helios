@@ -323,13 +323,17 @@ public class HeliosClient implements AutoCloseable {
       final Map<URI, URI> ipToHostnameUris = Maps.newHashMap();
 
       for (final URI hnUri : endpoints) {
-        final InetAddress[] ips = InetAddress.getAllByName(hnUri.getHost());
-        for (final InetAddress ip : ips) {
-          final URI ipUri = new URI(
-              hnUri.getScheme(), hnUri.getUserInfo(), ip.getHostAddress(), hnUri.getPort(),
-              hnUri.getPath(), hnUri.getQuery(), hnUri.getFragment());
-          ipEndpoints.add(ipUri);
-          ipToHostnameUris.put(ipUri, hnUri);
+        try {
+          final InetAddress[] ips = InetAddress.getAllByName(hnUri.getHost());
+          for (final InetAddress ip : ips) {
+            final URI ipUri = new URI(
+                hnUri.getScheme(), hnUri.getUserInfo(), ip.getHostAddress(), hnUri.getPort(),
+                hnUri.getPath(), hnUri.getQuery(), hnUri.getFragment());
+            ipEndpoints.add(ipUri);
+            ipToHostnameUris.put(ipUri, hnUri);
+          }
+        } catch (UnknownHostException e) {
+          log.warn("Unable to resolve hostname {} into IP address: {}", hnUri.getHost(), e);
         }
       }
 
@@ -380,7 +384,12 @@ public class HeliosClient implements AutoCloseable {
 
     final URLConnection urlConnection = ipUri.toURL().openConnection();
     final HttpURLConnection connection = (HttpURLConnection) urlConnection;
+
+    // We verify the TLS certificate against the original hostname since verifying against the
+    // IP address will fail
     if (urlConnection instanceof HttpsURLConnection) {
+      System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
+      connection.setRequestProperty("Host", hostname);
       ((HttpsURLConnection) connection).setHostnameVerifier(new HostnameVerifier() {
         @Override
         public boolean verify(String ip, SSLSession sslSession) {
