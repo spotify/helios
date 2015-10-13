@@ -138,6 +138,12 @@
                 <include>com/sun/jna/**</include>
               </includes>
             </filter>
+            <filter>
+              <artifact>commons-logging</artifact>
+              <includes>
+                <include>org/apache/commons/logging/**</include>
+              </includes>
+            </filter>
           </filters>
           <transformers>
             <!--The ServicesResourceTransformer is needed to make jersey happy-->

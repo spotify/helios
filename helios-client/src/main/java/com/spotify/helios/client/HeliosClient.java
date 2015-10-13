@@ -386,7 +386,7 @@ public class HeliosClient implements AutoCloseable {
         public boolean verify(String ip, SSLSession sslSession) {
           final String tHostname = hostname.endsWith(".") ?
                                    hostname.substring(0, hostname.length() - 1) : hostname;
-          return new DefaultHostnameVerifier(null).verify(tHostname, sslSession);
+          return new DefaultHostnameVerifier().verify(tHostname, sslSession);
         }
       });
     }
