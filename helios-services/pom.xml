@@ -351,6 +351,12 @@
       <artifactId>protobuf-java</artifactId>
       <version>2.5.0</version>
     </dependency>
+    <!-- TODO: (dxia) This won't be needed once we upgrade this dependency in docker-client and upgrade docker-client here. -->
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-unixsocket</artifactId>
+      <version>0.8</version>
+    </dependency>
   </dependencies>
 
   <build>
