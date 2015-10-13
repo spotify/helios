@@ -85,7 +85,7 @@ public class AgentZooKeeperDownTolerationTest extends SystemTestBase {
     // Wait for the job to run
     final TaskStatus firstTaskStatus = awaitJobState(client, testHost(), jobId, RUNNING,
                                                      LONG_WAIT_SECONDS, SECONDS);
-    assertEquals(job, firstTaskStatus.getJob());
+    assertJobEquals(job, firstTaskStatus.getJob());
     assertNotNull(dockerClient.inspectContainer(firstTaskStatus.getContainerId()));
 
     // Stop zookeeper

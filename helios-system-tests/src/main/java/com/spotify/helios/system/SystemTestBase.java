@@ -1128,6 +1128,13 @@ public abstract class SystemTestBase {
     return list;
   }
 
+  protected void assertJobsEqual(final Map<JobId, Job> expected, final Map<JobId, Job> actual) {
+    assertEquals(expected.size(), actual.size());
+    for (final Map.Entry<JobId, Job> entry : actual.entrySet()) {
+      assertJobEquals(expected.get(entry.getKey()), entry.getValue());
+    }
+  }
+
   protected void assertJobEquals(final Job expected, final Job actual) {
     final Builder expectedBuilder = expected.toBuilder();
 
@@ -1147,6 +1154,9 @@ public abstract class SystemTestBase {
       }
     }
     actualBuilder.setMetadata(metadata);
+
+    // Remove created timestamp set by master
+    actualBuilder.setCreated(null);
 
     // copy the hash
     expectedBuilder.setHash(actualBuilder.build().getId().getHash());

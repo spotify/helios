@@ -27,6 +27,8 @@ import com.google.common.collect.Maps;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
+import com.spotify.helios.agent.Clock;
+import com.spotify.helios.agent.SystemClock;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -75,6 +77,7 @@ public class JobsResource {
 
   private final MasterModel model;
   private final MasterMetrics metrics;
+  private Clock clock = new SystemClock();
 
   public JobsResource(final MasterModel model, final MasterMetrics metrics) {
     this.model = model;
@@ -147,6 +150,7 @@ public class JobsResource {
                                 @RequestUser final String username) {
     final Job.Builder clone = job.toBuilder()
         .setCreatingUser(username)
+        .setCreated(clock.now().getMillis())
         // If the job had a hash coming in, preserve it
         .setHash(job.getId().getHash());
     final Job actualJob = clone.build();
