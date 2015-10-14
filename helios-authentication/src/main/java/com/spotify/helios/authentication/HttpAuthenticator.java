@@ -23,6 +23,9 @@ package com.spotify.helios.authentication;
 
 public interface HttpAuthenticator {
 
+  /** The name of this authentication scheme */
+  String getSchemeName();
+
   String getHttpAuthHeaderKey();
 
   String createChallenge(String request) throws HeliosAuthException;
@@ -33,4 +36,6 @@ public interface HttpAuthenticator {
 
   String badAuthHeaderMsg();
 
+  // TODO (mbrown): correct semantics for this method
+  boolean verifyToken(String username, String accessToken);
 }

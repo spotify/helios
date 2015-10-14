@@ -54,6 +54,7 @@ public class MasterConfig extends Configuration {
   private Path stateDirectory;
   private Path authPlugin;
   private String authSecret;
+  private String versionNumberRequiredForAuthentication;
 
   public String getDomain() {
     return domain;
@@ -224,6 +225,15 @@ public class MasterConfig extends Configuration {
 
   public MasterConfig setAuthSecret(final String authSecret) {
     this.authSecret = authSecret;
+    return this;
+  }
+
+  public String getVersionNumberRequiredForAuthentication() {
+    return versionNumberRequiredForAuthentication;
+  }
+
+  public MasterConfig setVersionNumberRequiredForAuthentication(String str) {
+    this.versionNumberRequiredForAuthentication = str;
     return this;
   }
 

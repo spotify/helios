@@ -24,6 +24,16 @@ package com.spotify.helios.authentication;
 class NopHttpAuthenticator implements HttpAuthenticator {
 
   @Override
+  public String getSchemeName() {
+    return "noop";
+  }
+
+  @Override
+  public boolean verifyToken(String username, String accessToken) {
+    return true;
+  }
+
+  @Override
   public String getHttpAuthHeaderKey() {
     return null;
   }

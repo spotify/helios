@@ -21,9 +21,11 @@
 
 package com.spotify.helios.master;
 
+import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.servicescommon.ServiceParser;
 
 import net.sourceforge.argparse4j.inf.Argument;
+import net.sourceforge.argparse4j.inf.ArgumentChoice;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -44,6 +46,7 @@ public class MasterParser extends ServiceParser {
   private final Namespace options;
   private Argument httpArg;
   private Argument adminArg;
+  private Argument versionsForAuthArg;
   private Argument authPluginArg;
 
   public MasterParser(final String... args) throws ArgumentParserException {
@@ -72,7 +75,8 @@ public class MasterParser extends ServiceParser {
         .setKafkaBrokers(getKafkaBrokers())
         .setStateDirectory(getStateDirectory())
         .setAuthPlugin(getAuthPlugin())
-        .setAuthSecret(System.getenv("HELIOS_AUTH_SECRET"));
+        .setAuthSecret(System.getenv("HELIOS_AUTH_SECRET"))
+        .setVersionNumberRequiredForAuthentication(options.getString(versionsForAuthArg.getDest()));
 
     this.masterConfig = config;
   }
@@ -93,6 +97,13 @@ public class MasterParser extends ServiceParser {
         .setDefault(5802)
         .help("admin http port");
 
+    versionsForAuthArg = parser.addArgument("--auth-required-versions")
+        .help("Set to 'yes' to require authentication for all client versions. Set to a version "
+              + "string to require authentication for versions >= that version. Otherwise, Helios "
+              + "performs no authentication of client requests.")
+        .metavar("VERSION")
+        .choices(new VersionStringForAuthArgumentChoice());
+
     authPluginArg = parser.addArgument("--auth-plugin")
         .type(fileType().verifyExists().verifyCanRead())
         .help("Path to authenticator plugin.");
@@ -100,5 +111,27 @@ public class MasterParser extends ServiceParser {
 
   public MasterConfig getMasterConfig() {
     return masterConfig;
+  }
+
+  private static class VersionStringForAuthArgumentChoice implements ArgumentChoice {
+
+    @Override
+    public boolean contains(Object val) {
+      String value = String.valueOf(val);
+      if ("all".equalsIgnoreCase(value)) {
+        return true;
+      }
+      try {
+        PomVersion.parse(value);
+        return true;
+      } catch (RuntimeException e) {
+        return false;
+      }
+    }
+
+    @Override
+    public String textualFormat() {
+      return "'all' or a version string like 'x.y.z'";
+    }
   }
 }

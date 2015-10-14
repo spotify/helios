@@ -39,6 +39,17 @@ public class CrtHttpAuthenticator implements HttpAuthenticator {
   }
 
   @Override
+  public String getSchemeName() {
+    return "crtauth";
+  }
+
+  @Override
+  public boolean verifyToken(String username, String accessToken) {
+    // TODO (mbrown): implement
+    return false;
+  }
+
+  @Override
   public String getHttpAuthHeaderKey() {
     return HEADER;
   }
