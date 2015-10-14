@@ -192,7 +192,7 @@ public class MasterService extends AbstractIdleService {
 
     // Set up http server
     environment.servlets()
-        .addFilter("VersionResponseFilter", VersionResponseFilter.class)
+        .addFilter("VersionResponseFilter", new VersionResponseFilter(metrics.getMasterMetrics()))
         .addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
     environment.jersey().register(
         new ReportingResourceMethodDispatchAdapter(metrics.getMasterMetrics()));

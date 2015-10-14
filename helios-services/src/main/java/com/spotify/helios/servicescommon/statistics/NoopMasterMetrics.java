@@ -33,6 +33,9 @@ public class NoopMasterMetrics implements MasterMetrics {
   public void badRequest(final String name) {}
 
   @Override
+  public void clientVersion(final String version) {}
+
+  @Override
   public void jobsInJobList(int count) {}
 
   @Override
