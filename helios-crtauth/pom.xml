@@ -3,12 +3,16 @@
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
+  <parent>
+    <groupId>com.spotify</groupId>
+    <artifactId>helios-parent</artifactId>
+    <version>0.8.0-SNAPSHOT</version>
+  </parent>
 
-  <groupId>com.spotify</groupId>
-  <artifactId>helios-crtauth</artifactId>
-  <version>0.8.0-SNAPSHOT</version>
-  <packaging>jar</packaging>
   <name>helios-crtauth</name>
+  <artifactId>helios-crtauth</artifactId>
+  <packaging>jar</packaging>
+
   <description>A CRTauth and LDAP authentication provider for Helios.</description>
 
   <dependencies>
@@ -154,7 +158,7 @@
                   </mapper>
                 </data>
                 <data>
-                  <src>${project.basedir}/src/deb/helios-crtauth/default</src>
+                  <src>${project.parent.basedir}/src/deb/helios-crtauth/default</src>
                   <type>file</type>
                   <dst>/etc/default/helios-crtauth</dst>
                   <conffile>true</conffile>
