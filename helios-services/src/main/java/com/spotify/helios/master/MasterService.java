@@ -99,6 +99,9 @@ public class MasterService extends AbstractIdleService {
 
   private static final Logger log = LoggerFactory.getLogger(MasterService.class);
 
+  private static final String LOGBACK_ACCESS_CONFIG = "logback-access.xml";
+  private static final String LOGBACK_ACCESS_RESOURCE = "/" + LOGBACK_ACCESS_CONFIG;
+
   private final Server server;
   private final MasterConfig config;
   private final ServiceRegistrar registrar;
@@ -230,10 +233,10 @@ public class MasterService extends AbstractIdleService {
 
     this.server = serverFactory.build(environment);
 
-    setUpRequestLogging();
+    setUpRequestLogging(stateDirectory);
   }
 
-  private void setUpRequestLogging() {
+  private void setUpRequestLogging(final Path stateDirectory) {
     // Set up request logging
     final Handler originalHandler = server.getHandler();
     final HandlerCollection handlerCollection;
@@ -247,7 +250,13 @@ public class MasterService extends AbstractIdleService {
     final RequestLogHandler requestLogHandler = new RequestLogHandler();
     final RequestLogImpl requestLog = new RequestLogImpl();
     requestLog.setQuiet(true);
-    requestLog.setResource("/logback-access.xml");
+
+    if (stateDirectory.resolve(LOGBACK_ACCESS_CONFIG).toFile().exists()) {
+      requestLog.setFileName(stateDirectory.resolve(LOGBACK_ACCESS_CONFIG).toString());
+    } else if (this.getClass().getResource(LOGBACK_ACCESS_RESOURCE) != null) {
+      requestLog.setResource(LOGBACK_ACCESS_RESOURCE);
+    }
+
     requestLogHandler.setRequestLog(requestLog);
     handlerCollection.addHandler(requestLogHandler);
     server.setHandler(handlerCollection);
