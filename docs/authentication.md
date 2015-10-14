@@ -44,7 +44,7 @@ request to a protected resource on the service with an expired access token,
 the server will again respond with `401 Unauthorized` to signal that the client
 needs to perform the authentication flow again.
 
-### Crtauth flow
+### crtauth flow
 
 To begin the crtauth flow, the client sends a request to `/_auth` on one of the
 masters to request a challenge. The client's request includes the username of
@@ -70,6 +70,41 @@ subsequent requests to the server.
 authentication to only certain client versions*
 
 ## How to add support to Helios for additional schemes
+
+Pieces for implementing support for a new scheme:
+
+server-side:
+```java
+interface Authenticator {
+    /** 
+     * Given a token supplied in the "Authorization" header of the HTTP
+     * request to Helios master, check if the token is valid.
+     * An expired token should be treated like an invalid token by
+     * returning false.
+     */
+    boolean verifyToken(String username, String token)
+
+    /** 
+     * Allows the authentication scheme to register additional HTTP endpoints
+     * in Helios in the form of Jersey resource classes. This allows the scheme
+     * to customize the flow for performing the authentication handshake, for
+     * example to handle the two-step request-response cycle for crtauth.
+     * 
+     * If the scheme requires no custom HTTP endpoints (for instance, if just
+     * validating a pre-shared secret token), return Optional.absent().
+     */
+    Optional<AuthenticationFlowEndpoint> authenticationFlowEndpoint();
+}
+
+interface AuthenticationFlowEndpoint {
+    /** 
+     * Return an Object (i.e. Resource class instance) to be registered with
+     * Jersey at Helios master-startup which provides the HTTP endpoints needed
+     * for this scheme's authentication handshake.
+     */
+    Object createJerseyResource(com.spotify.helios.master.MasterConfig config);
+}
+```
 
 *TODO - what classes to implement*
 
