@@ -67,4 +67,21 @@ public class PomVersionTest {
           e.getMessage().contains("number"));
     }
   }
+
+  @Test
+  public void testComparable() {
+    PomVersion v1 = new PomVersion(false, 1, 0, 5);
+    PomVersion v2 = new PomVersion(false, 2, 1, 0);
+
+    assertTrue(v1.compareTo(v2) < 0);
+    assertTrue(v2.compareTo(v1) > 0);
+  }
+
+  @Test
+  public void testComparable_Equals() {
+    PomVersion v1 = new PomVersion(false, 1, 0, 0);
+    PomVersion v2 = new PomVersion(false, 1, 0, 0);
+    assertEquals(0, v1.compareTo(v2));
+    assertEquals(0, v2.compareTo(v1));
+  }
 }
