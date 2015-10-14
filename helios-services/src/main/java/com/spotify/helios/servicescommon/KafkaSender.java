@@ -23,16 +23,12 @@ package com.spotify.helios.servicescommon;
 
 import com.google.common.base.Optional;
 
+import org.apache.kafka.clients.producer.Callback;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * A class that wraps {@link org.apache.kafka.clients.producer.KafkaProducer}.
@@ -41,26 +37,32 @@ public class KafkaSender {
 
   private static final Logger log = LoggerFactory.getLogger(KafkaSender.class);
 
-  private static final int KAFKA_SEND_TIMEOUT = 5;
-
   private final Optional<KafkaProducer<String, byte[]>> kafkaProducer;
 
   public KafkaSender(final Optional<KafkaProducer<String, byte[]>> kafkaProducer) {
     this.kafkaProducer = kafkaProducer;
   }
 
-  public void send(final KafkaRecord record) {
+  public void send(final KafkaRecord kafkaRecord) {
     if (kafkaProducer.isPresent()) {
-      try {
-        final Future<RecordMetadata> future = kafkaProducer.get().send(
-            new ProducerRecord<String, byte[]>(record.getKafkaTopic(), record.getKafkaData()));
-        final RecordMetadata metadata = future.get(KAFKA_SEND_TIMEOUT, TimeUnit.SECONDS);
-        log.debug("Sent an event to Kafka, meta: {}", metadata);
-      } catch (ExecutionException | InterruptedException | TimeoutException e) {
-        log.warn("Unable to send an event to Kafka", e);
-      }
+      final ProducerRecord<String, byte[]> record =
+          new ProducerRecord<>(kafkaRecord.getKafkaTopic(), kafkaRecord.getKafkaData());
+
+      kafkaProducer.get().send(record, new LoggingCallback());
     } else {
       log.debug("KafkaProducer isn't set. Not sending anything.");
+    }
+  }
+
+  private static class LoggingCallback implements Callback {
+
+    @Override
+    public void onCompletion(RecordMetadata metadata, Exception e) {
+      if (e == null) {
+        log.debug("Sent an event to Kafka, meta: {}", metadata);
+      } else {
+        log.warn("Unable to send an event to Kafka", e);
+      }
     }
   }
 }
