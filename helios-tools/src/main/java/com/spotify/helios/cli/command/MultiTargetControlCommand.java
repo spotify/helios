@@ -35,6 +35,7 @@ import net.sourceforge.argparse4j.inf.Subparser;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
@@ -52,12 +53,13 @@ public abstract class MultiTargetControlCommand implements CliCommand {
   @Override
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
                  final PrintStream err, final String username, final boolean json,
-                 final BufferedReader stdin)
-                     throws IOException, InterruptedException {
+                 final Path authPlugin, final Path privateKeyPath, final BufferedReader stdin)
+      throws IOException, InterruptedException {
 
-    final Builder<TargetAndClient> clientBuilder = ImmutableList.<TargetAndClient>builder();
+    final Builder<TargetAndClient> clientBuilder = ImmutableList.builder();
     for (final Target target : targets) {
-      final HeliosClient client = Utils.getClient(target, err, username);
+      final HeliosClient client =
+          Utils.getClient(target, err, username, authPlugin, privateKeyPath);
       if (client == null) {
         return 1;
       }

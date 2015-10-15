@@ -25,6 +25,7 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
+import com.spotify.helios.authentication.HeliosAuthException;
 import com.spotify.helios.client.HeliosClient;
 
 import org.xbill.DNS.Name;
@@ -47,7 +48,8 @@ class HostResolver {
     this.searchPath = searchPath;
   }
 
-  static HostResolver create(HeliosClient client) throws InterruptedException, ExecutionException {
+  static HostResolver create(HeliosClient client)
+      throws InterruptedException, ExecutionException, HeliosAuthException {
     final ResolverConfig currentConfig = ResolverConfig.getCurrentConfig();
     final Name[] path;
     if (currentConfig != null) {

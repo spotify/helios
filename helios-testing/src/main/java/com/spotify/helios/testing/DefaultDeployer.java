@@ -27,6 +27,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 
+import com.spotify.helios.authentication.HeliosAuthException;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus.Status;
 import com.spotify.helios.common.descriptors.Job;
@@ -41,7 +42,7 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.base.Predicates.containsPattern;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.junit.Assert.fail;
 
 public class DefaultDeployer implements Deployer {
@@ -83,7 +84,7 @@ public class DefaultDeployer implements Deployer {
 
       hosts = client.listHosts().get();
       determineHosts.markSuccess();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (InterruptedException | ExecutionException | HeliosAuthException e) {
       throw new AssertionError("Failed to get list of Helios hosts", e);
     } finally {
       determineHosts.finish();
@@ -98,7 +99,7 @@ public class DefaultDeployer implements Deployer {
     }
 
     final String chosenHost = pickHost(filteredHosts);
-    return deploy(job, asList(chosenHost), waitPorts, prober, reportWriter);
+    return deploy(job, singletonList(chosenHost), waitPorts, prober, reportWriter);
   }
 
   @VisibleForTesting

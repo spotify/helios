@@ -56,7 +56,7 @@
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.8</version>
+      <version>1.10</version>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -135,7 +135,7 @@
     <dependency>
       <groupId>org.slf4j</groupId>
       <artifactId>slf4j-api</artifactId>
-      <version>1.7.6</version>
+      <version>1.7.7</version>
     </dependency>
     <dependency>
       <groupId>net.sourceforge.argparse4j</groupId>

@@ -23,6 +23,7 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.collect.Iterables;
 
+import com.spotify.helios.authentication.HeliosAuthException;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -56,7 +57,7 @@ abstract class WildcardJobCommand extends ControlCommand {
   @Override
   int run(final Namespace options, final HeliosClient client, final PrintStream out,
           final boolean json, final BufferedReader stdin)
-      throws ExecutionException, InterruptedException, IOException {
+      throws ExecutionException, InterruptedException, IOException, HeliosAuthException {
 
     final String jobIdString = options.getString(jobArg.getDest());
     final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
@@ -89,5 +90,5 @@ abstract class WildcardJobCommand extends ControlCommand {
   protected abstract int runWithJobId(final Namespace options, final HeliosClient client,
                                       final PrintStream out, final boolean json, final JobId jobId,
                                       final BufferedReader stdin)
-      throws ExecutionException, InterruptedException, IOException;
+      throws ExecutionException, InterruptedException, IOException, HeliosAuthException;
 }

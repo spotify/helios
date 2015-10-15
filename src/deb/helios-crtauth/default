@@ -1,0 +1,4 @@
+{
+  "ldapUrl": "ldap://ldap.example.com",
+  "ldapSearchPath": "CN=users,DC=example,DC=com"
+}

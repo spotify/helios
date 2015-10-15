@@ -23,6 +23,7 @@ package com.spotify.helios.cli.command;
 
 import com.google.common.collect.ImmutableList;
 
+import com.spotify.helios.authentication.HeliosAuthException;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.JobId;
@@ -86,7 +87,7 @@ public class JobUndeployCommand extends WildcardJobCommand {
   protected int runWithJobId(final Namespace options, final HeliosClient client,
                              final PrintStream out, final boolean json, final JobId jobId,
                              final BufferedReader stdin)
-      throws ExecutionException, InterruptedException, IOException {
+      throws ExecutionException, InterruptedException, IOException, HeliosAuthException {
 
     final boolean all = options.getBoolean(allArg.getDest());
     final boolean yes = options.getBoolean(yesArg.getDest());

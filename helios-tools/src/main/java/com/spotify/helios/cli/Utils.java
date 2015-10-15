@@ -21,11 +21,8 @@
 
 package com.spotify.helios.cli;
 
-import com.google.common.base.Function;
-import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
@@ -38,6 +35,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -57,7 +55,8 @@ public class Utils {
   }
 
   public static HeliosClient getClient(final Target target, final PrintStream err,
-                                       final String username) {
+                                       final String username, final Path authPlugin,
+                                       final Path privateKeyPath) {
 
     List<URI> endpoints = Collections.emptyList();
     try {
@@ -73,6 +72,8 @@ public class Utils {
     return HeliosClient.newBuilder()
         .setEndpointSupplier(target.getEndpointSupplier())
         .setUser(username)
+        .setAuthPlugin(authPlugin)
+        .setPrivateKeyPath(privateKeyPath)
         .build();
   }
 
@@ -87,11 +88,8 @@ public class Utils {
     }
     final char c = line.charAt(0);
 
-    if (c != 'Y' && c != 'y') {
-      return false;
-    }
+    return !(c != 'Y' && c != 'y');
 
-    return true;
   }
 
   public static Map<String, String> argToStringMap(final Namespace namespace, final Argument arg) {
@@ -109,24 +107,6 @@ public class Utils {
       }
     }
     return map;
-  }
-
-  public static <K extends Comparable<K>, V> void printMap(final PrintStream out, final String name,
-                                                    final Function<V, String> transform,
-                                                    final Map<K, V> values) {
-    out.print(name);
-    boolean first = true;
-    for (final K key : Ordering.natural().sortedCopy(values.keySet())) {
-      if (!first) {
-        out.print(Strings.repeat(" ", name.length()));
-      }
-      final V value = values.get(key);
-      out.printf("%s=%s%n", key, transform.apply(value));
-      first = false;
-    }
-    if (first) {
-      out.println();
-    }
   }
 
   public static List<HostSelector> parseHostSelectors(final Namespace namespace,

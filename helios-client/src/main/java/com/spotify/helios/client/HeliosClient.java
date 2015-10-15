@@ -40,6 +40,9 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.spotify.helios.authentication.AuthClient;
+import com.spotify.helios.authentication.AuthProviders;
+import com.spotify.helios.authentication.HeliosAuthException;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
@@ -82,6 +85,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -129,29 +133,29 @@ public class HeliosClient implements AutoCloseable {
 
   private final String user;
   private final Supplier<List<URI>> endpointSupplier;
+  private final AuthClient authClient;
 
   private final ListeningExecutorService executorService;
 
   HeliosClient(final String user,
                final Supplier<List<URI>> endpointSupplier,
+               final Path authPlugin,
+               final Path sshPrivateKeyPath,
                final ListeningExecutorService executorService) {
     this.user = checkNotNull(user);
     this.endpointSupplier = checkNotNull(endpointSupplier);
+    this.authClient = AuthProviders.createClientAuthProvider(
+        authPlugin, sshPrivateKeyPath, endpointSupplier.get()).getClient();
     this.executorService = checkNotNull(executorService);
   }
 
-  HeliosClient(final String user, final List<URI> endpoints,
-               final ListeningExecutorService executorService) {
-    this(user, Suppliers.ofInstance(endpoints), executorService);
-  }
-
-  HeliosClient(final String user, final Supplier<List<URI>> endpointSupplier) {
-    this(user, endpointSupplier, MoreExecutors.listeningDecorator(getExitingExecutorService(
-        (ThreadPoolExecutor) newFixedThreadPool(4), 0, SECONDS)));
-  }
-
-  HeliosClient(final String user, final List<URI> endpoints) {
-    this(user, Suppliers.ofInstance(endpoints));
+  HeliosClient(final String user,
+               final Supplier<List<URI>> endpointSupplier,
+               final Path authPlugin,
+               final Path privateKeyPath) {
+    this(user, endpointSupplier, authPlugin, privateKeyPath,
+         MoreExecutors.listeningDecorator(
+             getExitingExecutorService((ThreadPoolExecutor) newFixedThreadPool(4), 0, SECONDS)));
   }
 
   @Override
@@ -202,8 +206,16 @@ public class HeliosClient implements AutoCloseable {
     return request(uri, method, null);
   }
 
-  private ListenableFuture<Response> request(final URI uri, final String method,
+  private ListenableFuture<Response> request(final URI uri,
+                                             final String method,
                                              final Object entity) {
+    return request(uri, method, entity, Collections.<String, List<String>>emptyMap());
+  }
+
+  private ListenableFuture<Response> request(final URI uri,
+                                             final String method,
+                                             final Object entity,
+                                             final Map<String, List<String>> otherHeaders) {
     final Map<String, List<String>> headers = Maps.newHashMap();
     final byte[] entityBytes;
     headers.put(VersionCompatibility.HELIOS_VERSION_HEADER,
@@ -215,6 +227,11 @@ public class HeliosClient implements AutoCloseable {
     } else {
       entityBytes = new byte[]{};
     }
+
+    if (!otherHeaders.isEmpty()) {
+      headers.putAll(otherHeaders);
+    }
+
     return executorService.submit(new Callable<Response>() {
       @Override
       public Response call() throws Exception {
@@ -402,7 +419,12 @@ public class HeliosClient implements AutoCloseable {
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final TypeReference<T> typeReference) {
-    return get(uri, Json.type(typeReference));
+    return get(uri, Collections.<String, List<String>>emptyMap(), typeReference);
+  }
+
+  private <T> ListenableFuture<T> get(final URI uri, final Map<String, List<String>> headers,
+                                      final TypeReference<T> typeReference) {
+    return get(uri, headers, Json.type(typeReference));
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final Class<T> clazz) {
@@ -410,7 +432,12 @@ public class HeliosClient implements AutoCloseable {
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final JavaType javaType) {
-    return transform(request(uri, "GET"), new ConvertResponseToPojo<T>(javaType));
+    return get(uri, Collections.<String, List<String>>emptyMap(), javaType);
+  }
+
+  private <T> ListenableFuture<T> get(final URI uri, final Map<String, List<String>> headers,
+                                      final JavaType javaType) {
+    return transform(request(uri, "GET", null, headers), new ConvertResponseToPojo<T>(javaType));
   }
 
   private ListenableFuture<Integer> put(final URI uri) {
@@ -522,14 +549,21 @@ public class HeliosClient implements AutoCloseable {
                                                   ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
   }
 
-  public ListenableFuture<List<String>> listHosts() {
-    return get(uri("/hosts/"), new TypeReference<List<String>>() {
-    });
+  public ListenableFuture<List<String>> listHosts() throws HeliosAuthException {
+    return get(uri("/hosts/"), ImmutableMap.of(
+                   "Authorization", singletonList(authClient.getToken(user))
+               ),
+               new TypeReference<List<String>>() {}
+    );
   }
 
-  public ListenableFuture<List<String>> listMasters() {
-    return get(uri("/masters/"), new TypeReference<List<String>>() {
-    });
+  public ListenableFuture<List<String>> listMasters() throws HeliosAuthException {
+    return get(uri("/masters/"), ImmutableMap.of(
+                   // TODO (dxia) Do auth handshake again if 401
+                   "Authorization", singletonList(authClient.getToken(user))
+               ),
+               new TypeReference<List<String>>() {}
+    );
   }
 
   public ListenableFuture<VersionResponse> version() {
@@ -694,6 +728,8 @@ public class HeliosClient implements AutoCloseable {
 
     private String user;
     private Supplier<List<URI>> endpointSupplier;
+    private Path authPlugin;
+    private Path privateKeyPath;
 
     public Builder setUser(final String user) {
       this.user = user;
@@ -729,8 +765,18 @@ public class HeliosClient implements AutoCloseable {
       return this;
     }
 
+    public Builder setAuthPlugin(final Path authPlugin) {
+      this.authPlugin = authPlugin;
+      return this;
+    }
+
+    public Builder setPrivateKeyPath(final Path privateKeyPath) {
+      this.privateKeyPath = privateKeyPath;
+      return this;
+    }
+
     public HeliosClient build() {
-      return new HeliosClient(user, endpointSupplier);
+      return new HeliosClient(user, endpointSupplier, authPlugin, privateKeyPath);
     }
   }
 
@@ -761,6 +807,10 @@ public class HeliosClient implements AutoCloseable {
       this.uri = uri;
       this.status = status;
       this.payload = payload;
+    }
+
+    public int getStatus() {
+      return status;
     }
 
     @Override
