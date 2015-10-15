@@ -449,7 +449,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException {
     checkNotNull(deploymentGroup, "deploymentGroup");
 
-    log.info("rolling-update on deployment-group: name={}", deploymentGroup.getName());
+    log.info("starting rolling-update on deployment-group: name={}", deploymentGroup.getName());
 
     final DeploymentGroup updated = deploymentGroup.toBuilder()
         .setJobId(jobId)
@@ -478,6 +478,7 @@ public class ZooKeeperMasterModel implements MasterModel {
               DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, Json.asBytesUnchecked(event)));
         }
       }
+      log.info("finished rolling-update on deployment-group: name={}", deploymentGroup.getName());
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(deploymentGroup.getName());
     } catch (final KeeperException e) {
