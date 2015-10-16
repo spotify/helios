@@ -26,7 +26,7 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.codahale.metrics.MetricRegistry;
 import com.spotify.helios.auth.AuthenticationPlugin;
 import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
-import com.spotify.helios.auth.AuthenticatorLoader;
+import com.spotify.helios.auth.AuthenticationPluginLoader;
 import com.spotify.helios.auth.ServerAuthenticationConfig;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.jersey.DisabledAuthInjectableProvider;
@@ -211,7 +211,7 @@ public class MasterService extends AbstractIdleService {
     if (config.isAuthenticationEnabled()) {
       // Set up authentication
       final ServerAuthenticationConfig authConfig = config.getAuthenticationConfig();
-      final AuthenticationPlugin<?> authPlugin = AuthenticatorLoader.load(authConfig);
+      final AuthenticationPlugin<?> authPlugin = AuthenticationPluginLoader.load(authConfig);
       final ServerAuthentication<?> authentication = authPlugin.serverAuthentication();
 
       environment.jersey().register(authentication.authProvider());

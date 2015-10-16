@@ -27,7 +27,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.ServiceLoader;
 
-public class AuthenticatorLoader {
+public class AuthenticationPluginLoader {
 
   public static AuthenticationPlugin<?> load(ServerAuthenticationConfig config) {
     return load(config, ImmutableList.<Path>of());
