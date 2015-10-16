@@ -3,27 +3,32 @@
 This document details how to configure your Helios installation to authenticate
 requests between the Helios CLI and the Helios masters/cluster.
 
+The support for authentication in Helios is pluggable; the specific scheme used
+by an installation can be controlled based on the arguments that Helios is
+started with. New authentication schemes can be added to Helios via
+implementing a handful of Java interfaces, packaging your plugin as a jar, and
+supplying the path to that JAR in an argument when starting the Helios cluster.
+
+Helios comes with support for the [crtauth protocol][], which is in use
+internally at Spotify, but users of Helios are free to choose any other scheme.
+
 # TODOs for this document
 
-- configuration needed to setup master to require authentication
-  - make sure authentication can be enabled based on client version header, to
-    apply to versions >= some value and/or completely
-- add notion of schemes
-- link to how to setup https for helios masters
+- link to how to setup HTTPS for Helios masters
 
 ## Authentication flow
 
 *Note that since all authentication requires clients to send some sort of
 credentials over the wire to the Helios masters, you should first configure
-your Helios clusters to use HTTPS*
+your Helios clusters to use HTTPS.*
 
-When configured to do so, the Helios master(s) will respond to any
-unauthenticated request with a `HTTP 401 Unauthorized` status code in the
-response. The master will set the `WWW-Authenticate` header in the response
-with the configured scheme for the client to use.
+When configured to do so, the Helios master will respond to any unauthenticated
+request with a `HTTP 401 Unauthorized` status code in the response. The master
+will set the `WWW-Authenticate` header in the response with the configured
+scheme for the client to use.
 
 When the client receives this response status code, it will look for a plugin
-registered for the given scheme. The Helios CLI will have support for the
+registered for the given scheme. The Helios CLI has support for the
 [`crtauth`][] scheme built in, but additional schemes can be added to the CLI
 by doing ... *TODO*.
 
@@ -32,81 +37,113 @@ If the client cannot find a plugin for the scheme, it will be unable to proceed.
 After finding the plugin, the client activates it. The plugin is then
 responsible for performing authentication - for example in the crtauth flow (as
 explained below), it is the plugin's role to handle making the multiple HTTP
-requests for the two-step challenge-response flow.
+requests for the two-step challenge-response flow. A simpler authentication
+scheme may just read a shared secret from a file on disk or an environment
+variable and populate the `Authorization` header with that value.
 
-The end result of authenticating is that the Helios server gives the client an
-access token which should be included in the `Authorization` header of any
-subsequent HTTP requests.
+The end result of the authentication process is that the Helios client will
+have a token for the `Authorization` header of it's HTTP requests that is known
+to work. Some schemes may have the concept of expiring tokens, but to maintain
+support for all types of schemes within Helios, the server does not communicate
+this information back to the client. 
 
-Access tokens have an associated expiration time, although the time at which
-the token expires is not communicated to the client. When the client makes a
-request to a protected resource on the service with an expired access token,
-the server will again respond with `401 Unauthorized` to signal that the client
-needs to perform the authentication flow again.
-
-### crtauth flow
-
-To begin the crtauth flow, the client sends a request to `/_auth` on one of the
-masters to request a challenge. The client's request includes the username of
-the current user (`System.getProperty("user.name")` in Java, but this should be
-overridable via the CLI). The server will response with a challenge.
-
-The client signs the challenge using the user's configured SSH key and sends it
-to the server in a second request. 
-
-The server verifies that the signed challenge is valid for the given user. If
-valid, the server sends back an access token that the client is to use in all
-subsequent requests to the server. 
-
+The server may respond back to any request that contains an `Authorization`
+header with a new `401 Unauthorized` response (perhaps because the token has
+expired). The client will handle this by attempting to invoke the
+authentication flow again.
 
 ## Supported authentication schemes
 
 - [crtauth][]
-
+- [HTTP Basic Authentication][http-basic]
 
 ## How to configure the Helios masters to require authentication
 
-*TODO - document CLI args when starting the master, and how to restrict
-authentication to only certain client versions*
+Authentication is enabled in the master by adding the `--auth-enabled` flag.
+The name of the authentication scheme to activate must be supplied in the
+`--auth-scheme SCHEME` flag.
+
+Authentication can be restricted to only apply to a certain client
+version and above, to allow for rolling out the authentication requirement
+slowly across a Helios installation. This is controlled with the
+`--auth-minimum-version VERSION` argument when starting the master (where
+`VERSION` is a Helios version string like `0.8.500`). If not set,
+authentication is applied to all clients and requests.
+
+To use an authentication plugin that is not shipped with Helios itself (such as
+a scheme you have authored), include the path to the JAR containing the plugin
+with the `--auth-plugin` argument to the master.
 
 ## How to add support to Helios for additional schemes
 
-Pieces for implementing support for a new scheme:
+### How plugins are loaded
 
-server-side:
+Helios uses the `java.util.ServiceLoader` facility for loading
+Authenticator instances from the classpath. The first Authenticator
+instance found that matches the configured scheme name is used. If no
+Authenticator instance is found, the master will fail to start up.
+
+### Implementing a new plugin
+
+A new plugin needs to implement three interfaces: 
+
+- com.spotify.helios.auth.ServerAuthentication, which tells the server (and
+  Jersey) how to translate HTTP requests into "credentials" and verify them.
+- com.spotify.helios.auth.ClientAuthentication, which tells the CLI/client what
+  to do when the server signals that it requires authentication.
+- com.spotify.helios.auth.AuthenticationPlugin, which is the class actually
+  loaded by ServiceLoader and simply provides access to the
+  ServerAuthentication and ClientAuthentication above.
+
+A plugin providing HTTP Basic Authentication is packaged with the
+helios-authentication module as an example of how to implement a plugin. The
+packaged crtauth plugin can also be used as reference.
+
+#### ServerAuthentication
+
+There is one required part to implement in ServerAuthentication and one optional part.
+
+The required part of the interface is:
+
 ```java
-interface Authenticator {
-    /** 
-     * Given a token supplied in the "Authorization" header of the HTTP
-     * request to Helios master, check if the token is valid.
-     * An expired token should be treated like an invalid token by
-     * returning false.
-     */
-    boolean verifyToken(String username, String token)
-
-    /** 
-     * Allows the authentication scheme to register additional HTTP endpoints
-     * in Helios in the form of Jersey resource classes. This allows the scheme
-     * to customize the flow for performing the authentication handshake, for
-     * example to handle the two-step request-response cycle for crtauth.
-     * 
-     * If the scheme requires no custom HTTP endpoints (for instance, if just
-     * validating a pre-shared secret token), return Optional.absent().
-     */
-    Optional<AuthenticationFlowEndpoint> authenticationFlowEndpoint();
-}
-
-interface AuthenticationFlowEndpoint {
-    /** 
-     * Return an Object (i.e. Resource class instance) to be registered with
-     * Jersey at Helios master-startup which provides the HTTP endpoints needed
-     * for this scheme's authentication handshake.
-     */
-    Object createJerseyResource(com.spotify.helios.master.MasterConfig config);
-}
+InjectableProvider<Auth, Parameter> authProvider();
 ```
 
-*TODO - what classes to implement*
+`InjectableProvider<Auth, Parameter>` tells Jersey what to do when it
+encounters resource classes that have parameters annotated with `@Auth`. The
+main thing implementations of this class have to do (through the Jersey
+`Injectable` they return) is to translate a HTTP request, represented by the
+`com.sun.jersey.api.core.HttpContext` class, into an instance of `HeliosUser`.
+
+The typical flow for implementations will be to examine the HTTP headers of the
+request, and if they present and well-formed, validate the credentials into a
+user/principal object (`HeliosUser`).
+
+The recommended way to structure this, following the examples of
+`io.dropwizard.auth.basic.BasicAuthProvider` and Helios' `CrtAuthProvider`, is
+to use the Dropwizard concept of [`Authenticator`s][dw-authenticator], which
+provides a useful definition for a component that takes credentials and
+optionally turns them into a principal.
+
+##### Adding additional Jersey controllers to Helios
+The optional part of the ServerAuthentication interface is
+
+```java
+void registerAdditionalJerseyComponents(JerseyEnvironment env);
+```
+
+This method can be implemented to add extra components to the
+JerseyEnvironment. In the case of crtauth, it adds another resource to provide
+the two-step authentication flow of crtauth. If no new HTTP endpoints need to
+be added (as in the case of the HTTP Basic implementation), the implementation
+of the method can just be empty.
+
+### ClientAuthentication
+
+TODO
 
 
-[crtauth]: https://github.com/spotify/crtauth
+
+[crtauth]: https://github.com/spotify/crtauth-java
+[crtauth-protocol]: https://github.com/spotify/crtauth/blob/master/PROTOCOL.md
+[dw-authenticator]: http://dropwizard.github.io/dropwizard/0.7.1/docs/manual/auth.html
