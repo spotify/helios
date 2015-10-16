@@ -21,7 +21,6 @@
 
 package com.spotify.helios.client;
 
-import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
@@ -52,6 +51,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -66,7 +66,7 @@ import javax.net.ssl.SSLSession;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class DefaultRequestDispatcher implements RequestDispatcher {
+class DefaultRequestDispatcher implements RequestDispatcher {
 
   private static final Logger log = LoggerFactory.getLogger(DefaultRequestDispatcher.class);
 
@@ -87,8 +87,8 @@ public class DefaultRequestDispatcher implements RequestDispatcher {
 
   @Override
   public ListenableFuture<Response> request(final URI uri, final String method,
-                                                  final byte[] entityBytes,
-                                                  final Map<String, List<String>> headers) {
+                                            final byte[] entityBytes,
+                                            final Map<String, List<String>> headers) {
     return executorService.submit(new Callable<Response>() {
       @Override
       public Response call() throws Exception {
@@ -144,7 +144,7 @@ public class DefaultRequestDispatcher implements RequestDispatcher {
       return Json.asPrettyString(Json.read(bytes, new TypeReference<Map<String, Object>>() {
       }));
     } catch (IOException e) {
-      return new String(bytes, Charsets.UTF_8);
+      return new String(bytes, StandardCharsets.UTF_8);
     }
   }
 

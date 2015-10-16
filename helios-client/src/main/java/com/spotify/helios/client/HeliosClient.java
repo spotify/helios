@@ -78,8 +78,6 @@ import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.annotation.Nullable;
-
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
@@ -107,7 +105,7 @@ public class HeliosClient implements AutoCloseable {
   private final RequestDispatcher dispatcher;
   private final AtomicBoolean versionWarningLogged = new AtomicBoolean();
 
-  HeliosClient(final String user, final RequestDispatcher dispatcher) {
+  public HeliosClient(final String user, final RequestDispatcher dispatcher) {
     this.user = checkNotNull(user);
     this.dispatcher = checkNotNull(dispatcher);
   }
@@ -161,7 +159,7 @@ public class HeliosClient implements AutoCloseable {
   }
 
   private ListenableFuture<Response> request(final URI uri, final String method,
-                                                   final Object entity) {
+                                             final Object entity) {
     final Map<String, List<String>> headers = Maps.newHashMap();
     final byte[] entityBytes;
     headers.put(VersionCompatibility.HELIOS_VERSION_HEADER,
