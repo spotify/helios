@@ -52,7 +52,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
  */
 public class BasicServerAuthentication implements ServerAuthentication<BasicCredentials> {
 
-
   private final Map<String, String> users;
 
   public BasicServerAuthentication() {
@@ -84,7 +83,7 @@ public class BasicServerAuthentication implements ServerAuthentication<BasicCred
             final String username = credentials.getUsername();
             final String password = credentials.getPassword();
             if (users.containsKey(username) && users.get(username).equals(password)) {
-              Optional.of(new HeliosUser(username));
+              return Optional.of(new HeliosUser(username));
             }
             return Optional.absent();
           }

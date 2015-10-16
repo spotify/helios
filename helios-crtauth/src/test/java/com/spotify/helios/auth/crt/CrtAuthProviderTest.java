@@ -19,40 +19,20 @@
  * under the License.
  */
 
-package com.spotify.helios.auth;
+package com.spotify.helios.auth.crt;
 
-import com.google.common.base.Preconditions;
+import org.junit.Test;
 
-/** Represents an authenticated user accessing resources within the Helios master service. */
-public class HeliosUser {
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
-  private final String username;
+public class CrtAuthProviderTest {
 
-  public HeliosUser(String username) {
-    this.username = Preconditions.checkNotNull(username);
-  }
+  private final CrtTokenAuthenticator authenticator = mock(CrtTokenAuthenticator.class);
+  private final CrtAuthProviderTest
 
-  public String getUsername() {
-    return username;
-  }
-
-  @Override
-  public boolean equals(Object o) {
-    if (this == o) {
-      return true;
-    }
-    if (o == null || getClass() != o.getClass()) {
-      return false;
-    }
-
-    HeliosUser that = (HeliosUser) o;
-
-    return username.equals(that.username);
-
-  }
-
-  @Override
-  public int hashCode() {
-    return username.hashCode();
+  @Test
+  public void notImplemented() {
+    fail();
   }
 }
