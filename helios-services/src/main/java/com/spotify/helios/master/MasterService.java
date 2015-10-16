@@ -29,7 +29,12 @@ import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
 import com.spotify.helios.agent.KafkaClientProvider;
+import com.spotify.helios.auth.AuthenticationPlugin;
+import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
+import com.spotify.helios.auth.ServerAuthenticationConfig;
+import com.spotify.helios.auth.AuthenticationPluginLoader;
 import com.spotify.helios.master.http.VersionResponseFilter;
+import com.spotify.helios.master.jersey.DisabledAuthInjectableProvider;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
 import com.spotify.helios.master.resources.HistoryResource;
@@ -206,6 +211,22 @@ public class MasterService extends AbstractIdleService {
     environment.jersey().register(new VersionResource());
     environment.jersey().register(new UserProvider());
     environment.jersey().register(new DeploymentGroupResource(model));
+
+    if (config.isAuthenticationEnabled()) {
+      // Set up authentication
+      final ServerAuthenticationConfig authConfig = config.getAuthenticationConfig();
+      final AuthenticationPlugin<?> authPlugin = AuthenticationPluginLoader.load(authConfig);
+      final ServerAuthentication<?> authentication = authPlugin.serverAuthentication();
+
+      environment.jersey().register(authentication.authProvider());
+
+      // register any additional resources needed by the plugin
+      authentication.registerAdditionalJerseyComponents(environment.jersey());
+    } else {
+      // when authentication is disabled, we need to register an InjectableProvider with jersey to
+      // tell it what to do with all the @Auth annotations in our resources
+      environment.jersey().register(new DisabledAuthInjectableProvider());
+    }
 
     final DefaultServerFactory serverFactory = ServiceUtil.createServerFactory(
         config.getHttpEndpoint(), config.getAdminPort(), false);
