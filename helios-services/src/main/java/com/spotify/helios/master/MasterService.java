@@ -29,6 +29,7 @@ import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
 import com.spotify.helios.auth.AuthenticatorLoader;
 import com.spotify.helios.auth.ServerAuthenticationConfig;
 import com.spotify.helios.master.http.VersionResponseFilter;
+import com.spotify.helios.master.jersey.DisabledAuthInjectableProvider;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
 import com.spotify.helios.master.resources.HistoryResource;
@@ -217,6 +218,10 @@ public class MasterService extends AbstractIdleService {
 
       // register any additional resources needed by the plugin
       authentication.registerAdditionalJerseyComponents(environment.jersey());
+    } else {
+      // when authentication is disabled, we need to register an InjectableProvider with jersey to
+      // tell it what to do with all the @Auth annotations in our resources
+      environment.jersey().register(new DisabledAuthInjectableProvider());
     }
 
     final DefaultServerFactory serverFactory = ServiceUtil.createServerFactory(
