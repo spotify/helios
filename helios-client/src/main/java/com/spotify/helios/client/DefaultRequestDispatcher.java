@@ -52,6 +52,7 @@ import java.net.URISyntaxException;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -119,8 +120,9 @@ class DefaultRequestDispatcher implements RequestDispatcher {
                     method, realUri, status, payload.size(), gzip);
         }
 
-        return new Response(method, uri, status, payload.toByteArray(),
-                            ImmutableMap.copyOf(connection.getHeaderFields()));
+        return new Response(
+            method, uri, status, payload.toByteArray(),
+            Collections.unmodifiableMap(Maps.newHashMap(connection.getHeaderFields())));
       }
 
       private boolean isGzipCompressed(final HttpURLConnection connection) {
