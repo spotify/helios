@@ -43,6 +43,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 
 public class CliConfig {
 
+  private static final String HTTPS_SCHEME = "https";
   private static final String HTTP_SCHEME = "http";
   private static final String DOMAIN_SCHEME = "domain";
   private static final String MASTER_ENDPOINTS_KEY = "masterEndpoints";
@@ -168,6 +169,7 @@ public class CliConfig {
         configFromEnvVar = configFromEnvVar.withValue(
             DOMAINS_KEY, ConfigValueFactory.fromIterable(ImmutableList.of(uri.getHost())));
         break;
+      case HTTPS_SCHEME:
       case HTTP_SCHEME:
         configFromEnvVar = configFromEnvVar.withValue(
             MASTER_ENDPOINTS_KEY, ConfigValueFactory.fromIterable(ImmutableList.of(master)));

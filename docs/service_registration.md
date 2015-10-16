@@ -102,11 +102,20 @@ The SkyDNS plugin goes with option #2.
 
 Since the CLI needs to talk to the Helios masters, they too can usefully register with service
 registration if it exports names somehow via DNS SRV records.  The arguments used to configure
-registration are the same as for the agent.  It will register with service `helios` and protocol
-`http`.  The CLI has an environment argument named `--srv-name` to specify the SRV name it should
-look in DNS for, as well as the `-d` option to specify the domain.  It then takes both of those
-and puts it through the `HELIOS_SRV_FORMAT` environment variable format string, which defaults to
-`_%s._http.%s`, and then does an SRV DNS lookup on the result.  If you don't supply `--srv-name` it
-defaults to the string `helios`.  So by default if you did something like:
-`helios -d example.com command`, it will look up the SRV record `_helios._http.example.com` in the
-DNS and attempt to connect to the servers DNS returned.
+registration are the same as for the agent. The Helios master itself will register with service
+`helios` and protocol `http`.
+
+The master does not register or handle HTTPS. If you want to speak HTTPS to the master, put nginx
+in front of it and create a `_helios._https.<domain>` SRV record.
+
+The CLI has an environment argument named `--srv-name` to specify the SRV name it should
+look up in DNS as well as the `-d` option to specify the domain.  It takes both of those
+and puts fills them into the `HELIOS_HTTPS_SRV_FORMAT` and `HELIOS_HTTPS_SRV_FORMAT` environment
+variables format strings, which default to
+`_%s._https.%s` and `_%s._http.%s`, respectively. The client then looks up the SRV records for the
+resulting HTTPS SRV record (`_%s._https.%s`) with a fallback to HTTP (`_%s._http.%s`).
+
+If you don't supply `--srv-name` it defaults to the string `helios`.
+So by default if you ran `helios -d example.com command`,
+the client will look up the SRV records `_helios._https.example.com`. If none exist, the
+client will fallback to looking up the SRV records for `_helios._https.example.com`.

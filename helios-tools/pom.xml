@@ -138,6 +138,13 @@
                 <include>com/sun/jna/**</include>
               </includes>
             </filter>
+            <!-- Explicitly include commons-logging since minimizeJar=true will exclude required classes from the shaded jar. -->
+            <filter>
+              <artifact>commons-logging</artifact>
+              <includes>
+                <include>org/apache/commons/logging/**</include>
+              </includes>
+            </filter>
           </filters>
           <transformers>
             <!--The ServicesResourceTransformer is needed to make jersey happy-->

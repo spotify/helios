@@ -26,14 +26,9 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.xbill.DNS.DClass;
-import org.xbill.DNS.Lookup;
-import org.xbill.DNS.Record;
-import org.xbill.DNS.SRVRecord;
-import org.xbill.DNS.TextParseException;
-import org.xbill.DNS.Type;
+import com.spotify.dns.DnsSrvResolver;
+import com.spotify.dns.DnsSrvResolvers;
+import com.spotify.dns.LookupResult;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -44,67 +39,76 @@ import static java.lang.System.getenv;
 
 public abstract class Resolver {
 
-  private static final String SRV_FORMAT = env("HELIOS_SRV_FORMAT", "_%s._http.%s");
+  private static final String HTTPS_SRV_FORMAT = env("HELIOS_HTTPS_SRV_FORMAT", "_%s._https.%s");
+  private static final String HTTP_SRV_FORMAT = env("HELIOS_HTTP_SRV_FORMAT", "_%s._http.%s");
+
+  private static final DnsSrvResolver DEFAULT_RESOLVER = DnsSrvResolvers.newBuilder().build();
 
   private static String env(final String name, final String defaultValue) {
     return Optional.fromNullable(getenv(name)).or(defaultValue);
   }
 
-  private static final Logger log = LoggerFactory.getLogger(Resolver.class);
-
   public static Supplier<List<URI>> supplier(final String srvName, final String domain) {
+    return supplier(srvName, domain, DEFAULT_RESOLVER);
+  }
+
+  static Supplier<List<URI>> supplier(final String srvName, final String domain,
+                                      final DnsSrvResolver resolver) {
     return new Supplier<List<URI>>() {
       @Override
       public List<URI> get() {
-        return resolve(srvName, domain);
+        // Try to get HTTPS SRV records first and fallback to HTTP
+        List<URI> uris = resolve(srvName, "https", domain, resolver);
+        if (uris.isEmpty()) {
+          uris = resolve(srvName, "http", domain, resolver);
+        }
+        return uris;
       }
     };
   }
 
-  public static List<URI> resolve(final String srvName, final String domain) {
-    final String name = srv(srvName, domain);
-    final Lookup lookup;
-    try {
-      lookup = new Lookup(name, Type.SRV, DClass.IN);
-    } catch (TextParseException e) {
-      throw new IllegalArgumentException("unable to create lookup for name: " + name, e);
-    }
-
-    Record[] queryResult = lookup.run();
-
-    switch (lookup.getResult()) {
-      case Lookup.SUCCESSFUL:
-        final ImmutableList.Builder<URI> endpoints = ImmutableList.builder();
-        for (Record record : queryResult) {
-          if (record instanceof SRVRecord) {
-            SRVRecord srv = (SRVRecord) record;
-            endpoints.add(http(srv.getTarget().toString(), srv.getPort()));
-          }
-        }
-        return endpoints.build();
-      case Lookup.HOST_NOT_FOUND:
-        // fallthrough
-      case Lookup.TYPE_NOT_FOUND:
-        log.warn("No results returned for query '{}'", name);
-        return ImmutableList.of();
+  private static List<URI> resolve(final String srvName,
+                                   final String protocol,
+                                   final String domain,
+                                   final DnsSrvResolver resolver) {
+    final String name;
+    switch (protocol) {
+      case "https":
+        name = httpsSrv(srvName, domain);
+        break;
+      case "http":
+        name = httpSrv(srvName, domain);
+        break;
       default:
-        throw new HeliosRuntimeException(String.format("Lookup of '%s' failed with code: %d - %s ",
-                                                       name, lookup.getResult(),
-                                                       lookup.getErrorString()));
+        throw new IllegalArgumentException(String.format(
+            "Invalid protocol: %s. Helios SRV record can only be https or http.", protocol));
     }
+
+    final List<LookupResult> lookupResults = resolver.resolve(name);
+
+    final ImmutableList.Builder<URI> endpoints = ImmutableList.builder();
+    for (final LookupResult result : lookupResults) {
+      endpoints.add(protocol(protocol, result.host(), result.port()));
+    }
+
+    return endpoints.build();
   }
 
-  private static URI http(final String host, final int port) {
+  private static URI protocol(final String protocol, final String host, final int port) {
     final URI endpoint;
     try {
-      endpoint = new URI("http", null, host, port, null, null, null);
+      endpoint = new URI(protocol, null, host, port, null, null, null);
     } catch (URISyntaxException e) {
       throw Throwables.propagate(e);
     }
     return endpoint;
   }
 
-  private static String srv(final String name, final String domain) {
-    return format(SRV_FORMAT, name, domain);
+  private static String httpsSrv(final String name, final String domain) {
+    return format(HTTPS_SRV_FORMAT, name, domain);
+  }
+
+  private static String httpSrv(final String name, final String domain) {
+    return format(HTTP_SRV_FORMAT, name, domain);
   }
 }

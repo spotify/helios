@@ -50,6 +50,8 @@ When using the CLI, you'll have to specify which Helios endpoint you want to tal
 
     $ helios -z http://localhost:5801
 
+**Note:** The Helios client resolves hostnames into IP addresses and round-robins and retries among those IP addresses.
+
 If you have multiple masters, you can [setup automatic master lookup](automatic_master_lookup.md).
 
 **Note:** that the rest of this manual uses the `helios` command without specifying either the `-z` or `-d` flag. This is only for simplicity, though you can emulate this behavior by aliasing the `helios` command. For example:
