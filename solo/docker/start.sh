@@ -48,6 +48,26 @@ $HELIOS_AGENT_OPTS \
 
 # Start master
 mkdir -p /master
+if [ -n "$LOGSTASH_DESTINATION" ]; then
+	cat > /master/logback-access.xml <<- EOF
+<configuration>
+  <appender name="stash" class="net.logstash.logback.appender.LogstashAccessTcpSocketAppender">
+    <destination>${LOGSTASH_DESTINATION}</destination>
+
+    <!-- encoder is required -->
+    <encoder class="net.logstash.logback.encoder.LogstashAccessEncoder">
+      <fieldNames>
+        <fieldsRequestHeaders>@fields.request_headers</fieldsRequestHeaders>
+        <fieldsResponseHeaders>@fields.response_headers</fieldsResponseHeaders>
+      </fieldNames>
+    </encoder>
+  </appender>
+
+  <appender-ref ref="stash" />
+</configuration>
+EOF
+fi
+
 cd /master
 java -cp '/*' \
 -Xmx128m \
