@@ -35,8 +35,6 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.Version;
-import com.spotify.helios.common.VersionCompatibility;
 
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.slf4j.Logger;
@@ -59,15 +57,12 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
 
-import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
-import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -81,7 +76,6 @@ public class DefaultRequestDispatcher implements RequestDispatcher {
   private static final String VALID_PROTOCOLS_STR =
       String.format("[%s]", Joiner.on("|").join(VALID_PROTOCOLS));
 
-  private final AtomicBoolean versionWarningLogged = new AtomicBoolean();
   private final Supplier<List<URI>> endpointSupplier;
   private final ListeningExecutorService executorService;
 
@@ -124,7 +118,7 @@ public class DefaultRequestDispatcher implements RequestDispatcher {
           log.debug("rep: {} {} {} {} gzip:{}",
                     method, realUri, status, payload.size(), gzip);
         }
-        checkprotocolVersionStatus(connection);
+
         return new Response(method, uri, status, payload.toByteArray(),
                             ImmutableMap.copyOf(connection.getHeaderFields()));
       }
@@ -142,31 +136,6 @@ public class DefaultRequestDispatcher implements RequestDispatcher {
         return false;
       }
     });
-  }
-
-  private void checkprotocolVersionStatus(final HttpURLConnection connection) {
-    final VersionCompatibility.Status versionStatus = getVersionStatus(connection);
-    if (versionStatus == null) {
-      log.debug("Server didn't return a version header!");
-      return; // shouldn't happen really
-    }
-
-    final String serverVersion = connection.getHeaderField(HELIOS_SERVER_VERSION_HEADER);
-    if ((versionStatus == VersionCompatibility.Status.MAYBE) &&
-        (versionWarningLogged.compareAndSet(false, true))) {
-      log.warn("Your Helios client version [{}] is ahead of the server [{}].  This will"
-               + " probably work ok but there is the potential for weird things.  If in doubt,"
-               + " contact the Helios team if you think the cluster you're connecting to is out"
-               + " of date and should be upgraded.", Version.POM_VERSION, serverVersion);
-    }
-  }
-
-  private VersionCompatibility.Status getVersionStatus(final HttpURLConnection connection) {
-    final String status = connection.getHeaderField(HELIOS_VERSION_STATUS_HEADER);
-    if (status != null) {
-      return VersionCompatibility.Status.valueOf(status);
-    }
-    return null;
   }
 
   private String decode(final ByteArrayOutputStream payload) {

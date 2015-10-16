@@ -76,6 +76,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -93,6 +96,8 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 
 public class HeliosClient implements AutoCloseable {
 
@@ -100,6 +105,7 @@ public class HeliosClient implements AutoCloseable {
 
   private final String user;
   private final RequestDispatcher dispatcher;
+  private final AtomicBoolean versionWarningLogged = new AtomicBoolean();
 
   HeliosClient(final String user, final RequestDispatcher dispatcher) {
     this.user = checkNotNull(user);
@@ -168,7 +174,39 @@ public class HeliosClient implements AutoCloseable {
       entityBytes = new byte[]{};
     }
 
-    return dispatcher.request(uri, method, entityBytes, headers);
+    final ListenableFuture<Response> f = dispatcher.request(uri, method, entityBytes, headers);
+    return transform(f, new Function<Response, Response>() {
+      @Override
+      public Response apply(final Response response) {
+        checkProtocolVersionStatus(response);
+        return response;
+      }
+    });
+  }
+
+  private void checkProtocolVersionStatus(final Response response) {
+    final VersionCompatibility.Status versionStatus = getVersionStatus(response);
+    if (versionStatus == null) {
+      log.debug("Server didn't return a version header!");
+      return; // shouldn't happen really
+    }
+
+    final String serverVersion = response.header(HELIOS_SERVER_VERSION_HEADER);
+    if ((versionStatus == VersionCompatibility.Status.MAYBE) &&
+        (versionWarningLogged.compareAndSet(false, true))) {
+      log.warn("Your Helios client version [{}] is ahead of the server [{}].  This will"
+               + " probably work ok but there is the potential for weird things.  If in doubt,"
+               + " contact the Helios team if you think the cluster you're connecting to is out"
+               + " of date and should be upgraded.", Version.POM_VERSION, serverVersion);
+    }
+  }
+
+  private VersionCompatibility.Status getVersionStatus(final Response response) {
+    final String status = response.header(HELIOS_VERSION_STATUS_HEADER);
+    if (status != null) {
+      return VersionCompatibility.Status.valueOf(status);
+    }
+    return null;
   }
 
   private <T> ListenableFuture<T> get(final URI uri, final TypeReference<T> typeReference) {

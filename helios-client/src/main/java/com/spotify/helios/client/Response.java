@@ -83,4 +83,9 @@ class Response {
   public Map<String, List<String>> headers() {
     return headers;
   }
+
+  public String header(final String name) {
+    final List<String> headerValues = headers.get(name);
+    return headerValues == null || headerValues.isEmpty() ? null : headerValues.get(0);
+  }
 }
