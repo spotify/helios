@@ -22,6 +22,7 @@
 package com.spotify.helios.auth.crt;
 
 import com.google.auto.service.AutoService;
+import com.google.common.annotations.VisibleForTesting;
 
 import com.spotify.crtauth.CrtAuthServer;
 import com.spotify.crtauth.keyprovider.KeyProvider;
@@ -30,10 +31,21 @@ import com.spotify.helios.auth.AuthenticationPlugin;
 import org.springframework.ldap.core.LdapTemplate;
 import org.springframework.ldap.core.support.LdapContextSource;
 
-import java.util.concurrent.TimeUnit;
+import java.util.Map;
 
 @AutoService(AuthenticationPlugin.class)
 public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessToken> {
+
+  private final Map<String, String> environment;
+
+  public CrtAuthenticationPlugin() {
+    this(System.getenv());
+  }
+
+  @VisibleForTesting
+  protected CrtAuthenticationPlugin(Map<String, String> environment) {
+    this.environment = environment;
+  }
 
   @Override
   public String schemeName() {
@@ -42,12 +54,14 @@ public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessTo
 
   @Override
   public ServerAuthentication<CrtAccessToken> serverAuthentication() {
-    // TODO (mbrown): check for null
-    final String ldapUrl = System.getenv("CRTAUTH_LDAP_URL");
-    final String ldapSearchPath = System.getenv("CRTAUTH_LDAP_SEARCH_PATH");
-    final String serverName = System.getenv("CRTAUTH_SERVERNAME");
-    final String secret = System.getenv("CRTAUTH_SECRET");
-    final String ldapFieldNameOfKey = System.getenv("CRTAUTH_LDAP_KEY_FIELDNAME");
+    // only validate the presence of environment variables when this method is called, as opposed to
+    // in the constructor, as the client-side code will not use the same environment variables
+    final String ldapUrl =  getRequiredEnv("CRTAUTH_LDAP_URL");
+    final String ldapSearchPath = getRequiredEnv("CRTAUTH_LDAP_SEARCH_PATH");
+    final String serverName = getRequiredEnv("CRTAUTH_SERVERNAME");
+    final String secret = getRequiredEnv("CRTAUTH_SECRET");
+    final String ldapFieldNameOfKey = getOptionalEnv("CRTAUTH_LDAP_KEY_FIELDNAME", "sshPublicKey");
+    final int tokenLifetimeSecs = getOptionalEnv("CRTAUTH_TOKEN_LIFETIME_SECS", 540);
 
     final LdapContextSource contextSource = new LdapContextSource();
     contextSource.setUrl(ldapUrl);
@@ -56,7 +70,7 @@ public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessTo
 
     final LdapTemplate ldapTemplate = new LdapTemplate(contextSource);
 
-    // TODO (mbrown): this should be general, support reading from flat files etc
+    // TODO (mbrown): this should be general, support reading keys from flat files etc
     final KeyProvider keyProvider =
         new LdapKeyProvider(ldapTemplate, ldapSearchPath, ldapFieldNameOfKey);
 
@@ -64,10 +78,38 @@ public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessTo
         .setServerName(serverName)
         .setKeyProvider(keyProvider)
         .setSecret(secret.getBytes())
-        .setTokenLifetimeInS((int) TimeUnit.MINUTES.toSeconds(9))
+        .setTokenLifetimeInS(tokenLifetimeSecs)
         .build();
 
     return new CrtServerAuthentication(new CrtTokenAuthenticator(authServer), authServer);
+  }
+
+  private String getEnv(String name, boolean required) {
+    if (required && !environment.containsKey(name)) {
+      throw new IllegalArgumentException("Environment variable " + name + " is required");
+    }
+    return environment.get(name);
+  }
+
+  private String getRequiredEnv(String name) {
+    return getEnv(name, true);
+  }
+
+  private String getOptionalEnv(String name, String defaultValue) {
+    final String defined = getEnv(name, false);
+    return defined != null ? defined : defaultValue;
+  }
+
+  private int getOptionalEnv(String name, int defaultValue) {
+    final String defined = getEnv(name, false);
+    if (defined == null) {
+      return defaultValue;
+    }
+    try {
+      return Integer.parseInt(defined);
+    } catch (NumberFormatException e) {
+      throw new IllegalArgumentException("Value for " + name + " is not numeric");
+    }
   }
 
   @Override

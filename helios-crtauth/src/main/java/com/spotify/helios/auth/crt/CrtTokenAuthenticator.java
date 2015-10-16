@@ -52,7 +52,7 @@ class CrtTokenAuthenticator implements Authenticator<CrtAccessToken, HeliosUser>
     final String encodedUsername;
     try {
       encodedUsername = crtAuthServer.validateToken(token);
-    } catch (TokenExpiredException | ProtocolVersionException e) {
+    } catch (TokenExpiredException | ProtocolVersionException | IllegalArgumentException e) {
       log.warn("error validating CRT token", e);
       return Optional.absent();
     }

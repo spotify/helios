@@ -21,7 +21,7 @@
 
 package com.spotify.helios.auth.crt;
 
-import com.google.common.base.Preconditions;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 
 import com.spotify.crtauth.exceptions.KeyNotFoundException;
@@ -31,7 +31,7 @@ import com.spotify.crtauth.utils.TraditionalKeyParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.ldap.core.AttributesMapper;
-import org.springframework.ldap.core.LdapTemplate;
+import org.springframework.ldap.core.LdapOperations;
 
 import java.security.InvalidKeyException;
 import java.security.KeyFactory;
@@ -52,19 +52,46 @@ import static org.springframework.ldap.query.LdapQueryBuilder.query;
 // TODO (mbrown): generalize this
 public class LdapKeyProvider implements KeyProvider {
 
+  // similar to Guava's Function, but we need to declare a checked exception
+  public interface KeyParsingFunction {
+
+    RSAPublicKeySpec apply(String input) throws InvalidKeyException;
+  }
+
+  private static final KeyParsingFunction DEFAULT_KEY_PARSER = new KeyParsingFunction() {
+    @Override
+    public RSAPublicKeySpec apply(final String input) throws InvalidKeyException {
+      return TraditionalKeyParser.parsePemPublicKey(input);
+    }
+  };
+
   private static final Logger log = LoggerFactory.getLogger(LdapKeyProvider.class);
 
-  private final LdapTemplate ldapTemplate;
+  private final LdapOperations ldapTemplate;
   private final String baseSearchPath;
   /** name of the ldap attribute holding the key */
   private final String fieldName;
+  private final KeyParsingFunction publicKeyParser;
 
-  public LdapKeyProvider(final LdapTemplate ldapTemplate,
+  public LdapKeyProvider(final LdapOperations ldapTemplate,
                          final String baseSearchPath,
                          final String fieldName) {
+    this(ldapTemplate, baseSearchPath, fieldName, DEFAULT_KEY_PARSER);
+  }
+
+  /**
+   * Allow for swapping out the logic around parsing the public key string as returned by LDAP into
+   * an RSAPublicKeySpec, as having the test mock out actual legit public keys seems too annoying
+   */
+  @VisibleForTesting
+  protected LdapKeyProvider(final LdapOperations ldapTemplate,
+                            final String baseSearchPath,
+                            final String fieldName,
+                            final KeyParsingFunction publicKeyParser) {
+    this.ldapTemplate = ldapTemplate;
+    this.baseSearchPath = baseSearchPath;
     this.fieldName = fieldName;
-    this.ldapTemplate = Preconditions.checkNotNull(ldapTemplate);
-    this.baseSearchPath = Preconditions.checkNotNull(baseSearchPath);
+    this.publicKeyParser = publicKeyParser;
   }
 
   @Override
@@ -86,10 +113,9 @@ public class LdapKeyProvider implements KeyProvider {
       throw new KeyNotFoundException();
     } else if (result.size() == 1) {
       final String r = result.get(0);
-      RSAPublicKeySpec publicKeySpec;
       try {
         final String sshPublicKey = r.replace(fieldName + ": ", "").trim();
-        publicKeySpec = TraditionalKeyParser.parsePemPublicKey(sshPublicKey);
+        final RSAPublicKeySpec publicKeySpec = this.publicKeyParser.apply(sshPublicKey);
         final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         return (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
       } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException e) {
@@ -100,4 +126,6 @@ public class LdapKeyProvider implements KeyProvider {
 
     throw new IllegalStateException("Found more than one LDAP user for name: " + username);
   }
+
+
 }

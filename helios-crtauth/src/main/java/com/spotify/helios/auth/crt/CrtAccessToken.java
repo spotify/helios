@@ -21,16 +21,38 @@
 
 package com.spotify.helios.auth.crt;
 
+import com.google.common.base.Preconditions;
+
 /** Represents the credentials sent in HTTP requests for CRT */
 public class CrtAccessToken {
 
   private final String token;
 
   public CrtAccessToken(String token) {
-    this.token = token;
+    this.token = Preconditions.checkNotNull(token);
   }
 
   public String getToken() {
     return token;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    CrtAccessToken that = (CrtAccessToken) o;
+
+    return token.equals(that.token);
+
+  }
+
+  @Override
+  public int hashCode() {
+    return token.hashCode();
   }
 }

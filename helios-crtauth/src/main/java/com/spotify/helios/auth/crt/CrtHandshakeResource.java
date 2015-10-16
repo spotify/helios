@@ -66,7 +66,7 @@ public class CrtHandshakeResource {
       return Response.ok()
           .header("X-CHAP", "challenge:" + challenge)
           .build();
-    } catch (ProtocolVersionException e) {
+    } catch (IllegalArgumentException | ProtocolVersionException e) {
       // TODO (mbrown): proper response
       return Response.status(Status.BAD_REQUEST)
           .build();
@@ -81,7 +81,7 @@ public class CrtHandshakeResource {
       return Response.ok()
           .header("X-CHAP", "token:" + token)
           .build();
-    } catch (ProtocolVersionException e) {
+    } catch (IllegalArgumentException | ProtocolVersionException e) {
       // TODO (mbrown): proper response
       return Response.status(Status.BAD_REQUEST)
           .build();
