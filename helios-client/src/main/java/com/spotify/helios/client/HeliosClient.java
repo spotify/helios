@@ -497,7 +497,7 @@ public class HeliosClient implements AutoCloseable {
   public static class Builder {
 
     private String user;
-    private Supplier<List<URI>> endpointSupplier;
+    private Supplier<List<Endpoint>> endpointSupplier;
 
     public Builder setUser(final String user) {
       this.user = user;
@@ -505,15 +505,15 @@ public class HeliosClient implements AutoCloseable {
     }
 
     public Builder setDomain(final String domain) {
-      return setEndpointSupplier(Resolver.supplier("helios", domain));
+      return setEndpointSupplier(Endpoints.of(Resolver.supplier("helios", domain)));
     }
 
     public Builder setEndpoints(final List<URI> endpoints) {
-      return setEndpointSupplier(Suppliers.ofInstance(endpoints));
+      return setEndpointSupplier(Suppliers.ofInstance(Endpoints.of(endpoints)));
     }
 
     public Builder setEndpoints(final URI... endpoints) {
-      return setEndpointSupplier(Suppliers.ofInstance(asList(endpoints)));
+      return setEndpointSupplier(Suppliers.ofInstance(Endpoints.of(asList(endpoints))));
     }
 
     public Builder setEndpoints(final String... endpoints) {
@@ -528,7 +528,7 @@ public class HeliosClient implements AutoCloseable {
       return setEndpoints(uris);
     }
 
-    public Builder setEndpointSupplier(final Supplier<List<URI>> endpointSupplier) {
+    public Builder setEndpointSupplier(final Supplier<List<Endpoint>> endpointSupplier) {
       this.endpointSupplier = endpointSupplier;
       return this;
     }

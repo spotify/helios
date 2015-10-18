@@ -83,11 +83,11 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   private static final String VALID_PROTOCOLS_STR =
       String.format("[%s]", Joiner.on("|").join(VALID_PROTOCOLS));
 
-  private final Supplier<List<URI>> endpointSupplier;
+  private final Supplier<List<Endpoint>> endpointSupplier;
   private final ListeningExecutorService executorService;
   private final String user;
 
-  public DefaultRequestDispatcher(final Supplier<List<URI>> endpointSupplier,
+  public DefaultRequestDispatcher(final Supplier<List<Endpoint>> endpointSupplier,
                                   final String user,
                                   final ListeningExecutorService executorService) {
     this.endpointSupplier = endpointSupplier;
@@ -173,7 +173,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
     final int offset = ThreadLocalRandom.current().nextInt();
 
     while (currentTimeMillis() < deadline) {
-      final List<URI> endpoints = endpointSupplier.get();
+      final List<Endpoint> endpoints = endpointSupplier.get();
       if (endpoints.isEmpty()) {
         throw new RuntimeException("failed to resolve master");
       }
@@ -184,18 +184,15 @@ class DefaultRequestDispatcher implements RequestDispatcher {
       final List<URI> ipEndpoints = Lists.newArrayList();
       final Map<URI, URI> ipToHostnameUris = Maps.newHashMap();
 
-      for (final URI hnUri : endpoints) {
-        try {
-          final InetAddress[] ips = InetAddress.getAllByName(hnUri.getHost());
-          for (final InetAddress ip : ips) {
-            final URI ipUri = new URI(
-                hnUri.getScheme(), hnUri.getUserInfo(), ip.getHostAddress(), hnUri.getPort(),
-                hnUri.getPath(), hnUri.getQuery(), hnUri.getFragment());
-            ipEndpoints.add(ipUri);
-            ipToHostnameUris.put(ipUri, hnUri);
-          }
-        } catch (UnknownHostException e) {
-          log.warn("Unable to resolve hostname {} into IP address: {}", hnUri.getHost(), e);
+      for (final Endpoint ep : endpoints) {
+        final List<InetAddress> ips = ep.getIps();
+        final URI epUri = ep.getUri();
+        for (final InetAddress ip : ips) {
+          final URI ipUri = new URI(
+              epUri.getScheme(), epUri.getUserInfo(), ip.getHostAddress(), epUri.getPort(),
+              epUri.getPath(), epUri.getQuery(), epUri.getFragment());
+          ipEndpoints.add(ipUri);
+          ipToHostnameUris.put(ipUri, epUri);
         }
       }
 
