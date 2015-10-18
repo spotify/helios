@@ -28,6 +28,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import com.spotify.helios.client.Endpoints;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostSelector;
 
@@ -71,7 +72,7 @@ public class Utils {
     }
 
     return HeliosClient.newBuilder()
-        .setEndpointSupplier(target.getEndpointSupplier())
+        .setEndpointSupplier(Endpoints.of(target.getEndpointSupplier()))
         .setUser(username)
         .build();
   }
