@@ -257,16 +257,20 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         connection.addRequestProperty(header.getKey(), value);
       }
     }
-    if (entity.length > 0) {
-      connection.setDoOutput(true);
-      connection.getOutputStream().write(entity);
-    }
+
     if (urlConnection instanceof HttpsURLConnection) {
       setRequestMethod(connection, method, true);
     } else {
       setRequestMethod(connection, method, false);
     }
+
+    // at this point, the connection will be opened & request will be sent
+    if (entity.length > 0) {
+      connection.setDoOutput(true);
+      connection.getOutputStream().write(entity);
+    }
     connection.getResponseCode();
+
     return connection;
   }
 
