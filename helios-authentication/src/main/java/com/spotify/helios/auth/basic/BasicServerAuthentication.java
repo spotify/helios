@@ -48,7 +48,9 @@ public class BasicServerAuthentication implements ServerAuthentication<BasicCred
 
   public BasicServerAuthentication() {
     final String path = System.getenv("AUTH_BASIC_USERDB");
-    checkNotNull(path, "Environment variable AUTH_BASIC_USERDB not defined");
+    checkNotNull(path,
+        "Environment variable AUTH_BASIC_USERDB not defined, required for "
+        + BasicAuthenticationPlugin.class.getSimpleName());
 
     File file = new File(path);
     final ObjectMapper objectMapper = new ObjectMapper();

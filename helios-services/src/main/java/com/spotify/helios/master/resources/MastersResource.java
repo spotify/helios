@@ -19,7 +19,6 @@ package com.spotify.helios.master.resources;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
-import com.spotify.helios.auth.HeliosUser;
 import com.spotify.helios.master.MasterModel;
 
 import java.util.List;
@@ -27,8 +26,6 @@ import java.util.List;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
-
-import io.dropwizard.auth.Auth;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
@@ -49,7 +46,7 @@ public class MastersResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public List<String> list(@Auth(required = false) HeliosUser user) {
+  public List<String> list() {
     return model.getRunningMasters();
   }
 }

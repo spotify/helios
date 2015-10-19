@@ -26,10 +26,10 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
-import com.spotify.helios.auth.AuthInjectableProvider;
 import com.spotify.helios.auth.AuthenticationPlugin;
 import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
 import com.spotify.helios.auth.AuthenticationPluginLoader;
+import com.spotify.helios.auth.AuthenticationRequestFilter;
 import com.spotify.helios.auth.Authenticator;
 import com.spotify.helios.auth.ServerAuthenticationConfig;
 import com.spotify.helios.common.PomVersion;
@@ -257,14 +257,19 @@ public class MasterService extends AbstractIdleService {
     final ServerAuthenticationConfig authConfig = config.getAuthenticationConfig();
 
     final AuthenticationPlugin<?> authPlugin = AuthenticationPluginLoader.load(authConfig);
-    log.info("loaded authentication plugin: {}", authPlugin.getClass());
+    log.info("loaded authentication plugin {} for scheme {}",
+        authPlugin.getClass().getName(),
+        authConfig.getEnabledScheme());
 
     final ServerAuthentication<?> authentication = authPlugin.serverAuthentication();
     final Authenticator authenticator = authPlugin.serverAuthentication().authenticator();
     final Predicate<HttpRequestContext> isRequired = authenticationRequired(authConfig);
 
-    environment.jersey()
-        .register(new AuthInjectableProvider(authenticator, authPlugin.schemeName(), isRequired));
+    final AuthenticationRequestFilter filter =
+        new AuthenticationRequestFilter(authenticator, authPlugin.schemeName(), isRequired);
+
+    // setting up filters in Jersey 1.x is convoluted:
+    environment.jersey().getResourceConfig().getContainerRequestFilters().add(filter);
 
     // register any additional resources needed by the plugin
     authentication.registerAdditionalJerseyComponents(environment.jersey());

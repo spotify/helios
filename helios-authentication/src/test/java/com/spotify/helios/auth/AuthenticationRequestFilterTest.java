@@ -22,13 +22,10 @@
 package com.spotify.helios.auth;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 
-import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.api.core.HttpRequestContext;
-import com.sun.jersey.server.impl.inject.AbstractHttpContextInjectable;
-import com.sun.jersey.spi.inject.Injectable;
+import com.sun.jersey.spi.container.ContainerRequest;
 
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.Rule;
@@ -38,98 +35,71 @@ import org.junit.rules.ExpectedException;
 import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
-import io.dropwizard.auth.Auth;
-
-import static com.spotify.helios.auth.AuthInjectableProvider.HELIOS_VERSION_HEADER;
 import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.sameInstance;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class AuthInjectableProviderTest {
+public class AuthenticationRequestFilterTest {
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
 
   // HttpRequestContext is extension of HttpHeaders interface, needs to be used to wire into
   // httpContext.getRequest()
-  private final HttpRequestContext httpHeaders = mock(HttpRequestContext.class);
+  private final ContainerRequest request = mock(ContainerRequest.class);
 
   @SuppressWarnings("unchecked")
   private final Authenticator<String> authenticator = mock(Authenticator.class);
 
-  private final AuthInjectableProvider<String> providerAuthRequired =
-      newProvider(Predicates.<HttpRequestContext>alwaysTrue());
+  private final AuthenticationRequestFilter filterAuthRequired =
+      new AuthenticationRequestFilter(authenticator,
+          "foobar",
+          Predicates.<HttpRequestContext>alwaysTrue());
 
-  private final AuthInjectableProvider<String> providerAuthNotRequired =
-      newProvider(Predicates.<HttpRequestContext>alwaysFalse());
+  private final AuthenticationRequestFilter filterAuthNotRequired =
+      new AuthenticationRequestFilter(authenticator,
+          "foobar",
+          Predicates.<HttpRequestContext>alwaysFalse());
 
-  private AuthInjectableProvider<String> newProvider(Predicate<HttpRequestContext> authRequired) {
-    return new AuthInjectableProvider<>(authenticator, "foobar", authRequired);
-  }
-
-  private Object invokeAuthentication(AuthInjectableProvider<String> provider) {
-    final Auth auth = mock(Auth.class);
-    final Injectable injectable = provider.getInjectable(null, auth, null);
-
-    assumeThat("Test has no value if the Injectable does not extend AbstractHttpContextInjectable",
-        injectable, instanceOf(AbstractHttpContextInjectable.class));
-
-    final HttpContext httpContext = mock(HttpContext.class);
-    when(httpContext.getRequest()).thenReturn(httpHeaders);
-
-    return ((AbstractHttpContextInjectable) injectable).getValue(httpContext);
-  }
 
   @Test
   public void successfulAuthentication() throws Exception {
     final HeliosUser user = new HeliosUser("jamesbond");
     final String credentials = "secret-token";
 
-    when(httpHeaders.getHeaderValue(HELIOS_VERSION_HEADER)).thenReturn("1.0.1");
-
-    when(authenticator.extractCredentials(httpHeaders))
+    when(authenticator.extractCredentials(request))
         .thenReturn(Optional.of(credentials));
 
     when(authenticator.authenticate(credentials))
         .thenReturn(Optional.of(user));
 
-    final Object result = invokeAuthentication(providerAuthRequired);
-    assertThat(result, instanceOf(HeliosUser.class));
-    assertThat((HeliosUser) result, is(user));
+    // when auth is required...
+    assertThat(filterAuthRequired.filter(request), sameInstance(request));
 
-    final Object result2 = invokeAuthentication(providerAuthNotRequired);
-    assertThat(result2, instanceOf(HeliosUser.class));
-    assertThat((HeliosUser) result2, is(user));
+    // ... and when disabled
+    assertThat(filterAuthNotRequired.filter(request), sameInstance(request));
   }
 
   @Test
   public void authenticationNotRequired_NoCredentials() {
-    when(httpHeaders.getHeaderValue(HELIOS_VERSION_HEADER)).thenReturn("0.9.0");
+    when(authenticator.extractCredentials(request)).thenReturn(Optional.<String>absent());
 
-    when(authenticator.extractCredentials(httpHeaders)).thenReturn(Optional.<String>absent());
-
-    final Object result = invokeAuthentication(providerAuthNotRequired);
-    assertThat(result, nullValue());
+    assertThat(filterAuthNotRequired.filter(request), sameInstance(request));
   }
 
   @Test
   public void authenticationNotRequired_BadCredentials() throws Exception {
-    when(httpHeaders.getHeaderValue(HELIOS_VERSION_HEADER)).thenReturn("0.9.0");
-
     final String credentials = "bad-password";
 
-    when(authenticator.extractCredentials(httpHeaders))
+    when(authenticator.extractCredentials(request))
         .thenReturn(Optional.of(credentials));
 
     when(authenticator.authenticate(credentials))
         .thenReturn(Optional.<HeliosUser>absent());
 
-    final Object result = invokeAuthentication(providerAuthNotRequired);
-    assertThat(result, nullValue());
+    assertThat(filterAuthNotRequired.filter(request), sameInstance(request));
   }
 
   private static class StatusCodeMatcher extends CustomTypeSafeMatcher<WebApplicationException> {
@@ -155,32 +125,27 @@ public class AuthInjectableProviderTest {
 
   @Test
   public void authenticationRequired_NoCredentials() throws Exception {
-
-    when(httpHeaders.getHeaderValue(HELIOS_VERSION_HEADER)).thenReturn("1.1.0");
-
-    when(authenticator.extractCredentials(httpHeaders)).thenReturn(Optional.<String>absent());
+    when(authenticator.extractCredentials(request)).thenReturn(Optional.<String>absent());
 
     exception.expect(instanceOf(WebApplicationException.class));
     exception.expect(hasStatus(401));
 
-    invokeAuthentication(providerAuthRequired);
+    filterAuthRequired.filter(request);
   }
 
 
   @Test
   public void authenticationRequired_BadCredentials() throws Exception {
-
-    when(httpHeaders.getHeaderValue(HELIOS_VERSION_HEADER)).thenReturn("1.1.0");
-
     final String credentials = "foo";
 
-    when(authenticator.extractCredentials(httpHeaders)).thenReturn(Optional.of(credentials));
+    when(authenticator.extractCredentials(request)).thenReturn(Optional.of(credentials));
 
     when(authenticator.authenticate(credentials)).thenReturn(Optional.<HeliosUser>absent());
 
     exception.expect(instanceOf(WebApplicationException.class));
     exception.expect(hasStatus(401));
 
-    invokeAuthentication(providerAuthRequired);
+    filterAuthRequired.filter(request);
   }
+
 }
