@@ -60,6 +60,7 @@ import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
+import com.spotify.helios.transport.HeliosRequest;
 import com.spotify.helios.transport.RequestDispatcher;
 import com.spotify.helios.transport.Response;
 
@@ -172,7 +173,8 @@ public class HeliosClient implements AutoCloseable {
       entityBytes = new byte[]{};
     }
 
-    final ListenableFuture<Response> f = dispatcher.request(uri, method, entityBytes, headers);
+    final ListenableFuture<Response> f = dispatcher.request(
+        new HeliosRequest(uri, method, entityBytes, headers));
     return transform(f, new Function<Response, Response>() {
       @Override
       public Response apply(final Response response) {
