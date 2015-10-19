@@ -60,6 +60,8 @@ import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
+import com.spotify.helios.transport.RequestDispatcher;
+import com.spotify.helios.transport.Response;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.jetbrains.annotations.NotNull;
