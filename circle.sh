@@ -3,7 +3,7 @@
 case "$1" in
   pre_machine)
     # ensure correct level of parallelism
-    expected_nodes=5
+    expected_nodes=6
     if [ "$CIRCLE_NODE_TOTAL" -ne "$expected_nodes" ]
     then
         echo "Parallelism is set to ${CIRCLE_NODE_TOTAL}x, but we need ${expected_nodes}x."
@@ -48,27 +48,34 @@ case "$1" in
         ;;
 
       1)
-        # run helios-system-tests that start with A-G
-        echo "%regex[com.spotify.helios.system.[H-Z].*]" >> .test-excludes
-        mvn test -B -pl helios-system-tests
+        # run DeploymentGroupTest in its own container since it takes forever
+        mvn test -B -pl helios-system-tests -Dtest=com.spotify.helios.system.DeploymentGroupTest
 
         ;;
 
       2)
+        # run helios-system-tests that start with A-G
+        echo "%regex[com.spotify.helios.system.[H-Z].*]" >> .test-excludes
+        echo "%regex[com.spotify.helios.system.DeploymentGroupTest.*]" >> .test-excludes
+        mvn test -B -pl helios-system-tests
+
+        ;;
+
+      3)
         # run helios-system-tests that start with H-R
         echo "%regex[com.spotify.helios.system.[A-GS-Z].*]" >> .test-excludes
         mvn test -B -pl helios-system-tests
 
         ;;
 
-      3)
+      4)
         # run helios-system-tests that starts with S-Z
         echo "%regex[com.spotify.helios.system.[A-R].*]" >> .test-excludes
         mvn test -B -pl helios-system-tests
 
         ;;
 
-      4)
+      5)
         sudo apt-get install -y jq
 
         # build images for integration tests
