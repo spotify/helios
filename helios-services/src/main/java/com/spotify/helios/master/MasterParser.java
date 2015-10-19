@@ -21,7 +21,6 @@ import com.spotify.helios.auth.ServerAuthenticationConfig;
 import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.servicescommon.ServiceParser;
 
-import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.ArgumentChoice;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -44,7 +43,6 @@ public class MasterParser extends ServiceParser {
   private Argument adminArg;
 
   // authentication-related arguments:
-  private Argument authenticationEnabled;
   private Argument authenticationScheme;
   private Argument authenticationMinimumVersion;
   private Argument authenticationPluginsPathArg;
@@ -75,10 +73,10 @@ public class MasterParser extends ServiceParser {
         .setKafkaBrokers(getKafkaBrokers())
         .setStateDirectory(getStateDirectory());
 
-    // TODO (mbrown): argparse way for require some arguments if others are set?
-    if (options.getBoolean(authenticationEnabled.getDest())) {
+    final String authSchemeName = options.getString(authenticationScheme.getDest());
+    if (authSchemeName != null) {
       ServerAuthenticationConfig authConfig = new ServerAuthenticationConfig();
-      authConfig.setEnabledScheme(options.getString(authenticationScheme.getDest()));
+      authConfig.setEnabledScheme(authSchemeName);
 
       final File pluginPath = options.get(authenticationPluginsPathArg.getDest());
       if (pluginPath != null) {
@@ -106,15 +104,11 @@ public class MasterParser extends ServiceParser {
         .setDefault(5802)
         .help("admin http port");
 
-    authenticationEnabled = parser.addArgument("--auth-enabled")
-        .type(Boolean.class)
-        .setDefault(false)
-        .action(Arguments.storeTrue())
-        .help("Enable authentication. Requires setting of --auth-scheme as well.");
-
     authenticationScheme = parser.addArgument("--auth-scheme")
         .metavar("SCHEMENAME")
-        .help("Name of authentication scheme to use. 'crtauth' support is built into Helios. "
+        .help("Name of authentication scheme to use. "
+              + "Setting this flag enables authentication in Helios. "
+              + "'crtauth' support is built into Helios. "
               + "For other values, --auth-plugin must also be set.");
 
     authenticationMinimumVersion = parser.addArgument("--auth-minimum-version")

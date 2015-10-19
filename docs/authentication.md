@@ -60,9 +60,9 @@ authentication flow again.
 
 ## How to configure the Helios masters to require authentication
 
-Authentication is enabled in the master by adding the `--auth-enabled` flag.
-The name of the authentication scheme to activate must be supplied in the
-`--auth-scheme SCHEME` flag.
+Authentication is enabled in the master by adding the `--auth-scheme SCHEME`
+flag. This flag both enables authentication and configures the authentication
+scheme to be used.
 
 Authentication can be restricted to only apply to a certain client
 version and above, to allow for rolling out the authentication requirement

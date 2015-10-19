@@ -21,7 +21,11 @@
 
 package com.spotify.helios.auth;
 
+import com.google.common.base.Preconditions;
+
 import java.nio.file.Path;
+
+import javax.annotation.Nonnull;
 
 public class ServerAuthenticationConfig {
 
@@ -29,12 +33,13 @@ public class ServerAuthenticationConfig {
   private String minimumRequiredVersion;
   private Path pluginsPath;
 
+  @Nonnull
   public String getEnabledScheme() {
     return enabledScheme;
   }
 
   public ServerAuthenticationConfig setEnabledScheme(String enabledScheme) {
-    this.enabledScheme = enabledScheme;
+    this.enabledScheme = Preconditions.checkNotNull(enabledScheme);
     return this;
   }
 
