@@ -30,6 +30,8 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.escape.Escaper;
+import com.google.common.net.UrlEscapers;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -134,20 +136,13 @@ public class HeliosClient implements AutoCloseable {
 
   private String path(final String resource, final Object... params) {
     final String path;
+    final Escaper escaper = UrlEscapers.urlPathSegmentEscaper();
     if (params.length == 0) {
       path = resource;
     } else {
       final List<String> encodedParams = Lists.newArrayList();
       for (final Object param : params) {
-        final URI u;
-        try {
-          final String p = param.toString().replace("/", "%2F");
-          // URI does path encoding right, but using it is painful
-          u = new URI("http", "ignore", "/" + p, "");
-        } catch (URISyntaxException e) {
-          throw Throwables.propagate(e);
-        }
-        encodedParams.add(u.getRawPath().substring(1));
+        encodedParams.add(escaper.escape(param.toString()));
       }
       path = format(resource, encodedParams.toArray());
     }
