@@ -207,7 +207,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
           // UnknownHostException happens if we can't resolve hostname into IP address.
           // UnknownHostException's getMessage method returns just the hostname which is a useless
           // message, so log the exception class name to provide more info.
-          log.debug(e.getClass().getSimpleName() + " - " + e.getMessage());
+          log.debug(e.toString());
           // Connecting failed, sleep a bit to avoid hammering and then try another endpoint
           Thread.sleep(200);
         }
