@@ -22,7 +22,6 @@
 package com.spotify.helios.client;
 
 import java.net.URI;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -51,12 +50,12 @@ class Response {
            "method='" + method + '\'' +
            ", uri=" + uri +
            ", status=" + status +
-           ", payload=" + Arrays.toString(payload) +
+           ", payload='" + decode(payload) + '\'' +
            ", headers=" + headers +
            '}';
   }
 
-  private String decode(final byte[] payload) {
+  private static String decode(final byte[] payload) {
     if (payload == null) {
       return "";
     }
