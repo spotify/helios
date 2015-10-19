@@ -25,7 +25,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
@@ -34,7 +33,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 
-import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +42,6 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -59,9 +56,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPInputStream;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSession;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -165,33 +160,13 @@ class DefaultRequestDispatcher implements RequestDispatcher {
       }
       log.debug("endpoint uris are {}", endpoints);
 
-      // Resolve hostname into IPs so client will round-robin and retry for multiple A records.
-      // Keep a mapping of IPs to hostnames for TLS verification.
-      final List<URI> ipEndpoints = Lists.newArrayList();
-      final Map<URI, URI> ipToHostnameUris = Maps.newHashMap();
+      for (int i = 0; i < endpoints.size() && currentTimeMillis() < deadline; i++) {
+        final URI endpoint = endpoints.get(positive(offset + i) % endpoints.size());
+        final String fullpath = endpoint.getPath() + uri.getPath();
 
-      for (final URI hnUri : endpoints) {
-        try {
-          final InetAddress[] ips = InetAddress.getAllByName(hnUri.getHost());
-          for (final InetAddress ip : ips) {
-            final URI ipUri = new URI(
-                hnUri.getScheme(), hnUri.getUserInfo(), ip.getHostAddress(), hnUri.getPort(),
-                hnUri.getPath(), hnUri.getQuery(), hnUri.getFragment());
-            ipEndpoints.add(ipUri);
-            ipToHostnameUris.put(ipUri, hnUri);
-          }
-        } catch (UnknownHostException e) {
-          log.warn("Unable to resolve hostname {} into IP address: {}", hnUri.getHost(), e);
-        }
-      }
-
-      for (int i = 0; i < ipEndpoints.size() && currentTimeMillis() < deadline; i++) {
-        final URI ipEndpoint = ipEndpoints.get(positive(offset + i) % ipEndpoints.size());
-        final String fullpath = ipEndpoint.getPath() + uri.getPath();
-
-        final String scheme = ipEndpoint.getScheme();
-        final String host = ipEndpoint.getHost();
-        final int port = ipEndpoint.getPort();
+        final String scheme = endpoint.getScheme();
+        final String host = endpoint.getHost();
+        final int port = endpoint.getPort();
         if (!VALID_PROTOCOLS.contains(scheme) || host == null || port == -1) {
           throw new HeliosException(String.format(
               "Master endpoints must be of the form \"%s://heliosmaster.domain.net:<port>\"",
@@ -201,8 +176,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         final URI realUri = new URI(scheme, host + ":" + port, fullpath, uri.getQuery(), null);
         try {
           log.debug("connecting to {}", realUri);
-          return connect0(realUri, method, entity, headers,
-                          ipToHostnameUris.get(ipEndpoint).getHost());
+          return connect0(realUri, method, entity, headers);
         } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
           // UnknownHostException happens if we can't resolve hostname into IP address.
           // UnknownHostException's getMessage method returns just the hostname which is a useless
@@ -218,35 +192,19 @@ class DefaultRequestDispatcher implements RequestDispatcher {
     throw new TimeoutException("Timed out connecting to master");
   }
 
-  private HttpURLConnection connect0(final URI ipUri, final String method, final byte[] entity,
-                                     final Map<String, List<String>> headers,
-                                     final String hostname)
+  private HttpURLConnection connect0(final URI uri, final String method, final byte[] entity,
+                                     final Map<String, List<String>> headers)
       throws IOException {
     if (log.isTraceEnabled()) {
-      log.trace("req: {} {} {} {} {} {}", method, ipUri, headers.size(),
+      log.trace("req: {} {} {} {} {} {}", method, uri, headers.size(),
                 Joiner.on(',').withKeyValueSeparator("=").join(headers),
                 entity.length, Json.asPrettyStringUnchecked(entity));
     } else {
-      log.debug("req: {} {} {} {}", method, ipUri, headers.size(), entity.length);
+      log.debug("req: {} {} {} {}", method, uri, headers.size(), entity.length);
     }
 
-    final URLConnection urlConnection = ipUri.toURL().openConnection();
+    final URLConnection urlConnection = uri.toURL().openConnection();
     final HttpURLConnection connection = (HttpURLConnection) urlConnection;
-
-    // We verify the TLS certificate against the original hostname since verifying against the
-    // IP address will fail
-    if (urlConnection instanceof HttpsURLConnection) {
-      System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
-      connection.setRequestProperty("Host", hostname);
-      ((HttpsURLConnection) connection).setHostnameVerifier(new HostnameVerifier() {
-        @Override
-        public boolean verify(String ip, SSLSession sslSession) {
-          final String tHostname = hostname.endsWith(".") ?
-                                   hostname.substring(0, hostname.length() - 1) : hostname;
-          return new DefaultHostnameVerifier().verify(tHostname, sslSession);
-        }
-      });
-    }
 
     connection.setRequestProperty("Accept-Encoding", "gzip");
     connection.setInstanceFollowRedirects(false);
