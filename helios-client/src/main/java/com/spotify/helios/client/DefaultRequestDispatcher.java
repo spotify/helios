@@ -280,12 +280,21 @@ class DefaultRequestDispatcher implements RequestDispatcher {
     // Nasty workaround for ancient HttpURLConnection only supporting few methods
     final Class<?> httpURLConnectionClass = connection.getClass();
     try {
-      final Field methodField =
-          isHttps ?
-          httpURLConnectionClass.getSuperclass().getSuperclass().getDeclaredField("method") :
-          httpURLConnectionClass.getSuperclass().getDeclaredField("method");
+      Field methodField;
+      HttpURLConnection delegate;
+      if (isHttps) {
+        final Field delegateField = httpURLConnectionClass.getDeclaredField("delegate");
+        delegateField.setAccessible(true);
+        delegate = (HttpURLConnection) delegateField.get(connection);
+        methodField = delegate.getClass().getSuperclass().getSuperclass().getSuperclass()
+            .getDeclaredField("method");
+      } else {
+        delegate = connection;
+        methodField = httpURLConnectionClass.getSuperclass().getDeclaredField("method");
+      }
+
       methodField.setAccessible(true);
-      methodField.set(connection, method);
+      methodField.set(delegate, method);
     } catch (NoSuchFieldException | IllegalAccessException e) {
       throw Throwables.propagate(e);
     }
