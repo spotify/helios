@@ -29,6 +29,7 @@ import com.google.common.util.concurrent.ListeningExecutorService;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
+import com.spotify.helios.transport.HeliosRequest;
 import com.spotify.helios.transport.RequestDispatcher;
 import com.spotify.helios.transport.Response;
 
@@ -85,13 +86,12 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   }
 
   @Override
-  public ListenableFuture<Response> request(final URI uri, final String method,
-                                            final byte[] entityBytes,
-                                            final Map<String, List<String>> headers) {
+  public ListenableFuture<Response> request(final HeliosRequest request) {
     return executorService.submit(new Callable<Response>() {
       @Override
       public Response call() throws Exception {
-        final HttpURLConnection connection = connect(uri, method, entityBytes, headers);
+        final HttpURLConnection connection = connect(
+            request.uri(), request.method(), request.entity(), request.headers());
         final int status = connection.getResponseCode();
         final InputStream rawStream;
         if (status / 100 != 2) {
@@ -112,14 +112,14 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         URI realUri = connection.getURL().toURI();
         if (log.isTraceEnabled()) {
           log.trace("rep: {} {} {} {} {} gzip:{}",
-                    method, realUri, status, payload.size(), decode(payload), gzip);
+                    request.method(), realUri, status, payload.size(), decode(payload), gzip);
         } else {
           log.debug("rep: {} {} {} {} gzip:{}",
-                    method, realUri, status, payload.size(), gzip);
+                    request.method(), realUri, status, payload.size(), gzip);
         }
 
         return new Response(
-            method, uri, status, payload.toByteArray(),
+            request.method(), request.uri(), status, payload.toByteArray(),
             Collections.unmodifiableMap(Maps.newHashMap(connection.getHeaderFields())));
       }
 

@@ -25,8 +25,7 @@ import java.util.Map;
 
 public interface RequestDispatcher extends AutoCloseable {
 
-  ListenableFuture<Response> request(
-      URI uri, String method, byte[] entityBytes, Map<String, List<String>> headers);
+  ListenableFuture<Response> request(HeliosRequest request);
 
   void close();
 }
