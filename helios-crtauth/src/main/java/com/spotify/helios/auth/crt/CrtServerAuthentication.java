@@ -23,10 +23,8 @@ package com.spotify.helios.auth.crt;
 
 import com.spotify.crtauth.CrtAuthServer;
 import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
-import com.sun.jersey.api.model.Parameter;
-import com.sun.jersey.spi.inject.InjectableProvider;
+import com.spotify.helios.auth.Authenticator;
 
-import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.setup.JerseyEnvironment;
 
 public class CrtServerAuthentication implements ServerAuthentication<CrtAccessToken> {
@@ -40,9 +38,8 @@ public class CrtServerAuthentication implements ServerAuthentication<CrtAccessTo
   }
 
   @Override
-  public InjectableProvider<Auth, Parameter> authProvider() {
-    // register the jersey injectable that run whenever a resource with @Auth is requested
-    return new CrtAuthProvider(authenticator);
+  public Authenticator<CrtAccessToken> authenticator() {
+    return authenticator;
   }
 
   @Override

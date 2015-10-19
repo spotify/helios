@@ -23,7 +23,7 @@ package com.spotify.helios.auth;
 
 import com.google.common.base.Optional;
 
-import javax.ws.rs.core.HttpHeaders;
+import com.sun.jersey.api.core.HttpRequestContext;
 
 /**
  * Extension of {@link io.dropwizard.auth.Authenticator Dropwizard's Authenticator} interface to
@@ -38,5 +38,5 @@ public interface Authenticator<C> extends io.dropwizard.auth.Authenticator<C, He
    * <p>
    * If no credentials are present in the request, should return an absent Optional.</p>
    */
-  Optional<C> extractCredentials(HttpHeaders headers);
+  Optional<C> extractCredentials(HttpRequestContext request);
 }

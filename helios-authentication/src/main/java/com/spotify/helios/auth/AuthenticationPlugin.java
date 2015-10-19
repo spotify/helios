@@ -21,10 +21,6 @@
 
 package com.spotify.helios.auth;
 
-import com.sun.jersey.api.model.Parameter;
-import com.sun.jersey.spi.inject.InjectableProvider;
-
-import io.dropwizard.auth.Auth;
 import io.dropwizard.jersey.setup.JerseyEnvironment;
 
 /**
@@ -49,21 +45,16 @@ public interface AuthenticationPlugin<C> {
   interface ServerAuthentication<C> {
 
     /**
-     * The server-side authentication plugin needs to supply an InjectableProvider to Jersey to
-     * allow
-     * it to authenticate HTTP requests whenever the resource has an {@link Auth} annotation.
+     * An Authenticator instance to use when authenticating HTTP requests to Helios.
      * <p>
-     * Plugin implementations will have to return an InjectableProvider whose
-     * <pre>getInjectable</pre> method examines the current HTTP request to extract the
-     * Authorization header (or other headers), constructs a "credentials" object out of them, and
-     * runs that through an instance of {@link io.dropwizard.auth.Authenticator} to get the
-     * HeliosUser instance.
-     *
-     * @see io.dropwizard.auth.basic.BasicAuthProvider Dropwizard's BasicAuthProvider as an example
+     * Helio's Authentication support builds on top of the {@link io.dropwizard.auth.Authenticator
+     * Authenticator interface from Dropwizard} to add in a method for transforming HTTP headers
+     * into a "credentials" object. The latter is then fed into the {@link
+     * Authenticator#authenticate(Object)} method (defined in the dropwizard Authenticator
+     * interface) to actually authenticate the request.
+     * </p>
      */
-    // TODO (mbrown): change this signature to be just the Authenticator and do the common work of
-    // the InjectableProvider in this package, as it is mostly boilerplate
-    InjectableProvider<Auth, Parameter> authProvider();
+    Authenticator<C> authenticator();
 
     /**
      * A hook for implementations to register additional Jersey components, such as Resource

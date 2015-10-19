@@ -110,24 +110,21 @@ optional part.
 The required part of the interface is:
 
 ```java
-InjectableProvider<Auth, Parameter> authProvider();
+Authenticator<C> authenticator();
 ```
 
-`InjectableProvider<Auth, Parameter>` tells Jersey what to do when it
-encounters resource classes that have parameters annotated with `@Auth`. The
-main thing implementations of this class have to do (through the Jersey
-`Injectable` they return) is to translate a HTTP request, represented by the
-`com.sun.jersey.api.core.HttpContext` class, into an instance of `HeliosUser`.
+Helios extends the [`Authenticator` concept from Dropwizard][dw-authenticator].
+Helios' [Authenticator][helios-authenticator] has two responsibilities:
 
-The typical flow for implementations will be to examine the HTTP headers of the
-request, and if they present and well-formed, validate the credentials into a
-`HeliosUser` object.
+1. Translate HTTP headers in the request to a credentials type (which you
+   define yourself, specific to the plugin implementation). 
+2. When the credentials are present in the request, actually authenticate the
+   credentials.
 
-The recommended way to structure this, following the examples of
-`io.dropwizard.auth.basic.BasicAuthProvider` and Helios' `CrtAuthProvider`, is
-to use the Dropwizard concept of an [`Authenticator`][dw-authenticator], which
-provides a useful definition for a component that takes credentials and
-optionally turns them into a principal.
+Helios will take care of the boilerplate and glue code necessary to hook into
+Jersey to call these methods for each HTTP request to a protected resource when
+authentication is enabled; the plugin only has to specify it's unique logic
+(parsing HTTP headers, and authenticating the credentials to a user).
 
 ##### Adding additional Jersey controllers to Helios
 The optional part of the `ServerAuthentication` interface is
@@ -154,4 +151,5 @@ TODO
 [crtauth-handshake-resource]: helios-crtauth/src/main/java/com/spotify/helios/auth/crt/CrtHandshakeResource.java
 [crtauth-protocol]: https://github.com/spotify/crtauth/blob/master/PROTOCOL.md
 [dw-authenticator]: http://dropwizard.github.io/dropwizard/0.7.1/docs/manual/auth.html
+[helios-authenticator]: helios-authentication/src/main/java/com/spotify/helios/auth/Authenticator.java
 [http-basic]: helios-authentication/src/main/java/com/spotify/helios/auth/basic/BasicAuthenticationPlugin.java

@@ -27,6 +27,7 @@ import com.spotify.crtauth.CrtAuthServer;
 import com.spotify.crtauth.exceptions.ProtocolVersionException;
 import com.spotify.crtauth.exceptions.TokenExpiredException;
 import com.spotify.helios.auth.HeliosUser;
+import com.sun.jersey.api.core.HttpRequestContext;
 
 import org.junit.Test;
 
@@ -38,8 +39,33 @@ import static org.mockito.Mockito.when;
 
 public class CrtTokenAuthenticatorTest {
 
+  private final HttpRequestContext request = mock(HttpRequestContext.class);
   private final CrtAuthServer authServer = mock(CrtAuthServer.class);
   private final CrtTokenAuthenticator authenticator = new CrtTokenAuthenticator(authServer);
+
+  @Test
+  public void testExtractHeaders_Valid() {
+    when(request.getHeaderValue("Authorization")).thenReturn("chap:token");
+
+    assertThat(authenticator.extractCredentials(request),
+        is(Optional.of(new CrtAccessToken("token"))));
+  }
+
+  @Test
+  public void testExtractHeaders_Malformed() {
+    when(request.getHeaderValue("Authorization")).thenReturn("token token");
+
+    assertThat(authenticator.extractCredentials(request),
+        is(Optional.<CrtAccessToken>absent()));
+  }
+
+  @Test
+  public void testExtractHeaders_NotPresent() {
+    when(request.getHeaderValue("Authorization")).thenReturn(null);
+
+    assertThat(authenticator.extractCredentials(request),
+        is(Optional.<CrtAccessToken>absent()));
+  }
 
   @Test
   public void testAuthenticate_Valid() throws Exception {

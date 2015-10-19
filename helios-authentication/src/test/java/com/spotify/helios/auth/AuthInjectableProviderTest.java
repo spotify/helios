@@ -36,7 +36,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 import io.dropwizard.auth.Auth;
@@ -63,12 +62,12 @@ public class AuthInjectableProviderTest {
   private final Authenticator<String> authenticator = mock(Authenticator.class);
 
   private final AuthInjectableProvider<String> providerAuthRequired =
-      newProvider(Predicates.<HttpHeaders>alwaysTrue());
+      newProvider(Predicates.<HttpRequestContext>alwaysTrue());
 
   private final AuthInjectableProvider<String> providerAuthNotRequired =
-      newProvider(Predicates.<HttpHeaders>alwaysFalse());
+      newProvider(Predicates.<HttpRequestContext>alwaysFalse());
 
-  private AuthInjectableProvider<String> newProvider(Predicate<HttpHeaders> authRequired) {
+  private AuthInjectableProvider<String> newProvider(Predicate<HttpRequestContext> authRequired) {
     return new AuthInjectableProvider<>(authenticator, "foobar", authRequired);
   }
 

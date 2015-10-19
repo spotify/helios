@@ -25,6 +25,7 @@ import com.google.common.base.Optional;
 import com.google.common.base.Predicate;
 
 import com.sun.jersey.api.core.HttpContext;
+import com.sun.jersey.api.core.HttpRequestContext;
 import com.sun.jersey.api.model.Parameter;
 import com.sun.jersey.core.spi.component.ComponentContext;
 import com.sun.jersey.core.spi.component.ComponentScope;
@@ -52,11 +53,11 @@ public class AuthInjectableProvider<C> implements InjectableProvider<Auth, Param
 
   private final Authenticator<C> authenticator;
   private final String scheme;
-  private final Predicate<HttpHeaders> isAuthRequired;
+  private final Predicate<HttpRequestContext> isAuthRequired;
 
   public AuthInjectableProvider(final Authenticator<C> authenticator,
                                 final String scheme,
-                                final Predicate<HttpHeaders> isAuthRequired) {
+                                final Predicate<HttpRequestContext> isAuthRequired) {
     this.authenticator = authenticator;
     this.scheme = scheme;
     this.isAuthRequired = isAuthRequired;
@@ -73,10 +74,8 @@ public class AuthInjectableProvider<C> implements InjectableProvider<Auth, Param
     return new AbstractHttpContextInjectable() {
       @Override
       public Object getValue(final HttpContext c) {
-        HttpHeaders headers = c.getRequest();
-
-        final Optional<C> credentials = authenticator.extractCredentials(headers);
-
+        final HttpRequestContext request = c.getRequest();
+        final Optional<C> credentials = authenticator.extractCredentials(request);
         if (credentials.isPresent()) {
           try {
             final Optional<HeliosUser> result = authenticator.authenticate(credentials.get());
@@ -92,7 +91,7 @@ public class AuthInjectableProvider<C> implements InjectableProvider<Auth, Param
 
         // Either the request did not provide credentials or they did not map to a valid user.
         // Return a 401 Unauthorized response if the authentication is required for this user
-        if (isAuthRequired.apply(headers)) {
+        if (isAuthRequired.apply(request)) {
           throw new WebApplicationException(
               Response.status(Status.UNAUTHORIZED)
                   .header(HttpHeaders.WWW_AUTHENTICATE, scheme)

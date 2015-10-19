@@ -21,24 +21,16 @@
 
 package com.spotify.helios.auth.basic;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
-import com.spotify.helios.auth.HeliosUser;
-import com.sun.jersey.api.model.Parameter;
-import com.sun.jersey.spi.inject.InjectableProvider;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import io.dropwizard.auth.Auth;
-import io.dropwizard.auth.AuthenticationException;
-import io.dropwizard.auth.Authenticator;
-import io.dropwizard.auth.basic.BasicAuthProvider;
 import io.dropwizard.auth.basic.BasicCredentials;
 import io.dropwizard.jersey.setup.JerseyEnvironment;
 
@@ -74,26 +66,12 @@ public class BasicServerAuthentication implements ServerAuthentication<BasicCred
   }
 
   @Override
-  public InjectableProvider<Auth, Parameter> authProvider() {
-    Authenticator<BasicCredentials, HeliosUser> authenticator =
-        new Authenticator<BasicCredentials, HeliosUser>() {
-          @Override
-          public Optional<HeliosUser> authenticate(BasicCredentials credentials)
-              throws AuthenticationException {
-            final String username = credentials.getUsername();
-            final String password = credentials.getPassword();
-            if (users.containsKey(username) && users.get(username).equals(password)) {
-              return Optional.of(new HeliosUser(username));
-            }
-            return Optional.absent();
-          }
-        };
-
-    // dropwizard provides an InjectableProvider for basic auth
-    return new BasicAuthProvider<>(authenticator, "helios");
+  public com.spotify.helios.auth.Authenticator<BasicCredentials> authenticator() {
+    return new BasicAuthenticator(users);
   }
 
   @Override
   public void registerAdditionalJerseyComponents(JerseyEnvironment env) {
+    // nothing to add
   }
 }
