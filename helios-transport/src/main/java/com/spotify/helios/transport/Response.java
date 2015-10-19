@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.spotify.helios.client;
+package com.spotify.helios.transport;
 
 import java.net.URI;
 import java.util.List;
@@ -23,7 +23,7 @@ import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-class Response {
+public class Response {
 
   private final String method;
   private final URI uri;

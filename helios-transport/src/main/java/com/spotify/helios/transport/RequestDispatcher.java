@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.spotify.helios.client;
+package com.spotify.helios.transport;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -23,7 +23,7 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-interface RequestDispatcher extends AutoCloseable {
+public interface RequestDispatcher extends AutoCloseable {
 
   ListenableFuture<Response> request(
       URI uri, String method, byte[] entityBytes, Map<String, List<String>> headers);
