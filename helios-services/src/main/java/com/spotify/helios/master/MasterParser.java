@@ -87,7 +87,7 @@ public class MasterParser extends ServiceParser {
 
       final String minVersion = options.getString(authenticationMinimumVersion.getDest());
       if (minVersion != null) {
-        authConfig.setMinimumEnabledVersion(minVersion);
+        authConfig.setMinimumRequiredVersion(minVersion);
       }
 
       config.setAuthenticationConfig(authConfig);

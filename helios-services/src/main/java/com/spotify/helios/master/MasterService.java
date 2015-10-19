@@ -17,6 +17,7 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.base.Predicate;
 import com.google.common.base.Predicates;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -31,6 +32,8 @@ import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
 import com.spotify.helios.auth.AuthenticationPluginLoader;
 import com.spotify.helios.auth.Authenticator;
 import com.spotify.helios.auth.ServerAuthenticationConfig;
+import com.spotify.helios.common.PomVersion;
+import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.jersey.DisabledAuthInjectableProvider;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
@@ -258,11 +261,49 @@ public class MasterService extends AbstractIdleService {
 
     final ServerAuthentication<?> authentication = authPlugin.serverAuthentication();
     final Authenticator authenticator = authPlugin.serverAuthentication().authenticator();
-    environment.jersey().register(new AuthInjectableProvider(authenticator, authPlugin.schemeName(),
-        Predicates.<HttpRequestContext>alwaysFalse()));
+    final Predicate<HttpRequestContext> isRequired = authenticationRequired(authConfig);
+
+    environment.jersey()
+        .register(new AuthInjectableProvider(authenticator, authPlugin.schemeName(), isRequired));
 
     // register any additional resources needed by the plugin
     authentication.registerAdditionalJerseyComponents(environment.jersey());
+  }
+
+  private Predicate<HttpRequestContext> authenticationRequired(ServerAuthenticationConfig config) {
+    if (config.isEnabledForAllVersions()) {
+      return Predicates.alwaysTrue();
+    }
+
+    final PomVersion minVersion = PomVersion.parse(config.getMinimumRequiredVersion());
+
+    return new Predicate<HttpRequestContext>() {
+      @Override
+      public boolean apply(final HttpRequestContext input) {
+
+        final String versionString =
+            input.getHeaderValue(VersionCompatibility.HELIOS_VERSION_HEADER);
+        // if we don't know the version, jump into the "you need to authenticate flow" as opposed to
+        // letting them through
+        if (versionString == null) {
+          return true;
+        }
+
+        final PomVersion clientVersion;
+        try {
+          clientVersion = PomVersion.parse(versionString);
+        } catch (RuntimeException e) {
+          // malformed version header
+          log.warn("isAuthenticationRequired: rejecting request due to malformed "
+                   + "client version header: {}", versionString);
+          return true;
+        }
+
+        // -1 = minVersion is less than input (i.e. input is greater than minVersion), 0 = equal
+        // any input version above the minVersion requires auth
+        return minVersion.compareTo(clientVersion) < 1;
+      }
+    };
   }
 
   private void setUpRequestLogging(final Path stateDirectory) {

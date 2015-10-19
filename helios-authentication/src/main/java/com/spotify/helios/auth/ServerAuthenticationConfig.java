@@ -26,7 +26,7 @@ import java.nio.file.Path;
 public class ServerAuthenticationConfig {
 
   private String enabledScheme;
-  private String minimumEnabledVersion;
+  private String minimumRequiredVersion;
   private Path pluginsPath;
 
   public String getEnabledScheme() {
@@ -38,17 +38,17 @@ public class ServerAuthenticationConfig {
     return this;
   }
 
-  public String getMinimumEnabledVersion() {
-    return minimumEnabledVersion;
+  public String getMinimumRequiredVersion() {
+    return minimumRequiredVersion;
   }
 
-  public ServerAuthenticationConfig setMinimumEnabledVersion(String minimumEnabledVersion) {
-    this.minimumEnabledVersion = minimumEnabledVersion;
+  public ServerAuthenticationConfig setMinimumRequiredVersion(String minimumRequiredVersion) {
+    this.minimumRequiredVersion = minimumRequiredVersion;
     return this;
   }
 
   public boolean isEnabledForAllVersions() {
-    return this.minimumEnabledVersion == null;
+    return this.minimumRequiredVersion == null;
   }
 
   public Path getPluginsPath() {
