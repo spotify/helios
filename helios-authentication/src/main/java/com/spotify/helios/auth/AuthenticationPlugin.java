@@ -24,7 +24,12 @@ package com.spotify.helios.auth;
 import io.dropwizard.jersey.setup.JerseyEnvironment;
 
 /**
+ * To add new authentication schemes to Helios, a plugin needs to implement this interface to
+ * provide the logic for client-side and server-side authentication.
+ *
  * @param <C> the type of Credentials used
+ * @see com.spotify.helios.auth.basic.BasicAuthenticationPlugin an example implementation providing
+ * HTTP Basic authentication
  */
 public interface AuthenticationPlugin<C> {
 
@@ -42,12 +47,16 @@ public interface AuthenticationPlugin<C> {
 
   ClientAuthentication<C> clientAuthentication();
 
+  /**
+   * The server-side half of authentication in Helios. Responsible for creating {@link
+   * Authenticator} instances which translate HTTP headers into credentials and validate them.
+   */
   interface ServerAuthentication<C> {
 
     /**
      * An Authenticator instance to use when authenticating HTTP requests to Helios.
      * <p>
-     * Helio's Authentication support builds on top of the {@link io.dropwizard.auth.Authenticator
+     * Helios' Authentication support builds on top of the {@link io.dropwizard.auth.Authenticator
      * Authenticator interface from Dropwizard} to add in a method for transforming HTTP headers
      * into a "credentials" object. The latter is then fed into the {@link
      * Authenticator#authenticate(Object)} method (defined in the dropwizard Authenticator
