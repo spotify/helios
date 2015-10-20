@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Spotify AB.
+ * Copyright (c) 2015 Spotify AB.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,26 +19,11 @@
  * under the License.
  */
 
-package com.spotify.helios.auth.it;
+package com.spotify.helios.auth;
 
-import com.google.auto.service.AutoService;
+public interface ClientAuthenticationPlugin {
 
-import com.spotify.helios.auth.AuthenticationPlugin;
+  String schemeName();
 
-/**
- * Plugin implementation used in integration testing that AuthenticationPluginLoader can load
- * plugins from arbitrary paths not on the CLASSPATH.
- */
-@AutoService(AuthenticationPlugin.class)
-public class IntegrationTestPlugin implements AuthenticationPlugin<String> {
-
-  @Override
-  public String schemeName() {
-    return "plugin-for-integration-test";
-  }
-
-  @Override
-  public ServerAuthentication<String> serverAuthentication() {
-    return null;
-  }
+  AuthProvider.Factory authProviderFactory();
 }

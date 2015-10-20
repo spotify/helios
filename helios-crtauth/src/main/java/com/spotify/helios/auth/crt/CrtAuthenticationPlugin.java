@@ -109,7 +109,7 @@ public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessTo
   }
 
   @Override
-  public ClientAuthentication<CrtAccessToken> clientAuthentication() {
+  public ClientAuthentication clientAuthentication() {
     return null;
   }
 }

@@ -36,9 +36,4 @@ public class BasicAuthenticationPlugin implements AuthenticationPlugin<BasicCred
   public ServerAuthentication<BasicCredentials> serverAuthentication() {
     return new BasicServerAuthentication();
   }
-
-  @Override
-  public ClientAuthentication<BasicCredentials> clientAuthentication() {
-    return null;
-  }
 }
