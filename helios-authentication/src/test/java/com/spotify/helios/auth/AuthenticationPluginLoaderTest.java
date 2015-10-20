@@ -58,10 +58,5 @@ public class AuthenticationPluginLoaderTest {
     public ServerAuthentication<String> serverAuthentication(Map<String, String> environment) {
       return null;
     }
-
-    @Override
-    public ClientAuthentication<String> clientAuthentication() {
-      return null;
-    }
   }
 }

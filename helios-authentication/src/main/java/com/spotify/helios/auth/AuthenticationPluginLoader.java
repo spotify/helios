@@ -31,19 +31,7 @@ public class AuthenticationPluginLoader {
     final String scheme = config.getEnabledScheme();
     final Path pluginPath = config.getPluginPath();
 
-    final ClassLoader classLoader;
-    if (config.getPluginPath() == null) {
-      // default loader = this one
-      classLoader = Thread.currentThread().getContextClassLoader();
-    } else {
-      // load from plugin path *only*
-      Preconditions.checkArgument(pluginPath.toFile().canRead(),
-          "Plugin path " + pluginPath + " does not exist or is not readable");
-      classLoader = pluginClassLoader(pluginPath);
-    }
-
-    final ServiceLoader<AuthenticationPlugin> loader =
-        ServiceLoader.load(AuthenticationPlugin.class, classLoader);
+    final ServiceLoader<AuthenticationPlugin> loader = serviceLoaderForPath(pluginPath);
 
     for (AuthenticationPlugin plugin : loader) {
       if (scheme.equals(plugin.schemeName())) {
@@ -65,5 +53,21 @@ public class AuthenticationPluginLoader {
     } catch (MalformedURLException e) {
       throw new RuntimeException("Failed to load plugin jar " + plugin, e);
     }
+  }
+
+  private static ServiceLoader<AuthenticationPlugin> serviceLoaderForPath(final Path pluginPath) {
+    final ClassLoader classLoader;
+    if (pluginPath == null) {
+      // default loader = this one
+      classLoader = Thread.currentThread().getContextClassLoader();
+    } else {
+      // load from plugin path *only*
+      Preconditions.checkArgument(pluginPath.toFile().canRead(),
+                                  "Plugin path " + pluginPath
+                                  + " does not exist or is not readable");
+      classLoader = pluginClassLoader(pluginPath);
+    }
+
+    return ServiceLoader.load(AuthenticationPlugin.class, classLoader);
   }
 }

@@ -50,8 +50,6 @@ public interface AuthenticationPlugin<C> {
    */
   ServerAuthentication<C> serverAuthentication(Map<String, String> environment);
 
-  ClientAuthentication<C> clientAuthentication();
-
   /**
    * The server-side half of authentication in Helios. Responsible for creating {@link
    * Authenticator} instances which translate HTTP headers into credentials and validate them.
@@ -87,9 +85,5 @@ public interface AuthenticationPlugin<C> {
      * to those endpoint(s) in this method.</p>
      */
     Set<String> unauthenticatedPaths();
-  }
-
-  interface ClientAuthentication<C> {
-    // TODO (mbrown): have an interface!
   }
 }

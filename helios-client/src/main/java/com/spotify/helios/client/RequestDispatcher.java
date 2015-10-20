@@ -15,13 +15,9 @@
  * under the License.
  */
 
-package com.spotify.helios.transport;
+package com.spotify.helios.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
-
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
 
 public interface RequestDispatcher extends AutoCloseable {
 

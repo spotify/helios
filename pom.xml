@@ -121,7 +121,6 @@
     <module>helios-tools</module>
     <module>helios-testing</module>
     <module>helios-testing-common</module>
-    <module>helios-transport</module>
     <module>helios-service-registration</module>
     <module>helios-services</module>
     <module>helios-system-tests</module>

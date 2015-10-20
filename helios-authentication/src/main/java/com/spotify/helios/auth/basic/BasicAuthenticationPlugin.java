@@ -65,9 +65,4 @@ public class BasicAuthenticationPlugin implements AuthenticationPlugin<BasicCred
       throw Throwables.propagate(e);
     }
   }
-
-  @Override
-  public ClientAuthentication<BasicCredentials> clientAuthentication() {
-    return null;
-  }
 }

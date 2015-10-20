@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014 Spotify AB.
+ * Copyright (c) 2015 Spotify AB.
  *
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -19,26 +19,35 @@
  * under the License.
  */
 
-package com.spotify.helios.auth.it;
+package com.spotify.helios.auth;
 
 import com.google.auto.service.AutoService;
 
-import com.spotify.helios.auth.AuthenticationPlugin;
+import com.spotify.helios.client.RequestDispatcher;
 
-/**
- * Plugin implementation used in integration testing that AuthenticationPluginLoader can load
- * plugins from arbitrary paths not on the CLASSPATH.
- */
-@AutoService(AuthenticationPlugin.class)
-public class IntegrationTestPlugin implements AuthenticationPlugin<String> {
+@AutoService(ClientAuthenticationPlugin.class)
+public class BasicClientAuthenticationPlugin implements ClientAuthenticationPlugin {
 
   @Override
   public String schemeName() {
-    return "plugin-for-integration-test";
+    // TODO (staffan): This should be "Basic"
+    return "http-basic";
   }
 
   @Override
-  public ServerAuthentication<String> serverAuthentication() {
-    return null;
+  public AuthProvider.Factory authProviderFactory() {
+    final String username = System.getenv("AUTH_BASIC_USERNAME");
+    final String password = System.getenv("AUTH_BASIC_PASSWORD");
+
+    if (username == null || password == null) {
+      return null;
+    } else {
+      return new AuthProvider.Factory() {
+        @Override
+        public AuthProvider create(final RequestDispatcher requestDispatcher) {
+          return new BasicAuthProvider(username, password);
+        }
+      };
+    }
   }
 }
