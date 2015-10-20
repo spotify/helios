@@ -22,14 +22,11 @@
 package com.spotify.helios.auth.crt;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Throwables;
 
 import com.spotify.crtauth.exceptions.KeyNotFoundException;
 import com.spotify.crtauth.keyprovider.KeyProvider;
 import com.spotify.crtauth.utils.TraditionalKeyParser;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapOperations;
 
@@ -49,7 +46,6 @@ import static org.springframework.ldap.query.LdapQueryBuilder.query;
 /**
  * Returns user data from an LDAP directory.
  */
-// TODO (mbrown): generalize this
 public class LdapKeyProvider implements KeyProvider {
 
   // similar to Guava's Function, but we need to declare a checked exception
@@ -64,8 +60,6 @@ public class LdapKeyProvider implements KeyProvider {
       return TraditionalKeyParser.parsePemPublicKey(input);
     }
   };
-
-  private static final Logger log = LoggerFactory.getLogger(LdapKeyProvider.class);
 
   private final LdapOperations ldapTemplate;
   private final String baseSearchPath;
@@ -101,10 +95,8 @@ public class LdapKeyProvider implements KeyProvider {
             .base(baseSearchPath)
             .where("uid").is(username),
         new AttributesMapper<String>() {
-          // TODO (mbrown): how spotify specific is this field.lowercase stuff?
           @Override
           public String mapFromAttributes(final Attributes attributes) throws NamingException {
-            log.debug("got ldap stuff for uid {}", username);
             return attributes.get(fieldName.toLowerCase()).toString();
           }
         });
@@ -119,7 +111,7 @@ public class LdapKeyProvider implements KeyProvider {
         final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
         return (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
       } catch (InvalidKeyException | InvalidKeySpecException | NoSuchAlgorithmException e) {
-        throw Throwables.propagate(e);
+        throw new KeyNotFoundException(e);
       }
 
     }

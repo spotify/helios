@@ -27,6 +27,7 @@ import com.spotify.crtauth.exceptions.KeyNotFoundException;
 import com.spotify.helios.auth.crt.LdapKeyProvider.KeyParsingFunction;
 
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.ldap.core.AttributesMapper;
 import org.springframework.ldap.core.LdapOperations;
 import org.springframework.ldap.query.LdapQuery;
@@ -38,7 +39,9 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.List;
 import java.util.Random;
 
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -75,13 +78,18 @@ public class LdapKeyProviderTest {
 
     final List<String> results = ImmutableList.of("pubkey: foobar");
 
-    // TODO (mbrown): assert against the query
-    when(ldapTemplate.search(any(LdapQuery.class), any(AttributesMapper.class)))
+    final ArgumentCaptor<LdapQuery> query = ArgumentCaptor.forClass(LdapQuery.class);
+
+    when(ldapTemplate.search(query.capture(), any(AttributesMapper.class)))
         .thenReturn(results);
 
     final RSAPublicKey key = provider.getKey("user123");
 
+    // actual value is not important since we are returning random keys
     assertNotNull(key);
+
+    assertThat(query.getValue().base().toString(), is("CN=users"));
+    assertThat(query.getValue().filter().encode(), is("(uid=user123)"));
   }
 
   @Test(expected = KeyNotFoundException.class)
@@ -96,8 +104,7 @@ public class LdapKeyProviderTest {
     provider.getKey("user123");
   }
 
-  // TODO (mbrown): is RuntimeException the best exception type to throw?
-  @Test(expected = RuntimeException.class)
+  @Test(expected = KeyNotFoundException.class)
   public void storedKeyIsInvalid() throws Exception {
     final LdapKeyProvider provider = keyProvider(invalidKeyParser);
 
