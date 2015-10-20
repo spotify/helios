@@ -24,15 +24,21 @@ package com.spotify.helios.auth.crt;
 import com.spotify.crtauth.CrtAuthServer;
 import com.spotify.crtauth.exceptions.ProtocolVersionException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
 @Path("/_auth")
 public class CrtHandshakeResource {
+
+  private static final Logger log = LoggerFactory.getLogger(CrtHandshakeResource.class);
 
   private final CrtAuthServer authServer;
 
@@ -53,40 +59,51 @@ public class CrtHandshakeResource {
     }
 
     return Response.status(Status.BAD_REQUEST)
-        .header(HttpHeaders.CONTENT_TYPE, "text/plain")
+        .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN)
         .entity("Bad handshake")
         .build();
 
   }
 
-  private Response sendChallenge(String chap) {
-    final String requestPayload = chap.substring(chap.indexOf(":") + 1);
+  private Response sendChallenge(String chapHeader) {
+    final String requestPayload = splitHeader(chapHeader);
     try {
       final String challenge = authServer.createChallenge(requestPayload);
       return Response.ok()
           .header("X-CHAP", "challenge:" + challenge)
           .build();
     } catch (IllegalArgumentException | ProtocolVersionException e) {
-      // TODO (mbrown): proper response
+      log.warn("unable to create challenge for request with Authorization header: {}",
+          chapHeader,
+          e);
       return Response.status(Status.BAD_REQUEST)
+          .entity("Error in generating challenge for your request")
+          .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN)
           .build();
     }
   }
 
-  private Response sendResponse(String chap) {
-    final String responsePayload = chap.substring(chap.indexOf(":") + 1);
-    final String token;
+  private Response sendResponse(String chapHeader) {
+    final String responsePayload = splitHeader(chapHeader);
     try {
-      token = authServer.createToken(responsePayload);
+      final String token = authServer.createToken(responsePayload);
       return Response.ok()
           .header("X-CHAP", "token:" + token)
           .build();
     } catch (IllegalArgumentException | ProtocolVersionException e) {
-      // TODO (mbrown): proper response
+      // NOTE: the crtauth library throws IllegalArgumentException for cases where the key is not
+      // found, signing cannot be performed, etc
+      log.warn("unable to create response for request with Authorization header: {}",
+          chapHeader,
+          e);
       return Response.status(Status.BAD_REQUEST)
+          .entity("Error in generating challenge for your request")
+          .header(HttpHeaders.CONTENT_TYPE, MediaType.TEXT_PLAIN)
           .build();
     }
   }
 
-
+  private static String splitHeader(final String chapHeader) {
+    return chapHeader.substring(chapHeader.indexOf(":") + 1);
+  }
 }
