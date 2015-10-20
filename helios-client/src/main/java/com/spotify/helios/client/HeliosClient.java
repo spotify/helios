@@ -22,7 +22,6 @@
 package com.spotify.helios.client;
 
 import com.google.common.base.Function;
-import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
@@ -66,6 +65,7 @@ import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
 
+import org.apache.http.client.utils.URIBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -86,6 +86,8 @@ import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.Futures.withFallback;
 import static com.google.common.util.concurrent.MoreExecutors.getExitingExecutorService;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.lang.String.format;
 import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
 import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
@@ -96,8 +98,6 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newFixedThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
-import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 
 public class HeliosClient implements AutoCloseable {
 
@@ -122,13 +122,20 @@ public class HeliosClient implements AutoCloseable {
   }
 
   private URI uri(final String path, final Map<String, String> query) {
-    // TODO(dano): use a uri builder and clean this mess up
     checkArgument(path.startsWith("/"));
-    final Map<String, String> queryWithUser = Maps.newHashMap(query);
-    queryWithUser.put("user", user);
-    final String queryPart = Joiner.on('&').withKeyValueSeparator("=").join(queryWithUser);
+
+    final URIBuilder builder = new URIBuilder()
+        .setScheme("http")
+        .setHost("helios")
+        .setPath(path);
+
+    for (final Map.Entry<String, String> q : query.entrySet()) {
+      builder.addParameter(q.getKey(), q.getValue());
+    }
+    builder.addParameter("user", user);
+
     try {
-      return new URI("http", "helios", path, queryPart, null);
+      return builder.build();
     } catch (URISyntaxException e) {
       throw Throwables.propagate(e);
     }
