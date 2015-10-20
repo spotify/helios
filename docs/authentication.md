@@ -43,7 +43,7 @@ scheme may just read a shared secret from a file on disk or an environment
 variable and populate the `Authorization` header with that value.
 
 The end result of the authentication process is that the Helios client will
-have a token for the `Authorization` header of it's HTTP requests that is known
+have a token for the `Authorization` header of its HTTP requests that is known
 to work. Some schemes may have the concept of expiring tokens, but to maintain
 support for all types of schemes within Helios, the server does not communicate
 this information back to the client. 
@@ -64,8 +64,8 @@ Authentication is enabled in the master by adding the `--auth-scheme SCHEME`
 flag. This flag both enables authentication and configures the authentication
 scheme to be used.
 
-Authentication can be restricted to only apply to a certain client
-version and above, to allow for rolling out the authentication requirement
+Authentication can be restricted to only apply to clients at or above a
+specific version, to allow for rolling out the authentication requirement
 slowly across a Helios installation. This is controlled with the
 `--auth-minimum-version VERSION` argument when starting the master (where
 `VERSION` is a Helios version string like `0.8.500`). If not set,
@@ -123,8 +123,8 @@ Helios' [Authenticator][helios-authenticator] has two responsibilities:
 
 Helios will take care of the boilerplate and glue code necessary to hook into
 Jersey to call these methods for each HTTP request to a protected resource when
-authentication is enabled; the plugin only has to specify it's unique logic
-(parsing HTTP headers, and authenticating the credentials to a user).
+authentication is enabled; the plugin only has to specify its unique logic
+(parsing HTTP headers and authenticating the credentials to a user).
 
 ##### Adding additional Jersey controllers to Helios
 The optional part of the `ServerAuthentication` interface is

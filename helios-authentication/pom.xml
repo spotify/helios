@@ -12,8 +12,10 @@
   <packaging>jar</packaging>
 
   <description>
-    SPI for authentication in Helios. Defines the framework for authentication using
-    plugins, and an example implementation providing HTTP Basic Authentication.
+    Service provider interface for authentication in Helios. 
+    
+    Defines the framework for authentication using plugins and provides an
+    example implementation providing HTTP Basic Authentication.
   </description>
 
   <dependencies>
