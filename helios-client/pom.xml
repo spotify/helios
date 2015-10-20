@@ -22,6 +22,11 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>helios-authentication</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
       <groupId>com.spotify.docgenerator</groupId>
       <artifactId>scanner</artifactId>
       <version>0.0.1</version>

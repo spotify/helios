@@ -19,7 +19,9 @@ package com.spotify.helios.auth.basic;
 
 import com.google.auto.service.AutoService;
 
+import com.spotify.helios.auth.AuthProvider;
 import com.spotify.helios.auth.AuthenticationPlugin;
+import com.spotify.helios.transport.RequestDispatcher;
 
 import io.dropwizard.auth.basic.BasicCredentials;
 
@@ -38,7 +40,24 @@ public class BasicAuthenticationPlugin implements AuthenticationPlugin<BasicCred
   }
 
   @Override
-  public ClientAuthentication<BasicCredentials> clientAuthentication() {
-    return null;
+  public ClientAuthentication clientAuthentication() {
+    final String username = System.getenv("AUTH_BASIC_USERNAME");
+    final String password = System.getenv("AUTH_BASIC_PASSWORD");
+
+    if (username == null || password == null) {
+      return null;
+    } else {
+      return new ClientAuthentication() {
+        @Override
+        public AuthProvider.Factory authProviderFactory() {
+          return new AuthProvider.Factory() {
+            @Override
+            public AuthProvider create(final RequestDispatcher requestDispatcher) {
+              return new BasicAuthProvider(username, password);
+            }
+          };
+        }
+      };
+    }
   }
 }

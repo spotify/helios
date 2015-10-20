@@ -41,7 +41,7 @@ public interface AuthenticationPlugin<C> {
 
   ServerAuthentication<C> serverAuthentication();
 
-  ClientAuthentication<C> clientAuthentication();
+  ClientAuthentication clientAuthentication();
 
   /**
    * The server-side half of authentication in Helios. Responsible for creating {@link
@@ -69,7 +69,8 @@ public interface AuthenticationPlugin<C> {
     void registerAdditionalJerseyComponents(JerseyEnvironment env);
   }
 
-  interface ClientAuthentication<C> {
-    // TODO (mbrown): have an interface!
+  interface ClientAuthentication {
+
+    AuthProvider.Factory authProviderFactory();
   }
 }

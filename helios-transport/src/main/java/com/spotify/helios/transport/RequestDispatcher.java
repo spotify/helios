@@ -19,10 +19,6 @@ package com.spotify.helios.transport;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-
 public interface RequestDispatcher extends AutoCloseable {
 
   ListenableFuture<Response> request(HeliosRequest request);

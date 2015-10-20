@@ -17,6 +17,7 @@
 
 package com.spotify.helios.cli.command;
 
+import com.spotify.helios.auth.AuthProvider;
 import com.spotify.helios.cli.Target;
 
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -29,6 +30,6 @@ import java.util.List;
 public interface CliCommand {
   int run(final Namespace options, final List<Target> targets, final PrintStream out,
           final PrintStream err, final String username, final boolean json,
-          final BufferedReader stdin)
+          final BufferedReader stdin, final AuthProvider.Factory authProviderFactory)
               throws IOException, InterruptedException;
 }

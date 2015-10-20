@@ -18,11 +18,15 @@
 package com.spotify.helios.auth;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterators;
+import com.google.common.collect.Lists;
 
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.ServiceLoader;
 
 public class AuthenticationPluginLoader {
@@ -31,19 +35,7 @@ public class AuthenticationPluginLoader {
     final String scheme = config.getEnabledScheme();
     final Path pluginPath = config.getPluginPath();
 
-    final ClassLoader classLoader;
-    if (config.getPluginPath() == null) {
-      // default loader = this one
-      classLoader = Thread.currentThread().getContextClassLoader();
-    } else {
-      // load from plugin path *only*
-      Preconditions.checkArgument(pluginPath.toFile().canRead(),
-          "Plugin path " + pluginPath + " does not exist or is not readable");
-      classLoader = pluginClassLoader(pluginPath);
-    }
-
-    final ServiceLoader<AuthenticationPlugin> loader =
-        ServiceLoader.load(AuthenticationPlugin.class, classLoader);
+    final ServiceLoader<AuthenticationPlugin> loader = serviceLoaderForPath(pluginPath);
 
     for (AuthenticationPlugin plugin : loader) {
       if (scheme.equals(plugin.schemeName())) {
@@ -65,5 +57,33 @@ public class AuthenticationPluginLoader {
     } catch (MalformedURLException e) {
       throw new RuntimeException("Failed to load plugin jar " + plugin, e);
     }
+  }
+
+  public static List<AuthenticationPlugin> loadAll() {
+    return loadAll(null);
+  }
+
+  public static List<AuthenticationPlugin> loadAll(final Path pluginPath) {
+    final ServiceLoader<AuthenticationPlugin> loader =
+        serviceLoaderForPath(pluginPath);
+    final List<AuthenticationPlugin> plugins = Lists.newArrayList();
+    Iterators.addAll(plugins, loader.iterator());
+    return ImmutableList.copyOf(plugins);
+  }
+
+  private static ServiceLoader<AuthenticationPlugin> serviceLoaderForPath(final Path pluginPath) {
+    final ClassLoader classLoader;
+    if (pluginPath == null) {
+      // default loader = this one
+      classLoader = Thread.currentThread().getContextClassLoader();
+    } else {
+      // load from plugin path *only*
+      Preconditions.checkArgument(pluginPath.toFile().canRead(),
+                                  "Plugin path " + pluginPath
+                                  + " does not exist or is not readable");
+      classLoader = pluginClassLoader(pluginPath);
+    }
+
+    return ServiceLoader.load(AuthenticationPlugin.class, classLoader);
   }
 }
