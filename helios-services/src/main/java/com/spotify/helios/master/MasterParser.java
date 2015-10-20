@@ -80,7 +80,7 @@ public class MasterParser extends ServiceParser {
 
       final File pluginPath = options.get(authenticationPluginsPathArg.getDest());
       if (pluginPath != null) {
-        authConfig.setPluginsPath(pluginPath.toPath());
+        authConfig.setPluginPath(pluginPath.toPath());
       }
 
       final String minVersion = options.getString(authenticationMinimumVersion.getDest());

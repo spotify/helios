@@ -32,7 +32,6 @@ public class AuthenticationPluginLoaderTest {
 
   @Test
   public void canLoadPlugin() {
-    System.out.println(TestPlugin.class.getCanonicalName());
     config.setEnabledScheme("test-plugin");
     final AuthenticationPlugin<?> plugin = AuthenticationPluginLoader.load(config);
 

@@ -31,7 +31,7 @@ public class ServerAuthenticationConfig {
 
   private String enabledScheme;
   private String minimumRequiredVersion;
-  private Path pluginsPath;
+  private Path pluginPath;
 
   @Nonnull
   public String getEnabledScheme() {
@@ -56,12 +56,12 @@ public class ServerAuthenticationConfig {
     return this.minimumRequiredVersion == null;
   }
 
-  public Path getPluginsPath() {
-    return pluginsPath;
+  public Path getPluginPath() {
+    return pluginPath;
   }
 
-  public ServerAuthenticationConfig setPluginsPath(Path pluginsPath) {
-    this.pluginsPath = pluginsPath;
+  public ServerAuthenticationConfig setPluginPath(Path pluginPath) {
+    this.pluginPath = pluginPath;
     return this;
   }
 }

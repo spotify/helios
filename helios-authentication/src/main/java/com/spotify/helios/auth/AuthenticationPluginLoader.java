@@ -21,26 +21,33 @@
 
 package com.spotify.helios.auth;
 
-import com.google.common.collect.ImmutableList;
+import com.google.common.base.Preconditions;
 
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.nio.file.Path;
-import java.util.List;
 import java.util.ServiceLoader;
 
 public class AuthenticationPluginLoader {
 
   public static AuthenticationPlugin<?> load(ServerAuthenticationConfig config) {
-    return load(config, ImmutableList.<Path>of());
-  }
-
-  public static AuthenticationPlugin<?> load(ServerAuthenticationConfig config,
-                                             List<Path> pluginPaths) {
-
     final String scheme = config.getEnabledScheme();
+    final Path pluginPath = config.getPluginPath();
 
-    // TODO (mbrown): extra classloader magic for plugin paths
+    final ClassLoader classLoader;
+    if (config.getPluginPath() == null) {
+      // default loader = this one
+      classLoader = Thread.currentThread().getContextClassLoader();
+    } else {
+      // load from plugin path *only*
+      Preconditions.checkArgument(pluginPath.toFile().canRead(),
+          "Plugin path " + pluginPath + " does not exist or is not readable");
+      classLoader = pluginClassLoader(pluginPath);
+    }
+
     final ServiceLoader<AuthenticationPlugin> loader =
-        ServiceLoader.load(AuthenticationPlugin.class);
+        ServiceLoader.load(AuthenticationPlugin.class, classLoader);
 
     for (AuthenticationPlugin plugin : loader) {
       if (scheme.equals(plugin.schemeName())) {
@@ -50,5 +57,17 @@ public class AuthenticationPluginLoader {
 
     throw new IllegalStateException("No AuthenticationPlugin found for scheme " + scheme
                                     + ". Check classpath and plugin path settings");
+  }
+
+  /**
+   * Create a class loader for a plugin jar.
+   */
+  private static ClassLoader pluginClassLoader(final Path plugin) {
+    try {
+      final URL url = plugin.toFile().toURI().toURL();
+      return new URLClassLoader(new URL[]{url});
+    } catch (MalformedURLException e) {
+      throw new RuntimeException("Failed to load plugin jar " + plugin, e);
+    }
   }
 }
