@@ -79,6 +79,11 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.http.HttpStatus;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -174,6 +179,7 @@ public abstract class SystemTestBase {
   private int masterPort;
   private int masterAdminPort;
   private String masterEndpoint;
+  private String masterAdminEndpoint;
   private boolean integrationMode;
   private Range<Integer> dockerPortRange;
 
@@ -188,6 +194,9 @@ public abstract class SystemTestBase {
   private ZooKeeperTestManager zk;
   protected static String zooKeeperNamespace = null;
   protected final String zkClusterId = String.valueOf(ThreadLocalRandom.current().nextInt(10000));
+
+  /** An HttpClient that can be used for sending arbitrary HTTP requests */
+  protected CloseableHttpClient httpClient;
 
   @BeforeClass
   public static void staticSetup() {
@@ -209,6 +218,7 @@ public abstract class SystemTestBase {
     } else if (className.endsWith("Test")) {
       integrationMode = false;
       masterEndpoint = "http://localhost:" + masterPort();
+      masterAdminEndpoint = "http://localhost:" + masterAdminPort();
       // unit test
     } else {
       throw new RuntimeException("Test class' name must end in either 'Test' or 'ITCase'.");
@@ -220,6 +230,9 @@ public abstract class SystemTestBase {
     zk.ensure("/status");
     agentStateDirs = temporaryFolder.newFolder("helios-agents").toPath();
     masterStateDirs = temporaryFolder.newFolder("helios-masters").toPath();
+
+    // TODO (mbrown): not 100% sure what a minimal client is but it sounds good
+    httpClient = HttpClients.createMinimal();
   }
 
   @Before
@@ -453,6 +466,10 @@ public abstract class SystemTestBase {
     return masterEndpoint;
   }
 
+  protected String masterAdminEndpoint() {
+    return masterAdminEndpoint;
+  }
+
   protected String masterName() throws InterruptedException, ExecutionException {
     if (integrationMode) {
       if (masterName == null) {
@@ -560,7 +577,7 @@ public abstract class SystemTestBase {
     }
 
     final MasterMain master = startMaster(argsList.toArray(new String[argsList.size()]));
-    waitForMasterToConnectToZK();
+    waitForMasterToBeFullyUp();
 
     return master;
   }
@@ -579,13 +596,23 @@ public abstract class SystemTestBase {
     return masters;
   }
 
-  protected void waitForMasterToConnectToZK() throws Exception {
+  protected void waitForMasterToBeFullyUp() throws Exception {
+    log.debug("waitForMasterToBeFullyUp: beginning wait loop");
     Polling.await(WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<Object>() {
       @Override
       public Object call() {
         try {
-          final List<String> masters = defaultClient().listMasters().get();
-          return masters != null;
+          // While MasterService will start listening for http requests on the main and admin ports
+          // as soon as it is started (without waiting for ZK to be available), the Healthcheck
+          // registered for Zookeeper connectivity will cause the HealthcheckServlet to not return
+          // 200 OK until ZK is connected to (and even better, until *everything* is healthy).
+          final HttpGet request = new HttpGet(masterAdminEndpoint + "/healthcheck");
+
+          try (CloseableHttpResponse response = httpClient.execute(request)) {
+            final int status = response.getStatusLine().getStatusCode();
+            log.debug("waitForMasterToBeFullyUp: healthcheck endpoint returned {}", status);
+            return status == HttpStatus.SC_OK;
+          }
         } catch (Exception e) {
           return null;
         }
