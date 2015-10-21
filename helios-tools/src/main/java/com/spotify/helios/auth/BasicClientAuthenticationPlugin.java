@@ -21,8 +21,11 @@
 
 package com.spotify.helios.auth;
 
+import com.google.auto.service.AutoService;
+
 import com.spotify.helios.client.RequestDispatcher;
 
+@AutoService(ClientAuthenticationPlugin.class)
 public class BasicClientAuthenticationPlugin implements ClientAuthenticationPlugin {
 
   @Override
