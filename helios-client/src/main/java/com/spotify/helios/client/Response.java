@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.spotify.helios.transport;
+package com.spotify.helios.client;
 
 import java.net.URI;
 import java.util.List;

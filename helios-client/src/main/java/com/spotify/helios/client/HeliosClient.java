@@ -36,6 +36,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.spotify.helios.auth.AuthProvider;
+import com.spotify.helios.auth.AuthenticatingRequestDispatcher;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
@@ -61,9 +62,6 @@ import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
-import com.spotify.helios.transport.HeliosRequest;
-import com.spotify.helios.transport.RequestDispatcher;
-import com.spotify.helios.transport.Response;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.jetbrains.annotations.NotNull;

@@ -23,27 +23,29 @@ package com.spotify.helios.auth;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import com.spotify.helios.transport.RequestDispatcher;
+import org.apache.commons.codec.binary.Base64;
 
-public interface AuthProvider {
+import static com.google.common.util.concurrent.Futures.immediateFuture;
 
-  /**
-   * Get the current value to use in the "Authorization" header.
-   *
-   * @return {@code null} if the value is unavailable.
-   */
-  String currentAuthorization();
+public class BasicAuthProvider implements AuthProvider {
 
-  /**
-   * This method is called when current credentials are unknown or invalid (e.g. expired).
-   * Implementations should renew the authorization if supported when this method is called.
-   * If renewing credentials is unsupported an implementation MUST return an immediate future
-   * with the current credentials.
-   */
-  ListenableFuture<String> renewAuthorization(String authHeader);
+  private final String header;
+  private final ListenableFuture<String> headerFuture;
 
-  public interface Factory {
+  public BasicAuthProvider(final String username, final String password) {
+    // TODO(staffan): Verify that username doesn't contain comma
+    final String credentials = username + ":" + password;
+    header = "Basic " + Base64.encodeBase64String(credentials.getBytes());
+    headerFuture = immediateFuture(header);
+  }
 
-    AuthProvider create(RequestDispatcher requestDispatcher);
+  @Override
+  public String currentAuthorization() {
+    return header;
+  }
+
+  @Override
+  public ListenableFuture<String> renewAuthorization(final String authHeader) {
+    return headerFuture;
   }
 }

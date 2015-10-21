@@ -23,11 +23,11 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 
 import com.spotify.helios.auth.AuthProvider;
-import com.spotify.helios.auth.AuthenticationPlugin;
-import com.spotify.helios.auth.AuthenticationPluginLoader;
 import com.spotify.helios.auth.AuthProviderSelector;
+import com.spotify.helios.auth.ClientAuthenticationPlugin;
+import com.spotify.helios.auth.ClientAuthenticationPluginLoader;
 import com.spotify.helios.common.LoggingConfig;
-import com.spotify.helios.transport.RequestDispatcher;
+import com.spotify.helios.client.RequestDispatcher;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
@@ -82,11 +82,10 @@ public class CliMain {
   private static AuthProvider.Factory configureAuthProvider() {
     final Map<String, AuthProvider.Factory> authProviderFactories = Maps.newHashMap();
 
-    for (final AuthenticationPlugin plugin : AuthenticationPluginLoader.loadAll()) {
-      final AuthenticationPlugin.ClientAuthentication clientAuthentication =
-          plugin.clientAuthentication();
-      if (clientAuthentication != null) {
-        authProviderFactories.put(plugin.schemeName(), clientAuthentication.authProviderFactory());
+    for (final ClientAuthenticationPlugin plugin : ClientAuthenticationPluginLoader.loadAll()) {
+      final AuthProvider.Factory factory = plugin.authProviderFactory();
+      if (factory != null) {
+        authProviderFactories.put(plugin.schemeName(), factory);
       }
     }
 

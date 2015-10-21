@@ -41,8 +41,6 @@ public interface AuthenticationPlugin<C> {
 
   ServerAuthentication<C> serverAuthentication();
 
-  ClientAuthentication clientAuthentication();
-
   /**
    * The server-side half of authentication in Helios. Responsible for creating {@link
    * Authenticator} instances which translate HTTP headers into credentials and validate them.
@@ -67,10 +65,5 @@ public interface AuthenticationPlugin<C> {
      * for multi-stepped authentication handshakes.
      */
     void registerAdditionalJerseyComponents(JerseyEnvironment env);
-  }
-
-  interface ClientAuthentication {
-
-    AuthProvider.Factory authProviderFactory();
   }
 }

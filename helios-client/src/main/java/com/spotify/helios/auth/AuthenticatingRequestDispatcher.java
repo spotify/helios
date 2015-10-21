@@ -19,7 +19,7 @@
  * under the License.
  */
 
-package com.spotify.helios.client;
+package com.spotify.helios.auth;
 
 import com.google.common.net.HttpHeaders;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -27,10 +27,9 @@ import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
-import com.spotify.helios.auth.AuthProvider;
-import com.spotify.helios.transport.HeliosRequest;
-import com.spotify.helios.transport.RequestDispatcher;
-import com.spotify.helios.transport.Response;
+import com.spotify.helios.client.HeliosRequest;
+import com.spotify.helios.client.RequestDispatcher;
+import com.spotify.helios.client.Response;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;

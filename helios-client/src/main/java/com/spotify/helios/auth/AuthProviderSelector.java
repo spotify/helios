@@ -23,7 +23,7 @@ package com.spotify.helios.auth;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import com.spotify.helios.transport.RequestDispatcher;
+import com.spotify.helios.client.RequestDispatcher;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
