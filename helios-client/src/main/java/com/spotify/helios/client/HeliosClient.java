@@ -575,10 +575,4 @@ public class HeliosClient implements AutoCloseable {
         .setUser(user)
         .build();
   }
-
-
-  static interface RequestDispatcherFactory {
-
-    RequestDispatcher create(Supplier<List<URI>> endpointSupplier);
-  }
 }
