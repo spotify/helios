@@ -56,10 +56,5 @@ public class AuthenticationPluginLoaderTest {
     public ServerAuthentication<String> serverAuthentication() {
       return null;
     }
-
-    @Override
-    public ClientAuthentication clientAuthentication() {
-      return null;
-    }
   }
 }
