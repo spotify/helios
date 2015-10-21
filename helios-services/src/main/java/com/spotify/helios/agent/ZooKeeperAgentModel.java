@@ -26,6 +26,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaRecord;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.Paths;

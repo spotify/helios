@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.spotify.helios.agent;
+package com.spotify.helios.servicescommon;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
