@@ -49,7 +49,7 @@ public class AuthenticatingRequestDispatcher implements RequestDispatcher {
   public ListenableFuture<Response> request(final HeliosRequest request) {
     // Include an Authorization header if it's currently available
     final HeliosRequest req;
-    final String authHeader = authProvider.currentAuthorization();
+    final String authHeader = authProvider.currentAuthorizationHeader();
     if (authHeader != null) {
       req = request.toBuilder().header(HttpHeaders.AUTHORIZATION, authHeader).build();
     } else {
@@ -73,7 +73,7 @@ public class AuthenticatingRequestDispatcher implements RequestDispatcher {
   private ListenableFuture<Response> authenticateAndRetry(final HeliosRequest request,
                                                           final Response response) {
     final ListenableFuture<Response> f = Futures.transform(
-        authProvider.renewAuthorization(response.header(HttpHeaders.WWW_AUTHENTICATE)),
+        authProvider.renewAuthorizationHeader(response.header(HttpHeaders.WWW_AUTHENTICATE)),
         new AsyncFunction<String, Response>() {
           @Override
           public ListenableFuture<Response> apply(final String authHeader)
