@@ -25,17 +25,31 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.RequestDispatcher;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 
+/**
+ * Allows a client to avoid specifying which auth-scheme it wants to use upfront, deferring the
+ * decision until we know which auth-scheme the server supports. Instead the user specifies all the
+ * auth-schemes supported when constructing the
+ * {@link com.spotify.helios.auth.AuthProviderSelector}.
+ *
+ * When using this {@link com.spotify.helios.auth.AuthProvider} the first request will always be
+ * unauthenticated.
+ */
 public class AuthProviderSelector implements AuthProvider {
+
+  private static final Logger log = LoggerFactory.getLogger(AuthProviderSelector.class);
 
   private final RequestDispatcher requestDispatcher;
   // Scheme -> provider factory
   private final Map<String, Factory> providerFactories;
-  private AtomicReference<AuthProvider> activeProvider = new AtomicReference<>(null);
+  private AtomicReference<ActiveProvider> activeProviderRef = new AtomicReference<>(null);
 
   public AuthProviderSelector(final RequestDispatcher requestDispatcher,
                               final Map<String, Factory> providerFactories) {
@@ -44,31 +58,59 @@ public class AuthProviderSelector implements AuthProvider {
   }
 
   @Override
-  public String currentAuthorization() {
-    final AuthProvider authProvider = activeProvider.get();
-    return authProvider != null ? authProvider.currentAuthorization() : null;
+  public String currentAuthorizationHeader() {
+    final ActiveProvider activeProvider = activeProviderRef.get();
+    return activeProvider != null ? activeProvider.provider.currentAuthorizationHeader() : null;
   }
 
   @Override
-  public ListenableFuture<String> renewAuthorization(final String authHeader) {
-    // TODO(staffan): Support the case when multiple comma-separated auth schemes are returned in
-    // the WWW-Authenticate header.
-    // TODO(staffan): Log stuff. Which provider was requested, and if it becomes active or not.
+  public ListenableFuture<String> renewAuthorizationHeader(final String authHeader) {
+    // TODO(staffan): Support multiple comma-separated challegnes
     final String authScheme = authHeader.split(" ", 2)[0];
-    AuthProvider authProvider;
+
+    ActiveProvider oldProvider, newProvider;
     do {
-      authProvider = activeProvider.get();
-      if (authProvider != null) {
+      oldProvider = this.activeProviderRef.get();
+      if (oldProvider != null && authScheme.equals(oldProvider.scheme)) {
+        // The existing provider has the same scheme -- nothing more to do.
+        newProvider = oldProvider;
         break;
       }
 
-      authProvider = providerFactories.get(authScheme).create(requestDispatcher);
-      if (authProvider == null) {
+      final Factory factory = providerFactories.get(authScheme);
+      if (factory == null) {
+        log.warn("Unsupported auth-scheme %s", authScheme);
         return immediateFailedFuture(
             new IllegalArgumentException("Unsupported authentication scheme: " + authScheme));
       }
-    } while (!activeProvider.compareAndSet(null, authProvider));
 
-    return authProvider.renewAuthorization(authHeader);
+      final AuthProvider authProvider = factory.create(requestDispatcher);
+      if (authProvider == null) {
+        log.warn("AuthProvider.Factory returned null for auth-scheme %s", authScheme);
+        return immediateFailedFuture(
+            new NullPointerException("AuthProvider.Factory returned null"));
+      }
+
+      newProvider = new ActiveProvider(authProvider, authScheme);
+    } while (!this.activeProviderRef.compareAndSet(oldProvider, newProvider));
+
+    if (newProvider != oldProvider) {
+      log.info("Switched AuthProvider, %s -> %s",
+               oldProvider == null ? "None" : oldProvider.scheme,
+               newProvider.scheme);
+    }
+
+    return newProvider.provider.renewAuthorizationHeader(authHeader);
+  }
+
+  private static class ActiveProvider {
+
+    final AuthProvider provider;
+    final String scheme;
+
+    private ActiveProvider(final AuthProvider provider, final String scheme) {
+      this.provider = provider;
+      this.scheme = scheme;
+    }
   }
 }
