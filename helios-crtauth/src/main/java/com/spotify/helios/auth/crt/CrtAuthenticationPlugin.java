@@ -44,6 +44,11 @@ public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessTo
   }
 
   @Override
+  public String cliSchemeName() {
+    return "crtauth";
+  }
+
+  @Override
   public String schemeName() {
     return "crtauth";
   }

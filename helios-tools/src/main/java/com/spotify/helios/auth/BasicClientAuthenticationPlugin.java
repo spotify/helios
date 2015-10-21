@@ -30,8 +30,7 @@ public class BasicClientAuthenticationPlugin implements ClientAuthenticationPlug
 
   @Override
   public String schemeName() {
-    // TODO (staffan): This should be "Basic"
-    return "http-basic";
+    return "Basic";
   }
 
   @Override

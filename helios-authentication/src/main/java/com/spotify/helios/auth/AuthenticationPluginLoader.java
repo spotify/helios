@@ -34,7 +34,7 @@ public class AuthenticationPluginLoader {
     final ServiceLoader<AuthenticationPlugin> loader = serviceLoaderForPath(pluginPath);
 
     for (AuthenticationPlugin plugin : loader) {
-      if (scheme.equals(plugin.schemeName())) {
+      if (scheme.equals(plugin.cliSchemeName())) {
         return plugin;
       }
     }
