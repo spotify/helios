@@ -32,7 +32,7 @@ public interface AuthProvider {
    *
    * @return {@code null} if the value is unavailable.
    */
-  String currentAuthorization();
+  String currentAuthorizationHeader();
 
   /**
    * This method is called when current credentials are unknown or invalid (e.g. expired).
@@ -40,7 +40,7 @@ public interface AuthProvider {
    * If renewing credentials is unsupported an implementation MUST return an immediate future
    * with the current credentials.
    */
-  ListenableFuture<String> renewAuthorization(String authHeader);
+  ListenableFuture<String> renewAuthorizationHeader(String authHeader);
 
   public interface Factory {
 

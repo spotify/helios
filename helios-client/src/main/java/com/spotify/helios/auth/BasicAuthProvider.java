@@ -40,12 +40,12 @@ public class BasicAuthProvider implements AuthProvider {
   }
 
   @Override
-  public String currentAuthorization() {
+  public String currentAuthorizationHeader() {
     return header;
   }
 
   @Override
-  public ListenableFuture<String> renewAuthorization(final String authHeader) {
+  public ListenableFuture<String> renewAuthorizationHeader(final String authHeader) {
     return headerFuture;
   }
 }
