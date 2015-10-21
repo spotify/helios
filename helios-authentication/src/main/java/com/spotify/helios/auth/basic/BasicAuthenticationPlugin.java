@@ -37,8 +37,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 public class BasicAuthenticationPlugin implements AuthenticationPlugin<BasicCredentials> {
 
   @Override
-  public String schemeName() {
+  public String cliSchemeName() {
     return "http-basic";
+  }
+
+  public String schemeName() {
+    return "Basic";
   }
 
   @Override
@@ -60,7 +64,7 @@ public class BasicAuthenticationPlugin implements AuthenticationPlugin<BasicCred
     };
 
     try {
-      return  objectMapper.readValue(file, typeToken);
+      return objectMapper.readValue(file, typeToken);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }

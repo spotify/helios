@@ -32,6 +32,11 @@ import java.util.Map;
 public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessToken> {
 
   @Override
+  public String cliSchemeName() {
+    return "crtauth";
+  }
+
+  @Override
   public String schemeName() {
     return "crtauth";
   }
