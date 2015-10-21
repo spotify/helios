@@ -41,9 +41,4 @@ public class IntegrationTestPlugin implements AuthenticationPlugin<String> {
   public ServerAuthentication<String> serverAuthentication() {
     return null;
   }
-
-  @Override
-  public ClientAuthentication<String> clientAuthentication() {
-    return null;
-  }
 }
