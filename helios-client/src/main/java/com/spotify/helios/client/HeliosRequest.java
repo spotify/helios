@@ -67,6 +67,11 @@ public class HeliosRequest {
     return headers;
   }
 
+  public String header(final String header) {
+    final List<String> values = headers.get(header);
+    return values == null || values.isEmpty() ? null : values.get(0);
+  }
+
   public Builder toBuilder() {
     return builder()
         .uri(uri)
