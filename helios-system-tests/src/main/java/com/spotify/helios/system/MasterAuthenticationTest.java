@@ -71,6 +71,11 @@ public class MasterAuthenticationTest extends SystemTestBase {
   public static class FixedPasswordAuthentication implements AuthenticationPlugin<String> {
 
     @Override
+    public String cliSchemeName() {
+      return "fixed-password";
+    }
+
+    @Override
     public String schemeName() {
       return "fixed-password";
     }
@@ -102,11 +107,6 @@ public class MasterAuthenticationTest extends SystemTestBase {
         public void registerAdditionalJerseyComponents(final JerseyEnvironment env) {
         }
       };
-    }
-
-    @Override
-    public ClientAuthentication<String> clientAuthentication() {
-      return null;
     }
   }
 }

@@ -48,6 +48,11 @@ public class AuthenticationPluginLoaderTest {
   public static class TestPlugin implements AuthenticationPlugin<String> {
 
     @Override
+    public String cliSchemeName() {
+      return "test-plugin";
+    }
+
+    @Override
     public String schemeName() {
       return "test-plugin";
     }
