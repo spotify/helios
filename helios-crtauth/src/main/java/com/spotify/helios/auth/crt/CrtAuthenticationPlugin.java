@@ -44,6 +44,11 @@ public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessTo
   }
 
   @Override
+  public String cliSchemeName() {
+    return "crtauth";
+  }
+
+  @Override
   public String schemeName() {
     return "crtauth";
   }
@@ -106,10 +111,5 @@ public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessTo
     } catch (NumberFormatException e) {
       throw new IllegalArgumentException("Value for " + name + " is not numeric");
     }
-  }
-
-  @Override
-  public ClientAuthentication<CrtAccessToken> clientAuthentication() {
-    return null;
   }
 }

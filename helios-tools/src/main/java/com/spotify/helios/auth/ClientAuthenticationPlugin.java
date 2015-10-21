@@ -15,13 +15,11 @@
  * under the License.
  */
 
-package com.spotify.helios.client;
+package com.spotify.helios.auth;
 
-import com.google.common.util.concurrent.ListenableFuture;
+public interface ClientAuthenticationPlugin {
 
-public interface RequestDispatcher extends AutoCloseable {
+  String schemeName();
 
-  ListenableFuture<Response> request(HeliosRequest request);
-
-  void close();
+  AuthProvider.Factory authProviderFactory();
 }

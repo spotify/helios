@@ -28,17 +28,17 @@ import io.dropwizard.auth.basic.BasicCredentials;
 public class BasicAuthenticationPlugin implements AuthenticationPlugin<BasicCredentials> {
 
   @Override
-  public String schemeName() {
+  public String cliSchemeName() {
     return "http-basic";
+  }
+
+  @Override
+  public String schemeName() {
+    return "Basic";
   }
 
   @Override
   public ServerAuthentication<BasicCredentials> serverAuthentication() {
     return new BasicServerAuthentication();
-  }
-
-  @Override
-  public ClientAuthentication<BasicCredentials> clientAuthentication() {
-    return null;
   }
 }

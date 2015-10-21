@@ -98,7 +98,6 @@ public class CliParser {
 
   public CliParser(final String... args)
       throws ArgumentParserException, IOException, URISyntaxException {
-
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("helios")
         .defaultHelp(true)
         .version(format("%s%nTested on Docker %s", NAME_AND_VERSION, TESTED_DOCKER_VERSION))
@@ -321,8 +320,9 @@ public class CliParser {
     return new GlobalArgs(parser, cliConfig);
   }
 
-  private GlobalArgs addGlobalArgs(final ArgumentParser parser, final CliConfig cliConfig,
-                                   final boolean topLevel) {
+  private GlobalArgs addGlobalArgs(
+      final ArgumentParser parser, final CliConfig cliConfig,
+      final boolean topLevel) {
     return new GlobalArgs(parser, cliConfig, topLevel);
   }
 

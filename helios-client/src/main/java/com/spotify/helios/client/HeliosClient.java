@@ -35,6 +35,8 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.spotify.helios.auth.AuthProvider;
+import com.spotify.helios.auth.AuthenticatingRequestDispatcher;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
@@ -170,7 +172,8 @@ public class HeliosClient implements AutoCloseable {
       entityBytes = new byte[]{};
     }
 
-    final ListenableFuture<Response> f = dispatcher.request(uri, method, entityBytes, headers);
+    final ListenableFuture<Response> f = dispatcher.request(
+        new HeliosRequest(uri, method, entityBytes, headers));
     return transform(f, new Function<Response, Response>() {
       @Override
       public Response apply(final Response response) {
@@ -498,6 +501,7 @@ public class HeliosClient implements AutoCloseable {
 
     private String user;
     private Supplier<List<URI>> endpointSupplier;
+    private AuthProvider.Factory authProviderFactory;
 
     public Builder setUser(final String user) {
       this.user = user;
@@ -533,11 +537,27 @@ public class HeliosClient implements AutoCloseable {
       return this;
     }
 
+    public Builder setAuthProviderFactory(final AuthProvider.Factory authProviderFactory) {
+      this.authProviderFactory = authProviderFactory;
+      return this;
+    }
+
     public HeliosClient build() {
-      return new HeliosClient(user, new DefaultRequestDispatcher(
+      final RequestDispatcher defaultDispatcher = new DefaultRequestDispatcher(
           endpointSupplier,
           MoreExecutors.listeningDecorator(getExitingExecutorService(
-              (ThreadPoolExecutor) newFixedThreadPool(4), 0, SECONDS))));
+              (ThreadPoolExecutor) newFixedThreadPool(4), 0, SECONDS)));
+
+      final RequestDispatcher dispatcher;
+      if (authProviderFactory != null) {
+        dispatcher = new AuthenticatingRequestDispatcher(
+            defaultDispatcher,
+            authProviderFactory.create(defaultDispatcher));
+      } else {
+        dispatcher = defaultDispatcher;
+      }
+
+      return new HeliosClient(user, dispatcher);
     }
   }
 
@@ -555,5 +575,4 @@ public class HeliosClient implements AutoCloseable {
         .setUser(user)
         .build();
   }
-
 }

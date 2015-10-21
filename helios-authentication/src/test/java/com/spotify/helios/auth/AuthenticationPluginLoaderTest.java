@@ -48,17 +48,17 @@ public class AuthenticationPluginLoaderTest {
   public static class TestPlugin implements AuthenticationPlugin<String> {
 
     @Override
+    public String cliSchemeName() {
+      return "test-plugin";
+    }
+
+    @Override
     public String schemeName() {
       return "test-plugin";
     }
 
     @Override
     public ServerAuthentication<String> serverAuthentication() {
-      return null;
-    }
-
-    @Override
-    public ClientAuthentication<String> clientAuthentication() {
       return null;
     }
   }
