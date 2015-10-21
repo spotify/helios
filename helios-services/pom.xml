@@ -151,6 +151,16 @@
     </dependency>
     <dependency>
       <groupId>com.spotify</groupId>
+      <artifactId>helios-authentication</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>helios-crtauth</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
       <artifactId>helios-service-registration</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -162,7 +172,7 @@
     <dependency>
       <groupId>commons-codec</groupId>
       <artifactId>commons-codec</artifactId>
-      <version>1.9</version>
+      <version>1.10</version>
     </dependency>
     <dependency>
       <groupId>org.apache.httpcomponents</groupId>
@@ -355,6 +365,12 @@
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
       <version>2.5.0</version>
+    </dependency>
+    <!-- TODO: (dxia) This won't be needed once we upgrade this dependency in docker-client and upgrade docker-client here. -->
+    <dependency>
+      <groupId>com.github.jnr</groupId>
+      <artifactId>jnr-unixsocket</artifactId>
+      <version>0.8</version>
     </dependency>
   </dependencies>
 

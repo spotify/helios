@@ -37,7 +37,19 @@ public class Polling {
       }
       Thread.sleep(500);
     }
-    throw new TimeoutException();
+
+    final String msg = String.format(
+        "The callable %s defined in %s failed to return anything after %d ms",
+        callable.getClass().getName(),
+        // since this is just test code, include the class/method/line number that called this
+        // method  to help diagnose where the failure was since most Callables will just be
+        // anonymous classes.
+        // The class that called this method will be the 3rd element in the array - the first is the
+        // getStackTrace method and the second is Polling.await
+        Thread.currentThread().getStackTrace()[2],
+        timeUnit.toMillis(timeout)
+    );
+    throw new TimeoutException(msg);
   }
 
   public static <T> T awaitUnchecked(final long timeout, final TimeUnit timeUnit,

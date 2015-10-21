@@ -18,13 +18,14 @@
 package com.spotify.helios.common;
 
 import com.google.common.base.Splitter;
+import com.google.common.collect.ComparisonChain;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static com.google.common.collect.Iterables.get;
 import static com.google.common.collect.Iterables.size;
 
-public class PomVersion {
+public class PomVersion implements Comparable<PomVersion> {
   private final boolean isSnapshot;
   private final int major;
   private final int minor;
@@ -115,5 +116,15 @@ public class PomVersion {
       return false;
     }
     return patch == other.patch;
+  }
+
+  @Override
+  public int compareTo(PomVersion o) {
+    return ComparisonChain.start()
+        .compare(this.major, o.major)
+        .compare(this.minor, o.minor)
+        .compare(this.patch, o.patch)
+        .compareTrueFirst(this.isSnapshot, o.isSnapshot)
+        .result();
   }
 }

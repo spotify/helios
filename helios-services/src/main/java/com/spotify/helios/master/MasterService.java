@@ -17,6 +17,8 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.base.Predicate;
+import com.google.common.base.Predicates;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -24,7 +26,14 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
-import com.spotify.helios.servicescommon.KafkaClientProvider;
+import com.spotify.helios.auth.AuthenticationPlugin;
+import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
+import com.spotify.helios.auth.AuthenticationPluginLoader;
+import com.spotify.helios.auth.AuthenticationRequestFilter;
+import com.spotify.helios.auth.Authenticator;
+import com.spotify.helios.auth.ServerAuthenticationConfig;
+import com.spotify.helios.common.PomVersion;
+import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
@@ -36,6 +45,7 @@ import com.spotify.helios.master.resources.VersionResource;
 import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -54,6 +64,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
+import com.sun.jersey.api.core.HttpRequestContext;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -203,6 +214,11 @@ public class MasterService extends AbstractIdleService {
     environment.jersey().register(new UserProvider());
     environment.jersey().register(new DeploymentGroupResource(model));
 
+    // Set up authentication
+    if (config.isAuthenticationEnabled()) {
+      setupAuthentication(environment, config);
+    }
+
     final DefaultServerFactory serverFactory = ServiceUtil.createServerFactory(
         config.getHttpEndpoint(), config.getAdminPort(), false);
 
@@ -230,6 +246,64 @@ public class MasterService extends AbstractIdleService {
     this.server = serverFactory.build(environment);
 
     setUpRequestLogging(stateDirectory);
+  }
+
+  private void setupAuthentication(final Environment environment, final MasterConfig config) {
+    final ServerAuthenticationConfig authConfig = config.getAuthenticationConfig();
+
+    final AuthenticationPlugin<?> authPlugin = AuthenticationPluginLoader.load(authConfig);
+    log.info("loaded authentication plugin {} for scheme {}",
+        authPlugin.getClass().getName(),
+        authConfig.getEnabledScheme());
+
+    final ServerAuthentication<?> authentication = authPlugin.serverAuthentication();
+    final Authenticator authenticator = authPlugin.serverAuthentication().authenticator();
+    final Predicate<HttpRequestContext> isRequired = authenticationRequired(authConfig);
+
+    final AuthenticationRequestFilter filter =
+        new AuthenticationRequestFilter(authenticator, authPlugin.schemeName(), isRequired);
+
+    // setting up filters in Jersey 1.x is convoluted:
+    environment.jersey().getResourceConfig().getContainerRequestFilters().add(filter);
+
+    // register any additional resources needed by the plugin
+    authentication.registerAdditionalJerseyComponents(environment.jersey());
+  }
+
+  private Predicate<HttpRequestContext> authenticationRequired(ServerAuthenticationConfig config) {
+    if (config.isEnabledForAllVersions()) {
+      return Predicates.alwaysTrue();
+    }
+
+    final PomVersion minVersion = PomVersion.parse(config.getMinimumRequiredVersion());
+
+    return new Predicate<HttpRequestContext>() {
+      @Override
+      public boolean apply(final HttpRequestContext input) {
+
+        final String versionString =
+            input.getHeaderValue(VersionCompatibility.HELIOS_VERSION_HEADER);
+        // if we don't know the version, jump into the "you need to authenticate flow" as opposed to
+        // letting them through
+        if (versionString == null) {
+          return true;
+        }
+
+        final PomVersion clientVersion;
+        try {
+          clientVersion = PomVersion.parse(versionString);
+        } catch (RuntimeException e) {
+          // malformed version header
+          log.warn("isAuthenticationRequired: rejecting request due to malformed "
+                   + "client version header: {}", versionString);
+          return true;
+        }
+
+        // -1 = minVersion is less than input (i.e. input is greater than minVersion), 0 = equal
+        // any input version above the minVersion requires auth
+        return minVersion.compareTo(clientVersion) < 1;
+      }
+    };
   }
 
   private void setUpRequestLogging(final Path stateDirectory) {

@@ -17,9 +17,9 @@
 
 package com.spotify.helios.master.resources;
 
-import com.spotify.helios.master.MasterModel;
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
+import com.spotify.helios.master.MasterModel;
 
 import java.util.List;
 
