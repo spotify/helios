@@ -107,9 +107,4 @@ public class CrtAuthenticationPlugin implements AuthenticationPlugin<CrtAccessTo
       throw new IllegalArgumentException("Value for " + name + " is not numeric");
     }
   }
-
-  @Override
-  public ClientAuthentication clientAuthentication() {
-    return null;
-  }
 }
