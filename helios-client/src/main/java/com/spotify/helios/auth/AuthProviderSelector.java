@@ -38,9 +38,6 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
  * decision until we know which auth-scheme the server supports. Instead the user specifies all the
  * auth-schemes supported when constructing the
  * {@link com.spotify.helios.auth.AuthProviderSelector}.
- *
- * When using this {@link com.spotify.helios.auth.AuthProvider} the first request will always be
- * unauthenticated.
  */
 public class AuthProviderSelector implements AuthProvider {
 
