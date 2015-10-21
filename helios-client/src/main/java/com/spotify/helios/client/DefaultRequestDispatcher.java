@@ -60,6 +60,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
 
 import static java.lang.System.currentTimeMillis;
+import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class DefaultRequestDispatcher implements RequestDispatcher {
@@ -262,7 +263,11 @@ class DefaultRequestDispatcher implements RequestDispatcher {
     } else {
       setRequestMethod(connection, method, false);
     }
-    connection.getResponseCode();
+
+    if (connection.getResponseCode() == HTTP_BAD_GATEWAY) {
+      throw new ConnectException("502 Bad Gateway");
+    }
+
     return connection;
   }
 
