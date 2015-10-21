@@ -33,7 +33,10 @@ public class BasicAuthProvider implements AuthProvider {
   private final ListenableFuture<String> headerFuture;
 
   public BasicAuthProvider(final String username, final String password) {
-    // TODO(staffan): Verify that username doesn't contain comma
+    if (username.contains(":")) {
+      throw new IllegalArgumentException("Invalid username, username cannot contain comma");
+    }
+
     final String credentials = username + ":" + password;
     header = "Basic " + Base64.encodeBase64String(credentials.getBytes());
     headerFuture = immediateFuture(header);
