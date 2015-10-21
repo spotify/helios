@@ -47,8 +47,8 @@ public class AuthenticatingRequestDispatcher implements RequestDispatcher {
 
   @Override
   public ListenableFuture<Response> request(final HeliosRequest request) {
+    // Include an Authorization header if it's currently available
     final HeliosRequest req;
-    // Auth header available?
     final String authHeader = authProvider.currentAuthorization();
     if (authHeader != null) {
       req = request.toBuilder().header(HttpHeaders.AUTHORIZATION, authHeader).build();
@@ -58,33 +58,38 @@ public class AuthenticatingRequestDispatcher implements RequestDispatcher {
 
     return Futures.transform(delegate.request(req), new AsyncFunction<Response, Response>() {
       @Override
-      public ListenableFuture<Response> apply(final Response firstResponse) throws Exception {
-        if (firstResponse != null &&
-            firstResponse.status() == HTTP_UNAUTHORIZED &&
-            firstResponse.header(HttpHeaders.WWW_AUTHENTICATE) != null) {
-          final ListenableFuture<Response> f = Futures.transform(
-              authProvider.renewAuthorization(firstResponse.header(HttpHeaders.WWW_AUTHENTICATE)),
-              new AsyncFunction<String, Response>() {
-                @Override
-                public ListenableFuture<Response> apply(final String authHeader)
-                    throws Exception {
-                  return delegate.request(
-                      req.toBuilder().header(HttpHeaders.AUTHORIZATION, authHeader).build());
-                }
-              });
-
-          // If authentication fails, return the first (unauthorized) response we got, as opposed
-          // to a failed future.
-          return Futures.withFallback(f, new FutureFallback<Response>() {
-            @Override
-            public ListenableFuture<Response> create(final Throwable t) throws Exception {
-              // TODO: Log auth failure
-              return immediateFuture(firstResponse);
-            }
-          });
+      public ListenableFuture<Response> apply(final Response response) throws Exception {
+        if (response != null &&
+            response.status() == HTTP_UNAUTHORIZED &&
+            response.header(HttpHeaders.WWW_AUTHENTICATE) != null) {
+          return authenticateAndRetry(req, response);
         } else {
-          return immediateFuture(firstResponse);
+          return immediateFuture(response);
         }
+      }
+    });
+  }
+
+  private ListenableFuture<Response> authenticateAndRetry(final HeliosRequest request,
+                                                          final Response response) {
+    final ListenableFuture<Response> f = Futures.transform(
+        authProvider.renewAuthorization(response.header(HttpHeaders.WWW_AUTHENTICATE)),
+        new AsyncFunction<String, Response>() {
+          @Override
+          public ListenableFuture<Response> apply(final String authHeader)
+              throws Exception {
+            return delegate.request(
+                request.toBuilder().header(HttpHeaders.AUTHORIZATION, authHeader).build());
+          }
+        });
+
+    // If authentication fails, return the first (unauthorized) response we got, as opposed
+    // to a failed future.
+    return Futures.withFallback(f, new FutureFallback<Response>() {
+      @Override
+      public ListenableFuture<Response> create(final Throwable t) throws Exception {
+        // TODO: Log auth failure
+        return immediateFuture(response);
       }
     });
   }
