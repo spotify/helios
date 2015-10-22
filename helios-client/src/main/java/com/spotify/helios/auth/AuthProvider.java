@@ -40,7 +40,7 @@ public interface AuthProvider {
    */
   ListenableFuture<String> renewAuthorizationHeader(String authHeader);
 
-  public interface Factory {
+  interface Factory {
 
     AuthProvider create(Context context);
   }

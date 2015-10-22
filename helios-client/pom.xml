@@ -57,6 +57,16 @@
       <artifactId>httpclient</artifactId>
       <version>4.5</version>
     </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>crtauth</artifactId>
+      <version>0.2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>crtauth-agent-signer</artifactId>
+      <version>0.1.1</version>
+    </dependency>
 
     <!-- test deps -->
     <dependency>

@@ -37,8 +37,8 @@ public class BasicAuthProviderTest {
   }
 
   @Test
-  public void testCommanNotAllowedInUsername() throws Exception {
+  public void testColonNotAllowedInUsername() throws Exception {
     exception.expect(IllegalArgumentException.class);
-    final AuthProvider authProvider = new BasicAuthProvider("Aladdin:", "open sesame");
+    new BasicAuthProvider("Aladdin:", "open sesame");
   }
 }

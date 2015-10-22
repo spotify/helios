@@ -86,7 +86,7 @@ public class AuthProviderSelector implements AuthProvider {
     } while (!this.activeProviderRef.compareAndSet(oldProvider, newProvider));
 
     if (newProvider != oldProvider) {
-      log.info("Switched AuthProvider, %s -> %s",
+      log.info("Switched AuthProvider, {} -> {}",
                oldProvider == null ? "None" : oldProvider.scheme,
                newProvider.scheme);
     }

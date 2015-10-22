@@ -117,7 +117,7 @@ public class HeliosClient implements AutoCloseable {
     dispatcher.close();
   }
 
-  private URI uri(final String path) {
+  URI uri(final String path) {
     return uri(path, Collections.<String, String>emptyMap());
   }
 
