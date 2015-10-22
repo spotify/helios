@@ -21,6 +21,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.RequestDispatcher;
 
+import javax.annotation.Nullable;
+
 public interface AuthProvider {
 
   /**
@@ -40,6 +42,13 @@ public interface AuthProvider {
 
   public interface Factory {
 
-    AuthProvider create(RequestDispatcher requestDispatcher);
+    AuthProvider create(Context context);
+  }
+
+  public interface Context {
+
+    RequestDispatcher dispatcher();
+
+    @Nullable String user();
   }
 }

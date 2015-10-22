@@ -27,7 +27,6 @@ import com.spotify.helios.auth.AuthProviderSelector;
 import com.spotify.helios.auth.ClientAuthenticationPlugin;
 import com.spotify.helios.auth.ClientAuthenticationPluginLoader;
 import com.spotify.helios.common.LoggingConfig;
-import com.spotify.helios.client.RequestDispatcher;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 
@@ -91,8 +90,8 @@ public class CliMain {
 
     return new AuthProvider.Factory() {
       @Override
-      public AuthProvider create(final RequestDispatcher requestDispatcher) {
-        return new AuthProviderSelector(requestDispatcher, authProviderFactories);
+      public AuthProvider create(final AuthProvider.Context context) {
+        return new AuthProviderSelector(context, authProviderFactories);
       }
     };
   }
