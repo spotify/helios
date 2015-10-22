@@ -149,6 +149,9 @@ of running:
 
     $ mvn clean package
 
+For more info on setting up a development environment and an introduction to
+the source code, see the [Developer Guide](docs/developer_guide.md).
+
 How it all fits together
 ------------------------
 
