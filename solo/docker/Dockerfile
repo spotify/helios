@@ -1,4 +1,4 @@
-FROM spotify/helios-solo-base:0.2
+FROM spotify/helios-solo-base:0.3
 
 EXPOSE 5801
 
