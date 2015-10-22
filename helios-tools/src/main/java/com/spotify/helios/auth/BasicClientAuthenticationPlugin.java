@@ -19,8 +19,6 @@ package com.spotify.helios.auth;
 
 import com.google.auto.service.AutoService;
 
-import com.spotify.helios.client.RequestDispatcher;
-
 @AutoService(ClientAuthenticationPlugin.class)
 public class BasicClientAuthenticationPlugin implements ClientAuthenticationPlugin {
 
@@ -31,6 +29,7 @@ public class BasicClientAuthenticationPlugin implements ClientAuthenticationPlug
 
   @Override
   public AuthProvider.Factory authProviderFactory() {
+    // TODO(staffan): Should we just use the "normal" user (as passed to the CLI) here?
     final String username = System.getenv("AUTH_BASIC_USERNAME");
     final String password = System.getenv("AUTH_BASIC_PASSWORD");
 
@@ -39,7 +38,7 @@ public class BasicClientAuthenticationPlugin implements ClientAuthenticationPlug
     } else {
       return new AuthProvider.Factory() {
         @Override
-        public AuthProvider create(final RequestDispatcher requestDispatcher) {
+        public AuthProvider create(final AuthProvider.Context context) {
           return new BasicAuthProvider(username, password);
         }
       };

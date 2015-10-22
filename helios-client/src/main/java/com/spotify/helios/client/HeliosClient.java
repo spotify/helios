@@ -78,6 +78,8 @@ import java.util.Set;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import javax.annotation.Nullable;
+
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
@@ -550,14 +552,35 @@ public class HeliosClient implements AutoCloseable {
 
       final RequestDispatcher dispatcher;
       if (authProviderFactory != null) {
+        final AuthProvider.Context context = new AuthProviderContext(defaultDispatcher, user);
         dispatcher = new AuthenticatingRequestDispatcher(
-            defaultDispatcher,
-            authProviderFactory.create(defaultDispatcher));
+            defaultDispatcher, authProviderFactory.create(context));
       } else {
         dispatcher = defaultDispatcher;
       }
 
       return new HeliosClient(user, dispatcher);
+    }
+
+    private static class AuthProviderContext implements AuthProvider.Context {
+
+      private final RequestDispatcher dispatcher;
+      @Nullable private final String user;
+
+      public AuthProviderContext(final RequestDispatcher dispatcher, @Nullable final String user) {
+        this.dispatcher = dispatcher;
+        this.user = user;
+      }
+
+      @Override
+      public RequestDispatcher dispatcher() {
+        return dispatcher;
+      }
+
+      @Override
+      @Nullable public String user() {
+        return user;
+      }
     }
   }
 

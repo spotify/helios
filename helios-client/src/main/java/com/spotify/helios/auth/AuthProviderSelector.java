@@ -19,8 +19,6 @@ package com.spotify.helios.auth;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
-import com.spotify.helios.client.RequestDispatcher;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,14 +37,14 @@ public class AuthProviderSelector implements AuthProvider {
 
   private static final Logger log = LoggerFactory.getLogger(AuthProviderSelector.class);
 
-  private final RequestDispatcher requestDispatcher;
+  private final Context context;
   // Scheme -> provider factory
   private final Map<String, Factory> providerFactories;
   private AtomicReference<ActiveProvider> activeProviderRef = new AtomicReference<>(null);
 
-  public AuthProviderSelector(final RequestDispatcher requestDispatcher,
+  public AuthProviderSelector(final Context context,
                               final Map<String, Factory> providerFactories) {
-    this.requestDispatcher = requestDispatcher;
+    this.context = context;
     this.providerFactories = providerFactories;
   }
 
@@ -77,7 +75,7 @@ public class AuthProviderSelector implements AuthProvider {
             new IllegalArgumentException("Unsupported authentication scheme: " + authScheme));
       }
 
-      final AuthProvider authProvider = factory.create(requestDispatcher);
+      final AuthProvider authProvider = factory.create(context);
       if (authProvider == null) {
         log.warn("AuthProvider.Factory returned null for auth-scheme %s", authScheme);
         return immediateFailedFuture(

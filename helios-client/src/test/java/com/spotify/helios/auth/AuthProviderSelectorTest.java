@@ -26,6 +26,8 @@ import org.junit.Test;
 
 import java.util.concurrent.ExecutionException;
 
+import javax.annotation.Nullable;
+
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -49,16 +51,29 @@ public class AuthProviderSelectorTest {
 
   @Before
   public void setUp() {
-    when(providerFactory1.create(any(RequestDispatcher.class))).thenReturn(provider1);
-    when(providerFactory2.create(any(RequestDispatcher.class))).thenReturn(provider2);
+    when(providerFactory1.create(any(AuthProvider.Context.class))).thenReturn(provider1);
+    when(providerFactory2.create(any(AuthProvider.Context.class))).thenReturn(provider2);
     when(provider1.renewAuthorizationHeader(anyString())).thenReturn(immediateFuture("scheme1 creds"));
     when(provider2.renewAuthorizationHeader(anyString())).thenReturn(immediateFuture("scheme2 creds"));
     when(provider1.currentAuthorizationHeader()).thenReturn("scheme1 creds");
     when(provider2.currentAuthorizationHeader()).thenReturn("scheme2 creds");
 
+    final AuthProvider.Context context = new AuthProvider.Context() {
+      @Override
+      public RequestDispatcher dispatcher() {
+        return dispatcher;
+      }
+
+      @Nullable
+      @Override
+      public String user() {
+        return null;
+      }
+    };
+
     this.selector = new AuthProviderSelector(
-        dispatcher, ImmutableMap.of("scheme1", providerFactory1,
-                                    "scheme2", providerFactory2));
+        context, ImmutableMap.of("scheme1", providerFactory1,
+                                 "scheme2", providerFactory2));
   }
 
   @Test
