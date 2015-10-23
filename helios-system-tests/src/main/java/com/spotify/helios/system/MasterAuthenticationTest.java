@@ -42,6 +42,7 @@ import io.dropwizard.auth.AuthenticationException;
 
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertThat;
 
 /** Tests of authentication within Helios masters. */
@@ -107,7 +108,6 @@ public class MasterAuthenticationTest extends SystemTestBase {
               if ("secret123".equals(credentials)) {
                 return Optional.of(new HeliosUser("the-user"));
               }
-              ;
               return Optional.absent();
             }
           };
@@ -117,6 +117,32 @@ public class MasterAuthenticationTest extends SystemTestBase {
     @Override
     public ClientAuthentication<String> clientAuthentication() {
       return null;
+    }
+
+  }
+
+  /**
+   * Make sure that when crtauth is enabled, that the /_auth endpoint it registers does not itself
+   * require an Authorization header, otherwise no one would ever be able to obtain a token in the
+   * first place.
+   */
+  @Test
+  public void crtAuthEnabled_AuthEndpointDoesNotRequireAuthentication() throws Exception {
+    final Map<String, String> env = ImmutableMap.of(
+        "CRTAUTH_SECRET", "sekret",
+        "CRTAUTH_SERVERNAME", "foo",
+        "CRTAUTH_LDAP_URL", "foo",
+        "CRTAUTH_LDAP_SEARCH_PATH", "foo");
+
+    startDefaultMaster(env, "--auth-scheme", "crtauth");
+
+    // sanity check that the auth plugin is loaded and working
+    verifyNormalRequestIsUnauthorized("/masters", "crtauth");
+
+    // the /_auth endpoint added by crtauth should not require authentication itself
+    final HttpGet request = new HttpGet(masterEndpoint() + "/_auth");
+    try (CloseableHttpResponse response = httpClient.execute(request)) {
+      assertThat(response.getStatusLine().getStatusCode(), is(not(HttpStatus.SC_UNAUTHORIZED)));
     }
   }
 }

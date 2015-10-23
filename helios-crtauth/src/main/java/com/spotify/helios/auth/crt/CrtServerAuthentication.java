@@ -17,9 +17,13 @@
 
 package com.spotify.helios.auth.crt;
 
+import com.google.common.collect.ImmutableSet;
+
 import com.spotify.crtauth.CrtAuthServer;
 import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
 import com.spotify.helios.auth.Authenticator;
+
+import java.util.Set;
 
 import io.dropwizard.jersey.setup.JerseyEnvironment;
 
@@ -43,4 +47,8 @@ public class CrtServerAuthentication implements ServerAuthentication<CrtAccessTo
     env.register(new CrtHandshakeResource(this.authServer));
   }
 
+  @Override
+  public Set<String> unauthenticatedPaths() {
+    return ImmutableSet.of(CrtHandshakeResource.PATH);
+  }
 }
