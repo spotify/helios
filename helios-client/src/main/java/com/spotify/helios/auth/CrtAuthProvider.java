@@ -32,18 +32,16 @@ import com.spotify.helios.client.RequestDispatcher;
 import com.spotify.helios.client.Response;
 
 import org.jetbrains.annotations.NotNull;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicReference;
+
+import javax.annotation.Nullable;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 
 public class CrtAuthProvider implements AuthProvider {
-
-  private static final Logger log = LoggerFactory.getLogger(AuthProviderSelector.class);
 
   private static final String CRT_HEADER = "X-CHAP";
   private static final String AUTH_URI = "https://helios/_auth";
@@ -53,8 +51,7 @@ public class CrtAuthProvider implements AuthProvider {
   private final RequestDispatcher dispatcher;
   private final String username;
   private final CrtAuthClient crtClient;
-  private volatile String token;
-  private final Object lock = new Object();
+  private final AtomicReference<String> tokenRef;
 
   public CrtAuthProvider(final RequestDispatcher dispatcher,
                          final CrtAuthClient crtClient,
@@ -62,6 +59,7 @@ public class CrtAuthProvider implements AuthProvider {
     this.dispatcher = dispatcher;
     this.crtClient = crtClient;
     this.username = username;
+    this.tokenRef = new AtomicReference<>(null);
   }
 
   @VisibleForTesting
@@ -72,25 +70,12 @@ public class CrtAuthProvider implements AuthProvider {
     this.dispatcher = dispatcher;
     this.username = username;
     this.crtClient = new CrtAuthClient(signer, authServer);
+    this.tokenRef = new AtomicReference<>(null);
   }
 
   @Override
   public String currentAuthorizationHeader() {
-    // TODO (dxia) Should we use a lock here? It doesn't really matter if the token isn't
-    // thread-safe. We should get valid tokens each time. The lock just prevents
-    // another thread from doing extra work to get an extra token when it could just wait.
-    if (token == null) {
-      synchronized (lock) {
-        try {
-          token = renewAuthorizationHeader(null).get();
-        } catch (InterruptedException | ExecutionException e) {
-          log.error("Failed to complete crtauth handshake.");
-          throw Throwables.propagate(e);
-        }
-      }
-    }
-
-    return token;
+    return tokenRef.get();
   }
 
   @Override
@@ -123,14 +108,16 @@ public class CrtAuthProvider implements AuthProvider {
               return dispatcher.request(request);
             }
           });
-
       return Futures.transform(tokenFuture, new Function<Response, String>() {
+        @Nullable
         @Override
         public String apply(final Response response) {
           try {
             checkStatus(response, 200);
-            final String token = getHeader(response, CRT_HEADER, TOKEN_PREFIX);
-            return "chap:" + token;
+            final String t = getHeader(response, CRT_HEADER, TOKEN_PREFIX);
+            final String token = "chap:" + t;
+            tokenRef.set(token);
+            return token;
           } catch (CrtAuthException e) {
             throw Throwables.propagate(e);
           }

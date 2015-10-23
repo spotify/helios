@@ -45,7 +45,7 @@ public interface AuthProvider {
     AuthProvider create(Context context);
   }
 
-  public interface Context {
+  interface Context {
 
     RequestDispatcher dispatcher();
 

@@ -31,7 +31,6 @@ import com.spotify.helios.client.HeliosRequest;
 import com.spotify.helios.client.RequestDispatcher;
 import com.spotify.helios.client.Response;
 
-import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -48,6 +47,7 @@ import java.security.spec.RSAPublicKeySpec;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
@@ -118,7 +118,7 @@ public class CrtAuthProviderTest {
       final RSAPublicKey publicKey = (RSAPublicKey) keyFactory.generatePublic(publicKeySpec);
       keyProvider.putKey(USERNAME, publicKey);
     } catch (Exception e) {
-      throw new RuntimeException(e);
+      throw new ExecutionException(e);
     }
 
     authServer = new CrtAuthServer.Builder()
@@ -143,12 +143,16 @@ public class CrtAuthProviderTest {
         new Response("GET", new URI(AUTH_URI), 200, null,
                      authHeaderOf("token:" + authServer.createToken(authResponse)))));
 
+    // Getting the current header without renewing first should return null
+    assertEquals(authProvider.currentAuthorizationHeader(), null);
+
     // Just check the token starts with "chap:".
     // The token changes every time because it's time-based.
-    assertThat(authProvider.currentAuthorizationHeader(), Matchers.containsString("chap:"));
-    // But renewing the header should return the same one.
-    assertEquals(authProvider.currentAuthorizationHeader(),
-                 authProvider.renewAuthorizationHeader(null).get());
+    final String authHeader = authProvider.renewAuthorizationHeader(null).get();
+    assertThat(authHeader, containsString("chap:"));
+
+    // Getting the current header after renewing it should return the same one.
+    assertEquals(authHeader, authProvider.currentAuthorizationHeader());
   }
 
   @Test
@@ -157,9 +161,9 @@ public class CrtAuthProviderTest {
         new Response("GET", new URI(AUTH_URI), 404, null,
                      Collections.<String, List<String>>emptyMap())));
 
-    exception.expect(RuntimeException.class);
+    exception.expect(ExecutionException.class);
     exception.expectMessage(containsString("Got a 404 status code during the crtauth handshake."));
-    authProvider.currentAuthorizationHeader();
+    authProvider.renewAuthorizationHeader(null).get();
   }
 
   @Test
@@ -172,10 +176,10 @@ public class CrtAuthProviderTest {
         new Response("GET", new URI(AUTH_URI), 200, null,
                      authHeaderOf("token:" + authServer.createToken(authResponse)))));
 
-    exception.expect(RuntimeException.class);
+    exception.expect(ExecutionException.class);
     exception.expectMessage(containsString(
         "Didn't get an HTTP \"X-CHAP\" header X-CHAP during the crtauth handshake."));
-    authProvider.currentAuthorizationHeader();
+    authProvider.renewAuthorizationHeader(null).get();
   }
 
   @Test
@@ -187,9 +191,9 @@ public class CrtAuthProviderTest {
         new Response("GET", new URI(AUTH_URI), 200, null,
                      authHeaderOf("token:" + authServer.createToken(authResponse)))));
 
-    exception.expect(RuntimeException.class);
+    exception.expect(ExecutionException.class);
     exception.expectMessage(containsString("Got an invalid HTTP X-CHAP header"));
-    authProvider.currentAuthorizationHeader();
+    authProvider.renewAuthorizationHeader(null).get();
   }
 
   @Test
@@ -201,9 +205,9 @@ public class CrtAuthProviderTest {
         new Response("GET", new URI(AUTH_URI), 404, null,
                      authHeaderOf("token:" + authServer.createToken(authResponse)))));
 
-    exception.expect(RuntimeException.class);
+    exception.expect(ExecutionException.class);
     exception.expectMessage(containsString("Got a 404 status code during the crtauth handshake."));
-    authProvider.currentAuthorizationHeader();
+    authProvider.renewAuthorizationHeader(null).get();
   }
 
   @Test
@@ -215,10 +219,10 @@ public class CrtAuthProviderTest {
         new Response("GET", new URI(AUTH_URI), 200, null,
                      Collections.<String, List<String>>emptyMap())));
 
-    exception.expect(RuntimeException.class);
+    exception.expect(ExecutionException.class);
     exception.expectMessage(containsString(
         "Didn't get an HTTP \"X-CHAP\" header X-CHAP during the crtauth handshake."));
-    authProvider.currentAuthorizationHeader();
+    authProvider.renewAuthorizationHeader(null).get();
   }
 
   @Test
@@ -230,9 +234,9 @@ public class CrtAuthProviderTest {
         new Response("GET", new URI(AUTH_URI), 200, null,
                      authHeaderOf("token" + authServer.createToken(authResponse)))));
 
-    exception.expect(RuntimeException.class);
+    exception.expect(ExecutionException.class);
     exception.expectMessage(containsString("Got an invalid HTTP X-CHAP header"));
-    authProvider.currentAuthorizationHeader();
+    authProvider.renewAuthorizationHeader(null).get();
   }
 
   // TODO (dxia) Should we keep this test? It's testing AgentSigner more than CrtAuthProvider.

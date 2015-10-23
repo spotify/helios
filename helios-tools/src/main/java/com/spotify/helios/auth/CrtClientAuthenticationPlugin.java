@@ -24,6 +24,8 @@ import com.spotify.crtauth.CrtAuthClient;
 import com.spotify.crtauth.agentsigner.AgentSigner;
 import com.spotify.crtauth.exceptions.CrtAuthException;
 
+import static com.google.common.base.Objects.firstNonNull;
+
 @AutoService(ClientAuthenticationPlugin.class)
 public class CrtClientAuthenticationPlugin implements ClientAuthenticationPlugin {
 
@@ -34,7 +36,7 @@ public class CrtClientAuthenticationPlugin implements ClientAuthenticationPlugin
 
   @Override
   public AuthProvider.Factory authProviderFactory() {
-    final String authServer = System.getenv("AUTH_CRT_SERVER_NAME");
+    final String authServer = firstNonNull(System.getenv("AUTH_CRT_SERVER_NAME"), "heliosmaster");
     return new AuthProvider.Factory() {
       @Override
       public AuthProvider create(final AuthProvider.Context context) {
