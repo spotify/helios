@@ -23,6 +23,8 @@ package com.spotify.helios.auth;
 
 import org.junit.Test;
 
+import java.util.Map;
+
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.junit.Assert.assertThat;
 
@@ -53,7 +55,7 @@ public class AuthenticationPluginLoaderTest {
     }
 
     @Override
-    public ServerAuthentication<String> serverAuthentication() {
+    public ServerAuthentication<String> serverAuthentication(Map<String, String> environment) {
       return null;
     }
 

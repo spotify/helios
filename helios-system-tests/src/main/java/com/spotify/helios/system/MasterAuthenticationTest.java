@@ -19,6 +19,7 @@ package com.spotify.helios.system;
 
 import com.google.auto.service.AutoService;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 
 import com.spotify.helios.auth.AuthenticationPlugin;
 import com.spotify.helios.auth.Authenticator;
@@ -30,6 +31,9 @@ import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.junit.Test;
+
+import java.io.IOException;
+import java.util.Map;
 
 import javax.ws.rs.core.HttpHeaders;
 
@@ -43,27 +47,38 @@ import static org.junit.Assert.assertThat;
 /** Tests of authentication within Helios masters. */
 public class MasterAuthenticationTest extends SystemTestBase {
 
+  /**
+   * Simple test that ensures that a HTTP request to /masters returns 401 Unauthorized when the
+   * request has no Authorization headers, and that a second request containing the expected
+   * Authorization header succeeds.
+   */
   @Test
   public void authenticationEnabled() throws Exception {
     // use a new authentication scheme since BasicAuth requires setting up some environment
     // variables, which isn't simple to pass through startDefaultMaster
     startDefaultMaster("--auth-scheme", "fixed-password");
 
-    final String uri = masterEndpoint() + "/masters";
+    verifyNormalRequestIsUnauthorized("/masters", "fixed-password");
+
+    final HttpGet authorizedGet = new HttpGet(masterEndpoint() + "/masters");
+    authorizedGet.addHeader(HttpHeaders.AUTHORIZATION, "secret123");
+
+    try (CloseableHttpResponse response = httpClient.execute(authorizedGet)) {
+      assertThat(response.getStatusLine().getStatusCode(), is(HttpStatus.SC_OK));
+    }
+  }
+
+  private void verifyNormalRequestIsUnauthorized(String path, String expectedScheme)
+      throws IOException {
+
+    final String uri = masterEndpoint() + path;
     // expect an unauthenticated GET to return 401 Unauthorized
     try (CloseableHttpResponse response = httpClient.execute(new HttpGet(uri))) {
       assertThat(response.getStatusLine().getStatusCode(), is(HttpStatus.SC_UNAUTHORIZED));
 
       final Header[] headers = response.getHeaders(HttpHeaders.WWW_AUTHENTICATE);
       assertThat(headers, arrayWithSize(1));
-      assertThat(headers[0].getValue(), is("fixed-password"));
-    }
-
-    final HttpGet authorizedGet = new HttpGet(uri);
-    authorizedGet.addHeader(HttpHeaders.AUTHORIZATION, "secret123");
-
-    try (CloseableHttpResponse response = httpClient.execute(authorizedGet)) {
-      assertThat(response.getStatusLine().getStatusCode(), is(HttpStatus.SC_OK));
+      assertThat(headers[0].getValue(), is(expectedScheme));
     }
   }
 
@@ -76,8 +91,8 @@ public class MasterAuthenticationTest extends SystemTestBase {
     }
 
     @Override
-    public ServerAuthentication<String> serverAuthentication() {
-      return new ServerAuthentication<String>() {
+    public ServerAuthentication<String> serverAuthentication(Map<String, String> environment) {
+      return new SimpleServerAuthentication<String>() {
         @Override
         public Authenticator<String> authenticator() {
           return new Authenticator<String>() {
@@ -103,7 +118,6 @@ public class MasterAuthenticationTest extends SystemTestBase {
         }
       };
     }
-
     @Override
     public ClientAuthentication<String> clientAuthentication() {
       return null;

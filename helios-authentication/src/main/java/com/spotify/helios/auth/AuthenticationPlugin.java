@@ -17,6 +17,8 @@
 
 package com.spotify.helios.auth;
 
+import java.util.Map;
+
 import io.dropwizard.jersey.setup.JerseyEnvironment;
 
 /**
@@ -39,7 +41,13 @@ public interface AuthenticationPlugin<C> {
    */
   String schemeName();
 
-  ServerAuthentication<C> serverAuthentication();
+  /**
+   * Create the ServerAuthentication instance to use with this plugin.
+   *
+   * @param environment the environment variables that the Helios Master was started with. Provided
+   *                    as a method parameter rather than System.getenv() for ease of testing.
+   */
+  ServerAuthentication<C> serverAuthentication(Map<String, String> environment);
 
   ClientAuthentication<C> clientAuthentication();
 
