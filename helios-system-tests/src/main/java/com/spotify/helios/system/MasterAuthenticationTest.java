@@ -20,7 +20,9 @@ package com.spotify.helios.system;
 import com.google.auto.service.AutoService;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.io.BaseEncoding;
 
+import com.spotify.docker.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.auth.AuthenticationPlugin;
 import com.spotify.helios.auth.Authenticator;
 import com.spotify.helios.auth.HeliosUser;
@@ -33,6 +35,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.junit.Test;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
@@ -114,11 +117,41 @@ public class MasterAuthenticationTest extends SystemTestBase {
         }
       };
     }
+
     @Override
     public ClientAuthentication<String> clientAuthentication() {
       return null;
     }
 
+  }
+
+  @Test
+  public void basicAuthEnabled() throws Exception {
+    final Map<String, String> users = ImmutableMap.of("user1", "password2");
+
+    final File tempFile = File.createTempFile("users", "json");
+    tempFile.deleteOnExit();
+
+    final ObjectMapper objectMapper = new ObjectMapper();
+    objectMapper.writeValue(tempFile, users);
+
+    final Map<String, String> env = ImmutableMap.of(
+        "AUTH_BASIC_USERDB", tempFile.getAbsolutePath()
+    );
+
+    startDefaultMaster(env, "--auth-scheme", "http-basic");
+
+    // sanity check that the auth plugin is loaded and working
+    verifyNormalRequestIsUnauthorized("/masters", "http-basic");
+
+    // and now with a token
+    final HttpGet request = new HttpGet(masterEndpoint() + "/masters");
+    final String encoded = BaseEncoding.base64().encode("user1:password2".getBytes());
+    request.addHeader(HttpHeaders.AUTHORIZATION, "Basic " + encoded);
+
+    try (CloseableHttpResponse response = httpClient.execute(request)) {
+      assertThat(response.getStatusLine().getStatusCode(), is(HttpStatus.SC_OK));
+    }
   }
 
   /**
