@@ -24,6 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import com.spotify.helios.auth.AuthenticationPlugin;
 import com.spotify.helios.auth.Authenticator;
 import com.spotify.helios.auth.HeliosUser;
+import com.spotify.helios.auth.SimpleServerAuthentication;
 import com.sun.jersey.api.core.HttpRequestContext;
 
 import org.apache.http.Header;
@@ -38,7 +39,6 @@ import java.util.Map;
 import javax.ws.rs.core.HttpHeaders;
 
 import io.dropwizard.auth.AuthenticationException;
-import io.dropwizard.jersey.setup.JerseyEnvironment;
 
 import static org.hamcrest.Matchers.arrayWithSize;
 import static org.hamcrest.Matchers.is;
@@ -111,10 +111,6 @@ public class MasterAuthenticationTest extends SystemTestBase {
               return Optional.absent();
             }
           };
-        }
-
-        @Override
-        public void registerAdditionalJerseyComponents(final JerseyEnvironment env) {
         }
       };
     }

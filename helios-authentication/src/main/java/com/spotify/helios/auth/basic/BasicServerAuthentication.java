@@ -17,6 +17,7 @@
 
 package com.spotify.helios.auth.basic;
 
+import com.spotify.helios.auth.SimpleServerAuthentication;
 
 import java.util.Map;
 
@@ -28,7 +29,7 @@ import io.dropwizard.auth.basic.BasicCredentials;
  * configured by an environment variable, making it likely far too simple to be used for anything
  * but demonstrations.
  */
-public class BasicServerAuthentication implements ServerAuthentication<BasicCredentials> {
+public class BasicServerAuthentication extends SimpleServerAuthentication<BasicCredentials> {
 
   private final Map<String, String> users;
 
@@ -41,8 +42,4 @@ public class BasicServerAuthentication implements ServerAuthentication<BasicCred
     return new BasicAuthenticator(users);
   }
 
-  @Override
-  public void registerAdditionalJerseyComponents(JerseyEnvironment env) {
-    // nothing to add
-  }
 }
