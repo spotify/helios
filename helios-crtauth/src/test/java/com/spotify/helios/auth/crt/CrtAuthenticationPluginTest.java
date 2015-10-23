@@ -49,14 +49,14 @@ public class CrtAuthenticationPluginTest {
 
     final Map<String, String> env = ImmutableMap.of();
 
-    final CrtAuthenticationPlugin plugin = new CrtAuthenticationPlugin(env);
-    plugin.serverAuthentication();
+    final CrtAuthenticationPlugin plugin = new CrtAuthenticationPlugin();
+    plugin.serverAuthentication(env);
   }
 
   @Test
   public void serverAuthentication_AllRequiredArgs() {
-    final CrtAuthenticationPlugin plugin = new CrtAuthenticationPlugin(requiredEnvArgs);
-    plugin.serverAuthentication();
+    final CrtAuthenticationPlugin plugin = new CrtAuthenticationPlugin();
+    plugin.serverAuthentication(requiredEnvArgs);
   }
 
   @Test
@@ -66,7 +66,7 @@ public class CrtAuthenticationPluginTest {
     final Map<String, String> env = new HashMap<>(requiredEnvArgs);
     env.put("CRTAUTH_TOKEN_LIFETIME_SECS", "asdf");
 
-    final CrtAuthenticationPlugin plugin = new CrtAuthenticationPlugin(env);
-    plugin.serverAuthentication();
+    final CrtAuthenticationPlugin plugin = new CrtAuthenticationPlugin();
+    plugin.serverAuthentication(env);
   }
 }

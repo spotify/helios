@@ -83,6 +83,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
@@ -116,6 +117,7 @@ public class MasterService extends AbstractIdleService {
   private final ExpiredJobReaper expiredJobReaper;
   private final CuratorClientFactory curatorClientFactory;
   private final RollingUpdateService rollingUpdateService;
+  private final Map<String, String> environmentVariables;
 
   private ZooKeeperRegistrarService zkRegistrar;
 
@@ -127,11 +129,14 @@ public class MasterService extends AbstractIdleService {
    * @param curatorClientFactory The zookeeper curator factory.
    * @throws ConfigurationException If there is a problem with the DropWizard configuration.
    */
-  public MasterService(final MasterConfig config, final Environment environment,
-                       final CuratorClientFactory curatorClientFactory)
+  public MasterService(final MasterConfig config,
+                       final Environment environment,
+                       final CuratorClientFactory curatorClientFactory,
+                       final Map<String, String> environmentVariables)
       throws ConfigurationException, IOException, InterruptedException {
     this.config = config;
     this.curatorClientFactory = curatorClientFactory;
+    this.environmentVariables = environmentVariables;
 
     // Configure metrics
     // TODO (dano): do something with the riemann facade
@@ -256,12 +261,14 @@ public class MasterService extends AbstractIdleService {
         authPlugin.getClass().getName(),
         authConfig.getEnabledScheme());
 
-    final ServerAuthentication<?> authentication = authPlugin.serverAuthentication();
-    final Authenticator authenticator = authPlugin.serverAuthentication().authenticator();
-    final Predicate<HttpRequestContext> isRequired = authenticationRequired(authConfig);
+    final ServerAuthentication<?> authentication =
+        authPlugin.serverAuthentication(this.environmentVariables);
 
-    final AuthenticationRequestFilter filter =
-        new AuthenticationRequestFilter(authenticator, authPlugin.schemeName(), isRequired);
+    final Authenticator authenticator = authentication.authenticator();
+
+    final AuthenticationRequestFilter filter = new AuthenticationRequestFilter(authenticator,
+        authPlugin.schemeName(),
+        authenticationRequired(authentication, authConfig));
 
     // setting up filters in Jersey 1.x is convoluted:
     environment.jersey().getResourceConfig().getContainerRequestFilters().add(filter);
@@ -270,11 +277,31 @@ public class MasterService extends AbstractIdleService {
     authentication.registerAdditionalJerseyComponents(environment.jersey());
   }
 
-  private Predicate<HttpRequestContext> authenticationRequired(ServerAuthenticationConfig config) {
-    if (config.isEnabledForAllVersions()) {
-      return Predicates.alwaysTrue();
-    }
+  private Predicate<HttpRequestContext> authenticationRequired(
+      final ServerAuthentication<?> authentication, final ServerAuthenticationConfig config) {
 
+    // evaluate if the request is for the actual authentication endpoint
+    Predicate<HttpRequestContext> pathRequiresAuth = new Predicate<HttpRequestContext>() {
+      @Override
+      public boolean apply(final HttpRequestContext input) {
+        final String requestPath = input.getPath();
+        return !authentication.unauthenticatedPaths().contains(requestPath);
+      }
+    };
+
+    // if authentication is enabled for all versions then we just need to check that the request
+    // is not for an unauthenticated path.
+    // Otherwise we also check that the clientversion header is >= the minimum version that needs
+    // authentication
+
+    if (config.isEnabledForAllVersions()) {
+      return pathRequiresAuth;
+    }
+    return Predicates.and(pathRequiresAuth, clientVersionRequiresAuth(config));
+  }
+
+  private Predicate<HttpRequestContext> clientVersionRequiresAuth(
+      final ServerAuthenticationConfig config) {
     final PomVersion minVersion = PomVersion.parse(config.getMinimumRequiredVersion());
 
     return new Predicate<HttpRequestContext>() {

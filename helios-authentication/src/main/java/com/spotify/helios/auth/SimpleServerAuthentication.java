@@ -15,40 +15,29 @@
  * under the License.
  */
 
-package com.spotify.helios.auth.crt;
+package com.spotify.helios.auth;
 
 import com.google.common.collect.ImmutableSet;
 
-import com.spotify.crtauth.CrtAuthServer;
 import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
-import com.spotify.helios.auth.Authenticator;
 
 import java.util.Set;
 
 import io.dropwizard.jersey.setup.JerseyEnvironment;
 
-public class CrtServerAuthentication implements ServerAuthentication<CrtAccessToken> {
-
-  private final CrtTokenAuthenticator authenticator;
-  private final CrtAuthServer authServer;
-
-  public CrtServerAuthentication(CrtTokenAuthenticator authenticator, CrtAuthServer authServer) {
-    this.authenticator = authenticator;
-    this.authServer = authServer;
-  }
+/**
+ * A base authentication plugin class that can be used if the plugin does not need to add any
+ * additional Jersey components.
+ */
+public abstract class SimpleServerAuthentication<C> implements ServerAuthentication<C> {
 
   @Override
-  public Authenticator<CrtAccessToken> authenticator() {
-    return authenticator;
-  }
-
-  @Override
-  public void registerAdditionalJerseyComponents(JerseyEnvironment env) {
-    env.register(new CrtHandshakeResource(this.authServer));
+  public final void registerAdditionalJerseyComponents(final JerseyEnvironment env) {
+    // do nothing
   }
 
   @Override
   public Set<String> unauthenticatedPaths() {
-    return ImmutableSet.of(CrtHandshakeResource.PATH);
+    return ImmutableSet.of();
   }
 }
