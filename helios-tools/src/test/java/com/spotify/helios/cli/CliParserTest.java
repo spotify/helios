@@ -2,6 +2,7 @@ package com.spotify.helios.cli;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -148,5 +149,13 @@ public class CliParserTest {
           SRV, ImmutableList.of(DOMAINS[0], DOMAINS[1], DOMAINS[2]));
       assertEquals(expectedTargets, targets);
     }
+  }
+
+  @Test
+  public void testForceAuthentication() throws Exception {
+    final String[] args = {"--force-authentication-scheme", "foo", SUBCOMMAND, SERVICE};
+    final CliParser cliParser = new CliParser(args);
+
+    assertEquals(Optional.of("foo"), cliParser.getForcedAuthenticationScheme());
   }
 }

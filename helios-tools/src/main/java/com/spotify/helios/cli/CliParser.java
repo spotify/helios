@@ -17,6 +17,7 @@
 
 package com.spotify.helios.cli;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -95,6 +96,7 @@ public class CliParser {
   private final List<Target> targets;
   private final String username;
   private boolean json;
+  private final Optional<String> authenticationScheme;
 
   public CliParser(final String... args)
       throws ArgumentParserException, IOException, URISyntaxException {
@@ -146,6 +148,9 @@ public class CliParser {
 
     // TODO (dano): complex, refactor and unit test it
     this.targets = computeTargets(parser, explicitEndpoints, domains, srvName);
+
+    final String scheme = options.getString(globalArgs.authenticationScheme.getDest());
+    this.authenticationScheme = Optional.fromNullable(scheme);
   }
 
   private List<Target> computeTargets(final ArgumentParser parser,
@@ -255,6 +260,10 @@ public class CliParser {
     return json;
   }
 
+  public Optional<String> getForcedAuthenticationScheme() {
+    return this.authenticationScheme;
+  }
+
   private static class GlobalArgs {
 
     private final Argument masterArg;
@@ -264,6 +273,7 @@ public class CliParser {
     private final Argument verbose;
     private final Argument noLogSetup;
     private final Argument jsonArg;
+    private final Argument authenticationScheme;
 
     private final ArgumentGroup globalArgs;
     private final boolean topLevel;
@@ -308,6 +318,9 @@ public class CliParser {
       noLogSetup = addArgument("--no-log-setup")
           .action(storeTrue())
           .help(SUPPRESS);
+
+      authenticationScheme = addArgument("--force-authentication-scheme")
+        .help("Scheme to use with authentication; must be set if --force-authentication is set");
     }
 
     private Argument addArgument(final String... nameOrFlags) {

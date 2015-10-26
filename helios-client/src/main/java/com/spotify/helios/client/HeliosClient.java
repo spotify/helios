@@ -502,6 +502,8 @@ public class HeliosClient implements AutoCloseable {
     private String user;
     private Supplier<List<URI>> endpointSupplier;
     private AuthProvider.Factory authProviderFactory;
+    private boolean eagerAuthentication;
+    private String eagerAuthScheme;
 
     public Builder setUser(final String user) {
       this.user = user;
@@ -537,8 +539,23 @@ public class HeliosClient implements AutoCloseable {
       return this;
     }
 
+    /**
+     * Sets the Factory to use to retrieve AuthProvider instances. This method enables the
+     * HeliosClient to use authentication when communicating with the masters.
+     */
     public Builder setAuthProviderFactory(final AuthProvider.Factory authProviderFactory) {
       this.authProviderFactory = authProviderFactory;
+      return this;
+    }
+
+    /**
+     * When enabled, the returned HeliosClient will eagerly retrieve authentication tokens from the
+     * AuthProvider, rather than waiting for the Helios master to indicate that requests require
+     * authentication.
+     */
+    public Builder setEagerAuthenticationScheme(String scheme) {
+      this.eagerAuthentication = true;
+      this.eagerAuthScheme = scheme;
       return this;
     }
 
@@ -550,8 +567,11 @@ public class HeliosClient implements AutoCloseable {
 
       final RequestDispatcher dispatcher;
       if (authProviderFactory != null) {
-        dispatcher = new AuthenticatingRequestDispatcher(
-            defaultDispatcher, authProviderFactory, user);
+        dispatcher = new AuthenticatingRequestDispatcher(defaultDispatcher,
+            authProviderFactory,
+            user,
+            eagerAuthentication,
+            eagerAuthScheme);
       } else {
         dispatcher = defaultDispatcher;
       }

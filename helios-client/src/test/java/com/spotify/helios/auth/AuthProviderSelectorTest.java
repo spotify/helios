@@ -62,7 +62,7 @@ public class AuthProviderSelectorTest {
   @Test
   public void testWithParams() {
     final AuthProviderSelector selector = new AuthProviderSelector(factories);
-    assertSame(provider2, selector.create("scheme2 realm='foo.bar'", context));
+    assertSame(provider2, selector.create("scheme2", context));
   }
 
   @Test

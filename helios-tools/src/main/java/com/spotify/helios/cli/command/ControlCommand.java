@@ -17,11 +17,11 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 
 import com.spotify.helios.auth.AuthProvider;
 import com.spotify.helios.cli.Target;
-import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -39,7 +39,7 @@ import java.util.concurrent.TimeoutException;
 import static com.google.common.base.Strings.repeat;
 import static java.lang.String.format;
 
-public abstract class ControlCommand implements CliCommand {
+public abstract class ControlCommand extends AbstractCliCommand {
 
   // If true and multiple domains are passed in, will abort the command on the first non-zero
   // exit code returned for a domain. If false, the command will keep running.
@@ -57,7 +57,8 @@ public abstract class ControlCommand implements CliCommand {
   @Override
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
                  final PrintStream err, final String username, final boolean json,
-                 final BufferedReader stdin, final AuthProvider.Factory authProviderFactory)
+                 final BufferedReader stdin, final Optional<String> eagerAuthenticationScheme,
+                 final AuthProvider.Factory authProviderFactory)
       throws IOException, InterruptedException {
     boolean allSuccessful = true;
 
@@ -88,8 +89,16 @@ public abstract class ControlCommand implements CliCommand {
         }
       }
 
-      final boolean successful = run(
-          options, target, out, err, username, json, stdin, authProviderFactory);
+      final boolean successful = run(options,
+          target,
+          out,
+          err,
+          username,
+          json,
+          stdin,
+          eagerAuthenticationScheme,
+          authProviderFactory);
+
       if (shortCircuit && !successful) {
         return 1;
       }
@@ -117,10 +126,13 @@ public abstract class ControlCommand implements CliCommand {
    */
   private boolean run(final Namespace options, final Target target, final PrintStream out,
                       final PrintStream err, final String username, final boolean json,
-                      final BufferedReader stdin, final AuthProvider.Factory authProviderFactory)
+                      final BufferedReader stdin, final Optional<String> eagerAuthenticationScheme,
+                      final AuthProvider.Factory authProviderFactory)
       throws InterruptedException, IOException {
 
-    final HeliosClient client = Utils.getClient(target, err, username, authProviderFactory);
+    final HeliosClient client =
+        getClient(target, err, username, eagerAuthenticationScheme, authProviderFactory);
+
     if (client == null) {
       return false;
     }
