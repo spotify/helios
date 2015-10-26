@@ -141,7 +141,7 @@ public class MasterAuthenticationTest extends SystemTestBase {
     startDefaultMaster(env, "--auth-scheme", "http-basic");
 
     // sanity check that the auth plugin is loaded and working
-    verifyNormalRequestIsUnauthorized("/masters", "http-basic");
+    verifyNormalRequestIsUnauthorized("/masters", "Basic");
 
     // and now with a token
     final HttpGet request = new HttpGet(masterEndpoint() + "/masters");
