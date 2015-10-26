@@ -33,12 +33,20 @@ import io.dropwizard.jersey.setup.JerseyEnvironment;
 public interface AuthenticationPlugin<C> {
 
   /**
-   * The name of the scheme that this plugin provides.
+   * The name of the scheme that this plugin provides, as used in the CLI to select this
+   * authentication plugin.
+   *
    * <p>
    * When the Helios master starts up and attempts to load all configured authentication plugins,
    * it will compare the return value of this method against the <code>--auth-scheme</code>
    * argument that it was started with.
    * </p>
+   */
+  String cliSchemeName();
+
+  /**
+   * The name of the scheme that this plugin provides. This name will be used in the
+   * <code>WWW-Authenticate</code>-header when responding to unauthorized requests.
    */
   String schemeName();
 
@@ -49,8 +57,6 @@ public interface AuthenticationPlugin<C> {
    *                    as a method parameter rather than System.getenv() for ease of testing.
    */
   ServerAuthentication<C> serverAuthentication(Map<String, String> environment);
-
-  ClientAuthentication<C> clientAuthentication();
 
   /**
    * The server-side half of authentication in Helios. Responsible for creating {@link
@@ -87,9 +93,5 @@ public interface AuthenticationPlugin<C> {
      * to those endpoint(s) in this method.</p>
      */
     Set<String> unauthenticatedPaths();
-  }
-
-  interface ClientAuthentication<C> {
-    // TODO (mbrown): have an interface!
   }
 }

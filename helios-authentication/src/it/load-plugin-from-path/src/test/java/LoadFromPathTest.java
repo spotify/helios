@@ -39,6 +39,6 @@ public class LoadFromPathTest {
 
     final AuthenticationPlugin<?> plugin = AuthenticationPluginLoader.load(config);
 
-    assertThat(plugin.schemeName(), is(config.getEnabledScheme()));
+    assertThat(plugin.cliSchemeName(), is(config.getEnabledScheme()));
   }
 }

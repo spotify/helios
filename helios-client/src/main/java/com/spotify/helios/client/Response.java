@@ -23,7 +23,7 @@ import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
-class Response {
+public class Response {
 
   private final String method;
   private final URI uri;

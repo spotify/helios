@@ -24,6 +24,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.util.concurrent.ListenableFuture;
 
+import com.spotify.helios.auth.AuthProvider;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostSelector;
 
@@ -53,7 +54,8 @@ public class Utils {
   }
 
   public static HeliosClient getClient(final Target target, final PrintStream err,
-                                       final String username) {
+                                       final String username,
+                                       final AuthProvider.Factory authProviderFactory) {
 
     List<URI> endpoints = Collections.emptyList();
     try {
@@ -69,6 +71,7 @@ public class Utils {
     return HeliosClient.newBuilder()
         .setEndpointSupplier(target.getEndpointSupplier())
         .setUser(username)
+        .setAuthProviderFactory(authProviderFactory)
         .build();
   }
 

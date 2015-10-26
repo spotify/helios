@@ -38,12 +38,12 @@ public class IntegrationTestPlugin implements AuthenticationPlugin<String> {
   }
 
   @Override
-  public ServerAuthentication<String> serverAuthentication() {
-    return null;
+  public String cliSchemeName() {
+    return "plugin-for-integration-test";
   }
 
   @Override
-  public ClientAuthentication<String> clientAuthentication() {
+  public ServerAuthentication<String> serverAuthentication() {
     return null;
   }
 }

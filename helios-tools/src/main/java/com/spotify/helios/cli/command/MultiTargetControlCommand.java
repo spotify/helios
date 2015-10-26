@@ -21,6 +21,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 
+import com.spotify.helios.auth.AuthProvider;
 import com.spotify.helios.cli.Target;
 import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
@@ -48,12 +49,12 @@ public abstract class MultiTargetControlCommand implements CliCommand {
   @Override
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
                  final PrintStream err, final String username, final boolean json,
-                 final BufferedReader stdin)
+                 final BufferedReader stdin, final AuthProvider.Factory authProviderFactory)
                      throws IOException, InterruptedException {
 
     final Builder<TargetAndClient> clientBuilder = ImmutableList.<TargetAndClient>builder();
     for (final Target target : targets) {
-      final HeliosClient client = Utils.getClient(target, err, username);
+      final HeliosClient client = Utils.getClient(target, err, username, authProviderFactory);
       if (client == null) {
         return 1;
       }
