@@ -17,7 +17,6 @@
 
 package com.spotify.helios.auth;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.AsyncFunction;
@@ -26,7 +25,6 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.crtauth.CrtAuthClient;
 import com.spotify.crtauth.exceptions.CrtAuthException;
-import com.spotify.crtauth.signer.Signer;
 import com.spotify.helios.client.HeliosRequest;
 import com.spotify.helios.client.RequestDispatcher;
 import com.spotify.helios.client.Response;
@@ -62,17 +60,6 @@ public class CrtAuthProvider implements AuthProvider {
     this.tokenRef = new AtomicReference<>(null);
   }
 
-  @VisibleForTesting
-  CrtAuthProvider(final RequestDispatcher dispatcher,
-                  final String authServer,
-                  final String username,
-                  final Signer signer) {
-    this.dispatcher = dispatcher;
-    this.username = username;
-    this.crtClient = new CrtAuthClient(signer, authServer);
-    this.tokenRef = new AtomicReference<>(null);
-  }
-
   @Override
   public String currentAuthorizationHeader() {
     return tokenRef.get();
@@ -81,52 +68,54 @@ public class CrtAuthProvider implements AuthProvider {
   @Override
   public ListenableFuture<String> renewAuthorizationHeader(final String ignored) {
     final String authRequest = CrtAuthClient.createRequest(username);
+    final URI authUri;
     try {
-      final HeliosRequest request = HeliosRequest.builder()
-          .method("GET")
-          .uri(new URI(AUTH_URI))
-          .appendHeader(CRT_HEADER, "request:" + authRequest)
-          .build();
-
-      final ListenableFuture<Response> challengeFuture = dispatcher.request(request);
-
-      final ListenableFuture<Response> tokenFuture =
-          Futures.transform(challengeFuture, new AsyncFunction<Response, Response>() {
-            @Override
-            public ListenableFuture<Response> apply(@NotNull final Response response)
-                throws Exception {
-              checkStatus(response, 200);
-
-              final String challenge = getHeader(response, CRT_HEADER, CHALLENGE_PREFIX);
-              final String crtResponse = crtClient.createResponse(challenge);
-              final HeliosRequest request = HeliosRequest.builder()
-                  .method("GET")
-                  .uri(new URI(AUTH_URI))
-                  .appendHeader(CRT_HEADER, "response:" + crtResponse)
-                  .build();
-
-              return dispatcher.request(request);
-            }
-          });
-      return Futures.transform(tokenFuture, new Function<Response, String>() {
-        @Nullable
-        @Override
-        public String apply(final Response response) {
-          try {
-            checkStatus(response, 200);
-            final String t = getHeader(response, CRT_HEADER, TOKEN_PREFIX);
-            final String token = "chap:" + t;
-            tokenRef.set(token);
-            return token;
-          } catch (CrtAuthException e) {
-            throw Throwables.propagate(e);
-          }
-        }
-      });
+      authUri = new URI(AUTH_URI);
     } catch (URISyntaxException e) {
       // This should never happen
       throw Throwables.propagate(e);
     }
+
+    final HeliosRequest request = HeliosRequest.builder()
+        .method("GET")
+        .uri(authUri)
+        .appendHeader(CRT_HEADER, "request:" + authRequest)
+        .build();
+
+    final ListenableFuture<Response> challengeFuture = dispatcher.request(request);
+
+    final ListenableFuture<Response> tokenFuture =
+        Futures.transform(challengeFuture, new AsyncFunction<Response, Response>() {
+          @Override
+          public ListenableFuture<Response> apply(@NotNull final Response response)
+              throws Exception {
+            checkStatus(response, 200);
+
+            final String challenge = getHeader(response, CRT_HEADER, CHALLENGE_PREFIX);
+            final String crtResponse = crtClient.createResponse(challenge);
+            final HeliosRequest request = HeliosRequest.builder()
+                .method("GET")
+                .uri(authUri)
+                .appendHeader(CRT_HEADER, "response:" + crtResponse)
+                .build();
+
+            return dispatcher.request(request);
+          }
+        });
+    return Futures.transform(tokenFuture, new Function<Response, String>() {
+      @Nullable
+      @Override
+      public String apply(final Response response) {
+        try {
+          checkStatus(response, 200);
+          final String token = "chap:" + getHeader(response, CRT_HEADER, TOKEN_PREFIX);
+          tokenRef.set(token);
+          return token;
+        } catch (CrtAuthException e) {
+          throw Throwables.propagate(e);
+        }
+      }
+    });
   }
 
   private static void checkStatus(final Response response, final int expectedStatus)
