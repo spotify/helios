@@ -31,13 +31,14 @@ public class BasicAuthProviderTest {
   @Test
   public void test() throws Exception {
     final AuthProvider authProvider = new BasicAuthProvider("Aladdin", "open sesame");
+
     assertEquals("Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==", authProvider.currentAuthorizationHeader());
     assertEquals(authProvider.currentAuthorizationHeader(),
-                 authProvider.renewAuthorizationHeader("Basic realm='foo.bar'").get());
+                 authProvider.renewAuthorizationHeader().get());
   }
 
   @Test
-  public void testCommanNotAllowedInUsername() throws Exception {
+  public void testColonNotAllowedInUsername() throws Exception {
     exception.expect(IllegalArgumentException.class);
     final AuthProvider authProvider = new BasicAuthProvider("Aladdin:", "open sesame");
   }

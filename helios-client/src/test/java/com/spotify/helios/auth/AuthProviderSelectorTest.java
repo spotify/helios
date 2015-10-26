@@ -19,109 +19,63 @@ package com.spotify.helios.auth;
 
 import com.google.common.collect.ImmutableMap;
 
-import com.spotify.helios.client.RequestDispatcher;
-
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
-import java.util.concurrent.ExecutionException;
-
-import javax.annotation.Nullable;
-
-import static com.google.common.util.concurrent.Futures.immediateFuture;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class AuthProviderSelectorTest {
 
-  private final RequestDispatcher dispatcher = mock(RequestDispatcher.class);
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
+
   private final AuthProvider provider1 = mock(AuthProvider.class);
   private final AuthProvider provider2 = mock(AuthProvider.class);
   private final AuthProvider.Factory providerFactory1 = mock(AuthProvider.Factory.class);
   private final AuthProvider.Factory providerFactory2 = mock(AuthProvider.Factory.class);
-  private AuthProviderSelector selector;
+  private final ImmutableMap<String, AuthProvider.Factory> factories = ImmutableMap.of(
+      "scheme1", providerFactory1,
+      "scheme2", providerFactory2);
+  private final AuthProvider.Context context = mock(AuthProvider.Context.class);
 
   @Before
   public void setUp() {
-    when(providerFactory1.create(any(AuthProvider.Context.class))).thenReturn(provider1);
-    when(providerFactory2.create(any(AuthProvider.Context.class))).thenReturn(provider2);
-    when(provider1.renewAuthorizationHeader(anyString())).thenReturn(immediateFuture("scheme1 creds"));
-    when(provider2.renewAuthorizationHeader(anyString())).thenReturn(immediateFuture("scheme2 creds"));
-    when(provider1.currentAuthorizationHeader()).thenReturn("scheme1 creds");
-    when(provider2.currentAuthorizationHeader()).thenReturn("scheme2 creds");
-
-    final AuthProvider.Context context = new AuthProvider.Context() {
-      @Override
-      public RequestDispatcher dispatcher() {
-        return dispatcher;
-      }
-
-      @Nullable
-      @Override
-      public String user() {
-        return null;
-      }
-    };
-
-    this.selector = new AuthProviderSelector(
-        context, ImmutableMap.of("scheme1", providerFactory1,
-                                 "scheme2", providerFactory2));
+    when(providerFactory1.create(anyString(), any(AuthProvider.Context.class)))
+        .thenReturn(provider1);
+    when(providerFactory2.create(anyString(), any(AuthProvider.Context.class)))
+        .thenReturn(provider2);
   }
 
   @Test
-  public void testCurrentAuthNullBeforeRenewal() {
-    assertNull(selector.currentAuthorizationHeader());
+  public void testWithoutParams() {
+    final AuthProviderSelector selector = new AuthProviderSelector(factories);
+    assertSame(provider1, selector.create("scheme1", context));
   }
 
   @Test
-  public void testRenewAuth() throws Exception {
-    assertEquals("scheme1 creds", selector.renewAuthorizationHeader("scheme1").get());
-    verify(provider1).renewAuthorizationHeader("scheme1");
-
-    when(provider1.renewAuthorizationHeader(anyString())).thenReturn(immediateFuture("scheme1 creds2"));
-    when(provider1.currentAuthorizationHeader()).thenReturn("scheme1 creds2");
-
-    assertEquals("scheme1 creds2", selector.renewAuthorizationHeader("scheme1").get());
-    verify(provider1, times(2)).renewAuthorizationHeader("scheme1");
-    assertEquals(selector.currentAuthorizationHeader(), "scheme1 creds2");
+  public void testWithParams() {
+    final AuthProviderSelector selector = new AuthProviderSelector(factories);
+    assertSame(provider2, selector.create("scheme2 realm='foo.bar'", context));
   }
 
   @Test
-  public void testAuthSchemeSwitching() throws Exception {
-    assertEquals("scheme1 creds", selector.renewAuthorizationHeader("scheme1").get());
-    verify(provider1).renewAuthorizationHeader("scheme1");
-    assertEquals(selector.currentAuthorizationHeader(), "scheme1 creds");
-
-    assertEquals("scheme2 creds", selector.renewAuthorizationHeader("scheme2").get());
-    verify(provider2).renewAuthorizationHeader("scheme2");
-    assertEquals(selector.currentAuthorizationHeader(), "scheme2 creds");
+  public void testThrowsOnUnsupportedAuthScheme() {
+    final AuthProviderSelector selector = new AuthProviderSelector(factories);
+    exception.expect(IllegalArgumentException.class);
+    selector.create("scheme3", context);
   }
 
   @Test
-  public void testAuthHeaderWithParams() throws Exception {
-    assertEquals("scheme1 creds", selector.renewAuthorizationHeader("scheme1 realm='foo.bar'").get());
-    verify(provider1).renewAuthorizationHeader(anyString());
-  }
-
-  @Test
-  public void testUnsupportedAuthScheme() throws Exception {
-    Throwable cause = null;
-    try {
-      selector.renewAuthorizationHeader("unsupported scheme").get();
-    } catch (ExecutionException e) {
-      cause = e.getCause();
-    }
-
-    assertNotNull(cause);
-    assertTrue(cause instanceof IllegalArgumentException);
-    assertNull(selector.currentAuthorizationHeader());
+  public void testFactoryReturnsNull() {
+    when(providerFactory1.create(anyString(), any(AuthProvider.Context.class))).thenReturn(null);
+    final AuthProviderSelector selector = new AuthProviderSelector(factories);
+    assertNull(selector.create("scheme1", context));
   }
 }

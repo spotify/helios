@@ -38,11 +38,11 @@ public interface AuthProvider {
    * If renewing credentials is unsupported an implementation MUST return an immediate future
    * with the current credentials.
    */
-  ListenableFuture<String> renewAuthorizationHeader(String authHeader);
+  ListenableFuture<String> renewAuthorizationHeader();
 
   public interface Factory {
 
-    AuthProvider create(Context context);
+    AuthProvider create(String wwwAuthHeader, Context context);
   }
 
   public interface Context {

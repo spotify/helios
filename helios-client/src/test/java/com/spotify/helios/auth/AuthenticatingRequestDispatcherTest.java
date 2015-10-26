@@ -33,10 +33,12 @@ import java.net.URI;
 import java.net.URL;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Matchers.anyString;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -52,18 +54,31 @@ public class AuthenticatingRequestDispatcherTest {
     }
   }
 
+  private static AuthProvider.Factory authProvider(final String key) {
+    return authProvider(key, true);
+  }
+
+  private static AuthProvider.Factory authProvider(final String key,
+                                                   final boolean initCredentials) {
+    return new AuthProvider.Factory() {
+      @Override
+      public AuthProvider create(final String wwwAuthHeader, final AuthProvider.Context context) {
+        return new TestAuthProvider(key, initCredentials);
+      }
+    };
+  }
+
   @Test
   public void testNoAuthRequired() throws Exception {
     final TestDispatcher delegate = new TestDispatcher(null);
 
     final RequestDispatcher dispatcher =
-        new AuthenticatingRequestDispatcher(delegate, new TestAuthProvider("secret-key"));
+        new AuthenticatingRequestDispatcher(delegate, authProvider("secret-key"), "user");
 
     final Response response =
         dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
 
     assertEquals(200, response.status());
-    // Verify that 1 request hit upstream
     assertEquals(1, delegate.num200);
     assertEquals(0, delegate.num401);
   }
@@ -73,15 +88,39 @@ public class AuthenticatingRequestDispatcherTest {
     final TestDispatcher delegate = new TestDispatcher("secret-key");
 
     final RequestDispatcher dispatcher =
-        new AuthenticatingRequestDispatcher(delegate, new TestAuthProvider("secret-key"));
+        new AuthenticatingRequestDispatcher(delegate, authProvider("secret-key"), "user");
 
     final Response response =
         dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
 
     assertEquals(200, response.status());
-    // Veirfy that 1 request hit upstream
     assertEquals(1, delegate.num200);
-    assertEquals(0, delegate.num401);
+    assertEquals(1, delegate.num401);
+  }
+
+  @Test
+  public void testAuthProviderFactoryException() throws Exception {
+    final TestDispatcher delegate = new TestDispatcher("secret-key");
+
+    final AuthProvider.Factory factory = new AuthProvider.Factory() {
+      @Override
+      public AuthProvider create(final String wwwAuthHeader, final AuthProvider.Context context) {
+        throw new IllegalStateException();
+      }
+    };
+
+    final RequestDispatcher dispatcher =
+        new AuthenticatingRequestDispatcher(delegate, factory, "user");
+
+    Throwable cause = null;
+    try {
+      dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
+    } catch (ExecutionException e) {
+      cause = e.getCause();
+    }
+
+    assertNotNull(cause);
+    assertTrue(cause.getCause() instanceof IllegalStateException);
   }
 
   @Test
@@ -89,7 +128,7 @@ public class AuthenticatingRequestDispatcherTest {
     final TestDispatcher delegate = new TestDispatcher("secret-key");
 
     final RequestDispatcher dispatcher =
-        new AuthenticatingRequestDispatcher(delegate, new TestAuthProvider("bad-key"));
+        new AuthenticatingRequestDispatcher(delegate, authProvider("bad-key"), "user");
 
     final Response response =
         dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
@@ -104,7 +143,7 @@ public class AuthenticatingRequestDispatcherTest {
     final TestDispatcher delegate = new TestDispatcher("secret-key");
 
     final RequestDispatcher dispatcher =
-        new AuthenticatingRequestDispatcher(delegate, new TestAuthProvider("secret-key", false));
+        new AuthenticatingRequestDispatcher(delegate, authProvider("secret-key", false), "user");
 
     final Response response =
         dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
@@ -119,12 +158,20 @@ public class AuthenticatingRequestDispatcherTest {
   public void testRenewalFailure() throws Exception {
     final TestDispatcher delegate = new TestDispatcher("secret-key");
     final AuthProvider authProvider = mock(AuthProvider.class);
+    final AuthProvider.Factory factory = new AuthProvider.Factory() {
+      @Override
+      public AuthProvider create(final String wwwAuthHeader,
+                                 final AuthProvider.Context context) {
+        return authProvider;
+      }
+    };
+
+
+    when(authProvider.renewAuthorizationHeader()).thenReturn(
+        Futures.<String>immediateFailedFuture(new Exception("error")));
 
     final RequestDispatcher dispatcher =
-        new AuthenticatingRequestDispatcher(delegate, authProvider);
-
-    when(authProvider.renewAuthorizationHeader(anyString())).thenReturn(
-        Futures.<String>immediateFailedFuture(new Exception("error")));
+        new AuthenticatingRequestDispatcher(delegate, factory, "user");
 
     final Response response =
         dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
@@ -140,10 +187,6 @@ public class AuthenticatingRequestDispatcherTest {
     private final String credentials;
     private String curCredentials;
 
-    private TestAuthProvider(final String credentials) {
-      this(credentials, true);
-    }
-
     private TestAuthProvider(final String credentials, final boolean initCredentials) {
       this.credentials = credentials;
       this.curCredentials = initCredentials ? credentials : null;
@@ -155,7 +198,7 @@ public class AuthenticatingRequestDispatcherTest {
     }
 
     @Override
-    public ListenableFuture<String> renewAuthorizationHeader(final String authHeader) {
+    public ListenableFuture<String> renewAuthorizationHeader() {
       curCredentials = credentials;
       return immediateFuture(curCredentials);
     }

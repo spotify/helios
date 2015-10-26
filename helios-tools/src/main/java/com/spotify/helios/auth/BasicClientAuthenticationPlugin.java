@@ -38,7 +38,7 @@ public class BasicClientAuthenticationPlugin implements ClientAuthenticationPlug
     } else {
       return new AuthProvider.Factory() {
         @Override
-        public AuthProvider create(final AuthProvider.Context context) {
+        public AuthProvider create(final String wwwAuthHeader, final AuthProvider.Context context) {
           return new BasicAuthProvider(username, password);
         }
       };

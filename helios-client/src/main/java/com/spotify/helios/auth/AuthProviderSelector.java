@@ -17,15 +17,10 @@
 
 package com.spotify.helios.auth;
 
-import com.google.common.util.concurrent.ListenableFuture;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicReference;
-
-import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
 
 /**
  * Allows a client to avoid specifying which auth-scheme it wants to use upfront, deferring the
@@ -33,75 +28,35 @@ import static com.google.common.util.concurrent.Futures.immediateFailedFuture;
  * auth-schemes supported when constructing the
  * {@link com.spotify.helios.auth.AuthProviderSelector}.
  */
-public class AuthProviderSelector implements AuthProvider {
+public class AuthProviderSelector implements AuthProvider.Factory {
 
   private static final Logger log = LoggerFactory.getLogger(AuthProviderSelector.class);
 
-  private final Context context;
   // Scheme -> provider factory
-  private final Map<String, Factory> providerFactories;
-  private AtomicReference<ActiveProvider> activeProviderRef = new AtomicReference<>(null);
+  private final Map<String, AuthProvider.Factory> providerFactories;
 
-  public AuthProviderSelector(final Context context,
-                              final Map<String, Factory> providerFactories) {
-    this.context = context;
+  public AuthProviderSelector(final Map<String, AuthProvider.Factory> providerFactories) {
     this.providerFactories = providerFactories;
   }
 
   @Override
-  public String currentAuthorizationHeader() {
-    final ActiveProvider activeProvider = activeProviderRef.get();
-    return activeProvider != null ? activeProvider.provider.currentAuthorizationHeader() : null;
-  }
+  public AuthProvider create(final String wwwAuthHeader, final AuthProvider.Context context) {
+    // TODO(staffan): Support multiple comma-separated challenges
+    final String authScheme = wwwAuthHeader.split(" ", 2)[0];
 
-  @Override
-  public ListenableFuture<String> renewAuthorizationHeader(final String authHeader) {
-    // TODO(staffan): Support multiple comma-separated challegnes
-    final String authScheme = authHeader.split(" ", 2)[0];
-
-    ActiveProvider oldProvider, newProvider;
-    do {
-      oldProvider = this.activeProviderRef.get();
-      if (oldProvider != null && authScheme.equals(oldProvider.scheme)) {
-        // The existing provider has the same scheme -- nothing more to do.
-        newProvider = oldProvider;
-        break;
-      }
-
-      final Factory factory = providerFactories.get(authScheme);
-      if (factory == null) {
-        log.warn("Unsupported auth-scheme %s", authScheme);
-        return immediateFailedFuture(
-            new IllegalArgumentException("Unsupported authentication scheme: " + authScheme));
-      }
-
-      final AuthProvider authProvider = factory.create(context);
-      if (authProvider == null) {
-        log.warn("AuthProvider.Factory returned null for auth-scheme %s", authScheme);
-        return immediateFailedFuture(
-            new NullPointerException("AuthProvider.Factory returned null"));
-      }
-
-      newProvider = new ActiveProvider(authProvider, authScheme);
-    } while (!this.activeProviderRef.compareAndSet(oldProvider, newProvider));
-
-    if (newProvider != oldProvider) {
-      log.info("Switched AuthProvider, %s -> %s",
-               oldProvider == null ? "None" : oldProvider.scheme,
-               newProvider.scheme);
+    final AuthProvider.Factory factory = providerFactories.get(authScheme);
+    if (factory == null) {
+      log.warn("Unsupported auth-scheme %s", authScheme);
+      throw new IllegalArgumentException("Unsupported authentication scheme: " + authScheme);
     }
 
-    return newProvider.provider.renewAuthorizationHeader(authHeader);
-  }
-
-  private static class ActiveProvider {
-
-    final AuthProvider provider;
-    final String scheme;
-
-    private ActiveProvider(final AuthProvider provider, final String scheme) {
-      this.provider = provider;
-      this.scheme = scheme;
+    final AuthProvider authProvider = factory.create(wwwAuthHeader, context);
+    if (authProvider == null) {
+      log.warn("AuthProvider.Factory returned null for auth-scheme %s", authScheme);
+    } else {
+      log.info("AuthProvider for scheme {} created", authScheme);
     }
+
+    return authProvider;
   }
 }

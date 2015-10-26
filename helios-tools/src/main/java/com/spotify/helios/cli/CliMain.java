@@ -88,12 +88,7 @@ public class CliMain {
       }
     }
 
-    return new AuthProvider.Factory() {
-      @Override
-      public AuthProvider create(final AuthProvider.Context context) {
-        return new AuthProviderSelector(context, authProviderFactories);
-      }
-    };
+    return new AuthProviderSelector(authProviderFactories);
   }
 
   public int run() {
