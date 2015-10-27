@@ -12,7 +12,7 @@
 
   <properties>
     <version.template.file>helios-client/src/main/java/com/spotify/helios/common/Version.java.template</version.template.file>
-    <version.file>helios-client/src/main/java/com/spotify/helios/common/Version.java</version.file>
+    <version.file>${project.build.directory}/generated-sources/templated/com/spotify/helios/common/Version.java</version.file>
   </properties>
 
   <dependencies>
@@ -88,6 +88,22 @@
   <build>
     <plugins>
       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-clean-plugin</artifactId>
+        <version>3.0.0</version>
+        <configuration>
+          <filesets>
+            <!-- remove old location of Version.java as it is under src tree -->
+            <fileset>
+              <directory>${project.build.sourceDirectory}/com/spotify/helios/common</directory>
+              <includes>
+                <include>Version.java</include>
+              </includes>
+            </fileset>
+          </filesets>
+        </configuration>
+      </plugin>
+      <plugin>
         <groupId>com.google.code.maven-replacer-plugin</groupId>
         <artifactId>replacer</artifactId>
         <version>1.5.3</version>
@@ -109,6 +125,24 @@
             </replacement>
           </replacements>
         </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.9.1</version>
+        <executions>
+          <execution>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources/templated</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
