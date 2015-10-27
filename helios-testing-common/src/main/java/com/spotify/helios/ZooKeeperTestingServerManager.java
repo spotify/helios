@@ -27,6 +27,8 @@ import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.curator.test.TestingServer;
 import org.apache.zookeeper.KeeperException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -43,6 +45,8 @@ import static org.apache.commons.io.FileUtils.deleteQuietly;
  * to run an in-process ZooKeeper instance.
  */
 public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
+
+  private static final Logger log = LoggerFactory.getLogger(ZooKeeperTestingServerManager.class);
 
   public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
@@ -71,6 +75,9 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
     }
 
     curator = builder.build();
+
+    log.info("starting CuratorFramework connected to {}", endpoint);
+
     curator.start();
     start();
   }
@@ -135,6 +142,7 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
 
   @Override
   public void start() {
+    log.info("starting zookeeper TestingServer at port={}, dataDir={}", port, dataDir);
     try {
       server = new TestingServer(port, dataDir);
       awaitUp(2, MINUTES);
