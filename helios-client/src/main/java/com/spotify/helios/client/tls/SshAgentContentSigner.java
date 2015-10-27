@@ -31,7 +31,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Returns a signed SHA1 hash of any arbitrary data by sending it to the local SSH agent.
+ * Returns a signed hash of any arbitrary data by sending it to the local SSH agent.
  */
 class SshAgentContentSigner implements ContentSigner {
 

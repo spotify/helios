@@ -215,11 +215,16 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         final URI realUri = new URI(scheme, host + ":" + port, fullpath, uri.getQuery(), null);
 
         AgentProxy agentProxy = null;
-        Deque<Identity> identities = null;
+        Deque<Identity> identities = Queues.newArrayDeque();
         try {
           if (scheme.equals("https")) {
             agentProxy = AgentProxies.newInstance();
-            identities = Queues.newArrayDeque(agentProxy.list());
+            for (final Identity identity : agentProxy.list()) {
+              if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
+                // only RSA keys will work with our TLS implementation
+                identities.offerLast(identity);
+              }
+            }
           }
         } catch (Exception e) {
           log.warn("Couldn't get identities from ssh-agent", e);
@@ -228,9 +233,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         try {
           boolean tryNextIdentity = false;
           do {
-            final Identity identity = (identities != null) ?
-                                      identities.poll() :
-                                      null;
+            final Identity identity = identities.poll();
             try {
               log.debug("connecting to {}", realUri);
               return connect0(realUri, method, entity, headers,
@@ -240,7 +243,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
               // there was some sort of security error. if we have any more SSH identities to try,
               // retry with the next available identity
               log.debug(e.toString());
-              tryNextIdentity = (identities != null) && !identities.isEmpty();
+              tryNextIdentity = !identities.isEmpty();
             } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
               // UnknownHostException happens if we can't resolve hostname into IP address.
               // UnknownHostException's getMessage method returns just the hostname which is a
