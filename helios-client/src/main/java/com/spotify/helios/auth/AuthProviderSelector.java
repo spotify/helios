@@ -40,17 +40,14 @@ public class AuthProviderSelector implements AuthProvider.Factory {
   }
 
   @Override
-  public AuthProvider create(final String wwwAuthHeader, final AuthProvider.Context context) {
-    // TODO(staffan): Support multiple comma-separated challenges
-    final String authScheme = wwwAuthHeader.split(" ", 2)[0];
-
+  public AuthProvider create(final String authScheme, final AuthProvider.Context context) {
     final AuthProvider.Factory factory = providerFactories.get(authScheme);
     if (factory == null) {
       log.warn("Unsupported auth-scheme %s", authScheme);
       throw new IllegalArgumentException("Unsupported authentication scheme: " + authScheme);
     }
 
-    final AuthProvider authProvider = factory.create(wwwAuthHeader, context);
+    final AuthProvider authProvider = factory.create(authScheme, context);
     if (authProvider == null) {
       log.warn("AuthProvider.Factory returned null for auth-scheme %s", authScheme);
     } else {

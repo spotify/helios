@@ -17,13 +17,13 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableList.Builder;
 
 import com.spotify.helios.auth.AuthProvider;
 import com.spotify.helios.cli.Target;
-import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -41,7 +41,7 @@ import java.util.concurrent.TimeoutException;
  * This is in contrast to a normal {@link ControlCommand}, which can operate on multiple
  * domains but does so sequentially.
  */
-public abstract class MultiTargetControlCommand implements CliCommand {
+public abstract class MultiTargetControlCommand extends AbstractCliCommand {
   MultiTargetControlCommand(final Subparser parser) {
     parser.setDefault("command", this).defaultHelp(true);
   }
@@ -49,12 +49,15 @@ public abstract class MultiTargetControlCommand implements CliCommand {
   @Override
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
                  final PrintStream err, final String username, final boolean json,
-                 final BufferedReader stdin, final AuthProvider.Factory authProviderFactory)
+                 final BufferedReader stdin, final Optional<String> eagerAuthenticationScheme,
+                 final AuthProvider.Factory authProviderFactory)
                      throws IOException, InterruptedException {
 
     final Builder<TargetAndClient> clientBuilder = ImmutableList.<TargetAndClient>builder();
     for (final Target target : targets) {
-      final HeliosClient client = Utils.getClient(target, err, username, authProviderFactory);
+      final HeliosClient client =
+          getClient(target, err, username, eagerAuthenticationScheme, authProviderFactory);
+
       if (client == null) {
         return 1;
       }

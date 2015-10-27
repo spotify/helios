@@ -40,6 +40,8 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class AuthenticatingRequestDispatcherTest {
@@ -68,6 +70,19 @@ public class AuthenticatingRequestDispatcherTest {
     };
   }
 
+  private final AuthProvider mockAuthProvider = mock(AuthProvider.class);
+  private final AuthProvider.Factory mockProviderFactory = new AuthProvider.Factory() {
+    @Override
+    public AuthProvider create(final String wwwAuthHeader,
+                               final AuthProvider.Context context) {
+      return mockAuthProvider;
+    }
+  };
+
+
+  private final TestDispatcher delegate = new TestDispatcher("secret-key");
+  private final HeliosRequest request = HeliosRequest.builder().uri(TEST_URI).build();
+
   @Test
   public void testNoAuthRequired() throws Exception {
     final TestDispatcher delegate = new TestDispatcher(null);
@@ -75,8 +90,7 @@ public class AuthenticatingRequestDispatcherTest {
     final RequestDispatcher dispatcher =
         new AuthenticatingRequestDispatcher(delegate, authProvider("secret-key"), "user");
 
-    final Response response =
-        dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
+    final Response response = dispatcher.request(request).get();
 
     assertEquals(200, response.status());
     assertEquals(1, delegate.num200);
@@ -85,13 +99,10 @@ public class AuthenticatingRequestDispatcherTest {
 
   @Test
   public void testAuthRequired() throws Exception {
-    final TestDispatcher delegate = new TestDispatcher("secret-key");
-
     final RequestDispatcher dispatcher =
         new AuthenticatingRequestDispatcher(delegate, authProvider("secret-key"), "user");
 
-    final Response response =
-        dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
+    final Response response = dispatcher.request(request).get();
 
     assertEquals(200, response.status());
     assertEquals(1, delegate.num200);
@@ -125,13 +136,10 @@ public class AuthenticatingRequestDispatcherTest {
 
   @Test
   public void testAuthRequiredBadCredentials() throws Exception {
-    final TestDispatcher delegate = new TestDispatcher("secret-key");
-
     final RequestDispatcher dispatcher =
         new AuthenticatingRequestDispatcher(delegate, authProvider("bad-key"), "user");
 
-    final Response response =
-        dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
+    final Response response = dispatcher.request(request).get();
 
     assertEquals(401, response.status());
     assertEquals(0, delegate.num200);
@@ -140,13 +148,10 @@ public class AuthenticatingRequestDispatcherTest {
 
   @Test
   public void testNoInitialCredentials() throws Exception {
-    final TestDispatcher delegate = new TestDispatcher("secret-key");
-
     final RequestDispatcher dispatcher =
         new AuthenticatingRequestDispatcher(delegate, authProvider("secret-key", false), "user");
 
-    final Response response =
-        dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
+    final Response response = dispatcher.request(request).get();
 
     assertEquals(200, response.status());
 
@@ -156,22 +161,11 @@ public class AuthenticatingRequestDispatcherTest {
 
   @Test
   public void testRenewalFailure() throws Exception {
-    final TestDispatcher delegate = new TestDispatcher("secret-key");
-    final AuthProvider authProvider = mock(AuthProvider.class);
-    final AuthProvider.Factory factory = new AuthProvider.Factory() {
-      @Override
-      public AuthProvider create(final String wwwAuthHeader,
-                                 final AuthProvider.Context context) {
-        return authProvider;
-      }
-    };
-
-
-    when(authProvider.renewAuthorizationHeader()).thenReturn(
+    when(mockAuthProvider.renewAuthorizationHeader()).thenReturn(
         Futures.<String>immediateFailedFuture(new Exception("error")));
 
     final RequestDispatcher dispatcher =
-        new AuthenticatingRequestDispatcher(delegate, factory, "user");
+        new AuthenticatingRequestDispatcher(delegate, mockProviderFactory, "user");
 
     final Response response =
         dispatcher.request(HeliosRequest.builder().uri(TEST_URI).build()).get();
@@ -180,6 +174,62 @@ public class AuthenticatingRequestDispatcherTest {
 
     assertEquals(0, delegate.num200);
     assertEquals(1, delegate.num401);
+  }
+
+  @Test
+  public void testEagerAuthEnabled_HasGoodCurrentCredentials() throws Exception {
+    final AuthenticatingRequestDispatcher dispatcher = new AuthenticatingRequestDispatcher(delegate,
+        mockProviderFactory,
+        "user",
+        true,
+        delegate.authScheme);
+
+    when(mockAuthProvider.currentAuthorizationHeader()).thenReturn(delegate.credentials);
+
+    final Response response = dispatcher.request(request).get();
+
+    verify(mockAuthProvider, never()).renewAuthorizationHeader();
+
+    assertEquals(200, response.status());
+    assertEquals(1, delegate.numRequests);
+    assertEquals(1, delegate.num200);
+    assertEquals(0, delegate.num401);
+  }
+
+  @Test
+  public void testEagerAuthEnabled_HasBadCurrentCredentials() throws Exception {
+    // acts as if credentials are bad
+    final TestDispatcher delegate = new TestDispatcher("oops");
+
+    final AuthenticatingRequestDispatcher dispatcher =
+        new AuthenticatingRequestDispatcher(delegate, mockProviderFactory, "user", true, this.delegate.authScheme);
+
+    when(mockAuthProvider.currentAuthorizationHeader()).thenReturn(this.delegate.credentials);
+    when(mockAuthProvider.renewAuthorizationHeader()).thenReturn(immediateFuture("oops"));
+
+    final Response response = dispatcher.request(request).get();
+    assertEquals(200, response.status());
+    assertEquals(2, delegate.numRequests);
+    assertEquals(1, delegate.num200);
+    assertEquals(1, delegate.num401);
+  }
+
+  @Test
+  public void testEagerAuthEnabled_HasNoCurrentCredentials() throws Exception {
+    final AuthenticatingRequestDispatcher dispatcher = new AuthenticatingRequestDispatcher(delegate,
+        mockProviderFactory,
+        "user",
+        true,
+        delegate.authScheme);
+
+    when(mockAuthProvider.currentAuthorizationHeader()).thenReturn(null);
+    when(mockAuthProvider.renewAuthorizationHeader()).thenReturn(immediateFuture(delegate.credentials));
+
+    final Response response = dispatcher.request(request).get();
+    assertEquals(200, response.status());
+    assertEquals(1, delegate.numRequests);
+    assertEquals(1, delegate.num200);
+    assertEquals(0, delegate.num401);
   }
 
   private static class TestAuthProvider implements AuthProvider {
@@ -209,6 +259,7 @@ public class AuthenticatingRequestDispatcherTest {
     private final String authScheme;
     private final String credentials;
     private final boolean credentialsRequired;
+    int numRequests;
     int num401;
     int num200;
 
@@ -220,6 +271,7 @@ public class AuthenticatingRequestDispatcherTest {
 
     @Override
     public ListenableFuture<Response> request(final HeliosRequest request) {
+      numRequests++;
       final Map<String, List<String>> headers = Maps.newHashMap();
       if (!credentialsRequired ||
           credentials.equals(request.header(HttpHeaders.AUTHORIZATION))) {

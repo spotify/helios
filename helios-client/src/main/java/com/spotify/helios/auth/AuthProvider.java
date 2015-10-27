@@ -40,12 +40,12 @@ public interface AuthProvider {
    */
   ListenableFuture<String> renewAuthorizationHeader();
 
-  public interface Factory {
+  interface Factory {
 
-    AuthProvider create(String wwwAuthHeader, Context context);
+    AuthProvider create(String scheme, Context context);
   }
 
-  public interface Context {
+  interface Context {
 
     RequestDispatcher dispatcher();
 

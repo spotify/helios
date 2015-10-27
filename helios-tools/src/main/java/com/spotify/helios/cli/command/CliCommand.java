@@ -17,6 +17,8 @@
 
 package com.spotify.helios.cli.command;
 
+import com.google.common.base.Optional;
+
 import com.spotify.helios.auth.AuthProvider;
 import com.spotify.helios.cli.Target;
 
@@ -30,6 +32,7 @@ import java.util.List;
 public interface CliCommand {
   int run(final Namespace options, final List<Target> targets, final PrintStream out,
           final PrintStream err, final String username, final boolean json,
-          final BufferedReader stdin, final AuthProvider.Factory authProviderFactory)
+          final BufferedReader stdin, final Optional<String> eagerAuthenticationScheme,
+          final AuthProvider.Factory authProviderFactory)
               throws IOException, InterruptedException;
 }
