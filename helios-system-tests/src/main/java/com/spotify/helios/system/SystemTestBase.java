@@ -1107,6 +1107,15 @@ public abstract class SystemTestBase {
       public Object call() throws Exception {
         try {
           dockerClient.killContainer(containerId);
+        } catch (DockerRequestException e) {
+          if (e.message().contains("is not running")) {
+            // Container already isn't running. So we continue.
+          } else {
+            throw e;
+          }
+        }
+
+        try {
           dockerClient.removeContainer(containerId);
           return true;
         } catch (ContainerNotFoundException e) {
