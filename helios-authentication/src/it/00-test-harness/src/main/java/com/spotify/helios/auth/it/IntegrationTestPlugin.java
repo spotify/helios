@@ -25,8 +25,6 @@ import com.google.auto.service.AutoService;
 
 import com.spotify.helios.auth.AuthenticationPlugin;
 
-import java.util.Map;
-
 /**
  * Plugin implementation used in integration testing that AuthenticationPluginLoader can load
  * plugins from arbitrary paths not on the CLASSPATH.
@@ -40,7 +38,7 @@ public class IntegrationTestPlugin implements AuthenticationPlugin<String> {
   }
 
   @Override
-  public ServerAuthentication<String> serverAuthentication(Map<String, String> environment) {
+  public ServerAuthentication<String> serverAuthentication() {
     return null;
   }
 

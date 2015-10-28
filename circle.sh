@@ -45,9 +45,6 @@ case "$1" in
         sed -i'' 's/<module>helios-system-tests<\/module>//' pom.xml
         mvn test -B
 
-        # run the lightweight "integration" tests in helios-authentication also
-        mvn -pl helios-authentication verify -B
-
         ;;
 
       1)
