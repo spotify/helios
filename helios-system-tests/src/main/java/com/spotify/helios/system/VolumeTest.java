@@ -61,13 +61,12 @@ public class VolumeTest extends SystemTestBase {
         .setVersion(testJobVersion)
         .setImage(BUSYBOX)
         .addVolume("/volume")
-        .addVolume("/urandom", "/dev/urandom")
-        .addVolume("/hostdev", "/dev")
+        .addVolume("/hostname", "/etc/hostname")
         .setCommand(asList("sh", "-c", "echo foo > /volume/bar; " +
                                        "nc -p 4711 -le dd if=/volume/bar;" +
-                                       "nc -p 4712 -lle dd if=/urandom bs=1 count=4"))
+                                       "nc -p 4712 -lle dd if=/hostname"))
         .addPort("bar", PortMapping.of(4711))
-        .addPort("urandom", PortMapping.of(4712))
+        .addPort("hostname", PortMapping.of(4712))
         .setCreatingUser(TEST_USER)
         .build();
   }
@@ -100,18 +99,20 @@ public class VolumeTest extends SystemTestBase {
         client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
     assertJobEquals(job, taskStatus.getJob());
 
-    final Integer bar = taskStatus.getPorts().get("bar").getExternalPort();
-    final Integer urandom = taskStatus.getPorts().get("urandom").getExternalPort();
+    final Integer barPort = taskStatus.getPorts().get("bar").getExternalPort();
+    final Integer hostnamePort = taskStatus.getPorts().get("hostname").getExternalPort();
 
-    assert bar != null;
-    assert urandom != null;
+    assert barPort != null;
+    assert hostnamePort != null;
 
     // Read "foo" from /volume/bar
-    final String foo = recvUtf8(bar, 3);
+    final String foo = recvUtf8(barPort, 3);
     assertEquals("foo", foo);
 
-    // Attempt to read some random bytes from the mounted /dev/urandom
-    recv(urandom, 4);
+    // Read hostname from /hostname
+    final String hostname = getNewDockerClient().info().name();
+    final String mountedHostname = recvUtf8(hostnamePort, hostname.length());
+    assertEquals(hostname, mountedHostname);
   }
 
   private String recvUtf8(final int port, final int n) throws Exception {

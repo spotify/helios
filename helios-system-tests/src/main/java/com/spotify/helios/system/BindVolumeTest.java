@@ -41,16 +41,16 @@ public class BindVolumeTest extends SystemTestBase {
   @Test
   public void test() throws Exception {
     try (final DockerClient docker = getNewDockerClient()) {
-      // Start Helios agent, configured to bind host /proc into container /mnt/host-proc
+      // Start Helios agent, configured to bind host /etc/hostname into container /mnt/hostname
       startDefaultMaster();
-      startDefaultAgent(testHost(), "--bind", "/proc:/mnt/host-proc:ro");
+      startDefaultAgent(testHost(), "--bind", "/etc/hostname:/mnt/hostname:ro");
       awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
       // Figure out the host kernel version
-      final String hostKernelVersion = docker.info().kernelVersion();
+      final String hostname = docker.info().name();
 
-      // Run a job that cat's /mnt/host-proc/version, which should be the host's version info
-      final List<String> command = ImmutableList.of("cat", "/mnt/host-proc/version");
+      // Run a job that cat's /mnt/hostname, which should be the host's name
+      final List<String> command = ImmutableList.of("cat", "/mnt/hostname");
       final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, command);
       deployJob(jobId, testHost());
 
@@ -63,7 +63,7 @@ public class BindVolumeTest extends SystemTestBase {
         }
 
         // the kernel version from the host should be in the log
-        assertThat(log, containsString(hostKernelVersion));
+        assertThat(log, containsString(hostname));
       }
     }
   }
