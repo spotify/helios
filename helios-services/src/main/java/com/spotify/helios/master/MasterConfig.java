@@ -17,8 +17,6 @@
 
 package com.spotify.helios.master;
 
-import com.spotify.helios.auth.ServerAuthenticationConfig;
-
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.List;
@@ -50,7 +48,6 @@ public class MasterConfig extends Configuration {
   private InetSocketAddress httpEndpoint;
   private List<String> kafkaBrokers;
   private Path stateDirectory;
-  private ServerAuthenticationConfig authenticationConfig;
 
   public String getDomain() {
     return domain;
@@ -213,17 +210,4 @@ public class MasterConfig extends Configuration {
   public InetSocketAddress getHttpEndpoint() {
     return httpEndpoint;
   }
-
-  public ServerAuthenticationConfig getAuthenticationConfig() {
-    return this.authenticationConfig;
-  }
-
-  public void setAuthenticationConfig(ServerAuthenticationConfig authenticationConfig) {
-    this.authenticationConfig = authenticationConfig;
-  }
-
-  public boolean isAuthenticationEnabled() {
-    return this.authenticationConfig != null;
-  }
-
 }
