@@ -61,8 +61,6 @@ public class AuthenticationRequestFilter implements ContainerRequestFilter {
 
         if (result.isPresent()) {
           // authenticated!
-          // store user in request attributes for any possible downstream uses
-          request.getProperties().put("helios.user.principal", result.get());
           return request;
         }
       } catch (AuthenticationException e) {

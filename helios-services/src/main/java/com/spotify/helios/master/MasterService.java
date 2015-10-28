@@ -36,7 +36,6 @@ import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
-import com.spotify.helios.master.resources.AuthenticationResponseFilter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
 import com.spotify.helios.master.resources.HistoryResource;
 import com.spotify.helios.master.resources.HostsResource;
@@ -66,7 +65,6 @@ import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 import com.sun.jersey.api.core.HttpRequestContext;
-import com.sun.jersey.api.core.ResourceConfig;
 
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
@@ -273,9 +271,7 @@ public class MasterService extends AbstractIdleService {
         authenticationRequired(authentication, authConfig));
 
     // setting up filters in Jersey 1.x is convoluted:
-    final ResourceConfig resourceConfig = environment.jersey().getResourceConfig();
-    resourceConfig.getContainerRequestFilters().add(filter);
-    resourceConfig.getContainerResponseFilters().add(new AuthenticationResponseFilter());
+    environment.jersey().getResourceConfig().getContainerRequestFilters().add(filter);
 
     // register any additional resources needed by the plugin
     authentication.registerAdditionalJerseyComponents(environment.jersey());

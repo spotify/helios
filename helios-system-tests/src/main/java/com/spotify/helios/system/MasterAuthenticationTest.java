@@ -27,16 +27,12 @@ import com.spotify.helios.auth.AuthenticationPlugin;
 import com.spotify.helios.auth.Authenticator;
 import com.spotify.helios.auth.HeliosUser;
 import com.spotify.helios.auth.SimpleServerAuthentication;
-import com.spotify.helios.common.Version;
-import com.spotify.helios.common.VersionCompatibility;
 import com.sun.jersey.api.core.HttpRequestContext;
 
 import org.apache.http.Header;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
-import org.hamcrest.CustomTypeSafeMatcher;
-import org.hamcrest.Matcher;
 import org.junit.Test;
 
 import java.io.File;
@@ -126,40 +122,7 @@ public class MasterAuthenticationTest extends SystemTestBase {
     public ClientAuthentication<String> clientAuthentication() {
       return null;
     }
-  }
 
-  /**
-   * Test that a client can authenticate if it really wants to when it's client version header is
-   * less than the minimum-required-version. Reuse FixedPasswordAuthentication from above for
-   * simplicity.
-   */
-  @Test
-  public void clientCanAuthenticateIfBelowMinimumRequiredVersion() throws Exception {
-    startDefaultMaster("--auth-scheme", "fixed-password", "--auth-minimum-version", "99.9.9");
-
-    // ensure request with no token is ok
-    final HttpGet initialGet = new HttpGet(masterEndpoint() + "/masters");
-    initialGet.addHeader(VersionCompatibility.HELIOS_VERSION_HEADER, Version.POM_VERSION);
-    try (CloseableHttpResponse response = httpClient.execute(initialGet)) {
-      assertThat(response.getStatusLine().getStatusCode(), is(HttpStatus.SC_OK));
-    }
-
-    // add a good auth header
-    initialGet.addHeader("Authorization", "secret123");
-    try (CloseableHttpResponse response = httpClient.execute(initialGet)) {
-      assertThat(response.getStatusLine().getStatusCode(), is(HttpStatus.SC_OK));
-
-      assertThat(response.getFirstHeader("Authentication-Principal"), hasValue("the-user"));
-    }
-  }
-
-  private static Matcher<Header> hasValue(final String value) {
-    return new CustomTypeSafeMatcher<Header>("Header with value: " + value) {
-      @Override
-      protected boolean matchesSafely(final Header item) {
-        return item.getValue().equals(value);
-      }
-    };
   }
 
   @Test
