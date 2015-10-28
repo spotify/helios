@@ -78,5 +78,6 @@ com.spotify.helios.master.MasterMain \
 $HELIOS_MASTER_OPTS \
 &
 
+set +x
 # Sleep or execute command line
 while :; do sleep 1; done
