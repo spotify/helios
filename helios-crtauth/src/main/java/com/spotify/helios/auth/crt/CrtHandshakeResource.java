@@ -31,10 +31,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.Response.Status;
 
-@Path(CrtHandshakeResource.PATH)
+@Path("/_auth")
 public class CrtHandshakeResource {
 
-  public static final String PATH = "_auth";
   private static final Logger log = LoggerFactory.getLogger(CrtHandshakeResource.class);
 
   private final CrtAuthServer authServer;

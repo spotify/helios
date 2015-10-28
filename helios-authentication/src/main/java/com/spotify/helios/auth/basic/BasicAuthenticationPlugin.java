@@ -18,19 +18,10 @@
 package com.spotify.helios.auth.basic;
 
 import com.google.auto.service.AutoService;
-import com.google.common.base.Throwables;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.auth.AuthenticationPlugin;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.Map;
-
 import io.dropwizard.auth.basic.BasicCredentials;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 /** Proof of concept for the authentication plugin framework using HTTP Basic Auth. */
 @AutoService(AuthenticationPlugin.class)
@@ -42,28 +33,8 @@ public class BasicAuthenticationPlugin implements AuthenticationPlugin<BasicCred
   }
 
   @Override
-  public ServerAuthentication<BasicCredentials> serverAuthentication(
-      Map<String, String> environment) {
-
-    final String path = environment.get("AUTH_BASIC_USERDB");
-    checkNotNull(path,
-        "Environment variable AUTH_BASIC_USERDB not defined, required for "
-        + BasicAuthenticationPlugin.class.getSimpleName());
-
-    return new BasicServerAuthentication(readFileOfUsers(path));
-  }
-
-  private Map<String, String> readFileOfUsers(final String path) {
-    final File file = new File(path);
-    final ObjectMapper objectMapper = new ObjectMapper();
-    final TypeReference<Map<String, String>> typeToken = new TypeReference<Map<String, String>>() {
-    };
-
-    try {
-      return  objectMapper.readValue(file, typeToken);
-    } catch (IOException e) {
-      throw Throwables.propagate(e);
-    }
+  public ServerAuthentication<BasicCredentials> serverAuthentication() {
+    return new BasicServerAuthentication();
   }
 
   @Override

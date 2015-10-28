@@ -569,27 +569,14 @@ public abstract class SystemTestBase {
     return startDefaultMaster(0, args);
   }
 
-  protected MasterMain startDefaultMaster(Map<String, String> environmentVariables, String... args)
-      throws Exception {
-    return startDefaultMaster(0, environmentVariables, args);
-  }
-
   protected MasterMain startDefaultMaster(final int offset, String... args) throws Exception {
-    return startDefaultMaster(offset, ImmutableMap.<String, String>of(), args);
-  }
-
-  protected MasterMain startDefaultMaster(final int offset,
-                                          final Map<String, String> environmentVariables,
-                                          final String... args) throws Exception {
     final List<String> argsList = setupDefaultMaster(offset, args);
 
     if (argsList == null) {
       return null;
     }
 
-    final MasterMain master =
-        startMaster(environmentVariables, argsList.toArray(new String[argsList.size()]));
-
+    final MasterMain master = startMaster(argsList.toArray(new String[argsList.size()]));
     waitForMasterToBeFullyUp();
 
     return master;
@@ -671,9 +658,8 @@ public abstract class SystemTestBase {
     return startAgent(argsList.toArray(new String[argsList.size()]));
   }
 
-  protected MasterMain startMaster(final Map<String, String> environmentVariables,
-                                   final String... args) throws Exception {
-    final MasterMain main = new MasterMain(environmentVariables, args);
+  protected MasterMain startMaster(final String... args) throws Exception {
+    final MasterMain main = new MasterMain(args);
     main.startAsync().awaitRunning();
     services.add(main);
     return main;

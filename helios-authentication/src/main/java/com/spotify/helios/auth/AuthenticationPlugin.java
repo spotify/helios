@@ -17,9 +17,6 @@
 
 package com.spotify.helios.auth;
 
-import java.util.Map;
-import java.util.Set;
-
 import io.dropwizard.jersey.setup.JerseyEnvironment;
 
 /**
@@ -42,13 +39,7 @@ public interface AuthenticationPlugin<C> {
    */
   String schemeName();
 
-  /**
-   * Create the ServerAuthentication instance to use with this plugin.
-   *
-   * @param environment the environment variables that the Helios Master was started with. Provided
-   *                    as a method parameter rather than System.getenv() for ease of testing.
-   */
-  ServerAuthentication<C> serverAuthentication(Map<String, String> environment);
+  ServerAuthentication<C> serverAuthentication();
 
   ClientAuthentication<C> clientAuthentication();
 
@@ -76,17 +67,6 @@ public interface AuthenticationPlugin<C> {
      * for multi-stepped authentication handshakes.
      */
     void registerAdditionalJerseyComponents(JerseyEnvironment env);
-
-    /**
-     * Returns a Set of URI paths (such as <code>auth</code>) that should not require
-     * authentication. Note that the path as presented by Jersey will not have the leading
-     * <code>/</code>.
-     * <p>
-     * If the plugin registers any endpoints for authentication handshakes in {@link
-     * #registerAdditionalJerseyComponents(JerseyEnvironment)} then it must also return the path(s)
-     * to those endpoint(s) in this method.</p>
-     */
-    Set<String> unauthenticatedPaths();
   }
 
   interface ClientAuthentication<C> {

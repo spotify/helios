@@ -17,11 +17,20 @@
 
 package com.spotify.helios.auth.basic;
 
-import com.spotify.helios.auth.SimpleServerAuthentication;
+import com.google.common.base.Throwables;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.helios.auth.AuthenticationPlugin.ServerAuthentication;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 import io.dropwizard.auth.basic.BasicCredentials;
+import io.dropwizard.jersey.setup.JerseyEnvironment;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A very simple implementation of ServerAuthentication to demonstrate how to implement an
@@ -29,9 +38,26 @@ import io.dropwizard.auth.basic.BasicCredentials;
  * configured by an environment variable, making it likely far too simple to be used for anything
  * but demonstrations.
  */
-public class BasicServerAuthentication extends SimpleServerAuthentication<BasicCredentials> {
+public class BasicServerAuthentication implements ServerAuthentication<BasicCredentials> {
 
   private final Map<String, String> users;
+
+  public BasicServerAuthentication() {
+    final String path = System.getenv("AUTH_BASIC_USERDB");
+    checkNotNull(path,
+        "Environment variable AUTH_BASIC_USERDB not defined, required for "
+        + BasicAuthenticationPlugin.class.getSimpleName());
+
+    File file = new File(path);
+    final ObjectMapper objectMapper = new ObjectMapper();
+
+    try {
+      this.users = objectMapper.readValue(file, new TypeReference<Map<String, String>>() {
+      });
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
+  }
 
   public BasicServerAuthentication(Map<String, String> users) {
     this.users = users;
@@ -42,4 +68,8 @@ public class BasicServerAuthentication extends SimpleServerAuthentication<BasicC
     return new BasicAuthenticator(users);
   }
 
+  @Override
+  public void registerAdditionalJerseyComponents(JerseyEnvironment env) {
+    // nothing to add
+  }
 }
