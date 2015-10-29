@@ -170,6 +170,53 @@
           </execution>
         </executions>
       </plugin>
+      <!-- relocate com.spotify:dns and dnsjava:dnsjava so that users of helios-client/helios-testing
+      are not forced to use com.spotify:dns:3.x if they are using 2.x already, as there are
+      backwards incompatible changes in com.spotify:dns:3.x.
+      -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.4.1</version>
+        <configuration>
+          <artifactSet>
+            <includes>
+              <include>com.spotify:dns</include>
+              <include>dnsjava:dnsjava</include>
+            </includes>
+          </artifactSet>
+          <filters>
+            <filter>
+              <artifact>dnsjava:dnsjava</artifact>
+              <!-- exclude default package classes that ship with dnsjava that are just tests -->
+              <excludes>
+                <exclude>dig*</exclude>
+                <exclude>jnamed*</exclude>
+                <exclude>lookup*</exclude>
+                <exclude>update*</exclude>
+              </excludes>
+            </filter>
+          </filters>
+          <relocations>
+            <relocation>
+              <pattern>com.spotify.dns</pattern>
+              <shadedPattern>com.spotify.helios.client.shaded.com.spotify.dns</shadedPattern>
+            </relocation>
+            <relocation>
+              <pattern>org.xbill.DNS</pattern>
+              <shadedPattern>com.spotify.helios.client.shaded.org.xbill.DNS</shadedPattern>
+            </relocation>
+          </relocations>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 </project>
