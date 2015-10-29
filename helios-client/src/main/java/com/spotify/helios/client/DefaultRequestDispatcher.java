@@ -231,19 +231,26 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         }
 
         try {
-          boolean tryNextIdentity = false;
           do {
             final Identity identity = identities.poll();
+
             try {
               log.debug("connecting to {}", realUri);
-              return connect0(realUri, method, entity, headers,
+
+              final HttpURLConnection connection = connect0(realUri, method, entity, headers,
                               ipToHostnameUris.get(ipEndpoint).getHost(),
                               agentProxy, identity);
-            } catch (SecurityException e) {
-              // there was some sort of security error. if we have any more SSH identities to try,
-              // retry with the next available identity
-              log.debug(e.toString());
-              tryNextIdentity = !identities.isEmpty();
+
+              final int responseCode = connection.getResponseCode();
+              if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
+                  && !identities.isEmpty()) {
+                // there was some sort of security error. if we have any more SSH identities to try,
+                // retry with the next available identity
+                log.debug("retrying with next SSH identity since {} failed", identity.getComment());
+                continue;
+              }
+
+              return connection;
             } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
               // UnknownHostException happens if we can't resolve hostname into IP address.
               // UnknownHostException's getMessage method returns just the hostname which is a
@@ -252,11 +259,10 @@ class DefaultRequestDispatcher implements RequestDispatcher {
               // Connecting failed, sleep a bit to avoid hammering and then try another endpoint
               Thread.sleep(200);
             }
-          } while (tryNextIdentity);
+          } while (false);
         } finally {
           if (agentProxy != null) {
             agentProxy.close();
-            agentProxy = null;
           }
         }
       }
@@ -290,10 +296,9 @@ class DefaultRequestDispatcher implements RequestDispatcher {
 
       final HttpsURLConnection httpsConnection = (HttpsURLConnection) urlConnection;
       httpsConnection.setHostnameVerifier(new HostnameVerifier() {
-        @Override
-        public boolean verify(String ip, SSLSession sslSession) {
-          final String tHostname = hostname.endsWith(".") ?
-                                   hostname.substring(0, hostname.length() - 1) : hostname;
+        @Override public boolean verify(String ip, SSLSession sslSession) {
+          final String tHostname =
+              hostname.endsWith(".") ? hostname.substring(0, hostname.length() - 1) : hostname;
           return new DefaultHostnameVerifier().verify(tHostname, sslSession);
         }
       });
@@ -326,8 +331,6 @@ class DefaultRequestDispatcher implements RequestDispatcher {
     final int responseCode = connection.getResponseCode();
     if (responseCode == HTTP_BAD_GATEWAY) {
       throw new ConnectException("502 Bad Gateway");
-    } else if ((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED)) {
-      throw new SecurityException("Response code: " + responseCode);
     }
 
     return connection;
