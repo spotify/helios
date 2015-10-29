@@ -20,7 +20,58 @@ $ brew tap spotify/public && brew install helios-solo
 $ helios-up
 ```
 
-### Linux
+### Linux with Systemd
+
+Install Docker, and enable socket-activation for it:
+
+```bash
+$ sudo systemctl enable docker.socket
+Created symlink from /etc/systemd/system/sockets.target.wants/docker.socket to /usr/lib/systemd/system/docker.socket.
+$ sudo systemctl start docker.socket
+```
+
+Verify that socket activation works:
+
+```bash
+$ systemctl status docker
+● docker.service - Docker Application Container Engine
+   Loaded: loaded (/usr/lib/systemd/system/docker.service; disabled; vendor preset: disabled)
+   Active: inactive (dead)
+     Docs: https://docs.docker.com
+$ docker version -f '{{ .Server.Version }}'
+1.8.3
+$ systemctl status docker
+● docker.service - Docker Application Container Engine
+   Loaded: loaded (/usr/lib/systemd/system/docker.service; disabled; vendor preset: disabled)
+   Active: active (running) since tor 2015-10-29 20:01:09 CET; 1min 34s ago
+     Docs: https://docs.docker.com
+ Main PID: 27126 (docker)
+   CGroup: /system.slice/docker.service
+           └─27126 /usr/bin/docker daemon -H fd:// --exec-opt native.cgroupdriver=cgroupfs
+```
+
+Now drop in the service definition file for `helios-solo`:
+
+```bash
+$ sudo curl https://raw.githubusercontent.com/spotify/helios/master/solo/helios-solo.service \
+  -o /etc/systemd/system/helios-solo.service
+$ sudo systemctl daemon-reload
+$ sudo systemctl enable helios-solo
+Created symlink from /etc/systemd/system/multi-user.target.wants/helios-solo.service to /etc/systemd/system/helios-solo.service.
+$ sudo systemctl start helios-solo
+● helios-solo.service - Spotify Helios Solo
+   Loaded: loaded (/usr/lib/systemd/system/helios-solo.service; enabled; vendor preset: disabled)
+   Active: active (running) since tor 2015-10-29 20:08:49 CET; 4s ago
+     Docs: https://github.com/spotify/helios/tree/master/docs
+  Process: 27578 ExecStartPre=/usr/bin/docker pull spotify/helios-solo (code=exited, status=0/SUCCESS)
+  Process: 27570 ExecStartPre=/usr/bin/docker rm helios-solo-container (code=exited, status=0/SUCCESS)
+  Process: 27562 ExecStartPre=/usr/bin/docker kill helios-solo-container (code=exited, status=1/FAILURE)
+ Main PID: 27586 (docker)
+   CGroup: /system.slice/helios-solo.service
+           └─27586 /usr/bin/docker run --name=helios-solo-container ...
+```
+
+### Ubuntu
 
 Install Docker, configure it correctly, and **start the service** so that
 commands like `docker info` and `docker ps` work. Either
