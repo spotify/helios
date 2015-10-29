@@ -28,7 +28,7 @@ case "$1" in
     ;;
 
   dependencies)
-    mvn clean install -T 2 -Dmaven.javadoc.skip=true -DskipTests=true -Dinvoker.skip=true -B -V
+    mvn clean install -T 2 -Dmaven.javadoc.skip=true -DskipTests=true -B -V
 
     ;;
 
@@ -44,9 +44,6 @@ case "$1" in
         # run all tests *except* helios-system-tests
         sed -i'' 's/<module>helios-system-tests<\/module>//' pom.xml
         mvn test -B
-
-        # run the lightweight "integration" tests in helios-authentication also
-        mvn -pl helios-authentication verify -B
 
         ;;
 
