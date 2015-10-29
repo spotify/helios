@@ -23,12 +23,17 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
+import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.helios.client.tls.SshAgentSSLSocketFactory;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
+import com.spotify.sshagentproxy.AgentProxies;
+import com.spotify.sshagentproxy.AgentProxy;
+import com.spotify.sshagentproxy.Identity;
 
 import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.slf4j.Logger;
@@ -48,6 +53,7 @@ import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -58,9 +64,13 @@ import java.util.zip.GZIPInputStream;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
 
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.System.currentTimeMillis;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 class DefaultRequestDispatcher implements RequestDispatcher {
@@ -75,11 +85,14 @@ class DefaultRequestDispatcher implements RequestDispatcher {
 
   private final Supplier<List<URI>> endpointSupplier;
   private final ListeningExecutorService executorService;
+  private final String user;
 
   public DefaultRequestDispatcher(final Supplier<List<URI>> endpointSupplier,
+                                  final String user,
                                   final ListeningExecutorService executorService) {
     this.endpointSupplier = endpointSupplier;
     this.executorService = executorService;
+    this.user = user;
   }
 
   @Override
@@ -92,11 +105,13 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         final HttpURLConnection connection = connect(uri, method, entityBytes, headers);
         final int status = connection.getResponseCode();
         final InputStream rawStream;
+
         if (status / 100 != 2) {
           rawStream = connection.getErrorStream();
         } else {
           rawStream = connection.getInputStream();
         }
+
         final boolean gzip = isGzipCompressed(connection);
         final InputStream stream = gzip ? new GZIPInputStream(rawStream) : rawStream;
         final ByteArrayOutputStream payload = new ByteArrayOutputStream();
@@ -107,6 +122,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
             payload.write(buffer, 0, n);
           }
         }
+
         URI realUri = connection.getURL().toURI();
         if (log.isTraceEnabled()) {
           log.trace("rep: {} {} {} {} {} gzip:{}",
@@ -155,6 +171,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
              HeliosException {
     final long deadline = currentTimeMillis() + RETRY_TIMEOUT_MILLIS;
     final int offset = ThreadLocalRandom.current().nextInt();
+
     while (currentTimeMillis() < deadline) {
       final List<URI> endpoints = endpointSupplier.get();
       if (endpoints.isEmpty()) {
@@ -196,17 +213,57 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         }
 
         final URI realUri = new URI(scheme, host + ":" + port, fullpath, uri.getQuery(), null);
+
+        AgentProxy agentProxy = null;
+        Deque<Identity> identities = Queues.newArrayDeque();
         try {
-          log.debug("connecting to {}", realUri);
-          return connect0(realUri, method, entity, headers,
-                          ipToHostnameUris.get(ipEndpoint).getHost());
-        } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
-          // UnknownHostException happens if we can't resolve hostname into IP address.
-          // UnknownHostException's getMessage method returns just the hostname which is a useless
-          // message, so log the exception class name to provide more info.
-          log.debug(e.toString());
-          // Connecting failed, sleep a bit to avoid hammering and then try another endpoint
-          Thread.sleep(200);
+          if (scheme.equals("https")) {
+            agentProxy = AgentProxies.newInstance();
+            for (final Identity identity : agentProxy.list()) {
+              if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
+                // only RSA keys will work with our TLS implementation
+                identities.offerLast(identity);
+              }
+            }
+          }
+        } catch (Exception e) {
+          log.warn("Couldn't get identities from ssh-agent", e);
+        }
+
+        try {
+          do {
+            final Identity identity = identities.poll();
+
+            try {
+              log.debug("connecting to {}", realUri);
+
+              final HttpURLConnection connection = connect0(realUri, method, entity, headers,
+                              ipToHostnameUris.get(ipEndpoint).getHost(),
+                              agentProxy, identity);
+
+              final int responseCode = connection.getResponseCode();
+              if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
+                  && !identities.isEmpty()) {
+                // there was some sort of security error. if we have any more SSH identities to try,
+                // retry with the next available identity
+                log.debug("retrying with next SSH identity since {} failed", identity.getComment());
+                continue;
+              }
+
+              return connection;
+            } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
+              // UnknownHostException happens if we can't resolve hostname into IP address.
+              // UnknownHostException's getMessage method returns just the hostname which is a
+              // useless message, so log the exception class name to provide more info.
+              log.debug(e.toString());
+              // Connecting failed, sleep a bit to avoid hammering and then try another endpoint
+              Thread.sleep(200);
+            }
+          } while (false);
+        } finally {
+          if (agentProxy != null) {
+            agentProxy.close();
+          }
         }
       }
       log.warn("Failed to connect, retrying in 5 seconds.");
@@ -217,7 +274,8 @@ class DefaultRequestDispatcher implements RequestDispatcher {
 
   private HttpURLConnection connect0(final URI ipUri, final String method, final byte[] entity,
                                      final Map<String, List<String>> headers,
-                                     final String hostname)
+                                     final String hostname, final AgentProxy agentProxy,
+                                     final Identity identity)
       throws IOException {
     if (log.isTraceEnabled()) {
       log.trace("req: {} {} {} {} {} {}", method, ipUri, headers.size(),
@@ -235,14 +293,20 @@ class DefaultRequestDispatcher implements RequestDispatcher {
     if (urlConnection instanceof HttpsURLConnection) {
       System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
       connection.setRequestProperty("Host", hostname);
-      ((HttpsURLConnection) connection).setHostnameVerifier(new HostnameVerifier() {
-        @Override
-        public boolean verify(String ip, SSLSession sslSession) {
-          final String tHostname = hostname.endsWith(".") ?
-                                   hostname.substring(0, hostname.length() - 1) : hostname;
+
+      final HttpsURLConnection httpsConnection = (HttpsURLConnection) urlConnection;
+      httpsConnection.setHostnameVerifier(new HostnameVerifier() {
+        @Override public boolean verify(String ip, SSLSession sslSession) {
+          final String tHostname =
+              hostname.endsWith(".") ? hostname.substring(0, hostname.length() - 1) : hostname;
           return new DefaultHostnameVerifier().verify(tHostname, sslSession);
         }
       });
+
+      if (!isNullOrEmpty(user) && (agentProxy != null) && (identity != null)) {
+        final SSLSocketFactory factory = new SshAgentSSLSocketFactory(agentProxy, identity, user);
+        httpsConnection.setSSLSocketFactory(factory);
+      }
     }
 
     connection.setRequestProperty("Accept-Encoding", "gzip");
@@ -264,7 +328,8 @@ class DefaultRequestDispatcher implements RequestDispatcher {
       setRequestMethod(connection, method, false);
     }
 
-    if (connection.getResponseCode() == HTTP_BAD_GATEWAY) {
+    final int responseCode = connection.getResponseCode();
+    if (responseCode == HTTP_BAD_GATEWAY) {
       throw new ConnectException("502 Bad Gateway");
     }
 
