@@ -21,10 +21,22 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.util.List;
 
+/**
+ * A Helios master endpoint which is represented by a URI for the hostname and a list of IP
+ * addresses. There can be multiple IP addresses since a hostname can have multiple DNS A records.
+ */
 public interface Endpoint {
 
+  /**
+   * Returns the {@link URI} of the endpoint.
+   * @return URI
+   */
   URI getUri();
 
+  /**
+   * Returns a list of {@link InetAddress} to which the URI's hostname resolves.
+   * @return List of InetAddress
+   */
   List<InetAddress> getIps();
 
 }

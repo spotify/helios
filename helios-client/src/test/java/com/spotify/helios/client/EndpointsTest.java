@@ -1,0 +1,86 @@
+/*
+ * Copyright (c) 2015 Spotify AB.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package com.spotify.helios.client;
+
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableList;
+import com.google.common.net.InetAddresses;
+
+import org.apache.http.conn.DnsResolver;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.net.InetAddress;
+import java.net.URI;
+import java.util.Arrays;
+import java.util.List;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+public class EndpointsTest {
+
+  private static final DnsResolver resolver = mock(DnsResolver.class);
+  private static final InetAddress[] ips1 = new InetAddress[] {
+      InetAddresses.forString("1.2.3.4"),
+      InetAddresses.forString("2.3.4.5"),
+  };
+  private static final InetAddress[] ips2 = new InetAddress[] {
+    InetAddresses.forString("3.4.5.6"),
+    InetAddresses.forString("4.5.6.7"),
+  };
+  private static URI uri1;
+  private static URI uri2;
+  private static List<URI> uris;
+
+  @Before
+  public void setup() throws Exception {
+    when(resolver.resolve("example.com")).thenReturn(ips1);
+    when(resolver.resolve("example.net")).thenReturn(ips2);
+    uri1 = new URI("http://example.com");
+    uri2 = new URI("https://example.net");
+    uris = ImmutableList.of(uri1, uri2);
+  }
+
+  @Test
+  public void testSupplierFactory() throws Exception {
+    final Supplier<List<URI>> uriSupplier = Suppliers.ofInstance(uris);
+    final Supplier<List<Endpoint>> endpointSupplier = Endpoints.of(uriSupplier, resolver);
+    final List<Endpoint> endpoints = endpointSupplier.get();
+
+    assertThat(endpoints.size(), equalTo(2));
+    assertThat(endpoints.get(0).getUri(), equalTo(uri1));
+    assertThat(endpoints.get(0).getIps(), equalTo(Arrays.asList(ips1)));
+    assertThat(endpoints.get(1).getUri(), equalTo(uri2));
+    assertThat(endpoints.get(1).getIps(), equalTo(Arrays.asList(ips2)));
+  }
+
+  @Test
+  public void testFactory() throws Exception {
+    final List<Endpoint> endpoints = Endpoints.of(uris, resolver);
+
+    assertThat(endpoints.size(), equalTo(2));
+    assertThat(endpoints.get(0).getUri(), equalTo(uri1));
+    assertThat(endpoints.get(0).getIps(), equalTo(Arrays.asList(ips1)));
+    assertThat(endpoints.get(1).getUri(), equalTo(uri2));
+    assertThat(endpoints.get(1).getIps(), equalTo(Arrays.asList(ips2)));
+  }
+}
