@@ -47,7 +47,7 @@ public class RollingUpdateRequest {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(getClass())
+    return Objects.toStringHelper(this)
         .add("job", job)
         .add("rolloutOptions", rolloutOptions)
         .toString();

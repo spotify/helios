@@ -139,7 +139,7 @@ public class DeploymentGroupStatusResponse {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(getClass())
+    return Objects.toStringHelper(this)
         .add("deploymentGroup", deploymentGroup)
         .add("status", status)
         .add("error", error)

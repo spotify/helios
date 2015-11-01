@@ -45,7 +45,7 @@ public class HostRegisterResponse {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(getClass())
+    return Objects.toStringHelper(this)
         .add("status", status)
         .add("host", host)
         .toString();

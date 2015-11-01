@@ -47,7 +47,7 @@ public class TaskStatusEvents {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(getClass())
+    return Objects.toStringHelper(this)
         .add("status", status)
         .add("events", events)
         .toString();

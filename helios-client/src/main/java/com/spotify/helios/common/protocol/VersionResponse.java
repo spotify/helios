@@ -43,7 +43,7 @@ public class VersionResponse {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(getClass())
+    return Objects.toStringHelper(this)
         .add("clientVersion", clientVersion)
         .add("masterVersion", masterVersion)
         .toString();
