@@ -32,8 +32,10 @@ import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -86,7 +88,8 @@ public class EndpointIteratorTest {
 
   @Test
   public void testEmptyIterator() throws Exception {
-    exception.expect(IllegalArgumentException.class);
-    EndpointIterator.of(Collections.<Endpoint>emptyList());
+    final EndpointIterator iterator = EndpointIterator.of(Collections.<Endpoint>emptyList());
+    assertThat(iterator.size(), equalTo(0));
+    assertFalse(iterator.hasNext());
   }
 }

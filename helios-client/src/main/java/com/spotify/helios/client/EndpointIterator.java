@@ -19,6 +19,7 @@ package com.spotify.helios.client;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -35,12 +36,7 @@ class EndpointIterator implements Iterator<Endpoint> {
   private int cursor;
 
   private EndpointIterator(final List<Endpoint> endpoints) {
-    checkNotNull(endpoints);
-    if (endpoints.size() == 0) {
-      throw new IllegalArgumentException("List of Endpoints cannot be empty.");
-    }
-
-    this.endpoints = endpoints;
+    this.endpoints = checkNotNull(endpoints);
     this.size = endpoints.size();
     this.cursor = 0;
   }
@@ -61,8 +57,24 @@ class EndpointIterator implements Iterator<Endpoint> {
            endpoints.get(cursor = 0);
   }
 
+  /**
+   * Return the size of the list that backs this iterator.
+   * @return int representing the size of the backing list.
+   */
   public int size() {
     return size;
+  }
+
+  /**
+   * Set the cursor to a random location within the backing list.
+   */
+  public void randomizeCursor() {
+    final int offset = ThreadLocalRandom.current().nextInt();
+    cursor = positive(offset) % endpoints.size();
+  }
+
+  private int positive(final int value) {
+    return value < 0 ? value + Integer.MAX_VALUE : value;
   }
 
   @Override

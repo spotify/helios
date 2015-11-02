@@ -150,8 +150,7 @@ public class ConfigTest {
 
     // Specify the helios-ci profile explicitly
     parameters = new TestParameters(temporaryJobsBuilder("helios-ci"),
-                                ".+\\.helios-ci\\.cloud",
-                                validator);
+                                    ".+\\.helios-ci\\.cloud", validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }
 
