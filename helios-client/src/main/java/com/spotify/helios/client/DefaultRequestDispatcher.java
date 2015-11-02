@@ -21,7 +21,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -45,7 +44,6 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -179,37 +177,23 @@ class DefaultRequestDispatcher implements RequestDispatcher {
       }
       log.debug("endpoint uris are {}", endpoints);
 
-      // Resolve hostname into IPs so client will round-robin and retry for multiple A records.
-      // Keep a mapping of IPs to hostnames for TLS verification.
-      final List<URI> ipEndpoints = Lists.newArrayList();
-      final Map<URI, URI> ipToHostnameUris = Maps.newHashMap();
+      for (int i = 0; i < endpoints.size() && currentTimeMillis() < deadline; i++) {
+        final Endpoint endpoint = endpoints.get(positive(offset + i) % endpoints.size());
+        final URI endpointUri = endpoint.getUri();
+        final String fullpath = endpointUri.getPath() + uri.getPath();
 
-      for (final Endpoint ep : endpoints) {
-        final List<InetAddress> ips = ep.getIps();
-        final URI epUri = ep.getUri();
-        for (final InetAddress ip : ips) {
-          final URI ipUri = new URI(
-              epUri.getScheme(), epUri.getUserInfo(), ip.getHostAddress(), epUri.getPort(),
-              epUri.getPath(), epUri.getQuery(), epUri.getFragment());
-          ipEndpoints.add(ipUri);
-          ipToHostnameUris.put(ipUri, epUri);
-        }
-      }
-
-      for (int i = 0; i < ipEndpoints.size() && currentTimeMillis() < deadline; i++) {
-        final URI ipEndpoint = ipEndpoints.get(positive(offset + i) % ipEndpoints.size());
-        final String fullpath = ipEndpoint.getPath() + uri.getPath();
-
-        final String scheme = ipEndpoint.getScheme();
-        final String host = ipEndpoint.getHost();
-        final int port = ipEndpoint.getPort();
+        final String scheme = endpointUri.getScheme();
+        final String host = endpointUri.getHost();
+        final int port = endpointUri.getPort();
         if (!VALID_PROTOCOLS.contains(scheme) || host == null || port == -1) {
           throw new HeliosException(String.format(
               "Master endpoints must be of the form \"%s://heliosmaster.domain.net:<port>\"",
               VALID_PROTOCOLS_STR));
         }
 
-        final URI realUri = new URI(scheme, host + ":" + port, fullpath, uri.getQuery(), null);
+        final URI ipUri = new URI(
+            scheme, endpointUri.getUserInfo(), endpoint.getIp().getHostAddress(),
+            port, fullpath, uri.getQuery(), null);
 
         AgentProxy agentProxy = null;
         Deque<Identity> identities = Queues.newArrayDeque();
@@ -232,11 +216,10 @@ class DefaultRequestDispatcher implements RequestDispatcher {
             final Identity identity = identities.poll();
 
             try {
-              log.debug("connecting to {}", realUri);
+              log.debug("connecting to {}", ipUri);
 
-              final HttpURLConnection connection = connect0(realUri, method, entity, headers,
-                              ipToHostnameUris.get(ipEndpoint).getHost(),
-                              agentProxy, identity);
+              final HttpURLConnection connection = connect0(
+                  ipUri, method, entity, headers, endpointUri.getHost(), agentProxy, identity);
 
               final int responseCode = connection.getResponseCode();
               if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))

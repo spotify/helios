@@ -29,7 +29,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
-import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -88,7 +87,9 @@ public class Endpoints {
     final ImmutableList.Builder<Endpoint> endpoints = ImmutableList.builder();
     for (final URI uri : uris) {
       try {
-        endpoints.add(new DefaultEndpoint(uri, Arrays.asList(dnsResolver.resolve(uri.getHost()))));
+        for (final InetAddress ip : dnsResolver.resolve(uri.getHost())) {
+          endpoints.add(new DefaultEndpoint(uri, ip));
+        }
       } catch (UnknownHostException e) {
         log.warn("Unable to resolve hostname {} into IP address: {}", uri.getHost(), e);
       }
@@ -99,12 +100,12 @@ public class Endpoints {
 
   private static class DefaultEndpoint implements Endpoint {
 
-    private final List<InetAddress> ips;
+    private final InetAddress ip;
     private final URI uri;
 
-    DefaultEndpoint(final URI uri, final List<InetAddress> ips) {
+    DefaultEndpoint(final URI uri, final InetAddress ip) {
       this.uri = uri;
-      this.ips = ips;
+      this.ip = ip;
     }
 
     @Override
@@ -113,8 +114,8 @@ public class Endpoints {
     }
 
     @Override
-    public List<InetAddress> getIps() {
-      return ips;
+    public InetAddress getIp() {
+      return ip;
     }
 
     @Override
@@ -128,7 +129,7 @@ public class Endpoints {
 
       DefaultEndpoint that = (DefaultEndpoint) o;
 
-      if (ips != null ? !ips.equals(that.ips) : that.ips != null) {
+      if (ip != null ? !ip.equals(that.ip) : that.ip != null) {
         return false;
       }
       return !(uri != null ? !uri.equals(that.uri) : that.uri != null);
@@ -137,7 +138,7 @@ public class Endpoints {
 
     @Override
     public int hashCode() {
-      int result = ips != null ? ips.hashCode() : 0;
+      int result = ip != null ? ip.hashCode() : 0;
       result = 31 * result + (uri != null ? uri.hashCode() : 0);
       return result;
     }
@@ -146,7 +147,7 @@ public class Endpoints {
     public String toString() {
       return Objects.toStringHelper(this)
           .add("uri", uri)
-          .add("ips", ips)
+          .add("ip", ip)
           .toString();
     }
   }

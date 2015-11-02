@@ -19,11 +19,10 @@ package com.spotify.helios.client;
 
 import java.net.InetAddress;
 import java.net.URI;
-import java.util.List;
 
 /**
- * A Helios master endpoint which is represented by a URI for the hostname and a list of IP
- * addresses. There can be multiple IP addresses since a hostname can have multiple DNS A records.
+ * A Helios master endpoint which is represented by a {@link URI} and an IP address resolved from
+ * the hostname in the URI.
  */
 public interface Endpoint {
 
@@ -34,9 +33,9 @@ public interface Endpoint {
   URI getUri();
 
   /**
-   * Returns a list of {@link InetAddress} to which the URI's hostname resolves.
+   * Returns the {@link InetAddress} to which the URI's hostname resolves.
    * @return List of InetAddress
    */
-  List<InetAddress> getIps();
+  InetAddress getIp();
 
 }

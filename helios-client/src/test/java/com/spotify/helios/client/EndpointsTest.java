@@ -28,7 +28,7 @@ import org.junit.Test;
 
 import java.net.InetAddress;
 import java.net.URI;
-import java.util.Arrays;
+import java.net.UnknownHostException;
 import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -38,23 +38,20 @@ import static org.mockito.Mockito.when;
 
 public class EndpointsTest {
 
-  private static final DnsResolver resolver = mock(DnsResolver.class);
-  private static final InetAddress[] ips1 = new InetAddress[] {
-      InetAddresses.forString("1.2.3.4"),
-      InetAddresses.forString("2.3.4.5"),
-  };
-  private static final InetAddress[] ips2 = new InetAddress[] {
-    InetAddresses.forString("3.4.5.6"),
-    InetAddresses.forString("4.5.6.7"),
-  };
+  private static final InetAddress IP_A = InetAddresses.forString("1.2.3.4");
+  private static final InetAddress IP_B = InetAddresses.forString("2.3.4.5");
+  private static final InetAddress IP_C = InetAddresses.forString("3.4.5.6");
+  private static final InetAddress IP_D = InetAddresses.forString("4.5.6.7");
+
+  private static final InetAddress[] IPS_1 = new InetAddress[] {IP_A, IP_B};
+  private static final InetAddress[] IPS_2 = new InetAddress[] {IP_C, IP_D};
+
   private static URI uri1;
   private static URI uri2;
   private static List<URI> uris;
 
   @Before
   public void setup() throws Exception {
-    when(resolver.resolve("example.com")).thenReturn(ips1);
-    when(resolver.resolve("example.net")).thenReturn(ips2);
     uri1 = new URI("http://example.com");
     uri2 = new URI("https://example.net");
     uris = ImmutableList.of(uri1, uri2);
@@ -62,25 +59,49 @@ public class EndpointsTest {
 
   @Test
   public void testSupplierFactory() throws Exception {
+    final DnsResolver resolver = mock(DnsResolver.class);
+    when(resolver.resolve("example.com")).thenReturn(IPS_1);
+    when(resolver.resolve("example.net")).thenReturn(IPS_2);
     final Supplier<List<URI>> uriSupplier = Suppliers.ofInstance(uris);
     final Supplier<List<Endpoint>> endpointSupplier = Endpoints.of(uriSupplier, resolver);
     final List<Endpoint> endpoints = endpointSupplier.get();
 
-    assertThat(endpoints.size(), equalTo(2));
+    assertThat(endpoints.size(), equalTo(4));
     assertThat(endpoints.get(0).getUri(), equalTo(uri1));
-    assertThat(endpoints.get(0).getIps(), equalTo(Arrays.asList(ips1)));
-    assertThat(endpoints.get(1).getUri(), equalTo(uri2));
-    assertThat(endpoints.get(1).getIps(), equalTo(Arrays.asList(ips2)));
+    assertThat(endpoints.get(0).getIp(), equalTo(IP_A));
+    assertThat(endpoints.get(1).getUri(), equalTo(uri1));
+    assertThat(endpoints.get(1).getIp(), equalTo(IP_B));
+    assertThat(endpoints.get(2).getUri(), equalTo(uri2));
+    assertThat(endpoints.get(2).getIp(), equalTo(IP_C));
+    assertThat(endpoints.get(3).getUri(), equalTo(uri2));
+    assertThat(endpoints.get(3).getIp(), equalTo(IP_D));
   }
 
   @Test
   public void testFactory() throws Exception {
+    final DnsResolver resolver = mock(DnsResolver.class);
+    when(resolver.resolve("example.com")).thenReturn(IPS_1);
+    when(resolver.resolve("example.net")).thenReturn(IPS_2);
     final List<Endpoint> endpoints = Endpoints.of(uris, resolver);
 
-    assertThat(endpoints.size(), equalTo(2));
+    assertThat(endpoints.size(), equalTo(4));
     assertThat(endpoints.get(0).getUri(), equalTo(uri1));
-    assertThat(endpoints.get(0).getIps(), equalTo(Arrays.asList(ips1)));
-    assertThat(endpoints.get(1).getUri(), equalTo(uri2));
-    assertThat(endpoints.get(1).getIps(), equalTo(Arrays.asList(ips2)));
+    assertThat(endpoints.get(0).getIp(), equalTo(IP_A));
+    assertThat(endpoints.get(1).getUri(), equalTo(uri1));
+    assertThat(endpoints.get(1).getIp(), equalTo(IP_B));
+    assertThat(endpoints.get(2).getUri(), equalTo(uri2));
+    assertThat(endpoints.get(2).getIp(), equalTo(IP_C));
+    assertThat(endpoints.get(3).getUri(), equalTo(uri2));
+    assertThat(endpoints.get(3).getIp(), equalTo(IP_D));
+  }
+
+  @Test
+  public void testUnableToResolve() throws Exception {
+    final DnsResolver resolver = mock(DnsResolver.class);
+    when(resolver.resolve("example.com")).thenThrow(new UnknownHostException());
+    when(resolver.resolve("example.net")).thenThrow(new UnknownHostException());
+    final List<Endpoint> endpoints = Endpoints.of(uris, resolver);
+
+    assertThat(endpoints.size(), equalTo(0));
   }
 }

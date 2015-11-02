@@ -17,44 +17,32 @@
 
 package com.spotify.helios.client;
 
-import com.google.common.collect.ImmutableMap;
-
-import java.net.InetAddress;
-import java.net.URI;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * An {@link Iterator} of {@link Endpoint}.
- * The hasNext() and next() methods will return whether the iterator has a next Endpoint and the
- * next endpoint, respectively. In addition, the hasNextIp() and nextIp() methods iterate over
- * the current Endpoint's {@link InetAddress}s. I.e. they return whether the current endpoint
- * has more IP addresses and the next IP address for that endpoint, respectively.
+ * An {@link Iterator} of {@link Endpoint} that restarts when it reaches the end.
+ *
+ * The iterator will loop continuously around the provided elements, unless there are no elements
+ * in the collection to begin with.
  */
 class EndpointIterator implements Iterator<Endpoint> {
 
   private final List<Endpoint> endpoints;
-  private final int numEndpoints;
-  private final Map<URI, Integer> numIps;
-  private int endpointCursor;
-  private int ipCursor;
+  private final int size;
+  private int cursor;
 
   private EndpointIterator(final List<Endpoint> endpoints) {
-    this.endpoints = endpoints;
-    this.numEndpoints = endpoints.size();
-
-    // Calculate the number of IPs for each endpoint once here so we don't have to do it in every
-    // call to hasNextIp().
-    final ImmutableMap.Builder<URI, Integer> builder = ImmutableMap.builder();
-    for (final Endpoint e : endpoints) {
-      builder.put(e.getUri(), e.getIps().size());
+    checkNotNull(endpoints);
+    if (endpoints.size() == 0) {
+      throw new IllegalArgumentException("List of Endpoints cannot be empty.");
     }
-    numIps = builder.build();
 
-    this.endpointCursor = 0;
-    this.ipCursor = 0;
+    this.endpoints = endpoints;
+    this.size = endpoints.size();
+    this.cursor = 0;
   }
 
   static EndpointIterator of(final List<Endpoint> endpoints) {
@@ -63,28 +51,18 @@ class EndpointIterator implements Iterator<Endpoint> {
 
   @Override
   public boolean hasNext() {
-    return endpointCursor < numEndpoints;
-  }
-
-  public boolean hasNextIp() {
-    return numEndpoints > 0 && ipCursor < numIps.get(endpoints.get(endpointCursor).getUri());
+    return size > 0;
   }
 
   @Override
   public Endpoint next() {
-    if (!this.hasNext()) {
-      throw new NoSuchElementException();
-    } else {
-      return endpoints.get(ipCursor++);
-    }
+    return cursor < size ?
+           endpoints.get(cursor++) :
+           endpoints.get(cursor = 0);
   }
 
-  public InetAddress nextIp() {
-    if (!this.hasNextIp()) {
-      throw new NoSuchElementException();
-    } else {
-      return endpoints.get(endpointCursor).getIps().get(ipCursor++);
-    }
+  public int size() {
+    return size;
   }
 
   @Override
