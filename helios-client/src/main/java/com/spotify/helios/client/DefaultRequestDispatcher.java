@@ -64,7 +64,6 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.lang.System.currentTimeMillis;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -74,16 +73,15 @@ class DefaultRequestDispatcher implements RequestDispatcher {
 
   private static final Logger log = LoggerFactory.getLogger(DefaultRequestDispatcher.class);
 
-  private static final long RETRY_TIMEOUT_MILLIS = SECONDS.toMillis(60);
   private static final long HTTP_TIMEOUT_MILLIS = SECONDS.toMillis(10);
 
   private final Iterator<Endpoint> endpointIterator;
   private final ListeningExecutorService executorService;
   private final String user;
 
-  public DefaultRequestDispatcher(final Supplier<List<Endpoint>> endpointSupplier,
-                                  final String user,
-                                  final ListeningExecutorService executorService) {
+  DefaultRequestDispatcher(final Supplier<List<Endpoint>> endpointSupplier,
+                           final String user,
+                           final ListeningExecutorService executorService) {
     endpointIterator = EndpointIterator.of(endpointSupplier.get());
     this.executorService = executorService;
     this.user = user;
@@ -163,9 +161,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
                                     final Map<String, List<String>> headers)
       throws URISyntaxException, IOException, TimeoutException, InterruptedException,
              HeliosException {
-    final long deadline = currentTimeMillis() + RETRY_TIMEOUT_MILLIS;
 
-    while (currentTimeMillis() < deadline) {
       final Endpoint endpoint = endpointIterator.next();
       final URI endpointUri = endpoint.getUri();
       final String fullpath = endpointUri.getPath() + uri.getPath();
@@ -217,8 +213,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
             // UnknownHostException's getMessage method returns just the hostname which is a
             // useless message, so log the exception class name to provide more info.
             log.debug(e.toString());
-            // Connecting failed, sleep a bit to avoid hammering and then try another endpoint
-            Thread.sleep(200);
+            throw e;
           }
         } while (false);
       } finally {
@@ -226,10 +221,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
           agentProxy.close();
         }
       }
-      log.warn("Failed to connect, retrying in 5 seconds.");
-      Thread.sleep(5000);
-    }
-    throw new TimeoutException("Timed out connecting to master");
+    throw new HeliosException("foo");
   }
 
   private HttpURLConnection connect0(final URI ipUri, final String method, final byte[] entity,

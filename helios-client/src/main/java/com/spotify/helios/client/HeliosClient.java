@@ -73,7 +73,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -81,7 +81,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.Futures.withFallback;
-import static com.google.common.util.concurrent.MoreExecutors.getExitingExecutorService;
+import static com.google.common.util.concurrent.MoreExecutors.getExitingScheduledExecutorService;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.lang.String.format;
@@ -92,7 +92,7 @@ import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.Executors.newFixedThreadPool;
+import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class HeliosClient implements AutoCloseable {
@@ -534,10 +534,10 @@ public class HeliosClient implements AutoCloseable {
     }
 
     public HeliosClient build() {
-      return new HeliosClient(user, new DefaultRequestDispatcher(
+      return new HeliosClient(user, new RetryingRequestDispatcher(
           endpointSupplier, user,
-          MoreExecutors.listeningDecorator(getExitingExecutorService(
-              (ThreadPoolExecutor) newFixedThreadPool(4), 0, SECONDS))));
+          MoreExecutors.listeningDecorator(getExitingScheduledExecutorService(
+              (ScheduledThreadPoolExecutor) newScheduledThreadPool(4), 0, SECONDS))));
     }
   }
 

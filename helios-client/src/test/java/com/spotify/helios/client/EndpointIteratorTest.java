@@ -64,8 +64,8 @@ public class EndpointIteratorTest {
   public void setup() throws Exception {
     when(RESOLVER.resolve("example.com")).thenReturn(IPS_1);
     when(RESOLVER.resolve("example.net")).thenReturn(IPS_2);
-    uri1 = new URI("http://example.com");
-    uri2 = new URI("https://example.net");
+    uri1 = new URI("http://example.com:80");
+    uri2 = new URI("https://example.net:8080");
     final List<URI> uris = ImmutableList.of(uri1, uri2);
     endpoints = Endpoints.of(uris, RESOLVER);
   }
