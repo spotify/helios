@@ -18,7 +18,7 @@
 package com.spotify.helios.client;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
 
 import org.apache.http.conn.DnsResolver;
@@ -30,9 +30,11 @@ import org.junit.rules.ExpectedException;
 import java.net.InetAddress;
 import java.net.URI;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
 
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -70,26 +72,28 @@ public class EndpointIteratorTest {
 
   @Test
   public void test() throws Exception {
-    final EndpointIterator iterator = EndpointIterator.of(endpoints);
+    final Iterator<Endpoint> iterator = EndpointIterator.of(endpoints);
 
-    final List<URI> uris = Lists.newArrayList();
-    final List<InetAddress> ips = Lists.newArrayList();
-    for (int i = 0; i < iterator.size(); i++) {
+    final Set<URI> uris = Sets.newHashSet();
+    final Set<InetAddress> ips = Sets.newHashSet();
+    // Iterate 10 times and check we only have 2 unique URIs and 4 unique IPs
+    for (int i = 0; i < 10; i++) {
       final Endpoint e = iterator.next();
       uris.add(e.getUri());
       ips.add(e.getIp());
     }
 
-    assertEquals(uris.size(), 4);
+    assertEquals(uris.size(), 2);
     assertEquals(ips.size(), 4);
-    assertThat(uris, containsInAnyOrder(uri1, uri1, uri2, uri2));
+    assertThat(uris, containsInAnyOrder(uri1, uri2));
     assertThat(ips, containsInAnyOrder(IP_A, IP_B, IP_C, IP_D));
   }
 
   @Test
   public void testEmptyIterator() throws Exception {
-    final EndpointIterator iterator = EndpointIterator.of(Collections.<Endpoint>emptyList());
-    assertThat(iterator.size(), equalTo(0));
+    final Iterator<Endpoint> iterator = EndpointIterator.of(Collections.<Endpoint>emptyList());
     assertFalse(iterator.hasNext());
+    exception.expect(NoSuchElementException.class);
+    iterator.next();
   }
 }

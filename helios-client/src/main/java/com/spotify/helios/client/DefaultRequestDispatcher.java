@@ -52,6 +52,7 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Deque;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -80,7 +81,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   private static final String VALID_PROTOCOLS_STR =
       String.format("[%s]", Joiner.on("|").join(VALID_PROTOCOLS));
 
-  private final EndpointIterator endpointIterator;
+  private final Iterator<Endpoint> endpointIterator;
   private final ListeningExecutorService executorService;
   private final String user;
 
@@ -167,7 +168,6 @@ class DefaultRequestDispatcher implements RequestDispatcher {
       throws URISyntaxException, IOException, TimeoutException, InterruptedException,
              HeliosException {
     final long deadline = currentTimeMillis() + RETRY_TIMEOUT_MILLIS;
-    endpointIterator.randomizeCursor();
 
     while (currentTimeMillis() < deadline) {
       final Endpoint endpoint = endpointIterator.next();

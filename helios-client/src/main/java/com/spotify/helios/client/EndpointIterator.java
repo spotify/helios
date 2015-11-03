@@ -19,7 +19,8 @@ package com.spotify.helios.client;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.NoSuchElementException;
+import java.util.Random;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -37,11 +38,14 @@ class EndpointIterator implements Iterator<Endpoint> {
 
   private EndpointIterator(final List<Endpoint> endpoints) {
     this.endpoints = checkNotNull(endpoints);
-    this.size = endpoints.size();
-    this.cursor = 0;
+    size = endpoints.size();
+    // Set the cursor to a random location within the backing list.
+    // TODO (dxia) It'd be nice to enforce the backing list to not be empty.
+    // But this breaks an existing test.
+    cursor = size == 0 ? 0 : new Random().nextInt(size);
   }
 
-  static EndpointIterator of(final List<Endpoint> endpoints) {
+  static Iterator<Endpoint> of(final List<Endpoint> endpoints) {
     return new EndpointIterator(endpoints);
   }
 
@@ -52,25 +56,11 @@ class EndpointIterator implements Iterator<Endpoint> {
 
   @Override
   public Endpoint next() {
-    return cursor < size ?
-           endpoints.get(cursor++) :
-           endpoints.get(cursor = 0);
-  }
+    if (size == 0) {
+      throw new NoSuchElementException();
+    }
 
-  /**
-   * Return the size of the list that backs this iterator.
-   * @return int representing the size of the backing list.
-   */
-  public int size() {
-    return size;
-  }
-
-  /**
-   * Set the cursor to a random location within the backing list.
-   */
-  public void randomizeCursor() {
-    final int offset = ThreadLocalRandom.current().nextInt();
-    cursor = positive(offset) % endpoints.size();
+    return cursor < size ? endpoints.get(cursor++) : endpoints.get(cursor = 0);
   }
 
   private int positive(final int value) {
