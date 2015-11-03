@@ -24,7 +24,9 @@ import com.google.common.net.InetAddresses;
 
 import org.apache.http.conn.DnsResolver;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.net.InetAddress;
 import java.net.URI;
@@ -50,10 +52,13 @@ public class EndpointsTest {
   private static URI uri2;
   private static List<URI> uris;
 
+  @Rule
+  public final ExpectedException exception = ExpectedException.none();
+
   @Before
   public void setup() throws Exception {
-    uri1 = new URI("http://example.com");
-    uri2 = new URI("https://example.net");
+    uri1 = new URI("http://example.com:80");
+    uri2 = new URI("https://example.net:8080");
     uris = ImmutableList.of(uri1, uri2);
   }
 
@@ -103,5 +108,21 @@ public class EndpointsTest {
     final List<Endpoint> endpoints = Endpoints.of(uris, resolver);
 
     assertThat(endpoints.size(), equalTo(0));
+  }
+
+  @Test
+  public void testInvalidUri_NoScheme() throws Exception {
+    final DnsResolver resolver = mock(DnsResolver.class);
+    when(resolver.resolve("example.com")).thenReturn(IPS_1);
+    exception.expect(IllegalArgumentException.class);
+    Endpoints.of(ImmutableList.of(new URI(null, "example.com", null, null)), resolver);
+  }
+
+  @Test
+  public void testInvalidUri_NoPort() throws Exception {
+    final DnsResolver resolver = mock(DnsResolver.class);
+    when(resolver.resolve("example.com")).thenReturn(IPS_1);
+    exception.expect(IllegalArgumentException.class);
+    Endpoints.of(ImmutableList.of(new URI("http", "example.com", null, null)), resolver);
   }
 }

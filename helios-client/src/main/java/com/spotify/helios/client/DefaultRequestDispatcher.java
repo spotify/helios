@@ -20,7 +20,6 @@ package com.spotify.helios.client;
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -77,9 +76,6 @@ class DefaultRequestDispatcher implements RequestDispatcher {
 
   private static final long RETRY_TIMEOUT_MILLIS = SECONDS.toMillis(60);
   private static final long HTTP_TIMEOUT_MILLIS = SECONDS.toMillis(10);
-  private static final List<String> VALID_PROTOCOLS = ImmutableList.of("http", "https");
-  private static final String VALID_PROTOCOLS_STR =
-      String.format("[%s]", Joiner.on("|").join(VALID_PROTOCOLS));
 
   private final Iterator<Endpoint> endpointIterator;
   private final ListeningExecutorService executorService;
@@ -174,23 +170,16 @@ class DefaultRequestDispatcher implements RequestDispatcher {
       final URI endpointUri = endpoint.getUri();
       final String fullpath = endpointUri.getPath() + uri.getPath();
 
-      final String scheme = endpointUri.getScheme();
-      final String host = endpointUri.getHost();
-      final int port = endpointUri.getPort();
-      if (!VALID_PROTOCOLS.contains(scheme) || host == null || port == -1) {
-        throw new HeliosException(String.format(
-            "Master endpoints must be of the form \"%s://heliosmaster.domain.net:<port>\"",
-            VALID_PROTOCOLS_STR));
-      }
+      final String uriScheme = endpointUri.getScheme();
 
       final URI ipUri = new URI(
-          scheme, endpointUri.getUserInfo(), endpoint.getIp().getHostAddress(),
-          port, fullpath, uri.getQuery(), null);
+          uriScheme, endpointUri.getUserInfo(), endpoint.getIp().getHostAddress(),
+          endpointUri.getPort(), fullpath, uri.getQuery(), null);
 
       AgentProxy agentProxy = null;
       Deque<Identity> identities = Queues.newArrayDeque();
       try {
-        if (scheme.equals("https")) {
+        if (uriScheme.equals("https")) {
           agentProxy = AgentProxies.newInstance();
           for (final Identity identity : agentProxy.list()) {
             if (identity.getPublicKey().getAlgorithm().equals("RSA")) {

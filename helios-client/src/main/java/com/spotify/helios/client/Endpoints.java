@@ -17,6 +17,7 @@
 
 package com.spotify.helios.client;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -30,6 +31,8 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A class that provides static factory methods for {@link Endpoint}.
@@ -100,12 +103,25 @@ public class Endpoints {
 
   private static class DefaultEndpoint implements Endpoint {
 
+    private static final List<String> VALID_PROTOCOLS = ImmutableList.of("http", "https");
+    private static final String VALID_PROTOCOLS_STR =
+        String.format("[%s]", Joiner.on("|").join(VALID_PROTOCOLS));
+
     private final InetAddress ip;
     private final URI uri;
 
     DefaultEndpoint(final URI uri, final InetAddress ip) {
-      this.uri = uri;
-      this.ip = ip;
+      this.uri = checkNotNull(uri);
+      this.ip = checkNotNull(ip);
+
+      final String scheme = this.uri.getScheme();
+      final String host = this.uri.getHost();
+      final int port = this.uri.getPort();
+      if (!VALID_PROTOCOLS.contains(scheme) || host == null || port == -1) {
+        throw new IllegalArgumentException(String.format(
+            "Master endpoints must be of the form \"%s://heliosmaster.domain.net:<port>\"",
+            VALID_PROTOCOLS_STR));
+      }
     }
 
     @Override
