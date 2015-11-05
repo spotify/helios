@@ -47,7 +47,7 @@ class EndpointIterator implements Iterator<Endpoint> {
     cursor = size == 0 ? 0 : new Random().nextInt(size);
   }
 
-  static Iterator<Endpoint> of(final List<Endpoint> endpoints) {
+  static EndpointIterator of(final List<Endpoint> endpoints) {
     return new EndpointIterator(endpoints);
   }
 

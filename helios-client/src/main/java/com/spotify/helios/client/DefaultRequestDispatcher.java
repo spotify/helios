@@ -50,7 +50,6 @@ import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Deque;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -74,7 +73,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
 
   private static final long HTTP_TIMEOUT_MILLIS = SECONDS.toMillis(10);
 
-  private final Iterator<Endpoint> endpointIterator;
+  private final EndpointIterator endpointIterator;
   private final ListeningExecutorService executorService;
   private final String user;
 
