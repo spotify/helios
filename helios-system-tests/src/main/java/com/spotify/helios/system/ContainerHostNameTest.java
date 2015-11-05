@@ -27,8 +27,8 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDERR;
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
+import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
+import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
@@ -63,7 +63,8 @@ public class ContainerHostNameTest extends SystemTestBase {
       final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
       final String log;
-      try (final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {
+      try (final LogStream logs = dockerClient.logs(
+          taskStatus.getContainerId(), stdout(), stderr())) {
         log = logs.readFully();
       }
 
