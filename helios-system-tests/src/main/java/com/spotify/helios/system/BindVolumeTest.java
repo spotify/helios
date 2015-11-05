@@ -28,8 +28,8 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDERR;
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
+import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
+import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -58,7 +58,7 @@ public class BindVolumeTest extends SystemTestBase {
 
       {
         final String log;
-        try (LogStream logs = docker.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {
+        try (LogStream logs = docker.logs(taskStatus.getContainerId(), stdout(), stderr())) {
           log = logs.readFully();
         }
 
