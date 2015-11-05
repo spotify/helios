@@ -19,6 +19,9 @@ package com.spotify.helios.agent;
 
 import com.google.common.collect.Queues;
 
+import com.spotify.helios.common.Clock;
+import com.spotify.helios.common.SystemClock;
+
 import java.util.Deque;
 
 import static com.google.common.base.Preconditions.checkNotNull;

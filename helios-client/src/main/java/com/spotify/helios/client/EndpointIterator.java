@@ -17,6 +17,8 @@
 
 package com.spotify.helios.client;
 
+import com.google.common.collect.ImmutableList;
+
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
@@ -37,8 +39,8 @@ class EndpointIterator implements Iterator<Endpoint> {
   private int cursor;
 
   private EndpointIterator(final List<Endpoint> endpoints) {
-    this.endpoints = checkNotNull(endpoints);
-    size = endpoints.size();
+    this.endpoints = ImmutableList.copyOf(checkNotNull(endpoints));
+    size = this.endpoints.size();
     // Set the cursor to a random location within the backing list.
     // TODO (dxia) It'd be nice to enforce the backing list to not be empty.
     // But this breaks an existing test.
@@ -61,10 +63,6 @@ class EndpointIterator implements Iterator<Endpoint> {
     }
 
     return cursor < size ? endpoints.get(cursor++) : endpoints.get(cursor = 0);
-  }
-
-  private int positive(final int value) {
-    return value < 0 ? value + Integer.MAX_VALUE : value;
   }
 
   @Override

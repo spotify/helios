@@ -119,7 +119,7 @@ public class Endpoints {
       final int port = this.uri.getPort();
       if (!VALID_PROTOCOLS.contains(scheme) || host == null || port == -1) {
         throw new IllegalArgumentException(String.format(
-            "Master endpoints must be of the form \"%s://heliosmaster.domain.net:<port>\"",
+            "Master endpoints must be of the form \"%s://<hostname>:<port>\"",
             VALID_PROTOCOLS_STR));
       }
     }

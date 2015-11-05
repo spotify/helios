@@ -17,8 +17,6 @@
 
 package com.spotify.helios.client;
 
-import com.google.common.base.Predicate;
-import com.google.common.base.Predicates;
 import com.google.common.base.Supplier;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
@@ -58,10 +56,10 @@ class RetryingRequestDispatcher implements RequestDispatcher {
   private final long delay;
   private final TimeUnit delayTimeUnit;
 
-  RetryingRequestDispatcher(final Supplier<List<Endpoint>> endpointSupplier,
+  RetryingRequestDispatcher(final List<Endpoint> endpoints,
                             final String user,
                             final ListeningScheduledExecutorService executorService) {
-    this(new DefaultRequestDispatcher(endpointSupplier, user, executorService), executorService,
+    this(new DefaultRequestDispatcher(endpoints, user, executorService), executorService,
          new SystemClock(), DEFAULT_DELAY, DEFAULT_DELAY_TIMEUNIT);
   }
 
@@ -90,7 +88,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
         return delegate.request(uri, method, entityBytes, headers);
       }
     };
-    startRetry(future, code, deadline, delay, delayTimeUnit, Predicates.<Response>alwaysTrue());
+    startRetry(future, code, deadline, delay, delayTimeUnit);
     return future;
   }
 
@@ -103,33 +101,27 @@ class RetryingRequestDispatcher implements RequestDispatcher {
                           final Supplier<ListenableFuture<Response>> code,
                           final long deadline,
                           final long delay,
-                          final TimeUnit timeUnit,
-                          final Predicate<Response> retryCondition) {
+                          final TimeUnit timeUnit) {
 
     ListenableFuture<Response> codeFuture;
     try {
       codeFuture = code.get();
     } catch (Exception e) {
-      handleFailure(future, code, deadline, delay, timeUnit, retryCondition, e);
+      handleFailure(future, code, deadline, delay, timeUnit, e);
       return;
     }
 
     Futures.addCallback(codeFuture, new FutureCallback<Response>() {
       @Override
       public void onSuccess(Response result) {
-        if (retryCondition.apply(result)) {
-          future.set(result);
-        } else {
-          RuntimeException exception = new RuntimeException("Failed retry condition");
-          handleFailure(future, code, deadline, delay, timeUnit, retryCondition, exception);
-        }
+        future.set(result);
       }
 
       @Override
       public void onFailure(@NotNull Throwable t) {
         log.warn("Failed to connect, retrying in {} seconds.",
                  timeUnit.convert(delay, TimeUnit.SECONDS));
-        handleFailure(future, code, deadline, delay, timeUnit, retryCondition, t);
+        handleFailure(future, code, deadline, delay, timeUnit, t);
       }
     });
   }
@@ -139,18 +131,17 @@ class RetryingRequestDispatcher implements RequestDispatcher {
                                  final long deadline,
                                  final long delay,
                                  final TimeUnit timeUnit,
-                                 final Predicate<Response> retryCondition,
                                  final Throwable t) {
     if (clock.now().getMillis() < deadline) {
       if (delay > 0) {
         executorService.schedule(new Runnable() {
           @Override
           public void run() {
-            startRetry(future, code, deadline - 1, delay, timeUnit, retryCondition);
+            startRetry(future, code, deadline - 1, delay, timeUnit);
           }
         }, delay, timeUnit);
       } else {
-        startRetry(future, code, deadline - 1, delay, timeUnit, retryCondition);
+        startRetry(future, code, deadline - 1, delay, timeUnit);
       }
     } else {
       future.setException(t);

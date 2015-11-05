@@ -18,7 +18,6 @@
 package com.spotify.helios.client;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
@@ -79,10 +78,10 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   private final ListeningExecutorService executorService;
   private final String user;
 
-  DefaultRequestDispatcher(final Supplier<List<Endpoint>> endpointSupplier,
+  DefaultRequestDispatcher(final List<Endpoint> endpoints,
                            final String user,
                            final ListeningExecutorService executorService) {
-    endpointIterator = EndpointIterator.of(endpointSupplier.get());
+    endpointIterator = EndpointIterator.of(endpoints);
     this.executorService = executorService;
     this.user = user;
   }
@@ -221,7 +220,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
           agentProxy.close();
         }
       }
-    throw new HeliosException("foo");
+    throw new HeliosException("Unable to connect to master");
   }
 
   private HttpURLConnection connect0(final URI ipUri, final String method, final byte[] entity,

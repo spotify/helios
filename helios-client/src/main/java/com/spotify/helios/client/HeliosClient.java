@@ -535,7 +535,7 @@ public class HeliosClient implements AutoCloseable {
 
     public HeliosClient build() {
       return new HeliosClient(user, new RetryingRequestDispatcher(
-          endpointSupplier, user,
+          endpointSupplier.get(), user,
           MoreExecutors.listeningDecorator(getExitingScheduledExecutorService(
               (ScheduledThreadPoolExecutor) newScheduledThreadPool(4), 0, SECONDS))));
     }
