@@ -29,7 +29,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import org.junit.Before;
 import org.junit.Test;
 
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
+import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
@@ -82,7 +82,7 @@ public class TerminationTest extends SystemTestBase {
 
     final String log;
     try (final DockerClient dockerClient = getNewDockerClient();
-         LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT)) {
+         LogStream logs = dockerClient.logs(taskStatus.getContainerId(), stdout())) {
       log = logs.readFully();
     }
 
@@ -122,7 +122,7 @@ public class TerminationTest extends SystemTestBase {
 
     final String log;
     try (final DockerClient dockerClient = getNewDockerClient();
-         LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT)) {
+         LogStream logs = dockerClient.logs(taskStatus.getContainerId(), stdout())) {
       log = logs.readFully();
     }
 

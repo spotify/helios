@@ -36,8 +36,8 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.Callable;
 
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDERR;
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
+import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
+import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
@@ -155,7 +155,7 @@ public class MultiplePortJobTest extends SystemTestBase {
       final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
       final String log;
-      try (final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {
+      try (final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), stdout(), stderr())) {
         log = logs.readFully();
       }
       assertEquals(testHost() + ":" + externalPort1, log.trim());
