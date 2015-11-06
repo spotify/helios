@@ -25,8 +25,8 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.junit.Test;
 
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDERR;
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
+import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
+import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
@@ -51,7 +51,7 @@ public class DnsServerTest extends SystemTestBase {
 
     final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
     try (final DockerClient dockerClient = getNewDockerClient()) {
-      final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
+      final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), stdout(), stderr());
       final String log = logs.readFully();
 
       assertThat(log, containsString(server1));
@@ -72,7 +72,7 @@ public class DnsServerTest extends SystemTestBase {
 
     final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
     try (final DockerClient dockerClient = getNewDockerClient()) {
-      final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
+      final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), stdout(), stderr());
       final String log = logs.readFully();
 
       // Verify that a nameserver is set even if we don't specify the --dns param

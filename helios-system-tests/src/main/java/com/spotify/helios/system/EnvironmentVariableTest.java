@@ -34,8 +34,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDERR;
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
+import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
+import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
@@ -84,7 +84,7 @@ public class EnvironmentVariableTest extends SystemTestBase {
 
       final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
-      final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), STDOUT, STDERR);
+      final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), stdout(), stderr());
       final String log = logs.readFully();
 
       assertThat(log, containsString("pod: PODNAME"));

@@ -41,8 +41,8 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDERR;
-import static com.spotify.docker.client.DockerClient.LogsParameter.STDOUT;
+import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
+import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.Arrays.asList;
@@ -84,7 +84,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
       docker.waitContainer(containerId);
 
       final String log;
-      try (LogStream logs = docker.logs(containerId, STDOUT, STDERR)) {
+      try (LogStream logs = docker.logs(containerId, stdout(), stderr())) {
         log = logs.readFully();
       }
 
@@ -154,7 +154,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
       // Verify the log for the task container
       {
         final String log;
-        try (LogStream logs = docker.logs(taskStatus.getContainerId(), STDOUT, STDERR)) {
+        try (LogStream logs = docker.logs(taskStatus.getContainerId(), stdout(), stderr())) {
           log = logs.readFully();
         }
 
@@ -165,7 +165,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
       // Verify the log for the syslog container
       {
         final String log;
-        try (LogStream logs = docker.logs(syslogContainerId, STDOUT, STDERR)) {
+        try (LogStream logs = docker.logs(syslogContainerId, stdout(), stderr())) {
           log = logs.readFully();
         }
 
