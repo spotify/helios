@@ -54,7 +54,7 @@ available.
 
 Other components are that are required for a helios installation are:
 
-* [Docker 1.0](https://github.com/dotcloud/docker) or newer
+* [Docker 1.0](https://github.com/docker/docker) or newer
 * [Zookeeper 3.4.0](https://zookeeper.apache.org/) or newer
 
 
@@ -65,7 +65,7 @@ Install & Run
 Use [helios-solo](https://github.com/spotify/helios/blob/master/docs/helios_solo.md)
 to launch a local environment with a Helios master and agent.
 
-First, ensure you have [Docker installed locally](https://docs.docker.com/installation/).
+First, ensure you have [Docker installed locally](http://docs.docker.com/engine/installation/).
 Test this by making sure `docker info` works. Then install helios-solo:
 
 ```bash
@@ -255,7 +255,7 @@ Interactions with ZooKeeper for the agent and master are mainly in [ZookeeperAge
 and [ZooKeeperMasterModel.java](helios-services/src/main/java/com/spotify/helios/master/ZooKeeperMasterModel.java),
 respectively.
 
-The Helios services use [Dropwizard](http://dropwizard.io) which is a
+The Helios services use [Dropwizard](http://www.dropwizard.io/) which is a
 bundle of Jetty, Jersey, Jackson, Yammer Metrics, Guava, Logback and
 other Java libraries.
 
