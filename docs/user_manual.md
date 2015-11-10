@@ -56,7 +56,7 @@ If you have multiple masters, you can [setup automatic master lookup](automatic_
 
 **Note:** that the rest of this manual uses the `helios` command without specifying either the `-z` or `-d` flag. This is only for simplicity, though you can emulate this behavior by aliasing the `helios` command. For example:
 
-    alias helios=helios -z http://localhost:5801
+    alias helios='helios -z http://localhost:5801'
 
 This will save you from having to type the `-z` flag over and over again.
 
