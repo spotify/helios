@@ -47,6 +47,7 @@ import com.spotify.helios.common.descriptors.RolloutTask;
 import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.rollingupdate.DefaultRolloutPlanner;
 import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory;
 import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason;
@@ -658,6 +659,17 @@ public class ZooKeeperMasterModel implements MasterModel {
         metadata.put("jobState", taskStatus.getState());
         metadata.put("previousJobStates", previousJobStates);
         metadata.put("throttleState", taskStatus.getThrottled());
+
+        if (taskStatus.getThrottled().equals(ThrottleState.IMAGE_MISSING)) {
+          return opFactory.error("timed out waiting for job to reach RUNNING due to missing Docker image", host,
+                                 RollingUpdateError.IMAGE_MISSING,
+                                 metadata);
+        }
+        if (taskStatus.getThrottled().equals(ThrottleState.IMAGE_PULL_FAILED)) {
+          return opFactory.error("timed out waiting for job to reach RUNNING due to failure pulling Docker image", host,
+                                 RollingUpdateError.IMAGE_PULL_FAILED,
+                                 metadata);
+        }
         return opFactory.error("timed out waiting for job to reach RUNNING", host,
                                RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
                                metadata);
