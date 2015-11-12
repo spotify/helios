@@ -18,6 +18,7 @@
 package com.spotify.helios.master;
 
 import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -622,6 +623,51 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  private RollingUpdateOp rollingUpdateTimedoutError(final RollingUpdateOpFactory opFactory,
+                                                     final String host,
+                                                     final JobId jobId,
+                                                     final TaskStatus taskStatus) {
+    final List<TaskStatus.State> previousJobStates = getPreviousJobStates(jobId, host, 10);
+    final String previousJobStatesString = Joiner.on("->").join(previousJobStates);
+
+    final Map<String, Object> metadata = Maps.newHashMap();
+    metadata.put("jobState", taskStatus.getState());
+    metadata.put("previousJobStates", previousJobStates);
+    metadata.put("throttleState", taskStatus.getThrottled());
+
+    if (taskStatus.getThrottled().equals(ThrottleState.IMAGE_MISSING)) {
+      return opFactory.error(
+              "timed out waiting for job to reach RUNNING due to missing Docker image " +
+                      String.format("(previous job states: %s)", previousJobStatesString),
+              host,
+              RollingUpdateError.IMAGE_MISSING,
+              metadata);
+    }
+    if (taskStatus.getThrottled().equals(ThrottleState.IMAGE_PULL_FAILED)) {
+      return opFactory.error(
+              "timed out waiting for job to reach RUNNING due to failure pulling Docker image " +
+                      String.format("(previous job states: %s)", previousJobStatesString),
+              host,
+              RollingUpdateError.IMAGE_PULL_FAILED,
+              metadata);
+    }
+    if (taskStatus.getState().equals(TaskStatus.State.HEALTHCHECKING)) {
+      return opFactory.error(
+              "timed out during health checks waiting for job to reach RUNNING " +
+                      String.format("(previous job states: %s)", previousJobStatesString),
+              host,
+              RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
+              metadata);
+    }
+    return opFactory.error(
+            "timed out waiting for job to reach RUNNING " +
+                    String.format("(previous job states: %s)", previousJobStatesString),
+            host,
+            RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
+            metadata);
+
+  }
+
   private RollingUpdateOp rollingUpdateAwaitRunning(final ZooKeeperClient client,
                                                     final RollingUpdateOpFactory opFactory,
                                                     final DeploymentGroup deploymentGroup,
@@ -654,25 +700,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       if (isRolloutTimedOut(client, deploymentGroup)) {
         // We exceeded the configured deploy timeout, and this job is still not running
-        final List<TaskStatus.State> previousJobStates = getPreviousJobStates(jobId, host, 10);
-        final Map<String, Object> metadata = Maps.newHashMap();
-        metadata.put("jobState", taskStatus.getState());
-        metadata.put("previousJobStates", previousJobStates);
-        metadata.put("throttleState", taskStatus.getThrottled());
-
-        if (taskStatus.getThrottled().equals(ThrottleState.IMAGE_MISSING)) {
-          return opFactory.error("timed out waiting for job to reach RUNNING due to missing Docker image", host,
-                                 RollingUpdateError.IMAGE_MISSING,
-                                 metadata);
-        }
-        if (taskStatus.getThrottled().equals(ThrottleState.IMAGE_PULL_FAILED)) {
-          return opFactory.error("timed out waiting for job to reach RUNNING due to failure pulling Docker image", host,
-                                 RollingUpdateError.IMAGE_PULL_FAILED,
-                                 metadata);
-        }
-        return opFactory.error("timed out waiting for job to reach RUNNING", host,
-                               RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
-                               metadata);
+        return rollingUpdateTimedoutError(opFactory, host, jobId, taskStatus);
       }
 
       return opFactory.yield();
