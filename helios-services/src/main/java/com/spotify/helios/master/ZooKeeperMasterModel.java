@@ -1656,7 +1656,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       final List<TaskStatusEvent> jobHistory = getJobHistory(jobId, host);
       final List<TaskStatusEvent> cappedJobHistory = jobHistory.subList(
-          0, Math.min(maxStates, jobHistory.size()));
+          0, Math.max(Math.min(maxStates, jobHistory.size() - 1), 0));
       Function<TaskStatusEvent, TaskStatus.State> statusesToStrings =
           new Function<TaskStatusEvent, TaskStatus.State>() {
             @Override
