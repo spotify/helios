@@ -145,7 +145,9 @@ public class ZooKeeperRegistrarServiceTest {
 
       @Override
       public void tryToRegister(ZooKeeperClient client) throws KeeperException {
-        if (counter.incrementAndGet() == 1) { throw new KeeperException.ConnectionLossException(); }
+        if (counter.incrementAndGet() == 1) {
+          throw new KeeperException.ConnectionLossException();
+        }
 
         complete.set(null);
       }

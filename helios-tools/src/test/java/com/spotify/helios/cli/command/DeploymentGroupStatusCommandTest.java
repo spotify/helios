@@ -201,7 +201,8 @@ public class DeploymentGroupStatusCommandTest {
 
   @Test
   public void testDeploymentGroupNotFound() throws Exception {
-    final ListenableFuture<DeploymentGroupStatusResponse> nullFuture = Futures.immediateFuture(null);
+    final ListenableFuture<DeploymentGroupStatusResponse> nullFuture =
+        Futures.immediateFuture(null);
     when(client.deploymentGroupStatus(anyString())).thenReturn(nullFuture);
 
     final String name = "non-existent-group";
@@ -241,7 +242,8 @@ public class DeploymentGroupStatusCommandTest {
 
   @Test
   public void testDeploymentGroupNotFoundJson() throws Exception {
-    final ListenableFuture<DeploymentGroupStatusResponse> nullFuture = Futures.immediateFuture(null);
+    final ListenableFuture<DeploymentGroupStatusResponse> nullFuture =
+        Futures.immediateFuture(null);
     when(client.deploymentGroupStatus(anyString())).thenReturn(nullFuture);
 
     final String name = "non-existent-group";

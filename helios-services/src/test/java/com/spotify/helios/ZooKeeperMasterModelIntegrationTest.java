@@ -94,7 +94,8 @@ public class ZooKeeperMasterModelIntegrationTest {
     curator.start();
     client = new DefaultZooKeeperClient(curator);
 
-    // TODO (dano): this bootstrapping is essentially duplicated from MasterService, should be moved into ZooKeeperMasterModel?
+    // TODO (dano): this bootstrapping is essentially duplicated from MasterService,
+    // should be moved into ZooKeeperMasterModel?
     client.ensurePath(Paths.configHosts());
     client.ensurePath(Paths.configJobs());
     client.ensurePath(Paths.configJobRefs());

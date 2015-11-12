@@ -95,7 +95,8 @@ public class JobCreateCommandTest {
 
     command = new JobCreateCommand(subparser, envVarSupplier);
 
-    when(client.createJob(jobWhoseNameIs(JOB_NAME))).thenReturn(Futures.immediateFuture(okResponse));
+    when(client.createJob(jobWhoseNameIs(JOB_NAME))).thenReturn(
+        Futures.immediateFuture(okResponse));
   }
 
   @Test
@@ -123,7 +124,8 @@ public class JobCreateCommandTest {
     assertThat(output, containsString("\"metadata\":{\"a\":\"1\",\"b\":\"2\"},"));
     assertThat(output, containsString("\"gracePeriod\":100"));
     assertThat(output, containsString(
-        "\"healthCheck\":{\"type\":\"exec\",\"command\":[\"touch\",\"/this\"],\"type\":\"exec\"},"));
+        "\"healthCheck\":{\"type\":\"exec\","
+        + "\"command\":[\"touch\",\"/this\"],\"type\":\"exec\"},"));
     assertThat(output, containsString("\"securityOpt\":[\"label:user:dxia\",\"apparmor:foo\"]"));
     assertThat(output, containsString("\"networkMode\":\"host\""));
     assertThat(output, containsString("\"expires\":null"));
@@ -150,7 +152,7 @@ public class JobCreateCommandTest {
     assertThat(output, containsString("\"errors\":[\"Invalid port mapping protocol: http\"]"));
   }
 
-  @Test(expected=IllegalArgumentException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testJobCreateCommandFailsWithInvalidFilePath() throws Exception {
     when(options.getString("id")).thenReturn(JOB_ID);
     when(options.getString("image")).thenReturn("busybox:latest");

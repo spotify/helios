@@ -82,7 +82,8 @@ public class DefaultDeployerTest {
 
   @Test
   public void testFailsOnAllDown() throws Exception {
-    final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "", TIMEOUT);
+    final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "",
+                                                    TIMEOUT);
     
     // hosta is down, hostb is down too. 
     when(client.hostStatus(HOSTA)).thenReturn(DOWN_STATUS);

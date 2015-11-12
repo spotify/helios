@@ -79,9 +79,12 @@ public class HostListCommandTest {
   private static final JobId JOB_ID2 = new JobId(JOB_NAME, JOB_VERSION2);
   private static final JobId JOB_ID3 = new JobId(JOB_NAME, JOB_VERSION3);
 
-  private static final Job JOB1 = Job.newBuilder().setName(JOB_NAME).setVersion(JOB_VERSION1).build();
-  private static final Job JOB2 = Job.newBuilder().setName(JOB_NAME).setVersion(JOB_VERSION2).build();
-  private static final Job JOB3 = Job.newBuilder().setName(JOB_NAME).setVersion(JOB_VERSION3).build();
+  private static final Job JOB1 =
+      Job.newBuilder().setName(JOB_NAME).setVersion(JOB_VERSION1).build();
+  private static final Job JOB2 =
+      Job.newBuilder().setName(JOB_NAME).setVersion(JOB_VERSION2).build();
+  private static final Job JOB3 =
+      Job.newBuilder().setName(JOB_NAME).setVersion(JOB_VERSION3).build();
 
   private static final Map<JobId, Deployment> JOBS = ImmutableMap.of(
       JOB_ID1, Deployment.newBuilder().build(),
@@ -90,7 +93,7 @@ public class HostListCommandTest {
   );
 
   private static final Map<JobId, TaskStatus> JOB_STATUSES = ImmutableMap.of(
-      JOB_ID1,TaskStatus.newBuilder().setJob(JOB1).setGoal(Goal.START)
+      JOB_ID1, TaskStatus.newBuilder().setJob(JOB1).setGoal(Goal.START)
           .setState(TaskStatus.State.RUNNING).build(),
       JOB_ID2, TaskStatus.newBuilder().setJob(JOB2).setGoal(Goal.START)
           .setState(TaskStatus.State.RUNNING).build(),
@@ -198,7 +201,7 @@ public class HostListCommandTest {
     assertEquals(EXPECTED_ORDER, TestUtils.readFirstColumnFromOutput(baos.toString(), true));
   }
 
-  @Test(expected=IllegalArgumentException.class)
+  @Test(expected = IllegalArgumentException.class)
   public void testInvalidStatusThrowsError() throws Exception {
     when(options.getString("status")).thenReturn("DWN");
     final int ret = command.run(options, client, out, false, null);

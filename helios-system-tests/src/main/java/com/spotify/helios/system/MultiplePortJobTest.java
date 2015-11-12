@@ -155,7 +155,8 @@ public class MultiplePortJobTest extends SystemTestBase {
       final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
       final String log;
-      try (final LogStream logs = dockerClient.logs(taskStatus.getContainerId(), stdout(), stderr())) {
+      try (final LogStream logs = dockerClient.logs(taskStatus.getContainerId(),
+                                                    stdout(), stderr())) {
         log = logs.readFully();
       }
       assertEquals(testHost() + ":" + externalPort1, log.trim());

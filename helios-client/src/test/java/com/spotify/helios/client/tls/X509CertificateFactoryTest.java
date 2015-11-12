@@ -61,7 +61,7 @@ public class X509CertificateFactoryTest {
   }
 
   @Test
-  public void testGet() throws Exception{
+  public void testGet() throws Exception {
     final Certificate certificates = X509CertificateFactory.get(agentProxy, identity, USERNAME);
     assertEquals(1, certificates.getLength());
 
