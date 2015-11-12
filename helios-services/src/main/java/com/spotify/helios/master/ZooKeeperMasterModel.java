@@ -651,6 +651,14 @@ public class ZooKeeperMasterModel implements MasterModel {
               RollingUpdateError.IMAGE_PULL_FAILED,
               metadata);
     }
+    if (taskStatus.getState().equals(TaskStatus.State.HEALTHCHECKING)) {
+      return opFactory.error(
+              "timed out during health checks waiting for job to reach RUNNING " +
+                      String.format("(previous job states: %s)", previousJobStatesString),
+              host,
+              RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
+              metadata);
+    }
     return opFactory.error(
             "timed out waiting for job to reach RUNNING " +
                     String.format("(previous job states: %s)", previousJobStatesString),
