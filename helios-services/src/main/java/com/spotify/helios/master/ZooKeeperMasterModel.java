@@ -1655,7 +1655,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     List<TaskStatus.State> previousStates;
     try {
       final List<TaskStatusEvent> jobHistory = getJobHistory(jobId, host);
-      jobHistory.subList(0, Math.min(maxStates, jobHistory.size()));
+      final List<TaskStatusEvent> cappedJobHistory = jobHistory.subList(
+          0, Math.min(maxStates, jobHistory.size()));
       Function<TaskStatusEvent, TaskStatus.State> statusesToStrings =
           new Function<TaskStatusEvent, TaskStatus.State>() {
             @Override
@@ -1666,7 +1667,7 @@ public class ZooKeeperMasterModel implements MasterModel {
               return null;
             }
           };
-      previousStates = Lists.transform(jobHistory, statusesToStrings);
+      previousStates = Lists.transform(cappedJobHistory, statusesToStrings);
     } catch (JobDoesNotExistException ignored) {
       previousStates = emptyList();
     }
