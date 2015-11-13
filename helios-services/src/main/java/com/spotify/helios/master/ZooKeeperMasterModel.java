@@ -628,7 +628,11 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                      final JobId jobId,
                                                      final TaskStatus taskStatus) {
     final List<TaskStatus.State> previousJobStates = getPreviousJobStates(jobId, host, 10);
-    final String previousJobStatesString = Joiner.on("->").join(previousJobStates);
+    final String baseError = "timed out waiting for job to reach state RUNNING ";
+    final String stateInfo = String.format(
+            "(terminal job state %s, previous states: %s)",
+            taskStatus.getState(),
+            Joiner.on("->").join(previousJobStates));
 
     final Map<String, Object> metadata = Maps.newHashMap();
     metadata.put("jobState", taskStatus.getState());
@@ -637,35 +641,23 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     if (taskStatus.getThrottled().equals(ThrottleState.IMAGE_MISSING)) {
       return opFactory.error(
-              "timed out waiting for job to reach RUNNING due to missing Docker image " +
-                      String.format("(previous job states: %s)", previousJobStatesString),
+              baseError + "due to missing Docker image " + stateInfo,
               host,
               RollingUpdateError.IMAGE_MISSING,
               metadata);
     }
     if (taskStatus.getThrottled().equals(ThrottleState.IMAGE_PULL_FAILED)) {
       return opFactory.error(
-              "timed out waiting for job to reach RUNNING due to failure pulling Docker image " +
-                      String.format("(previous job states: %s)", previousJobStatesString),
+              baseError + "due to failure pulling Docker image " + stateInfo,
               host,
               RollingUpdateError.IMAGE_PULL_FAILED,
               metadata);
     }
-    if (taskStatus.getState().equals(TaskStatus.State.HEALTHCHECKING)) {
-      return opFactory.error(
-              "timed out during health checks waiting for job to reach RUNNING " +
-                      String.format("(previous job states: %s)", previousJobStatesString),
-              host,
-              RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
-              metadata);
-    }
     return opFactory.error(
-            "timed out waiting for job to reach RUNNING " +
-                    String.format("(previous job states: %s)", previousJobStatesString),
+            baseError + stateInfo,
             host,
             RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
             metadata);
-
   }
 
   private RollingUpdateOp rollingUpdateAwaitRunning(final ZooKeeperClient client,
