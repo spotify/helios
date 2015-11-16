@@ -93,7 +93,7 @@
         <artifactId>maven-shade-plugin</artifactId>
         <configuration>
           <createDependencyReducedPom>false</createDependencyReducedPom>
-          <minimizeJar>true</minimizeJar>
+          <minimizeJar>false</minimizeJar>
           <shadedArtifactAttached>true</shadedArtifactAttached>
           <shadedClassifierName>shaded</shadedClassifierName>
           <filters>
