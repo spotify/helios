@@ -48,13 +48,14 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
 public class SimpleTest extends TemporaryJobsTestBase {
 
   @ClassRule
-  public static final TemporaryFolder reportDir = new TemporaryFolder();
+  public static final TemporaryFolder REPORT_DIR = new TemporaryFolder();
 
   @Test
   public void simpleTest() throws Exception {
@@ -63,10 +64,13 @@ public class SimpleTest extends TemporaryJobsTestBase {
                client.jobs().get(15, SECONDS).isEmpty());
 
     // Ensure test reports were written and everything was successful
-    final File[] reportFiles = reportDir.getRoot().listFiles();
+    final File[] reportFiles = REPORT_DIR.getRoot().listFiles();
+    if (reportFiles == null) {
+      fail();
+    }
     assertNotEquals(reportFiles.length, 0);
 
-    for (File reportFile : reportFiles) {
+    for (final File reportFile : reportFiles) {
       final byte[] testReport = Files.readAllBytes(reportFile.toPath());
       final TemporaryJobEvent[] events = Json.read(testReport, TemporaryJobEvent[].class);
 
@@ -86,7 +90,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
             "Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")
         .jobPrefix(Optional.of(testTag).get())
         .deployTimeoutMillis(MINUTES.toMillis(3))
-        .testReportDirectory(reportDir.getRoot().getAbsolutePath())
+        .testReportDirectory(REPORT_DIR.getRoot().getAbsolutePath())
         .build();
 
     private TemporaryJob job1;

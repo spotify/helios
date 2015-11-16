@@ -33,7 +33,7 @@ import static org.junit.Assert.assertTrue;
 
 public class HostMatcherTest {
 
-  public static final Map<String, Map<String, String>> hostsAndLabels = ImmutableMap.of(
+  public static final Map<String, Map<String, String>> HOSTS_AND_LABELS = ImmutableMap.of(
       "host3", (Map<String, String>) ImmutableMap.of("x", "y"),
       "host11", (Map<String, String>) ImmutableMap.of("foo", "bar"),
       "host2", (Map<String, String>) ImmutableMap.of("foo", "bar"),
@@ -43,7 +43,7 @@ public class HostMatcherTest {
   @Test
   public void testHostMatcher() {
     final RollingUpdateService.HostMatcher hostMatcher = new
-        RollingUpdateService.HostMatcher(hostsAndLabels);
+        RollingUpdateService.HostMatcher(HOSTS_AND_LABELS);
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
         .setName("my_group")
         .setHostSelectors(Lists.newArrayList(
@@ -58,7 +58,7 @@ public class HostMatcherTest {
   @Test
   public void testDeploymentGroupWithNoSelectors() {
     final RollingUpdateService.HostMatcher hostMatcher = new
-        RollingUpdateService.HostMatcher(hostsAndLabels);
+        RollingUpdateService.HostMatcher(HOSTS_AND_LABELS);
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
         .setName("my_group")
         .setHostSelectors(EMPTY_LIST)

@@ -22,7 +22,6 @@ import com.google.common.base.Optional;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
 
-import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +38,7 @@ import static org.junit.experimental.results.ResultMatchers.hasSingleFailureCont
 public class TempJobFailureTest extends TemporaryJobsTestBase {
 
   @ClassRule
-  public static final TemporaryFolder reportDir = new TemporaryFolder();
+  public static final TemporaryFolder REPORT_DIR = new TemporaryFolder();
 
   @Test
   public void testDeploymentFailure() throws Exception {
@@ -48,9 +47,9 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
     assertThat(testResult(TempJobFailureTestImpl.class),
                hasSingleFailureContaining("AssertionError: Unexpected job state"));
     final long end = System.currentTimeMillis();
-    assertTrue("Test should not time out", (end-start) < Jobs.TIMEOUT_MILLIS);
+    assertTrue("Test should not time out", (end - start) < Jobs.TIMEOUT_MILLIS);
 
-    final byte[] testReport = Files.readAllBytes(reportDir.getRoot().listFiles()[0].toPath());
+    final byte[] testReport = Files.readAllBytes(REPORT_DIR.getRoot().listFiles()[0].toPath());
     final TemporaryJobEvent[] events = Json.read(testReport, TemporaryJobEvent[].class);
 
     for (final TemporaryJobEvent event : events) {
@@ -67,7 +66,7 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
         .hostFilter(".*")
         .client(client)
         .prober(new TestProber())
-        .testReportDirectory(reportDir.getRoot().getAbsolutePath())
+        .testReportDirectory(REPORT_DIR.getRoot().getAbsolutePath())
         .prefixDirectory(prefixDirectory.toString())
         .jobPrefix(Optional.of(testTag).get())
         .build();

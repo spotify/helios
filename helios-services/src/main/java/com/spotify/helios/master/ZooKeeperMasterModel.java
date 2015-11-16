@@ -19,6 +19,7 @@ package com.spotify.helios.master;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -83,7 +84,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
-import static com.google.common.base.Objects.firstNonNull;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -741,8 +741,8 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                 deploymentGroup.getName());
 
     try {
-      final String token =
-          firstNonNull(deploymentGroup.getRolloutOptions().getToken(), Job.EMPTY_TOKEN);
+      final String token = MoreObjects.firstNonNull(
+          deploymentGroup.getRolloutOptions().getToken(), Job.EMPTY_TOKEN);
       return opFactory.nextTask(getDeployOperations(client, host, deployment, token));
     } catch (JobDoesNotExistException e) {
       return opFactory.error(e, host, RollingUpdateError.JOB_NOT_FOUND);
@@ -778,8 +778,8 @@ public class ZooKeeperMasterModel implements MasterModel {
         }
 
         try {
-          final String token =
-              firstNonNull(deploymentGroup.getRolloutOptions().getToken(), Job.EMPTY_TOKEN);
+          final String token = MoreObjects.firstNonNull(
+              deploymentGroup.getRolloutOptions().getToken(), Job.EMPTY_TOKEN);
           operations.addAll(getUndeployOperations(client, host, deployment.getJobId(), token));
         } catch (TokenVerificationException e) {
           return opFactory.error(e, host, RollingUpdateError.TOKEN_VERIFICATION_ERROR);
@@ -804,7 +804,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("stopDeploymentGroup");
 
     // TODO(staffan): This is stupid, but required for correct behaviour right now.
-    final DeploymentGroup deploymentGroup = getDeploymentGroup(deploymentGroupName);
+    getDeploymentGroup(deploymentGroupName);
 
     // Delete deployment group tasks (if any) and set DG state to FAILED
     final DeploymentGroupStatus status = DeploymentGroupStatus.newBuilder()

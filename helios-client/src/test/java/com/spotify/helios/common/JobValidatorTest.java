@@ -61,9 +61,9 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 
 public class JobValidatorTest {
-  private final HealthCheck HEALTH_CHECK =
-    HealthCheck.newHttpHealthCheck().setPath("/").setPort("1").build();
-  private final Job VALID_JOB = Job.newBuilder()
+  private static final HealthCheck HEALTH_CHECK =
+      HealthCheck.newHttpHealthCheck().setPath("/").setPort("1").build();
+  private static final Job VALID_JOB = Job.newBuilder()
       .setName("foo")
       .setVersion("1")
       .setImage("bar")

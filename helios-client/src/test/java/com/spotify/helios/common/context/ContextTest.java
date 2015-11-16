@@ -30,7 +30,7 @@ import static org.junit.Assert.assertEquals;
 
 public class ContextTest {
   private ExecutorService executorService;
-  private final Callable<Boolean> KABOOM_CALLABLE = new Callable<Boolean>() {
+  private static final Callable<Boolean> KABOOM_CALLABLE = new Callable<Boolean>() {
     @Override
     public Boolean call() throws Exception {
       throw new RuntimeException("No boolean for you");

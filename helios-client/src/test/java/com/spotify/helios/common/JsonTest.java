@@ -64,23 +64,23 @@ public class JsonTest {
 
   @Test
   public void testObjectSha1() throws Exception {
-    final Bar bar = new Bar() {{
+    final Bar bar = new Bar() { {
       c = "bar";
-      foo = new Foo() {{
+      foo = new Foo() { {
         b = 17;
         a = "hello";
-        c = new LinkedHashMap<String, Object>() {{
+        c = new LinkedHashMap<String, Object>() { {
           put("2", "two");
           put("1", 1);
-        }};
+        } };
         ignoredNullString = null;
         ignoredNullMap = null;
         ignoredNullList = null;
         ignoredEmptyString = "";
         ignoredEmptyMap = Collections.emptyMap();
         ignoredEmptyList = Collections.emptyList();
-      }};
-    }};
+      } };
+    } };
     final String barJson = Json.asNormalizedString(bar);
     assertEquals(EXPECTED_JSON, barJson);
     final byte[] digest = Json.sha1digest(bar);
@@ -99,7 +99,7 @@ public class JsonTest {
 
   @Test
   public void verifyPrettyOutput() {
-    final String json = Json.asPrettyStringUnchecked(new SomePojo() {{foo = "bar";}});
+    final String json = Json.asPrettyStringUnchecked(new SomePojo() { { foo = "bar"; } });
     assertEquals("{\n" +
                  "  \"foo\" : \"bar\"\n" +
                  "}", json);

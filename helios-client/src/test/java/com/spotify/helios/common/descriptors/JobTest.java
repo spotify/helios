@@ -300,8 +300,8 @@ public class JobTest {
         .addVolume("/foo", "/bar")
         .build();
 
-    assertThat(job.getEnv(), hasEntry("env","var"));
-    assertThat(job.getMetadata(), hasEntry("meta","data"));
+    assertThat(job.getEnv(), hasEntry("env", "var"));
+    assertThat(job.getMetadata(), hasEntry("meta", "data"));
     assertThat(job.getPorts(), hasEntry("http", PortMapping.of(80, 8000)));
     assertThat(job.getRegistration(),
         hasEntry(ServiceEndpoint.of("foo", "http"), ServicePorts.of("http")));
@@ -403,7 +403,8 @@ public class JobTest {
     removeFieldAndParse(job, "metadata");
   }
 
-  private static void removeFieldAndParse(final Job job, final String... fieldNames) throws Exception {
+  private static void removeFieldAndParse(final Job job, final String... fieldNames)
+      throws Exception {
     final String jobJson = job.toJsonString();
 
     final ObjectMapper objectMapper = new ObjectMapper();

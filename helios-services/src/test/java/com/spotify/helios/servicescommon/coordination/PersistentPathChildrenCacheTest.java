@@ -181,9 +181,9 @@ public class PersistentPathChildrenCacheTest {
   @Test
   public void verifyNodesAreRetainedWhenZKGoesDown() throws Exception {
     // Create two nodes
-    final String FOO1 = "/foos/foo1";
-    final String FOO2 = "/foos/foo2";
-    final Set<String> paths = ImmutableSet.of(FOO1, FOO2);
+    final String foo1 = "/foos/foo1";
+    final String foo2 = "/foos/foo2";
+    final Set<String> paths = ImmutableSet.of(foo1, foo2);
     for (String path : paths) {
       ensure(path, new DataPojo(path));
     }
@@ -224,9 +224,9 @@ public class PersistentPathChildrenCacheTest {
   @Test
   public void verifyNodesRemovedWhilePathChildrenCacheIsDownAreDetected() throws Exception {
     // Create two nodes
-    final String FOO1 = "/foos/foo1";
-    final String FOO2 = "/foos/foo2";
-    final Set<String> paths = ImmutableSet.of(FOO1, FOO2);
+    final String foo1 = "/foos/foo1";
+    final String foo2 = "/foos/foo2";
+    final Set<String> paths = ImmutableSet.of(foo1, foo2);
     for (String path : paths) {
       ensure(path, new DataPojo(path));
     }
@@ -246,7 +246,7 @@ public class PersistentPathChildrenCacheTest {
 
     // Remove a node
     try {
-      zk.curator().delete().forPath(FOO1);
+      zk.curator().delete().forPath(foo1);
     } catch (NoNodeException ignore) {
     }
 
@@ -254,7 +254,7 @@ public class PersistentPathChildrenCacheTest {
     startCache();
 
     // Wait for the cache to reflect that there's only one node left
-    final Set<String> postDeletePaths = ImmutableSet.of(FOO2);
+    final Set<String> postDeletePaths = ImmutableSet.of(foo2);
     Polling.await(5, MINUTES, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
@@ -267,7 +267,8 @@ public class PersistentPathChildrenCacheTest {
 
   private void startCache() throws IOException, InterruptedException {
     reset(listener);
-    cache = new PersistentPathChildrenCache<>(zk.curator(), PATH, null, stateFile, Json.type(DataPojo.class));
+    cache = new PersistentPathChildrenCache<>(
+        zk.curator(), PATH, null, stateFile, Json.type(DataPojo.class));
     cache.addListener(listener);
     cache.startAsync().awaitRunning();
   }

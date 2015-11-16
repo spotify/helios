@@ -89,7 +89,7 @@ public class BasicFunctionalityITCase {
     }
   }
 
-  @Test(expected=HeliosException.class)
+  @Test(expected = HeliosException.class)
   public void testComputeTargetSingleEndpointInvalid() throws Exception {
     final HeliosClient badClient =
         HeliosClient.newBuilder().setUser("unittest").setEndpoints("some.fqdn.net").build();
