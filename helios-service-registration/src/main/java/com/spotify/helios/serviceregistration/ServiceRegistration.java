@@ -17,7 +17,7 @@
 
 package com.spotify.helios.serviceregistration;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -146,7 +146,7 @@ public class ServiceRegistration {
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
           .add("name", name)
           .add("protocol", protocol)
           .add("port", port)
@@ -188,7 +188,7 @@ public class ServiceRegistration {
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
           .add("type", type)
           .add("path", path)
           .toString();

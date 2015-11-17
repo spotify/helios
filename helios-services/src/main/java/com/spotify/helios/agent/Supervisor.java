@@ -17,7 +17,7 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DockerClient;
@@ -424,7 +424,7 @@ public class Supervisor {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("job", job)
         .add("currentCommand", currentCommand)
         .add("performedCommand", performedCommand)

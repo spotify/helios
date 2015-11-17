@@ -17,7 +17,7 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
@@ -47,7 +47,7 @@ public class RollingUpdateRequest {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("job", job)
         .add("rolloutOptions", rolloutOptions)
         .toString();
