@@ -73,7 +73,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -81,7 +81,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.Futures.withFallback;
-import static com.google.common.util.concurrent.MoreExecutors.getExitingExecutorService;
+import static com.google.common.util.concurrent.MoreExecutors.getExitingScheduledExecutorService;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.lang.String.format;
@@ -92,7 +92,7 @@ import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
 import static java.net.HttpURLConnection.HTTP_OK;
 import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
-import static java.util.concurrent.Executors.newFixedThreadPool;
+import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class HeliosClient implements AutoCloseable {
@@ -497,7 +497,7 @@ public class HeliosClient implements AutoCloseable {
   public static class Builder {
 
     private String user;
-    private Supplier<List<URI>> endpointSupplier;
+    private Supplier<List<Endpoint>> endpointSupplier;
 
     public Builder setUser(final String user) {
       this.user = user;
@@ -505,15 +505,15 @@ public class HeliosClient implements AutoCloseable {
     }
 
     public Builder setDomain(final String domain) {
-      return setEndpointSupplier(Resolver.supplier("helios", domain));
+      return setEndpointSupplier(Endpoints.of(Resolver.supplier("helios", domain)));
     }
 
     public Builder setEndpoints(final List<URI> endpoints) {
-      return setEndpointSupplier(Suppliers.ofInstance(endpoints));
+      return setEndpointSupplier(Suppliers.ofInstance(Endpoints.of(endpoints)));
     }
 
     public Builder setEndpoints(final URI... endpoints) {
-      return setEndpointSupplier(Suppliers.ofInstance(asList(endpoints)));
+      return setEndpointSupplier(Suppliers.ofInstance(Endpoints.of(asList(endpoints))));
     }
 
     public Builder setEndpoints(final String... endpoints) {
@@ -528,16 +528,16 @@ public class HeliosClient implements AutoCloseable {
       return setEndpoints(uris);
     }
 
-    public Builder setEndpointSupplier(final Supplier<List<URI>> endpointSupplier) {
+    public Builder setEndpointSupplier(final Supplier<List<Endpoint>> endpointSupplier) {
       this.endpointSupplier = endpointSupplier;
       return this;
     }
 
     public HeliosClient build() {
-      return new HeliosClient(user, new DefaultRequestDispatcher(
-          endpointSupplier, user,
-          MoreExecutors.listeningDecorator(getExitingExecutorService(
-              (ThreadPoolExecutor) newFixedThreadPool(4), 0, SECONDS))));
+      return new HeliosClient(user, new RetryingRequestDispatcher(
+          endpointSupplier.get(), user,
+          MoreExecutors.listeningDecorator(getExitingScheduledExecutorService(
+              (ScheduledThreadPoolExecutor) newScheduledThreadPool(4), 0, SECONDS))));
     }
   }
 

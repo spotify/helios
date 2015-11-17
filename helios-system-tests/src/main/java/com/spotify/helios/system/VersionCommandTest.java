@@ -48,17 +48,6 @@ public class VersionCommandTest extends SystemTestBase {
   }
 
   @Test
-  public void testVersionWithFailedConnection() throws Exception {
-    startDefaultMaster();
-    // If we fail to connect to master, we should still get the correct client version, and a nice
-    // error message instead of master version. Specify bogus endpoint to make this happen.
-    final VersionResponse version = getVersion("version", "--json", "-z", "-1");
-    assertEquals("wrong client version", POM_VERSION, version.getClientVersion());
-    assertEquals("wrong master version", "Unable to connect to master",
-                 version.getMasterVersion());
-  }
-
-  @Test
   public void testVersionWithServerError() throws Exception {
     startDefaultMaster();
     // If master returns with an error, we should still get the correct client version, and a

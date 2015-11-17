@@ -18,10 +18,7 @@
 package com.spotify.helios.client;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -45,7 +42,6 @@ import java.io.InputStream;
 import java.lang.reflect.Field;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -57,7 +53,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPInputStream;
 
@@ -67,7 +62,6 @@ import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.lang.System.currentTimeMillis;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -77,20 +71,16 @@ class DefaultRequestDispatcher implements RequestDispatcher {
 
   private static final Logger log = LoggerFactory.getLogger(DefaultRequestDispatcher.class);
 
-  private static final long RETRY_TIMEOUT_MILLIS = SECONDS.toMillis(60);
   private static final long HTTP_TIMEOUT_MILLIS = SECONDS.toMillis(10);
-  private static final List<String> VALID_PROTOCOLS = ImmutableList.of("http", "https");
-  private static final String VALID_PROTOCOLS_STR =
-      String.format("[%s]", Joiner.on("|").join(VALID_PROTOCOLS));
 
-  private final Supplier<List<URI>> endpointSupplier;
+  private final EndpointIterator endpointIterator;
   private final ListeningExecutorService executorService;
   private final String user;
 
-  public DefaultRequestDispatcher(final Supplier<List<URI>> endpointSupplier,
-                                  final String user,
-                                  final ListeningExecutorService executorService) {
-    this.endpointSupplier = endpointSupplier;
+  DefaultRequestDispatcher(final List<Endpoint> endpoints,
+                           final String user,
+                           final ListeningExecutorService executorService) {
+    endpointIterator = EndpointIterator.of(endpoints);
     this.executorService = executorService;
     this.user = user;
   }
@@ -169,107 +159,67 @@ class DefaultRequestDispatcher implements RequestDispatcher {
                                     final Map<String, List<String>> headers)
       throws URISyntaxException, IOException, TimeoutException, InterruptedException,
              HeliosException {
-    final long deadline = currentTimeMillis() + RETRY_TIMEOUT_MILLIS;
-    final int offset = ThreadLocalRandom.current().nextInt();
 
-    while (currentTimeMillis() < deadline) {
-      final List<URI> endpoints = endpointSupplier.get();
-      if (endpoints.isEmpty()) {
-        throw new RuntimeException("failed to resolve master");
-      }
-      log.debug("endpoint uris are {}", endpoints);
+      final Endpoint endpoint = endpointIterator.next();
+      final URI endpointUri = endpoint.getUri();
+      final String fullpath = endpointUri.getPath() + uri.getPath();
 
-      // Resolve hostname into IPs so client will round-robin and retry for multiple A records.
-      // Keep a mapping of IPs to hostnames for TLS verification.
-      final List<URI> ipEndpoints = Lists.newArrayList();
-      final Map<URI, URI> ipToHostnameUris = Maps.newHashMap();
+      final String uriScheme = endpointUri.getScheme();
 
-      for (final URI hnUri : endpoints) {
-        try {
-          final InetAddress[] ips = InetAddress.getAllByName(hnUri.getHost());
-          for (final InetAddress ip : ips) {
-            final URI ipUri = new URI(
-                hnUri.getScheme(), hnUri.getUserInfo(), ip.getHostAddress(), hnUri.getPort(),
-                hnUri.getPath(), hnUri.getQuery(), hnUri.getFragment());
-            ipEndpoints.add(ipUri);
-            ipToHostnameUris.put(ipUri, hnUri);
-          }
-        } catch (UnknownHostException e) {
-          log.warn("Unable to resolve hostname {} into IP address: {}", hnUri.getHost(), e);
-        }
-      }
+      final URI ipUri = new URI(
+          uriScheme, endpointUri.getUserInfo(), endpoint.getIp().getHostAddress(),
+          endpointUri.getPort(), fullpath, uri.getQuery(), null);
 
-      for (int i = 0; i < ipEndpoints.size() && currentTimeMillis() < deadline; i++) {
-        final URI ipEndpoint = ipEndpoints.get(positive(offset + i) % ipEndpoints.size());
-        final String fullpath = ipEndpoint.getPath() + uri.getPath();
-
-        final String scheme = ipEndpoint.getScheme();
-        final String host = ipEndpoint.getHost();
-        final int port = ipEndpoint.getPort();
-        if (!VALID_PROTOCOLS.contains(scheme) || host == null || port == -1) {
-          throw new HeliosException(String.format(
-              "Master endpoints must be of the form \"%s://heliosmaster.domain.net:<port>\"",
-              VALID_PROTOCOLS_STR));
-        }
-
-        final URI realUri = new URI(scheme, host + ":" + port, fullpath, uri.getQuery(), null);
-
-        AgentProxy agentProxy = null;
-        Deque<Identity> identities = Queues.newArrayDeque();
-        try {
-          if (scheme.equals("https")) {
-            agentProxy = AgentProxies.newInstance();
-            for (final Identity identity : agentProxy.list()) {
-              if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
-                // only RSA keys will work with our TLS implementation
-                identities.offerLast(identity);
-              }
+      AgentProxy agentProxy = null;
+      Deque<Identity> identities = Queues.newArrayDeque();
+      try {
+        if (uriScheme.equals("https")) {
+          agentProxy = AgentProxies.newInstance();
+          for (final Identity identity : agentProxy.list()) {
+            if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
+              // only RSA keys will work with our TLS implementation
+              identities.offerLast(identity);
             }
           }
-        } catch (Exception e) {
-          log.warn("Couldn't get identities from ssh-agent", e);
         }
+      } catch (Exception e) {
+        log.warn("Couldn't get identities from ssh-agent", e);
+      }
 
-        try {
-          do {
-            final Identity identity = identities.poll();
+      try {
+        do {
+          final Identity identity = identities.poll();
 
-            try {
-              log.debug("connecting to {}", realUri);
+          try {
+            log.debug("connecting to {}", ipUri);
 
-              final HttpURLConnection connection = connect0(realUri, method, entity, headers,
-                              ipToHostnameUris.get(ipEndpoint).getHost(),
-                              agentProxy, identity);
+            final HttpURLConnection connection = connect0(
+                ipUri, method, entity, headers, endpointUri.getHost(), agentProxy, identity);
 
-              final int responseCode = connection.getResponseCode();
-              if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
-                  && !identities.isEmpty()) {
-                // there was some sort of security error. if we have any more SSH identities to try,
-                // retry with the next available identity
-                log.debug("retrying with next SSH identity since {} failed", identity.getComment());
-                continue;
-              }
-
-              return connection;
-            } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
-              // UnknownHostException happens if we can't resolve hostname into IP address.
-              // UnknownHostException's getMessage method returns just the hostname which is a
-              // useless message, so log the exception class name to provide more info.
-              log.debug(e.toString());
-              // Connecting failed, sleep a bit to avoid hammering and then try another endpoint
-              Thread.sleep(200);
+            final int responseCode = connection.getResponseCode();
+            if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
+                && !identities.isEmpty()) {
+              // there was some sort of security error. if we have any more SSH identities to try,
+              // retry with the next available identity
+              log.debug("retrying with next SSH identity since {} failed", identity.getComment());
+              continue;
             }
-          } while (false);
-        } finally {
-          if (agentProxy != null) {
-            agentProxy.close();
+
+            return connection;
+          } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
+            // UnknownHostException happens if we can't resolve hostname into IP address.
+            // UnknownHostException's getMessage method returns just the hostname which is a
+            // useless message, so log the exception class name to provide more info.
+            log.debug(e.toString());
+            throw e;
           }
+        } while (false);
+      } finally {
+        if (agentProxy != null) {
+          agentProxy.close();
         }
       }
-      log.warn("Failed to connect, retrying in 5 seconds.");
-      Thread.sleep(5000);
-    }
-    throw new TimeoutException("Timed out connecting to master");
+    throw new HeliosException("Unable to connect to master");
   }
 
   private HttpURLConnection connect0(final URI ipUri, final String method, final byte[] entity,
@@ -334,10 +284,6 @@ class DefaultRequestDispatcher implements RequestDispatcher {
     }
 
     return connection;
-  }
-
-  private int positive(final int value) {
-    return value < 0 ? value + Integer.MAX_VALUE : value;
   }
 
   private void setRequestMethod(final HttpURLConnection connection,

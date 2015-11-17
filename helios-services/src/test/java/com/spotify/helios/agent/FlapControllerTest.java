@@ -17,6 +17,8 @@
 
 package com.spotify.helios.agent;
 
+import com.spotify.helios.common.Clock;
+
 import org.joda.time.Instant;
 import org.junit.Test;
 import org.junit.runner.RunWith;

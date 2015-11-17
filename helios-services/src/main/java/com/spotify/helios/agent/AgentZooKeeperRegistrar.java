@@ -19,6 +19,8 @@ package com.spotify.helios.agent;
 
 import com.google.common.util.concurrent.Service;
 
+import com.spotify.helios.common.Clock;
+import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrar;

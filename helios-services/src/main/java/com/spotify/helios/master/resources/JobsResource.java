@@ -23,8 +23,8 @@ import com.google.common.collect.Maps;
 
 import com.codahale.metrics.annotation.ExceptionMetered;
 import com.codahale.metrics.annotation.Timed;
-import com.spotify.helios.agent.Clock;
-import com.spotify.helios.agent.SystemClock;
+import com.spotify.helios.common.Clock;
+import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;

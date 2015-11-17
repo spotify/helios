@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.spotify.helios.agent;
+package com.spotify.helios.common;
 
 import org.joda.time.Instant;
 

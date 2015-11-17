@@ -19,7 +19,7 @@ package com.spotify.helios.master;
 
 import com.google.common.collect.ImmutableMap;
 
-import com.spotify.helios.agent.Clock;
+import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;

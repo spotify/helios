@@ -20,8 +20,8 @@ package com.spotify.helios.master;
 import com.google.common.collect.ImmutableList;
 
 import com.spotify.helios.agent.InterruptingScheduledService;
-import com.spotify.helios.agent.Clock;
-import com.spotify.helios.agent.SystemClock;
+import com.spotify.helios.common.Clock;
+import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;

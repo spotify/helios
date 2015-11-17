@@ -23,6 +23,7 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerTimeoutException;
 import com.spotify.docker.client.ImageNotFoundException;
 import com.spotify.docker.client.ImagePullFailedException;
+import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
 
