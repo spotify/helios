@@ -17,7 +17,7 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
@@ -43,7 +43,7 @@ public class VersionResponse {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("clientVersion", clientVersion)
         .add("masterVersion", masterVersion)
         .toString();

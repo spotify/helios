@@ -17,7 +17,7 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Supplier;
 import com.google.common.base.Throwables;
 
@@ -162,7 +162,7 @@ public class PersistentAtomicReference<T> {
 
   @Override
   public String toString() {
-    return Objects.toStringHelper(this)
+    return MoreObjects.toStringHelper(this)
         .add("filename", filename)
         .toString();
   }
