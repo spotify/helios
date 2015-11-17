@@ -160,66 +160,65 @@ class DefaultRequestDispatcher implements RequestDispatcher {
       throws URISyntaxException, IOException, TimeoutException, InterruptedException,
              HeliosException {
 
-      final Endpoint endpoint = endpointIterator.next();
-      final URI endpointUri = endpoint.getUri();
-      final String fullpath = endpointUri.getPath() + uri.getPath();
+    final Endpoint endpoint = endpointIterator.next();
+    final URI endpointUri = endpoint.getUri();
+    final String fullpath = endpointUri.getPath() + uri.getPath();
 
-      final String uriScheme = endpointUri.getScheme();
+    final String uriScheme = endpointUri.getScheme();
 
-      final URI ipUri = new URI(
-          uriScheme, endpointUri.getUserInfo(), endpoint.getIp().getHostAddress(),
-          endpointUri.getPort(), fullpath, uri.getQuery(), null);
+    final URI ipUri = new URI(
+        uriScheme, endpointUri.getUserInfo(), endpoint.getIp().getHostAddress(),
+        endpointUri.getPort(), fullpath, uri.getQuery(), null);
 
-      AgentProxy agentProxy = null;
-      Deque<Identity> identities = Queues.newArrayDeque();
-      try {
-        if (uriScheme.equals("https")) {
-          agentProxy = AgentProxies.newInstance();
-          for (final Identity identity : agentProxy.list()) {
-            if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
-              // only RSA keys will work with our TLS implementation
-              identities.offerLast(identity);
-            }
+    AgentProxy agentProxy = null;
+    Deque<Identity> identities = Queues.newArrayDeque();
+    try {
+      if (uriScheme.equals("https")) {
+        agentProxy = AgentProxies.newInstance();
+        for (final Identity identity : agentProxy.list()) {
+          if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
+            // only RSA keys will work with our TLS implementation
+            identities.offerLast(identity);
           }
         }
-      } catch (Exception e) {
-        log.warn("Couldn't get identities from ssh-agent", e);
       }
+    } catch (Exception e) {
+      log.warn("Couldn't get identities from ssh-agent", e);
+    }
 
-      try {
-        do {
-          final Identity identity = identities.poll();
+    try {
+      while (true) {
+        final Identity identity = identities.poll();
 
-          try {
-            log.debug("connecting to {}", ipUri);
+        try {
+          log.debug("connecting to {}", ipUri);
 
-            final HttpURLConnection connection = connect0(
-                ipUri, method, entity, headers, endpointUri.getHost(), agentProxy, identity);
+          final HttpURLConnection connection = connect0(
+              ipUri, method, entity, headers, endpointUri.getHost(), agentProxy, identity);
 
-            final int responseCode = connection.getResponseCode();
-            if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
-                && !identities.isEmpty()) {
-              // there was some sort of security error. if we have any more SSH identities to try,
-              // retry with the next available identity
-              log.debug("retrying with next SSH identity since {} failed", identity.getComment());
-              continue;
-            }
-
-            return connection;
-          } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
-            // UnknownHostException happens if we can't resolve hostname into IP address.
-            // UnknownHostException's getMessage method returns just the hostname which is a
-            // useless message, so log the exception class name to provide more info.
-            log.debug(e.toString());
-            throw e;
+          final int responseCode = connection.getResponseCode();
+          if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
+              && !identities.isEmpty()) {
+            // there was some sort of security error. if we have any more SSH identities to try,
+            // retry with the next available identity
+            log.debug("retrying with next SSH identity since {} failed", identity.getComment());
+            continue;
           }
-        } while (false);
-      } finally {
-        if (agentProxy != null) {
-          agentProxy.close();
+
+          return connection;
+        } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
+          // UnknownHostException happens if we can't resolve hostname into IP address.
+          // UnknownHostException's getMessage method returns just the hostname which is a
+          // useless message, so log the exception class name to provide more info.
+          log.debug(e.toString());
+          throw new HeliosException("Unable to connect to master", e);
         }
       }
-    throw new HeliosException("Unable to connect to master");
+    } finally {
+      if (agentProxy != null) {
+        agentProxy.close();
+      }
+    }
   }
 
   private HttpURLConnection connect0(final URI ipUri, final String method, final byte[] entity,
