@@ -242,7 +242,8 @@ class DefaultRequestDispatcher implements RequestDispatcher {
                               agentProxy, identity);
 
               final int responseCode = connection.getResponseCode();
-              if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))) {
+              if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
+                  && connection.getHeaderField("WWW-Authenticate") != null) {
                 // there was some sort of security error. if we have any more SSH identities to try,
                 // retry with the next available identity
                 log.debug("retrying with next SSH identity since {} failed", identity.getComment());
