@@ -125,13 +125,28 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
   }
 
+  protected String getContainerError() {
+    final ContainerInfo info;
+    try {
+      // If we don't know our containerId at this point there's not a lot we can do.
+      info = getContainerInfo(containerId.orNull());
+    } catch (DockerException | InterruptedException e) {
+      log.warn("failed to propagate container error: {}", e);
+      return "";
+    }
+    if (info == null) {
+      return "";
+    }
+    return info.state().error();
+  }
+
   @Override
   protected void run() {
     try {
       final int exitCode = run0();
       result.set(exitCode);
     } catch (Exception e) {
-      listener.failed(e);
+      listener.failed(e, getContainerError());
       result.setException(e);
     }
   }
@@ -161,6 +176,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
             .build().newScheduler();
 
         while (!healthChecker.get().check(containerId)) {
+          // TODO(negz): Why aren't we using getContainerInfo() here?
           final ContainerState state = docker.inspectContainer(containerId).state();
           if (!state.running()) {
             log.warn("container exited during health checking: {}: {}: {}",
@@ -283,7 +299,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
   public interface Listener {
 
-    void failed(Throwable t);
+    void failed(Throwable t, String containerError);
 
     void pulling();
 
@@ -366,7 +382,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   public static class NopListener implements Listener {
 
     @Override
-    public void failed(final Throwable t) {
+    public void failed(final Throwable t, final String containerError) {
 
     }
 

@@ -33,6 +33,7 @@ public class DefaultStatusUpdater implements StatusUpdater {
   private ThrottleState throttleState = ThrottleState.NO;
   private AgentModel model;
   private TaskStatus.State state;
+  private String containerError;
 
   public DefaultStatusUpdater(final AgentModel model,
                               final TaskStatus.Builder builder) {
@@ -56,13 +57,19 @@ public class DefaultStatusUpdater implements StatusUpdater {
   }
 
   @Override
+  public void setContainerError(final String containerError) {
+    this.containerError = containerError;
+  }
+
+  @Override
   public void update() throws InterruptedException {
     final TaskStatus status = builder
-        .setGoal(goal)
-        .setState(state)
-        .setContainerId(containerId)
-        .setThrottled(throttleState)
-        .build();
+            .setGoal(goal)
+            .setState(state)
+            .setContainerId(containerId)
+            .setThrottled(throttleState)
+            .setContainerError(containerError)
+            .build();
     model.setTaskStatus(status.getJob().getId(), status);
   }
 

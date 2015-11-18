@@ -21,6 +21,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -651,6 +652,13 @@ public class ZooKeeperMasterModel implements MasterModel {
               baseError + "due to failure pulling Docker image " + stateInfo,
               host,
               RollingUpdateError.IMAGE_PULL_FAILED,
+              metadata);
+    }
+    if (!Strings.isNullOrEmpty(taskStatus.getContainerError())) {
+      return opFactory.error(
+              baseError + stateInfo + " container error: " + taskStatus.getContainerError(),
+              host,
+              RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
               metadata);
     }
     return opFactory.error(

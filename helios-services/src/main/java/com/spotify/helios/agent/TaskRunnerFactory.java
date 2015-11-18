@@ -116,9 +116,9 @@ public class TaskRunnerFactory {
     }
 
     @Override
-    public void failed(final Throwable t) {
+    public void failed(final Throwable t, final String containerError) {
       for (TaskRunner.Listener l : listeners) {
-        l.failed(t);
+        l.failed(t, containerError);
       }
     }
 
