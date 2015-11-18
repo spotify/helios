@@ -1,0 +1,26 @@
+[Unit]
+Description=Spotify Helios Solo
+Documentation=https://github.com/spotify/helios/tree/master/docs
+After=docker.socket
+Requires=docker.socket
+
+[Service]
+Restart=on-failure
+RestartSec=10
+TimeoutStartSec=0
+ExecStartPre=-/usr/bin/docker kill helios-solo-container
+ExecStartPre=-/usr/bin/docker rm helios-solo-container
+ExecStartPre=-/usr/bin/docker pull spotify/helios-solo
+ExecStart=/bin/sh -c "/usr/bin/docker run \
+  --name=helios-solo-container \
+  -v /var/run/docker.sock:/var/run/docker.sock \
+  -e DOCKER_HOST=unix:///var/run/docker.sock \
+  -e HELIOS_NAME=solo.local. \
+  -e HOST_ADDRESS=$(ip -4 addr show docker0 | grep -Po 'inet \\K[\\d.]+') \
+  -e REGISTRAR_HOST_FORMAT='_spotify-$${service}._$${protocol}.services.$${domain}' \
+  -p 5801:5801 \
+  spotify/helios-solo"
+ExecStop=/usr/bin/docker kill helios-solo-container
+
+[Install]
+WantedBy=multi-user.target
