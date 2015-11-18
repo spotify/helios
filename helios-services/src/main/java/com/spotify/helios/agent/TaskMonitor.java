@@ -114,8 +114,15 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
     } else if (t instanceof ImagePullFailedException) {
       imageFailure(IMAGE_PULL_FAILED);
     }
-    updateState(FAILED);
-    updateContainerError(containerError);
+    // Don't use updateState() to avoid calling statusUpdater.update() twice in a row.
+    statusUpdater.setState(FAILED);
+    statusUpdater.setContainerError(containerError);
+    // Commit and push a new status
+    try {
+      statusUpdater.update();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   @Override
@@ -233,20 +240,6 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
    */
   private void updateState(final TaskStatus.State state) {
     statusUpdater.setState(state);
-    // Commit and push a new status
-    try {
-      statusUpdater.update();
-    } catch (InterruptedException e) {
-      // TODO: propagate interrupt instead?
-      Thread.currentThread().interrupt();
-    }
-  }
-
-  /**
-   * Propagate the container error by setting it and committing the update.
-   */
-  private void updateContainerError(final String containerError) {
-    statusUpdater.setContainerError(containerError);
     // Commit and push a new status
     try {
       statusUpdater.update();

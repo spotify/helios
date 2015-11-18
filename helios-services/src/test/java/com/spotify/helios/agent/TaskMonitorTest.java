@@ -28,9 +28,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.InOrder;
 import org.mockito.Mock;
-import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
@@ -105,11 +103,9 @@ public class TaskMonitorTest {
     reset(statusUpdater);
 
     sut.failed(new Exception(), "Error herping derps.");
-    InOrder order = Mockito.inOrder(statusUpdater);
-    order.verify(statusUpdater).setState(FAILED);
-    order.verify(statusUpdater).update();
-    order.verify(statusUpdater).setContainerError("Error herping derps.");
-    order.verify(statusUpdater).update();
+    verify(statusUpdater).setState(FAILED);
+    verify(statusUpdater).setContainerError("Error herping derps.");
+    verify(statusUpdater).update();
     verify(statusUpdater, never()).setThrottleState(any(ThrottleState.class));
     reset(statusUpdater);
   }
@@ -118,22 +114,18 @@ public class TaskMonitorTest {
   public void verifyMonitorPropagatesImagePullFailed() throws Exception {
     sut.failed(new ImagePullFailedException("foobar", "failure"), "container error");
     verify(statusUpdater).setThrottleState(IMAGE_PULL_FAILED);
-    InOrder order = Mockito.inOrder(statusUpdater);
-    order.verify(statusUpdater).setState(FAILED);
-    order.verify(statusUpdater).update();
-    order.verify(statusUpdater).setContainerError("container error");
-    order.verify(statusUpdater).update();
+    verify(statusUpdater).setState(FAILED);
+    verify(statusUpdater).setContainerError("container error");
+    verify(statusUpdater).update();
   }
 
   @Test
   public void verifyMonitorPropagatesImageMissing() throws Exception {
     sut.failed(new ImageNotFoundException("foobar", "not found"), "container error");
     verify(statusUpdater).setThrottleState(IMAGE_MISSING);
-    InOrder order = Mockito.inOrder(statusUpdater);
-    order.verify(statusUpdater).setState(FAILED);
-    order.verify(statusUpdater).update();
-    order.verify(statusUpdater).setContainerError("container error");
-    order.verify(statusUpdater).update();
+    verify(statusUpdater).setState(FAILED);
+    verify(statusUpdater).setContainerError("container error");
+    verify(statusUpdater).update();
   }
 
   @Test
@@ -151,11 +143,9 @@ public class TaskMonitorTest {
     when(flapController.isFlapping()).thenReturn(true);
     sut.failed(new ImagePullFailedException("foobar", "failure"), "container error");
     verify(statusUpdater).setThrottleState(IMAGE_PULL_FAILED);
-    InOrder order = Mockito.inOrder(statusUpdater);
-    order.verify(statusUpdater).setState(FAILED);
-    order.verify(statusUpdater).update();
-    order.verify(statusUpdater).setContainerError("container error");
-    order.verify(statusUpdater).update();
+    verify(statusUpdater).setState(FAILED);
+    verify(statusUpdater).setContainerError("container error");
+    verify(statusUpdater).update();
   }
 
   @Test
@@ -163,11 +153,9 @@ public class TaskMonitorTest {
     when(flapController.isFlapping()).thenReturn(true);
     sut.failed(new ImageNotFoundException("foobar", "not found"), "container error");
     verify(statusUpdater).setThrottleState(IMAGE_MISSING);
-    InOrder order = Mockito.inOrder(statusUpdater);
-    order.verify(statusUpdater).setState(FAILED);
-    order.verify(statusUpdater).update();
-    order.verify(statusUpdater).setContainerError("container error");
-    order.verify(statusUpdater).update();
+    verify(statusUpdater).setState(FAILED);
+    verify(statusUpdater).setContainerError("container error");
+    verify(statusUpdater).update();
   }
 
   @Test
