@@ -17,6 +17,7 @@
 
 package com.spotify.helios.system;
 
+import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
@@ -27,6 +28,9 @@ import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import org.junit.Test;
+
+import java.util.List;
+import java.util.concurrent.Callable;
 
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
@@ -58,6 +62,20 @@ public class UndeployRaceTest extends SystemTestBase {
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
     final Deployment deployment = Deployment.of(jobId, START);
+
+    // Wait for host to be registered in the master. Otherwise, the client.deploy() call will
+    // return HOST_NOT_FOUND
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<String>() {
+      @Override
+      public String call() throws Exception {
+        final List<String> hosts = client.listHosts().get();
+        if (hosts.contains(testHost())) {
+          return testHost();
+        }
+        return null;
+      }
+    });
+
     final JobDeployResponse deployed = client.deploy(deployment, testHost()).get();
     assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
