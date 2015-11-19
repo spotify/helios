@@ -82,6 +82,11 @@
       <name>Andrey Sibiryov</name>
       <email>kobolog@spotify.com</email>
     </developer>
+    <developer>
+      <id>mattbrown</id>
+      <name>Matt Brown</name>
+      <email>mattbrown@spotify.com</email>
+    </developer>
   </developers>
 
   <repositories>
