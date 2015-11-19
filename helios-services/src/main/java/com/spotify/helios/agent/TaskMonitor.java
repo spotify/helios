@@ -103,7 +103,7 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
   }
 
   @Override
-  public void failed(final Throwable t) {
+  public void failed(final Throwable t, String containerError) {
     if (t instanceof InterruptedException) {
       // Ignore failures due to interruptions as they're used when tearing down the agent and do
       // not indicate actual runner failures.
@@ -114,7 +114,15 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
     } else if (t instanceof ImagePullFailedException) {
       imageFailure(IMAGE_PULL_FAILED);
     }
-    updateState(FAILED);
+    // Don't use updateState() to avoid calling statusUpdater.update() twice in a row.
+    statusUpdater.setState(FAILED);
+    statusUpdater.setContainerError(containerError);
+    // Commit and push a new status
+    try {
+      statusUpdater.update();
+    } catch (InterruptedException e) {
+      Thread.currentThread().interrupt();
+    }
   }
 
   @Override

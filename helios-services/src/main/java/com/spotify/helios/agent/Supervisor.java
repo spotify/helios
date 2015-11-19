@@ -383,6 +383,7 @@ public class Supervisor {
       }
 
       statusUpdater.setState(STOPPED);
+      statusUpdater.setContainerError(containerError());
       statusUpdater.update();
     }
 
@@ -413,6 +414,22 @@ public class Supervisor {
       }
       return !containerInfo.state().running();
     }
+
+    private String containerError() throws InterruptedException {
+      if (containerId == null) {
+        return null;
+      }
+      final ContainerInfo containerInfo;
+      try {
+        containerInfo = docker.inspectContainer(containerId);
+      } catch (ContainerNotFoundException e) {
+        return null;
+      } catch (DockerException e) {
+        log.error("failed to query container {}", containerId, e);
+        return null;
+      }
+      return containerInfo.state().error();
+    }
   }
 
   private static class Nop implements Command {
@@ -436,7 +453,7 @@ public class Supervisor {
     private MetricsContext pullContext;
 
     @Override
-    public void failed(final Throwable t) {
+    public void failed(final Throwable t, final String containerError) {
       metrics.containersThrewException();
     }
 

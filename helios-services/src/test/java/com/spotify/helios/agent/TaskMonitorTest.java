@@ -102,26 +102,29 @@ public class TaskMonitorTest {
     verify(statusUpdater).update();
     reset(statusUpdater);
 
-    sut.failed(new Exception());
+    sut.failed(new Exception(), "Error herping derps.");
     verify(statusUpdater).setState(FAILED);
-    verify(statusUpdater, never()).setThrottleState(any(ThrottleState.class));
+    verify(statusUpdater).setContainerError("Error herping derps.");
     verify(statusUpdater).update();
+    verify(statusUpdater, never()).setThrottleState(any(ThrottleState.class));
     reset(statusUpdater);
   }
 
   @Test
   public void verifyMonitorPropagatesImagePullFailed() throws Exception {
-    sut.failed(new ImagePullFailedException("foobar", "failure"));
+    sut.failed(new ImagePullFailedException("foobar", "failure"), "container error");
     verify(statusUpdater).setThrottleState(IMAGE_PULL_FAILED);
     verify(statusUpdater).setState(FAILED);
+    verify(statusUpdater).setContainerError("container error");
     verify(statusUpdater).update();
   }
 
   @Test
   public void verifyMonitorPropagatesImageMissing() throws Exception {
-    sut.failed(new ImageNotFoundException("foobar", "not found"));
+    sut.failed(new ImageNotFoundException("foobar", "not found"), "container error");
     verify(statusUpdater).setThrottleState(IMAGE_MISSING);
     verify(statusUpdater).setState(FAILED);
+    verify(statusUpdater).setContainerError("container error");
     verify(statusUpdater).update();
   }
 
@@ -138,18 +141,20 @@ public class TaskMonitorTest {
   @Test
   public void verifyImagePullFailureTrumpsFlappingState() throws Exception {
     when(flapController.isFlapping()).thenReturn(true);
-    sut.failed(new ImagePullFailedException("foobar", "failure"));
+    sut.failed(new ImagePullFailedException("foobar", "failure"), "container error");
     verify(statusUpdater).setThrottleState(IMAGE_PULL_FAILED);
     verify(statusUpdater).setState(FAILED);
+    verify(statusUpdater).setContainerError("container error");
     verify(statusUpdater).update();
   }
 
   @Test
   public void verifyImageMissingTrumpsFlappingState() throws Exception {
     when(flapController.isFlapping()).thenReturn(true);
-    sut.failed(new ImageNotFoundException("foobar", "not found"));
+    sut.failed(new ImageNotFoundException("foobar", "not found"), "container error");
     verify(statusUpdater).setThrottleState(IMAGE_MISSING);
     verify(statusUpdater).setState(FAILED);
+    verify(statusUpdater).setContainerError("container error");
     verify(statusUpdater).update();
   }
 

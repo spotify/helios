@@ -56,7 +56,8 @@ import static java.util.Collections.emptyMap;
  *     }
  *   },
  *   "state" : "RUNNING",
- *   "throttled" : "NO"
+ *   "throttled" : "NO",
+ *   "containerError": "Something broke starting the container!"
  * },
  * </pre>
  */
@@ -85,6 +86,7 @@ public class TaskStatus extends Descriptor {
   private final ThrottleState throttled;
   private final Map<String, PortMapping> ports;
   private final Map<String, String> env;
+  private final String containerError;
 
   /**
    * @param job The job the task is running.
@@ -94,6 +96,7 @@ public class TaskStatus extends Descriptor {
    * @param throttled The throttle state of the task.
    * @param ports The ports actually assigned to the task.
    * @param env The environment passed to the container.
+   * @param containerError The last Docker error encountered while starting the container.
    */
   public TaskStatus(@JsonProperty("job") final Job job,
                     @Nullable @JsonProperty("goal") final Goal goal,
@@ -101,7 +104,8 @@ public class TaskStatus extends Descriptor {
                     @Nullable @JsonProperty("containerId") final String containerId,
                     @JsonProperty("throttled") final ThrottleState throttled,
                     @JsonProperty("ports") final Map<String, PortMapping> ports,
-                    @Nullable @JsonProperty("env") final Map<String, String> env) {
+                    @Nullable @JsonProperty("env") final Map<String, String> env,
+                    @Nullable @JsonProperty("containerError") final String containerError) {
     this.job = checkNotNull(job, "job");
     this.goal = goal; // TODO (dano): add null check when all masters are upgraded
     this.state = checkNotNull(state, "state");
@@ -111,17 +115,19 @@ public class TaskStatus extends Descriptor {
     this.throttled = Optional.fromNullable(throttled).or(ThrottleState.NO);
     this.ports = Optional.fromNullable(ports).or(EMPTY_PORTS);
     this.env = Optional.fromNullable(env).or(Maps.<String, String>newHashMap());
+    this.containerError = Optional.fromNullable(containerError).or("");
   }
 
   public Builder asBuilder() {
     return newBuilder()
-        .setJob(job)
-        .setGoal(goal)
-        .setState(state)
-        .setContainerId(containerId)
-        .setThrottled(throttled)
-        .setPorts(ports)
-        .setEnv(env);
+            .setJob(job)
+            .setGoal(goal)
+            .setState(state)
+            .setContainerId(containerId)
+            .setThrottled(throttled)
+            .setPorts(ports)
+            .setEnv(env)
+            .setContainerError(containerError);
   }
 
   private TaskStatus(final Builder builder) {
@@ -134,6 +140,7 @@ public class TaskStatus extends Descriptor {
     this.throttled = Optional.fromNullable(builder.throttled).or(ThrottleState.NO);
     this.ports = Optional.fromNullable(builder.ports).or(EMPTY_PORTS);
     this.env = Optional.fromNullable(builder.env).or(Maps.<String, String>newHashMap());
+    this.containerError = Optional.fromNullable(builder.containerError).or("");
   }
 
   public ThrottleState getThrottled() {
@@ -165,17 +172,22 @@ public class TaskStatus extends Descriptor {
     return env;
   }
 
+  public String getContainerError() {
+    return containerError;
+  }
+
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-        .add("job", job)
-        .add("goal", goal)
-        .add("state", state)
-        .add("containerId", containerId)
-        .add("throttled", throttled)
-        .add("ports", ports)
-        .add("env", env)
-        .toString();
+            .add("job", job)
+            .add("goal", goal)
+            .add("state", state)
+            .add("containerId", containerId)
+            .add("throttled", throttled)
+            .add("ports", ports)
+            .add("containerError", containerError)
+            .add("env", env)
+            .toString();
   }
 
   @Override
@@ -210,6 +222,10 @@ public class TaskStatus extends Descriptor {
     if (throttled != that.throttled) {
       return false;
     }
+    if (containerError != null ? !containerError.equals(that.containerError) :
+            that.containerError != null) {
+      return false;
+    }
 
     return true;
   }
@@ -223,6 +239,7 @@ public class TaskStatus extends Descriptor {
     result = 31 * result + (throttled != null ? throttled.hashCode() : 0);
     result = 31 * result + (ports != null ? ports.hashCode() : 0);
     result = 31 * result + (env != null ? env.hashCode() : 0);
+    result = 31 * result + (containerError != null ? containerError.hashCode() : 0);
     return result;
   }
 
@@ -240,6 +257,7 @@ public class TaskStatus extends Descriptor {
     private Map<String, PortMapping> ports;
     private ThrottleState throttled;
     private Map<String, String> env;
+    private String containerError;
 
     public Builder setJob(final Job job) {
       this.job = job;
@@ -273,6 +291,11 @@ public class TaskStatus extends Descriptor {
 
     public Builder setEnv(final Map<String, String> env) {
       this.env = env;
+      return this;
+    }
+
+    public Builder setContainerError(final String containerError) {
+      this.containerError = containerError;
       return this;
     }
 

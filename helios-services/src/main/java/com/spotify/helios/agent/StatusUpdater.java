@@ -34,5 +34,7 @@ public interface StatusUpdater {
 
   void setGoal(Goal goal);
 
+  void setContainerError(String containerError);
+
   void update() throws InterruptedException;
 }
