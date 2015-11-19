@@ -183,7 +183,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         }
       }
     } catch (Exception e) {
-      log.warn("Couldn't get identities from ssh-agent", e);
+      log.debug("Couldn't get identities from ssh-agent", e);
     }
 
     try {
