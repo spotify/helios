@@ -183,7 +183,15 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         }
       }
     } catch (Exception e) {
-      log.warn("Couldn't get identities from ssh-agent", e);
+      log.debug("Couldn't get identities from ssh-agent", e);
+      log.warn(
+          "Your Helios cluster is setup to work over HTTPS based on the Helios DNS records "
+          + "found by this Helios CLI. This will provide client and server-side authentication. "
+          + "The team that operates your Helios cluster may choose to make this authentication "
+          + "optional for now in which case this is just a warning.\nWhen authentication is "
+          + "required, you'll need to run ssh-agent and set the SSH_AUTH_SOCK environment variable "
+          + "whenever you invoke this CLI."
+      );
     }
 
     try {
