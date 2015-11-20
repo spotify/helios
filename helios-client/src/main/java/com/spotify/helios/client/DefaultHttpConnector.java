@@ -21,7 +21,6 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Queues;
 
-import com.spotify.helios.client.tls.SshAgentSSLSocketFactory;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.sshagentproxy.AgentProxies;
@@ -45,12 +44,8 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocketFactory;
 
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -67,13 +62,17 @@ public class DefaultHttpConnector implements HttpConnector {
 
   private final List<Identity> identities;
   private final EndpointIterator endpointIterator;
+  private final HostnameVerifierProvider hostnameVerifierProvider;
 
   public DefaultHttpConnector(final String user,
                               final List<Identity> identities,
-                              final EndpointIterator endpointIterator) {
+                              final EndpointIterator endpointIterator,
+                              final boolean sslHostnameVerificationEnabled) {
     this.user = user;
     this.identities = identities;
     this.endpointIterator = endpointIterator;
+    this.hostnameVerifierProvider =
+        new HostnameVerifierProvider(sslHostnameVerificationEnabled, new DefaultHostnameVerifier());
   }
 
   @Override
@@ -183,19 +182,7 @@ public class DefaultHttpConnector implements HttpConnector {
       connection.setRequestProperty("Host", hostname);
 
       final HttpsURLConnection httpsConnection = (HttpsURLConnection) urlConnection;
-      httpsConnection.setHostnameVerifier(new HostnameVerifier() {
-        @Override
-        public boolean verify(String ip, SSLSession sslSession) {
-          final String tHostname =
-              hostname.endsWith(".") ? hostname.substring(0, hostname.length() - 1) : hostname;
-          return new DefaultHostnameVerifier().verify(tHostname, sslSession);
-        }
-      });
-
-      if (!isNullOrEmpty(user) && (agentProxy != null) && (identity != null)) {
-        final SSLSocketFactory factory = new SshAgentSSLSocketFactory(agentProxy, identity, user);
-        httpsConnection.setSSLSocketFactory(factory);
-      }
+      httpsConnection.setHostnameVerifier(hostnameVerifierProvider.verifierFor(hostname));
     }
 
     connection.setRequestProperty("Accept-Encoding", "gzip");
