@@ -19,6 +19,7 @@ package com.spotify.helios.client;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -75,6 +76,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   private final ListeningExecutorService executorService;
   private final String user;
   private final HostnameVerifierProvider hostnameVerifierProvider;
+  private List<Identity> identities = Collections.emptyList();
 
   DefaultRequestDispatcher(final List<Endpoint> endpoints,
                            final String user,
@@ -85,6 +87,14 @@ class DefaultRequestDispatcher implements RequestDispatcher {
     this.user = user;
     this.hostnameVerifierProvider =
         new HostnameVerifierProvider(sslHostnameVerificationEnabled, new DefaultHostnameVerifier());
+
+    if (endpointIterator.hasHttps()) {
+      try {
+        identities = getSshIdentities();
+      } catch (Exception e) {
+        log.debug("Couldn't get identities from ssh-agent", e);
+      }
+    }
   }
 
   @Override
@@ -155,7 +165,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   }
 
   /**
-   * Sets up a connection, retrying on connect failure.
+   * Sets up a connection
    */
   private HttpURLConnection connect(final URI uri, final String method, final byte[] entity,
                                     final Map<String, List<String>> headers)
@@ -172,25 +182,20 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         uriScheme, endpointUri.getUserInfo(), endpoint.getIp().getHostAddress(),
         endpointUri.getPort(), fullpath, uri.getQuery(), null);
 
-    AgentProxy agentProxy = null;
-    Deque<Identity> identities = Queues.newArrayDeque();
-    try {
-      if (uriScheme.equals("https")) {
-        agentProxy = AgentProxies.newInstance();
-        for (final Identity identity : agentProxy.list()) {
-          if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
-            // only RSA keys will work with our TLS implementation
-            identities.offerLast(identity);
-          }
-        }
-      }
-    } catch (Exception e) {
-      log.debug("Couldn't get identities from ssh-agent", e);
+    final AgentProxy agentProxy;
+    final Deque<Identity> ids;
+    if (uriScheme.equalsIgnoreCase("https")) {
+      agentProxy = AgentProxies.newInstance();
+      ids = Queues.newArrayDeque(identities);
+    } else {
+      agentProxy = null;
+      //noinspection ConstantConditions
+      ids = Queues.newArrayDeque(null);
     }
 
     try {
       while (true) {
-        final Identity identity = identities.poll();
+        final Identity identity = ids.poll();
 
         try {
           log.debug("connecting to {}", ipUri);
@@ -310,5 +315,20 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   @Override
   public void close() {
     executorService.shutdownNow();
+  }
+
+  private static List<Identity> getSshIdentities() throws IOException {
+    final ImmutableList.Builder<Identity> builder = ImmutableList.builder();
+
+    try (final AgentProxy agentProxy = AgentProxies.newInstance()) {
+      for (final Identity identity : agentProxy.list()) {
+        if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
+          // only RSA keys will work with our TLS implementation
+          builder.add(identity);
+        }
+      }
+    }
+
+    return builder.build();
   }
 }
