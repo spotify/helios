@@ -25,9 +25,9 @@ import com.spotify.helios.common.descriptors.HostSelector;
 
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Map;
 
-import static java.util.Collections.EMPTY_LIST;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertTrue;
 
@@ -61,7 +61,7 @@ public class HostMatcherTest {
         RollingUpdateService.HostMatcher(HOSTS_AND_LABELS);
     final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
         .setName("my_group")
-        .setHostSelectors(EMPTY_LIST)
+        .setHostSelectors(Collections.<HostSelector>emptyList())
         .build();
 
     assertTrue(hostMatcher.getMatchingHosts(deploymentGroup).isEmpty());
