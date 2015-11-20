@@ -17,12 +17,16 @@
 
 package com.spotify.helios.client;
 
+import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 
 import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Random;
+
+import javax.annotation.Nullable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -68,5 +72,19 @@ class EndpointIterator implements Iterator<Endpoint> {
   @Override
   public void remove() {
     throw new UnsupportedOperationException();
+  }
+
+  /**
+   * @return true if any endpoints' scheme is HTTPS
+   */
+  boolean hasHttps() {
+    return Iterables.any(endpoints, new Predicate<Endpoint>() {
+      @Override
+      public boolean apply(@Nullable Endpoint endpoint) {
+        return endpoint != null && endpoint.getUri() != null &&
+               endpoint.getUri().getScheme() != null &&
+               endpoint.getUri().getScheme().equalsIgnoreCase("https");
+      }
+    });
   }
 }
