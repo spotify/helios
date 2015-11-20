@@ -562,7 +562,6 @@ public class HeliosClient implements AutoCloseable {
           TimeUnit.SECONDS);
     }
 
-    @NotNull
     private HttpConnector createHttpConnector() {
       // ssh identities (potentially) used in authentication
       final List<Identity> identities = new ArrayList<>();
@@ -586,7 +585,19 @@ public class HeliosClient implements AutoCloseable {
       }
 
       final EndpointIterator endpointIterator = EndpointIterator.of(endpointSupplier.get());
-      return new DefaultHttpConnector(user, agentProxyOpt, identities, endpointIterator);
+
+      final DefaultHttpConnector connector = new DefaultHttpConnector(endpointIterator, 10000);
+
+      if (agentProxyOpt.isPresent()) {
+
+        return new AuthenticatingHttpConnector(user,
+            agentProxyOpt,
+            identities,
+            endpointIterator,
+            connector);
+      } else {
+        return connector;
+      }
     }
   }
 
