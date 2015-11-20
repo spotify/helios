@@ -39,7 +39,6 @@ import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.util.Deque;
 import java.util.List;
@@ -162,16 +161,15 @@ public class DefaultHttpConnector implements HttpConnector {
       log.debug("req: {} {} {} {}", method, ipUri, headers.size(), entity.length);
     }
 
-    final URLConnection urlConnection = ipUri.toURL().openConnection();
-    final HttpURLConnection connection = (HttpURLConnection) urlConnection;
+    final HttpURLConnection connection = (HttpURLConnection) ipUri.toURL().openConnection();
 
     // We verify the TLS certificate against the original hostname since verifying against the
     // IP address will fail
-    if (urlConnection instanceof HttpsURLConnection) {
+    if (connection instanceof HttpsURLConnection) {
       System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
       connection.setRequestProperty("Host", hostname);
 
-      final HttpsURLConnection httpsConnection = (HttpsURLConnection) urlConnection;
+      final HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
       httpsConnection.setHostnameVerifier(new HostnameVerifier() {
         @Override
         public boolean verify(String ip, SSLSession sslSession) {
@@ -201,7 +199,7 @@ public class DefaultHttpConnector implements HttpConnector {
       connection.setDoOutput(true);
       connection.getOutputStream().write(entity);
     }
-    if (urlConnection instanceof HttpsURLConnection) {
+    if (connection instanceof HttpsURLConnection) {
       setRequestMethod(connection, method, true);
     } else {
       setRequestMethod(connection, method, false);
