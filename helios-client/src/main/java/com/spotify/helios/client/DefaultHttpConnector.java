@@ -18,13 +18,13 @@
 package com.spotify.helios.client;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Queues;
 
 import com.spotify.helios.client.tls.SshAgentSSLSocketFactory;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
-import com.spotify.sshagentproxy.AgentProxies;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 
@@ -48,7 +48,6 @@ import java.util.Map;
 import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocketFactory;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
@@ -64,14 +63,16 @@ public class DefaultHttpConnector implements HttpConnector {
   private static final long HTTP_TIMEOUT_MILLIS = SECONDS.toMillis(10);
   // TODO (mbrown): remove
   private final String user;
-
+  private final Optional<AgentProxy> agentProxy;
   private final List<Identity> identities;
   private final EndpointIterator endpointIterator;
 
   public DefaultHttpConnector(final String user,
+                              final Optional<AgentProxy> agentProxy,
                               final List<Identity> identities,
                               final EndpointIterator endpointIterator) {
     this.user = user;
+    this.agentProxy = agentProxy;
     this.identities = identities;
     this.endpointIterator = endpointIterator;
   }
@@ -92,13 +93,10 @@ public class DefaultHttpConnector implements HttpConnector {
       throw new HeliosException(e);
     }
 
-    final AgentProxy agentProxy;
     final Deque<Identity> ids;
     if (ipUri.getScheme().equalsIgnoreCase("https")) {
-      agentProxy = AgentProxies.newInstance();
       ids = Queues.newArrayDeque(identities);
     } else {
-      agentProxy = null;
       //noinspection ConstantConditions
       ids = Queues.newArrayDeque(null);
     }
@@ -111,7 +109,7 @@ public class DefaultHttpConnector implements HttpConnector {
           log.debug("connecting to {}", ipUri);
 
           final HttpURLConnection connection = connect0(
-              ipUri, method, entity, headers, endpointHost, agentProxy, identity);
+              ipUri, method, entity, headers, endpointHost, identity);
 
           final int responseCode = connection.getResponseCode();
           if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
@@ -134,15 +132,6 @@ public class DefaultHttpConnector implements HttpConnector {
     } catch (IOException e) {
       throw new HeliosException(e);
     }
-    finally {
-      if (agentProxy != null) {
-        try {
-          agentProxy.close();
-        } catch (IOException e) {
-          //ignored
-        }
-      }
-    }
   }
 
   private URI toIpUri(Endpoint endpoint, URI uri) throws URISyntaxException {
@@ -162,7 +151,7 @@ public class DefaultHttpConnector implements HttpConnector {
 
   private HttpURLConnection connect0(final URI ipUri, final String method, final byte[] entity,
                                      final Map<String, List<String>> headers,
-                                     final String hostname, final AgentProxy agentProxy,
+                                     final String hostname,
                                      final Identity identity)
       throws IOException {
     if (log.isTraceEnabled()) {
@@ -192,9 +181,10 @@ public class DefaultHttpConnector implements HttpConnector {
         }
       });
 
-      if (!isNullOrEmpty(user) && (agentProxy != null) && (identity != null)) {
-        final SSLSocketFactory factory = new SshAgentSSLSocketFactory(agentProxy, identity, user);
-        httpsConnection.setSSLSocketFactory(factory);
+      // TODO (mbrown): this expression feels redundant as we can't have an identity without an agentproxy
+      if (!isNullOrEmpty(user) && agentProxy.isPresent() && identity != null) {
+        httpsConnection.setSSLSocketFactory(
+            new SshAgentSSLSocketFactory(agentProxy.get(), identity, user));
       }
     }
 

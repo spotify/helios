@@ -18,6 +18,7 @@
 package com.spotify.helios.client;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
@@ -566,7 +567,10 @@ public class HeliosClient implements AutoCloseable {
       // ssh identities (potentially) used in authentication
       final List<Identity> identities = new ArrayList<>();
 
+      Optional<AgentProxy> agentProxyOpt = Optional.absent();
+
       try (final AgentProxy agentProxy = AgentProxies.newInstance()) {
+        agentProxyOpt = Optional.of(agentProxy);
         for (final Identity identity : agentProxy.list()) {
           if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
             // only RSA keys will work with our TLS implementation
@@ -582,7 +586,7 @@ public class HeliosClient implements AutoCloseable {
       }
 
       final EndpointIterator endpointIterator = EndpointIterator.of(endpointSupplier.get());
-      return new DefaultHttpConnector(user, identities, endpointIterator);
+      return new DefaultHttpConnector(user, agentProxyOpt, identities, endpointIterator);
     }
   }
 
