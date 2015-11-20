@@ -18,7 +18,7 @@
 package com.spotify.helios.client;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Objects;
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 
@@ -145,6 +145,7 @@ public class Endpoints {
 
       DefaultEndpoint that = (DefaultEndpoint) o;
 
+      //noinspection SimplifiableIfStatement
       if (ip != null ? !ip.equals(that.ip) : that.ip != null) {
         return false;
       }
@@ -161,7 +162,7 @@ public class Endpoints {
 
     @Override
     public String toString() {
-      return Objects.toStringHelper(this)
+      return MoreObjects.toStringHelper(this)
           .add("uri", uri)
           .add("ip", ip)
           .toString();
