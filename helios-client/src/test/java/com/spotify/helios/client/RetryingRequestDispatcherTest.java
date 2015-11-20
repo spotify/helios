@@ -26,7 +26,6 @@ import com.spotify.helios.common.Clock;
 
 import org.hamcrest.CoreMatchers;
 import org.joda.time.Instant;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -53,14 +52,8 @@ public class RetryingRequestDispatcherTest {
   @Rule
   public final ExpectedException exception = ExpectedException.none();
 
-  private static RequestDispatcher delegate;
-  private static Clock clock;
-
-  @Before
-  public void setup() {
-    delegate = mock(RequestDispatcher.class);
-    clock = mock(Clock.class);
-  }
+  private final RequestDispatcher delegate = mock(RequestDispatcher.class);
+  private final Clock clock = mock(Clock.class);
 
   @Test
   public void testSuccess() throws Exception {
