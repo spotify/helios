@@ -26,6 +26,8 @@ import java.util.Map;
 
 interface HttpConnector {
 
+  // TODO (mbrown): it's ugly that this has the same list of parameters as RequestDispatcher
+  // TODO (mbrown): should create a Request interface instead to hold all of them
   HttpURLConnection connect(final URI uri, final String method, final byte[] entity,
                             final Map<String, List<String>> headers) throws HeliosException;
 }

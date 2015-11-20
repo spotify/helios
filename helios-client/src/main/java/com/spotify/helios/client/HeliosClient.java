@@ -596,8 +596,20 @@ public class HeliosClient implements AutoCloseable {
       }
 
       final EndpointIterator endpointIterator = EndpointIterator.of(endpointSupplier.get());
-      return new DefaultHttpConnector(user, agentProxyOpt, identities, endpointIterator,
-                                      sslHostnameVerification);
+
+      final DefaultHttpConnector connector = new DefaultHttpConnector(endpointIterator, 10000,
+                                                                      sslHostnameVerification);
+
+      if (agentProxyOpt.isPresent()) {
+
+        return new AuthenticatingHttpConnector(user,
+            agentProxyOpt,
+            identities,
+            endpointIterator,
+            connector);
+      } else {
+        return connector;
+      }
     }
   }
 
