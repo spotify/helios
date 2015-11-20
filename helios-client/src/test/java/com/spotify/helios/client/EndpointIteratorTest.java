@@ -39,6 +39,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -72,7 +73,7 @@ public class EndpointIteratorTest {
 
   @Test
   public void test() throws Exception {
-    final Iterator<Endpoint> iterator = EndpointIterator.of(endpoints);
+    final EndpointIterator iterator = EndpointIterator.of(endpoints);
 
     final Set<URI> uris = Sets.newHashSet();
     final Set<InetAddress> ips = Sets.newHashSet();
@@ -87,6 +88,7 @@ public class EndpointIteratorTest {
     assertEquals(ips.size(), 4);
     assertThat(uris, containsInAnyOrder(uri1, uri2));
     assertThat(ips, containsInAnyOrder(IP_A, IP_B, IP_C, IP_D));
+    assertTrue(iterator.hasHttps());
   }
 
   @Test
@@ -95,5 +97,12 @@ public class EndpointIteratorTest {
     assertFalse(iterator.hasNext());
     exception.expect(NoSuchElementException.class);
     iterator.next();
+  }
+
+  @Test
+  public void testHasHttpsReturnsFalse() throws Exception {
+    final EndpointIterator iterator = EndpointIterator.of(
+        Endpoints.of(Collections.singletonList(uri1)));
+    assertFalse(iterator.hasHttps());
   }
 }
