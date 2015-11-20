@@ -51,15 +51,11 @@ class DefaultRequestDispatcher implements RequestDispatcher {
 
   private final ListeningExecutorService executorService;
   private final HttpConnector httpConnector;
-  private final HostnameVerifierProvider hostnameVerifierProvider;
 
   DefaultRequestDispatcher(final HttpConnector httpConnector,
-                           final ListeningExecutorService executorService,
-                           final boolean sslHostnameVerificationEnabled) {
+                           final ListeningExecutorService executorService) {
     this.executorService = executorService;
     this.httpConnector = httpConnector;
-    this.hostnameVerifierProvider =
-        new HostnameVerifierProvider(sslHostnameVerificationEnabled, new DefaultHostnameVerifier());
   }
 
   @Override
