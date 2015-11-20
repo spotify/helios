@@ -111,7 +111,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
 
           final int responseCode = connection.getResponseCode();
           if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
-              && !identities.isEmpty()) {
+              && !ids.isEmpty()) {
             // there was some sort of security error. if we have any more SSH identities to try,
             // retry with the next available identity
             log.debug("retrying with next SSH identity since {} failed", identity.getComment());
