@@ -21,6 +21,7 @@ import com.google.common.base.Joiner;
 import com.google.common.base.Objects;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
+import com.google.common.net.InetAddresses;
 
 import org.apache.http.conn.DnsResolver;
 import org.apache.http.impl.conn.SystemDefaultDnsResolver;
@@ -90,7 +91,10 @@ public class Endpoints {
     final ImmutableList.Builder<Endpoint> endpoints = ImmutableList.builder();
     for (final URI uri : uris) {
       try {
-        for (final InetAddress ip : dnsResolver.resolve(uri.getHost())) {
+        for (InetAddress ip : dnsResolver.resolve(uri.getHost())) {
+          if (ip.isLoopbackAddress()) {
+            ip = InetAddresses.forString("127.0.0.1");
+          }
           endpoints.add(new DefaultEndpoint(uri, ip));
         }
       } catch (UnknownHostException e) {
