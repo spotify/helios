@@ -25,6 +25,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
@@ -48,6 +49,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -62,6 +64,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadPoolExecutor;
 
+import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -202,8 +205,30 @@ public class TemporaryJobs implements TestRule {
   }
 
   public TemporaryJobBuilder job() {
+    return this.job(Job.newBuilder());
+  }
+
+  public TemporaryJobBuilder jobWithConfig(final String configFile) throws IOException {
+    checkNotNull(configFile);
+
+    final Path configPath = Paths.get(configFile);
+    final File file = configPath.toFile();
+
+    if (!file.exists() || !file.isFile() || !file.canRead()) {
+      throw new IllegalArgumentException("Cannot read file " + file);
+    }
+
+    final byte[] bytes = Files.readAllBytes(configPath);
+    final String config = new String(bytes, UTF_8);
+    final Job job = Json.read(config, Job.class);
+
+    return this.job(job.toBuilder());
+  }
+
+  private TemporaryJobBuilder job(final Job.Builder jobBuilder) {
     final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix(),
-                                                                prober, env, reportWriter.get());
+                                                                prober, env, reportWriter.get(),
+                                                                jobBuilder);
 
     if (config.hasPath("env")) {
       final Config env = config.getConfig("env");

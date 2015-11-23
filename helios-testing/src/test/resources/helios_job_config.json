@@ -1,0 +1,14 @@
+{
+  "ports" : {
+    "http": {
+      "externalPort": 80,
+      "internalPort": 80,
+      "protocol": "tcp"
+    },
+    "https": {
+      "externalPort": 123,
+      "internalPort": 456,
+      "protocol": "tcp"
+    }
+  }
+}
