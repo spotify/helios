@@ -60,7 +60,7 @@ public class TemporaryJobBuilder {
   private static final int DEFAULT_EXPIRES_MINUTES = 30;
 
   private final List<String> hosts = Lists.newArrayList();
-  private final Job.Builder builder = Job.newBuilder();
+  private final Job.Builder builder;
   private final Set<String> waitPorts = Sets.newHashSet();
   private final Deployer deployer;
   private final String jobNamePrefix;
@@ -73,13 +73,15 @@ public class TemporaryJobBuilder {
 
   public TemporaryJobBuilder(final Deployer deployer, final String jobNamePrefix,
                              final Prober defaultProber, final Map<String, String> env,
-                             final TemporaryJobReports.ReportWriter reportWriter) {
+                             final TemporaryJobReports.ReportWriter reportWriter,
+                             final Job.Builder jobBuilder) {
     checkNotNull(deployer, "deployer");
     checkNotNull(jobNamePrefix, "jobNamePrefix");
     checkNotNull(defaultProber, "defaultProber");
     this.deployer = deployer;
     this.jobNamePrefix = jobNamePrefix;
     this.prober = defaultProber;
+    this.builder = jobBuilder;
     this.builder.setRegistrationDomain(jobNamePrefix);
     this.env = env;
     this.reportWriter = reportWriter;
