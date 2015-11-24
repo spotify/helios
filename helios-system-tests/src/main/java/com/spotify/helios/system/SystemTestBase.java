@@ -543,7 +543,7 @@ public abstract class SystemTestBase {
     final List<String> argsList = Lists.newArrayList(
         "-vvvv",
         "--no-log-setup",
-        "--http", "http://localhost:" + (masterPort() + offset),
+        "--http", "http://0.0.0.0:" + (masterPort() + offset),
         "--admin=" + (masterAdminPort() + offset),
         "--domain", "",
         "--zk", zk.connectString()
