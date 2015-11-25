@@ -340,7 +340,7 @@ public class ZooKeeperMasterModel implements MasterModel {
             create(Paths.configDeploymentGroup(deploymentGroup.getName()), deploymentGroup),
             create(Paths.statusDeploymentGroup(deploymentGroup.getName())),
             create(Paths.statusDeploymentGroupHosts(deploymentGroup.getName()))
-          );
+        );
       } catch (final NodeExistsException e) {
         throw new DeploymentGroupExistsException(deploymentGroup.getName());
       }
@@ -375,13 +375,12 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("removeDeploymentGroup");
     try {
       client.ensurePath(Paths.configDeploymentGroups());
-      client.delete(Paths.configDeploymentGroup(name));
-      if (client.exists(Paths.statusDeploymentGroupHosts(name)) != null) {
-        client.delete(Paths.statusDeploymentGroupHosts(name));
-      }
-      if (client.exists(Paths.statusDeploymentGroup(name)) != null) {
-        client.delete(Paths.statusDeploymentGroup(name));
-      }
+      client.ensurePath(Paths.statusDeploymentGroups());
+      client.transaction(
+          delete(Paths.configDeploymentGroup(name)),
+          delete(Paths.statusDeploymentGroupHosts(name)),
+          delete(Paths.statusDeploymentGroup(name))
+      );
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(name);
     } catch (final KeeperException e) {
