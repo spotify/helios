@@ -39,8 +39,6 @@ import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
-import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
-
 // TODO (mbrown): rename
 public class DefaultHttpConnector implements HttpConnector {
 
@@ -67,8 +65,6 @@ public class DefaultHttpConnector implements HttpConnector {
     final Endpoint endpoint = endpointIterator.next();
     final String endpointHost = endpoint.getUri().getHost();
 
-    // convert the URI whose hostname portion is a domain name into a URI where the host is an IP
-    // as we expect there to be several different IP addresses besides a common domain name
     try {
       return connect0(uri, method, entity, headers, endpointHost);
     } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
@@ -84,7 +80,7 @@ public class DefaultHttpConnector implements HttpConnector {
 
   private HttpURLConnection connect0(final URI ipUri, final String method, final byte[] entity,
                                      final Map<String, List<String>> headers,
-                                     final String hostname)
+                                     final String endpointHost)
       throws IOException {
     if (log.isTraceEnabled()) {
       log.trace("req: {} {} {} {} {} {}", method, ipUri, headers.size(),
@@ -95,16 +91,7 @@ public class DefaultHttpConnector implements HttpConnector {
     }
 
     final HttpURLConnection connection = (HttpURLConnection) ipUri.toURL().openConnection();
-
-    // We verify the TLS certificate against the original hostname since verifying against the
-    // IP address will fail
-    if (connection instanceof HttpsURLConnection) {
-      System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
-      connection.setRequestProperty("Host", hostname);
-
-      final HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
-      httpsConnection.setHostnameVerifier(hostnameVerifierProvider.verifierFor(hostname));
-    }
+    handleHttps(connection, endpointHost);
 
     connection.setRequestProperty("Accept-Encoding", "gzip");
     connection.setInstanceFollowRedirects(false);
@@ -122,14 +109,23 @@ public class DefaultHttpConnector implements HttpConnector {
 
     setRequestMethod(connection, method, connection instanceof HttpsURLConnection);
 
-    final int responseCode = connection.getResponseCode();
-    if (responseCode == HTTP_BAD_GATEWAY) {
-      throw new ConnectException("502 Bad Gateway");
-    }
-
     return connection;
   }
 
+  private void handleHttps(final HttpURLConnection connection, final String hostname) {
+
+    if (!(connection instanceof HttpsURLConnection)) {
+      return;
+    }
+
+    // We verify the TLS certificate against the original hostname since verifying against the
+    // IP address will fail
+    System.setProperty("sun.net.http.allowRestrictedHeaders", "true");
+    connection.setRequestProperty("Host", hostname);
+
+    final HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+    httpsConnection.setHostnameVerifier(hostnameVerifierProvider.verifierFor(hostname));
+  }
 
   private void setRequestMethod(final HttpURLConnection connection,
                                 final String method,
