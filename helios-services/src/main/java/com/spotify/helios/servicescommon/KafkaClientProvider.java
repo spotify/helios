@@ -24,7 +24,9 @@ import com.google.common.collect.ImmutableMap;
 
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.ByteArraySerializer;
 import org.apache.kafka.common.serialization.Serializer;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +40,7 @@ public class KafkaClientProvider {
   private static final Logger log = LoggerFactory.getLogger(KafkaClientProvider.class);
 
   private static final String KAFKA_HELIOS_CLIENT_ID = "Helios";
-  private static final int KAFKA_QUORUM_PARAMETER = 1;
+  private static final String KAFKA_QUORUM_PARAMETER = "1";
   public static final int MAX_BLOCK_TIMEOUT = 5000;
 
   private final Optional<ImmutableMap<String, Object>> partialConfigs;
@@ -85,19 +87,25 @@ public class KafkaClientProvider {
     });
   }
 
-  static KafkaClientProvider getTestingProvider() {
-    return new KafkaClientProvider(null);
+  /**
+   * Returns a producer that uses {@link org.apache.kafka.common.serialization.StringSerializer} for
+   * keys and {@link org.apache.kafka.common.serialization.ByteArraySerializer} for values.
+   */
+  public Optional<KafkaProducer<String, byte[]>> getDefaultProducer() {
+    return getProducer(new StringSerializer(), new ByteArraySerializer());
   }
 
-  public <K, V> Optional<KafkaProducer<K, V>> getProducer(@NotNull final Serializer<K> ks,
-                                                          @NotNull final Serializer<V> vs) {
+  /** Returns a producer with customized serializers for keys and values. */
+  public <K, V> Optional<KafkaProducer<K, V>> getProducer(
+      @NotNull final Serializer<K> keySerializer,
+      @NotNull final Serializer<V> valueSerializer) {
     try {
       return partialConfigs.transform(
           new Function<ImmutableMap<String, Object>, KafkaProducer<K, V>>() {
             @Nullable
             @Override
             public KafkaProducer<K, V> apply(ImmutableMap<String, Object> input) {
-              return new KafkaProducer<>(input, ks, vs);
+              return new KafkaProducer<>(input, keySerializer, valueSerializer);
             }
           });
     } catch (final Exception e) {

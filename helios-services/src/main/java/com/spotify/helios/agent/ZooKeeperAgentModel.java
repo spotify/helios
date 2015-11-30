@@ -36,8 +36,6 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperUpdatingPersistentDirectory;
 
 import org.apache.curator.framework.state.ConnectionState;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,8 +90,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     this.historyWriter = new TaskHistoryWriter(
         host, client, stateDirectory.resolve(TASK_HISTORY_FILENAME));
 
-    this.kafkaSender = new KafkaSender(
-        kafkaProvider.getProducer(new StringSerializer(), new ByteArraySerializer()));
+    this.kafkaSender = new KafkaSender(kafkaProvider.getDefaultProducer());
   }
 
   @Override

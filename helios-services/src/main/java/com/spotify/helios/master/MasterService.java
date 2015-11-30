@@ -24,7 +24,6 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
-import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
@@ -36,6 +35,7 @@ import com.spotify.helios.master.resources.VersionResource;
 import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -58,8 +58,6 @@ import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.kafka.common.serialization.ByteArraySerializer;
-import org.apache.kafka.common.serialization.StringSerializer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -167,8 +165,7 @@ public class MasterService extends AbstractIdleService {
 
     // Make a KafkaProducer for events that can be serialized to an array of bytes,
     // and wrap it in our KafkaSender.
-    final KafkaSender kafkaSender = new KafkaSender(
-        kafkaClientProvider.getProducer(new StringSerializer(), new ByteArraySerializer()));
+    final KafkaSender kafkaSender = new KafkaSender(kafkaClientProvider.getDefaultProducer());
 
     final ZooKeeperMasterModel model =
         new ZooKeeperMasterModel(zkClientProvider, config.getName(), kafkaSender);
