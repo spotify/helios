@@ -40,7 +40,7 @@ public class KafkaClientProvider {
   private static final Logger log = LoggerFactory.getLogger(KafkaClientProvider.class);
 
   private static final String KAFKA_HELIOS_CLIENT_ID = "Helios";
-  private static final int KAFKA_QUORUM_PARAMETER = 1;
+  private static final String KAFKA_QUORUM_PARAMETER = "1";
   public static final int MAX_BLOCK_TIMEOUT = 5000;
 
   private final Optional<ImmutableMap<String, Object>> partialConfigs;

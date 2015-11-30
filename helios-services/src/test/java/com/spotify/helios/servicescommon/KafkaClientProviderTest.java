@@ -37,7 +37,9 @@ public class KafkaClientProviderTest {
 
   @Test
   public void testReturnsProvider() {
-    final KafkaClientProvider provider = new KafkaClientProvider(ImmutableList.of("localhost"));
+    // the actual host:port used in the test does not need to be an actual Kafka server
+    final ImmutableList<String> hosts = ImmutableList.of("localhost:2181");
+    final KafkaClientProvider provider = new KafkaClientProvider(hosts);
 
     assertTrue("Expected KafkaProvider to return non-absent KafkaProducer "
                + "when passed a list of seed hosts",
