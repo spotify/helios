@@ -15,7 +15,8 @@
  * under the License.
  */
 
-package com.spotify.helios.servicescommon;
+// TODO(negz): Dedupe with com.spotify.helios.servicescommon, move into docker-client?
+package com.spotify.helios.testing;
 
 import com.google.common.net.HostAndPort;
 
@@ -36,6 +37,7 @@ public class DockerHost {
 
   private final String host;
   private final URI uri;
+  private final URI bindURI;
   private final String address;
   private final int port;
   private final String dockerCertPath;
@@ -43,9 +45,10 @@ public class DockerHost {
   private DockerHost(final String endpoint, final String dockerCertPath) {
     if (endpoint.startsWith("unix://")) {
       this.port = 0;
-      this.address = "localhost";
+      this.address = DEFAULT_HOST;
       this.host = endpoint;
       this.uri = URI.create(endpoint);
+      this.bindURI = URI.create(endpoint);
     } else {
       final String stripped = endpoint.replaceAll(".*://", "");
       final HostAndPort hostAndPort = HostAndPort.fromString(stripped);
@@ -56,6 +59,7 @@ public class DockerHost {
       this.address = isNullOrEmpty(hostText) ? DEFAULT_HOST : hostText;
       this.host = address + ":" + port;
       this.uri = URI.create(scheme + "://" + address + ":" + port);
+      this.bindURI = URI.create("tcp://" + address + ":" + port);
     }
 
     this.dockerCertPath = dockerCertPath;
@@ -79,6 +83,14 @@ public class DockerHost {
     return uri;
   }
 
+  /**
+   * Get the docker rest bind uri.
+   *
+   * @return The uri of the host for binding ports (or setting $DOCKER_HOST).
+   */
+  public URI bindURI() {
+    return bindURI;
+  }
   /**
    * Get the docker endpoint port.
    *
