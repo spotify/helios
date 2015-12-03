@@ -33,6 +33,7 @@ import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.JobNotDeployedException;
 import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.master.ZooKeeperMasterModel;
+import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -62,6 +63,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 
 @RunWith(MockitoJUnitRunner.class)
 public class ZooKeeperMasterModelIntegrationTest {
@@ -103,8 +105,12 @@ public class ZooKeeperMasterModelIntegrationTest {
     client.ensurePath(Paths.statusMasters());
     client.ensurePath(Paths.historyJobs());
 
-    model = new ZooKeeperMasterModel(
-        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()));
+    final ZooKeeperClientProvider zkProvider =
+        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop());
+
+    final KafkaSender kafkaSender = mock(KafkaSender.class);
+
+    model = new ZooKeeperMasterModel(zkProvider, getClass().getName(), kafkaSender);
   }
 
   @Test

@@ -21,6 +21,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -147,28 +148,18 @@ public class ZooKeeperMasterModel implements MasterModel {
   private final String name;
   private final KafkaSender kafkaSender;
 
-  public  ZooKeeperMasterModel(final ZooKeeperClientProvider provider)
-      throws IOException, InterruptedException {
-    this(provider, null);
-  }
-
-  public ZooKeeperMasterModel(final ZooKeeperClientProvider provider, @Nullable final String name) {
-    this(provider, name, null);
-  }
-
   /**
    * Constructor
    * @param provider         {@link ZooKeeperClientProvider}
    * @param name             The hostname of the machine running the {@link MasterModel}
    * @param kafkaSender      {@link KafkaSender}
    */
-  public ZooKeeperMasterModel(
-      final ZooKeeperClientProvider provider,
-      @Nullable final String name,
-      @Nullable final KafkaSender kafkaSender) {
-    this.provider = provider;
-    this.name = name;
-    this.kafkaSender = kafkaSender;
+  public ZooKeeperMasterModel(final ZooKeeperClientProvider provider,
+                              final String name,
+                              final KafkaSender kafkaSender) {
+    this.provider = Preconditions.checkNotNull(provider);
+    this.name = Preconditions.checkNotNull(name);
+    this.kafkaSender = Preconditions.checkNotNull(kafkaSender);
   }
 
   /**
@@ -425,13 +416,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         }
 
         client.transaction(ops);
-
-        if (kafkaSender != null) {
-          for (final Map<String, Object> event : events) {
-            kafkaSender.send(KafkaRecord.of(
-                DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, Json.asBytesUnchecked(event)));
-          }
-        }
+        emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, events);
       }
     } catch (NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(name, e);
@@ -470,12 +455,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       client.ensurePath(Paths.statusDeploymentGroupTasks(updated.getName()));
       client.transaction(operations);
 
-      if (kafkaSender != null) {
-        for (final Map<String, Object> event : op.events()) {
-          kafkaSender.send(KafkaRecord.of(
-              DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, Json.asBytesUnchecked(event)));
-        }
-      }
+      emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, op.events());
       log.info("finished rolling-update on deployment-group: name={}", deploymentGroup.getName());
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(deploymentGroup.getName());
@@ -600,14 +580,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           ops.addAll(op.operations());
           try {
             client.transaction(ops);
-
-            // Emit events
-            if (kafkaSender != null) {
-              for (final Map<String, Object> event : op.events()) {
-                kafkaSender.send(KafkaRecord.of(
-                    DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, Json.asBytesUnchecked(event)));
-              }
-            }
+            emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, op.events());
           } catch (KeeperException.BadVersionException e) {
             // some other master beat us in processing this rolling update step. not exceptional.
             // ideally we would check the path in the exception, but curator doesn't provide a path
@@ -620,6 +593,13 @@ public class ZooKeeperMasterModel implements MasterModel {
       } catch (final Exception e) {
         log.error("error processing rolling update step for {}", deploymentGroupName, e);
       }
+    }
+  }
+
+  private void emitEvents(final String topic, final List<Map<String, Object>> events) {
+    // Emit events
+    for (final Map<String, Object> event : events) {
+      kafkaSender.send(KafkaRecord.of(topic, Json.asBytesUnchecked(event)));
     }
   }
 
