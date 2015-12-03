@@ -38,6 +38,12 @@
       <groupId>com.typesafe</groupId>
       <artifactId>config</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.spotify</groupId>
+      <artifactId>docker-client</artifactId>
+      <version>3.2.1</version>
+      <classifier>shaded</classifier>
+    </dependency>
 
     <!--test deps-->
     <dependency>
