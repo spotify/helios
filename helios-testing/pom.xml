@@ -34,10 +34,10 @@
       <groupId>joda-time</groupId>
       <artifactId>joda-time</artifactId>
     </dependency>
-	  <dependency>
-	    <groupId>com.typesafe</groupId>
-	    <artifactId>config</artifactId>
-	  </dependency>
+    <dependency>
+      <groupId>com.typesafe</groupId>
+      <artifactId>config</artifactId>
+    </dependency>
 
     <!--test deps-->
     <dependency>
