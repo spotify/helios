@@ -88,7 +88,7 @@ public class ServiceIT {
   public void testPing() throws Exception {    
     // send a request to a /ping endpoint using the host and dynamically
     // allocated port of the job
-    HostAndPort port = job.address("wiggum");
+    HostAndPort port = temporaryJob.address("wiggum");
     String pingUri = String.format("http://%s:%d/ping",
                                    port.getHostText(),
                                    port.getPort());
