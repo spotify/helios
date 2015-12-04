@@ -326,6 +326,22 @@ public class ZooKeeperMasterModel implements MasterModel {
     return Ordering.from(EVENT_COMPARATOR).sortedCopy(jsEvents);
   }
 
+  /**
+   * Create a deployment group.
+   * <p>
+   * If successful, the following ZK nodes will be created:
+   * <ul>
+   *   <li>/config/deployment-groups/[group-name]</li>
+   *   <li>/status/deployment-groups/[group-name]</li>
+   *   <li>/status/deployment-groups/[group-name]/hosts</li>
+   * </ul>
+   * These nodes are guaranteed to exist until the DG is removed.
+   * <p>
+   * If the operation fails no ZK nodes will be created. If any of the nodes above already exist the
+   * operation will fail.
+   *
+   * @throws DeploymentGroupExistsException If a DG with the same name already exists.
+   */
   @Override
   public void addDeploymentGroup(final DeploymentGroup deploymentGroup)
       throws DeploymentGroupExistsException {
@@ -339,7 +355,8 @@ public class ZooKeeperMasterModel implements MasterModel {
         client.transaction(
             create(Paths.configDeploymentGroup(deploymentGroup.getName()), deploymentGroup),
             create(Paths.statusDeploymentGroup(deploymentGroup.getName())),
-            create(Paths.statusDeploymentGroupHosts(deploymentGroup.getName()))
+            create(Paths.statusDeploymentGroupHosts(deploymentGroup.getName()),
+                   Json.asBytesUnchecked(emptyList()))
         );
       } catch (final NodeExistsException e) {
         throw new DeploymentGroupExistsException(deploymentGroup.getName());
@@ -369,6 +386,22 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   * Remove a deployment group.
+   * <p>
+   * If successful, all ZK nodes associated with the DG will be deleted. Specifically these nodes
+   * are guaranteed to be non-existent after a successful remove (not all of them might exist
+   * before, though):
+   * <ul>
+   *   <li>/config/deployment-groups/[group-name]</li>
+   *   <li>/status/deployment-groups/[group-name]</li>
+   *   <li>/status/deployment-groups/[group-name]/hosts</li>
+   *   <li>/status/deployment-group-tasks/[group-name]</li>
+   * </ul>
+   * If the operation fails no ZK nodes will be removed.
+   *
+   * @throws DeploymentGroupDoesNotExistException If the DG does not exist.
+   */
   @Override
   public void removeDeploymentGroup(final String name) throws DeploymentGroupDoesNotExistException {
     log.info("removing deployment-group: name={}", name);
@@ -376,11 +409,31 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       client.ensurePath(Paths.configDeploymentGroups());
       client.ensurePath(Paths.statusDeploymentGroups());
-      client.transaction(
-          delete(Paths.configDeploymentGroup(name)),
-          delete(Paths.statusDeploymentGroupHosts(name)),
-          delete(Paths.statusDeploymentGroup(name))
-      );
+      client.ensurePath(Paths.statusDeploymentGroupTasks());
+
+      final List<ZooKeeperOperation> operations = Lists.newArrayList();
+
+      // /status/deployment-group-tasks/[group-name] might exist (if a rolling-update is in
+      // progress). To avoid inconsistent state make sure it's deleted if it does exist:
+      //
+      // * If it exists: delete it.
+      // * If it doesn't exist, add and delete it in the same transaction. This is a round-about
+      //   way of ensuring that it wasn't created when we commit the transaction.
+      //
+      // Having /status/deployment-group-tasks/[group-name] for removed groups around will cause
+      // DGs to become slower and spam logs with errors so we want to avoid it.
+      if (client.exists(Paths.statusDeploymentGroupTasks(name)) != null) {
+        operations.add(delete(Paths.statusDeploymentGroupTasks(name)));
+      } else {
+        operations.add(create(Paths.statusDeploymentGroupTasks(name)));
+        operations.add(delete(Paths.statusDeploymentGroupTasks(name)));
+      }
+
+      operations.add(delete(Paths.configDeploymentGroup(name)));
+      operations.add(delete(Paths.statusDeploymentGroupHosts(name)));
+      operations.add(delete(Paths.statusDeploymentGroup(name)));
+
+      client.transaction(operations);
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(name);
     } catch (final KeeperException e) {
