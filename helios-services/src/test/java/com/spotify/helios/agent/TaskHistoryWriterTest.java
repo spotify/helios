@@ -29,6 +29,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.ZooKeeperMasterModel;
+import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -90,8 +91,14 @@ public class TaskHistoryWriterTest {
 
     client = new DefaultZooKeeperClient(zk.curator());
     makeWriter(client);
-    masterModel = new ZooKeeperMasterModel(new ZooKeeperClientProvider(client,
-        ZooKeeperModelReporter.noop()));
+
+    final ZooKeeperClientProvider zkProvider =
+        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop());
+
+    final KafkaSender kafkaSender = mock(KafkaSender.class);
+
+    masterModel = new ZooKeeperMasterModel(zkProvider, "test", kafkaSender);
+
     client.ensurePath(Paths.configJobs());
     client.ensurePath(Paths.configJobRefs());
     client.ensurePath(Paths.historyJobHostEvents(JOB_ID, HOSTNAME));
