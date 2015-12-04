@@ -72,6 +72,7 @@ import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.KeeperException.NotEmptyException;
+import org.apache.zookeeper.OpResult;
 import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
@@ -810,9 +811,6 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final ZooKeeperClient client = provider.get("stopDeploymentGroup");
 
-    // TODO(staffan): This is stupid, but required for correct behaviour right now.
-    getDeploymentGroup(deploymentGroupName);
-
     // Delete deployment group tasks (if any) and set DG state to FAILED
     final DeploymentGroupStatus status = DeploymentGroupStatus.newBuilder()
         .setState(FAILED)
@@ -822,26 +820,43 @@ public class ZooKeeperMasterModel implements MasterModel {
     final String tasksPath = Paths.statusDeploymentGroupTasks(deploymentGroupName);
 
     try {
-      client.ensurePath(statusPath);
       client.ensurePath(Paths.statusDeploymentGroupTasks());
 
-      // NOTE: This is racey. If a rollout finishes before the delete() is executed
-      // then this will fail. This is annoying for users, but at least means we won't have
-      // inconsistent state. There's also another race in case the DG is inactive when stop is
-      // called, but has become active when we execute the ZK transaction to stop the DG.
+      final List<ZooKeeperOperation> operations = Lists.newArrayList();
+
+      // NOTE: This remove operation is racey. If tasks exist and the rollout finishes before the
+      // delete() is executed then this will fail. Conversely, if it doesn't exist but is created
+      // before the transaction is executed it will also fail. This is annoying for users, but at
+      // least means we won't have inconsistent state.
+      //
+      // That the set() is first in the list of operations is important because of the
+      // kludgy error checking we do below to disambiguate "doesn't exist" failures from the race
+      // condition mentioned below.
+      operations.add(set(statusPath, status));
+
       final Stat tasksStat = client.stat(tasksPath);
       if (tasksStat != null) {
-        client.transaction(set(statusPath, status),
-                           delete(tasksPath));
+        operations.add(delete(tasksPath));
       } else {
         // There doesn't seem to be a "check that node doesn't exist" operation so we
         // do a create and a delete on the same path to emulate it.
-        client.transaction(set(statusPath, status),
-                           create(tasksPath),
-                           delete(tasksPath));
+        operations.add(create(tasksPath));
+        operations.add(delete(tasksPath));
       }
+
+      client.transaction(operations);
     } catch (final NoNodeException e) {
-      throw new DeploymentGroupDoesNotExistException(deploymentGroupName);
+      // Either the statusPath didn't exist, in which case the DG does not exist. Or the tasks path
+      // does not exist which can happen due to the race condition described above. In the latter
+      // case make sure we don't return a "doesn't exist" error as that would be a lie.
+      if (((OpResult.ErrorResult) e.getResults().get(0)).getErr() ==
+          KeeperException.Code.NONODE.intValue()) {
+        throw new DeploymentGroupDoesNotExistException(deploymentGroupName);
+      } else {
+        throw new HeliosRuntimeException(
+            "stop deployment-group " + deploymentGroupName +
+            " failed due to a race condition, please retry", e);
+      }
     } catch (final KeeperException e) {
       throw new HeliosRuntimeException(
           "stop deployment-group " + deploymentGroupName + " failed", e);
