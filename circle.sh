@@ -29,6 +29,7 @@ case "$1" in
 
   dependencies)
     mvn clean install -T 2 -Dmaven.javadoc.skip=true -DskipTests=true -B -V
+    pip install codecov
 
     ;;
 
@@ -116,7 +117,8 @@ case "$1" in
   collect_test_reports)
     cp */target/surefire-reports/*.xml $CI_REPORTS || true
     cp */target/failsafe-reports/*.xml $CI_REPORTS || true
-
+    codecov
+    
     ;;
 
 esac
