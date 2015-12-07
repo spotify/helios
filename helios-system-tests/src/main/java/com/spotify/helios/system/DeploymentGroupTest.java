@@ -38,6 +38,7 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
+import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.master.MasterMain;
 
@@ -618,5 +619,37 @@ public class DeploymentGroupTest extends SystemTestBase {
     assertThat(output, containsString("FORBIDDEN"));
     awaitDeploymentGroupStatus(defaultClient(), TEST_GROUP, DeploymentGroupStatus.State.DONE);
     awaitTaskState(jobId, host, TaskStatus.State.RUNNING);
+  }
+
+  @Test
+  public void testRemoveDeploymentGroupInactive() throws Exception {
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    cli("rolling-update", "--async", "--migrate", testJobNameAndVersion, TEST_GROUP);
+
+    final RemoveDeploymentGroupResponse response =
+        defaultClient().removeDeploymentGroup(TEST_GROUP).get();
+
+    assertEquals(RemoveDeploymentGroupResponse.Status.REMOVED, response.getStatus());
+  }
+
+  @Test
+  public void testRemoveDeploymentGroupActive() throws Exception {
+    final String host = testHost();
+    startDefaultAgent(host, "--labels", TEST_LABEL);
+
+    // Wait for agent to come up
+    final HeliosClient client = defaultClient();
+    awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+
+    // Use an invalid image to make sure the DG doesn't succeed (this ensure the DG will be active
+    // for 5+ minutes, which is plenty of time).
+    final JobId jobId = createJob(testJobName, testJobVersion, "invalid_image", IDLE_COMMAND);
+    cli("create-deployment-group", "--json", TEST_GROUP, TEST_LABEL);
+    cli("rolling-update", "--async", "--migrate", testJobNameAndVersion, TEST_GROUP);
+
+    final RemoveDeploymentGroupResponse response =
+        defaultClient().removeDeploymentGroup(TEST_GROUP).get();
+
+    assertEquals(RemoveDeploymentGroupResponse.Status.REMOVED, response.getStatus());
   }
 }
