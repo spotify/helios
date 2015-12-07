@@ -284,6 +284,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <autoReleaseAfterClose>true</autoReleaseAfterClose>
     <jacoco.version>0.7.1.201405082137</jacoco.version>
+    <surefire.version>2.16</surefire.version>
     <surefireArgLine>-Xmx128m -XX:+TieredCompilation -XX:TieredStopAtLevel=1</surefireArgLine>
   </properties>
 
@@ -310,7 +311,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>2.16</version>
+            <version>${surefire.version}</version>
             <configuration>
               <enableAssertions>false</enableAssertions>
               <forkCount>1C</forkCount>
@@ -342,7 +343,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>2.16</version>
+            <version>${surefire.version}</version>
             <configuration>
               <enableAssertions>false</enableAssertions>
               <forkCount>4</forkCount>
@@ -377,7 +378,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>2.16</version>
+            <version>${surefire.version}</version>
             <configuration>
               <enableAssertions>false</enableAssertions>
               <forkCount>1C</forkCount>
@@ -408,7 +409,7 @@
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
-            <version>2.16</version>
+            <version>${surefire.version}</version>
             <configuration>
               <enableAssertions>false</enableAssertions>
               <systemPropertyVariables>
@@ -428,7 +429,9 @@
       <build>
         <plugins>
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire.version}</version>
             <configuration>
               <skip>true</skip>
             </configuration>
@@ -542,7 +545,9 @@
             </executions>
           </plugin>
           <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
+            <version>${surefire.version}</version>
             <configuration>
               <argLine>${jacocoArgLine} ${surefireArgLine}</argLine>
             </configuration>
