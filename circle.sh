@@ -44,7 +44,7 @@ case "$1" in
       0)
         # run all tests *except* helios-system-tests
         sed -i'' 's/<module>helios-system-tests<\/module>//' pom.xml
-        mvn test -B
+        mvn test -B -Pjacoco
 
         ;;
 
@@ -118,7 +118,7 @@ case "$1" in
     cp */target/surefire-reports/*.xml $CI_REPORTS || true
     cp */target/failsafe-reports/*.xml $CI_REPORTS || true
     codecov
-    
+
     ;;
 
 esac
