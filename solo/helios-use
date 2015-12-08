@@ -12,7 +12,7 @@ function get_helios_version() {
 
 function get_cli_version() {
 	if type -p helios >/dev/null; then
-		helios --version | grep -oe '[0-9\.]\+'
+		helios --version | grep 'Helios CLI' | grep -oe '[0-9\.]\+'
 	fi
 }
 
