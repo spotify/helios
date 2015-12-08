@@ -834,7 +834,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       // condition mentioned below.
       operations.add(set(statusPath, status));
 
-      final Stat tasksStat = client.stat(tasksPath);
+      final Stat tasksStat = client.exists(tasksPath);
       if (tasksStat != null) {
         operations.add(delete(tasksPath));
       } else {
@@ -849,6 +849,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       // Either the statusPath didn't exist, in which case the DG does not exist. Or the tasks path
       // does not exist which can happen due to the race condition described above. In the latter
       // case make sure we don't return a "doesn't exist" error as that would be a lie.
+      // Yes, the way you figure out which operation in a transaction failed is retarded.
       if (((OpResult.ErrorResult) e.getResults().get(0)).getErr() ==
           KeeperException.Code.NONODE.intValue()) {
         throw new DeploymentGroupDoesNotExistException(deploymentGroupName);
