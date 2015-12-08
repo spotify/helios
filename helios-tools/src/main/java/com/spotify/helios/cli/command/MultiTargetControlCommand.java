@@ -53,7 +53,7 @@ public abstract class MultiTargetControlCommand implements CliCommand {
 
     final Builder<TargetAndClient> clientBuilder = ImmutableList.<TargetAndClient>builder();
     for (final Target target : targets) {
-      final HeliosClient client = Utils.getClient(target, err, username);
+      final HeliosClient client = Utils.getClient(target, err, username, options);
       if (client == null) {
         return 1;
       }

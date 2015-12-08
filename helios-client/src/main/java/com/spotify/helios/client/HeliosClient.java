@@ -501,6 +501,7 @@ public class HeliosClient implements AutoCloseable {
 
     private String user;
     private Supplier<List<Endpoint>> endpointSupplier;
+    private boolean sslHostnameVerification = true;
 
     public Builder setUser(final String user) {
       this.user = user;
@@ -536,6 +537,15 @@ public class HeliosClient implements AutoCloseable {
       return this;
     }
 
+    /**
+     * Can be used to disable hostname verification for HTTPS connections to the Helios master.
+     * Defaults to being enabled.
+     */
+    public Builder setSslHostnameVerification(boolean enabled) {
+      this.sslHostnameVerification = enabled;
+      return this;
+    }
+
     public HeliosClient build() {
       return new HeliosClient(user, createDispatcher());
     }
@@ -547,8 +557,10 @@ public class HeliosClient implements AutoCloseable {
       final ListeningScheduledExecutorService listeningExecutor =
           MoreExecutors.listeningDecorator(executor);
 
-      final RequestDispatcher dispatcher =
-          new DefaultRequestDispatcher(endpointSupplier.get(), user, listeningExecutor);
+      final RequestDispatcher dispatcher = new DefaultRequestDispatcher(endpointSupplier.get(),
+          user,
+          listeningExecutor,
+          sslHostnameVerification);
 
       return new RetryingRequestDispatcher(dispatcher,
           listeningExecutor,

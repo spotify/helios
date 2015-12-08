@@ -56,9 +56,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPInputStream;
 
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSession;
 import javax.net.ssl.SSLSocketFactory;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -76,13 +74,17 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   private final EndpointIterator endpointIterator;
   private final ListeningExecutorService executorService;
   private final String user;
+  private final HostnameVerifierProvider hostnameVerifierProvider;
 
   DefaultRequestDispatcher(final List<Endpoint> endpoints,
                            final String user,
-                           final ListeningExecutorService executorService) {
-    endpointIterator = EndpointIterator.of(endpoints);
+                           final ListeningExecutorService executorService,
+                           final boolean sslHostnameVerificationEnabled) {
+    this.endpointIterator = EndpointIterator.of(endpoints);
     this.executorService = executorService;
     this.user = user;
+    this.hostnameVerifierProvider =
+        new HostnameVerifierProvider(sslHostnameVerificationEnabled, new DefaultHostnameVerifier());
   }
 
   @Override
@@ -244,13 +246,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
       connection.setRequestProperty("Host", hostname);
 
       final HttpsURLConnection httpsConnection = (HttpsURLConnection) urlConnection;
-      httpsConnection.setHostnameVerifier(new HostnameVerifier() {
-        @Override public boolean verify(String ip, SSLSession sslSession) {
-          final String tHostname =
-              hostname.endsWith(".") ? hostname.substring(0, hostname.length() - 1) : hostname;
-          return new DefaultHostnameVerifier().verify(tHostname, sslSession);
-        }
-      });
+      httpsConnection.setHostnameVerifier(hostnameVerifierProvider.verifierFor(hostname));
 
       if (!isNullOrEmpty(user) && (agentProxy != null) && (identity != null)) {
         final SSLSocketFactory factory = new SshAgentSSLSocketFactory(agentProxy, identity, user);

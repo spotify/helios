@@ -265,6 +265,7 @@ public class CliParser {
     private final Argument verbose;
     private final Argument noLogSetup;
     private final Argument jsonArg;
+    private final Argument insecureHttps;
 
     private final ArgumentGroup globalArgs;
     private final boolean topLevel;
@@ -309,6 +310,14 @@ public class CliParser {
       noLogSetup = addArgument("--no-log-setup")
           .action(storeTrue())
           .help(SUPPRESS);
+
+      insecureHttps = addArgument("-k", "--insecure")
+          .action(storeTrue())
+          .help("Disables hostname verification of HTTPS connections. "
+                + "Similar to 'curl -k'. "
+                + "Useful when using -z flag to connect directly to a master using HTTPS which "
+                + "presents a certificate whose subject does not match the actual hostname."
+          );
     }
 
     private Argument addArgument(final String... nameOrFlags) {
