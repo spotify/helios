@@ -17,12 +17,13 @@
 
 package com.spotify.helios.client;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
 
 import com.spotify.helios.client.tls.SshAgentSSLSocketFactory;
 import com.spotify.helios.common.HeliosException;
-import com.spotify.sshagentproxy.AgentProxies;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 
@@ -42,6 +43,7 @@ import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
@@ -61,18 +63,26 @@ public class AuthenticatingHttpConnector implements HttpConnector {
   private final List<Identity> identities;
   private final EndpointIterator endpointIterator;
 
-  private final HttpConnector delegate;
+  private final DefaultHttpConnector delegate;
 
   public AuthenticatingHttpConnector(final String user,
-                                     final Optional<AgentProxy> agentProxy,
-                                     final List<Identity> identities,
+                                     final Optional<AgentProxy> agentProxyOpt,
                                      final EndpointIterator endpointIterator,
-                                     final HttpConnector delegate) {
+                                     final DefaultHttpConnector delegate) {
+    this(user, agentProxyOpt, endpointIterator, delegate, getSshIdentities(agentProxyOpt));
+  }
+
+  @VisibleForTesting
+  AuthenticatingHttpConnector(final String user,
+                              final Optional<AgentProxy> agentProxyOpt,
+                              final EndpointIterator endpointIterator,
+                              final DefaultHttpConnector delegate,
+                              final List<Identity> identities) {
     this.user = user;
-    this.agentProxy = agentProxy;
-    this.identities = identities;
+    this.agentProxy = agentProxyOpt;
     this.endpointIterator = endpointIterator;
     this.delegate = delegate;
+    this.identities = identities;
   }
 
   @Override
@@ -103,13 +113,16 @@ public class AuthenticatingHttpConnector implements HttpConnector {
         try {
           log.debug("connecting to {}", ipUri);
 
+          if (agentProxy.isPresent() && identity != null) {
+            delegate.setHttpsHandler(new AuthenticatingHttpsHandler(
+                user, agentProxy.get(), identity));
+          }
           final HttpURLConnection connection = delegate.connect(ipUri, method, entity, headers);
-
-          handleHttps(connection, identity);
 
           final int responseCode = connection.getResponseCode();
           if (responseCode == HTTP_BAD_GATEWAY) {
-            throw new ConnectException("502 Bad Gateway");
+            log.debug("502 Bad Gateway");
+            continue;
           }
 
           if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
@@ -149,17 +162,63 @@ public class AuthenticatingHttpConnector implements HttpConnector {
         null);
   }
 
-  private void handleHttps(final HttpURLConnection connection, final Identity identity) {
-    if (!(connection instanceof HttpsURLConnection)) {
-      return;
+  private static List<Identity> getSshIdentities(final Optional<AgentProxy> agentProxyOpt) {
+    // ssh identities (potentially) used in authentication
+    final ImmutableList.Builder<Identity> listBuilder = ImmutableList.builder();
+    if (agentProxyOpt.isPresent()) {
+      try {
+        final List<Identity> identities = agentProxyOpt.get().list();
+        for (final Identity identity : identities) {
+          if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
+            // only RSA keys will work with our TLS implementation
+            listBuilder.add(identity);
+          }
+        }
+      } catch (IOException e) {
+        log.debug("Couldn't get identities from ssh-agent", e);
+      }
     }
 
-    final HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+    return listBuilder.build();
+  }
 
-    // TODO (mbrown): this expression feels redundant as we can't have an identity without an agent
-    if (!isNullOrEmpty(user) && agentProxy.isPresent() && identity != null) {
-      httpsConnection.setSSLSocketFactory(
-          new SshAgentSSLSocketFactory(AgentProxies.newInstance(), identity, user));
+  class AuthenticatingHttpsHandler implements HttpsHandler {
+
+    private final String user;
+    private final AgentProxy agentProxy;
+    private final Identity identity;
+
+    AuthenticatingHttpsHandler(final String user,
+                               final AgentProxy agentProxy,
+                               final Identity identity) {
+      if (isNullOrEmpty(user)) {
+        throw new IllegalArgumentException();
+      }
+
+      this.user = user;
+      this.agentProxy = checkNotNull(agentProxy);
+      this.identity = checkNotNull(identity);
+    }
+
+    @Override
+    public void handle(final HttpURLConnection connection) {
+      if (!(connection instanceof HttpsURLConnection)) {
+        return;
+      }
+
+      final HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
+
+      if (identity != null) {
+        httpsConnection.setSSLSocketFactory(
+            new SshAgentSSLSocketFactory(agentProxy, identity, user));
+      }
+    }
+  }
+
+  @Override
+  public void close() throws IOException {
+    if (agentProxy.isPresent()) {
+      agentProxy.get().close();
     }
   }
 }

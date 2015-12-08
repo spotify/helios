@@ -49,7 +49,7 @@ public abstract class MultiTargetControlCommand implements CliCommand {
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
                  final PrintStream err, final String username, final boolean json,
                  final BufferedReader stdin)
-                     throws IOException, InterruptedException {
+      throws Exception {
 
     final Builder<TargetAndClient> clientBuilder = ImmutableList.<TargetAndClient>builder();
     for (final Target target : targets) {
