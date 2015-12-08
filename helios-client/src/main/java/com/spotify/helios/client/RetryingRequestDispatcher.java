@@ -111,6 +111,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
       public void onFailure(@NotNull Throwable t) {
         log.warn("Failed to connect, retrying in {} seconds.",
                  timeUnit.convert(delay, TimeUnit.SECONDS));
+        log.debug("Specific reason for connection failure", t);
         handleFailure(future, code, deadline, delay, timeUnit, t);
       }
     });
