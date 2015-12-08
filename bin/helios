@@ -1,4 +1,12 @@
 #!/bin/bash -e
+#
+# Wrapper for running the Helios CLI which will use the locally built `helios`
+# if run from the checked-out source code's root directory.
+#
+# This script will start java with the necessary JDWP arguments to suspend the
+# process until a debugger is attached if the `JDWPPORT` environment variable
+# is set like `JDWPPORT=5005 helios ...`.
+
 dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 if [[ -e "$dir/../helios-tools" ]]; then
@@ -9,7 +17,15 @@ else
     CLASSPATH="/usr/share/helios/lib/tools/*"
 fi
 
+DEBUG_ARGS=""
+if [[ -n "$JDWPPORT" ]]; then
+    # suspend=n doesn't make much sense as the helios CLI command might finish
+    # before you start and attach the debugger
+    DEBUG_ARGS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$JDWPPORT"
+fi
+
 exec java \
+    $DEBUG_ARGS \
     -Djava.net.preferIPv4Stack=true \
     -XX:+TieredCompilation -XX:TieredStopAtLevel=1 \
     -Xverify:none \
