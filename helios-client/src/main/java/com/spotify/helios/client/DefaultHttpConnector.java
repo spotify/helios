@@ -48,6 +48,7 @@ public class DefaultHttpConnector implements HttpConnector {
   private final HostnameVerifierProvider hostnameVerifierProvider;
 
   private final int httpTimeoutMillis;
+  private HttpsHandler httpsHandler;
 
   public DefaultHttpConnector(final EndpointIterator endpointIterator,
                               final int httpTimeoutMillis,
@@ -56,6 +57,7 @@ public class DefaultHttpConnector implements HttpConnector {
     this.httpTimeoutMillis = httpTimeoutMillis;
     this.hostnameVerifierProvider =
         new HostnameVerifierProvider(sslHostnameVerificationEnabled, new DefaultHostnameVerifier());
+    this.httpsHandler = new NoopHttpsHandler();
   }
 
   @Override
@@ -92,6 +94,7 @@ public class DefaultHttpConnector implements HttpConnector {
 
     final HttpURLConnection connection = (HttpURLConnection) ipUri.toURL().openConnection();
     handleHttps(connection, endpointHost);
+    httpsHandler.handle(connection);
 
     connection.setRequestProperty("Accept-Encoding", "gzip");
     connection.setInstanceFollowRedirects(false);
@@ -150,6 +153,21 @@ public class DefaultHttpConnector implements HttpConnector {
       methodField.set(delegate, method);
     } catch (NoSuchFieldException | IllegalAccessException e) {
       throw Throwables.propagate(e);
+    }
+  }
+
+  @Override
+  public void close() throws Exception {
+  }
+
+  public void setHttpsHandler(final HttpsHandler httpsHandler) {
+    this.httpsHandler = httpsHandler;
+  }
+
+  class NoopHttpsHandler implements HttpsHandler {
+
+    @Override
+    public void handle(final HttpURLConnection connection) {
     }
   }
 }

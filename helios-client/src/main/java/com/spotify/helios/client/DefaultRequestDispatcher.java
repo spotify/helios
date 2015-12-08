@@ -127,8 +127,9 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   }
 
   @Override
-  public void close() {
+  public void close() throws Exception {
     executorService.shutdownNow();
+    httpConnector.close();
   }
 
 }

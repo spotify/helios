@@ -65,7 +65,6 @@ import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
 import com.spotify.sshagentproxy.AgentProxies;
 import com.spotify.sshagentproxy.AgentProxy;
-import com.spotify.sshagentproxy.Identity;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.jetbrains.annotations.NotNull;
@@ -75,7 +74,6 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -117,7 +115,7 @@ public class HeliosClient implements AutoCloseable {
   }
 
   @Override
-  public void close() {
+  public void close() throws Exception {
     dispatcher.close();
   }
 
@@ -572,27 +570,16 @@ public class HeliosClient implements AutoCloseable {
           TimeUnit.SECONDS);
     }
 
-    @NotNull
     private HttpConnector createHttpConnector(final boolean sslHostnameVerification) {
-      // ssh identities (potentially) used in authentication
-      final List<Identity> identities = new ArrayList<>();
-
       Optional<AgentProxy> agentProxyOpt = Optional.absent();
 
-      try (final AgentProxy agentProxy = AgentProxies.newInstance()) {
-        agentProxyOpt = Optional.of(agentProxy);
-        for (final Identity identity : agentProxy.list()) {
-          if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
-            // only RSA keys will work with our TLS implementation
-            identities.add(identity);
-          }
-        }
-      } catch (Exception e) {
+      try {
+        agentProxyOpt = Optional.of(AgentProxies.newInstance());
+      } catch (RuntimeException e) {
         // the user likely doesn't have ssh-agent setup. This may not matter at all if the masters
         // do not require authentication, so we delay reporting any sort of error to the user until
         // the servers return 401 Unauthorized.
-        // This is also why we have the overly broad catch on Exception.
-        log.debug("Couldn't get identities from ssh-agent", e);
+        log.debug("{}", e);
       }
 
       final EndpointIterator endpointIterator = EndpointIterator.of(endpointSupplier.get());
@@ -600,8 +587,7 @@ public class HeliosClient implements AutoCloseable {
       final DefaultHttpConnector connector = new DefaultHttpConnector(endpointIterator, 10000,
                                                                       sslHostnameVerification);
 
-      return new AuthenticatingHttpConnector(user, agentProxyOpt, identities, endpointIterator,
-                                             connector);
+      return new AuthenticatingHttpConnector(user, agentProxyOpt, endpointIterator, connector);
     }
   }
 

@@ -57,7 +57,7 @@ public abstract class ControlCommand implements CliCommand {
   public int run(final Namespace options, final List<Target> targets, final PrintStream out,
                  final PrintStream err, final String username, final boolean json,
                  final BufferedReader stdin)
-      throws IOException, InterruptedException {
+      throws Exception {
     boolean allSuccessful = true;
 
     boolean isFirst = true;
@@ -116,7 +116,7 @@ public abstract class ControlCommand implements CliCommand {
   private boolean run(final Namespace options, final Target target, final PrintStream out,
                       final PrintStream err, final String username, final boolean json,
                       final BufferedReader stdin)
-      throws InterruptedException, IOException {
+      throws Exception {
 
     final HeliosClient client = Utils.getClient(target, err, username, options);
     if (client == null) {
