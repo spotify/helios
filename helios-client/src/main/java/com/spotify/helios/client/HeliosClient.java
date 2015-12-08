@@ -18,6 +18,7 @@
 package com.spotify.helios.client;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
@@ -30,6 +31,7 @@ import com.google.common.net.UrlEscapers;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -38,6 +40,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
+import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -60,6 +63,9 @@ import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
+import com.spotify.sshagentproxy.AgentProxies;
+import com.spotify.sshagentproxy.AgentProxy;
+import com.spotify.sshagentproxy.Identity;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.jetbrains.annotations.NotNull;
@@ -69,11 +75,14 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -81,7 +90,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.Futures.withFallback;
-import static com.google.common.util.concurrent.MoreExecutors.getExitingScheduledExecutorService;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.lang.String.format;
@@ -534,10 +542,62 @@ public class HeliosClient implements AutoCloseable {
     }
 
     public HeliosClient build() {
-      return new HeliosClient(user, new RetryingRequestDispatcher(
-          endpointSupplier.get(), user,
-          MoreExecutors.listeningDecorator(getExitingScheduledExecutorService(
-              (ScheduledThreadPoolExecutor) newScheduledThreadPool(4), 0, SECONDS))));
+      return new HeliosClient(user, createDispatcher());
+    }
+
+    private RequestDispatcher createDispatcher() {
+      final ScheduledExecutorService executor = MoreExecutors.getExitingScheduledExecutorService(
+          (ScheduledThreadPoolExecutor) newScheduledThreadPool(4), 0, SECONDS);
+
+      final ListeningScheduledExecutorService listeningExecutor =
+          MoreExecutors.listeningDecorator(executor);
+
+      final RequestDispatcher dispatcher =
+          new DefaultRequestDispatcher(createHttpConnector(), listeningExecutor);
+
+      return new RetryingRequestDispatcher(dispatcher,
+          listeningExecutor,
+          new SystemClock(),
+          5,
+          TimeUnit.SECONDS);
+    }
+
+    private HttpConnector createHttpConnector() {
+      // ssh identities (potentially) used in authentication
+      final List<Identity> identities = new ArrayList<>();
+
+      Optional<AgentProxy> agentProxyOpt = Optional.absent();
+
+      try (final AgentProxy agentProxy = AgentProxies.newInstance()) {
+        agentProxyOpt = Optional.of(agentProxy);
+        for (final Identity identity : agentProxy.list()) {
+          if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
+            // only RSA keys will work with our TLS implementation
+            identities.add(identity);
+          }
+        }
+      } catch (Exception e) {
+        // the user likely doesn't have ssh-agent setup. This may not matter at all if the masters
+        // do not require authentication, so we delay reporting any sort of error to the user until
+        // the servers return 401 Unauthorized.
+        // This is also why we have the overly broad catch on Exception.
+        log.debug("Couldn't get identities from ssh-agent", e);
+      }
+
+      final EndpointIterator endpointIterator = EndpointIterator.of(endpointSupplier.get());
+
+      final DefaultHttpConnector connector = new DefaultHttpConnector(endpointIterator, 10000);
+
+      if (agentProxyOpt.isPresent()) {
+
+        return new AuthenticatingHttpConnector(user,
+            agentProxyOpt,
+            identities,
+            endpointIterator,
+            connector);
+      } else {
+        return connector;
+      }
     }
   }
 
