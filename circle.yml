@@ -23,6 +23,9 @@ machine:
   environment:
     DOCKER_HOST: tcp://127.0.0.1:2375
     MAVEN_OPTS: -Xmx128m
+  # tells CircleCI that we want virtualenv so that we can pip install codecov without errors
+  python:
+    version: 2.7.10
 
 general:
   artifacts:
