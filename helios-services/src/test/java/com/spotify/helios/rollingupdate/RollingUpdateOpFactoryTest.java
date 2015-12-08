@@ -26,10 +26,13 @@ import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
+import com.spotify.helios.servicescommon.coordination.CreateEmpty;
 import com.spotify.helios.servicescommon.coordination.Delete;
 import com.spotify.helios.servicescommon.coordination.SetData;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
+import org.apache.zookeeper.data.Stat;
 import org.junit.Test;
 
 import java.util.ArrayList;
@@ -56,7 +59,7 @@ public class RollingUpdateOpFactoryTest {
   private final DeploymentGroupEventFactory eventFactory = mock(DeploymentGroupEventFactory.class);
 
   @Test
-  public void testStartManualNoHosts() {
+  public void testStartManualNoHosts() throws Exception {
     // Create a DeploymentGroupTasks object with no rolloutTasks (defaults to empty list).
     final DeploymentGroupTasks deploymentGroupTasks = DeploymentGroupTasks.newBuilder()
         .setDeploymentGroup(DEPLOYMENT_GROUP)
@@ -64,7 +67,43 @@ public class RollingUpdateOpFactoryTest {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL);
+    final ZooKeeperClient client = mock(ZooKeeperClient.class);
+    when(client.exists(anyString())).thenReturn(null);
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL, client);
+
+    // Three ZK operations should return:
+    // * create tasks node
+    // * delete the tasks
+    // * set the status to DONE
+    assertEquals(
+        ImmutableSet.of(
+            new CreateEmpty("/status/deployment-group-tasks/my_group"),
+            new Delete("/status/deployment-group-tasks/my_group"),
+            new SetData("/status/deployment-groups/my_group", DeploymentGroupStatus.newBuilder()
+                .setState(DeploymentGroupStatus.State.DONE)
+                .setError(null)
+                .build()
+                .toJsonBytes())),
+        ImmutableSet.copyOf(op.operations()));
+
+    // Two events should return: rollingUpdateStarted and rollingUpdateDone
+    assertEquals(2, op.events().size());
+    verify(eventFactory).rollingUpdateStarted(DEPLOYMENT_GROUP, MANUAL);
+    verify(eventFactory).rollingUpdateDone(DEPLOYMENT_GROUP);
+  }
+
+  @Test
+  public void testStartManualNoHostsTasksAlreadyExist() throws Exception {
+    // Create a DeploymentGroupTasks object with no rolloutTasks (defaults to empty list).
+    final DeploymentGroupTasks deploymentGroupTasks = DeploymentGroupTasks.newBuilder()
+        .setDeploymentGroup(DEPLOYMENT_GROUP)
+        .build();
+
+    final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
+        deploymentGroupTasks, eventFactory);
+    final ZooKeeperClient client = mock(ZooKeeperClient.class);
+    when(client.exists(anyString())).thenReturn(mock(Stat.class));
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL, client);
 
     // Two ZK operations should return:
     // * delete the tasks
@@ -86,7 +125,7 @@ public class RollingUpdateOpFactoryTest {
   }
 
   @Test
-  public void testStartManualWithHosts() {
+  public void testStartManualWithHosts() throws Exception {
     // Create a DeploymentGroupTasks object with some rolloutTasks.
     final ArrayList<RolloutTask> rolloutTasks = Lists.newArrayList(
         RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "host1"),
@@ -101,13 +140,17 @@ public class RollingUpdateOpFactoryTest {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL);
+    final ZooKeeperClient client = mock(ZooKeeperClient.class);
+    when(client.exists(anyString())).thenReturn(null);
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, MANUAL, client);
 
-    // Two ZK operations should return:
+    // Three ZK operations should return:
+    // * create tasks node
     // * set the task index to 0
     // * set the status to ROLLING_OUT
     assertEquals(
         ImmutableSet.of(
+            new CreateEmpty("/status/deployment-group-tasks/my_group"),
             new SetData("/status/deployment-group-tasks/my_group", DeploymentGroupTasks.newBuilder()
                 .setRolloutTasks(rolloutTasks)
                 .setTaskIndex(0)
@@ -126,7 +169,7 @@ public class RollingUpdateOpFactoryTest {
   }
 
   @Test
-  public void testStartHostsChanged() {
+  public void testStartHostsChanged() throws Exception {
     // Create a DeploymentGroupTasks object with some rolloutTasks.
     final ArrayList<RolloutTask> rolloutTasks = Lists.newArrayList(
         RolloutTask.of(RolloutTask.Action.UNDEPLOY_OLD_JOBS, "host1"),
@@ -141,13 +184,17 @@ public class RollingUpdateOpFactoryTest {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         deploymentGroupTasks, eventFactory);
-    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, HOSTS_CHANGED);
+    final ZooKeeperClient client = mock(ZooKeeperClient.class);
+    when(client.exists(anyString())).thenReturn(null);
+    final RollingUpdateOp op = opFactory.start(DEPLOYMENT_GROUP, HOSTS_CHANGED, client);
 
-    // Two ZK operations should return:
+    // Three ZK operations should return:
+    // * create tasks node
     // * set the task index to 0
     // * another to set the status to ROLLING_OUT
     assertEquals(
         ImmutableSet.of(
+            new CreateEmpty("/status/deployment-group-tasks/my_group"),
             new SetData("/status/deployment-group-tasks/my_group", DeploymentGroupTasks.newBuilder()
                 .setRolloutTasks(rolloutTasks)
                 .setTaskIndex(0)

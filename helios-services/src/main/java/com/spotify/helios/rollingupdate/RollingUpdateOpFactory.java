@@ -26,7 +26,11 @@ import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
 import com.spotify.helios.common.descriptors.RolloutTask;
 import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason;
 import com.spotify.helios.servicescommon.coordination.Paths;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
+
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.Stat;
 
 import java.util.Collections;
 import java.util.List;
@@ -36,6 +40,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.ROLLING_OUT;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
 
@@ -53,12 +58,25 @@ public class RollingUpdateOpFactory {
   }
 
   public RollingUpdateOp start(final DeploymentGroup deploymentGroup,
-                               final RollingUpdateReason reason) {
+                               final RollingUpdateReason reason,
+                               final ZooKeeperClient client) throws KeeperException {
+    client.ensurePath(Paths.statusDeploymentGroupTasks());
+
     final List<ZooKeeperOperation> ops = Lists.newArrayList();
     final List<Map<String, Object>> events = Lists.newArrayList();
 
     final List<RolloutTask> rolloutTasks = tasks.getRolloutTasks();
     events.add(eventFactory.rollingUpdateStarted(deploymentGroup, reason));
+
+    final Stat tasksStat = client.exists(
+        Paths.statusDeploymentGroupTasks(deploymentGroup.getName()));
+    if (tasksStat == null) {
+      // Create the tasks path if it doesn't already exist. The following operations (delete or set)
+      // assume the node already exists. If the tasks path is created/deleted before the transaction
+      // is committed it will fail. This will on occasion generate a user-visible error but is
+      // better than having inconsistent state.
+      ops.add(create(Paths.statusDeploymentGroupTasks(deploymentGroup.getName())));
+    }
 
     final DeploymentGroupStatus status;
     if (rolloutTasks.isEmpty()) {
@@ -79,6 +97,9 @@ public class RollingUpdateOpFactory {
       ops.add(set(Paths.statusDeploymentGroupTasks(deploymentGroup.getName()), tasks));
     }
 
+    // NOTE: If the DG was removed this set() cause the transaction to fail, because removing
+    // the DG removes this node. It's *important* that there's an operation that causes the
+    // transaction to fail if the DG was removed or we'll end up with inconsistent state.
     ops.add(set(Paths.statusDeploymentGroup(deploymentGroup.getName()), status));
 
     return new RollingUpdateOp(ImmutableList.copyOf(ops), ImmutableList.copyOf(events));

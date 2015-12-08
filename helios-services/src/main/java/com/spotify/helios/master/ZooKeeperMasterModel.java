@@ -441,11 +441,16 @@ public class ZooKeeperMasterModel implements MasterModel {
       Optional<Integer> version = Optional.absent();
       List<String> curHosts;
       try {
+        // addDeploymentGroup creates Paths.statusDeploymentGroupHosts(name) so it should always
+        // exist. If it doesn't, then the DG was (likely) deleted.
         final Node node = client.getNode(Paths.statusDeploymentGroupHosts(name));
         version = Optional.of(node.getStat().getVersion());
         curHosts = Json.read(node.getBytes(), new TypeReference<List<String>>() {});
-      } catch (NoNodeException | JsonMappingException e) {
+      } catch (JsonMappingException e) {
         curHosts = Collections.emptyList();
+      } catch (NoNodeException e) {
+        // DG was deleted -- abort.
+        return;
       }
 
       if (!version.isPresent() || !hosts.equals(curHosts)) {
@@ -453,8 +458,6 @@ public class ZooKeeperMasterModel implements MasterModel {
         final List<ZooKeeperOperation> ops = Lists.newArrayList();
         ops.add(set(Paths.statusDeploymentGroupHosts(name), Json.asBytes(hosts)));
 
-        client.ensurePath(Paths.statusDeploymentGroup(name));
-        client.ensurePath(Paths.statusDeploymentGroupTasks(name));
         final DeploymentGroup deploymentGroup = getDeploymentGroup(name);
         ImmutableList<Map<String, Object>> events = ImmutableList.of();
 
@@ -462,7 +465,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           final DeploymentGroupStatus deploymentGroupStatus = getDeploymentGroupStatus(name);
           if (deploymentGroupStatus == null || deploymentGroupStatus.getState() != FAILED) {
             final RollingUpdateOp op =
-                getInitRollingUpdateOps(deploymentGroup, hosts, HOSTS_CHANGED);
+                getInitRollingUpdateOps(deploymentGroup, hosts, HOSTS_CHANGED, client);
             ops.addAll(op.operations());
             events = op.events();
           }
@@ -500,12 +503,11 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("rollingUpdate");
 
     operations.add(set(Paths.configDeploymentGroup(updated.getName()), updated));
-    final RollingUpdateOp op = getInitRollingUpdateOps(updated, MANUAL);
-    operations.addAll(op.operations());
 
     try {
-      client.ensurePath(Paths.statusDeploymentGroup(updated.getName()));
-      client.ensurePath(Paths.statusDeploymentGroupTasks(updated.getName()));
+      final RollingUpdateOp op = getInitRollingUpdateOps(updated, MANUAL, client);
+      operations.addAll(op.operations());
+
       client.transaction(operations);
 
       emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, op.events());
@@ -519,15 +521,18 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private RollingUpdateOp getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
-                                                  final RollingUpdateReason reason)
-      throws DeploymentGroupDoesNotExistException {
+                                                  final RollingUpdateReason reason,
+                                                  final ZooKeeperClient zooKeeperClient)
+      throws DeploymentGroupDoesNotExistException, KeeperException {
     final List<String> hosts = getDeploymentGroupHosts(deploymentGroup.getName());
-    return getInitRollingUpdateOps(deploymentGroup, hosts, reason);
+    return getInitRollingUpdateOps(deploymentGroup, hosts, reason, zooKeeperClient);
   }
 
   private RollingUpdateOp getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
                                                   final List<String> hosts,
-                                                  final RollingUpdateReason reason) {
+                                                  final RollingUpdateReason reason,
+                                                  final ZooKeeperClient zooKeeperClient)
+      throws KeeperException {
     final Map<String, HostStatus> hostsAndStatuses = Maps.newLinkedHashMap();
     for (final String host : hosts) {
       hostsAndStatuses.put(host, getHostStatus(host));
@@ -543,7 +548,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
-    return opFactory.start(deploymentGroup, reason);
+    return opFactory.start(deploymentGroup, reason, zooKeeperClient);
   }
 
   private Map<String, VersionedValue<DeploymentGroupTasks>> getDeploymentGroupTasks(
