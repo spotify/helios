@@ -171,7 +171,9 @@ public class AuthenticatingHttpConnector implements HttpConnector {
             listBuilder.add(identity);
           }
         }
-      } catch (IOException e) {
+      } catch (Exception e) {
+        // We catch everything because right now the masters do not require authentication.
+        // So delay reporting errors to the user until the servers return 401 Unauthorized.
         log.debug("Couldn't get identities from ssh-agent", e);
       }
     }
