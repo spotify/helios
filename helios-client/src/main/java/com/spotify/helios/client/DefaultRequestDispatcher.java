@@ -251,6 +251,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
       if (!isNullOrEmpty(user) && (agentProxy != null) && (identity != null)) {
         final SSLSocketFactory factory = new SshAgentSSLSocketFactory(agentProxy, identity, user);
         httpsConnection.setSSLSocketFactory(factory);
+        log.debug("configured SshAgentSSLSocketFactory with identity={}", identity);
       }
     }
 
