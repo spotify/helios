@@ -26,7 +26,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.Endpoints;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostSelector;
+import com.spotify.helios.common.protocol.SetGoalResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -143,5 +145,36 @@ public class Utils {
       }
     }
     return ret;
+  }
+
+  // shared between JobStartCommand and JobStopCommand
+  public static int setGoalOnHosts(final HeliosClient client, final PrintStream out,
+                                   final boolean json, final List<String> hosts,
+                                   final Deployment deployment, final String token)
+      throws InterruptedException, ExecutionException {
+    int code = 0;
+
+    for (final String host : hosts) {
+      if (!json) {
+        out.printf("%s: ", host);
+      }
+      final SetGoalResponse result = client.setGoal(deployment, host, token).get();
+      if (result.getStatus() == SetGoalResponse.Status.OK) {
+        if (json) {
+          out.printf(result.toJsonString());
+        } else {
+          out.printf("done%n");
+        }
+      } else {
+        if (json) {
+          out.printf(result.toJsonString());
+        } else {
+          out.printf("failed: %s%n", result);
+        }
+        code = 1;
+      }
+    }
+
+    return code;
   }
 }
