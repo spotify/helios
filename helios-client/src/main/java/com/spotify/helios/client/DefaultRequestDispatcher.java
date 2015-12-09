@@ -19,6 +19,7 @@ package com.spotify.helios.client;
 
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Queues;
 import com.google.common.util.concurrent.ListenableFuture;
@@ -76,6 +77,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   private final EndpointIterator endpointIterator;
   private final ListeningExecutorService executorService;
   private final String user;
+  private List<Identity> identities = Collections.emptyList();
 
   DefaultRequestDispatcher(final List<Endpoint> endpoints,
                            final String user,
@@ -83,6 +85,22 @@ class DefaultRequestDispatcher implements RequestDispatcher {
     endpointIterator = EndpointIterator.of(endpoints);
     this.executorService = executorService;
     this.user = user;
+
+    if (endpointIterator.hasHttps()) {
+      try {
+        identities = getSshIdentities();
+      } catch (Exception e) {
+        log.debug("Couldn't get identities from ssh-agent", e);
+        log.warn(
+            "Your Helios cluster is setup to work over HTTPS based on the Helios DNS records "
+            + "found by this Helios CLI. This will provide client and server-side authentication. "
+            + "The team that operates your Helios cluster may choose to make this authentication "
+            + "optional for now in which case this is just a warning.\nWhen authentication is "
+            + "required, you'll need to run ssh-agent and set the SSH_AUTH_SOCK environment "
+            + "variable whenever you invoke this CLI."
+        );
+      }
+    }
   }
 
   @Override
@@ -153,7 +171,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   }
 
   /**
-   * Sets up a connection, retrying on connect failure.
+   * Sets up a connection
    */
   private HttpURLConnection connect(final URI uri, final String method, final byte[] entity,
                                     final Map<String, List<String>> headers)
@@ -170,25 +188,20 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         uriScheme, endpointUri.getUserInfo(), endpoint.getIp().getHostAddress(),
         endpointUri.getPort(), fullpath, uri.getQuery(), null);
 
-    AgentProxy agentProxy = null;
-    Deque<Identity> identities = Queues.newArrayDeque();
-    try {
-      if (uriScheme.equals("https")) {
-        agentProxy = AgentProxies.newInstance();
-        for (final Identity identity : agentProxy.list()) {
-          if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
-            // only RSA keys will work with our TLS implementation
-            identities.offerLast(identity);
-          }
-        }
-      }
-    } catch (Exception e) {
-      log.debug("Couldn't get identities from ssh-agent", e);
+    final AgentProxy agentProxy;
+    final Deque<Identity> ids;
+    if (uriScheme.equalsIgnoreCase("https")) {
+      agentProxy = AgentProxies.newInstance();
+      ids = Queues.newArrayDeque(identities);
+    } else {
+      // Create null agentProxy and empty ids for connect0() later on to not perform TLS handshake
+      agentProxy = null;
+      ids = Queues.newArrayDeque();
     }
 
     try {
       while (true) {
-        final Identity identity = identities.poll();
+        final Identity identity = ids.poll();
 
         try {
           log.debug("connecting to {}", ipUri);
@@ -314,5 +327,20 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   @Override
   public void close() {
     executorService.shutdownNow();
+  }
+
+  private static List<Identity> getSshIdentities() throws IOException {
+    final ImmutableList.Builder<Identity> builder = ImmutableList.builder();
+
+    try (final AgentProxy agentProxy = AgentProxies.newInstance()) {
+      for (final Identity identity : agentProxy.list()) {
+        if (identity.getPublicKey().getAlgorithm().equals("RSA")) {
+          // only RSA keys will work with our TLS implementation
+          builder.add(identity);
+        }
+      }
+    }
+
+    return builder.build();
   }
 }
