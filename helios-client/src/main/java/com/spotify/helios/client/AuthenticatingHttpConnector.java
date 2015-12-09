@@ -22,7 +22,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
 
-import com.spotify.helios.client.HttpsHandlers.AuthenticatingHttpsHandler;
+import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
@@ -37,6 +37,7 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.file.Path;
 import java.util.Deque;
 import java.util.List;
 import java.util.Map;
@@ -56,6 +57,8 @@ public class AuthenticatingHttpConnector implements HttpConnector {
   // TODO (mbrown): username is here to pass to SshAgentSSLSocketFactory, could be handled nicer
   private final String user;
   private final Optional<AgentProxy> agentProxy;
+  private final Optional<Path> clientCertificatePath;
+  private final Optional<Path> clientKeyPath;
   private final List<Identity> identities;
   private final EndpointIterator endpointIterator;
 
@@ -63,19 +66,31 @@ public class AuthenticatingHttpConnector implements HttpConnector {
 
   public AuthenticatingHttpConnector(final String user,
                                      final Optional<AgentProxy> agentProxyOpt,
+                                     final Optional<Path> clientCertificatePath,
+                                     final Optional<Path> clientKeyPath,
                                      final EndpointIterator endpointIterator,
                                      final DefaultHttpConnector delegate) {
-    this(user, agentProxyOpt, endpointIterator, delegate, getSshIdentities(agentProxyOpt));
+    this(user, agentProxyOpt, clientCertificatePath, clientKeyPath, endpointIterator,
+         delegate, getSshIdentities(agentProxyOpt));
   }
 
   @VisibleForTesting
   AuthenticatingHttpConnector(final String user,
                               final Optional<AgentProxy> agentProxyOpt,
+                              final Optional<Path> clientCertificatePath,
+                              final Optional<Path> clientKeyPath,
                               final EndpointIterator endpointIterator,
                               final DefaultHttpConnector delegate,
                               final List<Identity> identities) {
+    if (clientCertificatePath.isPresent() != clientKeyPath.isPresent()) {
+      throw new IllegalArgumentException(
+          "both or neither of clientCertificatePath and clientKeyPath must be specified");
+    }
+
     this.user = user;
     this.agentProxy = agentProxyOpt;
+    this.clientCertificatePath = clientCertificatePath;
+    this.clientKeyPath = clientKeyPath;
     this.endpointIterator = endpointIterator;
     this.delegate = delegate;
     this.identities = identities;
@@ -109,10 +124,14 @@ public class AuthenticatingHttpConnector implements HttpConnector {
         try {
           log.debug("connecting to {}", ipUri);
 
-          if (agentProxy.isPresent() && identity != null) {
-            delegate.setExtraHttpsHandler(new AuthenticatingHttpsHandler(
+          if (clientCertificatePath.isPresent() && clientKeyPath.isPresent()) {
+            delegate.setExtraHttpsHandler(new HttpsHandlers.CertificateFileHttpsHandler(
+                user, clientCertificatePath.get(), clientKeyPath.get()));
+          } else if (agentProxy.isPresent() && identity != null) {
+            delegate.setExtraHttpsHandler(new SshAgentHttpsHandler(
                 user, agentProxy.get(), identity));
           }
+
           final HttpURLConnection connection = delegate.connect(ipUri, method, entity, headers);
 
           final int responseCode = connection.getResponseCode();
