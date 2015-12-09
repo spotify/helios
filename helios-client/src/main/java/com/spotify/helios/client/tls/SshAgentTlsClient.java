@@ -37,7 +37,10 @@ import org.bouncycastle.crypto.tls.TlsSignerCredentials;
 import java.io.IOException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.List;
+
+import static com.spotify.helios.common.Hash.sha1digest;
 
 /**
  * A {@link org.bouncycastle.crypto.tls.TlsClient} that uses an SSH agent identity for client
@@ -115,7 +118,28 @@ class SshAgentTlsClient extends DefaultTlsClient {
         @Override
         public byte[] generateCertificateSignature(final byte[] hash) throws IOException {
           final SshAgentContentSigner signer = new SshAgentContentSigner(agentProxy, identity);
-          signer.getOutputStream().write(protocol.getRecord());
+
+          final byte[] record = protocol.getRecord();
+          final byte[] recordHash = sha1digest(record);
+          if (!Arrays.equals(recordHash, hash)) {
+            /**
+             By default, BouncyCastle keeps a rolling hash of TLS handshake messages and
+             then signs that hash as part of the handshake. Unfortunately, that doesn't
+             work for us when using ssh-agent, since ssh-agent does the hashing itself.
+
+             So instead, we keep a complete record of all TLS handshake messages, and
+             send that to ssh-agent for hashing and signing.
+
+             Since we are keeping this record ourselves, and since only certain types of
+             messages should be recorded, there's potential for arcane bugs. To prevent
+             head-scratching, we can compare the SHA1 hash of our record to the rolling
+             hash that BouncyCastle has kept. The two should match, and if they don't,
+             then we know our recording is being done incorrectly.
+             */
+            throw new IOException("our hash of the handshake record doesn't match BouncyCastle's");
+          }
+
+          signer.getOutputStream().write(record);
           return signer.getSignature();
         }
 
