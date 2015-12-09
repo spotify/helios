@@ -48,7 +48,7 @@ public class DefaultHttpConnector implements HttpConnector {
   private final HostnameVerifierProvider hostnameVerifierProvider;
 
   private final int httpTimeoutMillis;
-  private HttpsHandler httpsHandler;
+  private HttpsHandler extraHttpsHandler;
 
   public DefaultHttpConnector(final EndpointIterator endpointIterator,
                               final int httpTimeoutMillis,
@@ -57,13 +57,12 @@ public class DefaultHttpConnector implements HttpConnector {
     this.httpTimeoutMillis = httpTimeoutMillis;
     this.hostnameVerifierProvider =
         new HostnameVerifierProvider(sslHostnameVerificationEnabled, new DefaultHostnameVerifier());
-    this.httpsHandler = new NoopHttpsHandler();
+    this.extraHttpsHandler = null;
   }
 
   @Override
   public HttpURLConnection connect(final URI uri, final String method, final byte[] entity,
                                    final Map<String, List<String>> headers) throws HeliosException {
-    // TODO (mbrown): this shouldn't be here
     final Endpoint endpoint = endpointIterator.next();
     final String endpointHost = endpoint.getUri().getHost();
 
@@ -93,8 +92,7 @@ public class DefaultHttpConnector implements HttpConnector {
     }
 
     final HttpURLConnection connection = (HttpURLConnection) ipUri.toURL().openConnection();
-    handleHttps(connection, endpointHost);
-    httpsHandler.handle(connection);
+    handleHttps(connection, endpointHost, hostnameVerifierProvider, extraHttpsHandler);
 
     connection.setRequestProperty("Accept-Encoding", "gzip");
     connection.setInstanceFollowRedirects(false);
@@ -115,7 +113,9 @@ public class DefaultHttpConnector implements HttpConnector {
     return connection;
   }
 
-  private void handleHttps(final HttpURLConnection connection, final String hostname) {
+  private static void handleHttps(final HttpURLConnection connection, final String hostname,
+                                  final HostnameVerifierProvider hostnameVerifierProvider,
+                                  final HttpsHandler extraHttpsHandler) {
 
     if (!(connection instanceof HttpsURLConnection)) {
       return;
@@ -128,9 +128,13 @@ public class DefaultHttpConnector implements HttpConnector {
 
     final HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
     httpsConnection.setHostnameVerifier(hostnameVerifierProvider.verifierFor(hostname));
+
+    if (extraHttpsHandler != null) {
+      extraHttpsHandler.handle(httpsConnection);
+    }
   }
 
-  private void setRequestMethod(final HttpURLConnection connection,
+  private static void setRequestMethod(final HttpURLConnection connection,
                                 final String method,
                                 final boolean isHttps) {
     // Nasty workaround for ancient HttpURLConnection only supporting few methods
@@ -160,14 +164,7 @@ public class DefaultHttpConnector implements HttpConnector {
   public void close() throws Exception {
   }
 
-  public void setHttpsHandler(final HttpsHandler httpsHandler) {
-    this.httpsHandler = httpsHandler;
-  }
-
-  class NoopHttpsHandler implements HttpsHandler {
-
-    @Override
-    public void handle(final HttpURLConnection connection) {
-    }
+  public void setExtraHttpsHandler(final HttpsHandler extraHttpsHandler) {
+    this.extraHttpsHandler = extraHttpsHandler;
   }
 }

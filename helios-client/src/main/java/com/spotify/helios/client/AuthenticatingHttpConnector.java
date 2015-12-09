@@ -22,7 +22,7 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Queues;
 
-import com.spotify.helios.client.tls.SshAgentSSLSocketFactory;
+import com.spotify.helios.client.HttpsHandlers.AuthenticatingHttpsHandler;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
@@ -41,10 +41,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
-import javax.net.ssl.HttpsURLConnection;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -114,7 +110,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
           log.debug("connecting to {}", ipUri);
 
           if (agentProxy.isPresent() && identity != null) {
-            delegate.setHttpsHandler(new AuthenticatingHttpsHandler(
+            delegate.setExtraHttpsHandler(new AuthenticatingHttpsHandler(
                 user, agentProxy.get(), identity));
           }
           final HttpURLConnection connection = delegate.connect(ipUri, method, entity, headers);
@@ -129,7 +125,8 @@ public class AuthenticatingHttpConnector implements HttpConnector {
               && !ids.isEmpty()) {
             // there was some sort of security error. if we have any more SSH identities to try,
             // retry with the next available identity
-            log.debug("retrying with next SSH identity since {} failed", identity.getComment());
+            log.debug("retrying with next SSH identity since {} failed",
+                      identity == null ? "the previous one" : identity.getComment());
             continue;
           }
 
@@ -180,39 +177,6 @@ public class AuthenticatingHttpConnector implements HttpConnector {
     }
 
     return listBuilder.build();
-  }
-
-  class AuthenticatingHttpsHandler implements HttpsHandler {
-
-    private final String user;
-    private final AgentProxy agentProxy;
-    private final Identity identity;
-
-    AuthenticatingHttpsHandler(final String user,
-                               final AgentProxy agentProxy,
-                               final Identity identity) {
-      if (isNullOrEmpty(user)) {
-        throw new IllegalArgumentException();
-      }
-
-      this.user = user;
-      this.agentProxy = checkNotNull(agentProxy);
-      this.identity = checkNotNull(identity);
-    }
-
-    @Override
-    public void handle(final HttpURLConnection connection) {
-      if (!(connection instanceof HttpsURLConnection)) {
-        return;
-      }
-
-      final HttpsURLConnection httpsConnection = (HttpsURLConnection) connection;
-
-      if (identity != null) {
-        httpsConnection.setSSLSocketFactory(
-            new SshAgentSSLSocketFactory(agentProxy, identity, user));
-      }
-    }
   }
 
   @Override

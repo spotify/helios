@@ -22,12 +22,14 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 
+import com.spotify.helios.client.HttpsHandlers.AuthenticatingHttpsHandler;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentMatcher;
 
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
@@ -35,7 +37,6 @@ import java.net.URI;
 import java.util.List;
 
 import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSocketFactory;
 
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
@@ -47,6 +48,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class AuthenticatingHttpConnectorTest {
+
+  private static final String USER = "user";
 
   private final DefaultHttpConnector connector = mock(DefaultHttpConnector.class);
   private final String method = "GET";
@@ -67,7 +70,7 @@ public class AuthenticatingHttpConnectorTest {
       final Optional<AgentProxy> proxy, final List<Identity> identities) {
 
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
-    return new AuthenticatingHttpConnector("user", proxy, endpointIterator, connector, identities);
+    return new AuthenticatingHttpConnector(USER, proxy, endpointIterator, connector, identities);
   }
 
   private CustomTypeSafeMatcher<URI> matchesAnyEndpoint(final String path) {
@@ -115,7 +118,7 @@ public class AuthenticatingHttpConnectorTest {
 
     authConnector.connect(uri, method, entity, headers);
 
-    verify(connection, never()).setSSLSocketFactory(any(SSLSocketFactory.class));
+    verify(connector, never()).setExtraHttpsHandler(any(HttpsHandler.class));
   }
 
   @Test
@@ -141,9 +144,7 @@ public class AuthenticatingHttpConnectorTest {
 
     authConnector.connect(uri, method, entity, headers);
 
-    // TODO (mbrown): assert that the sslsocketfactory has a reference to *this* identity
-    // TODO (dxia): figure out how to test this now that DefaultHttpConnector is calling this
-//    verify(connection).setSSLSocketFactory(any(SSLSocketFactory.class));
+    verify(connector).setExtraHttpsHandler(authedHttpsHandlerWithArgs(USER, proxy, identity));
   }
 
   @Test
@@ -169,8 +170,7 @@ public class AuthenticatingHttpConnectorTest {
 
     HttpURLConnection returnedConnection = authConnector.connect(uri, method, entity, headers);
 
-    // TODO (dxia): figure out how to test this now that DefaultHttpConnector is calling this
-//    verify(connection).setSSLSocketFactory(any(SSLSocketFactory.class));
+    verify(connector).setExtraHttpsHandler(authedHttpsHandlerWithArgs(USER, proxy, identity));
 
     assertSame("If there is only one identity do not expect any additional endpoints to "
                + "be called after the first returns Unauthorized",
@@ -189,5 +189,22 @@ public class AuthenticatingHttpConnectorTest {
         return ip;
       }
     };
+  }
+
+  private static HttpsHandler authedHttpsHandlerWithArgs(
+      final String user, final AgentProxy agentProxy, final Identity identity) {
+    return argThat(new ArgumentMatcher<HttpsHandler>() {
+      @Override
+      public boolean matches(final Object handler) {
+        if (!(handler instanceof AuthenticatingHttpsHandler)) {
+          return false;
+        }
+
+        final AuthenticatingHttpsHandler authHandler = (AuthenticatingHttpsHandler) handler;
+        return authHandler.getUser().equals(user) &&
+               authHandler.getAgentProxy().equals(agentProxy) &&
+               authHandler.getIdentity().equals(identity);
+      }
+    });
   }
 }
