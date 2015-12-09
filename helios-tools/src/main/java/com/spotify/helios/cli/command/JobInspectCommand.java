@@ -49,6 +49,7 @@ import java.util.TimeZone;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.CharMatcher.WHITESPACE;
+import static com.spotify.helios.cli.Utils.printMap;
 
 public class JobInspectCommand extends WildcardJobCommand {
 
@@ -153,24 +154,6 @@ public class JobInspectCommand extends WildcardJobCommand {
     }
 
     return 0;
-  }
-
-  private <K extends Comparable<K>, V> void printMap(final PrintStream out, final String name,
-                                                     final Function<V, String> transform,
-                                                     final Map<K, V> values) {
-    out.print(name);
-    boolean first = true;
-    for (final K key : Ordering.natural().sortedCopy(values.keySet())) {
-      if (!first) {
-        out.print(Strings.repeat(" ", name.length()));
-      }
-      final V value = values.get(key);
-      out.printf("%s=%s%n", key, transform.apply(value));
-      first = false;
-    }
-    if (first) {
-      out.println();
-    }
   }
 
   private void printVolumes(final PrintStream out, final Map<String, String> volumes) {
