@@ -22,10 +22,8 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 
-import org.apache.http.conn.ssl.DefaultHostnameVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,23 +32,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
-import java.util.concurrent.TimeoutException;
 import java.util.zip.GZIPInputStream;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSocketFactory;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
-import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
-import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Connects to Helios masters via Sun HttpUrlConnection and handles special setup for HTTPS, as well
