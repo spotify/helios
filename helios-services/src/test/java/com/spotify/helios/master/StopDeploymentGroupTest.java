@@ -20,6 +20,7 @@ package com.spotify.helios.master;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
+import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -96,7 +97,9 @@ public class StopDeploymentGroupTest {
         .thenReturn(tasksExist ? mock(Stat.class) : null);
 
     final ZooKeeperMasterModel masterModel = new ZooKeeperMasterModel(
-        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()));
+        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
+        getClass().getName(),
+        mock(KafkaSender.class));
 
     if (dgExists) {
       final DeploymentGroup dg = DeploymentGroup.newBuilder()
