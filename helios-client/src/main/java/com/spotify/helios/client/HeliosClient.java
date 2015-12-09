@@ -74,6 +74,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -85,6 +87,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.Futures.withFallback;
@@ -502,9 +505,21 @@ public class HeliosClient implements AutoCloseable {
 
   public static class Builder {
 
+    private static final String HELIOS_CERT_PATH = "HELIOS_CERT_PATH";
+
     private String user;
+    private Path clientCertificatePath;
+    private Path clientKeyPath;
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
+
+    private Builder() {
+      final String heliosCertPath = System.getenv(HELIOS_CERT_PATH);
+      if (!isNullOrEmpty(heliosCertPath)) {
+        this.clientCertificatePath = Paths.get(heliosCertPath, "cert.pem");
+        this.clientKeyPath = Paths.get(heliosCertPath, "key.pem");
+      }
+    }
 
     public Builder setUser(final String user) {
       this.user = user;
@@ -544,8 +559,18 @@ public class HeliosClient implements AutoCloseable {
      * Can be used to disable hostname verification for HTTPS connections to the Helios master.
      * Defaults to being enabled.
      */
-    public Builder setSslHostnameVerification(boolean enabled) {
+    public Builder setSslHostnameVerification(final boolean enabled) {
       this.sslHostnameVerification = enabled;
+      return this;
+    }
+
+    public Builder setClientCertificatePath(final Path clientCertificatePath) {
+      this.clientCertificatePath = clientCertificatePath;
+      return this;
+    }
+
+    public Builder setClientKeyPath(final Path clientKeyPath) {
+      this.clientKeyPath = clientKeyPath;
       return this;
     }
 
@@ -571,8 +596,16 @@ public class HeliosClient implements AutoCloseable {
     }
 
     private HttpConnector createHttpConnector(final boolean sslHostnameVerification) {
-      Optional<AgentProxy> agentProxyOpt = Optional.absent();
 
+      final EndpointIterator endpointIterator = EndpointIterator.of(endpointSupplier.get());
+
+      final DefaultHttpConnector connector = new DefaultHttpConnector(endpointIterator, 10000,
+                                                                      sslHostnameVerification);
+
+      Optional<Path> clientCertificatePath = Optional.fromNullable(this.clientCertificatePath);
+      Optional<Path> clientKeyPath = Optional.fromNullable(this.clientKeyPath);
+
+      Optional<AgentProxy> agentProxyOpt = Optional.absent();
       try {
         agentProxyOpt = Optional.of(AgentProxies.newInstance());
       } catch (RuntimeException e) {
@@ -582,12 +615,8 @@ public class HeliosClient implements AutoCloseable {
         log.debug("{}", e);
       }
 
-      final EndpointIterator endpointIterator = EndpointIterator.of(endpointSupplier.get());
-
-      final DefaultHttpConnector connector = new DefaultHttpConnector(endpointIterator, 10000,
-                                                                      sslHostnameVerification);
-
-      return new AuthenticatingHttpConnector(user, agentProxyOpt, endpointIterator, connector);
+      return new AuthenticatingHttpConnector(user, agentProxyOpt, clientCertificatePath,
+                                             clientKeyPath, endpointIterator, connector);
     }
   }
 

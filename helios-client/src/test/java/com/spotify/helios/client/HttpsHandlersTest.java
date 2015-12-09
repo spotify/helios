@@ -17,7 +17,7 @@
 
 package com.spotify.helios.client;
 
-import com.spotify.helios.client.HttpsHandlers.AuthenticatingHttpsHandler;
+import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
 import com.spotify.helios.client.tls.SshAgentSSLSocketFactory;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
@@ -25,9 +25,16 @@ import com.spotify.sshagentproxy.Identity;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
+import sun.security.ssl.SSLSocketFactoryImpl;
+
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
+import static com.google.common.io.Resources.getResource;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -35,11 +42,24 @@ import static org.mockito.Mockito.verify;
 public class HttpsHandlersTest {
 
   @Test
-  public void test() throws Exception {
+  public void testCertificateFile() throws Exception {
+    final HttpsURLConnection conn = mock(HttpsURLConnection.class);
+
+    final Path certificate = Paths.get(getResource("UIDCACert.pem").getPath());
+    final Path key = Paths.get(getResource("UIDCACert.key").getPath());
+    final HttpsHandlers.CertificateFileHttpsHandler h =
+        new HttpsHandlers.CertificateFileHttpsHandler("foo", certificate, key);
+
+    h.handle(conn);
+    verify(conn).setSSLSocketFactory(any(SSLSocketFactoryImpl.class));
+  }
+
+  @Test
+  public void testSshAgent() throws Exception {
     final AgentProxy proxy = mock(AgentProxy.class);
     final Identity identity = mock(Identity.class);
     final HttpsURLConnection conn = mock(HttpsURLConnection.class);
-    final AuthenticatingHttpsHandler h = new AuthenticatingHttpsHandler("foo", proxy, identity);
+    final SshAgentHttpsHandler h = new SshAgentHttpsHandler("foo", proxy, identity);
 
     h.handle(conn);
     verify(conn).setSSLSocketFactory(sshAgentSSLSocketFactoryWithArgs(proxy, identity, "foo"));
