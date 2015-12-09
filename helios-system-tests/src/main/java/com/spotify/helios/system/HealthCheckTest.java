@@ -104,19 +104,13 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
 
     final HealthCheck healthCheck = TcpHealthCheck.of("health");
 
-    // start a container that listens on a poke port, and once poked listens on the healthcheck port
-    final Job job = Job.newBuilder()
-        .setName(testJobName)
-        .setVersion(testJobVersion)
-        .setImage(ALPINE)
-        .setCommand(asList("sh", "-c",
-                           "nc -l -p 4711 && nc -lk -p 4712 -e hostname"))
-        .addPort("poke", PortMapping.of(4711))
-        .addPort("health", PortMapping.of(4712))
-        .addRegistration(ServiceEndpoint.of("foo_service", "foo_proto"), ServicePorts.of("health"))
-        .setHealthCheck(healthCheck)
-        .build();
+    final Job job = pokeJob(healthCheck);
 
+    assertContainerRegistersAfterPoke(client, job);
+  }
+
+  private void assertContainerRegistersAfterPoke(final HeliosClient client, final Job job)
+      throws Exception {
     final JobId jobId = createJob(job);
     deployJob(jobId, testHost());
     awaitTaskState(jobId, testHost(), HEALTHCHECKING);
@@ -126,26 +120,8 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
     // shouldn't be registered, since we haven't poked it yet
     verify(registrar, never()).register(any(ServiceRegistration.class));
 
-    // poke container to get it to start listening on the healthcheck port
-    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<Object>() {
-      @Override
-      public Object call() throws Exception {
-        final JobStatus jobStatus = getOrNull(client.jobStatus(jobId));
-        final TaskStatus taskStatus = jobStatus.getTaskStatuses().get(testHost());
-        final PortMapping port = taskStatus.getPorts().get("poke");
+    pokeAndVerifyRegistration(client, jobId, LONG_WAIT_SECONDS);
 
-        assert port.getExternalPort() != null;
-        if (poke(port.getExternalPort())) {
-          return true;
-        } else {
-          return null;
-        }
-      }
-    });
-
-    awaitTaskState(jobId, testHost(), RUNNING);
-    verify(registrar, timeout((int) SECONDS.toMillis(LONG_WAIT_SECONDS)))
-        .register(registrationCaptor.capture());
     final ServiceRegistration serviceRegistration = registrationCaptor.getValue();
 
     final Map<String, Endpoint> registered = Maps.newHashMap();
@@ -180,44 +156,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
         .setHealthCheck(healthCheck)
         .build();
 
-    final JobId jobId = createJob(job);
-    deployJob(jobId, testHost());
-    awaitTaskState(jobId, testHost(), HEALTHCHECKING);
-
-    // wait a few seconds to see if the service gets registered
-    Thread.sleep(3000);
-    // shouldn't be registered, since we haven't poked it yet
-    verify(registrar, never()).register(any(ServiceRegistration.class));
-
-    // poke container to get it to start nginx
-    Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<Object>() {
-      @Override
-      public Object call() throws Exception {
-        final JobStatus jobStatus = getOrNull(client.jobStatus(jobId));
-        final TaskStatus taskStatus = jobStatus.getTaskStatuses().get(testHost());
-        final PortMapping port = taskStatus.getPorts().get("poke");
-
-        assert port.getExternalPort() != null;
-        if (poke(port.getExternalPort())) {
-          return true;
-        } else {
-          return null;
-        }
-      }
-    });
-
-    awaitTaskState(jobId, testHost(), RUNNING);
-    verify(registrar, timeout((int) SECONDS.toMillis(LONG_WAIT_SECONDS)))
-        .register(registrationCaptor.capture());
-    final ServiceRegistration serviceRegistration = registrationCaptor.getValue();
-
-    final Map<String, Endpoint> registered = Maps.newHashMap();
-    for (final Endpoint endpoint : serviceRegistration.getEndpoints()) {
-      registered.put(endpoint.getName(), endpoint);
-    }
-
-    assertEquals("wrong service", "foo_service", registered.get("foo_service").getName());
-    assertEquals("wrong protocol", "foo_proto", registered.get("foo_service").getProtocol());
+    assertContainerRegistersAfterPoke(client, job);
   }
 
   @Test
@@ -306,19 +245,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
     awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final HealthCheck healthCheck = TcpHealthCheck.of("health");
-
-    // start a container that listens on a poke port, and once poked listens on the healthcheck port
-    final Job job = Job.newBuilder()
-        .setName(testJobName)
-        .setVersion(testJobVersion)
-        .setImage(ALPINE)
-        .setCommand(asList("sh", "-c",
-                           "nc -l -p 4711 && nc -lk -p 4712 -e hostname"))
-        .addPort("poke", PortMapping.of(4711))
-        .addPort("health", PortMapping.of(4712))
-        .addRegistration(ServiceEndpoint.of("foo_service", "foo_proto"), ServicePorts.of("health"))
-        .setHealthCheck(healthCheck)
-        .build();
+    final Job job = pokeJob(healthCheck);
 
     final JobId jobId = createJob(job);
     deployJob(jobId, testHost());
@@ -330,7 +257,8 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
     getNewDockerClient().killContainer(taskStatus.getContainerId());
 
     // ensure the job is marked as failed
-    Polling.await(WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<Object>() {
+    final int timeout = WAIT_TIMEOUT_SECONDS;
+    Polling.await(timeout, SECONDS, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         final TaskStatusEvents jobHistory = getOrNull(client.jobHistory(jobId));
@@ -347,8 +275,12 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
     // wait for the job to come back up and start healthchecking again
     awaitTaskState(jobId, testHost(), HEALTHCHECKING);
 
-    // poke container to get it to start listening on the healthcheck port
-    Polling.await(WAIT_TIMEOUT_SECONDS, SECONDS, new Callable<Object>() {
+    pokeAndVerifyRegistration(client, jobId, timeout);
+  }
+
+  private void pokeAndVerifyRegistration(final HeliosClient client, final JobId jobId,
+                                         final int timeout) throws Exception {
+    Polling.await(timeout, SECONDS, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
         final JobStatus jobStatus = getOrNull(client.jobStatus(jobId));
@@ -364,10 +296,28 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
       }
     });
 
-    // ensure the job is now running and registered
     awaitTaskState(jobId, testHost(), RUNNING);
-    verify(registrar, timeout((int) SECONDS.toMillis(WAIT_TIMEOUT_SECONDS)))
+    verify(registrar, timeout((int) SECONDS.toMillis(timeout)))
         .register(registrationCaptor.capture());
+  }
+
+  /**
+   * Starts a container that listens on a poke port, and once poked listens on the healthcheck
+   * port.
+   */
+  private Job pokeJob(final HealthCheck healthCheck) {
+
+    return Job.newBuilder()
+        .setName(testJobName)
+        .setVersion(testJobVersion)
+        .setImage(ALPINE)
+        .setCommand(asList("sh", "-c",
+                           "nc -l -p 4711 && nc -lk -p 4712 -e hostname"))
+        .addPort("poke", PortMapping.of(4711))
+        .addPort("health", PortMapping.of(4712))
+        .addRegistration(ServiceEndpoint.of("foo_service", "foo_proto"), ServicePorts.of("health"))
+        .setHealthCheck(healthCheck)
+        .build();
   }
 
   private boolean poke(final int port) {
