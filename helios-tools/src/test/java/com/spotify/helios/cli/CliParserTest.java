@@ -30,9 +30,12 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class CliParserTest {
 
@@ -49,10 +52,19 @@ public class CliParserTest {
   private static final String SERVICE = "foo-service";
   private static final String SRV = "helios";
 
+  private final ImmutableList<String> singleEndpointArgs = ImmutableList.of(
+      SUBCOMMAND, "--master", ENDPOINTS[0], SERVICE
+  );
+
+  private static String[] toArray(List<String> args, String... additionalArgs) {
+    final List<String> newArgs = Lists.newArrayList(args);
+    Collections.addAll(newArgs, additionalArgs);
+    return newArgs.toArray(new String[newArgs.size()]);
+  }
+
   @Test
   public void testComputeTargetsSingleEndpoint() throws Exception {
-    final String[] args = {SUBCOMMAND, "--master", ENDPOINTS[0], SERVICE};
-    final CliParser cliParser = new CliParser(args);
+    final CliParser cliParser = new CliParser(toArray(singleEndpointArgs));
     final List<Target> targets = cliParser.getTargets();
 
     // We expect the specified master endpoint target
@@ -71,10 +83,7 @@ public class CliParserTest {
     }
     argsList.add(SERVICE);
 
-    final String[] args = new String[argsList.size()];
-    argsList.toArray(args);
-
-    final CliParser cliParser = new CliParser(args);
+    final CliParser cliParser = new CliParser(toArray(argsList));
     final List<Target> targets = cliParser.getTargets();
 
     // We expect only the specified master endpoint targets since they take precedence over domains
@@ -166,5 +175,20 @@ public class CliParserTest {
           SRV, ImmutableList.of(DOMAINS[0], DOMAINS[1], DOMAINS[2]));
       assertEquals(expectedTargets, targets);
     }
+  }
+
+  @Test
+  public void testInsecureHttpsDisabledByDefault() throws Exception {
+    final CliParser parser = new CliParser(toArray(singleEndpointArgs));
+
+    assertFalse("GlobalArg 'insecure' should default to false",
+        parser.getNamespace().getBoolean("insecure"));
+  }
+
+  @Test
+  public void testInsecureHttpsEnable() throws Exception {
+    final CliParser parser = new CliParser(toArray(singleEndpointArgs, "--insecure"));
+
+    assertTrue(parser.getNamespace().getBoolean("insecure"));
   }
 }

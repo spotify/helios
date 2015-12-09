@@ -30,6 +30,7 @@ import com.google.common.net.UrlEscapers;
 import com.google.common.util.concurrent.AsyncFunction;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -38,6 +39,7 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
+import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -73,7 +75,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -81,7 +85,6 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.Futures.withFallback;
-import static com.google.common.util.concurrent.MoreExecutors.getExitingScheduledExecutorService;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
 import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
 import static java.lang.String.format;
@@ -498,6 +501,7 @@ public class HeliosClient implements AutoCloseable {
 
     private String user;
     private Supplier<List<Endpoint>> endpointSupplier;
+    private boolean sslHostnameVerification = true;
 
     public Builder setUser(final String user) {
       this.user = user;
@@ -533,11 +537,36 @@ public class HeliosClient implements AutoCloseable {
       return this;
     }
 
+    /**
+     * Can be used to disable hostname verification for HTTPS connections to the Helios master.
+     * Defaults to being enabled.
+     */
+    public Builder setSslHostnameVerification(boolean enabled) {
+      this.sslHostnameVerification = enabled;
+      return this;
+    }
+
     public HeliosClient build() {
-      return new HeliosClient(user, new RetryingRequestDispatcher(
-          endpointSupplier.get(), user,
-          MoreExecutors.listeningDecorator(getExitingScheduledExecutorService(
-              (ScheduledThreadPoolExecutor) newScheduledThreadPool(4), 0, SECONDS))));
+      return new HeliosClient(user, createDispatcher());
+    }
+
+    private RequestDispatcher createDispatcher() {
+      final ScheduledExecutorService executor = MoreExecutors.getExitingScheduledExecutorService(
+          (ScheduledThreadPoolExecutor) newScheduledThreadPool(4), 0, SECONDS);
+
+      final ListeningScheduledExecutorService listeningExecutor =
+          MoreExecutors.listeningDecorator(executor);
+
+      final RequestDispatcher dispatcher = new DefaultRequestDispatcher(endpointSupplier.get(),
+          user,
+          listeningExecutor,
+          sslHostnameVerification);
+
+      return new RetryingRequestDispatcher(dispatcher,
+          listeningExecutor,
+          new SystemClock(),
+          5,
+          TimeUnit.SECONDS);
     }
   }
 

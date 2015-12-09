@@ -25,7 +25,6 @@ import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.SettableFuture;
 
 import com.spotify.helios.common.Clock;
-import com.spotify.helios.common.SystemClock;
 
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -47,21 +46,12 @@ class RetryingRequestDispatcher implements RequestDispatcher {
   private static final Logger log = LoggerFactory.getLogger(RetryingRequestDispatcher.class);
 
   private static final long RETRY_TIMEOUT_MILLIS = SECONDS.toMillis(60);
-  private static final long DEFAULT_DELAY = 5;
-  private static final TimeUnit DEFAULT_DELAY_TIMEUNIT = SECONDS;
 
   private final ListeningScheduledExecutorService executorService;
   private final RequestDispatcher delegate;
   private final Clock clock;
   private final long delay;
   private final TimeUnit delayTimeUnit;
-
-  RetryingRequestDispatcher(final List<Endpoint> endpoints,
-                            final String user,
-                            final ListeningScheduledExecutorService executorService) {
-    this(new DefaultRequestDispatcher(endpoints, user, executorService), executorService,
-         new SystemClock(), DEFAULT_DELAY, DEFAULT_DELAY_TIMEUNIT);
-  }
 
   RetryingRequestDispatcher(final RequestDispatcher delegate,
                             final ListeningScheduledExecutorService executorService,
@@ -121,6 +111,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
       public void onFailure(@NotNull Throwable t) {
         log.warn("Failed to connect, retrying in {} seconds.",
                  timeUnit.convert(delay, TimeUnit.SECONDS));
+        log.debug("Specific reason for connection failure", t);
         handleFailure(future, code, deadline, delay, timeUnit, t);
       }
     });

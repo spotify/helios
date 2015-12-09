@@ -54,7 +54,7 @@ public class Utils {
   }
 
   public static HeliosClient getClient(final Target target, final PrintStream err,
-                                       final String username) {
+                                       final String username, final Namespace options) {
 
     List<URI> endpoints = Collections.emptyList();
     try {
@@ -69,6 +69,7 @@ public class Utils {
 
     return HeliosClient.newBuilder()
         .setEndpointSupplier(Endpoints.of(target.getEndpointSupplier()))
+        .setSslHostnameVerification(!options.getBoolean("insecure"))
         .setUser(username)
         .build();
   }

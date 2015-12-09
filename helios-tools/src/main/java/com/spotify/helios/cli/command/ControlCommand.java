@@ -118,7 +118,7 @@ public abstract class ControlCommand implements CliCommand {
                       final BufferedReader stdin)
       throws InterruptedException, IOException {
 
-    final HeliosClient client = Utils.getClient(target, err, username);
+    final HeliosClient client = Utils.getClient(target, err, username, options);
     if (client == null) {
       return false;
     }
