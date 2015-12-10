@@ -48,6 +48,11 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singletonList;
 
+/**
+ * A HeliosSoloDeployment represents a deployment of Helios Solo, which is to say one Helios
+ * master and one Helios agent deployed in Docker. Helios Solo uses the Docker instance it is
+ * deployed to to run its jobs.
+ */
 public class HeliosSoloDeployment implements HeliosDeployment {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeployment.class);
@@ -90,7 +95,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         heliosHost = dockerHost.address();
       }
       this.heliosContainerId = deploySolo(heliosHost);
-      heliosPort = getHeliosMasterPort(this.heliosContainerId, HELIOS_MASTER_PORT);
+      heliosPort = getHostPort(this.heliosContainerId, HELIOS_MASTER_PORT);
     } catch (HeliosDeploymentException e) {
       throw new AssertionError("Unable to deploy helios-solo container.", e);
     }
@@ -145,6 +150,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     return ImmutableList.copyOf(binds);
   }
 
+  /**
+   * @throws HeliosDeploymentException if we cannot reach the Docker daemon's API from inside a
+   * probe container.
+   */
   private void assertDockerReachableFromContainer() throws HeliosDeploymentException {
     final String probeName = randomString();
     final HostConfig hostConfig = HostConfig.builder()
@@ -212,8 +221,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     return ImmutableList.copyOf(cmd);
   }
 
-  // TODO(negz): Merge with dockerReachableFromContainer() ?
+  /**
+   * Predict the gateway IP address for this HeliosSoloDeployment by running and inspecting a
+   * container.
+   *
+   * @return The gateway IP address of the gateway probe container.
+   * @throws HeliosDeploymentException if the gateway probe container could not be deployed.
+   */
   private String containerGateway() throws HeliosDeploymentException {
+    // TODO(negz): Merge with dockerReachableFromContainer() ?
     final ContainerConfig containerConfig = ContainerConfig.builder()
             .env(env)
             .hostConfig(HostConfig.builder().build())
@@ -243,6 +259,12 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
   }
 
+  /**
+   * @param heliosHost The address at which the Helios agent should expect to find the Helios
+   *                   master.
+   * @return The container ID of the Helios Solo container.
+   * @throws HeliosDeploymentException if Helios Solo could not be deployed.
+   */
   private String deploySolo(final String heliosHost) throws HeliosDeploymentException {
     //TODO(negz): Don't make this.env immutable so early?
     final List<String> env = new ArrayList<String>();
@@ -299,9 +321,17 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
   }
 
-  private String getHeliosMasterPort(final String containerId, final int port)
+  /**
+   * Return the first host port bound to the requested container port.
+   *
+   * @param containerId The container in which to find the requested port.
+   * @param containerPort The container port to resolve to a host port.
+   * @return The first host port bound to the requested container port.
+   * @throws HeliosDeploymentException when no host port is found.
+   */
+  private String getHostPort(final String containerId, final int containerPort)
           throws HeliosDeploymentException {
-    final String heliosPort = String.format("%d/tcp", port);
+    final String heliosPort = String.format("%d/tcp", containerPort);
     try {
       final NetworkSettings settings = dockerClient.inspectContainer(containerId).networkSettings();
       for (Map.Entry<String, List<PortBinding>> entry : settings.ports().entrySet()) {
@@ -328,28 +358,40 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     return Integer.toHexString(new Random().nextInt());
   }
 
+  /**
+   * @return A helios client connected to the master of this HeliosSoloDeployment.
+   */
   public HeliosClient client() {
     return this.heliosClient;
   }
 
+  /**
+   * Undeploy (shut down) this HeliosSoloDeployment.
+   */
   public void close() {
     killContainer(heliosContainerId);
     removeContainer(heliosContainerId);
     this.dockerClient.close();
   }
 
+  /**
+   * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
+   */
   public static Builder builder() {
     return new Builder();
   }
 
-  public static Builder fromEnv() {
+  /**
+   * @return A Builder with its Docker Client configured automatically using the
+   * <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or sensible
+   * defaults if they are absent.
+   */
+  public static Builder fromEnv()  {
     try {
       DefaultDockerClient.fromEnv().uri();
       return builder().dockerClient(DefaultDockerClient.fromEnv().build());
     } catch (DockerCertificateException e) {
-      // TODO(negz): Just propagate this rather than return null and fail later on checkNotNull?
-      log.error("unable to create Docker client from environment", e);
-      return builder();
+      throw new RuntimeException("unable to create Docker client from environment", e);
     }
   }
 
@@ -360,31 +402,77 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private String namespace;
     private String heliosUsername;
 
+    /**
+     * Specify a Docker client to be used for this Helios Solo deployment. A Docker client is
+     * necessary in order to deploy Helios Solo.
+     *
+     * @param dockerClient A client connected to the Docker instance in which to deploy Helios Solo.
+     * @return This Builder, with its Docker client configured.
+     */
     public Builder dockerClient(final DockerClient dockerClient) {
       this.dockerClient = dockerClient;
       return this;
     }
 
+    /**
+     * Optionally specify a DockerHost (i.e. Docker socket and certificate info) to connect to
+     * Docker from the host OS. If unset the <code>DOCKER_HOST</code> and
+     * <code>DOCKER_CERT_PATH</code> environment variables will be used. If said variables are not
+     * present sensible defaults will be used.
+     *
+     * @param dockerHost Docker socket and certificate settings for the host OS.
+     * @return This Builder, with its Docker host configured.
+     */
     public Builder dockerHost(final DockerHost dockerHost) {
       this.dockerHost = dockerHost;
       return this;
     }
 
+    /**
+     * Optionally specify a DockerHost (i.e. Docker socket and certificate info) to connect to
+     * Docker from inside the Helios container. If unset sensible defaults will be derived from
+     * the <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables and the
+     * Docker daemon's configuration.
+     *
+     * @param dockerHost Docker socket and certificate settings for the Helios container.
+     * @return This Builder, with its container Docker host configured.
+     */
     public Builder containerDockerHost(final DockerHost dockerHost) {
       this.containerDockerHost = containerDockerHost;
       return this;
     }
 
+    /**
+     * Optionally specify a unique namespace for the Helios solo agent and Docker container names.
+     * If unset a random string will be used.
+     *
+     * @param namespace A unique namespace for the Helios solo agent and Docker container.
+     * @return This Builder, with its namespace configured.
+     */
     public Builder namespace(final String namespace) {
       this.namespace = namespace;
       return this;
     }
 
+    /**
+     * Optionally specify the username to be used by the {@link HeliosClient} connected to the
+     * {@link HeliosSoloDeployment} created with this Builder. If unset a random string will be
+     * used.
+     *
+     * @param username The Helios user to identify as.
+     * @return This Builder, with its Helios username configured.
+     */
     public Builder heliosUsername(final String username) {
       this.heliosUsername = username;
       return this;
     }
 
+    /**
+     * Configures, deploys, and returns a {@link HeliosSoloDeployment} using the as specified by
+     * this Builder.
+     *
+     * @return A Helios Solo deployment configured by this Builder.
+     */
     public HeliosDeployment build() {
       return new HeliosSoloDeployment(this);
     }

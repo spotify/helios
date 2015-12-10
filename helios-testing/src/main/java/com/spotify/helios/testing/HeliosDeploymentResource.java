@@ -21,9 +21,16 @@ import com.spotify.helios.client.HeliosClient;
 
 import org.junit.rules.ExternalResource;
 
+/**
+ * A HeliosDeploymentResource makes the supplied {@link HeliosDeployment} available to a JUnit
+ * test, and guarantees to tear it down afterward.
+ */
 public class HeliosDeploymentResource extends ExternalResource {
   HeliosDeployment deployment;
 
+  /**
+   * @param deployment The Helios deployment to expose to your JUnit tests.
+   */
   HeliosDeploymentResource(final HeliosDeployment deployment) {
     this.deployment = deployment;
   }
@@ -33,6 +40,11 @@ public class HeliosDeploymentResource extends ExternalResource {
     deployment.close();
   }
 
+  /**
+   *
+   * @return A Helios client connected to the Helios deployment supplied when instantiating the
+   * HeliosDeploymentResource.
+   */
   public HeliosClient client() {
     return deployment.client();
   }
