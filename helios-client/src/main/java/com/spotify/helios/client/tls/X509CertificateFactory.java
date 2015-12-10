@@ -18,6 +18,7 @@
 package com.spotify.helios.client.tls;
 
 import com.google.common.base.Throwables;
+import com.google.common.io.BaseEncoding;
 
 import com.eaio.uuid.UUID;
 import com.spotify.sshagentproxy.AgentProxy;
@@ -32,6 +33,7 @@ import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
 import org.bouncycastle.asn1.x509.BasicConstraints;
 import org.bouncycastle.asn1.x509.Extension;
 import org.bouncycastle.asn1.x509.KeyUsage;
+import org.bouncycastle.asn1.x509.SubjectKeyIdentifier;
 import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509ExtensionUtils;
@@ -40,6 +42,8 @@ import org.bouncycastle.crypto.tls.Certificate;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.DigestCalculator;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.security.Security;
@@ -47,6 +51,11 @@ import java.util.Calendar;
 import java.util.Date;
 
 class X509CertificateFactory {
+
+  private static final Logger log = LoggerFactory.getLogger(X509CertificateFactory.class);
+
+  private static final BaseEncoding KEY_ID_ENCODING =
+      BaseEncoding.base16().upperCase().withSeparator(":", 2);
 
   private static final int HOURS_BEFORE = 1;
   private static final int HOURS_AFTER = 48;
@@ -83,8 +92,11 @@ class X509CertificateFactory {
           .get(new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1));
       final X509ExtensionUtils utils = new X509ExtensionUtils(digestCalculator);
 
-      builder.addExtension(Extension.subjectKeyIdentifier, false,
-                           utils.createSubjectKeyIdentifier(subjectPublicKeyInfo));
+      final SubjectKeyIdentifier keyId = utils.createSubjectKeyIdentifier(subjectPublicKeyInfo);
+      final String keyIdHex = KEY_ID_ENCODING.encode(keyId.getKeyIdentifier());
+      log.info("generated an X509 certificate with key ID {}", keyIdHex);
+
+      builder.addExtension(Extension.subjectKeyIdentifier, false, keyId);
       builder.addExtension(Extension.authorityKeyIdentifier, false,
                            utils.createAuthorityKeyIdentifier(subjectPublicKeyInfo));
       builder.addExtension(Extension.keyUsage, false,
