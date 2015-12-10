@@ -40,6 +40,11 @@ case "$1" in
     ;;
 
   test)
+    # fix DOCKER_HOST to be accessible from within containers
+    docker0_ip=$(/sbin/ifconfig docker0 | grep 'inet addr' | \
+      awk -F: '{print $2}' | awk '{print $1}')
+    export DOCKER_HOST="tcp://$docker0_ip:2375"
+
     case $CIRCLE_NODE_INDEX in
       0)
         # run all tests *except* helios-system-tests
@@ -86,11 +91,6 @@ case "$1" in
         # tag the helios-solo image we just built
         solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
         docker tag -f $solo_image spotify/helios-solo:latest
-
-        # fix DOCKER_HOST to be accessible from within containers
-        docker0_ip=$(/sbin/ifconfig docker0 | grep 'inet addr' | \
-          awk -F: '{print $2}' | awk '{print $1}')
-        export DOCKER_HOST="tcp://$docker0_ip:2375"
 
         # bring up helios-solo for integration tests
         cd solo
