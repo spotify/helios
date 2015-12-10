@@ -154,13 +154,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public Stat exists(final String path) throws KeeperException {
-    assertClusterIdFlagTrue();
-    try {
-      return client.checkExists().forPath(path);
-    } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
-    }
+    return stat(path);
   }
 
   @Override

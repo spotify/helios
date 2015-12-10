@@ -17,11 +17,11 @@
 
 package com.spotify.helios.cli.command;
 
+import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.protocol.SetGoalResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -70,30 +70,7 @@ public class JobStartCommand extends WildcardJobCommand {
       out.printf("Starting %s on %s%n", jobId, hosts);
     }
 
-    int code = 0;
-
-    for (final String host : hosts) {
-      if (!json) {
-        out.printf("%s: ", host);
-      }
-      final String token = options.getString(tokenArg.getDest());
-      final SetGoalResponse result = client.setGoal(deployment, host, token).get();
-      if (result.getStatus() == SetGoalResponse.Status.OK) {
-        if (json) {
-          out.printf(result.toJsonString());
-        } else {
-          out.printf("done%n");
-        }
-      } else {
-        if (json) {
-          out.printf(result.toJsonString());
-        } else {
-          out.printf("failed: %s%n", result);
-        }
-        code = 1;
-      }
-    }
-
-    return code;
+    return Utils.setGoalOnHosts(client, out, json, hosts, deployment,
+        options.getString(tokenArg.getDest()));
   }
 }
