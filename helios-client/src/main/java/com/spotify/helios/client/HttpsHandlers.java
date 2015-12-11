@@ -25,6 +25,7 @@ import com.spotify.sshagentproxy.Identity;
 
 import org.apache.http.ssl.SSLContexts;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
+import org.bouncycastle.openssl.PEMKeyPair;
 import org.bouncycastle.openssl.PEMParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -142,9 +143,17 @@ class HttpsHandlers {
         final Certificate clientCert = cf.generateCertificate(
             Files.newInputStream(clientCertificatePath));
 
-        final PrivateKeyInfo keyInfo = (PrivateKeyInfo) new PEMParser(
-            Files.newBufferedReader(clientKeyPath, Charset.defaultCharset()))
-            .readObject();
+        final Object pemObj = new PEMParser(
+            Files.newBufferedReader(clientKeyPath, Charset.defaultCharset())).readObject();
+
+        final PrivateKeyInfo keyInfo;
+        if (pemObj instanceof PEMKeyPair) {
+          keyInfo = ((PEMKeyPair) pemObj).getPrivateKeyInfo();
+        } else if (pemObj instanceof PrivateKeyInfo) {
+          keyInfo = (PrivateKeyInfo) pemObj;
+        } else {
+          throw new IllegalArgumentException("Unable to parse x509 certificate.");
+        }
 
         final PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyInfo.getEncoded());
         final KeyFactory kf = KeyFactory.getInstance("RSA");
