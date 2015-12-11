@@ -18,6 +18,7 @@
 package com.spotify.helios.testing;
 
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
@@ -90,7 +91,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     try {
       assertDockerReachableFromContainer();
       if (dockerHost.address().equals("localhost") || dockerHost.address().equals("127.0.0.1")) {
-          heliosHost = containerGateway();
+        heliosHost = containerGateway();
       } else {
         heliosHost = dockerHost.address();
       }
@@ -125,7 +126,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       return this.dockerClient.info();
     } catch (DockerException | InterruptedException e) {
       // There's not a lot we can do if Docker is unreachable.
-      throw new AssertionError(e);
+      throw Throwables.propagate(e);
     }
   }
 

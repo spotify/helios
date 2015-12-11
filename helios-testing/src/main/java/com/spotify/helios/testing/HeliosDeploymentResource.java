@@ -26,7 +26,7 @@ import org.junit.rules.ExternalResource;
  * test, and guarantees to tear it down afterward.
  */
 public class HeliosDeploymentResource extends ExternalResource {
-  HeliosDeployment deployment;
+  private final HeliosDeployment deployment;
 
   /**
    * @param deployment The Helios deployment to expose to your JUnit tests.
