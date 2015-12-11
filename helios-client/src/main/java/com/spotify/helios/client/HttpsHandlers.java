@@ -26,6 +26,8 @@ import com.spotify.sshagentproxy.Identity;
 import org.apache.http.ssl.SSLContexts;
 import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
 import org.bouncycastle.openssl.PEMParser;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.Charset;
@@ -56,6 +58,8 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 class HttpsHandlers {
 
   static class SshAgentHttpsHandler implements HttpsHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(SshAgentHttpsHandler.class);
 
     private final String user;
     private final AgentProxy agentProxy;
@@ -88,6 +92,7 @@ class HttpsHandlers {
     @Override
     public void handle(final HttpsURLConnection conn) {
       conn.setSSLSocketFactory(new SshAgentSSLSocketFactory(agentProxy, identity, user));
+      log.debug("configured SshAgentSSLSocketFactory with identity={}", identity);
     }
   }
 
