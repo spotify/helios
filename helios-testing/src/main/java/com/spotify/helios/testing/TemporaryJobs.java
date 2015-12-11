@@ -513,6 +513,20 @@ public class TemporaryJobs implements TestRule {
 
   public static class Builder {
 
+    private final Map<String, String> env;
+    private final Config config;
+    private String user = DEFAULT_USER;
+    private Prober prober = DEFAULT_PROBER;
+    private Deployer deployer;
+    private String hostFilter;
+    private HeliosClient client;
+    private String prefixDirectory;
+    private String testReportDirectory;
+    private String jobPrefix;
+    private String jobDeployedMessageFormat;
+    private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
+    private long deployTimeoutMillis = DEFAULT_DEPLOY_TIMEOUT_MILLIS;
+
     Builder(String profile, Config rootConfig, Map<String, String> env) {
       this.env = env;
 
@@ -647,20 +661,6 @@ public class TemporaryJobs implements TestRule {
             + "value for hostPickingStrategyKey which is used to seed the random number generator");
       }
     }
-
-    private final Map<String, String> env;
-    private final Config config;
-    private String user = DEFAULT_USER;
-    private Prober prober = DEFAULT_PROBER;
-    private Deployer deployer;
-    private String hostFilter;
-    private HeliosClient client;
-    private String prefixDirectory;
-    private String testReportDirectory;
-    private String jobPrefix;
-    private String jobDeployedMessageFormat;
-    private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
-    private long deployTimeoutMillis = DEFAULT_DEPLOY_TIMEOUT_MILLIS;
 
     public Builder domain(final String domain) {
       return client(HeliosClient.newBuilder()

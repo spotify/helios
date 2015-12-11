@@ -20,8 +20,8 @@ machine:
     - helios/circle.sh post_machine
   services:
     - docker
+  # See circle.sh for DOCKER_HOST.
   environment:
-    DOCKER_HOST: tcp://127.0.0.1:2375
     MAVEN_OPTS: -Xmx128m
   # tells CircleCI that we want virtualenv so that we can pip install codecov without errors
   python:
