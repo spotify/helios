@@ -83,7 +83,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
   }
 
   @Override
-  public void close() {
+  public void close() throws Exception {
     delegate.close();
   }
 

@@ -18,6 +18,7 @@
 package com.spotify.helios.client;
 
 import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
@@ -62,6 +63,8 @@ import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.common.protocol.SetGoalResponse;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
+import com.spotify.sshagentproxy.AgentProxies;
+import com.spotify.sshagentproxy.AgentProxy;
 
 import org.apache.http.client.utils.URIBuilder;
 import org.jetbrains.annotations.NotNull;
@@ -71,6 +74,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -82,6 +87,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.google.common.util.concurrent.Futures.transform;
 import static com.google.common.util.concurrent.Futures.withFallback;
@@ -112,7 +118,7 @@ public class HeliosClient implements AutoCloseable {
   }
 
   @Override
-  public void close() {
+  public void close() throws Exception {
     dispatcher.close();
   }
 
@@ -499,9 +505,21 @@ public class HeliosClient implements AutoCloseable {
 
   public static class Builder {
 
+    private static final String HELIOS_CERT_PATH = "HELIOS_CERT_PATH";
+
     private String user;
+    private Path clientCertificatePath;
+    private Path clientKeyPath;
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
+
+    private Builder() {
+      final String heliosCertPath = System.getenv(HELIOS_CERT_PATH);
+      if (!isNullOrEmpty(heliosCertPath)) {
+        this.clientCertificatePath = Paths.get(heliosCertPath, "cert.pem");
+        this.clientKeyPath = Paths.get(heliosCertPath, "key.pem");
+      }
+    }
 
     public Builder setUser(final String user) {
       this.user = user;
@@ -541,8 +559,18 @@ public class HeliosClient implements AutoCloseable {
      * Can be used to disable hostname verification for HTTPS connections to the Helios master.
      * Defaults to being enabled.
      */
-    public Builder setSslHostnameVerification(boolean enabled) {
+    public Builder setSslHostnameVerification(final boolean enabled) {
       this.sslHostnameVerification = enabled;
+      return this;
+    }
+
+    public Builder setClientCertificatePath(final Path clientCertificatePath) {
+      this.clientCertificatePath = clientCertificatePath;
+      return this;
+    }
+
+    public Builder setClientKeyPath(final Path clientKeyPath) {
+      this.clientKeyPath = clientKeyPath;
       return this;
     }
 
@@ -557,16 +585,38 @@ public class HeliosClient implements AutoCloseable {
       final ListeningScheduledExecutorService listeningExecutor =
           MoreExecutors.listeningDecorator(executor);
 
-      final RequestDispatcher dispatcher = new DefaultRequestDispatcher(endpointSupplier.get(),
-          user,
-          listeningExecutor,
-          sslHostnameVerification);
+      final RequestDispatcher dispatcher = new DefaultRequestDispatcher(
+          createHttpConnector(sslHostnameVerification), listeningExecutor);
 
       return new RetryingRequestDispatcher(dispatcher,
           listeningExecutor,
           new SystemClock(),
           5,
           TimeUnit.SECONDS);
+    }
+
+    private HttpConnector createHttpConnector(final boolean sslHostnameVerification) {
+
+      final EndpointIterator endpointIterator = EndpointIterator.of(endpointSupplier.get());
+
+      final DefaultHttpConnector connector = new DefaultHttpConnector(endpointIterator, 10000,
+                                                                      sslHostnameVerification);
+
+      Optional<Path> clientCertificatePath = Optional.fromNullable(this.clientCertificatePath);
+      Optional<Path> clientKeyPath = Optional.fromNullable(this.clientKeyPath);
+
+      Optional<AgentProxy> agentProxyOpt = Optional.absent();
+      try {
+        agentProxyOpt = Optional.of(AgentProxies.newInstance());
+      } catch (RuntimeException e) {
+        // the user likely doesn't have ssh-agent setup. This may not matter at all if the masters
+        // do not require authentication, so we delay reporting any sort of error to the user until
+        // the servers return 401 Unauthorized.
+        log.debug("{}", e);
+      }
+
+      return new AuthenticatingHttpConnector(user, agentProxyOpt, clientCertificatePath,
+                                             clientKeyPath, endpointIterator, connector);
     }
   }
 

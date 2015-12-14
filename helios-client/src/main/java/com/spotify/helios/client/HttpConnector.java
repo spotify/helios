@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Spotify AB.
+ * Copyright (c) 2014 Spotify AB.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,17 @@
 
 package com.spotify.helios.client;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import com.spotify.helios.common.HeliosException;
 
+import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-interface RequestDispatcher extends AutoCloseable {
+interface HttpConnector extends AutoCloseable {
 
-  ListenableFuture<Response> request(
-      URI uri, String method, byte[] entityBytes, Map<String, List<String>> headers);
-
+  // TODO (mbrown): it's ugly that this has the same list of parameters as RequestDispatcher
+  // TODO (mbrown): should create a Request interface instead to hold all of them
+  HttpURLConnection connect(final URI uri, final String method, final byte[] entity,
+                            final Map<String, List<String>> headers) throws HeliosException;
 }

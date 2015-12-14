@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Spotify AB.
+ * Copyright (c) 2014 Spotify AB.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,15 +17,13 @@
 
 package com.spotify.helios.client;
 
-import com.google.common.util.concurrent.ListenableFuture;
+import javax.net.ssl.HttpsURLConnection;
 
-import java.net.URI;
-import java.util.List;
-import java.util.Map;
-
-interface RequestDispatcher extends AutoCloseable {
-
-  ListenableFuture<Response> request(
-      URI uri, String method, byte[] entityBytes, Map<String, List<String>> headers);
-
+/**
+ * An interface that handles HTTPS connections by modifying them.
+ * E.g. HttpsURLConnection.setSSLSocketFactory()
+ */
+interface HttpsHandler {
+  void handle(HttpsURLConnection connection);
 }
+

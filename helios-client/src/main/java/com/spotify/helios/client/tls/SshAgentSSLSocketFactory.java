@@ -41,13 +41,23 @@ public class SshAgentSSLSocketFactory extends SSLSocketFactory {
   private final Identity identity;
   private final String username;
 
+  public AgentProxy getAgentProxy() {
+    return agentProxy;
+  }
+
+  public Identity getIdentity() {
+    return identity;
+  }
+
+  public String getUsername() {
+    return username;
+  }
+
   /**
    * @param username The username to set in the UID field of generated X509 certificates.
-   * @throws IOException Should never be thrown.
    */
   public SshAgentSSLSocketFactory(final AgentProxy agentProxy, final Identity identity,
-                                  final String username)
-      throws IOException {
+                                  final String username) {
     checkNotNull(agentProxy, "agentProxy");
     checkNotNull(identity, "identity");
     checkNotNull(username, "username");
