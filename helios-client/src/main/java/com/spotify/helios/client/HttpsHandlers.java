@@ -152,7 +152,7 @@ class HttpsHandlers {
         } else if (pemObj instanceof PrivateKeyInfo) {
           keyInfo = (PrivateKeyInfo) pemObj;
         } else {
-          throw new IllegalArgumentException("Unable to parse x509 certificate.");
+          throw new UnsupportedOperationException("Unable to parse x509 certificate.");
         }
 
         final PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyInfo.getEncoded());
