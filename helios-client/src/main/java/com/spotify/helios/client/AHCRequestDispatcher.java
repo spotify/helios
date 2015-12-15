@@ -46,11 +46,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
+
+import static com.spotify.helios.client.AHCUtils.toArray;
+import static com.spotify.helios.client.AHCUtils.toMap;
 
 /** A RequestDispatcher that uses Apache HttpClient. */
 // TODO (mbrown): this is meant to be wrapped in a builder and layered
@@ -98,7 +99,8 @@ class AHCRequestDispatcher implements RequestDispatcher {
 
     final Endpoint endpoint = endpointIterator.next();
 
-    final HttpUriRequest request = createRequest(method, combine(uri, endpoint), entityBytes);
+    final HttpUriRequest request =
+        createRequest(method, combine(uri, endpoint), headers, entityBytes);
 
     final HttpHost target = new HttpHost(endpoint.getIp(),
         endpoint.getUri().getPort(),
@@ -203,33 +205,40 @@ class AHCRequestDispatcher implements RequestDispatcher {
     return uriWithEndpoint;
   }
 
-  private HttpUriRequest createRequest(String method, URI uri, byte[] entity) {
-    if (method.equals("GET")) {
-      checkEntityIsEmpty(method, entity);
-      return new HttpGet(uri);
-    }
-
-    if (method.equals("DELETE")) {
-      checkEntityIsEmpty(method, entity);
-      return new HttpDelete(uri);
-    }
-
-    final HttpEntityEnclosingRequestBase request;
+  private HttpUriRequest createRequest(String method, URI uri, Map<String, List<String>> headers,
+                                       byte[] entity) {
+    final HttpUriRequest request;
     switch (method) {
-      case "POST":
-        request = new HttpPost(uri);
+      case "GET":
+        checkEntityIsEmpty(method, entity);
+        request = new HttpGet(uri);
         break;
-      case "PUT":
-        request = new HttpPut(uri);
-        break;
-      case "PATCH":
-        request = new HttpPatch(uri);
+      case "DELETE":
+        checkEntityIsEmpty(method, entity);
+        request = new HttpDelete(uri);
         break;
       default:
-        throw new IllegalArgumentException("Unknown HTTP method: " + method);
+        final HttpEntityEnclosingRequestBase requestWithEntity;
+        switch (method) {
+          case "POST":
+            requestWithEntity = new HttpPost(uri);
+            break;
+          case "PUT":
+            requestWithEntity = new HttpPut(uri);
+            break;
+          case "PATCH":
+            requestWithEntity = new HttpPatch(uri);
+            break;
+          default:
+            throw new IllegalArgumentException("Unknown HTTP method: " + method);
+        }
+        requestWithEntity.setEntity(new ByteArrayEntity(entity));
+        request = requestWithEntity;
+        break;
     }
 
-    request.setEntity(new ByteArrayEntity(entity));
+    request.setHeaders(toArray(headers));
+
     return request;
   }
 
@@ -239,18 +248,6 @@ class AHCRequestDispatcher implements RequestDispatcher {
       throw new IllegalArgumentException(
           "Cannot make " + method + " request with a request entity");
     }
-  }
-
-  private static Map<String, List<String>> toMap(final Header[] headers) {
-    final Map<String, List<String>> map = new HashMap<>(headers.length);
-    for (Header header : headers) {
-      // TODO (mbrown): in Java 8 this becomes Map.computeIfAbsent(key, function<K, V>)
-      if (!map.containsKey(header.getName())) {
-        map.put(header.getName(), new ArrayList<String>());
-      }
-      map.get(header.getName()).add(header.getValue());
-    }
-    return map;
   }
 
   @Override

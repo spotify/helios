@@ -18,6 +18,7 @@
 package com.spotify.helios.client;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.ListeningExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -47,6 +48,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 
+import static com.spotify.helios.client.AHCUtils.toMap;
 import static com.spotify.helios.client.EndpointsHelper.hostFor;
 import static org.hamcrest.Matchers.allOf;
 import static org.hamcrest.Matchers.is;
@@ -91,7 +93,9 @@ public class AHCRequestDispatcherTest {
     return response;
   }
 
-  // necessary because HttpGet and friends don't implement equals()
+  // this matcher is necessary because HttpGet and friends don't implement equals().
+  // all of the Matchers below use Matcher<HttpUriRequest> so that they can be composed in an
+  // allOf() block; and HttpUriRequest is an easier-to-use base type than HttpRequest
   private static Matcher<HttpUriRequest> request(final String method, final URI uri) {
     final String desc = "A request with method=" + method + " and URI=" + uri;
     return new CustomTypeSafeMatcher<HttpUriRequest>(desc) {
@@ -127,6 +131,16 @@ public class AHCRequestDispatcherTest {
     };
   }
 
+  private static Matcher<HttpUriRequest> hasAllHeaders(final Map<String, List<String>> expected) {
+    final String description = "Request with headers: " + expected;
+    return new CustomTypeSafeMatcher<HttpUriRequest>(description) {
+      @Override
+      protected boolean matchesSafely(final HttpUriRequest actual) {
+        return Objects.equals(expected, toMap(actual.getAllHeaders()));
+      }
+    };
+  }
+
   @Test
   public void testSimpleGet() throws Exception {
     final URI uri = baseUri.resolve("/foo");
@@ -151,6 +165,26 @@ public class AHCRequestDispatcherTest {
 
   private static Matcher<byte[]> isEmpty() {
     return is(new byte[0]);
+  }
+
+  @Test
+  public void testSendsHeaders() throws Exception {
+    final URI uri = baseUri.resolve("/blah");
+    final Map<String, List<String>> headers = ImmutableMap.<String, List<String>>of(
+        "Something", ImmutableList.of("one-value"),
+        "Another-Header", ImmutableList.of("one", "two")
+    );
+
+    final CloseableHttpResponse httpResponse = mockHttpResponse(200);
+
+    when(httpClient.execute(
+        argThat(hostFor(endpoints)),
+        argThat(allOf(request("GET", uri), hasAllHeaders(headers))))
+    ).thenReturn(httpResponse);
+
+    final Response response = dispatcher.request(uri, "GET", null, headers).get();
+
+    assertThat(response.status(), is(200));
   }
 
   @Test
