@@ -263,4 +263,32 @@ public class AuthenticatingHttpConnectorTest {
       }
     });
   }
+
+  @Test
+  public void testOneIdentity_ServerReturns502BadGateway() throws Exception {
+    final AgentProxy proxy = mock(AgentProxy.class);
+    final Identity identity = mockIdentity();
+
+    final AuthenticatingHttpConnector authConnector =
+        createAuthenticatingConnector(Optional.of(proxy), ImmutableList.of(identity));
+
+    final String path = "/foobar";
+
+    final HttpsURLConnection connection = mock(HttpsURLConnection.class);
+    when(connector.connect(argThat(matchesAnyEndpoint(path)),
+        eq(method),
+        eq(entity),
+        eq(headers))
+    ).thenReturn(connection);
+    when(connection.getResponseCode()).thenReturn(502);
+
+    URI uri = new URI("https://helios" + path);
+
+    HttpURLConnection returnedConnection = authConnector.connect(uri, method, entity, headers);
+
+    assertSame("If there is only one identity do not expect any additional endpoints to "
+               + "be called after the first returns Unauthorized",
+        returnedConnection, connection);
+
+  }
 }

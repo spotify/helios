@@ -42,7 +42,6 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
-import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 
@@ -130,16 +129,13 @@ public class AuthenticatingHttpConnector implements HttpConnector {
           } else if (agentProxy.isPresent() && identity != null) {
             delegate.setExtraHttpsHandler(new SshAgentHttpsHandler(
                 user, agentProxy.get(), identity));
+          } else {
+            // no authentication set up!
           }
 
           final HttpURLConnection connection = delegate.connect(ipUri, method, entity, headers);
 
           final int responseCode = connection.getResponseCode();
-          if (responseCode == HTTP_BAD_GATEWAY) {
-            log.debug("502 Bad Gateway");
-            continue;
-          }
-
           if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
               && !ids.isEmpty()) {
             // there was some sort of security error. if we have any more SSH identities to try,
