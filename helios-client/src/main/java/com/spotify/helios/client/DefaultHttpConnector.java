@@ -39,6 +39,8 @@ import java.util.Map;
 
 import javax.net.ssl.HttpsURLConnection;
 
+import static java.net.HttpURLConnection.HTTP_BAD_GATEWAY;
+
 // TODO (mbrown): rename
 public class DefaultHttpConnector implements HttpConnector {
 
@@ -67,7 +69,16 @@ public class DefaultHttpConnector implements HttpConnector {
     final String endpointHost = endpoint.getUri().getHost();
 
     try {
-      return connect0(uri, method, entity, headers, endpointHost);
+      HttpURLConnection connection = connect0(uri, method, entity, headers, endpointHost);
+
+      if (connection.getResponseCode() == HTTP_BAD_GATEWAY) {
+        throw new HeliosException(
+            String.format("Request to %s returned %s, master is down",
+                uri, connection.getResponseCode())
+        );
+      }
+      return connection;
+
     } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
       // UnknownHostException happens if we can't resolve hostname into IP address.
       // UnknownHostException's getMessage method returns just the hostname which is a

@@ -38,8 +38,7 @@ import java.util.concurrent.TimeUnit;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
- * A {@link RequestDispatcher} that retries. Uses {@link DefaultRequestDispatcher}
- * as a delegate.
+ * A {@link RequestDispatcher} that retries.
  */
 class RetryingRequestDispatcher implements RequestDispatcher {
 
