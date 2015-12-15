@@ -107,8 +107,12 @@ class AHCRequestDispatcher implements RequestDispatcher {
     return executorService.submit(new Callable<Response>() {
       @Override
       public Response call() throws Exception {
-        log.debug("connecting to host={} to send request={}", target, request);
+        log.debug("connecting to host={} with address={}", target, target.getAddress());
         logRequest();
+
+        // TODO (mbrown): is the HttpHost argument necessary? I thought it would be to set the
+        // inetaddress for the connection,
+        // but we are setting the request.uri.host to the same inetaddress.hostaddress anyway
         try (final CloseableHttpResponse response = httpClient.execute(target, request)) {
           final int status = response.getStatusLine().getStatusCode();
 

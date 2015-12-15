@@ -163,6 +163,10 @@ public class AHCRequestDispatcherTest {
     final byte[] responseEntity = {7, 9, 82};
     when(httpResponse.getEntity()).thenReturn(new ByteArrayEntity(responseEntity));
 
+    // hack to hit the isGzip=true branches
+    when(httpResponse.getHeaders("Content-Encoding"))
+        .thenReturn(new Header[]{new BasicHeader("Content-Encoding", "gzip")});
+
     when(httpClient.execute(argThat(hostFor(endpoints)), argThat(request("GET", uri))))
         .thenReturn(httpResponse);
 
