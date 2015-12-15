@@ -68,7 +68,6 @@ public class EndpointsHelper {
         for (Endpoint endpoint : endpoints) {
           final URI uri = endpoint.getUri();
           if (item.getAddress().equals(endpoint.getIp()) &&
-              item.getHostName().equals(uri.getHost()) &&
               item.getSchemeName().equals(uri.getScheme()) &&
               item.getPort() == uri.getPort()) {
             return true;

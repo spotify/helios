@@ -17,6 +17,7 @@
 
 package com.spotify.helios.client;
 
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
@@ -32,9 +33,11 @@ import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -82,14 +85,14 @@ class AHCRequestDispatcher implements RequestDispatcher {
     //
     // common stuff:
     // - hostname verifier logic
-    final HttpRequest request = createRequest(method, uri, entityBytes);
 
     final Endpoint endpoint = endpointIterator.next();
 
+    final HttpRequest request = createRequest(method, combine(uri, endpoint), entityBytes);
+
     final HttpHost target = new HttpHost(endpoint.getIp(),
-        uri.getHost(),
-        uri.getPort(),
-        uri.getScheme());
+        endpoint.getUri().getPort(),
+        endpoint.getUri().getScheme());
 
     return executorService.submit(new Callable<Response>() {
       @Override
@@ -113,6 +116,25 @@ class AHCRequestDispatcher implements RequestDispatcher {
         }
       }
     });
+  }
+
+  @NotNull
+  private URI combine(final URI uri, final Endpoint endpoint) {
+    final URI uriWithEndpoint;
+    try {
+      uriWithEndpoint = new URI(
+          endpoint.getUri().getScheme(),
+          endpoint.getUri().getUserInfo(),
+          endpoint.getIp().getHostAddress(),
+          endpoint.getUri().getPort(),
+          endpoint.getUri().getPath() + uri.getPath(),
+          uri.getQuery(),
+          null
+      );
+    } catch (URISyntaxException e) {
+      throw Throwables.propagate(e);
+    }
+    return uriWithEndpoint;
   }
 
   private HttpRequest createRequest(String method, URI uri, byte[] entity) {

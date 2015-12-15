@@ -45,6 +45,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import static com.spotify.helios.client.EndpointsHelper.hostFor;
 import static org.hamcrest.Matchers.allOf;
@@ -63,13 +64,15 @@ public class AHCRequestDispatcherTest {
   private final CloseableHttpClient httpClient = mock(CloseableHttpClient.class);
   private final Map<String, List<String>> emptyHeaders = Collections.emptyMap();
 
-  private final URI baseUri = URI.create("https://helios:443");
   private final List<Endpoint> endpoints = Endpoints.of(
-      baseUri,
+      URI.create("https://helios-cluster:443"),
       ImmutableList.of(
           InetAddresses.forString("192.168.0.1"),
           InetAddresses.forString("192.168.0.2")
       ));
+
+  // mimic the fake URI that HeliosClient uses
+  private final URI baseUri = URI.create("http://helios");
 
   private AHCRequestDispatcher dispatcher =
       new AHCRequestDispatcher(executor, httpClient, EndpointIterator.of(endpoints));
@@ -94,7 +97,9 @@ public class AHCRequestDispatcherTest {
     return new CustomTypeSafeMatcher<HttpUriRequest>(desc) {
       @Override
       protected boolean matchesSafely(final HttpUriRequest item) {
-        return item.getMethod().equals(method) && item.getURI().equals(uri);
+        return item.getMethod().equals(method) &&
+               Objects.equals(item.getURI().getPath(), uri.getPath()) &&
+               Objects.equals(item.getURI().getQuery(), uri.getQuery());
       }
     };
   }
@@ -171,7 +176,7 @@ public class AHCRequestDispatcherTest {
   public void testRequestsWithEntity() throws Exception {
     final URI uri = baseUri.resolve("/foo");
 
-    for (String method : new String[] {"PUT", "POST", "PATCH"}) {
+    for (String method : new String[]{"PUT", "POST", "PATCH"}) {
       final CloseableHttpResponse httpResponse = mockHttpResponse(201);
       final byte[] inputBytes = new byte[]{1, 2, 3, 4};
 
