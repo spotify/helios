@@ -130,7 +130,7 @@ public class DefaultHttpConnector implements HttpConnector {
     httpsConnection.setHostnameVerifier(hostnameVerifierProvider.verifierFor(hostname));
 
     if (extraHttpsHandler != null) {
-      extraHttpsHandler.handle(httpsConnection);
+      httpsConnection.setSSLSocketFactory(extraHttpsHandler.socketFactory());
     }
   }
 

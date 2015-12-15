@@ -17,13 +17,13 @@
 
 package com.spotify.helios.client;
 
-import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSocketFactory;
 
 /**
  * An interface that handles HTTPS connections by modifying them.
  * E.g. HttpsURLConnection.setSSLSocketFactory()
  */
 interface HttpsHandler {
-  void handle(HttpsURLConnection connection);
+  SSLSocketFactory socketFactory();
 }
 

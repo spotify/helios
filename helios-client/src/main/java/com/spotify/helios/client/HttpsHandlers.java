@@ -47,8 +47,8 @@ import java.security.cert.CertificateFactory;
 import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 
-import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -91,9 +91,9 @@ class HttpsHandlers {
     }
 
     @Override
-    public void handle(final HttpsURLConnection conn) {
-      conn.setSSLSocketFactory(new SshAgentSSLSocketFactory(agentProxy, identity, user));
+    public SSLSocketFactory socketFactory() {
       log.debug("configured SshAgentSSLSocketFactory with identity={}", identity);
+      return new SshAgentSSLSocketFactory(agentProxy, identity, user);
     }
   }
 
@@ -129,8 +129,9 @@ class HttpsHandlers {
       return clientKeyPath;
     }
 
+    // TODO (mbrown): construct the instance in the constructor rather than on each method call
     @Override
-    public void handle(final HttpsURLConnection conn) {
+    public SSLSocketFactory socketFactory() {
       try {
         /*
           We're creating a keystore in memory and putting the certificate & key from disk into it.
@@ -168,7 +169,7 @@ class HttpsHandlers {
             .useProtocol("TLS")
             .loadKeyMaterial(keyStore, KEY_STORE_PASSWORD)
             .build();
-        conn.setSSLSocketFactory(sslContext.getSocketFactory());
+        return sslContext.getSocketFactory();
       } catch (
           CertificateException |
               IOException |
