@@ -30,7 +30,9 @@ import org.slf4j.LoggerFactory;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -99,6 +101,31 @@ public class Endpoints {
     }
 
     return endpoints.build();
+  }
+
+  /**
+   * Transform a Map of URIs and InetAddresses to a List of Endpoints.
+   * <p>Useful in cases where all of the corresponding InetAddresses are known ahead of time
+   * and DNS queries are not necessary (which is probably only in test code).</p>
+   * <p>The argument is a Map of addresses to URIs and not the reverse since many addresses will
+   * probably map to just one URI</p>.
+   */
+  public static List<Endpoint> of(Map<InetAddress, URI> urisForAddresses) {
+    List<Endpoint> endpoints = new ArrayList<>(urisForAddresses.size());
+    for (Map.Entry<InetAddress, URI> entry : urisForAddresses.entrySet()) {
+      final InetAddress ip = entry.getKey();
+      final URI uri = entry.getValue();
+      endpoints.add(new DefaultEndpoint(uri, ip));
+    }
+    return ImmutableList.copyOf(endpoints);
+  }
+
+  public static List<Endpoint> of (URI uri, List<InetAddress> addresses) {
+    List<Endpoint> endpoints = new ArrayList<>(addresses.size());
+    for (InetAddress address : addresses) {
+      endpoints.add(new DefaultEndpoint(uri, address));
+    }
+    return ImmutableList.copyOf(endpoints);
   }
 
   private static class DefaultEndpoint implements Endpoint {

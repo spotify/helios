@@ -20,9 +20,11 @@ package com.spotify.helios.client;
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
 
 import org.apache.http.conn.DnsResolver;
+import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -32,8 +34,11 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
+import java.util.Map;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -124,5 +129,34 @@ public class EndpointsTest {
     when(resolver.resolve("example.com")).thenReturn(IPS_1);
     exception.expect(IllegalArgumentException.class);
     Endpoints.of(ImmutableList.of(new URI("http", "example.com", null, null)), resolver);
+  }
+
+  @Test
+  @SuppressWarnings("unchecked")
+  public void testConstructedFromMap() {
+    final URI uri = URI.create("http://helios:80/");
+
+    final InetAddress a1 = InetAddresses.forString("192.168.0.1");
+    final InetAddress a2 = InetAddresses.forString("192.168.0.2");
+    final InetAddress a3 = InetAddresses.forString("192.168.0.3");
+
+    final Map<InetAddress, URI> map = ImmutableMap.of(a1, uri, a2, uri, a3, uri);
+
+    final List<Endpoint> endpoints = Endpoints.of(map);
+    assertThat(endpoints, hasSize(map.size()));
+    assertThat(endpoints, containsInAnyOrder(
+        endpointFor(a1, uri), endpointFor(a2, uri), endpointFor(a3, uri))
+    );
+  }
+
+  private static CustomTypeSafeMatcher<Endpoint> endpointFor(final InetAddress address,
+                                                             final URI uri) {
+    final String description = "Endpoint with address=" + address + " and uri=" + uri;
+    return new CustomTypeSafeMatcher<Endpoint>(description) {
+      @Override
+      protected boolean matchesSafely(final Endpoint item) {
+        return item.getIp().equals(address) && item.getUri().equals(uri);
+      }
+    };
   }
 }

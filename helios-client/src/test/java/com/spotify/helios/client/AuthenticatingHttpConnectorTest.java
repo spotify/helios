@@ -27,13 +27,10 @@ import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 
-import org.hamcrest.CustomTypeSafeMatcher;
-import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
 import java.net.HttpURLConnection;
-import java.net.InetAddress;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -42,6 +39,7 @@ import java.util.List;
 import javax.net.ssl.HttpsURLConnection;
 
 import static com.google.common.io.Resources.getResource;
+import static com.spotify.helios.client.EndpointsHelper.matchesAnyEndpoint;
 import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
@@ -62,15 +60,13 @@ public class AuthenticatingHttpConnectorTest {
   private final byte[] entity = new byte[0];
   private final ImmutableMap<String, List<String>> headers = ImmutableMap.of();
 
-  private List<Endpoint> endpoints;
+  private final List<Endpoint> endpoints = Endpoints.of(
+      URI.create("https://server.example:443"),
+      ImmutableList.of(
+          InetAddresses.forString("192.168.0.1"),
+          InetAddresses.forString("192.168.0.2")
+      ));
 
-  @Before
-  public void setUp() throws Exception {
-    endpoints = ImmutableList.of(
-        endpoint(new URI("https://server1.example"), InetAddresses.forString("192.168.0.1")),
-        endpoint(new URI("https://server2.example"), InetAddresses.forString("192.168.0.2"))
-    );
-  }
 
   private AuthenticatingHttpConnector createAuthenticatingConnector(
       final Optional<AgentProxy> proxy, final List<Identity> identities) {
@@ -90,25 +86,6 @@ public class AuthenticatingHttpConnectorTest {
                                            endpointIterator, connector);
   }
 
-  private CustomTypeSafeMatcher<URI> matchesAnyEndpoint(final String path) {
-    return new CustomTypeSafeMatcher<URI>("A URI matching one of the endpoints in " + endpoints) {
-      @Override
-      protected boolean matchesSafely(final URI item) {
-        for (Endpoint endpoint : endpoints) {
-          final InetAddress ip = endpoint.getIp();
-          final URI uri = endpoint.getUri();
-
-          if (item.getScheme().equals(uri.getScheme()) &&
-              item.getHost().equals(ip.getHostAddress()) &&
-              item.getPath().equals(path)) {
-            return true;
-          }
-        }
-        return false;
-      }
-    };
-  }
-
   private Identity mockIdentity() {
     final Identity identity = mock(Identity.class);
     when(identity.getComment()).thenReturn("a comment");
@@ -124,7 +101,7 @@ public class AuthenticatingHttpConnectorTest {
     final String path = "/foo/bar";
 
     final HttpsURLConnection connection = mock(HttpsURLConnection.class);
-    when(connector.connect(argThat(matchesAnyEndpoint(path)),
+    when(connector.connect(argThat(matchesAnyEndpoint(endpoints, path)),
                            eq(method),
                            eq(entity),
                            eq(headers))
@@ -145,7 +122,7 @@ public class AuthenticatingHttpConnectorTest {
     final String path = "/foo/bar";
 
     final HttpsURLConnection connection = mock(HttpsURLConnection.class);
-    when(connector.connect(argThat(matchesAnyEndpoint(path)),
+    when(connector.connect(argThat(matchesAnyEndpoint(endpoints, path)),
                            eq(method),
                            eq(entity),
                            eq(headers))
@@ -172,7 +149,7 @@ public class AuthenticatingHttpConnectorTest {
     final String path = "/another/one";
 
     final HttpsURLConnection connection = mock(HttpsURLConnection.class);
-    when(connector.connect(argThat(matchesAnyEndpoint(path)),
+    when(connector.connect(argThat(matchesAnyEndpoint(endpoints, path)),
         eq(method),
         eq(entity),
         eq(headers))
@@ -198,7 +175,7 @@ public class AuthenticatingHttpConnectorTest {
     final String path = "/another/one";
 
     final HttpsURLConnection connection = mock(HttpsURLConnection.class);
-    when(connector.connect(argThat(matchesAnyEndpoint(path)),
+    when(connector.connect(argThat(matchesAnyEndpoint(endpoints, path)),
         eq(method),
         eq(entity),
         eq(headers))
@@ -214,20 +191,6 @@ public class AuthenticatingHttpConnectorTest {
     assertSame("If there is only one identity do not expect any additional endpoints to "
                + "be called after the first returns Unauthorized",
         returnedConnection, connection);
-  }
-
-  private static Endpoint endpoint(final URI uri, final InetAddress ip) {
-    return new Endpoint() {
-      @Override
-      public URI getUri() {
-        return uri;
-      }
-
-      @Override
-      public InetAddress getIp() {
-        return ip;
-      }
-    };
   }
 
   private static HttpsHandler sshAgentHttpsHandlerWithArgs(
