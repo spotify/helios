@@ -434,9 +434,9 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   @Override
-  public void updateDeploymentGroupHosts(final String name, final List<String> hosts)
+  public void updateDeploymentGroupHosts(final String groupName, final List<String> hosts)
       throws DeploymentGroupDoesNotExistException {
-    log.debug("updating deployment-group hosts: name={}", name);
+    log.debug("updating deployment-group hosts: name={}", groupName);
     final ZooKeeperClient client = provider.get("updateDeploymentGroupHosts");
     try {
       Optional<Integer> version = Optional.absent();
@@ -444,7 +444,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       try {
         // addDeploymentGroup creates Paths.statusDeploymentGroupHosts(name) so it should always
         // exist. If it doesn't, then the DG was (likely) deleted.
-        final Node node = client.getNode(Paths.statusDeploymentGroupHosts(name));
+        final Node node = client.getNode(Paths.statusDeploymentGroupHosts(groupName));
         version = Optional.of(node.getStat().getVersion());
         curHosts = Json.read(node.getBytes(), new TypeReference<List<String>>() {});
       } catch (JsonMappingException e) {
@@ -457,13 +457,13 @@ public class ZooKeeperMasterModel implements MasterModel {
       if (!version.isPresent() || !hosts.equals(curHosts)) {
         // Node not present or hosts have changed
         final List<ZooKeeperOperation> ops = Lists.newArrayList();
-        ops.add(set(Paths.statusDeploymentGroupHosts(name), Json.asBytes(hosts)));
+        ops.add(set(Paths.statusDeploymentGroupHosts(groupName), Json.asBytes(hosts)));
 
-        final DeploymentGroup deploymentGroup = getDeploymentGroup(name);
+        final DeploymentGroup deploymentGroup = getDeploymentGroup(groupName);
         ImmutableList<Map<String, Object>> events = ImmutableList.of();
 
         if (deploymentGroup.getJobId() != null) {
-          final DeploymentGroupStatus deploymentGroupStatus = getDeploymentGroupStatus(name);
+          final DeploymentGroupStatus deploymentGroupStatus = getDeploymentGroupStatus(groupName);
           if (deploymentGroupStatus == null || deploymentGroupStatus.getState() != FAILED) {
             final RollingUpdateOp op =
                 getInitRollingUpdateOps(deploymentGroup, hosts, HOSTS_CHANGED, client);
@@ -472,11 +472,15 @@ public class ZooKeeperMasterModel implements MasterModel {
           }
         }
 
+        log.info("starting zookeeper transaction for updateDeploymentGroupHosts on "
+                 + "deployment-group name {} jobId={}. List of operations: {}",
+            groupName, deploymentGroup.getJobId(), ops);
+
         client.transaction(ops);
         emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, events);
       }
     } catch (NoNodeException e) {
-      throw new DeploymentGroupDoesNotExistException(name, e);
+      throw new DeploymentGroupDoesNotExistException(groupName, e);
     } catch (KeeperException | IOException e) {
       throw new HeliosRuntimeException("updating deployment group hosts failed", e);
     }
@@ -489,7 +493,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException, JobDoesNotExistException {
     checkNotNull(deploymentGroup, "deploymentGroup");
 
-    log.info("starting rolling-update on deployment-group: name={}", deploymentGroup.getName());
+    log.info("preparing to initiate rolling-update on deployment-group: name={}, jobId={}",
+        deploymentGroup.getName(), jobId);
 
     final DeploymentGroup updated = deploymentGroup.toBuilder()
         .setJobId(jobId)
@@ -509,10 +514,15 @@ public class ZooKeeperMasterModel implements MasterModel {
       final RollingUpdateOp op = getInitRollingUpdateOps(updated, MANUAL, client);
       operations.addAll(op.operations());
 
+      log.info("starting zookeeper transaction for rolling-update on "
+               + "deployment-group name={} jobId={}. List of operations: {}",
+          deploymentGroup.getName(), jobId, operations);
+
       client.transaction(operations);
 
       emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, op.events());
-      log.info("finished rolling-update on deployment-group: name={}", deploymentGroup.getName());
+      log.info("initiated rolling-update on deployment-group: name={}, jobId={}",
+          deploymentGroup.getName(), jobId);
     } catch (final NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(deploymentGroup.getName());
     } catch (final KeeperException e) {
@@ -623,7 +633,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       final VersionedValue<DeploymentGroupTasks> versionedTasks = entry.getValue();
       final DeploymentGroupTasks tasks = versionedTasks.value();
 
-      log.debug("rolling-update step on deployment-group: name={}", deploymentGroupName);
+      log.info("rolling-update step on deployment-group: name={}, tasks={}",
+          deploymentGroupName, tasks);
 
       try {
         final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
@@ -637,6 +648,10 @@ public class ZooKeeperMasterModel implements MasterModel {
           ops.add(check(Paths.statusDeploymentGroupTasks(deploymentGroupName),
                         versionedTasks.version()));
           ops.addAll(op.operations());
+
+          log.info("rolling-update step on deployment-group: name={}, zookeeper operations={}",
+              deploymentGroupName, ops);
+
           try {
             client.transaction(ops);
             emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, op.events());
