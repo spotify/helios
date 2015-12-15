@@ -17,11 +17,14 @@
 
 package com.spotify.helios.client;
 
+import org.apache.http.HttpHost;
 import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
 
 import java.net.InetAddress;
 import java.net.URI;
 import java.util.Collection;
+import java.util.List;
 
 /** Utilities related to Endpoints for use in other tests. */
 public class EndpointsHelper {
@@ -29,7 +32,12 @@ public class EndpointsHelper {
   private EndpointsHelper() {
   }
 
-  public static CustomTypeSafeMatcher<URI> matchesAnyEndpoint(
+
+  /**
+   * A URI matcher where uri.host must equal the InetAddress of one of the given endpoints (the
+   * scheme must also match) and the path portion of the URI must match the argument.
+   */
+  static Matcher<URI> matchesAnyEndpoint(
       final Collection<Endpoint> endpoints,
       final String path) {
 
@@ -43,6 +51,26 @@ public class EndpointsHelper {
           if (item.getScheme().equals(uri.getScheme()) &&
               item.getHost().equals(ip.getHostAddress()) &&
               item.getPath().equals(path)) {
+            return true;
+          }
+        }
+        return false;
+      }
+    };
+  }
+
+  /** Matches a HttpHost where the InetAddress matches one of the given endpoints. */
+  static Matcher<HttpHost> hostFor(final List<Endpoint> endpoints) {
+    final String description = "A HttpHost matching one of the endpoints in: " + endpoints;
+    return new CustomTypeSafeMatcher<HttpHost>(description) {
+      @Override
+      protected boolean matchesSafely(final HttpHost item) {
+        for (Endpoint endpoint : endpoints) {
+          final URI uri = endpoint.getUri();
+          if (item.getAddress().equals(endpoint.getIp()) &&
+              item.getHostName().equals(uri.getHost()) &&
+              item.getSchemeName().equals(uri.getScheme()) &&
+              item.getPort() == uri.getPort()) {
             return true;
           }
         }
