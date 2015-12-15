@@ -17,13 +17,16 @@
 
 package com.spotify.helios.client;
 
+import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningExecutorService;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.spotify.helios.common.Json;
+
 import org.apache.http.Header;
 import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpEntityEnclosingRequestBase;
@@ -31,13 +34,18 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPatch;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpPut;
+import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.jetbrains.annotations.NotNull;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -47,6 +55,8 @@ import java.util.concurrent.Callable;
 /** A RequestDispatcher that uses Apache HttpClient. */
 // TODO (mbrown): this is meant to be wrapped in a builder and layered
 class AHCRequestDispatcher implements RequestDispatcher {
+
+  private static final Logger log = LoggerFactory.getLogger(AHCRequestDispatcher.class);
 
   private final ListeningExecutorService executorService;
   private final CloseableHttpClient httpClient;
@@ -88,7 +98,7 @@ class AHCRequestDispatcher implements RequestDispatcher {
 
     final Endpoint endpoint = endpointIterator.next();
 
-    final HttpRequest request = createRequest(method, combine(uri, endpoint), entityBytes);
+    final HttpUriRequest request = createRequest(method, combine(uri, endpoint), entityBytes);
 
     final HttpHost target = new HttpHost(endpoint.getIp(),
         endpoint.getUri().getPort(),
@@ -97,22 +107,74 @@ class AHCRequestDispatcher implements RequestDispatcher {
     return executorService.submit(new Callable<Response>() {
       @Override
       public Response call() throws Exception {
+        log.debug("connecting to host={} to send request={}", target, request);
+        logRequest();
         try (final CloseableHttpResponse response = httpClient.execute(target, request)) {
           final int status = response.getStatusLine().getStatusCode();
 
           //read the response entity
-          final byte[] entity;
+          final ByteArrayOutputStream payload = new ByteArrayOutputStream();
           if (response.getEntity() != null) {
-            final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            response.getEntity().writeTo(baos);
-            entity = baos.toByteArray();
-          } else {
-            // DefaultRequestDispatcher returned an empty array in this case
-            entity = new byte[0];
+            response.getEntity().writeTo(payload);
           }
 
+          logResponse(response, payload);
+
           // TODO (mbrown): why does the Response class need the method?
+          final byte[] entity = payload.toByteArray();
           return new Response(method, uri, status, entity, toMap(response.getAllHeaders()));
+        }
+      }
+
+      private void logRequest() {
+        final URI uri = request.getURI();
+        final int length = entityBytes != null ? entityBytes.length : 0;
+        if (log.isTraceEnabled()) {
+          log.trace("req: {} {} {} {} {} {}", method, uri, headers.size(),
+              Joiner.on(',').withKeyValueSeparator("=").join(headers),
+              length, Json.asPrettyStringUnchecked(entityBytes));
+        } else {
+          log.debug("req: {} {} {} {}", method, uri, headers.size(), length);
+        }
+
+      }
+
+      private void logResponse(final CloseableHttpResponse response,
+                               final ByteArrayOutputStream payload) {
+        final URI realUri = request.getURI();
+        final int status = response.getStatusLine().getStatusCode();
+        // TODO (mbrown): not sure if it's worth checking this part
+        boolean gzip = isGzip(response);
+
+        if (log.isTraceEnabled()) {
+          log.trace("rep: {} {} {} {} {} gzip:{}",
+              method, realUri, status, payload.size(), decode(payload), gzip);
+        } else {
+          log.debug("rep: {} {} {} {} gzip:{}",
+              method, realUri, status, payload.size(), gzip);
+        }
+      }
+
+      private boolean isGzip(final CloseableHttpResponse response) {
+        final Header[] encodingHeaders = response.getHeaders("Content-Encoding");
+        if (encodingHeaders == null) {
+          return false;
+        }
+        for (Header header : encodingHeaders) {
+          if (header.getValue().equals("gzip")) {
+            return true;
+          }
+        }
+        return false;
+      }
+
+      private String decode(final ByteArrayOutputStream payload) {
+        final byte[] bytes = payload.toByteArray();
+        try {
+          return Json.asPrettyString(Json.read(bytes, new TypeReference<Map<String, Object>>() {
+          }));
+        } catch (IOException e) {
+          return new String(bytes, StandardCharsets.UTF_8);
         }
       }
     });
@@ -137,7 +199,7 @@ class AHCRequestDispatcher implements RequestDispatcher {
     return uriWithEndpoint;
   }
 
-  private HttpRequest createRequest(String method, URI uri, byte[] entity) {
+  private HttpUriRequest createRequest(String method, URI uri, byte[] entity) {
     if (method.equals("GET")) {
       checkEntityIsEmpty(method, entity);
       return new HttpGet(uri);
@@ -165,11 +227,9 @@ class AHCRequestDispatcher implements RequestDispatcher {
 
     request.setEntity(new ByteArrayEntity(entity));
     return request;
-
-
   }
 
-  private void checkEntityIsEmpty(final String method, final byte[] entity) {
+  private static void checkEntityIsEmpty(final String method, final byte[] entity) {
     if (entity != null && entity.length > 0) {
       // TODO (mbrown): is the assumption that we don't need this correct?
       throw new IllegalArgumentException(
