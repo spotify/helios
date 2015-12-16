@@ -91,6 +91,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     final String heliosPort;
     //TODO(negz): Determine and propagate NetworkManager DNS servers?
     try {
+      log.info("checking that docker can be reached from within a container");
       assertDockerReachableFromContainer();
       if (dockerHost.address().equals("localhost") || dockerHost.address().equals("127.0.0.1")) {
         heliosHost = containerGateway();
@@ -293,6 +294,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .image(HELIOS_IMAGE)
             .build();
 
+    log.info("starting container for helios-solo with image={}", HELIOS_IMAGE);
+
     final ContainerCreation creation;
     try {
       dockerClient.pull(HELIOS_IMAGE);
@@ -309,6 +312,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       removeContainer(creation.id());
       throw new HeliosDeploymentException("helios-solo container start failed", e);
     }
+
+    log.info("helios-solo container started, containerId={}", creation.id());
 
     return creation.id();
   }
