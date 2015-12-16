@@ -24,6 +24,8 @@ import com.spotify.helios.common.descriptors.JobId;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
@@ -47,31 +49,34 @@ public class HeliosSoloDeploymentTest {
 
     public static final String BUSYBOX = "busybox:latest";
     public static final List<String> IDLE_COMMAND = asList(
-            "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
+        "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
 
-    private TemporaryJob soloJob;
+    private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeploymentTestImpl.class);
 
     // TODO(negz): We want one deployment per test run, not one per test class.
     @ClassRule
     public static final HeliosDeploymentResource DEPLOYMENT = new HeliosDeploymentResource(
-            HeliosSoloDeployment.fromEnv().build());
+        HeliosSoloDeployment.fromEnv().build());
 
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.create(DEPLOYMENT.client());
 
     @Test
     public void testDeployToSolo() throws Exception {
-      final TemporaryJob job = temporaryJobs.job()
-              .command(IDLE_COMMAND)
-              .deploy();
+      temporaryJobs.job()
+          .command(IDLE_COMMAND)
+          .deploy();
 
       final Map<JobId, Job> jobs = DEPLOYMENT.client().jobs().get(15, SECONDS);
+      log.info("{} jobs deployed on helios-solo", jobs.size());
+      for (Job job : jobs.values()) {
+        log.info("job on helios-solo: {}", job);
+      }
+
       assertEquals("wrong number of jobs running", 1, jobs.size());
       for (Job j : jobs.values()) {
         assertEquals("wrong job running", BUSYBOX, j.getImage());
       }
-
-      job.undeploy();
     }
   }
 }

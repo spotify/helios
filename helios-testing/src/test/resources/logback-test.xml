@@ -8,7 +8,11 @@
     </encoder>
   </appender>
 
+  <logger name="com.spotify.helios.client.RetryingRequestDispatcher" level="debug" />
+
   <logger name="com.spotify.helios.testing" level="info"/>
+  <logger name="com.spotify.helios.testing.HeliosDeploymentResource" level="debug"/>
+  <logger name="com.spotify.helios.testing.HeliosSoloDeploymentTest" level="debug"/>
 
   <root level="info">
     <appender-ref ref="STDOUT" />

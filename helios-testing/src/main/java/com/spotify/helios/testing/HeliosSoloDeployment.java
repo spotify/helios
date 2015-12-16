@@ -17,6 +17,7 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -65,14 +66,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
   public static final int HELIOS_MASTER_PORT = 5801;
 
-  final DockerClient dockerClient;
-  final DockerHost dockerHost;
-  final DockerHost containerDockerHost;
-  final String namespace;
-  final List<String> env;
-  final List<String> binds;
-  final String heliosContainerId;
-  final HeliosClient heliosClient;
+  private final DockerClient dockerClient;
+  private final DockerHost dockerHost;
+  private final DockerHost containerDockerHost;
+  private final String namespace;
+  private final List<String> env;
+  private final List<String> binds;
+  private final String heliosContainerId;
+  private final HostAndPort deploymentAddress;
+  private final HeliosClient heliosClient;
 
   HeliosSoloDeployment(final Builder builder) {
     final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
@@ -102,11 +104,16 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     // Running the String host:port through HostAndPort does some validation for us.
+    this.deploymentAddress = HostAndPort.fromString(dockerHost.address() + ":" + heliosPort);
     this.heliosClient = HeliosClient.newBuilder()
             .setUser(username)
-            .setEndpoints("http://" +
-                    HostAndPort.fromString(dockerHost.address() + ":" + heliosPort))
+            .setEndpoints("http://" + deploymentAddress)
             .build();
+  }
+
+  @Override
+  public HostAndPort address() {
+      return deploymentAddress;
   }
 
   private DockerHost containerDockerHostFromEnv() {
@@ -131,7 +138,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   private List<String> containerEnv() {
-    final HashSet<String> env = new HashSet<String>();
+    final HashSet<String> env = new HashSet<>();
     env.add("DOCKER_HOST=" + containerDockerHost.bindURI().toString());
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       env.add("DOCKER_CERT_PATH=/certs");
@@ -140,7 +147,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   private List<String> containerBinds() {
-    final HashSet<String> binds = new HashSet<String>();
+    final HashSet<String> binds = new HashSet<>();
     if (containerDockerHost.bindURI().getScheme().equals("unix")) {
       binds.add(containerDockerHost.bindURI().getSchemeSpecificPart() + ":" +
               containerDockerHost.bindURI().getSchemeSpecificPart());
@@ -201,7 +208,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   private List<String> probeCommand(final String probeName) {
-    final List<String> cmd = new ArrayList<String>(ImmutableList.of("curl", "-f"));
+    final List<String> cmd = new ArrayList<>(ImmutableList.of("curl", "-f"));
     switch (containerDockerHost.uri().getScheme()) {
       case "unix":
         cmd.addAll(ImmutableList.of(
@@ -268,7 +275,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    */
   private String deploySolo(final String heliosHost) throws HeliosDeploymentException {
     //TODO(negz): Don't make this.env immutable so early?
-    final List<String> env = new ArrayList<String>();
+    final List<String> env = new ArrayList<>();
     env.addAll(this.env);
     env.add("HELIOS_NAME=" + HELIOS_NAME_PREFIX + this.namespace);
     env.add("HOST_ADDRESS=" + heliosHost);
@@ -370,8 +377,12 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * Undeploy (shut down) this HeliosSoloDeployment.
    */
   public void close() {
+    log.info("shutting ourselves down");
+
     killContainer(heliosContainerId);
     removeContainer(heliosContainerId);
+    log.info("Stopped and removed HeliosSolo on host={} containerId={}",
+        containerDockerHost, heliosContainerId);
     this.dockerClient.close();
   }
 
@@ -394,6 +405,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     } catch (DockerCertificateException e) {
       throw new RuntimeException("unable to create Docker client from environment", e);
     }
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("deploymentAddress", deploymentAddress)
+        .add("dockerHost", dockerHost)
+        .add("heliosContainerId", heliosContainerId)
+        .toString();
   }
 
   public static class Builder {
