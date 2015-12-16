@@ -256,6 +256,8 @@ public class TemporaryJobBuilder {
   public TemporaryJob deploy(final List<String> hosts) {
     this.hosts.addAll(hosts);
 
+    // check that the job has not already been deployed (this allows multiple calls to deploy()
+    // to be no-ops once deployed)
     if (job == null) {
       if (builder.getName() == null && builder.getVersion() == null) {
         // Both name and version are unset, use image name as job name and generate random version
