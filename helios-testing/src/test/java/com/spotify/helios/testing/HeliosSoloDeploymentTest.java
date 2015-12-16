@@ -59,7 +59,10 @@ public class HeliosSoloDeploymentTest {
         HeliosSoloDeployment.fromEnv().build());
 
     @Rule
-    public final TemporaryJobs temporaryJobs = TemporaryJobs.create(DEPLOYMENT.client());
+    public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
+        .jobPrefix("HeliosSoloDeploymentTest")
+        .client(DEPLOYMENT.client())
+        .build();
 
     @Test
     public void testDeployToSolo() throws Exception {
