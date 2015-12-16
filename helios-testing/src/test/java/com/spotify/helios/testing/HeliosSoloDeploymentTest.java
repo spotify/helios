@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
@@ -47,9 +46,7 @@ public class HeliosSoloDeploymentTest {
 
   public static class HeliosSoloDeploymentTestImpl {
 
-    public static final String BUSYBOX = "busybox:latest";
-    public static final List<String> IDLE_COMMAND = asList(
-        "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
+    public static final String IMAGE_NAME = "onescience/alpine:latest";
 
     private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeploymentTestImpl.class);
 
@@ -67,7 +64,10 @@ public class HeliosSoloDeploymentTest {
     @Test
     public void testDeployToSolo() throws Exception {
       temporaryJobs.job()
-          .command(IDLE_COMMAND)
+          .command(asList("sh", "-c", "nc -l -v -p 4711 -e true"))
+          .image(IMAGE_NAME)
+          .port("netcat", 4711)
+          .registration("foobar", "tcp", "netcat")
           .deploy();
 
       final Map<JobId, Job> jobs = DEPLOYMENT.client().jobs().get(15, SECONDS);
@@ -78,7 +78,7 @@ public class HeliosSoloDeploymentTest {
 
       assertEquals("wrong number of jobs running", 1, jobs.size());
       for (Job j : jobs.values()) {
-        assertEquals("wrong job running", BUSYBOX, j.getImage());
+        assertEquals("wrong job running", IMAGE_NAME, j.getImage());
       }
     }
   }
