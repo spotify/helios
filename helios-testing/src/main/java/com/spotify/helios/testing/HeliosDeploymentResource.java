@@ -82,7 +82,7 @@ public class HeliosDeploymentResource extends ExternalResource {
     // this doesn't check that the agent is UP but should be sufficient to avoid conditions
     // like continuing with the test when starting up helios-solo before the agent is registered
     final HeliosClient client = client();
-    Polling.awaitUnchecked(5, TimeUnit.SECONDS, new Callable<Boolean>() {
+    Polling.awaitUnchecked(30, TimeUnit.SECONDS, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
         final ListenableFuture<List<String>> future = client.listHosts();
