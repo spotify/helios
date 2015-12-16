@@ -20,8 +20,8 @@ package com.spotify.helios.client;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Queues;
 
+import com.spotify.helios.client.HttpsHandlers.CertificateFileHttpsHandler;
 import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.sshagentproxy.AgentProxy;
@@ -38,9 +38,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
-import java.util.Deque;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 
 import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
 import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
@@ -53,7 +54,6 @@ public class AuthenticatingHttpConnector implements HttpConnector {
 
   private static final Logger log = LoggerFactory.getLogger(AuthenticatingHttpConnector.class);
 
-  // TODO (mbrown): username is here to pass to SshAgentSSLSocketFactory, could be handled nicer
   private final String user;
   private final Optional<AgentProxy> agentProxy;
   private final Optional<Path> clientCertificatePath;
@@ -109,63 +109,90 @@ public class AuthenticatingHttpConnector implements HttpConnector {
       throw new HeliosException(e);
     }
 
-    final Deque<Identity> ids;
-    if (ipUri.getScheme().equalsIgnoreCase("https")) {
-      ids = Queues.newArrayDeque(identities);
-    } else {
-      ids = Queues.newArrayDeque();
-    }
-
     try {
-      while (true) {
-        final Identity identity = ids.poll();
+      log.debug("connecting to {}", ipUri);
 
-        try {
-          log.debug("connecting to {}", ipUri);
-
-          if (clientCertificatePath.isPresent() && clientKeyPath.isPresent()) {
-            delegate.setExtraHttpsHandler(new HttpsHandlers.CertificateFileHttpsHandler(
-                user, clientCertificatePath.get(), clientKeyPath.get()));
-          } else if (agentProxy.isPresent() && identity != null) {
-            delegate.setExtraHttpsHandler(new SshAgentHttpsHandler(
-                user, agentProxy.get(), identity));
-          } else {
-            // no authentication set up!
-          }
-
-          final HttpURLConnection connection = delegate.connect(ipUri, method, entity, headers);
-
-          final int responseCode = connection.getResponseCode();
-          if (((responseCode == HTTP_FORBIDDEN) || (responseCode == HTTP_UNAUTHORIZED))
-              && !ids.isEmpty()) {
-            // there was some sort of security error. if we have any more SSH identities to try,
-            // retry with the next available identity
-            log.debug("retrying with next SSH identity since {} failed",
-                      identity == null ? "the previous one" : identity.getComment());
-            continue;
-          }
-
-          return connection;
-        } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
-          // UnknownHostException happens if we can't resolve hostname into IP address.
-          // UnknownHostException's getMessage method returns just the hostname which is a
-          // useless message, so log the exception class name to provide more info.
-          log.debug(e.toString());
-          throw new HeliosException("Unable to connect to master", e);
-        }
+      // prioritize using the certificate file if set
+      if (clientCertificatePath.isPresent() && clientKeyPath.isPresent()) {
+        return connectWithCertificateFile(ipUri, method, entity, headers);
       }
+      // ssh-agent based authentication
+      else if (agentProxy.isPresent() && !identities.isEmpty()) {
+        return connectWithIdentities(identities, ipUri, method, entity, headers);
+      } else {
+        // no authentication
+        return doConnect(ipUri, method, entity, headers);
+      }
+
+    } catch (ConnectException | SocketTimeoutException | UnknownHostException e) {
+      // UnknownHostException happens if we can't resolve hostname into IP address.
+      // UnknownHostException's getMessage method returns just the hostname which is a
+      // useless message, so log the exception class name to provide more info.
+      log.debug(e.toString());
+      throw new HeliosException("Unable to connect to master", e);
     } catch (IOException e) {
       throw new HeliosException(e);
     }
   }
 
+  private HttpURLConnection connectWithCertificateFile(final URI ipUri, final String method,
+                                                       final byte[] entity,
+                                                       final Map<String, List<String>> headers)
+      throws HeliosException {
+
+    delegate.setExtraHttpsHandler(
+        new CertificateFileHttpsHandler(user, clientCertificatePath.get(), clientKeyPath.get()));
+
+    return doConnect(ipUri, method, entity, headers);
+  }
+
+  private HttpURLConnection connectWithIdentities(final List<Identity> identities, final URI uri,
+                                                  final String method, final byte[] entity,
+                                                  final Map<String, List<String>> headers)
+      throws IOException, HeliosException {
+
+    if (identities.isEmpty()) {
+      throw new IllegalArgumentException("identities cannot be empty");
+    }
+
+    final Queue<Identity> queue = new LinkedList<>(identities);
+    HttpURLConnection connection = null;
+    while (!queue.isEmpty()) {
+      final Identity identity = queue.poll();
+
+      delegate.setExtraHttpsHandler(new SshAgentHttpsHandler(user, agentProxy.get(), identity));
+
+      connection = doConnect(uri, method, entity, headers);
+
+      // check the status and retry the request if necessary
+      final int responseCode = connection.getResponseCode();
+
+      final boolean retryResponse =
+          responseCode == HTTP_FORBIDDEN || responseCode == HTTP_UNAUTHORIZED;
+
+      if (retryResponse && !queue.isEmpty()) {
+        // there was some sort of security error. if we have any more SSH identities to try,
+        // retry with the next available identity
+        log.debug("retrying with next SSH identity since {} failed",
+            identity == null ? "the previous one" : identity.getComment());
+        continue;
+      }
+      break;
+    }
+    return connection;
+  }
+
+  private HttpURLConnection doConnect(final URI uri, final String method, final byte[] entity,
+                                      final Map<String, List<String>> headers)
+      throws HeliosException {
+    return delegate.connect(uri, method, entity, headers);
+  }
+
   private URI toIpUri(Endpoint endpoint, URI uri) throws URISyntaxException {
     final URI endpointUri = endpoint.getUri();
     final String fullpath = endpointUri.getPath() + uri.getPath();
-
-    final String uriScheme = endpointUri.getScheme();
-
-    return new URI(uriScheme,
+    return new URI(
+        endpointUri.getScheme(),
         endpointUri.getUserInfo(),
         endpoint.getIp().getHostAddress(),
         endpointUri.getPort(),
