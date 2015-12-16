@@ -18,6 +18,7 @@
 package com.spotify.helios.testing;
 
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
 
@@ -30,8 +31,10 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
+import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * A HeliosDeploymentResource makes the supplied {@link HeliosDeployment} available to a JUnit
@@ -55,6 +58,7 @@ public class HeliosDeploymentResource extends ExternalResource {
   protected void before() throws Throwable {
     super.before();
 
+    // wait for the helios master to be available
     Polling.awaitUnchecked(30, TimeUnit.SECONDS, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
@@ -71,6 +75,35 @@ public class HeliosDeploymentResource extends ExternalResource {
           log.debug("could not yet connect to HeliosDeployment: {}", e.toString());
           return null;
         }
+      }
+    });
+
+    // ensure that at least one agent is available in this HeliosDeployment
+    // this doesn't check that the agent is UP but should be sufficient to avoid conditions
+    // like continuing with the test when starting up helios-solo before the agent is registered
+    final HeliosClient client = client();
+    Polling.awaitUnchecked(5, TimeUnit.SECONDS, new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        final ListenableFuture<List<String>> future = client.listHosts();
+
+        final List<String> hosts;
+        try {
+          // use a short timeout to allow this request to be retried a few times by the
+          // Polling.await loop
+           hosts = future.get(1, TimeUnit.SECONDS);
+        } catch (TimeoutException | InterruptedException e) {
+          log.debug("timed out waiting for listHosts request to finish, will retry");
+          return null;
+        }
+
+        if (!hosts.isEmpty()) {
+          log.info("Ensured that at least one agent is available in this HeliosDeployment, "
+                   + "continuing with test!");
+          return true;
+        }
+        log.debug("0 agents in {}, will retry", deployment);
+        return null;
       }
     });
   }
