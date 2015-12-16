@@ -17,6 +17,7 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -66,6 +67,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public static final int HELIOS_MASTER_PORT = 5801;
 
   private final DockerClient dockerClient;
+  private final DockerHost dockerHost;
   private final DockerHost containerDockerHost;
   private final String namespace;
   private final List<String> env;
@@ -78,8 +80,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
 
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
-    final DockerHost dockerHost =
-        Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
+    this.dockerHost = Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
     this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
             .or(containerDockerHostFromEnv());
     this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
@@ -376,8 +377,12 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * Undeploy (shut down) this HeliosSoloDeployment.
    */
   public void close() {
+    log.info("shutting ourselves down");
+
     killContainer(heliosContainerId);
     removeContainer(heliosContainerId);
+    log.info("Stopped and removed HeliosSolo on host={} containerId={}",
+        containerDockerHost, heliosContainerId);
     this.dockerClient.close();
   }
 
@@ -400,6 +405,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     } catch (DockerCertificateException e) {
       throw new RuntimeException("unable to create Docker client from environment", e);
     }
+  }
+
+  @Override
+  public String toString() {
+    return MoreObjects.toStringHelper(this)
+        .add("deploymentAddress", deploymentAddress)
+        .add("dockerHost", dockerHost)
+        .add("heliosContainerId", heliosContainerId)
+        .toString();
   }
 
   public static class Builder {

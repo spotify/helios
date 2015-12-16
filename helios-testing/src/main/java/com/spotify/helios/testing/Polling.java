@@ -27,8 +27,8 @@ import static java.lang.System.nanoTime;
 
 class Polling {
 
-  private static <T> T await(final long timeout, final TimeUnit timeUnit, final Callable<T> callable)
-      throws Exception {
+  private static <T> T await(final long timeout, final TimeUnit timeUnit,
+                             final Callable<T> callable) throws Exception {
     final long deadline = nanoTime() + timeUnit.toNanos(timeout);
     while (nanoTime() < deadline) {
       final T value = callable.call();

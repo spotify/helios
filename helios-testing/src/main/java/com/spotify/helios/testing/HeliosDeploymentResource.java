@@ -65,9 +65,9 @@ public class HeliosDeploymentResource extends ExternalResource {
         try {
           final Socket s = new Socket();
           s.connect(address, 100);
-          log.info("successfully connected to HeliosDeployment at {}", s.getRemoteSocketAddress());
+          log.info("successfully connected to address {} for {}", address, deployment);
           return true;
-        } catch (SocketTimeoutException | ConnectException e ) {
+        } catch (SocketTimeoutException | ConnectException e) {
           log.debug("could not yet connect to HeliosDeployment: {}", e.toString());
           return null;
         }
@@ -77,6 +77,7 @@ public class HeliosDeploymentResource extends ExternalResource {
 
   @Override
   protected void after() {
+    log.info("Tearing down {}", this.deployment);
     deployment.close();
   }
 
