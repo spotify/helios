@@ -138,7 +138,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   private List<String> containerEnv() {
-    final HashSet<String> env = new HashSet<String>();
+    final HashSet<String> env = new HashSet<>();
     env.add("DOCKER_HOST=" + containerDockerHost.bindURI().toString());
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       env.add("DOCKER_CERT_PATH=/certs");
@@ -147,7 +147,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   private List<String> containerBinds() {
-    final HashSet<String> binds = new HashSet<String>();
+    final HashSet<String> binds = new HashSet<>();
     if (containerDockerHost.bindURI().getScheme().equals("unix")) {
       binds.add(containerDockerHost.bindURI().getSchemeSpecificPart() + ":" +
               containerDockerHost.bindURI().getSchemeSpecificPart());
@@ -208,7 +208,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   private List<String> probeCommand(final String probeName) {
-    final List<String> cmd = new ArrayList<String>(ImmutableList.of("curl", "-f"));
+    final List<String> cmd = new ArrayList<>(ImmutableList.of("curl", "-f"));
     switch (containerDockerHost.uri().getScheme()) {
       case "unix":
         cmd.addAll(ImmutableList.of(
@@ -275,7 +275,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    */
   private String deploySolo(final String heliosHost) throws HeliosDeploymentException {
     //TODO(negz): Don't make this.env immutable so early?
-    final List<String> env = new ArrayList<String>();
+    final List<String> env = new ArrayList<>();
     env.addAll(this.env);
     env.add("HELIOS_NAME=" + HELIOS_NAME_PREFIX + this.namespace);
     env.add("HOST_ADDRESS=" + heliosHost);
