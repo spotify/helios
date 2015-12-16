@@ -43,7 +43,6 @@ public class HeliosSoloDeploymentTest {
     assertThat(testResult(HeliosSoloDeploymentTestImpl.class), isSuccessful());
   }
 
-
   public static class HeliosSoloDeploymentTestImpl {
 
     public static final String IMAGE_NAME = "onescience/alpine:latest";
@@ -64,6 +63,13 @@ public class HeliosSoloDeploymentTest {
     @Test
     public void testDeployToSolo() throws Exception {
       temporaryJobs.job()
+          // while ".*" is the default in the local testing profile, explicitly specify it here
+          // to avoid any extraneous environment variables for HELIOS_HOST_FILTER that might be set
+          // on the build agent executing this test from interfering with the behavior we want here.
+          // Since we are deploying on a self-contained helios-solo container, any
+          // HELIOS_HOST_FILTER value set for other tests will never match the agent hostname
+          // inside helios-solo.
+          .hostFilter(".*")
           .command(asList("sh", "-c", "nc -l -v -p 4711 -e true"))
           .image(IMAGE_NAME)
           .port("netcat", 4711)
