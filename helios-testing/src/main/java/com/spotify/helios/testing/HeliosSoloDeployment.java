@@ -65,20 +65,21 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
   public static final int HELIOS_MASTER_PORT = 5801;
 
-  final DockerClient dockerClient;
-  final DockerHost dockerHost;
-  final DockerHost containerDockerHost;
-  final String namespace;
-  final List<String> env;
-  final List<String> binds;
-  final String heliosContainerId;
-  final HeliosClient heliosClient;
+  private final DockerClient dockerClient;
+  private final DockerHost containerDockerHost;
+  private final String namespace;
+  private final List<String> env;
+  private final List<String> binds;
+  private final String heliosContainerId;
+  private final HostAndPort deploymentAddress;
+  private final HeliosClient heliosClient;
 
   HeliosSoloDeployment(final Builder builder) {
     final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
 
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
-    this.dockerHost = Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
+    final DockerHost dockerHost =
+        Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
     this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
             .or(containerDockerHostFromEnv());
     this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
@@ -102,11 +103,16 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     // Running the String host:port through HostAndPort does some validation for us.
+    this.deploymentAddress = HostAndPort.fromString(dockerHost.address() + ":" + heliosPort);
     this.heliosClient = HeliosClient.newBuilder()
             .setUser(username)
-            .setEndpoints("http://" +
-                    HostAndPort.fromString(dockerHost.address() + ":" + heliosPort))
+            .setEndpoints("http://" + deploymentAddress)
             .build();
+  }
+
+  @Override
+  public HostAndPort address() {
+      return deploymentAddress;
   }
 
   private DockerHost containerDockerHostFromEnv() {

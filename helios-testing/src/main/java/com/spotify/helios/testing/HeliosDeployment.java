@@ -17,6 +17,8 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.net.HostAndPort;
+
 import com.spotify.helios.client.HeliosClient;
 
 /**
@@ -28,6 +30,12 @@ public interface HeliosDeployment extends AutoCloseable {
    * @return A helios client connected to the master(s) of this helios deployment.
    */
   HeliosClient client();
+
+  /**
+   * Returns the host and port information  that the deployment is available at.
+   */
+  // TODO (mbrown): should this be URI to capture scheme info also?
+  HostAndPort address();
 
   /**
    * Undeploy (shut down) this Helios deployment.

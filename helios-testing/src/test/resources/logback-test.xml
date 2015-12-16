@@ -9,6 +9,7 @@
   </appender>
 
   <logger name="com.spotify.helios.testing" level="info"/>
+  <logger name="com.spotify.helios.testing.HeliosDeploymentResource" level="debug"/>
 
   <root level="info">
     <appender-ref ref="STDOUT" />
