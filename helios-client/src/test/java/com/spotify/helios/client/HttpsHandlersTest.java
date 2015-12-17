@@ -47,8 +47,10 @@ public class HttpsHandlersTest {
 
     final Path certificate = Paths.get(getResource("UIDCACert.pem").getPath());
     final Path key = Paths.get(getResource("UIDCACert.key").getPath());
+    final ClientCertificatePath clientCertificatePath = new ClientCertificatePath(certificate, key);
+
     final HttpsHandlers.CertificateFileHttpsHandler h =
-        new HttpsHandlers.CertificateFileHttpsHandler("foo", certificate, key);
+        new HttpsHandlers.CertificateFileHttpsHandler("foo", clientCertificatePath);
 
     assertNotNull(h.getCertificate());
     assertNotNull(h.getPrivateKey());

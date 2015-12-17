@@ -17,6 +17,8 @@
 
 package com.spotify.helios.client;
 
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 
 import com.spotify.helios.client.tls.X509CertificateFactory;
@@ -60,8 +62,6 @@ class HttpsHandlers {
 
   static class SshAgentHttpsHandler extends CertificateHttpsHandler {
 
-    private static final Logger log = LoggerFactory.getLogger(SshAgentHttpsHandler.class);
-
     private final AgentProxy agentProxy;
     private final Identity identity;
 
@@ -102,35 +102,31 @@ class HttpsHandlers {
 
   static class CertificateFileHttpsHandler extends CertificateHttpsHandler {
 
-    private final Path clientCertificatePath;
-    private final Path clientKeyPath;
+    private final ClientCertificatePath clientCertificatePath;
 
     CertificateFileHttpsHandler(final String user,
-                                final Path clientCertificatePath,
-                                final Path clientKeyPath) {
+                                final ClientCertificatePath clientCertificatePath) {
       super(user);
-      this.clientCertificatePath = checkNotNull(clientCertificatePath, "clientCertificatePath");
-      this.clientKeyPath = checkNotNull(clientKeyPath, "clientKeyPath");
+      this.clientCertificatePath = checkNotNull(clientCertificatePath);
     }
 
-    Path getClientCertificatePath() {
+    @VisibleForTesting
+    protected ClientCertificatePath getClientCertificatePath() {
       return clientCertificatePath;
-    }
-
-    Path getClientKeyPath() {
-      return clientKeyPath;
     }
 
     @Override
     Certificate getCertificate() throws Exception {
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
-      return cf.generateCertificate(Files.newInputStream(clientCertificatePath));
+      final Path certPath = clientCertificatePath.getCertificatePath();
+      return cf.generateCertificate(Files.newInputStream(certPath));
     }
 
     @Override
     PrivateKey getPrivateKey() throws Exception {
-      final Object pemObj = new PEMParser(
-          Files.newBufferedReader(clientKeyPath, Charset.defaultCharset())).readObject();
+      final Object pemObj = new PEMParser(Files
+          .newBufferedReader(clientCertificatePath.getKeyPath(), Charset.defaultCharset()))
+          .readObject();
 
       final PrivateKeyInfo keyInfo;
       if (pemObj instanceof PEMKeyPair) {
