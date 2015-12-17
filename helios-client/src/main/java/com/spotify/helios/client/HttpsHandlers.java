@@ -22,7 +22,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 
 import com.spotify.helios.client.tls.X509CertificateFactory;
-import com.spotify.helios.common.HeliosRuntimeException;
+import com.spotify.helios.client.tls.X509CertificateFactory.CertificateAndKeyPair;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 
@@ -37,6 +37,7 @@ import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
@@ -65,38 +66,36 @@ class HttpsHandlers {
     private final AgentProxy agentProxy;
     private final Identity identity;
 
-    private X509CertificateFactory.CertificateAndKeyPair certificateAndKeyPair;
-
     SshAgentHttpsHandler(final String user,
+                         final boolean failOnCertificateError,
                          final AgentProxy agentProxy,
                          final Identity identity) {
-      super(user);
+      super(user, failOnCertificateError);
       this.agentProxy = checkNotNull(agentProxy, "agentProxy");
       this.identity = checkNotNull(identity, "identity");
     }
 
-    AgentProxy getAgentProxy() {
+    @VisibleForTesting
+    protected AgentProxy getAgentProxy() {
       return agentProxy;
     }
 
-    Identity getIdentity() {
+    @VisibleForTesting
+    protected Identity getIdentity() {
       return identity;
     }
 
     @Override
-    Certificate getCertificate() throws Exception {
-      return certificateAndKeyPair.getCertificate();
+    protected CertificateAndPrivateKey createCertificateAndPrivateKey() {
+      final CertificateAndKeyPair certificateAndKeyPair =
+          X509CertificateFactory.get(agentProxy, identity, getUser());
+
+      return CertificateAndPrivateKey.from(certificateAndKeyPair);
     }
 
     @Override
-    PrivateKey getPrivateKey() throws Exception {
-      return certificateAndKeyPair.getKeyPair().getPrivate();
-    }
-
-    @Override
-    public void handle(HttpsURLConnection conn) {
-      certificateAndKeyPair = X509CertificateFactory.get(agentProxy, identity, getUser());
-      super.handle(conn);
+    protected String getCertificateSource() {
+      return "ssh-agent key: " + identity.getComment();
     }
   }
 
@@ -105,8 +104,9 @@ class HttpsHandlers {
     private final ClientCertificatePath clientCertificatePath;
 
     CertificateFileHttpsHandler(final String user,
+                                final boolean failOnCertificateError,
                                 final ClientCertificatePath clientCertificatePath) {
-      super(user);
+      super(user, failOnCertificateError);
       this.clientCertificatePath = checkNotNull(clientCertificatePath);
     }
 
@@ -116,14 +116,13 @@ class HttpsHandlers {
     }
 
     @Override
-    Certificate getCertificate() throws Exception {
+    protected CertificateAndPrivateKey createCertificateAndPrivateKey()
+        throws IOException, GeneralSecurityException {
+
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
       final Path certPath = clientCertificatePath.getCertificatePath();
-      return cf.generateCertificate(Files.newInputStream(certPath));
-    }
+      final Certificate certificate = cf.generateCertificate(Files.newInputStream(certPath));
 
-    @Override
-    PrivateKey getPrivateKey() throws Exception {
       final Object pemObj = new PEMParser(Files
           .newBufferedReader(clientCertificatePath.getKeyPath(), Charset.defaultCharset()))
           .readObject();
@@ -139,47 +138,72 @@ class HttpsHandlers {
 
       final PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyInfo.getEncoded());
       final KeyFactory kf = KeyFactory.getInstance("RSA");
-      return kf.generatePrivate(spec);
+
+      return new CertificateAndPrivateKey(certificate, kf.generatePrivate(spec));
     }
 
+    @Override
+    protected String getCertificateSource() {
+      return clientCertificatePath.toString();
+    }
   }
 
-  abstract static class CertificateHttpsHandler implements HttpsHandler {
+  protected abstract static class CertificateHttpsHandler implements HttpsHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(CertificateHttpsHandler.class);
     private static final char[] KEY_STORE_PASSWORD = "FPLSlZQuM3ZCM3SjINSKuWyPK2HeS4".toCharArray();
 
     private final String user;
+    private final boolean failOnCertificateError;
 
-    CertificateHttpsHandler(final String user) {
-      if (isNullOrEmpty(user)) {
-        throw new IllegalArgumentException("user");
-      }
-
+    protected CertificateHttpsHandler(final String user, final boolean failOnCertificateError) {
+      Preconditions.checkArgument(!isNullOrEmpty(user));
       this.user = user;
+      this.failOnCertificateError = failOnCertificateError;
     }
 
-    String getUser() {
+    @VisibleForTesting
+    protected String getUser() {
       return user;
     }
 
-    abstract Certificate getCertificate() throws Exception;
-    abstract PrivateKey getPrivateKey() throws Exception;
+    /**
+     * Generate the Certificate and PrivateKey that will be used in {@link
+     * #handle(HttpsURLConnection)}.
+     *
+     * <p>The method signature is defined as throwing GeneralSecurityException because there are a
+     * handful of GeneralSecurityException subclasses that can be thrown in loading a x509
+     * Certificate and we handle all of them identically. </p>
+     */
+    protected abstract CertificateAndPrivateKey createCertificateAndPrivateKey()
+        throws IOException, GeneralSecurityException;
+
+    /**
+     * Return a String describing the source of the certificate for use in error messages logged by
+     * {@link #handle(HttpsURLConnection)}.
+     */
+    protected abstract String getCertificateSource();
 
     public void handle(final HttpsURLConnection conn) {
-      final Certificate certificate;
-      final PrivateKey privateKey;
-
+      final CertificateAndPrivateKey certificateAndPrivateKey;
       try {
-        certificate = getCertificate();
-      } catch (Exception e) {
-        throw new HeliosRuntimeException("error getting client certificate", e);
+        certificateAndPrivateKey = createCertificateAndPrivateKey();
+      } catch (IOException | GeneralSecurityException e) {
+        if (failOnCertificateError) {
+          throw Throwables.propagate(e);
+        } else {
+          log.warn(
+              "Error when setting up client certificates from {}. Error was '{}'. "
+              + "No certificate will be sent with request.",
+              getCertificateSource(),
+              e.toString());
+          log.debug("full exception from setting up ClientCertificate follows", e);
+          return;
+        }
       }
 
-      try {
-        privateKey = getPrivateKey();
-      } catch (Exception e) {
-        throw new HeliosRuntimeException("error getting private key", e);
-      }
+      final Certificate certificate = certificateAndPrivateKey.certificate;
+      final PrivateKey privateKey = certificateAndPrivateKey.privateKey;
 
       try {
         /*
@@ -210,7 +234,32 @@ class HttpsHandlers {
         throw Throwables.propagate(e);
       }
     }
-
   }
 
+  @VisibleForTesting
+  protected static class CertificateAndPrivateKey {
+    private final Certificate certificate;
+    private final PrivateKey privateKey;
+
+    public CertificateAndPrivateKey(final Certificate certificate, final PrivateKey privateKey) {
+      this.certificate = certificate;
+      this.privateKey = privateKey;
+    }
+
+    public Certificate getCertificate() {
+      return certificate;
+    }
+
+    public PrivateKey getPrivateKey() {
+      return privateKey;
+    }
+
+    static CertificateAndPrivateKey from(
+        X509CertificateFactory.CertificateAndKeyPair certificateAndKeyPair) {
+
+      return new CertificateAndPrivateKey(
+          certificateAndKeyPair.getCertificate(),
+          certificateAndKeyPair.getKeyPair().getPrivate());
+    }
+  }
 }

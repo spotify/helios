@@ -132,7 +132,9 @@ public class AuthenticatingHttpConnector implements HttpConnector {
     final ClientCertificatePath clientCertificatePath = this.clientCertificatePath.get();
     log.debug("configuring CertificateFileHttpsHandler with {}", clientCertificatePath);
 
-    delegate.setExtraHttpsHandler(new CertificateFileHttpsHandler(user, clientCertificatePath));
+    delegate.setExtraHttpsHandler(
+        new CertificateFileHttpsHandler(user, false, clientCertificatePath)
+    );
 
     return doConnect(ipUri, method, entity, headers);
   }
@@ -151,7 +153,8 @@ public class AuthenticatingHttpConnector implements HttpConnector {
     while (!queue.isEmpty()) {
       final Identity identity = queue.poll();
 
-      delegate.setExtraHttpsHandler(new SshAgentHttpsHandler(user, agentProxy.get(), identity));
+      delegate.setExtraHttpsHandler(
+          new SshAgentHttpsHandler(user, false, agentProxy.get(), identity));
 
       connection = doConnect(uri, method, entity, headers);
 

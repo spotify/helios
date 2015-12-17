@@ -17,6 +17,7 @@
 
 package com.spotify.helios.client;
 
+import com.spotify.helios.client.HttpsHandlers.CertificateAndPrivateKey;
 import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
@@ -25,38 +26,31 @@ import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
-import java.nio.file.Path;
 import java.nio.file.Paths;
-
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.SSLSocketFactory;
 
 import static com.google.common.io.Resources.getResource;
 import static com.spotify.helios.common.Hash.sha1digest;
 import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class HttpsHandlersTest {
 
   @Test
   public void testCertificateFile() throws Exception {
-    final HttpsURLConnection conn = mock(HttpsURLConnection.class);
-
-    final Path certificate = Paths.get(getResource("UIDCACert.pem").getPath());
-    final Path key = Paths.get(getResource("UIDCACert.key").getPath());
-    final ClientCertificatePath clientCertificatePath = new ClientCertificatePath(certificate, key);
+    final ClientCertificatePath clientCertificatePath = new ClientCertificatePath(
+        Paths.get(getResource("UIDCACert.pem").getPath()),
+        Paths.get(getResource("UIDCACert.key").getPath())
+    );
 
     final HttpsHandlers.CertificateFileHttpsHandler h =
-        new HttpsHandlers.CertificateFileHttpsHandler("foo", clientCertificatePath);
+        new HttpsHandlers.CertificateFileHttpsHandler("foo", true, clientCertificatePath);
 
-    assertNotNull(h.getCertificate());
-    assertNotNull(h.getPrivateKey());
-
-    h.handle(conn);
-    verify(conn).setSSLSocketFactory(any(SSLSocketFactory.class));
+    final CertificateAndPrivateKey pair = h.createCertificateAndPrivateKey();
+    assertNotNull(pair);
+    assertNotNull(pair.getCertificate());
+    assertNotNull(pair.getPrivateKey());
   }
 
   @Test
@@ -72,14 +66,11 @@ public class HttpsHandlersTest {
       }
     });
 
-    final HttpsURLConnection conn = mock(HttpsURLConnection.class);
-    final SshAgentHttpsHandler h = new SshAgentHttpsHandler("foo", proxy, identity);
+    final SshAgentHttpsHandler h = new SshAgentHttpsHandler("foo", true, proxy, identity);
 
-    h.handle(conn);
-
-    assertNotNull(h.getCertificate());
-    assertNotNull(h.getPrivateKey());
-
-    verify(conn).setSSLSocketFactory(any(SSLSocketFactory.class));
+    final CertificateAndPrivateKey pair = h.createCertificateAndPrivateKey();
+    assertNotNull(pair);
+    assertNotNull(pair.getCertificate());
+    assertNotNull(pair.getPrivateKey());
   }
 }
