@@ -513,19 +513,6 @@ public class HeliosClient implements AutoCloseable {
     private boolean sslHostnameVerification = true;
 
     private Builder() {
-      final String heliosCertPath = System.getenv(HELIOS_CERT_PATH);
-      if (!isNullOrEmpty(heliosCertPath)) {
-        final Path certPath = Paths.get(heliosCertPath, "cert.pem");
-        final Path keyPath = Paths.get(heliosCertPath, "key.pem");
-
-        if (certPath.toFile().canRead() && keyPath.toFile().canRead()) {
-          this.clientCertificatePath = new ClientCertificatePath(certPath, keyPath);
-        } else {
-          log.warn("{} is set to {}, but {} and/or {} do not exist or cannot be read. "
-                   + "Will not send client certificate in HeliosClient requests.",
-              HELIOS_CERT_PATH, heliosCertPath, certPath, keyPath);
-        }
-      }
     }
 
     public Builder setUser(final String user) {
@@ -612,6 +599,25 @@ public class HeliosClient implements AutoCloseable {
         // do not require authentication, so we delay reporting any sort of error to the user until
         // the servers return 401 Unauthorized.
         log.debug("{}", e);
+      }
+
+      // set up the ClientCertificatePath, giving precedence to any values set
+      // with setClientCertificatePath()
+      ClientCertificatePath clientCertificatePath = this.clientCertificatePath;
+      if (clientCertificatePath == null) {
+        final String heliosCertPath = System.getenv(HELIOS_CERT_PATH);
+        if (!isNullOrEmpty(heliosCertPath)) {
+          final Path certPath = Paths.get(heliosCertPath, "cert.pem");
+          final Path keyPath = Paths.get(heliosCertPath, "key.pem");
+
+          if (certPath.toFile().canRead() && keyPath.toFile().canRead()) {
+            this.clientCertificatePath = new ClientCertificatePath(certPath, keyPath);
+          } else {
+            log.warn("{} is set to {}, but {} and/or {} do not exist or cannot be read. "
+                     + "Will not send client certificate in HeliosClient requests.",
+                HELIOS_CERT_PATH, heliosCertPath, certPath, keyPath);
+          }
+        }
       }
 
       return new AuthenticatingHttpConnector(user,
