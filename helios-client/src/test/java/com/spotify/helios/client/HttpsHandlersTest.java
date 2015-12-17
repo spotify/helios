@@ -18,14 +18,12 @@
 package com.spotify.helios.client;
 
 import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
-import com.spotify.helios.client.tls.SshAgentSSLSocketFactory;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 
 import org.junit.Test;
-import org.mockito.ArgumentMatcher;
-
-import sun.security.ssl.SSLSocketFactoryImpl;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -34,10 +32,12 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLSocketFactory;
 
 import static com.google.common.io.Resources.getResource;
+import static com.spotify.helios.common.Hash.sha1digest;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class HttpsHandlersTest {
 
@@ -50,35 +50,34 @@ public class HttpsHandlersTest {
     final HttpsHandlers.CertificateFileHttpsHandler h =
         new HttpsHandlers.CertificateFileHttpsHandler("foo", certificate, key);
 
+    assertNotNull(h.getCertificate());
+    assertNotNull(h.getPrivateKey());
+
     h.handle(conn);
-    verify(conn).setSSLSocketFactory(any(SSLSocketFactoryImpl.class));
+    verify(conn).setSSLSocketFactory(any(SSLSocketFactory.class));
   }
 
   @Test
   public void testSshAgent() throws Exception {
     final AgentProxy proxy = mock(AgentProxy.class);
     final Identity identity = mock(Identity.class);
+
+    when(proxy.sign(any(Identity.class), any(byte[].class))).thenAnswer(new Answer<byte[]>() {
+      @Override
+      public byte[] answer(InvocationOnMock invocation) throws Throwable {
+        final byte[] bytesToSign = (byte[]) invocation.getArguments()[1];
+        return sha1digest(bytesToSign);
+      }
+    });
+
     final HttpsURLConnection conn = mock(HttpsURLConnection.class);
     final SshAgentHttpsHandler h = new SshAgentHttpsHandler("foo", proxy, identity);
 
     h.handle(conn);
-    verify(conn).setSSLSocketFactory(sshAgentSSLSocketFactoryWithArgs(proxy, identity, "foo"));
-  }
 
-  private static SSLSocketFactory sshAgentSSLSocketFactoryWithArgs(
-      final AgentProxy proxy, final Identity identity, final String user) {
-    return argThat(new ArgumentMatcher<SSLSocketFactory>() {
-      @Override
-      public boolean matches(final Object obj) {
-        if (!(obj instanceof SshAgentSSLSocketFactory)) {
-          return false;
-        }
+    assertNotNull(h.getCertificate());
+    assertNotNull(h.getPrivateKey());
 
-        final SshAgentSSLSocketFactory factory = (SshAgentSSLSocketFactory) obj;
-        return factory.getAgentProxy().equals(proxy) &&
-               factory.getIdentity().equals(identity) &&
-               factory.getUsername().equals(user);
-      }
-    });
+    verify(conn).setSSLSocketFactory(any(SSLSocketFactory.class));
   }
 }

@@ -38,7 +38,7 @@ import org.bouncycastle.asn1.x509.SubjectPublicKeyInfo;
 import org.bouncycastle.cert.X509CertificateHolder;
 import org.bouncycastle.cert.X509ExtensionUtils;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
-import org.bouncycastle.crypto.tls.Certificate;
+import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.DigestCalculator;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
@@ -48,19 +48,27 @@ import org.slf4j.LoggerFactory;
 import sun.security.provider.X509Factory;
 
 import java.math.BigInteger;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.SecureRandom;
 import java.security.Security;
+import java.security.cert.Certificate;
 import java.util.Calendar;
 import java.util.Date;
 
-class X509CertificateFactory {
+public class X509CertificateFactory {
 
   private static final Logger log = LoggerFactory.getLogger(X509CertificateFactory.class);
+
+  private static final JcaX509CertificateConverter CERTIFICATE_CONVERTER =
+      new JcaX509CertificateConverter().setProvider("BC");
 
   private static final BaseEncoding KEY_ID_ENCODING =
       BaseEncoding.base16().upperCase().withSeparator(":", 2);
   private static final BaseEncoding CERT_ENCODING =
       BaseEncoding.base64().withSeparator("\n", 64);
 
+  private static final int KEY_SIZE = 2048;
   private static final int HOURS_BEFORE = 1;
   private static final int HOURS_AFTER = 48;
 
@@ -68,14 +76,12 @@ class X509CertificateFactory {
     Security.addProvider(new BouncyCastleProvider());
   }
 
-  public static Certificate get(final AgentProxy agentProxy, final Identity identity,
-                                final String username) {
+  public static CertificateAndKeyPair get(final AgentProxy agentProxy, final Identity identity,
+                                          final String username) {
     final UUID uuid = new UUID();
     final Calendar calendar = Calendar.getInstance();
     final X500Name issuerDN = new X500Name("C=US,O=Spotify,CN=helios-client");
     final X500Name subjectDN = new X500NameBuilder().addRDN(BCStyle.UID, username).build();
-    final SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(
-        ASN1Sequence.getInstance(identity.getPublicKey().getEncoded()));
 
     calendar.add(Calendar.HOUR, -HOURS_BEFORE);
     final Date notBefore = calendar.getTime();
@@ -86,12 +92,19 @@ class X509CertificateFactory {
     // Reuse the UUID time as a SN
     final BigInteger serialNumber = BigInteger.valueOf(uuid.getTime()).abs();
 
-    final X509v3CertificateBuilder builder = new X509v3CertificateBuilder(issuerDN, serialNumber,
-                                                                          notBefore, notAfter,
-                                                                          subjectDN,
-                                                                          subjectPublicKeyInfo);
-
     try {
+      final KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance("RSA", "BC");
+      keyPairGenerator.initialize(KEY_SIZE, new SecureRandom());
+
+      final KeyPair keyPair = keyPairGenerator.generateKeyPair();
+      final SubjectPublicKeyInfo subjectPublicKeyInfo = SubjectPublicKeyInfo.getInstance(
+          ASN1Sequence.getInstance(keyPair.getPublic().getEncoded()));
+
+      final X509v3CertificateBuilder builder = new X509v3CertificateBuilder(issuerDN, serialNumber,
+                                                                            notBefore, notAfter,
+                                                                            subjectDN,
+                                                                            subjectPublicKeyInfo);
+
       final DigestCalculator digestCalculator = new BcDigestCalculatorProvider()
           .get(new AlgorithmIdentifier(OIWObjectIdentifiers.idSHA1));
       final X509ExtensionUtils utils = new X509ExtensionUtils(digestCalculator);
@@ -114,11 +127,29 @@ class X509CertificateFactory {
                 CERT_ENCODING.encode(holder.getEncoded()),
                 X509Factory.END_CERT);
 
-      return new Certificate(new org.bouncycastle.asn1.x509.Certificate[] {
-          holder.toASN1Structure(),
-      });
+
+      return new CertificateAndKeyPair(CERTIFICATE_CONVERTER.getCertificate(holder), keyPair);
     } catch (Exception e) {
       throw Throwables.propagate(e);
+    }
+  }
+
+  public static class CertificateAndKeyPair {
+    private Certificate certificate;
+    private KeyPair keyPair;
+
+    public CertificateAndKeyPair(final Certificate certificate,
+                                 final KeyPair keyPair) {
+      this.certificate = certificate;
+      this.keyPair = keyPair;
+    }
+
+    public Certificate getCertificate() {
+      return certificate;
+    }
+
+    public KeyPair getKeyPair() {
+      return keyPair;
     }
   }
 }
