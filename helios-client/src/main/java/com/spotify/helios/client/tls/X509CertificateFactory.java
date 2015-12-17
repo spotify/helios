@@ -45,6 +45,8 @@ import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import sun.security.provider.X509Factory;
+
 import java.math.BigInteger;
 import java.security.Security;
 import java.util.Calendar;
@@ -56,6 +58,8 @@ class X509CertificateFactory {
 
   private static final BaseEncoding KEY_ID_ENCODING =
       BaseEncoding.base16().upperCase().withSeparator(":", 2);
+  private static final BaseEncoding CERT_ENCODING =
+      BaseEncoding.base64().withSeparator("\n", 64);
 
   private static final int HOURS_BEFORE = 1;
   private static final int HOURS_AFTER = 48;
@@ -94,7 +98,7 @@ class X509CertificateFactory {
 
       final SubjectKeyIdentifier keyId = utils.createSubjectKeyIdentifier(subjectPublicKeyInfo);
       final String keyIdHex = KEY_ID_ENCODING.encode(keyId.getKeyIdentifier());
-      log.info("generated an X509 certificate with key ID {}", keyIdHex);
+      log.info("generating an X509 certificate with key ID {}", keyIdHex);
 
       builder.addExtension(Extension.subjectKeyIdentifier, false, keyId);
       builder.addExtension(Extension.authorityKeyIdentifier, false,
@@ -105,6 +109,10 @@ class X509CertificateFactory {
 
       final X509CertificateHolder holder = builder.build(new SshAgentContentSigner(agentProxy,
                                                                                    identity));
+      log.debug("generated certificate:\n{}\n{}\n{}",
+                X509Factory.BEGIN_CERT,
+                CERT_ENCODING.encode(holder.getEncoded()),
+                X509Factory.END_CERT);
 
       return new Certificate(new org.bouncycastle.asn1.x509.Certificate[] {
           holder.toASN1Structure(),
