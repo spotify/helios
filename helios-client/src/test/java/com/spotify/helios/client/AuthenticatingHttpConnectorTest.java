@@ -115,6 +115,26 @@ public class AuthenticatingHttpConnectorTest {
     return identity;
   }
 
+  @Test(expected = IllegalArgumentException.class)
+  public void misMatchedCertificateArguments1() {
+    new AuthenticatingHttpConnector("user",
+        Optional.<AgentProxy>absent(),
+        Optional.of(Paths.get("/foo")),
+        Optional.<Path>absent(),
+        EndpointIterator.of(endpoints),
+        connector);
+  }
+
+  @Test(expected = IllegalArgumentException.class)
+  public void misMatchedCertificateArguments2() {
+    new AuthenticatingHttpConnector("user",
+        Optional.<AgentProxy>absent(),
+        Optional.<Path>absent(),
+        Optional.of(Paths.get("/foo")),
+        EndpointIterator.of(endpoints),
+        connector);
+  }
+
   @Test
   public void testNoIdentities_ResponseIsOK() throws Exception {
     final AuthenticatingHttpConnector authConnector = createAuthenticatingConnector(
@@ -125,9 +145,9 @@ public class AuthenticatingHttpConnectorTest {
 
     final HttpsURLConnection connection = mock(HttpsURLConnection.class);
     when(connector.connect(argThat(matchesAnyEndpoint(path)),
-                           eq(method),
-                           eq(entity),
-                           eq(headers))
+        eq(method),
+        eq(entity),
+        eq(headers))
     ).thenReturn(connection);
     when(connection.getResponseCode()).thenReturn(200);
 
@@ -146,9 +166,9 @@ public class AuthenticatingHttpConnectorTest {
 
     final HttpsURLConnection connection = mock(HttpsURLConnection.class);
     when(connector.connect(argThat(matchesAnyEndpoint(path)),
-                           eq(method),
-                           eq(entity),
-                           eq(headers))
+        eq(method),
+        eq(entity),
+        eq(headers))
     ).thenReturn(connection);
     when(connection.getResponseCode()).thenReturn(200);
 
@@ -216,6 +236,42 @@ public class AuthenticatingHttpConnectorTest {
         returnedConnection, connection);
   }
 
+  @Test
+  public void testTwoIdentities_ResponseIsUnauthorized() throws Exception {
+
+    final AgentProxy proxy = mock(AgentProxy.class);
+    final Identity id1 = mockIdentity();
+    final Identity id2 = mockIdentity();
+
+    final AuthenticatingHttpConnector authConnector =
+        createAuthenticatingConnector(Optional.of(proxy), ImmutableList.of(id1, id2));
+
+    final String path = "/another/one";
+
+    // set up two seperate connect() calls - the first returns 401 and the second 200 OK
+    final HttpsURLConnection connection1 = mock(HttpsURLConnection.class);
+    when(connection1.getResponseCode()).thenReturn(401);
+
+    final HttpsURLConnection connection2 = mock(HttpsURLConnection.class);
+    when(connection2.getResponseCode()).thenReturn(200);
+
+    when(connector.connect(argThat(matchesAnyEndpoint(path)),
+        eq(method),
+        eq(entity),
+        eq(headers))
+    ).thenReturn(connection1, connection2);
+
+    URI uri = new URI("https://helios" + path);
+
+    HttpURLConnection returnedConnection = authConnector.connect(uri, method, entity, headers);
+
+    verify(connector).setExtraHttpsHandler(sshAgentHttpsHandlerWithArgs(USER, proxy, id1));
+    verify(connector).setExtraHttpsHandler(sshAgentHttpsHandlerWithArgs(USER, proxy, id2));
+
+    assertSame("Expect returned connection to be the second one, with successful response code",
+        returnedConnection, connection2);
+  }
+
   private static Endpoint endpoint(final URI uri, final InetAddress ip) {
     return new Endpoint() {
       @Override
@@ -262,5 +318,33 @@ public class AuthenticatingHttpConnectorTest {
                authHandler.getClientKeyPath().equals(keyPath);
       }
     });
+  }
+
+  @Test
+  public void testOneIdentity_ServerReturns502BadGateway() throws Exception {
+    final AgentProxy proxy = mock(AgentProxy.class);
+    final Identity identity = mockIdentity();
+
+    final AuthenticatingHttpConnector authConnector =
+        createAuthenticatingConnector(Optional.of(proxy), ImmutableList.of(identity));
+
+    final String path = "/foobar";
+
+    final HttpsURLConnection connection = mock(HttpsURLConnection.class);
+    when(connector.connect(argThat(matchesAnyEndpoint(path)),
+        eq(method),
+        eq(entity),
+        eq(headers))
+    ).thenReturn(connection);
+    when(connection.getResponseCode()).thenReturn(502);
+
+    URI uri = new URI("https://helios" + path);
+
+    HttpURLConnection returnedConnection = authConnector.connect(uri, method, entity, headers);
+
+    assertSame("If there is only one identity do not expect any additional endpoints to "
+               + "be called after the first returns Unauthorized",
+        returnedConnection, connection);
+
   }
 }
