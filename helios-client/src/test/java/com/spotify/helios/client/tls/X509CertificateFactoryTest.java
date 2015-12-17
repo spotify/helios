@@ -25,13 +25,17 @@ import org.bouncycastle.crypto.tls.Certificate;
 import org.bouncycastle.util.encoders.Base64;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.security.KeyFactory;
 import java.security.PublicKey;
 import java.security.spec.X509EncodedKeySpec;
 
+import static com.spotify.helios.common.Hash.sha1digest;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -58,6 +62,13 @@ public class X509CertificateFactoryTest {
     publicKey = keyFactory.generatePublic(pubKeySpec);
 
     when(identity.getPublicKey()).thenReturn(publicKey);
+    when(agentProxy.sign(any(Identity.class), any(byte[].class))).thenAnswer(new Answer<byte[]>() {
+      @Override
+      public byte[] answer(InvocationOnMock invocation) throws Throwable {
+        final byte[] bytesToSign = (byte[]) invocation.getArguments()[1];
+        return sha1digest(bytesToSign);
+      }
+    });
   }
 
   @Test
