@@ -112,12 +112,11 @@ public class AuthenticatingHttpConnector implements HttpConnector {
     try {
       log.debug("connecting to {}", ipUri);
 
-      // prioritize using the certificate file if set
       if (clientCertificatePath.isPresent() && clientKeyPath.isPresent()) {
+        // prioritize using the certificate file if set
         return connectWithCertificateFile(ipUri, method, entity, headers);
-      }
-      // ssh-agent based authentication
-      else if (agentProxy.isPresent() && !identities.isEmpty()) {
+      } else if (agentProxy.isPresent() && !identities.isEmpty()) {
+        // ssh-agent based authentication
         return connectWithIdentities(identities, ipUri, method, entity, headers);
       } else {
         // no authentication

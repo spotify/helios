@@ -20,8 +20,6 @@ package com.spotify.helios.client.tls;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 
-import org.bouncycastle.asn1.x500.style.BCStyle;
-import org.bouncycastle.crypto.tls.Certificate;
 import org.bouncycastle.util.encoders.Base64;
 import org.junit.Before;
 import org.junit.Test;
@@ -30,13 +28,17 @@ import org.mockito.stubbing.Answer;
 
 import java.security.KeyFactory;
 import java.security.PublicKey;
+import java.security.cert.X509Certificate;
 import java.security.spec.X509EncodedKeySpec;
 
 import static com.spotify.helios.common.Hash.sha1digest;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.refEq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class X509CertificateFactoryTest {
@@ -73,14 +75,16 @@ public class X509CertificateFactoryTest {
 
   @Test
   public void testGet() throws Exception {
-    final Certificate certificates = X509CertificateFactory.get(agentProxy, identity, USERNAME);
-    assertEquals(1, certificates.getLength());
+    final X509CertificateFactory.CertificateAndKeyPair certificateAndKeyPair =
+        X509CertificateFactory.get(agentProxy, identity, USERNAME);
 
-    final org.bouncycastle.asn1.x509.Certificate certificate = certificates.getCertificateAt(0);
+    assertNotNull(certificateAndKeyPair.getCertificate());
+    assertNotNull(certificateAndKeyPair.getKeyPair());
 
-    assertEquals(USERNAME,
-                 certificate.getSubject().getRDNs(BCStyle.UID)[0].getFirst().getValue().toString());
-    assertArrayEquals(publicKey.getEncoded(), certificate.getSubjectPublicKeyInfo().getEncoded());
+    final X509Certificate certificate = (X509Certificate) certificateAndKeyPair.getCertificate();
+
+    verify(agentProxy).sign(refEq(identity), eq(certificate.getTBSCertificate()));
+    assertEquals("UID=" + USERNAME, certificate.getSubjectDN().getName());
   }
 
 }

@@ -19,7 +19,8 @@ package com.spotify.helios.client;
 
 import com.google.common.base.Throwables;
 
-import com.spotify.helios.client.tls.SshAgentSSLSocketFactory;
+import com.spotify.helios.client.tls.X509CertificateFactory;
+import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 
@@ -44,7 +45,6 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
 import java.security.cert.CertificateFactory;
-import java.security.spec.InvalidKeySpecException;
 import java.security.spec.PKCS8EncodedKeySpec;
 
 import javax.net.ssl.HttpsURLConnection;
@@ -58,28 +58,21 @@ import static com.google.common.base.Strings.isNullOrEmpty;
  */
 class HttpsHandlers {
 
-  static class SshAgentHttpsHandler implements HttpsHandler {
+  static class SshAgentHttpsHandler extends CertificateHttpsHandler {
 
     private static final Logger log = LoggerFactory.getLogger(SshAgentHttpsHandler.class);
 
-    private final String user;
     private final AgentProxy agentProxy;
     private final Identity identity;
+
+    private X509CertificateFactory.CertificateAndKeyPair certificateAndKeyPair;
 
     SshAgentHttpsHandler(final String user,
                          final AgentProxy agentProxy,
                          final Identity identity) {
-      if (isNullOrEmpty(user)) {
-        throw new IllegalArgumentException();
-      }
-
-      this.user = user;
+      super(user);
       this.agentProxy = checkNotNull(agentProxy, "agentProxy");
       this.identity = checkNotNull(identity, "identity");
-    }
-
-    String getUser() {
-      return user;
     }
 
     AgentProxy getAgentProxy() {
@@ -91,34 +84,33 @@ class HttpsHandlers {
     }
 
     @Override
-    public void handle(final HttpsURLConnection conn) {
-      conn.setSSLSocketFactory(new SshAgentSSLSocketFactory(agentProxy, identity, user));
-      log.debug("configured SshAgentSSLSocketFactory with identity={}", identity);
+    Certificate getCertificate() throws Exception {
+      return certificateAndKeyPair.getCertificate();
+    }
+
+    @Override
+    PrivateKey getPrivateKey() throws Exception {
+      return certificateAndKeyPair.getKeyPair().getPrivate();
+    }
+
+    @Override
+    public void handle(HttpsURLConnection conn) {
+      certificateAndKeyPair = X509CertificateFactory.get(agentProxy, identity, getUser());
+      super.handle(conn);
     }
   }
 
-  static class CertificateFileHttpsHandler implements HttpsHandler {
+  static class CertificateFileHttpsHandler extends CertificateHttpsHandler {
 
-    private static final char[] KEY_STORE_PASSWORD = "FPLSlZQuM3ZCM3SjINSKuWyPK2HeS4".toCharArray();
-
-    private final String user;
     private final Path clientCertificatePath;
     private final Path clientKeyPath;
 
     CertificateFileHttpsHandler(final String user,
                                 final Path clientCertificatePath,
                                 final Path clientKeyPath) {
-      if (isNullOrEmpty(user)) {
-        throw new IllegalArgumentException();
-      }
-
-      this.user = user;
+      super(user);
       this.clientCertificatePath = checkNotNull(clientCertificatePath, "clientCertificatePath");
       this.clientKeyPath = checkNotNull(clientKeyPath, "clientKeyPath");
-    }
-
-    String getUser() {
-      return user;
     }
 
     Path getClientCertificatePath() {
@@ -130,38 +122,80 @@ class HttpsHandlers {
     }
 
     @Override
+    Certificate getCertificate() throws Exception {
+      final CertificateFactory cf = CertificateFactory.getInstance("X.509");
+      return cf.generateCertificate(Files.newInputStream(clientCertificatePath));
+    }
+
+    @Override
+    PrivateKey getPrivateKey() throws Exception {
+      final Object pemObj = new PEMParser(
+          Files.newBufferedReader(clientKeyPath, Charset.defaultCharset())).readObject();
+
+      final PrivateKeyInfo keyInfo;
+      if (pemObj instanceof PEMKeyPair) {
+        keyInfo = ((PEMKeyPair) pemObj).getPrivateKeyInfo();
+      } else if (pemObj instanceof PrivateKeyInfo) {
+        keyInfo = (PrivateKeyInfo) pemObj;
+      } else {
+        throw new UnsupportedOperationException("Unable to parse x509 certificate.");
+      }
+
+      final PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyInfo.getEncoded());
+      final KeyFactory kf = KeyFactory.getInstance("RSA");
+      return kf.generatePrivate(spec);
+    }
+
+  }
+
+  abstract static class CertificateHttpsHandler implements HttpsHandler {
+
+    private static final char[] KEY_STORE_PASSWORD = "FPLSlZQuM3ZCM3SjINSKuWyPK2HeS4".toCharArray();
+
+    private final String user;
+
+    CertificateHttpsHandler(final String user) {
+      if (isNullOrEmpty(user)) {
+        throw new IllegalArgumentException("user");
+      }
+
+      this.user = user;
+    }
+
+    String getUser() {
+      return user;
+    }
+
+    abstract Certificate getCertificate() throws Exception;
+    abstract PrivateKey getPrivateKey() throws Exception;
+
     public void handle(final HttpsURLConnection conn) {
+      final Certificate certificate;
+      final PrivateKey privateKey;
+
+      try {
+        certificate = getCertificate();
+      } catch (Exception e) {
+        throw new HeliosRuntimeException("error getting client certificate", e);
+      }
+
+      try {
+        privateKey = getPrivateKey();
+      } catch (Exception e) {
+        throw new HeliosRuntimeException("error getting private key", e);
+      }
+
       try {
         /*
-          We're creating a keystore in memory and putting the certificate & key from disk into it.
+          We're creating a keystore in memory and putting the certificate & key into it.
           The keystore needs a password when we put the key into it, even though it's only going to
           exist for the lifetime of the process. So we just have some random password that we use.
-          Most of this code is lifted from spotify/docker-client.
          */
 
-        final CertificateFactory cf = CertificateFactory.getInstance("X.509");
-        final Certificate clientCert = cf.generateCertificate(
-            Files.newInputStream(clientCertificatePath));
-
-        final Object pemObj = new PEMParser(
-            Files.newBufferedReader(clientKeyPath, Charset.defaultCharset())).readObject();
-
-        final PrivateKeyInfo keyInfo;
-        if (pemObj instanceof PEMKeyPair) {
-          keyInfo = ((PEMKeyPair) pemObj).getPrivateKeyInfo();
-        } else if (pemObj instanceof PrivateKeyInfo) {
-          keyInfo = (PrivateKeyInfo) pemObj;
-        } else {
-          throw new UnsupportedOperationException("Unable to parse x509 certificate.");
-        }
-
-        final PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyInfo.getEncoded());
-        final KeyFactory kf = KeyFactory.getInstance("RSA");
-        final PrivateKey clientKey = kf.generatePrivate(spec);
         final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
         keyStore.load(null, null);
-        keyStore.setCertificateEntry("client", clientCert);
-        keyStore.setKeyEntry("key", clientKey, KEY_STORE_PASSWORD, new Certificate[]{clientCert});
+        keyStore.setCertificateEntry("client", certificate);
+        keyStore.setKeyEntry("key", privateKey, KEY_STORE_PASSWORD, new Certificate[]{certificate});
 
         // build an SSLContext based on our keystore, and then get an SSLSocketFactory from that
         final SSLContext sslContext = SSLContexts.custom()
@@ -173,7 +207,6 @@ class HttpsHandlers {
           CertificateException |
               IOException |
               NoSuchAlgorithmException |
-              InvalidKeySpecException |
               KeyStoreException |
               UnrecoverableKeyException |
               KeyManagementException e) {
