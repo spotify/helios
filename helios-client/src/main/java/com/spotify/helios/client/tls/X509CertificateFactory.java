@@ -135,8 +135,8 @@ public class X509CertificateFactory {
   }
 
   public static class CertificateAndKeyPair {
-    private Certificate certificate;
-    private KeyPair keyPair;
+    private final Certificate certificate;
+    private final KeyPair keyPair;
 
     public CertificateAndKeyPair(final Certificate certificate,
                                  final KeyPair keyPair) {

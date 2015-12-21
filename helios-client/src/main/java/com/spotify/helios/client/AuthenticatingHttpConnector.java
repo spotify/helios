@@ -37,7 +37,6 @@ import java.net.SocketTimeoutException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
-import java.nio.file.Path;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -56,8 +55,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
 
   private final String user;
   private final Optional<AgentProxy> agentProxy;
-  private final Optional<Path> clientCertificatePath;
-  private final Optional<Path> clientKeyPath;
+  private final Optional<ClientCertificatePath> clientCertificatePath;
   private final List<Identity> identities;
   private final EndpointIterator endpointIterator;
 
@@ -65,31 +63,23 @@ public class AuthenticatingHttpConnector implements HttpConnector {
 
   public AuthenticatingHttpConnector(final String user,
                                      final Optional<AgentProxy> agentProxyOpt,
-                                     final Optional<Path> clientCertificatePath,
-                                     final Optional<Path> clientKeyPath,
+                                     final Optional<ClientCertificatePath> clientCertificatePath,
                                      final EndpointIterator endpointIterator,
                                      final DefaultHttpConnector delegate) {
-    this(user, agentProxyOpt, clientCertificatePath, clientKeyPath, endpointIterator,
+    this(user, agentProxyOpt, clientCertificatePath, endpointIterator,
          delegate, getSshIdentities(agentProxyOpt));
   }
 
   @VisibleForTesting
   AuthenticatingHttpConnector(final String user,
                               final Optional<AgentProxy> agentProxyOpt,
-                              final Optional<Path> clientCertificatePath,
-                              final Optional<Path> clientKeyPath,
+                              final Optional<ClientCertificatePath> clientCertificatePath,
                               final EndpointIterator endpointIterator,
                               final DefaultHttpConnector delegate,
                               final List<Identity> identities) {
-    if (clientCertificatePath.isPresent() != clientKeyPath.isPresent()) {
-      throw new IllegalArgumentException(
-          "both or neither of clientCertificatePath and clientKeyPath must be specified");
-    }
-
     this.user = user;
     this.agentProxy = agentProxyOpt;
     this.clientCertificatePath = clientCertificatePath;
-    this.clientKeyPath = clientKeyPath;
     this.endpointIterator = endpointIterator;
     this.delegate = delegate;
     this.identities = identities;
@@ -112,7 +102,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
     try {
       log.debug("connecting to {}", ipUri);
 
-      if (clientCertificatePath.isPresent() && clientKeyPath.isPresent()) {
+      if (clientCertificatePath.isPresent()) {
         // prioritize using the certificate file if set
         return connectWithCertificateFile(ipUri, method, entity, headers);
       } else if (agentProxy.isPresent() && !identities.isEmpty()) {
@@ -139,8 +129,12 @@ public class AuthenticatingHttpConnector implements HttpConnector {
                                                        final Map<String, List<String>> headers)
       throws HeliosException {
 
+    final ClientCertificatePath clientCertificatePath = this.clientCertificatePath.get();
+    log.debug("configuring CertificateFileHttpsHandler with {}", clientCertificatePath);
+
     delegate.setExtraHttpsHandler(
-        new CertificateFileHttpsHandler(user, clientCertificatePath.get(), clientKeyPath.get()));
+        new CertificateFileHttpsHandler(user, false, clientCertificatePath)
+    );
 
     return doConnect(ipUri, method, entity, headers);
   }
@@ -159,7 +153,8 @@ public class AuthenticatingHttpConnector implements HttpConnector {
     while (!queue.isEmpty()) {
       final Identity identity = queue.poll();
 
-      delegate.setExtraHttpsHandler(new SshAgentHttpsHandler(user, agentProxy.get(), identity));
+      delegate.setExtraHttpsHandler(
+          new SshAgentHttpsHandler(user, false, agentProxy.get(), identity));
 
       connection = doConnect(uri, method, entity, headers);
 

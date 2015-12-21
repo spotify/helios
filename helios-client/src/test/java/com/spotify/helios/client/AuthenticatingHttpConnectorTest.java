@@ -76,18 +76,26 @@ public class AuthenticatingHttpConnectorTest {
       final Optional<AgentProxy> proxy, final List<Identity> identities) {
 
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
-    return new AuthenticatingHttpConnector(USER, proxy, Optional.<Path>absent(),
-                                           Optional.<Path>absent(), endpointIterator, connector,
-                                           identities);
+    return new AuthenticatingHttpConnector(USER,
+        proxy,
+        Optional.<ClientCertificatePath>absent(),
+        endpointIterator,
+        connector,
+        identities);
   }
 
   private AuthenticatingHttpConnector createAuthenticatingConnectorWithCertFile() {
 
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
 
-    return new AuthenticatingHttpConnector(USER, Optional.<AgentProxy>absent(),
-                                           Optional.of(CERTIFICATE_PATH), Optional.of(KEY_PATH),
-                                           endpointIterator, connector);
+    final ClientCertificatePath clientCertificatePath =
+        new ClientCertificatePath(CERTIFICATE_PATH, KEY_PATH);
+
+    return new AuthenticatingHttpConnector(USER,
+        Optional.<AgentProxy>absent(),
+        Optional.of(clientCertificatePath),
+        endpointIterator,
+        connector);
   }
 
   private CustomTypeSafeMatcher<URI> matchesAnyEndpoint(final String path) {
@@ -113,26 +121,6 @@ public class AuthenticatingHttpConnectorTest {
     final Identity identity = mock(Identity.class);
     when(identity.getComment()).thenReturn("a comment");
     return identity;
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void misMatchedCertificateArguments1() {
-    new AuthenticatingHttpConnector("user",
-        Optional.<AgentProxy>absent(),
-        Optional.of(Paths.get("/foo")),
-        Optional.<Path>absent(),
-        EndpointIterator.of(endpoints),
-        connector);
-  }
-
-  @Test(expected = IllegalArgumentException.class)
-  public void misMatchedCertificateArguments2() {
-    new AuthenticatingHttpConnector("user",
-        Optional.<AgentProxy>absent(),
-        Optional.<Path>absent(),
-        Optional.of(Paths.get("/foo")),
-        EndpointIterator.of(endpoints),
-        connector);
   }
 
   @Test
@@ -313,9 +301,12 @@ public class AuthenticatingHttpConnectorTest {
         }
 
         final CertificateFileHttpsHandler authHandler = (CertificateFileHttpsHandler) handler;
+
+        final ClientCertificatePath expectedCertPath =
+            new ClientCertificatePath(certificatePath, keyPath);
+
         return authHandler.getUser().equals(user) &&
-               authHandler.getClientCertificatePath().equals(certificatePath) &&
-               authHandler.getClientKeyPath().equals(keyPath);
+               authHandler.getClientCertificatePath().equals(expectedCertPath);
       }
     });
   }

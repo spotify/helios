@@ -508,17 +508,11 @@ public class HeliosClient implements AutoCloseable {
     private static final String HELIOS_CERT_PATH = "HELIOS_CERT_PATH";
 
     private String user;
-    private Path clientCertificatePath;
-    private Path clientKeyPath;
+    private ClientCertificatePath clientCertificatePath;
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
 
     private Builder() {
-      final String heliosCertPath = System.getenv(HELIOS_CERT_PATH);
-      if (!isNullOrEmpty(heliosCertPath)) {
-        this.clientCertificatePath = Paths.get(heliosCertPath, "cert.pem");
-        this.clientKeyPath = Paths.get(heliosCertPath, "key.pem");
-      }
     }
 
     public Builder setUser(final String user) {
@@ -564,13 +558,8 @@ public class HeliosClient implements AutoCloseable {
       return this;
     }
 
-    public Builder setClientCertificatePath(final Path clientCertificatePath) {
+    public Builder setClientCertificatePath(final ClientCertificatePath clientCertificatePath) {
       this.clientCertificatePath = clientCertificatePath;
-      return this;
-    }
-
-    public Builder setClientKeyPath(final Path clientKeyPath) {
-      this.clientKeyPath = clientKeyPath;
       return this;
     }
 
@@ -602,9 +591,6 @@ public class HeliosClient implements AutoCloseable {
       final DefaultHttpConnector connector = new DefaultHttpConnector(endpointIterator, 10000,
                                                                       sslHostnameVerification);
 
-      Optional<Path> clientCertificatePath = Optional.fromNullable(this.clientCertificatePath);
-      Optional<Path> clientKeyPath = Optional.fromNullable(this.clientKeyPath);
-
       Optional<AgentProxy> agentProxyOpt = Optional.absent();
       try {
         agentProxyOpt = Optional.of(AgentProxies.newInstance());
@@ -615,8 +601,30 @@ public class HeliosClient implements AutoCloseable {
         log.debug("{}", e);
       }
 
-      return new AuthenticatingHttpConnector(user, agentProxyOpt, clientCertificatePath,
-                                             clientKeyPath, endpointIterator, connector);
+      // set up the ClientCertificatePath, giving precedence to any values set
+      // with setClientCertificatePath()
+      ClientCertificatePath clientCertificatePath = this.clientCertificatePath;
+      if (clientCertificatePath == null) {
+        final String heliosCertPath = System.getenv(HELIOS_CERT_PATH);
+        if (!isNullOrEmpty(heliosCertPath)) {
+          final Path certPath = Paths.get(heliosCertPath, "cert.pem");
+          final Path keyPath = Paths.get(heliosCertPath, "key.pem");
+
+          if (certPath.toFile().canRead() && keyPath.toFile().canRead()) {
+            this.clientCertificatePath = new ClientCertificatePath(certPath, keyPath);
+          } else {
+            log.warn("{} is set to {}, but {} and/or {} do not exist or cannot be read. "
+                     + "Will not send client certificate in HeliosClient requests.",
+                HELIOS_CERT_PATH, heliosCertPath, certPath, keyPath);
+          }
+        }
+      }
+
+      return new AuthenticatingHttpConnector(user,
+          agentProxyOpt,
+          Optional.fromNullable(clientCertificatePath),
+          endpointIterator,
+          connector);
     }
   }
 
