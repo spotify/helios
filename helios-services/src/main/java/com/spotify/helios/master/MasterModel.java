@@ -108,7 +108,7 @@ public interface MasterModel {
 
   List<String> getDeploymentGroupHosts(String name) throws DeploymentGroupDoesNotExistException;
 
-  void updateDeploymentGroupHosts(String name, List<String> hosts)
+  void updateDeploymentGroupHosts(String groupName, List<String> hosts)
       throws DeploymentGroupDoesNotExistException;
 
   DeploymentGroupStatus getDeploymentGroupStatus(String name)
