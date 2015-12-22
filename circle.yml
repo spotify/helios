@@ -3,8 +3,6 @@ dependencies:
     - ./circle.sh dependencies
 
 test:
-  pre:
-    - ./circle.sh pre_test
   override:
     - ./circle.sh test:
         parallel: true

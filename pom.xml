@@ -354,7 +354,7 @@
                 <HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>2</HELIOS_CLUSTER_DEPLOYMENT_TEST_HOSTS>
               </environmentVariables>
               <systemPropertyVariables>
-                <logToFile>false</logToFile>
+                <logToFile>true</logToFile>
                 <heliosLoggingLevel>INFO</heliosLoggingLevel>
                 <externalLoggingLevel>OFF</externalLoggingLevel>
                 <rootLoggingLevel>ERROR</rootLoggingLevel>
