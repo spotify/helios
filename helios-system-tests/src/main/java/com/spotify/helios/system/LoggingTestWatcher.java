@@ -41,8 +41,19 @@ import ch.qos.logback.core.FileAppender;
 
 import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
+/**
+ * Custom logback configuration for system tests.
+ */
 final class LoggingTestWatcher extends TestWatcher {
+
   private static final Logger log = LoggerFactory.getLogger(LoggingTestWatcher.class);
+
+  /**
+   * Logs a line full of the = character as a separator.
+   */
+  private void logLine() {
+    log.info(Strings.repeat("=", 80));
+  }
 
   @Override
   protected void starting(Description description) {
@@ -50,47 +61,57 @@ final class LoggingTestWatcher extends TestWatcher {
       final String name = description.getClassName() + "_" + description.getMethodName();
       setupFileLogging(name);
     }
-    log.info(Strings.repeat("=", 80));
+    logLine();
     log.info("STARTING: {}: {}", description.getClassName(), description.getMethodName());
-    log.info(Strings.repeat("=", 80));
+    logLine();
   }
 
   @Override
   protected void succeeded(final Description description) {
-    log.info(Strings.repeat("=", 80));
+    logLine();
     log.info("FINISHED: {}: {}", description.getClassName(), description.getMethodName());
-    log.info(Strings.repeat("=", 80));
+    logLine();
   }
 
   @Override
   protected void failed(final Throwable e, final Description description) {
-    log.info(Strings.repeat("=", 80));
+    logLine();
     log.info("FAILED  : {} {}", description.getClassName(), description.getMethodName());
     log.info("Exception", e);
-    log.info(Strings.repeat("=", 80));
+    logLine();
   }
 
+  /**
+   * Sets up a FileAppender under the path {@code $logDir/<timestamp>-<name>-<pid>.log}. If not set
+   * as a system property then {@code $logDir} falls back to {@code /tmp/helios-test/log}.
+   */
   private void setupFileLogging(final String name) {
     final ch.qos.logback.classic.Logger rootLogger =
         (ch.qos.logback.classic.Logger) LoggerFactory.getLogger(ROOT_LOGGER_NAME);
     final LoggerContext context = rootLogger.getLoggerContext();
     context.reset();
-    final FileAppender<ILoggingEvent> fileAppender = new FileAppender<>();
+
     final String ts = new SimpleDateFormat("yyyyMMdd'T'HHmmss.SSS").format(new Date());
     final String pid = ManagementFactory.getRuntimeMXBean().getName().split("@", 2)[0];
-    final Path directory = Paths.get(System.getProperty("logDir", "/tmp/helios-test/log/"));
-    final String filename = String.format("%s-%s-%s.log", ts, name, pid);
-    final Path file = directory.resolve(filename);
+
     final PatternLayoutEncoder ple = new PatternLayoutEncoder();
     ple.setContext(context);
     ple.setPattern("%d{HH:mm:ss.SSS} %-5level %logger{1} %F:%L - %msg%n");
     ple.start();
+
+    final Path directory = Paths.get(System.getProperty("logDir", "/tmp/helios-test/log/"));
+    final String filename = String.format("%s-%s-%s.log", ts, name, pid);
+    final Path file = directory.resolve(filename);
+
+    final FileAppender<ILoggingEvent> fileAppender = new FileAppender<>();
     fileAppender.setEncoder(ple);
     fileAppender.setFile(file.toString());
     fileAppender.setContext(context);
     fileAppender.start();
+
     rootLogger.setLevel(Level.DEBUG);
     rootLogger.addAppender(fileAppender);
+
     try {
       Files.createDirectories(directory);
     } catch (IOException e) {
