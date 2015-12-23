@@ -33,12 +33,6 @@ case "$1" in
 
     ;;
 
-  pre_test)
-    # clean the artifacts dir from the previous build
-    rm -rf artifacts && mkdir artifacts
-
-    ;;
-
   test)
     # fix DOCKER_HOST to be accessible from within containers
     docker0_ip=$(/sbin/ifconfig docker0 | grep 'inet addr' | \
@@ -108,15 +102,16 @@ case "$1" in
 
   post_test)
     # collect artifacts into the artifacts dir
-    find . -regex ".*/target/.*-[0-9]\.jar" | xargs -I {} mv {} artifacts
-    find . -regex ".*/target/.*-SNAPSHOT\.jar" | xargs -I {} mv {} artifacts
-    find . -regex ".*/target/.*\.deb" | xargs -I {} mv {} artifacts
+    find . -regex ".*/target/.*-[0-9]\.jar" | xargs -I {} mv {} $CIRCLE_ARTIFACTS
+    find . -regex ".*/target/.*-SNAPSHOT\.jar" | xargs -I {} mv {} $CIRCLE_ARTIFACTS
+    find . -regex ".*/target/.*\.deb" | xargs -I {} mv {} $CIRCLE_ARTIFACTS
 
     ;;
 
   collect_test_reports)
-    cp */target/surefire-reports/*.xml $CI_REPORTS || true
-    cp */target/failsafe-reports/*.xml $CI_REPORTS || true
+    cp */target/surefire-reports/*.xml $CIRCLE_TEST_REPORTS || true
+    cp */target/failsafe-reports/*.xml $CIRCLE_TEST_REPORTS || true
+    cp /tmp/helios-test/log/* $CIRCLE_TEST_REPORTS || true
     codecov
 
     ;;
