@@ -137,13 +137,13 @@ public class JobUndeployCommand extends WildcardJobCommand {
         if (!json) {
           out.println("done");
         } else {
-          out.printf(response.toJsonString());
+          out.print(response.toJsonString());
         }
       } else {
         if (!json) {
           out.println("failed: " + response);
         } else {
-          out.printf(response.toJsonString());
+          out.print(response.toJsonString());
         }
         code = -1;
       }

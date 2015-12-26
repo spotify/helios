@@ -296,7 +296,7 @@ public class JobCreateCommand extends ControlCommand {
         } else {
           CreateJobResponse createJobResponse =
               new CreateJobResponse(CreateJobResponse.Status.UNKNOWN_JOB, null, null);
-          out.printf(createJobResponse.toJsonString());
+          out.print(createJobResponse.toJsonString());
         }
         return 1;
       } else if (jobs.size() > 1) {
@@ -305,7 +305,7 @@ public class JobCreateCommand extends ControlCommand {
         } else {
           CreateJobResponse createJobResponse =
               new CreateJobResponse(CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, null, null);
-          out.printf(createJobResponse.toJsonString());
+          out.print(createJobResponse.toJsonString());
         }
         return 1;
       }

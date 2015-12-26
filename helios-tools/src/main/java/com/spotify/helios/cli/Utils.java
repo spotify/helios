@@ -161,13 +161,13 @@ public class Utils {
       final SetGoalResponse result = client.setGoal(deployment, host, token).get();
       if (result.getStatus() == SetGoalResponse.Status.OK) {
         if (json) {
-          out.printf(result.toJsonString());
+          out.print(result.toJsonString());
         } else {
           out.printf("done%n");
         }
       } else {
         if (json) {
-          out.printf(result.toJsonString());
+          out.print(result.toJsonString());
         } else {
           out.printf("failed: %s%n", result);
         }

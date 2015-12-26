@@ -97,13 +97,13 @@ public class JobRemoveCommand extends WildcardJobCommand {
     }
     if (response.getStatus() == JobDeleteResponse.Status.OK) {
       if (json) {
-        out.printf(response.toJsonString());
+        out.print(response.toJsonString());
       } else {
         out.printf("done%n");
       }
     } else {
       if (json) {
-        out.printf(response.toJsonString());
+        out.print(response.toJsonString());
       } else {
         out.printf("failed: %s%n", response);
       }
