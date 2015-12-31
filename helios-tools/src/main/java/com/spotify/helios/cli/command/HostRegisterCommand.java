@@ -54,7 +54,7 @@ public class HostRegisterCommand extends ControlCommand {
     final String id = options.getString(idArg.getDest());
 
     if (isNullOrEmpty(host) || isNullOrEmpty(id)) {
-      out.printf("You must specify the hostname and id.");
+      out.print("You must specify the hostname and id.");
       return 1;
     }
 

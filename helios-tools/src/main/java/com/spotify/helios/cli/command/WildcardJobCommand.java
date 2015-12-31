@@ -63,7 +63,7 @@ abstract class WildcardJobCommand extends ControlCommand {
       } else {
         JobDeployResponse jobDeployResponse =
             new JobDeployResponse(JobDeployResponse.Status.JOB_NOT_FOUND, null, null);
-        out.printf(jobDeployResponse.toJsonString());
+        out.print(jobDeployResponse.toJsonString());
       }
       return 1;
     } else if (jobs.size() > 1) {
@@ -72,7 +72,7 @@ abstract class WildcardJobCommand extends ControlCommand {
       } else {
         JobDeployResponse jobDeployResponse =
             new JobDeployResponse(JobDeployResponse.Status.AMBIGUOUS_JOB_REFERENCE, null, null);
-        out.printf(jobDeployResponse.toJsonString());
+        out.print(jobDeployResponse.toJsonString());
       }
       return 1;
     }
