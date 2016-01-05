@@ -20,10 +20,13 @@ package com.spotify.helios.master;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
+import com.spotify.helios.common.Hash;
+import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
@@ -38,6 +41,7 @@ import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
+import com.spotify.helios.servicescommon.ZooKeeperAclProvider;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
@@ -56,8 +60,11 @@ import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 
 import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.bouncycastle.util.encoders.Base64;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -70,6 +77,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -308,13 +316,40 @@ public class MasterService extends AbstractIdleService {
    * @return A zookeeper client.
    */
   private ZooKeeperClient setupZookeeperClient(final MasterConfig config) {
+    ACLProvider aclProvider = null;
+    List<AuthInfo> authorization = null;
+
+    if (config.isZooKeeperEnableAcls()) {
+      final String masterPassword = config.getZooKeeperMasterPassword();
+      final String agentDigest = config.getZooKeeperAgentDigest();
+
+      if (masterPassword == null) {
+        throw new HeliosRuntimeException("ZooKeeper ACLs enabled but master password not set");
+      }
+
+      if (agentDigest == null) {
+        throw new HeliosRuntimeException("ZooKeeper ACLs enabled but agent digest not set");
+      }
+
+      final String masterDigest = Base64.toBase64String(Hash.sha1digest(
+          String.format("%s:%s", ZooKeeperAclProvider.MASTER_USER, masterPassword).getBytes()));
+
+      aclProvider = new ZooKeeperAclProvider(masterDigest, agentDigest);
+      authorization = Lists.newArrayList(new AuthInfo(
+          "digest",
+          String.format("%s:%s", ZooKeeperAclProvider.MASTER_USER, masterPassword).getBytes()));
+    }
+
+
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
     final CuratorFramework curator = curatorClientFactory.newClient(
         config.getZooKeeperConnectionString(),
         config.getZooKeeperSessionTimeoutMillis(),
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy,
-        config.getZooKeeperNamespace());
+        config.getZooKeeperNamespace(),
+        aclProvider,
+        authorization);
     final ZooKeeperClient client =
         new DefaultZooKeeperClient(curator, config.getZooKeeperClusterId());
     client.start();

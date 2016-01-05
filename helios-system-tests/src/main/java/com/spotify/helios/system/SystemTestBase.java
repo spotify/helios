@@ -57,6 +57,7 @@ import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.cli.command.JobCreateCommand;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.Hash;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
@@ -72,6 +73,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.master.MasterMain;
+import com.spotify.helios.servicescommon.ZooKeeperAclProvider;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.jersey.api.client.ClientResponse;
@@ -82,6 +84,7 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.bouncycastle.util.encoders.Base64;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -165,6 +168,13 @@ public abstract class SystemTestBase {
   public static final String TEST_USER = "test-user";
   public static final String TEST_HOST = "test-host";
   public static final String TEST_MASTER = "test-master";
+
+  private static final String MASTER_PASSWORD = "master-password";
+  private static final String AGENT_PASSWORD = "agent-password";
+  private static final String MASTER_DIGEST = Base64.toBase64String(Hash.sha1digest(
+      String.format("%s:%s", ZooKeeperAclProvider.MASTER_USER, MASTER_PASSWORD).getBytes()));
+  private static final String AGENT_DIGEST = Base64.toBase64String(Hash.sha1digest(
+      String.format("%s:%s", ZooKeeperAclProvider.AGENT_USER, AGENT_PASSWORD).getBytes()));
 
   @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
@@ -466,7 +476,10 @@ public abstract class SystemTestBase {
         "--http", "http://0.0.0.0:" + (masterPort() + offset),
         "--admin=" + (masterAdminPort() + offset),
         "--domain", "",
-        "--zk", zk.connectString()
+        "--zk", zk.connectString(),
+        "--zk-enable-acls",
+        "--zk-agent-digest", AGENT_DIGEST,
+        "--zk-master-password", MASTER_PASSWORD
     );
 
     final String name;
@@ -567,19 +580,23 @@ public abstract class SystemTestBase {
   protected AgentMain startDefaultAgent(final String host, final String... args)
       throws Exception {
     final String stateDir = agentStateDirs.resolve(host).toString();
-    final List<String> argsList = Lists.newArrayList("-vvvv",
-                                                     "--no-log-setup",
-                                                     "--no-http",
-                                                     "--name", host,
-                                                     "--docker=" + DOCKER_HOST,
-                                                     "--zk", zk.connectString(),
-                                                     "--zk-session-timeout", "100",
-                                                     "--zk-connection-timeout", "100",
-                                                     "--state-dir", stateDir,
-                                                     "--domain", "",
-                                                     "--port-range=" +
-                                                     dockerPortRange.lowerEndpoint() + ":" +
-                                                     dockerPortRange.upperEndpoint()
+    final List<String> argsList = Lists.newArrayList(
+        "-vvvv",
+        "--no-log-setup",
+        "--no-http",
+        "--name", host,
+        "--docker=" + DOCKER_HOST,
+        "--zk", zk.connectString(),
+        "--zk-session-timeout", "100",
+        "--zk-connection-timeout", "100",
+        "--zk-enable-acls",
+        "--zk-master-digest", MASTER_DIGEST,
+        "--zk-agent-password", AGENT_PASSWORD,
+        "--state-dir", stateDir,
+        "--domain", "",
+        "--port-range=" +
+        dockerPortRange.lowerEndpoint() + ":" +
+        dockerPortRange.upperEndpoint()
     );
     argsList.addAll(asList(args));
     return startAgent(argsList.toArray(new String[argsList.size()]));

@@ -25,7 +25,9 @@ import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import org.apache.curator.CuratorZookeeperClient;
 import org.apache.curator.RetryLoop;
 import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.GetChildrenBuilder;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.state.ConnectionStateListener;
@@ -35,6 +37,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 
 import static org.junit.Assert.assertTrue;
@@ -50,7 +53,8 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
   protected ZooKeeperTestManager zooKeeperTestManager() {
     final ZooKeeperTestManager testManager = mock(ZooKeeperTestManager.class);
     final MockCuratorClientFactory mockCuratorClientFactory = new MockCuratorClientFactory();
-    final CuratorFramework curator = mockCuratorClientFactory.newClient(null, 0, 0, null, null);
+    final CuratorFramework curator = mockCuratorClientFactory.newClient(
+        null, 0, 0, null, null, null, null);
     when(testManager.curator()).thenReturn(curator);
 
     when(testManager.connectString()).thenReturn("127.0.0.1");
@@ -78,11 +82,10 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
   private static class MockCuratorClientFactory implements CuratorClientFactory {
 
     @Override
-    public CuratorFramework newClient(String connectString,
-                                      int sessionTimeoutMs,
-                                      int connectionTimeoutMs,
-                                      RetryPolicy retryPolicy,
-                                      String namespace) {
+    public CuratorFramework newClient(final String connectString, final int sessionTimeoutMs,
+                                      final int connectionTimeoutMs, final RetryPolicy retryPolicy,
+                                      final String namespace, final ACLProvider aclProvider,
+                                      final List<AuthInfo> authorization) {
       final CuratorFramework curator = mock(CuratorFramework.class);
 
       final RetryLoop retryLoop = mock(RetryLoop.class);

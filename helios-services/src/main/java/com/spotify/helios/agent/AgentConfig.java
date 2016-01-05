@@ -59,6 +59,9 @@ public class AgentConfig extends Configuration {
   private List<String> binds;
   private List<String> kafkaBrokers;
   private Map<String, String> labels;
+  private boolean zooKeeperEnableAcls;
+  private String zooKeeperMasterDigest;
+  private String zooKeeperAgentPassword;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -305,5 +308,32 @@ public class AgentConfig extends Configuration {
   public AgentConfig setLabels(Map<String, String> labels) {
     this.labels = labels;
     return this;
+  }
+
+  public AgentConfig setZooKeeperEnableAcls(final boolean zooKeeperEnableAcls) {
+    this.zooKeeperEnableAcls = zooKeeperEnableAcls;
+    return this;
+  }
+
+  public boolean isZooKeeperEnableAcls() {
+    return zooKeeperEnableAcls;
+  }
+
+  public AgentConfig setZooKeeperMasterDigest(final String zooKeeperMasterDigest) {
+    this.zooKeeperMasterDigest = zooKeeperMasterDigest;
+    return this;
+  }
+
+  public String getZooKeeperMasterDigest() {
+    return zooKeeperMasterDigest;
+  }
+
+  public AgentConfig setZooKeeperAgentPassword(final String zooKeeperAgentPassword) {
+    this.zooKeeperAgentPassword = zooKeeperAgentPassword;
+    return this;
+  }
+
+  public String getZooKeeperAgentPassword() {
+    return zooKeeperAgentPassword;
   }
 }

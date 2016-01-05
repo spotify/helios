@@ -31,16 +31,25 @@ import java.net.InetSocketAddress;
  */
 public class MasterParser extends ServiceParser {
 
+  private static final String ZK_MASTER_PASSWORD_ENVVAR = "HELIOS_ZK_MASTER_PASSWORD";
+
   private final MasterConfig masterConfig;
 
   private Argument httpArg;
   private Argument adminArg;
+  private Argument zkAgentDigest;
+  private Argument zkMasterPassword;
 
   public MasterParser(final String... args) throws ArgumentParserException {
     super("helios-master", "Spotify Helios Master", args);
 
     final Namespace options = getNamespace();
     final InetSocketAddress httpAddress = parseSocketAddress(options.getString(httpArg.getDest()));
+
+    String masterPassword = System.getenv(ZK_MASTER_PASSWORD_ENVVAR);
+    if (masterPassword == null) {
+      masterPassword = options.getString(zkMasterPassword.getDest());
+    }
 
     final MasterConfig config = new MasterConfig()
         .setZooKeeperConnectString(getZooKeeperConnectString())
@@ -49,6 +58,9 @@ public class MasterParser extends ServiceParser {
         .setZooKeeperNamespace(getZooKeeperNamespace())
         .setZooKeeperClusterId(getZooKeeperClusterId())
         .setNoZooKeeperMasterRegistration(getNoZooKeeperRegistration())
+        .setZooKeeperEnableAcls(getZooKeeperEnableAcls())
+        .setZooKeeperAgentDigest(options.getString(zkAgentDigest.getDest()))
+        .setZooKeeperMasterPassword(masterPassword)
         .setDomain(getDomain())
         .setName(getName())
         .setStatsdHostPort(getStatsdHostPort())
@@ -75,6 +87,15 @@ public class MasterParser extends ServiceParser {
         .type(Integer.class)
         .setDefault(5802)
         .help("admin http port");
+
+    zkAgentDigest = parser.addArgument("--zk-agent-digest")
+        .type(String.class);
+
+    zkMasterPassword = parser.addArgument("--zk-master-password")
+        .type(String.class)
+        .help("ZooKeeper master password (for ZooKeeper ACLs). If the "
+              + ZK_MASTER_PASSWORD_ENVVAR
+              + " environment variable is present this argument is ignored.");
   }
 
   public MasterConfig getMasterConfig() {

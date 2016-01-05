@@ -18,32 +18,46 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.framework.CuratorFrameworkFactory.Builder;
+import org.apache.curator.framework.api.ACLProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public class CuratorClientFactoryImpl implements CuratorClientFactory {
   private static final Logger log = LoggerFactory.getLogger(CuratorClientFactoryImpl.class);
 
-    @Override
-    public CuratorFramework newClient(String connectString,
-                                      int sessionTimeoutMs,
-                                      int connectionTimeoutMs,
-                                      RetryPolicy retryPolicy,
-                                      String namespace) {
-      Builder builder = CuratorFrameworkFactory.builder()
-          .connectString(connectString)
-          .sessionTimeoutMs(sessionTimeoutMs)
-          .connectionTimeoutMs(connectionTimeoutMs)
-          .retryPolicy(retryPolicy);
+  @Override
+  public CuratorFramework newClient(String connectString,
+                                    int sessionTimeoutMs,
+                                    int connectionTimeoutMs,
+                                    RetryPolicy retryPolicy,
+                                    String namespace,
+                                    final ACLProvider aclProvider,
+                                    final List<AuthInfo> authorization) {
+    Builder builder = CuratorFrameworkFactory.builder()
+        .connectString(connectString)
+        .sessionTimeoutMs(sessionTimeoutMs)
+        .connectionTimeoutMs(connectionTimeoutMs)
+        .retryPolicy(retryPolicy);
 
-      if (namespace != null) {
-        log.info("Setting ZooKeeper namespace to " + namespace);
-        builder = builder.namespace(namespace);
-      }
-
-      return builder.build();
+    if (aclProvider != null) {
+      builder.aclProvider(aclProvider);
     }
+
+    if (authorization != null && !authorization.isEmpty()) {
+      builder.authorization(authorization);
+    }
+
+    if (namespace != null) {
+      log.info("Setting ZooKeeper namespace to " + namespace);
+      builder = builder.namespace(namespace);
+    }
+
+    return builder.build();
+  }
 }

@@ -48,6 +48,9 @@ public class MasterConfig extends Configuration {
   private InetSocketAddress httpEndpoint;
   private List<String> kafkaBrokers;
   private Path stateDirectory;
+  private boolean zooKeeperEnableAcls;
+  private String zooKeeperAgentDigest;
+  private String zooKeeperMasterPassword;
 
   public String getDomain() {
     return domain;
@@ -209,5 +212,32 @@ public class MasterConfig extends Configuration {
 
   public InetSocketAddress getHttpEndpoint() {
     return httpEndpoint;
+  }
+
+  public MasterConfig setZooKeeperEnableAcls(final boolean zooKeeperEnableAcls) {
+    this.zooKeeperEnableAcls = zooKeeperEnableAcls;
+    return this;
+  }
+
+  public boolean isZooKeeperEnableAcls() {
+    return zooKeeperEnableAcls;
+  }
+
+  public MasterConfig setZooKeeperAgentDigest(final String zooKeeperAgentDigest) {
+    this.zooKeeperAgentDigest = zooKeeperAgentDigest;
+    return this;
+  }
+
+  public String getZooKeeperAgentDigest() {
+    return zooKeeperAgentDigest;
+  }
+
+  public MasterConfig setZooKeeperMasterPassword(final String zooKeeperMasterPassword) {
+    this.zooKeeperMasterPassword = zooKeeperMasterPassword;
+    return this;
+  }
+
+  public String getZooKeeperMasterPassword() {
+    return zooKeeperMasterPassword;
   }
 }

@@ -66,6 +66,7 @@ public class ServiceParser {
   private final Argument zooKeeperNamespace;
   private final Argument zooKeeperClusterId;
   private final Argument noZooKeeperRegistrationArg;
+  private final Argument zooKeeperEnableAcls;
   private final Argument noMetricsArg;
   private final Argument statsdHostPortArg;
   private final Argument riemannHostPortArg;
@@ -126,6 +127,11 @@ public class ServiceParser {
         .setDefault(SUPPRESS)
         .action(storeTrue())
         .help("Do not register this master in zookeeper. Useful for debugging.");
+
+    zooKeeperEnableAcls = parser.addArgument("--zk-enable-acls")
+        .action(storeTrue())
+        .setDefault(false)
+        .help("Enable ZooKeeper ACLs.");
 
     noMetricsArg = parser.addArgument("--no-metrics")
         .setDefault(SUPPRESS)
@@ -249,6 +255,10 @@ public class ServiceParser {
 
   public Boolean getNoZooKeeperRegistration() {
     return fromNullable(options.getBoolean(noZooKeeperRegistrationArg.getDest())).or(false);
+  }
+
+  public boolean getZooKeeperEnableAcls() {
+    return options.getBoolean(zooKeeperEnableAcls.getDest());
   }
 
   public List<String> getKafkaBrokers() {
