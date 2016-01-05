@@ -30,6 +30,7 @@ import com.spotify.helios.common.descriptors.Job;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
@@ -37,7 +38,6 @@ import java.util.concurrent.ExecutionException;
 import static com.google.common.base.Predicates.containsPattern;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 
 public class DefaultDeployer implements Deployer {
@@ -89,12 +89,15 @@ public class DefaultDeployer implements Deployer {
         .filter(containsPattern(hostFilter))
         .toList();
 
+    log.info("Got this filtered list of hosts with host filter '%s': %s",
+             hostFilter, filteredHosts);
+
     if (filteredHosts.isEmpty()) {
       fail(format("no hosts matched the filter pattern - %s", hostFilter));
     }
 
     final String chosenHost = pickHost(filteredHosts);
-    return deploy(job, asList(chosenHost), waitPorts, prober, reportWriter);
+    return deploy(job, Collections.singletonList(chosenHost), waitPorts, prober, reportWriter);
   }
 
   @VisibleForTesting
