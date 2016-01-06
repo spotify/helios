@@ -40,7 +40,7 @@ import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.ServiceUtil;
-import com.spotify.helios.servicescommon.ZooKeeperAclProvider;
+import com.spotify.helios.servicescommon.ZooKeeperAclProviders;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarService;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
@@ -342,12 +342,12 @@ public class AgentService extends AbstractIdleService implements Managed {
       }
 
       final String agentDigest = Base64.toBase64String(Hash.sha1digest(
-          String.format("%s:%s", ZooKeeperAclProvider.AGENT_USER, agentPassword).getBytes()));
+          String.format("%s:%s", ZooKeeperAclProviders.AGENT_USER, agentPassword).getBytes()));
 
-      aclProvider = new ZooKeeperAclProvider(masterDigest, agentDigest);
+      aclProvider = ZooKeeperAclProviders.defaultAclProvider(masterDigest, agentDigest);
       authorization = Lists.newArrayList(new AuthInfo(
           "digest",
-          String.format("%s:%s", ZooKeeperAclProvider.AGENT_USER, agentPassword).getBytes()));
+          String.format("%s:%s", ZooKeeperAclProviders.AGENT_USER, agentPassword).getBytes()));
     }
 
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);

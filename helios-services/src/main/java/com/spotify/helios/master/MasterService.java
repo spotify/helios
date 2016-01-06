@@ -41,7 +41,7 @@ import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
-import com.spotify.helios.servicescommon.ZooKeeperAclProvider;
+import com.spotify.helios.servicescommon.ZooKeeperAclProviders;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
@@ -332,12 +332,12 @@ public class MasterService extends AbstractIdleService {
       }
 
       final String masterDigest = Base64.toBase64String(Hash.sha1digest(
-          String.format("%s:%s", ZooKeeperAclProvider.MASTER_USER, masterPassword).getBytes()));
+          String.format("%s:%s", ZooKeeperAclProviders.MASTER_USER, masterPassword).getBytes()));
 
-      aclProvider = new ZooKeeperAclProvider(masterDigest, agentDigest);
+      aclProvider = ZooKeeperAclProviders.defaultAclProvider(masterDigest, agentDigest);
       authorization = Lists.newArrayList(new AuthInfo(
           "digest",
-          String.format("%s:%s", ZooKeeperAclProvider.MASTER_USER, masterPassword).getBytes()));
+          String.format("%s:%s", ZooKeeperAclProviders.MASTER_USER, masterPassword).getBytes()));
     }
 
 

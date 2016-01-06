@@ -73,7 +73,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.master.MasterMain;
-import com.spotify.helios.servicescommon.ZooKeeperAclProvider;
+import com.spotify.helios.servicescommon.ZooKeeperAclProviders;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.jersey.api.client.ClientResponse;
@@ -172,9 +172,9 @@ public abstract class SystemTestBase {
   private static final String MASTER_PASSWORD = "master-password";
   private static final String AGENT_PASSWORD = "agent-password";
   private static final String MASTER_DIGEST = Base64.toBase64String(Hash.sha1digest(
-      String.format("%s:%s", ZooKeeperAclProvider.MASTER_USER, MASTER_PASSWORD).getBytes()));
+      String.format("%s:%s", ZooKeeperAclProviders.MASTER_USER, MASTER_PASSWORD).getBytes()));
   private static final String AGENT_DIGEST = Base64.toBase64String(Hash.sha1digest(
-      String.format("%s:%s", ZooKeeperAclProvider.AGENT_USER, AGENT_PASSWORD).getBytes()));
+      String.format("%s:%s", ZooKeeperAclProviders.AGENT_USER, AGENT_PASSWORD).getBytes()));
 
   @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
