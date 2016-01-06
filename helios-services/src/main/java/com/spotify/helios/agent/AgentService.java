@@ -334,12 +334,12 @@ public class AgentService extends AbstractIdleService implements Managed {
       final String masterUser = config.getZookeeperAclMasterUser();
       final String masterDigest = config.getZooKeeperAclMasterDigest();
 
-      if (agentUser == null || agentPassword == null) {
+      if (isNullOrEmpty(agentUser) || isNullOrEmpty(agentPassword)) {
         throw new HeliosRuntimeException(
             "ZooKeeper ACLs enabled but agent username and/or password not set");
       }
 
-      if (masterUser == null || masterDigest == null) {
+      if (isNullOrEmpty(masterUser) || isNullOrEmpty(masterDigest)) {
         throw new HeliosRuntimeException(
             "ZooKeeper ACLs enabled but master username and/or digest not set");
       }

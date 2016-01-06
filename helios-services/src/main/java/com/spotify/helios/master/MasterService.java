@@ -90,6 +90,7 @@ import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Environment;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
@@ -324,12 +325,12 @@ public class MasterService extends AbstractIdleService {
       final String agentUser = config.getZookeeperAclAgentUser();
       final String agentDigest = config.getZooKeeperAclAgentDigest();
 
-      if (masterUser == null || masterPassword == null) {
+      if (isNullOrEmpty(masterUser) || isNullOrEmpty(masterPassword)) {
         throw new HeliosRuntimeException(
             "ZooKeeper ACLs enabled but master username and/or password not set");
       }
 
-      if (agentUser == null || agentDigest == null) {
+      if (isNullOrEmpty(agentUser) || isNullOrEmpty(agentDigest)) {
         throw new HeliosRuntimeException(
             "ZooKeeper ACLs enabled but agent username and/or digest not set");
       }
