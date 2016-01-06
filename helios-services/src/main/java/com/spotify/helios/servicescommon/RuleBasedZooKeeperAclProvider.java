@@ -26,6 +26,7 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
@@ -108,6 +109,10 @@ public class RuleBasedZooKeeperAclProvider implements ACLProvider {
 
     private final List<Rule> rules = Lists.newArrayList();
     private ImmutableList<ACL> defaultAcl = ImmutableList.copyOf(ZooDefs.Ids.READ_ACL_UNSAFE);
+
+    Builder defaultAcl(final ACL... acls) {
+      return defaultAcl(Arrays.asList(acls));
+    }
 
     Builder defaultAcl(final List<ACL> defaultAcl) {
       this.defaultAcl = ImmutableList.copyOf(defaultAcl);
