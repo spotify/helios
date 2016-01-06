@@ -330,24 +330,28 @@ public class AgentService extends AbstractIdleService implements Managed {
     List<AuthInfo> authorization = null;
 
     if (config.isZooKeeperEnableAcls()) {
-      final String agentPassword = config.getZooKeeperAgentPassword();
-      final String masterDigest = config.getZooKeeperMasterDigest();
+      final String agentUser = config.getZookeeperAclAgentUser();
+      final String agentPassword = config.getZooKeeperAclAgentPassword();
+      final String masterUser = config.getZookeeperAclMasterUser();
+      final String masterDigest = config.getZooKeeperAclMasterDigest();
 
-      if (agentPassword == null) {
-        throw new HeliosRuntimeException("ZooKeeper ACLs enabled but agent password not set");
+      if (agentUser == null || agentPassword == null) {
+        throw new HeliosRuntimeException(
+            "ZooKeeper ACLs enabled but agent username and/or password not set");
       }
 
-      if (masterDigest == null) {
-        throw new HeliosRuntimeException("ZooKeeper ACLs enabled but master digest not set");
+      if (masterUser == null || masterDigest == null) {
+        throw new HeliosRuntimeException(
+            "ZooKeeper ACLs enabled but master username and/or digest not set");
       }
 
       final String agentDigest = Base64.toBase64String(Hash.sha1digest(
-          String.format("%s:%s", ZooKeeperAclProviders.AGENT_USER, agentPassword).getBytes()));
+          String.format("%s:%s", agentUser, agentPassword).getBytes()));
 
-      aclProvider = ZooKeeperAclProviders.defaultAclProvider(masterDigest, agentDigest);
+      aclProvider = ZooKeeperAclProviders.defaultAclProvider(masterUser, masterDigest,
+                                                             agentUser, agentDigest);
       authorization = Lists.newArrayList(new AuthInfo(
-          "digest",
-          String.format("%s:%s", ZooKeeperAclProviders.AGENT_USER, agentPassword).getBytes()));
+          "digest", String.format("%s:%s", agentUser, agentPassword).getBytes()));
     }
 
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);

@@ -60,8 +60,10 @@ public class AgentConfig extends Configuration {
   private List<String> kafkaBrokers;
   private Map<String, String> labels;
   private boolean zooKeeperEnableAcls;
-  private String zooKeeperMasterDigest;
-  private String zooKeeperAgentPassword;
+  private String zookeeperAclMasterUser;
+  private String zooKeeperAclMasterDigest;
+  private String zookeeperAclAgentUser;
+  private String zooKeeperAclAgentPassword;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -319,21 +321,39 @@ public class AgentConfig extends Configuration {
     return zooKeeperEnableAcls;
   }
 
-  public AgentConfig setZooKeeperMasterDigest(final String zooKeeperMasterDigest) {
-    this.zooKeeperMasterDigest = zooKeeperMasterDigest;
+  public AgentConfig setZooKeeperAclMasterDigest(final String zooKeeperAclMasterDigest) {
+    this.zooKeeperAclMasterDigest = zooKeeperAclMasterDigest;
     return this;
   }
 
-  public String getZooKeeperMasterDigest() {
-    return zooKeeperMasterDigest;
+  public String getZooKeeperAclMasterDigest() {
+    return zooKeeperAclMasterDigest;
   }
 
-  public AgentConfig setZooKeeperAgentPassword(final String zooKeeperAgentPassword) {
-    this.zooKeeperAgentPassword = zooKeeperAgentPassword;
+  public AgentConfig setZooKeeperAclAgentPassword(final String zooKeeperAclAgentPassword) {
+    this.zooKeeperAclAgentPassword = zooKeeperAclAgentPassword;
     return this;
   }
 
-  public String getZooKeeperAgentPassword() {
-    return zooKeeperAgentPassword;
+  public String getZooKeeperAclAgentPassword() {
+    return zooKeeperAclAgentPassword;
+  }
+
+  public String getZookeeperAclMasterUser() {
+    return zookeeperAclMasterUser;
+  }
+
+  public AgentConfig setZookeeperAclMasterUser(final String zookeeperAclMasterUser) {
+    this.zookeeperAclMasterUser = zookeeperAclMasterUser;
+    return this;
+  }
+
+  public String getZookeeperAclAgentUser() {
+    return zookeeperAclAgentUser;
+  }
+
+  public AgentConfig setZookeeperAclAgentUser(final String zookeeperAclAgentUser) {
+    this.zookeeperAclAgentUser = zookeeperAclAgentUser;
+    return this;
   }
 }

@@ -320,24 +320,28 @@ public class MasterService extends AbstractIdleService {
     List<AuthInfo> authorization = null;
 
     if (config.isZooKeeperEnableAcls()) {
-      final String masterPassword = config.getZooKeeperMasterPassword();
-      final String agentDigest = config.getZooKeeperAgentDigest();
+      final String masterUser = config.getZookeeperAclMasterUser();
+      final String masterPassword = config.getZooKeeperAclMasterPassword();
+      final String agentUser = config.getZookeeperAclAgentUser();
+      final String agentDigest = config.getZooKeeperAclAgentDigest();
 
-      if (masterPassword == null) {
-        throw new HeliosRuntimeException("ZooKeeper ACLs enabled but master password not set");
+      if (masterUser == null || masterPassword == null) {
+        throw new HeliosRuntimeException(
+            "ZooKeeper ACLs enabled but master username and/or password not set");
       }
 
-      if (agentDigest == null) {
-        throw new HeliosRuntimeException("ZooKeeper ACLs enabled but agent digest not set");
+      if (agentUser == null || agentDigest == null) {
+        throw new HeliosRuntimeException(
+            "ZooKeeper ACLs enabled but agent username and/or digest not set");
       }
 
       final String masterDigest = Base64.toBase64String(Hash.sha1digest(
-          String.format("%s:%s", ZooKeeperAclProviders.MASTER_USER, masterPassword).getBytes()));
+          String.format("%s:%s", masterUser, masterPassword).getBytes()));
 
-      aclProvider = ZooKeeperAclProviders.defaultAclProvider(masterDigest, agentDigest);
+      aclProvider = ZooKeeperAclProviders.defaultAclProvider(masterUser, masterDigest,
+                                                             agentUser, agentDigest);
       authorization = Lists.newArrayList(new AuthInfo(
-          "digest",
-          String.format("%s:%s", ZooKeeperAclProviders.MASTER_USER, masterPassword).getBytes()));
+          "digest", String.format("%s:%s", masterUser, masterPassword).getBytes()));
     }
 
 

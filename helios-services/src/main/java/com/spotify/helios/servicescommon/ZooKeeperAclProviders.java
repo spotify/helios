@@ -48,13 +48,13 @@ public class ZooKeeperAclProviders {
 
   private static final String PATH_COMPONENT_WILDCARD = "[^/]+";
   private static final String DIGEST_SCHEME = "digest";
-  public static final String MASTER_USER = "helios-master";
-  public static final String AGENT_USER = "helios-agent";
 
-  public static ACLProvider defaultAclProvider(final String masterDigest,
+  public static ACLProvider defaultAclProvider(final String masterUser,
+                                               final String masterDigest,
+                                               final String agentUser,
                                                final String agentDigest) {
-    final Id masterId = new Id(DIGEST_SCHEME, String.format("%s:%s", MASTER_USER, masterDigest));
-    final Id agentId = new Id(DIGEST_SCHEME, String.format("%s:%s", AGENT_USER, agentDigest));
+    final Id masterId = new Id(DIGEST_SCHEME, String.format("%s:%s", masterUser, masterDigest));
+    final Id agentId = new Id(DIGEST_SCHEME, String.format("%s:%s", agentUser, agentDigest));
 
     return RuleBasedZooKeeperAclProvider.builder()
         // Set the default ACL to grant everyone READ permission to everyone. Note that the default
