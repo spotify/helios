@@ -36,6 +36,7 @@ import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
 import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -387,6 +388,28 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   public Collection<CuratorTransactionResult> transaction(final ZooKeeperOperation... operations)
       throws KeeperException {
     return transaction(asList(operations));
+  }
+
+  @Override
+  public void setAcl(final String path, final List<ACL> aclList) throws KeeperException {
+    assertClusterIdFlagTrue();
+    try {
+      client.setACL().withACL(aclList).forPath(path);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
+  public List<ACL> getAcl(final String path) throws KeeperException {
+    assertClusterIdFlagTrue();
+    try {
+      return client.getACL().forPath(path);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
   }
 
   private void assertClusterIdFlagTrue() {

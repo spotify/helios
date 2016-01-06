@@ -21,6 +21,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
@@ -62,6 +63,7 @@ import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.zookeeper.data.ACL;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -342,7 +344,6 @@ public class MasterService extends AbstractIdleService {
           "digest", String.format("%s:%s", masterUser, masterPassword).getBytes()));
     }
 
-
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
     final CuratorFramework curator = curatorClientFactory.newClient(
         config.getZooKeeperConnectionString(),
@@ -357,6 +358,28 @@ public class MasterService extends AbstractIdleService {
     client.start();
     zkRegistrar = new ZooKeeperRegistrarService(
         client, new MasterZooKeeperRegistrar(config.getName()));
+
+    // TODO: This is perhaps not the correct place to do this - but at present it's the only
+    // place where we have access to the ACL provider.
+    if (aclProvider != null) {
+      // Set ACLs on the ZK root, if they aren't already set correctly.
+      // This is handy since it avoids having to manually do this operation when setting up
+      // a new ZK cluster.
+      // Note that this is slightly racey -- if two masters start at the same time both might
+      // attempt to update the ACLs but only one will succeed. That said, it's unlikely and the
+      // effects are limited to a spurious log line.
+      try {
+        final List<ACL> curAcls = client.getAcl("/");
+        final List<ACL> wantedAcls = aclProvider.getAclForPath("/");
+        if (!Sets.newHashSet(curAcls).equals(Sets.newHashSet(wantedAcls))) {
+          log.info(
+              "Current ACLs on the zookeeper root node differ from the desired ACLs, updating");
+          client.getCuratorFramework().setACL().withACL(wantedAcls).forPath("/");
+        }
+      } catch (Exception e) {
+        log.error("Failed to get/set ACLs on the zookeeper root node", e);
+      }
+    }
 
     return client;
   }

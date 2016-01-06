@@ -27,6 +27,7 @@ import org.apache.curator.framework.state.ConnectionStateListener;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.IOException;
@@ -262,6 +263,26 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   @Override
   public CuratorFramework getCuratorFramework() {
     return client.getCuratorFramework();
+  }
+
+  @Override
+  public void setAcl(final String path, final List<ACL> aclList) throws KeeperException {
+    try {
+      client.setAcl(path, aclList);
+    } catch (KeeperException e) {
+      reporter.checkException(e, tag, "setAcl");
+      throw e;
+    }
+  }
+
+  @Override
+  public List<ACL> getAcl(final String path) throws KeeperException {
+    try {
+      return client.getAcl(path);
+    } catch (KeeperException e) {
+      reporter.checkException(e, tag, "getAcl");
+      throw e;
+    }
   }
 }
 
