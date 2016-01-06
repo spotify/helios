@@ -17,11 +17,13 @@
 
 package com.spotify.helios.servicescommon;
 
+import com.spotify.helios.common.Hash;
 import com.spotify.helios.servicescommon.coordination.Paths;
 
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.Id;
+import org.bouncycastle.util.encoders.Base64;
 
 import static org.apache.zookeeper.ZooDefs.Perms.CREATE;
 import static org.apache.zookeeper.ZooDefs.Perms.READ;
@@ -49,10 +51,13 @@ public class ZooKeeperAclProviders {
   private static final String PATH_COMPONENT_WILDCARD = "[^/]+";
   private static final String DIGEST_SCHEME = "digest";
 
-  public static ACLProvider defaultAclProvider(final String masterUser,
-                                               final String masterDigest,
-                                               final String agentUser,
-                                               final String agentDigest) {
+  public static String digest(final String user, final String password) {
+    return Base64.toBase64String(Hash.sha1digest(
+        String.format("%s:%s", user, password).getBytes()));
+  }
+
+  public static ACLProvider heliosAclProvider(final String masterUser, final String masterDigest,
+                                              final String agentUser, final String agentDigest) {
     final Id masterId = new Id(DIGEST_SCHEME, String.format("%s:%s", masterUser, masterDigest));
     final Id agentId = new Id(DIGEST_SCHEME, String.format("%s:%s", agentUser, agentDigest));
 

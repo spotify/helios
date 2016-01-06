@@ -28,7 +28,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.docker.client.DockerCertificateException;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.helios.common.Hash;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
@@ -40,7 +39,6 @@ import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
 import com.spotify.helios.servicescommon.RiemannSupport;
 import com.spotify.helios.servicescommon.ServiceUtil;
-import com.spotify.helios.servicescommon.ZooKeeperAclProviders;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarService;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactoryImpl;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
@@ -60,7 +58,6 @@ import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.bouncycastle.util.encoders.Base64;
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -84,6 +81,8 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -345,11 +344,9 @@ public class AgentService extends AbstractIdleService implements Managed {
             "ZooKeeper ACLs enabled but master username and/or digest not set");
       }
 
-      final String agentDigest = Base64.toBase64String(Hash.sha1digest(
-          String.format("%s:%s", agentUser, agentPassword).getBytes()));
-
-      aclProvider = ZooKeeperAclProviders.defaultAclProvider(masterUser, masterDigest,
-                                                             agentUser, agentDigest);
+      aclProvider = heliosAclProvider(
+          masterUser, masterDigest,
+          agentUser, digest(agentUser, agentPassword));
       authorization = Lists.newArrayList(new AuthInfo(
           "digest", String.format("%s:%s", agentUser, agentPassword).getBytes()));
     }

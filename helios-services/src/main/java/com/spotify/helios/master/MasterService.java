@@ -25,7 +25,6 @@ import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
-import com.spotify.helios.common.Hash;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
@@ -41,7 +40,6 @@ import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
-import com.spotify.helios.servicescommon.ZooKeeperAclProviders;
 import com.spotify.helios.servicescommon.ReactorFactory;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.RiemannHeartBeat;
@@ -64,7 +62,6 @@ import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.bouncycastle.util.encoders.Base64;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -94,6 +91,8 @@ import io.dropwizard.setup.Environment;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
 
 /**
  * The Helios master service.
@@ -335,11 +334,9 @@ public class MasterService extends AbstractIdleService {
             "ZooKeeper ACLs enabled but agent username and/or digest not set");
       }
 
-      final String masterDigest = Base64.toBase64String(Hash.sha1digest(
-          String.format("%s:%s", masterUser, masterPassword).getBytes()));
-
-      aclProvider = ZooKeeperAclProviders.defaultAclProvider(masterUser, masterDigest,
-                                                             agentUser, agentDigest);
+      aclProvider = heliosAclProvider(
+          masterUser, digest(masterUser, masterPassword),
+          agentUser, agentDigest);
       authorization = Lists.newArrayList(new AuthInfo(
           "digest", String.format("%s:%s", masterUser, masterPassword).getBytes()));
     }
