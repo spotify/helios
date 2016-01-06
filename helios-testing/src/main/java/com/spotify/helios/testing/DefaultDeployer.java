@@ -89,7 +89,7 @@ public class DefaultDeployer implements Deployer {
         .filter(containsPattern(hostFilter))
         .toList();
 
-    log.info("Got this filtered list of hosts with host filter '%s': %s",
+    log.info("Got this filtered list of hosts with host filter '{}': {}",
              hostFilter, filteredHosts);
 
     if (filteredHosts.isEmpty()) {
