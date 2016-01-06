@@ -37,8 +37,8 @@ public class MasterParser extends ServiceParser {
 
   private Argument httpArg;
   private Argument adminArg;
-  private Argument zkAgentDigest;
-  private Argument zkMasterPassword;
+  private Argument zkAclAgentDigest;
+  private Argument zkAclMasterPassword;
 
   public MasterParser(final String... args) throws ArgumentParserException {
     super("helios-master", "Spotify Helios Master", args);
@@ -48,7 +48,7 @@ public class MasterParser extends ServiceParser {
 
     String masterPassword = System.getenv(ZK_MASTER_PASSWORD_ENVVAR);
     if (masterPassword == null) {
-      masterPassword = options.getString(zkMasterPassword.getDest());
+      masterPassword = options.getString(zkAclMasterPassword.getDest());
     }
 
     final MasterConfig config = new MasterConfig()
@@ -59,9 +59,9 @@ public class MasterParser extends ServiceParser {
         .setZooKeeperClusterId(getZooKeeperClusterId())
         .setNoZooKeeperMasterRegistration(getNoZooKeeperRegistration())
         .setZooKeeperEnableAcls(getZooKeeperEnableAcls())
-        .setZookeeperAclAgentUser(getZooKeeperAgentAclUser())
-        .setZooKeeperAclAgentDigest(options.getString(zkAgentDigest.getDest()))
-        .setZookeeperAclMasterUser(getZooKeeperMasterAclUser())
+        .setZookeeperAclAgentUser(getZooKeeperAclAgentUser())
+        .setZooKeeperAclAgentDigest(options.getString(zkAclAgentDigest.getDest()))
+        .setZookeeperAclMasterUser(getZooKeeperAclMasterUser())
         .setZooKeeperAclMasterPassword(masterPassword)
         .setDomain(getDomain())
         .setName(getName())
@@ -90,10 +90,10 @@ public class MasterParser extends ServiceParser {
         .setDefault(5802)
         .help("admin http port");
 
-    zkAgentDigest = parser.addArgument("--zk-agent-digest")
+    zkAclAgentDigest = parser.addArgument("--zk-acl-agent-digest")
         .type(String.class);
 
-    zkMasterPassword = parser.addArgument("--zk-master-password")
+    zkAclMasterPassword = parser.addArgument("--zk-acl-master-password")
         .type(String.class)
         .help("ZooKeeper master password (for ZooKeeper ACLs). If the "
               + ZK_MASTER_PASSWORD_ENVVAR

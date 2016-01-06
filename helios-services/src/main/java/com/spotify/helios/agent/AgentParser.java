@@ -62,8 +62,8 @@ public class AgentParser extends ServiceParser {
   private Argument bindArg;
   private Argument labelsArg;
   private Argument zkRegistrationTtlMinutesArg;
-  private Argument zkMasterDigest;
-  private Argument zkAgentPassword;
+  private Argument zkAclMasterDigest;
+  private Argument zkAclAgentPassword;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -104,7 +104,7 @@ public class AgentParser extends ServiceParser {
 
     String agentPassword = System.getenv(ZK_AGENT_PASSWORD_ENVVAR);
     if (agentPassword == null) {
-      agentPassword = options.getString(zkAgentPassword.getDest());
+      agentPassword = options.getString(zkAclAgentPassword.getDest());
     }
 
     this.agentConfig = new AgentConfig()
@@ -116,9 +116,9 @@ public class AgentParser extends ServiceParser {
         .setZooKeeperClusterId(getZooKeeperClusterId())
         .setZooKeeperRegistrationTtlMinutes(options.getInt(zkRegistrationTtlMinutesArg.getDest()))
         .setZooKeeperEnableAcls(getZooKeeperEnableAcls())
-        .setZookeeperAclMasterUser(getZooKeeperMasterAclUser())
-        .setZooKeeperAclMasterDigest(options.getString(zkMasterDigest.getDest()))
-        .setZookeeperAclAgentUser(getZooKeeperAgentAclUser())
+        .setZookeeperAclMasterUser(getZooKeeperAclMasterUser())
+        .setZooKeeperAclMasterDigest(options.getString(zkAclMasterDigest.getDest()))
+        .setZookeeperAclAgentUser(getZooKeeperAclAgentUser())
         .setZooKeeperAclAgentPassword(agentPassword)
         .setDomain(getDomain())
         .setEnvVars(envVars)
@@ -233,10 +233,10 @@ public class AgentParser extends ServiceParser {
               + "itself. This is useful when the agent loses its registration ID and you don't "
               + "want to waste time debugging why the master lists your agent as constantly DOWN.");
 
-    zkMasterDigest = parser.addArgument("--zk-master-digest")
+    zkAclMasterDigest = parser.addArgument("--zk-acl-master-digest")
         .type(String.class);
 
-    zkAgentPassword = parser.addArgument("--zk-agent-password")
+    zkAclAgentPassword = parser.addArgument("--zk-acl-agent-password")
         .type(String.class)
         .help("ZooKeeper agent password (for ZooKeeper ACLs). If the "
               + ZK_AGENT_PASSWORD_ENVVAR

@@ -57,7 +57,6 @@ import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.cli.command.JobCreateCommand;
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.Hash;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
@@ -84,7 +83,6 @@ import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
-import org.bouncycastle.util.encoders.Base64;
 import org.jetbrains.annotations.NotNull;
 import org.junit.After;
 import org.junit.Before;
@@ -169,12 +167,14 @@ public abstract class SystemTestBase {
   public static final String TEST_HOST = "test-host";
   public static final String TEST_MASTER = "test-master";
 
+  private static final String MASTER_USER = "helios-master";
   private static final String MASTER_PASSWORD = "master-password";
+  private static final String AGENT_USER = "helios-agent";
   private static final String AGENT_PASSWORD = "agent-password";
-  private static final String MASTER_DIGEST = Base64.toBase64String(Hash.sha1digest(
-      String.format("%s:%s", ZooKeeperAclProviders.MASTER_USER, MASTER_PASSWORD).getBytes()));
-  private static final String AGENT_DIGEST = Base64.toBase64String(Hash.sha1digest(
-      String.format("%s:%s", ZooKeeperAclProviders.AGENT_USER, AGENT_PASSWORD).getBytes()));
+  private static final String MASTER_DIGEST =
+      ZooKeeperAclProviders.digest(MASTER_USER, MASTER_PASSWORD);
+  private static final String AGENT_DIGEST = ZooKeeperAclProviders.digest(
+      AGENT_USER, AGENT_PASSWORD);
 
   @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
@@ -478,8 +478,10 @@ public abstract class SystemTestBase {
         "--domain", "",
         "--zk", zk.connectString(),
         "--zk-enable-acls",
-        "--zk-agent-digest", AGENT_DIGEST,
-        "--zk-master-password", MASTER_PASSWORD
+        "--zk-acl-agent-user", AGENT_USER,
+        "--zk-acl-agent-digest", AGENT_DIGEST,
+        "--zk-acl-master-user", MASTER_USER,
+        "--zk-acl-master-password", MASTER_PASSWORD
     );
 
     final String name;
@@ -590,8 +592,10 @@ public abstract class SystemTestBase {
         "--zk-session-timeout", "100",
         "--zk-connection-timeout", "100",
         "--zk-enable-acls",
-        "--zk-master-digest", MASTER_DIGEST,
-        "--zk-agent-password", AGENT_PASSWORD,
+        "--zk-acl-master-user", MASTER_USER,
+        "--zk-acl-master-digest", MASTER_DIGEST,
+        "--zk-acl-agent-user", AGENT_USER,
+        "--zk-acl-agent-password", AGENT_PASSWORD,
         "--state-dir", stateDir,
         "--domain", "",
         "--port-range=" +

@@ -67,8 +67,8 @@ public class ServiceParser {
   private final Argument zooKeeperClusterId;
   private final Argument noZooKeeperRegistrationArg;
   private final Argument zooKeeperEnableAcls;
-  private final Argument zooKeeperMasterAclUser;
-  private final Argument zooKeeperAgentAclUser;
+  private final Argument zooKeeperAclMasterUser;
+  private final Argument zooKeeperAclAgentUser;
   private final Argument noMetricsArg;
   private final Argument statsdHostPortArg;
   private final Argument riemannHostPortArg;
@@ -135,12 +135,12 @@ public class ServiceParser {
         .setDefault(false)
         .help("Enable zookeeper ACLs.");
 
-    zooKeeperMasterAclUser = parser.addArgument("--zk-acl-master-user")
+    zooKeeperAclMasterUser = parser.addArgument("--zk-acl-master-user")
         .type(String.class)
         .setDefault("helios-master")
         .help("zookeeper ACL username used for masters.");
 
-    zooKeeperAgentAclUser = parser.addArgument("--zk-acl-agent-user")
+    zooKeeperAclAgentUser = parser.addArgument("--zk-acl-agent-user")
         .type(String.class)
         .setDefault("helios-agent")
         .help("zookeeper ACL username used for agents.");
@@ -273,12 +273,12 @@ public class ServiceParser {
     return options.getBoolean(zooKeeperEnableAcls.getDest());
   }
 
-  public String getZooKeeperMasterAclUser() {
-    return options.getString(zooKeeperMasterAclUser.getDest());
+  public String getZooKeeperAclMasterUser() {
+    return options.getString(zooKeeperAclMasterUser.getDest());
   }
 
-  public String getZooKeeperAgentAclUser() {
-    return options.getString(zooKeeperAgentAclUser.getDest());
+  public String getZooKeeperAclAgentUser() {
+    return options.getString(zooKeeperAclAgentUser.getDest());
   }
 
   public List<String> getKafkaBrokers() {
