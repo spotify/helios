@@ -112,7 +112,6 @@ public class AgentParser extends ServiceParser {
         .setZooKeeperConnectionString(getZooKeeperConnectString())
         .setZooKeeperSessionTimeoutMillis(getZooKeeperSessionTimeoutMillis())
         .setZooKeeperConnectionTimeoutMillis(getZooKeeperConnectionTimeoutMillis())
-        .setZooKeeperNamespace(getZooKeeperNamespace())
         .setZooKeeperClusterId(getZooKeeperClusterId())
         .setZooKeeperRegistrationTtlMinutes(options.getInt(zkRegistrationTtlMinutesArg.getDest()))
         .setZooKeeperEnableAcls(getZooKeeperEnableAcls())

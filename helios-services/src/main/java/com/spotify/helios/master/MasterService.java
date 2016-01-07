@@ -350,7 +350,6 @@ public class MasterService extends AbstractIdleService {
         config.getZooKeeperSessionTimeoutMillis(),
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy,
-        config.getZooKeeperNamespace(),
         aclProvider,
         authorization);
     final ZooKeeperClient client =

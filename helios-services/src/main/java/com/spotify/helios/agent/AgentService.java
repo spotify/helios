@@ -357,7 +357,6 @@ public class AgentService extends AbstractIdleService implements Managed {
         config.getZooKeeperSessionTimeoutMillis(),
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy,
-        config.getZooKeeperNamespace(),
         aclProvider,
         authorization);
 

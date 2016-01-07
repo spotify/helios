@@ -30,7 +30,6 @@ public interface CuratorClientFactory {
                                     int sessionTimeoutMs,
                                     int connectionTimeoutMs,
                                     RetryPolicy retryPolicy,
-                                    String namespace,
                                     ACLProvider aclProvider,
                                     List<AuthInfo> authorization);
 

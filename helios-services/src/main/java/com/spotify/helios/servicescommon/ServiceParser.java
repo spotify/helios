@@ -63,7 +63,6 @@ public class ServiceParser {
   private final Argument zooKeeperConnectStringArg;
   private final Argument zooKeeperSessiontimeoutArg;
   private final Argument zooKeeperConnectiontimeoutArg;
-  private final Argument zooKeeperNamespace;
   private final Argument zooKeeperClusterId;
   private final Argument noZooKeeperRegistrationArg;
   private final Argument zooKeeperEnableAcls;
@@ -114,11 +113,6 @@ public class ServiceParser {
         .type(Integer.class)
         .setDefault((int) SECONDS.toMillis(15))
         .help("zookeeper connection timeout");
-
-    zooKeeperNamespace = parser.addArgument("--zk-namespace")
-        .type(String.class)
-        .setDefault((String) null)
-        .help("Prefix for helios zookeeper namespace");
 
     zooKeeperClusterId = parser.addArgument("--zk-cluster-id")
         .type(String.class)
@@ -255,10 +249,6 @@ public class ServiceParser {
 
   public int getZooKeeperSessionTimeoutMillis() {
     return options.getInt(zooKeeperSessiontimeoutArg.getDest());
-  }
-
-  public String getZooKeeperNamespace() {
-    return options.getString(zooKeeperNamespace.getDest());
   }
 
   public String getZooKeeperClusterId() {

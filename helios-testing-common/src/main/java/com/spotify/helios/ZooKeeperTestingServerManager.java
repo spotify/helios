@@ -58,10 +58,6 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
   private TestingServer server;
 
   public ZooKeeperTestingServerManager() {
-    this(null);
-  }
-
-  public ZooKeeperTestingServerManager(final String namespace) {
     this.dataDir = Files.createTempDir();
 
     final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
@@ -69,10 +65,6 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
     Builder builder = CuratorFrameworkFactory.builder()
         .connectString(endpoint)
         .retryPolicy(retryPolicy);
-
-    if (namespace != null) {
-      builder = builder.namespace(namespace);
-    }
 
     curator = builder.build();
 

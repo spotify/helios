@@ -41,7 +41,6 @@ public class MasterConfig extends Configuration {
   private Path serviceRegistrarPlugin;
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
-  private String zooKeeperNamespace;
   private String zooKeeperClusterId;
   private boolean noZooKeeperMasterRegistration;
   private int adminPort;
@@ -97,15 +96,6 @@ public class MasterConfig extends Configuration {
 
   public int getZooKeeperConnectionTimeoutMillis() {
     return zooKeeperConnectionTimeoutMillis;
-  }
-
-  public String getZooKeeperNamespace() {
-    return this.zooKeeperNamespace;
-  }
-
-  public MasterConfig setZooKeeperNamespace(String zooKeeperNamespace) {
-    this.zooKeeperNamespace = zooKeeperNamespace;
-    return this;
   }
 
   public String getZooKeeperClusterId() {

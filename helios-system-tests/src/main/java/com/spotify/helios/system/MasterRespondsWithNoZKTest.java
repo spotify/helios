@@ -54,7 +54,7 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
     final ZooKeeperTestManager testManager = mock(ZooKeeperTestManager.class);
     final MockCuratorClientFactory mockCuratorClientFactory = new MockCuratorClientFactory();
     final CuratorFramework curator = mockCuratorClientFactory.newClient(
-        null, 0, 0, null, null, null, null);
+        null, 0, 0, null, null, null);
     when(testManager.curator()).thenReturn(curator);
 
     when(testManager.connectString()).thenReturn("127.0.0.1");
@@ -84,7 +84,7 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
     @Override
     public CuratorFramework newClient(final String connectString, final int sessionTimeoutMs,
                                       final int connectionTimeoutMs, final RetryPolicy retryPolicy,
-                                      final String namespace, final ACLProvider aclProvider,
+                                      final ACLProvider aclProvider,
                                       final List<AuthInfo> authorization) {
       final CuratorFramework curator = mock(CuratorFramework.class);
 

@@ -36,7 +36,6 @@ public class CuratorClientFactoryImpl implements CuratorClientFactory {
                                     int sessionTimeoutMs,
                                     int connectionTimeoutMs,
                                     RetryPolicy retryPolicy,
-                                    String namespace,
                                     final ACLProvider aclProvider,
                                     final List<AuthInfo> authorization) {
     Builder builder = CuratorFrameworkFactory.builder()
@@ -51,11 +50,6 @@ public class CuratorClientFactoryImpl implements CuratorClientFactory {
 
     if (authorization != null && !authorization.isEmpty()) {
       builder.authorization(authorization);
-    }
-
-    if (namespace != null) {
-      log.info("Setting ZooKeeper namespace to " + namespace);
-      builder = builder.namespace(namespace);
     }
 
     return builder.build();
