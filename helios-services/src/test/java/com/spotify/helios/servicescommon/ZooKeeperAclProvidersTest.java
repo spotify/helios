@@ -17,10 +17,11 @@
 
 package com.spotify.helios.servicescommon;
 
+import com.google.common.collect.Lists;
+
 import com.spotify.helios.servicescommon.coordination.Paths;
 
 import org.apache.curator.framework.api.ACLProvider;
-import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.junit.Before;
@@ -28,11 +29,14 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
 import static org.apache.zookeeper.ZooDefs.Perms.CREATE;
 import static org.apache.zookeeper.ZooDefs.Perms.DELETE;
 import static org.apache.zookeeper.ZooDefs.Perms.READ;
 import static org.apache.zookeeper.ZooDefs.Perms.WRITE;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -65,20 +69,33 @@ public class ZooKeeperAclProvidersTest {
     assertEquals("tpUq/4Pn5A64fVZyQ0gOJ8ZWqkY=", digest("user", "password"));
   }
 
-  // Everyone should have READ permission on ALL nodes
   @Test
-  public void testEveryoneHasReadPermissionEverywhere() {
-    final ACL acl = new ACL(READ, ZooDefs.Ids.ANYONE_ID_UNSAFE);
-    assertThat(aclProvider.getAclForPath("/"), hasItem(acl));
-    assertThat(aclProvider.getAclForPath("/some/random/path"), hasItem(acl));
+  public void testDefaultAcl() {
+    assertEquals(
+        newHashSet(new ACL(READ, AGENT_ID), new ACL(CREATE | READ | WRITE | DELETE, MASTER_ID)),
+        newHashSet(aclProvider.getDefaultAcl()));
+  }
+
+  // None but masters and agents should have any permissions to any paths
+  @Test
+  public void testOnlyAgentsAndMastersHaveAccess() {
+    final List<String> paths = Lists.newArrayList("/", "/some/random/path", "/config/hosts");
+    for (final String path : paths) {
+      final List<ACL> acls = aclProvider.getAclForPath(path);
+      for (final ACL acl : acls) {
+        assertThat(acl.getId(), anyOf(equalTo(AGENT_ID), equalTo(MASTER_ID)));
+      }
+    }
   }
 
   // Masters should have CRWD permissions on ALL nodes
   @Test
-  public void testMastersHaveCrwdPermissionsEverywhere() {
+  public void testMasterPermissions() {
     final ACL acl = new ACL(CREATE | READ | WRITE | DELETE, MASTER_ID);
     assertThat(aclProvider.getAclForPath("/"), hasItem(acl));
     assertThat(aclProvider.getAclForPath("/some/random/path"), hasItem(acl));
+    assertThat(aclProvider.getAclForPath("/config/hosts/foo"), hasItem(acl));
+    assertThat(aclProvider.getAclForPath("/status/hosts/foo"), hasItem(acl));
   }
 
   @Test

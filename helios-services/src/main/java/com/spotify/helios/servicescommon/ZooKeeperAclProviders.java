@@ -21,7 +21,7 @@ import com.spotify.helios.common.Hash;
 import com.spotify.helios.servicescommon.coordination.Paths;
 
 import org.apache.curator.framework.api.ACLProvider;
-import org.apache.zookeeper.ZooDefs;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.bouncycastle.util.encoders.Base64;
 
@@ -34,11 +34,10 @@ import static org.apache.zookeeper.ZooDefs.Perms.DELETE;
  * Contains a single factory method for creating ACLProvider used by Helios (agents and masters),
  * that controls the ACLs set on nodes when they are created.
  * <p>
- * It allows read-only access for unauthenticated users. To gain more permissions you need to
- * provide credentials. There are two different roles: agents and masters. Masters are granted
- * all permissions (except ADMIN) to all nodes. Agents are only granted the permissions it needs, to
- * a subset of all the nodes. This limits the consequences of the agent credentials being
- * compromised.
+ * If not authentication is provided a client has no access (not even read access). There are two
+ * different roles: agents and masters. Masters are granted all permissions except ADMIN to all
+ * nodes. Agents are only granted the permissions it needs, to a subset of all the nodes. This
+ * limits the consequences of the agent credentials being compromised.
  * <p>
  * Currently all agents share the same permissions, using a single shared credential. I.e. an agent
  * can modify data that "belongs" to another agent (to the same extent that it can modify data that
@@ -62,15 +61,14 @@ public class ZooKeeperAclProviders {
     final Id agentId = new Id(DIGEST_SCHEME, String.format("%s:%s", agentUser, agentDigest));
 
     return RuleBasedZooKeeperAclProvider.builder()
-        // Set the default ACL to grant everyone READ permission to everyone. Note that the default
-        // ACLs should never be used though, as we set up catch-all rules below.
-        .defaultAcl(ZooDefs.Ids.READ_ACL_UNSAFE)
+        // Set the default ACL to grant everyone CRWD permissions to master and READ to agents.
+        // Note that the default ACLs should never be used though, as we set up catch-all rules
+        // below.
+        .defaultAcl(new ACL(CREATE | READ | WRITE | DELETE, masterId), new ACL(READ, agentId))
         // Master has CRWD permissions on all paths
         .rule(".*", CREATE | READ | WRITE | DELETE, masterId)
         // Agent has READ permission on all paths
         .rule(".*", READ, agentId)
-        // Grant everyone READ-only access to make troubleshooting easier
-        .rule(".*", READ, ZooDefs.Ids.ANYONE_ID_UNSAFE)
         // The agent needs to create the /config/hosts/<host> path and nodes below it. It also needs
         // DELETE permissions since agents will delete it's "own" subtree when re-registering itself
         // (when a machine is reinstalled with the same name). Note that agent does however not have
