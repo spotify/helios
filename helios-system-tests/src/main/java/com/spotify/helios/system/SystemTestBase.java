@@ -167,13 +167,13 @@ public abstract class SystemTestBase {
   public static final String TEST_HOST = "test-host";
   public static final String TEST_MASTER = "test-master";
 
-  private static final String MASTER_USER = "helios-master";
-  private static final String MASTER_PASSWORD = "master-password";
-  private static final String AGENT_USER = "helios-agent";
-  private static final String AGENT_PASSWORD = "agent-password";
-  private static final String MASTER_DIGEST =
+  public static final String MASTER_USER = "helios-master";
+  public static final String MASTER_PASSWORD = "master-password";
+  public static final String AGENT_USER = "helios-agent";
+  public static final String AGENT_PASSWORD = "agent-password";
+  public static final String MASTER_DIGEST =
       ZooKeeperAclProviders.digest(MASTER_USER, MASTER_PASSWORD);
-  private static final String AGENT_DIGEST = ZooKeeperAclProviders.digest(
+  public static final String AGENT_DIGEST = ZooKeeperAclProviders.digest(
       AGENT_USER, AGENT_PASSWORD);
 
   @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
