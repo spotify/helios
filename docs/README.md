@@ -18,3 +18,6 @@ Helios Documentation
 
 * **[Registering Containers with Service Discovery](service_registration.md)**
   Everything you wanted to know about how to use Helios and whatever service discovery system you have.
+
+* **[Authentication](authentication.md)**
+  Client to backend authentication.
