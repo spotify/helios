@@ -70,8 +70,6 @@ import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
-import com.spotify.helios.common.protocol.JobDeleteResponse;
-import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.master.MasterMain;
 import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
@@ -103,7 +101,6 @@ import java.io.PrintStream;
 import java.net.Socket;
 import java.net.URI;
 import java.nio.file.Path;
-import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
@@ -120,7 +117,6 @@ import java.util.concurrent.TimeoutException;
 import static com.google.common.base.CharMatcher.WHITESPACE;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
@@ -180,16 +176,13 @@ public abstract class SystemTestBase {
   private int masterAdminPort;
   private String masterEndpoint;
   private String masterAdminEndpoint;
-  private boolean integrationMode;
   private Range<Integer> dockerPortRange;
 
   private final List<Service> services = newArrayList();
   private final List<HeliosClient> clients = Lists.newArrayList();
 
-  private String testHost;
   private Path agentStateDirs;
   private Path masterStateDirs;
-  private String masterName;
 
   private ZooKeeperTestManager zk;
   protected static String zooKeeperNamespace = null;
@@ -210,19 +203,8 @@ public abstract class SystemTestBase {
     masterPort = temporaryPorts.localPort("helios master");
     masterAdminPort = temporaryPorts.localPort("helios master admin");
 
-    String className = getClass().getName();
-    if (className.endsWith("ITCase")) {
-      masterEndpoint = checkNotNull(System.getenv("HELIOS_ENDPOINT"),
-                                    "For integration tests, HELIOS_ENDPOINT *must* be set");
-      integrationMode = true;
-    } else if (className.endsWith("Test")) {
-      integrationMode = false;
-      masterEndpoint = "http://localhost:" + masterPort();
-      masterAdminEndpoint = "http://localhost:" + masterAdminPort();
-      // unit test
-    } else {
-      throw new RuntimeException("Test class' name must end in either 'Test' or 'ITCase'.");
-    }
+    masterEndpoint = "http://localhost:" + masterPort();
+    masterAdminEndpoint = "http://localhost:" + masterAdminPort();
 
     zk = zooKeeperTestManager();
     listThreads();
@@ -347,7 +329,6 @@ public abstract class SystemTestBase {
 
   @After
   public void baseTeardown() throws Exception {
-    tearDownJobs();
     for (final HeliosClient client : clients) {
       client.close();
     }
@@ -414,46 +395,6 @@ public abstract class SystemTestBase {
     log.info(Strings.repeat("=", 80));
   }
 
-  protected void tearDownJobs() throws InterruptedException, ExecutionException {
-    if (!isIntegration()) {
-      return;
-    }
-
-    if (System.getenv("ITCASE_PRESERVE_JOBS") != null) {
-      return;
-    }
-
-    final List<ListenableFuture<JobUndeployResponse>> undeploys = Lists.newArrayList();
-    final HeliosClient c = defaultClient();
-    final Map<JobId, Job> jobs = c.jobs().get();
-    for (JobId jobId : jobs.keySet()) {
-      if (!jobId.toString().startsWith(testTag)) {
-        continue;
-      }
-      final JobStatus st = c.jobStatus(jobId).get();
-      final Set<String> hosts = st.getDeployments().keySet();
-      for (String host : hosts) {
-        log.info("Undeploying job " + jobId);
-        undeploys.add(c.undeploy(jobId, host));
-      }
-    }
-    Futures.allAsList(undeploys);
-
-    final List<ListenableFuture<JobDeleteResponse>> deletes = Lists.newArrayList();
-    for (JobId jobId : jobs.keySet()) {
-      if (!jobId.toString().startsWith(testTag)) {
-        continue;
-      }
-      log.info("Deleting job " + jobId);
-      deletes.add(c.deleteJob(jobId));
-    }
-    Futures.allAsList(deletes);
-  }
-
-  protected boolean isIntegration() {
-    return integrationMode;
-  }
-
   protected TemporaryPorts temporaryPorts() {
     return temporaryPorts;
   }
@@ -471,14 +412,7 @@ public abstract class SystemTestBase {
   }
 
   protected String masterName() throws InterruptedException, ExecutionException {
-    if (integrationMode) {
-      if (masterName == null) {
-        masterName = defaultClient().listMasters().get().get(0);
-      }
-      return masterName;
-    } else {
-      return "test-master";
-    }
+    return TEST_MASTER;
   }
 
   protected HeliosClient defaultClient() {
@@ -507,15 +441,7 @@ public abstract class SystemTestBase {
   }
 
   protected String testHost() throws InterruptedException, ExecutionException {
-    if (integrationMode) {
-      if (testHost == null) {
-        final List<String> hosts = defaultClient().listHosts().get();
-        testHost = hosts.get(new SecureRandom().nextInt(hosts.size()));
-      }
-      return testHost;
-    } else {
-      return TEST_HOST;
-    }
+    return TEST_HOST;
   }
 
   protected List<String> setupDefaultMaster(String... args) throws Exception {
@@ -523,12 +449,6 @@ public abstract class SystemTestBase {
   }
 
   protected List<String> setupDefaultMaster(final int offset, String... args) throws Exception {
-    if (isIntegration()) {
-      checkArgument(args.length == 0,
-                    "cannot start default master in integration test with arguments passed");
-      return null;
-    }
-
     // TODO (dano): Move this bootstrapping to something reusable
     final CuratorFramework curator = zk.curator();
     curator.newNamespaceAwareEnsurePath(Paths.configHosts()).ensure(curator.getZookeeperClient());
@@ -646,12 +566,6 @@ public abstract class SystemTestBase {
 
   protected AgentMain startDefaultAgent(final String host, final String... args)
       throws Exception {
-    if (isIntegration()) {
-      checkArgument(args.length == 0,
-                    "cannot start default agent in integration test with arguments passed");
-      return null;
-    }
-
     final String stateDir = agentStateDirs.resolve(host).toString();
     final List<String> argsList = Lists.newArrayList("-vvvv",
                                                      "--no-log-setup",
