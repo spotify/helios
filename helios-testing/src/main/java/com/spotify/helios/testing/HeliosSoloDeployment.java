@@ -53,7 +53,7 @@ import static java.util.Collections.singletonList;
 /**
  * A HeliosSoloDeployment represents a deployment of Helios Solo, which is to say one Helios
  * master and one Helios agent deployed in Docker. Helios Solo uses the Docker instance it is
- * deployed to to run its jobs.
+ * deployed on to run its jobs.
  */
 public class HeliosSoloDeployment implements HeliosDeployment {
 
@@ -92,9 +92,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     //TODO(negz): Determine and propagate NetworkManager DNS servers?
     try {
       log.info("checking that docker can be reached from within a container");
-      assertDockerReachableFromContainer();
+      final String probeContainerGateway = checkDockerAndGetGateway();
       if (dockerHost.address().equals("localhost") || dockerHost.address().equals("127.0.0.1")) {
-        heliosHost = containerGateway();
+        heliosHost = probeContainerGateway;
       } else {
         heliosHost = dockerHost.address();
       }
@@ -160,10 +160,14 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
-   * @throws HeliosDeploymentException if we cannot reach the Docker daemon's API from inside a
-   * probe container.
+   * Checks that the local Docker daemon is reachable from inside a container.
+   * This method also gets the gateway IP address for this HeliosSoloDeployment.
+   *
+   * @return The gateway IP address of the gateway probe container.
+   * @throws HeliosDeploymentException if we can't deploy the probe container or can't reach the
+   * Docker daemon's API from inside the container.
    */
-  private void assertDockerReachableFromContainer() throws HeliosDeploymentException {
+  private String checkDockerAndGetGateway() throws HeliosDeploymentException {
     final String probeName = randomString();
     final HostConfig hostConfig = HostConfig.builder()
             .binds(binds)
@@ -184,8 +188,11 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     final ContainerExit exit;
+    final String gateway;
     try {
       dockerClient.startContainer(creation.id());
+      gateway = dockerClient.inspectContainer(creation.id())
+          .networkSettings().gateway();
       exit = dockerClient.waitContainer(creation.id());
     } catch (DockerException | InterruptedException e) {
       killContainer(creation.id());
@@ -206,6 +213,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     removeContainer(creation.id());
+    return gateway;
   }
 
   private List<String> probeCommand(final String probeName) {
@@ -228,44 +236,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         break;
     }
     return ImmutableList.copyOf(cmd);
-  }
-
-  /**
-   * Predict the gateway IP address for this HeliosSoloDeployment by running and inspecting a
-   * container.
-   *
-   * @return The gateway IP address of the gateway probe container.
-   * @throws HeliosDeploymentException if the gateway probe container could not be deployed.
-   */
-  private String containerGateway() throws HeliosDeploymentException {
-    // TODO(negz): Merge with dockerReachableFromContainer() ?
-    final ContainerConfig containerConfig = ContainerConfig.builder()
-            .env(env)
-            .hostConfig(HostConfig.builder().build())
-            .image(PROBE_IMAGE)
-            .cmd(ImmutableList.of("sh", "-c", "while true;do sleep 10;done"))
-            .build();
-
-    final ContainerCreation creation;
-    try {
-      dockerClient.pull(PROBE_IMAGE);
-      creation = dockerClient.createContainer(containerConfig);
-    } catch (DockerException | InterruptedException e) {
-      throw new HeliosDeploymentException("helios-solo gateway probe container creation failed", e);
-    }
-
-    try {
-      dockerClient.startContainer(creation.id());
-      final String gateway = dockerClient.inspectContainer(creation.id())
-              .networkSettings().gateway();
-      killContainer(creation.id());
-      removeContainer(creation.id());
-      return gateway;
-    } catch (DockerException | InterruptedException e) {
-      killContainer(creation.id());
-      removeContainer(creation.id());
-      throw new HeliosDeploymentException("helios-solo gateway probe failed", e);
-    }
   }
 
   /**
@@ -349,9 +319,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       final NetworkSettings settings = dockerClient.inspectContainer(containerId).networkSettings();
       for (Map.Entry<String, List<PortBinding>> entry : settings.ports().entrySet()) {
         if (entry.getKey().equals(heliosPort)) {
-          for (PortBinding portBinding : entry.getValue()) {
-            return portBinding.hostPort();
-          }
+          return entry.getValue().get(0).hostPort();
         }
       }
     } catch (DockerException | InterruptedException e) {
