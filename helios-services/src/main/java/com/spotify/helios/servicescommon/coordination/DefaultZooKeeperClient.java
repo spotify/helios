@@ -17,8 +17,6 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
-import com.google.common.collect.ImmutableList;
-
 import com.fasterxml.jackson.databind.JavaType;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -48,7 +46,6 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.collect.Lists.reverse;
@@ -232,35 +229,8 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   public List<String> listRecursive(final String path) throws KeeperException {
     assertClusterIdFlagTrue();
-
-    // namespace the path since we're using zookeeper directly
-    final String namespace = emptyToNull(client.getNamespace());
-    final String namespacedPath = ZKPaths.fixForNamespace(namespace, path);
-
     try {
-      final List<String> paths = ZKUtil.listSubTreeBFS(
-          client.getZookeeperClient().getZooKeeper(), namespacedPath);
-
-      if (isNullOrEmpty(namespace)) {
-        return paths;
-      } else {
-        // hide the namespace in the paths returned from zookeeper
-        final ImmutableList.Builder<String> builder = ImmutableList.builder();
-        for (final String p : paths) {
-          final String fixed;
-          if (p.startsWith("/" + namespace)) {
-            fixed = (p.length() > namespace.length() + 1)
-                    ? p.substring(namespace.length() + 1)
-                    : "/";
-          } else {
-            fixed = p;
-          }
-
-          builder.add(fixed);
-        }
-
-        return builder.build();
-      }
+      return ZKUtil.listSubTreeBFS(client.getZookeeperClient().getZooKeeper(), path);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
