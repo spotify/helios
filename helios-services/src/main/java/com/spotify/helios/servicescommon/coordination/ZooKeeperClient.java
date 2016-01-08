@@ -20,6 +20,7 @@ package com.spotify.helios.servicescommon.coordination;
 import com.fasterxml.jackson.databind.JavaType;
 
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
@@ -98,4 +99,7 @@ public interface ZooKeeperClient {
   void setAcl(String path, List<ACL> aclList) throws KeeperException;
 
   List<ACL> getAcl(String path) throws KeeperException;
+
+  void initializeAclRecursive(final String path, final ACLProvider aclProvider)
+      throws KeeperException;
 }

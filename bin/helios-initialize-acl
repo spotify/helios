@@ -1,0 +1,29 @@
+#!/bin/bash -e
+
+args=()
+dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+if [[ -e "$dir/../helios-services" ]]; then
+    jar="$(ls -t $dir/../helios-services/target/helios*-shaded.jar | grep -v sources | grep -v javadoc | head -n 1)"
+    CLASSPATH="$(cd $(dirname $jar) && pwd -P)/$(basename $jar)"
+    echo "running in helios project, using $CLASSPATH" 1>&2
+else
+    CLASSPATH="/usr/share/helios/lib/services/*"
+fi
+
+DEBUG_ARGS=""
+if [[ -n "$JDWPPORT" ]]; then
+    # suspend=n doesn't make much sense as the helios CLI command might finish
+    # before you start and attach the debugger
+    DEBUG_ARGS="-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=$JDWPPORT"
+fi
+
+exec java \
+    $DEBUG_ARGS \
+    "${args[@]}" \
+    -Djava.net.preferIPv4Stack=true \
+    -XX:+TieredCompilation -XX:TieredStopAtLevel=1 \
+    -Xverify:none \
+    -cp "$CLASSPATH" \
+    com.spotify.helios.servicescommon.ZooKeeperAclInitializer \
+    "$@"
