@@ -159,7 +159,7 @@ public class PersistentPathChildrenCacheTest {
     verify(listener, timeout(60000).atLeastOnce()).nodesChanged(cache);
     reset(listener);
     final DataPojo changed = new DataPojo("foo-changed");
-    zk.curator().setData().forPath("/foos/foo", Json.asBytesUnchecked(changed));
+    zk.curatorWithSuperAuth().setData().forPath("/foos/foo", Json.asBytesUnchecked(changed));
     verify(listener, timeout(60000).atLeastOnce()).nodesChanged(cache);
     final DataPojo read = Iterables.getOnlyElement(cache.getNodes().values());
     assertEquals(changed, read);
@@ -171,7 +171,7 @@ public class PersistentPathChildrenCacheTest {
     verify(listener, timeout(60000).atLeastOnce()).nodesChanged(cache);
     reset(listener);
     try {
-      zk.curator().delete().forPath("/foos/foo");
+      zk.curatorWithSuperAuth().delete().forPath("/foos/foo");
     } catch (NoNodeException ignore) {
     }
     verify(listener, timeout(60000).atLeastOnce()).nodesChanged(cache);
@@ -246,7 +246,7 @@ public class PersistentPathChildrenCacheTest {
 
     // Remove a node
     try {
-      zk.curator().delete().forPath(foo1);
+      zk.curatorWithSuperAuth().delete().forPath(foo1);
     } catch (NoNodeException ignore) {
     }
 
@@ -268,7 +268,7 @@ public class PersistentPathChildrenCacheTest {
   private void startCache() throws IOException, InterruptedException {
     reset(listener);
     cache = new PersistentPathChildrenCache<>(
-        zk.curator(), PATH, null, stateFile, Json.type(DataPojo.class));
+        zk.curatorWithSuperAuth(), PATH, null, stateFile, Json.type(DataPojo.class));
     cache.addListener(listener);
     cache.startAsync().awaitRunning();
   }
@@ -280,7 +280,7 @@ public class PersistentPathChildrenCacheTest {
   private void ensure(final String path, final Object value) throws Exception {
     zk.ensure(ZKPaths.getPathAndNode(path).getPath());
     try {
-      zk.curator().create().forPath(path, Json.asBytesUnchecked(value));
+      zk.curatorWithSuperAuth().create().forPath(path, Json.asBytesUnchecked(value));
     } catch (KeeperException.NodeExistsException ignore) {
     }
 

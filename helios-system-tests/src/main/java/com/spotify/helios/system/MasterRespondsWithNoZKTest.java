@@ -55,7 +55,7 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
     final MockCuratorClientFactory mockCuratorClientFactory = new MockCuratorClientFactory();
     final CuratorFramework curator = mockCuratorClientFactory.newClient(
         null, 0, 0, null, null, null);
-    when(testManager.curator()).thenReturn(curator);
+    when(testManager.curatorWithSuperAuth()).thenReturn(curator);
 
     when(testManager.connectString()).thenReturn("127.0.0.1");
     return testManager;

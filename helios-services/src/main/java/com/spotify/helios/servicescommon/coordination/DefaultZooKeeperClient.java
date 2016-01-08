@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.framework.state.ConnectionState;
@@ -157,7 +158,9 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void start() {
-    client.start();
+    if (client.getState() != CuratorFrameworkState.STARTED) {
+      client.start();
+    }
     if (clusterId != null) {
       client.getConnectionStateListenable().addListener(connectionStateListener);
       checkClusterIdExists(clusterId, "start");

@@ -89,7 +89,7 @@ public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
 
     // Create a node that we know is written after the job
     try {
-      zkc.curator().create().forPath("/barrier");
+      zkc.curatorWithSuperAuth().create().forPath("/barrier");
     } catch (NodeExistsException ignore) {
     }
 

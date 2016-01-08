@@ -89,7 +89,7 @@ public class TaskHistoryWriterTest {
     zk = new ZooKeeperTestingServerManager();
     agentStateDirs = Files.createTempDirectory("helios-agents");
 
-    client = new DefaultZooKeeperClient(zk.curator());
+    client = new DefaultZooKeeperClient(zk.curatorWithSuperAuth());
     makeWriter(client);
 
     final ZooKeeperClientProvider zkProvider =
