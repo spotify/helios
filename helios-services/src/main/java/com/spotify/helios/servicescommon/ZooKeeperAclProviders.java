@@ -84,6 +84,7 @@ public class ZooKeeperAclProviders {
         .rule(Paths.statusHostJobs(PATH_COMPONENT_WILDCARD), CREATE | DELETE, agentId)
         .rule(Paths.statusHostJob(PATH_COMPONENT_WILDCARD, PATH_COMPONENT_WILDCARD), WRITE, agentId)
         .rule(Paths.statusHostAgentInfo(PATH_COMPONENT_WILDCARD), WRITE, agentId)
+        .rule(Paths.statusHostInfo(PATH_COMPONENT_WILDCARD), WRITE, agentId)
         .rule(Paths.statusHostLabels(PATH_COMPONENT_WILDCARD), WRITE, agentId)
         .rule(Paths.statusHostEnvVars(PATH_COMPONENT_WILDCARD), WRITE, agentId)
         .rule(Paths.statusHostUp(PATH_COMPONENT_WILDCARD), WRITE, agentId)
