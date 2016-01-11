@@ -19,7 +19,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Splitter;
 
-import com.spotify.helios.servicescommon.DockerHost;
+import com.spotify.docker.client.DockerHost;
 import com.spotify.helios.servicescommon.ServiceParser;
 
 import net.sourceforge.argparse4j.inf.Argument;

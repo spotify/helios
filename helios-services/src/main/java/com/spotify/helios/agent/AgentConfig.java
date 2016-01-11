@@ -17,7 +17,7 @@
 
 package com.spotify.helios.agent;
 
-import com.spotify.helios.servicescommon.DockerHost;
+import com.spotify.docker.client.DockerHost;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;

@@ -18,10 +18,10 @@
 package com.spotify.helios.agent;
 
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.DockerHost;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
-import com.spotify.helios.servicescommon.DockerHost;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
 import java.util.List;
