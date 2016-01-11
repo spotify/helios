@@ -57,10 +57,6 @@ public class MasterRespondsWithNoZKTest extends SystemTestBase {
     return testManager;
   }
 
-  @Override
-  protected void tearDownJobs() {
-  }
-
   @Test
   public void test() throws Exception {
 
