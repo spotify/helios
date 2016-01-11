@@ -603,7 +603,6 @@ public class HeliosClient implements AutoCloseable {
 
       // set up the ClientCertificatePath, giving precedence to any values set
       // with setClientCertificatePath()
-      ClientCertificatePath clientCertificatePath = this.clientCertificatePath;
       if (clientCertificatePath == null) {
         final String heliosCertPath = System.getenv(HELIOS_CERT_PATH);
         if (!isNullOrEmpty(heliosCertPath)) {
