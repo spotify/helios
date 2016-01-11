@@ -210,7 +210,9 @@ public class AuthenticatingHttpConnector implements HttpConnector {
       } catch (Exception e) {
         // We catch everything because right now the masters do not require authentication.
         // So delay reporting errors to the user until the servers return 401 Unauthorized.
-        log.debug("Couldn't get identities from ssh-agent", e);
+        log.debug("Unable to get identities from ssh-agent. Note that this might not indicate"
+                  + " an actual problem unless your Helios cluster requires authentication"
+                  + " for all requests.", e);
       }
     }
 
