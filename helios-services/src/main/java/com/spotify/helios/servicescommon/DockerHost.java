@@ -112,7 +112,7 @@ public class DockerHost {
    * @return The DockerHost object.
    */
   public static DockerHost fromEnv() {
-    String defaultEndpoint;
+    final String defaultEndpoint;
     if (System.getProperty("os.name").toLowerCase().equals("linux")) {
       defaultEndpoint = DEFAULT_UNIX_ENDPOINT;
     } else {
