@@ -81,8 +81,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
     this.dockerHost = Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
-    this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
-            .or(containerDockerHostFromEnv());
+    this.containerDockerHost = containerDockerHost(builder);
     this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
     this.env = containerEnv();
     this.binds = containerBinds();
@@ -112,20 +111,36 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .build();
   }
 
+  private DockerHost containerDockerHost(final Builder builder) {
+    if (builder.containerDockerHost != null) {
+      return containerDockerHost;
+    }
+
+    if (isBoot2Docker(dockerInfo())) {
+      return DockerHost.from(DefaultDockerClient.DEFAULT_UNIX_ENDPOINT, null);
+    }
+
+    // otherwise construct a DockerHost from environment variables, *unless* DOCKER_HOST is set to
+    // localhost or 127.0.0.1 - which will never work inside a container. For those cases, we
+    // override the settings and use the unix socket instead.
+    final DockerHost dockerHost = DockerHost.fromEnv();
+    if (dockerHost.address().equals("localhost") || dockerHost.address().equals("127.0.0.1")) {
+      final String endpoint = DockerHost.DEFAULT_UNIX_ENDPOINT;
+      log.warn("DOCKER_HOST points to localhost or 127.0.0.1. Replacing this with {} "
+               + "as localhost/127.0.0.1 will not work inside a container to talk to the docker "
+               + "daemon on the host itself.", endpoint);
+      return DockerHost.from(endpoint, dockerHost.dockerCertPath());
+    }
+
+    return dockerHost;
+  }
+
   @Override
   public HostAndPort address() {
       return deploymentAddress;
   }
 
-  private DockerHost containerDockerHostFromEnv() {
-    if (isBoot2Docker(dockerInfo())) {
-      return DockerHost.from(DefaultDockerClient.DEFAULT_UNIX_ENDPOINT, null);
-    } else {
-      return DockerHost.fromEnv();
-    }
-  }
-
-  private Boolean isBoot2Docker(final Info dockerInfo) {
+  private boolean isBoot2Docker(final Info dockerInfo) {
     return dockerInfo.operatingSystem().contains(BOOT2DOCKER_SIGNATURE);
   }
 
