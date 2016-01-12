@@ -211,12 +211,12 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       exit = dockerClient.waitContainer(creation.id());
     } catch (DockerException | InterruptedException e) {
       killContainer(creation.id());
-      removeContainer(creation.id());
       throw new HeliosDeploymentException("helios-solo probe container failed", e);
+    } finally {
+      removeContainer(creation.id());
     }
 
     if (exit.statusCode() != 0) {
-      removeContainer(creation.id());
       throw new HeliosDeploymentException(String.format(
               "Docker was not reachable (curl exit status %d) using DOCKER_HOST=%s and "
                       + "DOCKER_CERT_PATH=%s from within a container. Please ensure that "
@@ -227,7 +227,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
               containerDockerHost.dockerCertPath()));
     }
 
-    removeContainer(creation.id());
     return gateway;
   }
 
