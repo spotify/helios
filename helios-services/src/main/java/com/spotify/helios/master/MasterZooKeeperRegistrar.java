@@ -77,6 +77,7 @@ public class MasterZooKeeperRegistrar implements ZooKeeperRegistrar {
 
     if (upNode == null) {
       final String upPath = Paths.statusMasterUp(name);
+      client.ensurePath(upPath, true);
       upNode = client.persistentEphemeralNode(upPath, Mode.EPHEMERAL, new byte[]{});
       upNode.start();
     }

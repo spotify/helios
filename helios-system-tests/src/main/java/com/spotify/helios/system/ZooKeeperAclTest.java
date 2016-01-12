@@ -19,6 +19,7 @@ package com.spotify.helios.system;
 
 import com.google.common.collect.Sets;
 
+import com.spotify.helios.Polling;
 import com.spotify.helios.servicescommon.coordination.Paths;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -27,6 +28,8 @@ import org.apache.zookeeper.data.ACL;
 import org.junit.Test;
 
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 import static org.junit.Assert.assertEquals;
@@ -58,6 +61,7 @@ public class ZooKeeperAclTest extends SystemTestBase {
   public void testAgentCreatedNodesHaveAcls() throws Exception {
     startDefaultMaster();
     startDefaultAgent(TEST_HOST);
+    awaitHostRegistered(TEST_HOST, WAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS);
 
     final CuratorFramework curator = zk().curatorWithSuperAuth();
 
@@ -74,6 +78,12 @@ public class ZooKeeperAclTest extends SystemTestBase {
   @Test
   public void testMasterCreatedNodesHaveAcls() throws Exception {
     startDefaultMaster();
+    Polling.await(WAIT_TIMEOUT_SECONDS, TimeUnit.SECONDS, new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        return defaultClient().listMasters().get().isEmpty() ? null : true;
+      }
+    });
 
     final CuratorFramework curator = zk().curatorWithSuperAuth();
 
