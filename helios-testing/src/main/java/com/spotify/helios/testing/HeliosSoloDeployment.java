@@ -23,6 +23,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificateException;
@@ -41,11 +42,20 @@ import com.spotify.helios.client.HeliosClient;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.net.InetSocketAddress;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -66,6 +76,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public static final String HELIOS_NAME_PREFIX = "solo.local.";
   public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
   public static final int HELIOS_MASTER_PORT = 5801;
+  public static final int HELIOS_SOLO_WATCHDOG_PORT = 33333;
 
   private final DockerClient dockerClient;
   /** The DockerHost we use to communicate with docker */
@@ -79,19 +90,22 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private final HostAndPort deploymentAddress;
   private final HeliosClient heliosClient;
 
+  private static volatile HeliosSoloDeployment deployment;
+
   HeliosSoloDeployment(final Builder builder) {
     final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
 
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
     this.dockerHost = Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
     this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
-        .or(containerDockerHost());
+        .or(containerDockerHostFromEnv());
     this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
     this.env = containerEnv();
     this.binds = containerBinds();
 
     final String heliosHost;
     final String heliosPort;
+    final int watchdogPort;
     //TODO(negz): Determine and propagate NetworkManager DNS servers?
     try {
       log.info("checking that docker can be reached from within a container");
@@ -103,6 +117,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       }
       this.heliosContainerId = deploySolo(heliosHost);
       heliosPort = getHostPort(this.heliosContainerId, HELIOS_MASTER_PORT);
+      watchdogPort = Integer.parseInt(
+          getHostPort(this.heliosContainerId, HELIOS_SOLO_WATCHDOG_PORT));
     } catch (HeliosDeploymentException e) {
       throw new AssertionError("Unable to deploy helios-solo container.", e);
     }
@@ -113,10 +129,73 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .setUser(username)
             .setEndpoints("http://" + deploymentAddress)
             .build();
+
+    connectToWatchdog(dockerHost.address(), watchdogPort);
   }
 
-  /** Returns the DockerHost that the container should use to refer to the docker daemon. */
-  private DockerHost containerDockerHost() {
+  static synchronized HeliosSoloDeployment getOrCreateHeliosSoloDeployment() {
+    if (deployment == null) {
+      deployment = HeliosSoloDeployment.fromEnv().build();
+    }
+
+    return deployment;
+  }
+
+  private static void connectToWatchdog(final String host, final int port) {
+    final ExecutorService executorService = Executors.newSingleThreadExecutor(
+        new ThreadFactoryBuilder()
+            .setNameFormat("helios-solo-watchdog-%d")
+            .setDaemon(true).build());
+
+    log.info("Connecting to helios-solo watchdog at %s:%d", host, port);
+
+    executorService.submit(new Runnable() {
+      @Override
+      public void run() {
+        // 1. Connect
+        while (true) {
+          try {
+            final Socket s = new Socket();
+            s.connect(new InetSocketAddress(host, port));
+
+            // For whatever reason it seems like connections get "connected" even though there's
+            // really nothing on the other end -- to detect this send and recv some data.
+            final DataOutputStream writer = new DataOutputStream(s.getOutputStream());
+            final BufferedReader reader = new BufferedReader(
+                new InputStreamReader(s.getInputStream()));
+            writer.writeBytes("HELO\n");
+            writer.flush();
+            final String line = reader.readLine();
+            if (line.startsWith("HELO")) {
+              break;
+            } else {
+              s.close();
+            }
+          } catch (IOException ignored) {
+            log.debug("Failed to connect to helios-solo watchdog");
+          }
+
+          try {
+            Thread.sleep(500);
+          } catch (InterruptedException ignored) {
+          }
+        }
+
+        log.info("Connected to helios-solo watchdog");
+
+        // 2. ..then just sleep forever
+        //noinspection InfiniteLoopStatement
+        while (true) {
+          try {
+            Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+          } catch (InterruptedException ignored) {
+          }
+        }
+      }
+    });
+  }
+
+  private DockerHost containerDockerHostFromEnv() {
     if (isBoot2Docker(dockerInfo())) {
       return DockerHost.from(DefaultDockerClient.DEFAULT_UNIX_ENDPOINT, null);
     }
@@ -134,11 +213,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     return dockerHost;
-  }
-
-  @Override
-  public HostAndPort address() {
-      return deploymentAddress;
   }
 
   private boolean isBoot2Docker(final Info dockerInfo) {
@@ -160,6 +234,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       env.add("DOCKER_CERT_PATH=/certs");
     }
+    // Inform helios-solo  that it's being used for helios-testing and that it should kill itself
+    // when no longer used.
+    env.add("HELIOS_SOLO_SUICIDE=1");
     return ImmutableList.copyOf(env);
   }
 
@@ -267,8 +344,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     env.add("HOST_ADDRESS=" + heliosHost);
 
     final String heliosPort = String.format("%d/tcp", HELIOS_MASTER_PORT);
+    final String watchdogPort = String.format("%d/tcp", HELIOS_SOLO_WATCHDOG_PORT);
     final Map<String, List<PortBinding>> portBindings = ImmutableMap.of(
-            heliosPort, singletonList(PortBinding.of("0.0.0.0", "")));
+            heliosPort, singletonList(PortBinding.randomPort("0.0.0.0")),
+            watchdogPort, singletonList(PortBinding.randomPort("0.0.0.0")));
     final HostConfig hostConfig = HostConfig.builder()
             .portBindings(portBindings)
             .binds(binds)
@@ -302,7 +381,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     return creation.id();
   }
-
 
   private void killContainer(String id) {
     try {
@@ -364,13 +442,17 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   /**
    * Undeploy (shut down) this HeliosSoloDeployment.
    */
+  @Override
+  public HostAndPort address() {
+    return deploymentAddress;
+  }
+
   public void close() {
     log.info("shutting ourselves down");
-
     killContainer(heliosContainerId);
     removeContainer(heliosContainerId);
     log.info("Stopped and removed HeliosSolo on host={} containerId={}",
-        containerDockerHost, heliosContainerId);
+             containerDockerHost, heliosContainerId);
     this.dockerClient.close();
   }
 
@@ -397,9 +479,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
-        .add("deploymentAddress", deploymentAddress)
+        .add("dockerClient", dockerClient)
         .add("dockerHost", dockerHost)
+        .add("containerDockerHost", containerDockerHost)
+        .add("namespace", namespace)
+        .add("env", env)
+        .add("binds", binds)
         .add("heliosContainerId", heliosContainerId)
+        .add("deploymentAddress", deploymentAddress)
+        .add("heliosClient", heliosClient)
         .toString();
   }
 
@@ -482,7 +570,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      *
      * @return A Helios Solo deployment configured by this Builder.
      */
-    public HeliosDeployment build() {
+    public HeliosSoloDeployment build() {
       return new HeliosSoloDeployment(this);
     }
   }

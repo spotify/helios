@@ -17,7 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -48,7 +47,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -84,7 +82,6 @@ public class TemporaryJobs implements TestRule {
   private static final String HELIOS_TESTING_PROFILES = "helios.testing.profiles.";
   private static final String DEFAULT_USER = getProperty("user.name");
   private static final Prober DEFAULT_PROBER = new DefaultProber();
-  private static final String DEFAULT_LOCAL_HOST_FILTER = ".+";
   private static final String DEFAULT_PREFIX_DIRECTORY = "/tmp/helios-temp-jobs";
   private static final String DEFAULT_TEST_REPORT_DIRECTORY = "target/helios-reports/test";
   private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
@@ -572,61 +569,7 @@ public class TemporaryJobs implements TestRule {
         deployTimeoutMillis(this.config.getLong("deployTimeoutMillis"));
       }
 
-      // Configuration from profile may be overridden by environment variables
-      configureWithEnv();
-    }
-
-    private void configureWithEnv() {
-      // Use HELIOS_HOST_FILTER if set
-      final String heliosHostFilter = env.get("HELIOS_HOST_FILTER");
-      if (heliosHostFilter != null) {
-        hostFilter(heliosHostFilter);
-      }
-
-      // Use HELIOS_DOMAIN if set
-      final String domain = env.get("HELIOS_DOMAIN");
-      if (!isNullOrEmpty(domain)) {
-        domain(domain);
-        return;
-      }
-
-      // Use HELIOS_ENDPOINTS if set
-      final String endpoints = env.get("HELIOS_ENDPOINTS");
-      if (!isNullOrEmpty(endpoints)) {
-        endpointStrings(Splitter.on(',').splitToList(endpoints));
-        return;
-      }
-
-      // If we get here and client is set, we know which master we'll be talking to, so just return
-      // as rest of this method handles the case where the helios master wasn't specified.
-      if (client != null) {
-        return;
-      }
-
-      // If we get here, we did not create a client based on environment variables or a testing
-      // profile, so check if DOCKER_HOST is set. If so, try to connect to that host on port 5801,
-      // assuming it has a helios master running. If not, attempt to connect to
-      // http://localhost:5801 as a last attempt.
-      final String dockerHost = env.get("DOCKER_HOST");
-      if (dockerHost == null) {
-        endpoints("http://localhost:5801");
-      } else {
-        try {
-          final URI uri = new URI(dockerHost);
-          endpoints("http://" + uri.getHost() + ":5801");
-        } catch (URISyntaxException e) {
-          throw Throwables.propagate(e);
-        }
-      }
-
-      // We usually require the caller to specify a host filter, so jobs aren't accidentally
-      // deployed to arbitrary hosts. But at this point the master is either running on localhost
-      // or the docker host. Either way, this is probably a test machine with one master and one
-      // agent both running on the same box, so it is safe to provide a default filter that will
-      // deploy anywhere.
-      if (isNullOrEmpty(hostFilter)) {
-        hostFilter(DEFAULT_LOCAL_HOST_FILTER);
-      }
+      client = HeliosSoloDeployment.getOrCreateHeliosSoloDeployment().client();
     }
 
     private void processHostPickingStrategy() {
