@@ -49,7 +49,7 @@ public class HeliosDeploymentResource extends ExternalResource {
   /**
    * @param deployment The Helios deployment to expose to your JUnit tests.
    */
-  HeliosDeploymentResource(final HeliosDeployment deployment) {
+  public HeliosDeploymentResource(final HeliosDeployment deployment) {
     this.deployment = deployment;
   }
 
