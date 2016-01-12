@@ -23,12 +23,12 @@ import com.google.common.collect.Iterables;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.DockerHost;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
-import com.spotify.helios.servicescommon.DockerHost;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -83,8 +83,8 @@ public class HealthCheckerFactory {
       try {
         final List<String> cmd = healthCheck.getCommand();
         final String execId = docker.execCreate(containerId, cmd.toArray(new String[cmd.size()]),
-                                                DockerClient.ExecParameter.STDOUT,
-                                                DockerClient.ExecParameter.STDERR);
+                                                DockerClient.ExecCreateParam.attachStdout(),
+                                                DockerClient.ExecCreateParam.attachStderr());
 
         final String output;
         try (LogStream stream = docker.execStart(execId)) {

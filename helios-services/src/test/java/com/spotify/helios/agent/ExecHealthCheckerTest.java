@@ -18,7 +18,6 @@
 package com.spotify.helios.agent;
 
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerClient.ExecParameter;
 import com.spotify.docker.client.DockerClient.ExecStartParameter;
 import com.spotify.docker.client.LogStream;
 import com.spotify.docker.client.messages.ExecState;
@@ -48,13 +47,12 @@ public class ExecHealthCheckerTest {
   @Rule
   public final ExpectedException exception = ExpectedException.none();
 
-  private ExecHealthCheck healthCheck;
   private DockerClient docker;
   private ExecHealthChecker checker;
 
   @Before
   public void setUp() throws Exception {
-    healthCheck = ExecHealthCheck.of("exit 0");
+    final ExecHealthCheck healthCheck = ExecHealthCheck.of("exit 0");
 
     final Info info = mock(Info.class);
     when(info.executionDriver()).thenReturn("native-0.2");
@@ -71,7 +69,8 @@ public class ExecHealthCheckerTest {
     docker = mock(DockerClient.class);
     when(docker.info()).thenReturn(info);
     when(docker.version()).thenReturn(version);
-    when(docker.execCreate(eq(CONTAINER_ID), any(String[].class), (ExecParameter) anyVararg()))
+    when(docker.execCreate(eq(CONTAINER_ID), any(String[].class),
+                           (DockerClient.ExecCreateParam) anyVararg()))
         .thenReturn(EXEC_ID);
     when(docker.execStart(eq(EXEC_ID), (ExecStartParameter) anyVararg())).thenReturn(log);
     when(docker.execInspect(EXEC_ID)).thenReturn(execState);
