@@ -126,9 +126,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     // Running the String host:port through HostAndPort does some validation for us.
     this.deploymentAddress = HostAndPort.fromString(dockerHost.address() + ":" + heliosPort);
     this.heliosClient = HeliosClient.newBuilder()
-            .setUser(username)
-            .setEndpoints("http://" + deploymentAddress)
-            .build();
+        .setUser(username)
+        .setEndpoints("http://" + deploymentAddress)
+        .build();
 
     connectToWatchdog(dockerHost.address(), watchdogPort);
   }
@@ -263,14 +263,14 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private String checkDockerAndGetGateway() throws HeliosDeploymentException {
     final String probeName = randomString();
     final HostConfig hostConfig = HostConfig.builder()
-            .binds(binds)
-            .build();
+        .binds(binds)
+        .build();
     final ContainerConfig containerConfig = ContainerConfig.builder()
-            .env(env)
-            .hostConfig(hostConfig)
-            .image(PROBE_IMAGE)
-            .cmd(probeCommand(probeName))
-            .build();
+        .env(env)
+        .hostConfig(hostConfig)
+        .image(PROBE_IMAGE)
+        .cmd(probeCommand(probeName))
+        .build();
 
     final ContainerCreation creation;
     try {
@@ -296,13 +296,13 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     if (exit.statusCode() != 0) {
       throw new HeliosDeploymentException(String.format(
-              "Docker was not reachable (curl exit status %d) using DOCKER_HOST=%s and "
-                      + "DOCKER_CERT_PATH=%s from within a container. Please ensure that "
-                      + "DOCKER_HOST contains a full hostname or IP address, not localhost, "
-                      + "127.0.0.1, etc.",
-              exit.statusCode(),
-              containerDockerHost.bindURI(),
-              containerDockerHost.dockerCertPath()));
+          "Docker was not reachable (curl exit status %d) using DOCKER_HOST=%s and "
+          + "DOCKER_CERT_PATH=%s from within a container. Please ensure that "
+          + "DOCKER_HOST contains a full hostname or IP address, not localhost, "
+          + "127.0.0.1, etc.",
+          exit.statusCode(),
+          containerDockerHost.bindURI(),
+          containerDockerHost.dockerCertPath()));
     }
 
     return gateway;
@@ -313,15 +313,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     switch (containerDockerHost.uri().getScheme()) {
       case "unix":
         cmd.addAll(ImmutableList.of(
-                "--unix-socket", containerDockerHost.uri().getSchemeSpecificPart(),
-                "http:/containers/" + probeName + "/json"));
+            "--unix-socket", containerDockerHost.uri().getSchemeSpecificPart(),
+            "http:/containers/" + probeName + "/json"));
         break;
       case "https":
         cmd.addAll(ImmutableList.of(
-                "--insecure",
-                "--cert", "/certs/cert.pem",
-                "--key", "/certs/key.pem",
-                containerDockerHost.uri() + "/containers/" + probeName + "/json"));
+            "--insecure",
+            "--cert", "/certs/cert.pem",
+            "--key", "/certs/key.pem",
+            containerDockerHost.uri() + "/containers/" + probeName + "/json"));
         break;
       default:
         cmd.add(containerDockerHost.uri() + "/containers/" + probeName + "/json");
@@ -346,17 +346,17 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     final String heliosPort = String.format("%d/tcp", HELIOS_MASTER_PORT);
     final String watchdogPort = String.format("%d/tcp", HELIOS_SOLO_WATCHDOG_PORT);
     final Map<String, List<PortBinding>> portBindings = ImmutableMap.of(
-            heliosPort, singletonList(PortBinding.randomPort("0.0.0.0")),
-            watchdogPort, singletonList(PortBinding.randomPort("0.0.0.0")));
+        heliosPort, singletonList(PortBinding.randomPort("0.0.0.0")),
+        watchdogPort, singletonList(PortBinding.randomPort("0.0.0.0")));
     final HostConfig hostConfig = HostConfig.builder()
-            .portBindings(portBindings)
-            .binds(binds)
-            .build();
+        .portBindings(portBindings)
+        .binds(binds)
+        .build();
     final ContainerConfig containerConfig = ContainerConfig.builder()
-            .env(ImmutableList.copyOf(env))
-            .hostConfig(hostConfig)
-            .image(HELIOS_IMAGE)
-            .build();
+        .env(ImmutableList.copyOf(env))
+        .hostConfig(hostConfig)
+        .image(HELIOS_IMAGE)
+        .build();
 
     log.info("starting container for helios-solo with image={}", HELIOS_IMAGE);
 
@@ -406,7 +406,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * @throws HeliosDeploymentException when no host port is found.
    */
   private String getHostPort(final String containerId, final int containerPort)
-          throws HeliosDeploymentException {
+      throws HeliosDeploymentException {
     final String heliosPort = String.format("%d/tcp", containerPort);
     try {
       final NetworkSettings settings = dockerClient.inspectContainer(containerId).networkSettings();
@@ -416,16 +416,14 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         }
       }
     } catch (DockerException | InterruptedException e) {
-      throw new HeliosDeploymentException(String.format(
-              "unable to find port binding for %s in container %s.",
-              heliosPort,
-              containerId),
-              e);
+      throw new HeliosDeploymentException(
+          String.format("unable to find port binding for %s in container %s.",
+                        heliosPort, containerId), e);
     }
     throw new HeliosDeploymentException(String.format(
-            "unable to find port binding for %s in container %s.",
-            heliosPort,
-            containerId));
+        "unable to find port binding for %s in container %s.",
+        heliosPort,
+        containerId));
   }
 
   private String randomString() {
