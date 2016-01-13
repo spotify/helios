@@ -46,3 +46,22 @@ will add a lot of overhead to each test. We recommend using
 
 [helios-solo]: docs/helios_solo.md
 [TemporaryJobs]: docs/testing_framework.md
+
+## Issues if `DOCKER_HOST` refers to `localhost` or `127.0.0.1`
+
+In order to deploy jobs to itself, the helios-solo container needs to talk to
+the docker daemon running on the host. 
+
+If your `DOCKER_HOST` environment variable points to a Unix socket, or refers
+to an address that is not `localhost` or `127.0.0.1` then this should work fine
+(in the Unix socket case, `HeliosSoloDeployment` adds arguments to the
+helios-solo container to bind the unix socket file).
+
+If `DOCKER_HOST` refers to `localhost`/`127.0.0.1` then this will not work as
+that address within the container refers back to the container itself.
+
+In this case, `HeliosSoloDeployment` will attempt to be smart and override your
+`DOCKER_HOST` and use the unix socket endpoint instead. If this does not work
+for you (perhaps because you use a non-default Unix socket address) then you
+can workaround this by making sure your test is launched with a `DOCKER_HOST`
+value that is not localhost.
