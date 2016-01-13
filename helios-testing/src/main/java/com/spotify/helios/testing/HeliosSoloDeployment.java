@@ -429,10 +429,11 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * the <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables and the
      * Docker daemon's configuration.
      *
-     * @param dockerHost Docker socket and certificate settings for the Helios container.
+     * @param containerDockerHost Docker socket and certificate settings as seen from inside
+     *                            the Helios container.
      * @return This Builder, with its container Docker host configured.
      */
-    public Builder containerDockerHost(final DockerHost dockerHost) {
+    public Builder containerDockerHost(final DockerHost containerDockerHost) {
       this.containerDockerHost = containerDockerHost;
       return this;
     }
