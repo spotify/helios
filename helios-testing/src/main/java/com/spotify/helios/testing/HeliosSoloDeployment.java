@@ -165,8 +165,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private List<String> containerBinds() {
     final HashSet<String> binds = new HashSet<>();
     if (containerDockerHost.bindURI().getScheme().equals("unix")) {
-      binds.add(containerDockerHost.bindURI().getSchemeSpecificPart() + ":" +
-              containerDockerHost.bindURI().getSchemeSpecificPart());
+      final String path = containerDockerHost.bindURI().getPath();
+      binds.add(path + ":" + path);
     }
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       binds.add(containerDockerHost.dockerCertPath() + ":/certs");
@@ -387,7 +387,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    */
   public static Builder fromEnv()  {
     try {
-      DefaultDockerClient.fromEnv().uri();
       return builder().dockerClient(DefaultDockerClient.fromEnv().build());
     } catch (DockerCertificateException e) {
       throw new RuntimeException("unable to create Docker client from environment", e);
