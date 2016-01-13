@@ -31,10 +31,10 @@ import static org.apache.zookeeper.ZooDefs.Perms.WRITE;
 import static org.apache.zookeeper.ZooDefs.Perms.DELETE;
 
 /**
- * Contains a single factory method for creating ACLProvider used by Helios (agents and masters),
+ * Contains methods for creating ACLProvider used by Helios (agents and masters),
  * that controls the ACLs set on nodes when they are created.
  * <p>
- * If not authentication is provided a client has no access (not even read access). There are two
+ * If no authentication is provided a client has no access (not even read access). There are two
  * different roles: agents and masters. Masters are granted all permissions except ADMIN to all
  * nodes. Agents are only granted the permissions it needs, to a subset of all the nodes. This
  * limits the consequences of the agent credentials being compromised.

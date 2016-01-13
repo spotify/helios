@@ -91,7 +91,7 @@ public class RuleBasedZooKeeperAclProvider implements ACLProvider {
   private static class Rule {
 
     private final Pattern pattern;
-    private Id id;
+    private final Id id;
     private final int perms;
 
     Rule(final String regex, final int perms, final Id id) {

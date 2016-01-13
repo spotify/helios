@@ -44,6 +44,7 @@ public class ZooKeeperAclInitializer {
     } else {
       System.out.println("usage: <ZK connect string> <ZK cluster ID> " +
                          "<master user> <master password> <agent user> <agent password>");
+      System.exit(-1);
     }
   }
 
@@ -70,9 +71,12 @@ public class ZooKeeperAclInitializer {
         authorization);
 
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator, zooKeeperClusterId);
-    client.start();
-
-    client.initializeAclRecursive("/", aclProvider);
+    try {
+      client.start();
+      client.initializeAclRecursive("/", aclProvider);
+    } finally {
+      client.close();
+    }
   }
 
 }

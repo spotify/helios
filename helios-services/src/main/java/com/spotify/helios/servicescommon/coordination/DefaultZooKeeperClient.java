@@ -55,6 +55,7 @@ import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.newLinkedList;
 import static com.google.common.collect.Lists.reverse;
+import static com.google.common.collect.Sets.newHashSet;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
@@ -167,10 +168,11 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   public void start() {
     if (client.getState() != CuratorFrameworkState.STARTED) {
       client.start();
-    }
-    if (clusterId != null) {
-      client.getConnectionStateListenable().addListener(connectionStateListener);
-      checkClusterIdExists(clusterId, "start");
+
+      if (clusterId != null) {
+        client.getConnectionStateListenable().addListener(connectionStateListener);
+        checkClusterIdExists(clusterId, "start");
+      }
     }
   }
 
@@ -425,7 +427,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
       final List<ACL> expected = aclProvider.getAclForPath(path);
       final List<ACL> actual = getAcl(path);
 
-      if ((expected.size() == actual.size()) && (expected.containsAll(actual))) {
+      if (newHashSet(expected).equals(newHashSet(actual))) {
         // actual ACL matches expected
       } else {
         setAcl(path, expected);

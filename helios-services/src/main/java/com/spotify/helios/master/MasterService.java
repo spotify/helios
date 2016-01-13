@@ -372,7 +372,8 @@ public class MasterService extends AbstractIdleService {
         final List<ACL> wantedAcls = aclProvider.getAclForPath("/");
         if (!Sets.newHashSet(curAcls).equals(Sets.newHashSet(wantedAcls))) {
           log.info(
-              "Current ACLs on the zookeeper root node differ from the desired ACLs, updating");
+              "Current ACL's on the zookeeper root node differ from desired, updating: {} -> {}",
+              curAcls, wantedAcls);
           client.getCuratorFramework().setACL().withACL(wantedAcls).forPath("/");
         }
       } catch (Exception e) {

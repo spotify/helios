@@ -17,21 +17,20 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.collect.Sets;
-
 import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Id;
 import org.junit.Test;
 
-import java.util.Arrays;
-
-import static org.apache.zookeeper.ZooDefs.Perms.DELETE;
 import static org.apache.zookeeper.ZooDefs.Perms.CREATE;
+import static org.apache.zookeeper.ZooDefs.Perms.DELETE;
 import static org.apache.zookeeper.ZooDefs.Perms.READ;
 import static org.apache.zookeeper.ZooDefs.Perms.WRITE;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 public class RuleBasedZooKeeperAclProviderTest {
 
@@ -45,15 +44,9 @@ public class RuleBasedZooKeeperAclProviderTest {
         .rule("/foo/qux", READ | WRITE, id2)
         .build();
 
-    assertEquals(
-        Arrays.asList(new ACL(DELETE, id1)),
-        aclProvider.getAclForPath("/foo/baz"));
-    assertEquals(
-        Arrays.asList(new ACL(CREATE, id1)),
-        aclProvider.getAclForPath("/foo/bar"));
-    assertEquals(
-        Arrays.asList(new ACL(READ | WRITE, id2)),
-        aclProvider.getAclForPath("/foo/qux"));
+    assertThat(aclProvider.getAclForPath("/foo/baz"), contains(new ACL(DELETE, id1)));
+    assertThat(aclProvider.getAclForPath("/foo/bar"), contains(new ACL(CREATE, id1)));
+    assertThat(aclProvider.getAclForPath("/foo/qux"), contains(new ACL(READ | WRITE, id2)));
   }
 
   @Test
@@ -67,9 +60,8 @@ public class RuleBasedZooKeeperAclProviderTest {
         .rule("/foo/bar/baz", WRITE, id2)
         .build();
 
-    assertEquals(
-        Sets.newHashSet(new ACL(CREATE | DELETE, id1), new ACL(READ, id2)),
-        Sets.newHashSet(aclProvider.getAclForPath("/foo/bar")));
+    assertThat(aclProvider.getAclForPath("/foo/bar"), containsInAnyOrder(
+        new ACL(CREATE | DELETE, id1), new ACL(READ, id2)));
   }
 
   @Test
