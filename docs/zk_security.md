@@ -1,12 +1,12 @@
 # ZooKeeper security
 
-To prevent accidental or malicious tampering with the data that Helios stores in ZooKeeper Helios
-supports using ZooKeeper's ACL functionality to lock it down (to an extent).  This functionality is
+To prevent accidental or malicious tampering with the data that Helios stores in ZooKeeper, we
+support using ZooKeeper's ACL functionality to lock it down (to an extent).  This functionality is
 disabled by default.
 
 When enabled, credentials are required to access data in ZooKeeper (we use ZooKeeper's `digest`
-authentication scheme). There are two sets of credentials: one set of the masters, and one set for 
-the agents. With ACLs enabled unauthenticated users have no access to the data in ZooKeeper (not
+authentication scheme). There are two sets of credentials: one set for the masters, and one set for 
+the agents. With ACL's enabled unauthenticated users have no access to the data in ZooKeeper (not
 even read access). Agents have read access to all data but limited permissions to mutate data. They
 only have mutate permissions where needed. This limits the impact of the agent credentials being
 compromised (e.g. if an agent is compromised). While the agent credentials being compromised is
@@ -15,9 +15,8 @@ jobs to other agents (in most cases).
 
 Masters are granted all permissions except ADMIN on all nodes.
 
-**Note that credentials are sent to ZooKeeper in plain-text** (we currently don't support using
-encrypted connections to ZooKeeper) - meaing that ACLs are only effective if you can trust the
-network that you run on.
+**Note that credentials are sent to ZooKeeper in plain-text** ,meaning that ACL's are only effective
+if you can trust the network that you run on. Alternatively, you can try to [setup SSL for ZooKeeper client-server communication](https://cwiki.apache.org/confluence/display/ZOOKEEPER/ZooKeeper+SSL+User+Guide).
 
 ## Configuring ACL support
 
@@ -48,9 +47,15 @@ the following command:
     $ echo -n user:password | openssl dgst -sha1 -binary | base64
     tpUq/4Pn5A64fVZyQ0gOJ8ZWqkY=
 
-## Migrating an existing cluster to using ACLs
+## Migrating an existing cluster to using ACL's
 
-ACLs are applied only to new nodes as they are created. Enabling ACL support on an existing cluster
-will not break anything but ACLs will not be retroactively applied to already existing ZK nodes.
+ACL's are applied only to new nodes as they are created. Enabling ACL support on an existing cluster
+will not break anything, but ACL's will not be retroactively applied to already existing ZK nodes.
 
-TODO
+To apply ACL's to an existing cluster, use the `helios-initialize-acl` tool, either from the `bin`
+directory from the source distribution or from the `helios-master` package:
+
+```
+$ bin/helios-initialize-acl
+usage: <ZK connect string> <ZK cluster ID> <master user> <master password> <agent user> <agent password>
+```
