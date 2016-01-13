@@ -371,7 +371,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     final ContainerCreation creation;
     try {
-      dockerClient.pull(HELIOS_IMAGE);
+      //dockerClient.pull(HELIOS_IMAGE);
       final String containerName = HELIOS_CONTAINER_PREFIX + namespace;
       creation = dockerClient.createContainer(containerConfig, containerName);
     } catch (DockerException | InterruptedException e) {
