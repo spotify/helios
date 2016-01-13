@@ -1,3 +1,5 @@
+#!/bin/bash
+
 ### BEGIN INIT INFO
 # Provides:          helios-agent
 # Required-Start:    networking
