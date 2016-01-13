@@ -1,15 +1,10 @@
-Since Helios 0.8.662, [helios-solo][] can also be run directly from within an
-integration test using a JUnit `@ClassRule`/`@Rule`.
+Since Helios 0.8.662, [helios-solo][] can also be launched directly from within
+an integration test using a JUnit `@ClassRule`/`@Rule`.
 
-This allows integration tests to run against Helios on the local machine
-executing the tests without having to have `helios-solo` already installed
-and/or running.
-
-In other words, integration tests can be written that will automatically
-install (and clean up) helios-solo for you without having to install any extra
-packages beforehand on your local machine / CI server / etc. The only
-requirement is that the machine running the integration test have Docker
-installed.
+This allows for integration tests that will automatically install (and clean
+up) helios-solo for you without having to install `helios-solo` and remember to
+start it before running your tests.  The only requirement is that the machine
+running the integration test have Docker installed.
 
 # How to use it
 
