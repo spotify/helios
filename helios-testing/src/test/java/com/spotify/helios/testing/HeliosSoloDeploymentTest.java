@@ -64,7 +64,7 @@ public class HeliosSoloDeploymentTest {
 
   public static class HeliosSoloDeploymentTestImpl {
 
-    public static final String IMAGE_NAME = "onescience/alpine:latest";
+    private static final String IMAGE_NAME = "onescience/alpine:latest";
 
     private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeploymentTestImpl.class);
 

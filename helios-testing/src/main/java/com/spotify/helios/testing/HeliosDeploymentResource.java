@@ -53,6 +53,10 @@ public class HeliosDeploymentResource extends ExternalResource {
     this.deployment = deployment;
   }
 
+  public HeliosDeployment deployment() {
+    return deployment;
+  }
+
   /** Ensure that the HeliosDeployment is up. */
   @Override
   protected void before() throws Throwable {

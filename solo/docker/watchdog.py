@@ -10,7 +10,6 @@ import os
 PORT=33333
 TIMEOUT=60
 connected=False
-closed=False
 
 class Server(asyncore.dispatcher):
     def __init__(self, host, port):
@@ -34,8 +33,8 @@ class Server(asyncore.dispatcher):
 class Handler(asyncore.dispatcher_with_send):
     def handle_close(self):
         print "Connection closed"
-        global closed
-        closed=True
+        global connected
+        connected=False
         self.close()
 
     def handle_read(self):
@@ -54,9 +53,9 @@ t0 = time.time()
 
 while True:
     asyncore.loop(timeout=1, count=1)
-    if closed:
+    if not connected:
         print "Exiting -- connection closed"
         break
-    if connected == False and time.time() - t0 >= TIMEOUT:
+    if time.time() - t0 >= TIMEOUT:
         print "Exiting -- no connection established within timeout"
         break
