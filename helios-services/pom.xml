@@ -407,6 +407,15 @@
                   </mapper>
                 </data>
                 <data>
+                  <src>${basedir}/../bin/helios-initialize-acl</src>
+                  <type>file</type>
+                  <mapper>
+                    <type>perm</type>
+                    <prefix>/usr/bin/</prefix>
+                    <filemode>755</filemode>
+                  </mapper>
+                </data>
+                <data>
                   <src>${project.parent.basedir}/src/deb/helios-master/default</src>
                   <type>file</type>
                   <dst>/etc/default/helios-master</dst>
