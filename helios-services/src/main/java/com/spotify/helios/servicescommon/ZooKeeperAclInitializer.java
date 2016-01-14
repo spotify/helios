@@ -29,10 +29,14 @@ import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.data.ACL;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static com.google.common.base.Throwables.propagate;
+import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 
@@ -73,10 +77,31 @@ public class ZooKeeperAclInitializer {
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator, zooKeeperClusterId);
     try {
       client.start();
-      client.initializeAclRecursive("/", aclProvider);
+      initializeAclRecursive(client, "/", aclProvider);
     } finally {
       client.close();
     }
   }
 
+  static void initializeAclRecursive(final ZooKeeperClient client, final String path,
+                                            final ACLProvider aclProvider)
+      throws KeeperException {
+    try {
+      final List<ACL> expected = aclProvider.getAclForPath(path);
+      final List<ACL> actual = client.getAcl(path);
+
+      if (newHashSet(expected).equals(newHashSet(actual))) {
+        // actual ACL matches expected
+      } else {
+        client.setAcl(path, expected);
+      }
+
+      for (final String child : client.getChildren(path)) {
+        initializeAclRecursive(client, path.replaceAll("/$", "") + "/" + child, aclProvider);
+      }
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
 }

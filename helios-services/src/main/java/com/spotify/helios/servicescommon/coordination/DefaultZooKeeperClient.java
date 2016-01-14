@@ -20,7 +20,6 @@ package com.spotify.helios.servicescommon.coordination;
 import com.fasterxml.jackson.databind.JavaType;
 
 import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.imps.CuratorFrameworkState;
@@ -55,7 +54,6 @@ import static com.google.common.base.Throwables.propagateIfInstanceOf;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.newLinkedList;
 import static com.google.common.collect.Lists.reverse;
-import static com.google.common.collect.Sets.newHashSet;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
 
@@ -413,29 +411,6 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     assertClusterIdFlagTrue();
     try {
       return client.getACL().forPath(path);
-    } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
-    }
-  }
-
-  @Override
-  public void initializeAclRecursive(final String path, final ACLProvider aclProvider)
-      throws KeeperException {
-    assertClusterIdFlagTrue();
-    try {
-      final List<ACL> expected = aclProvider.getAclForPath(path);
-      final List<ACL> actual = getAcl(path);
-
-      if (newHashSet(expected).equals(newHashSet(actual))) {
-        // actual ACL matches expected
-      } else {
-        setAcl(path, expected);
-      }
-
-      for (final String child : getChildren(path)) {
-        initializeAclRecursive(path.replaceAll("/$", "") + "/" + child, aclProvider);
-      }
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);
       throw propagate(e);
