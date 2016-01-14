@@ -102,7 +102,7 @@ public class JobRemoveTest extends SystemTestBase {
     awaitJobUndeployed(defaultClient(), testHost(), jobId, LONG_WAIT_SECONDS, SECONDS);
 
     final ZooKeeperClient zkClient = new ZooKeeperClientProvider(
-        new DefaultZooKeeperClient(zk().curator()), ZooKeeperModelReporter.noop())
+        new DefaultZooKeeperClient(zk().curatorWithSuperAuth()), ZooKeeperModelReporter.noop())
         .get("test-client");
 
     // Check that there's some history events

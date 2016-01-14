@@ -131,6 +131,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
     if (upNode == null) {
       final String upPath = Paths.statusHostUp(name);
       log.debug("Creating up node: {}", upPath);
+      client.ensurePath(upPath, true);
       upNode = client.persistentEphemeralNode(upPath, EPHEMERAL, EMPTY_BYTES);
       upNode.start();
     }

@@ -31,10 +31,14 @@ import java.net.InetSocketAddress;
  */
 public class MasterParser extends ServiceParser {
 
+  private static final String ZK_MASTER_PASSWORD_ENVVAR = "HELIOS_ZK_MASTER_PASSWORD";
+
   private final MasterConfig masterConfig;
 
   private Argument httpArg;
   private Argument adminArg;
+  private Argument zkAclAgentDigest;
+  private Argument zkAclMasterPassword;
 
   public MasterParser(final String... args) throws ArgumentParserException {
     super("helios-master", "Spotify Helios Master", args);
@@ -42,13 +46,22 @@ public class MasterParser extends ServiceParser {
     final Namespace options = getNamespace();
     final InetSocketAddress httpAddress = parseSocketAddress(options.getString(httpArg.getDest()));
 
+    String masterPassword = System.getenv(ZK_MASTER_PASSWORD_ENVVAR);
+    if (masterPassword == null) {
+      masterPassword = options.getString(zkAclMasterPassword.getDest());
+    }
+
     final MasterConfig config = new MasterConfig()
         .setZooKeeperConnectString(getZooKeeperConnectString())
         .setZooKeeperSessionTimeoutMillis(getZooKeeperSessionTimeoutMillis())
         .setZooKeeperConnectionTimeoutMillis(getZooKeeperConnectionTimeoutMillis())
-        .setZooKeeperNamespace(getZooKeeperNamespace())
         .setZooKeeperClusterId(getZooKeeperClusterId())
         .setNoZooKeeperMasterRegistration(getNoZooKeeperRegistration())
+        .setZooKeeperEnableAcls(getZooKeeperEnableAcls())
+        .setZookeeperAclAgentUser(getZooKeeperAclAgentUser())
+        .setZooKeeperAclAgentDigest(options.getString(zkAclAgentDigest.getDest()))
+        .setZookeeperAclMasterUser(getZooKeeperAclMasterUser())
+        .setZooKeeperAclMasterPassword(masterPassword)
         .setDomain(getDomain())
         .setName(getName())
         .setStatsdHostPort(getStatsdHostPort())
@@ -75,6 +88,15 @@ public class MasterParser extends ServiceParser {
         .type(Integer.class)
         .setDefault(5802)
         .help("admin http port");
+
+    zkAclAgentDigest = parser.addArgument("--zk-acl-agent-digest")
+        .type(String.class);
+
+    zkAclMasterPassword = parser.addArgument("--zk-acl-master-password")
+        .type(String.class)
+        .help("ZooKeeper master password (for ZooKeeper ACLs). If the "
+              + ZK_MASTER_PASSWORD_ENVVAR
+              + " environment variable is present this argument is ignored.");
   }
 
   public MasterConfig getMasterConfig() {

@@ -58,7 +58,7 @@ public interface ZooKeeperTestManager {
    * Get a curator client connected to this cluster.
    * @return The curator.
    */
-  CuratorFramework curator();
+  CuratorFramework curatorWithSuperAuth();
 
   /**
    * Await zookeeper successfully serving requests.

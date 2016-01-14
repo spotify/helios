@@ -30,12 +30,16 @@ import org.apache.curator.test.InstanceSpec;
 import org.apache.curator.test.TestingCluster;
 import org.apache.curator.test.TestingZooKeeperServer;
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.server.auth.DigestAuthenticationProvider;
 import org.junit.Rule;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.NoSuchAlgorithmException;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +59,9 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
 
   @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
+  private static final String SUPER_USER = "super";
+  private static final String SUPER_PASSWORD = "hunter2****";
+
   private final Path tempDir;
 
   private List<InstanceSpec> zkPeers;
@@ -64,6 +71,25 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
 
   private CuratorFramework curator;
   private TestingCluster cluster;
+
+  static {
+    try {
+      final String superDigest = DigestAuthenticationProvider.generateDigest(
+          SUPER_USER + ":" + SUPER_PASSWORD);
+
+      final Field digestField = DigestAuthenticationProvider.class.getDeclaredField("superDigest");
+      digestField.setAccessible(true);
+
+      final Field modifiersField = Field.class.getDeclaredField("modifiers");
+      modifiersField.setAccessible(true);
+      modifiersField.setInt(digestField, digestField.getModifiers() & ~Modifier.FINAL);
+
+      digestField.set(null, superDigest);
+    } catch (NoSuchAlgorithmException | IllegalAccessException | NoSuchFieldException e) {
+      // i mean, for real?
+      throw Throwables.propagate(e);
+    }
+  }
 
   public ZooKeeperTestingClusterManager() {
     try {
@@ -100,7 +126,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
   }
 
   @Override
-  public CuratorFramework curator() {
+  public CuratorFramework curatorWithSuperAuth() {
     return curator;
   }
 
@@ -110,7 +136,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
       @Override
       public Object call() throws Exception {
         try {
-          return curator().getChildren().forPath("/");
+          return curatorWithSuperAuth().getChildren().forPath("/");
         } catch (Exception e) {
           return null;
         }
@@ -124,7 +150,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
       @Override
       public Object call() throws Exception {
         try {
-          curator().getChildren().forPath("/");
+          curatorWithSuperAuth().getChildren().forPath("/");
           return null;
         } catch (KeeperException.ConnectionLossException e) {
           return true;
@@ -190,7 +216,11 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
 
   private CuratorFramework createCurator(final String connectString) {
     final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
-    final CuratorFramework curator = CuratorFrameworkFactory.newClient(connectString, retryPolicy);
+    final CuratorFramework curator = CuratorFrameworkFactory.builder()
+        .connectString(connectString)
+        .retryPolicy(retryPolicy)
+        .authorization("digest", (SUPER_USER + ":" + SUPER_PASSWORD).getBytes())
+        .build();
     curator.start();
     return curator;
   }

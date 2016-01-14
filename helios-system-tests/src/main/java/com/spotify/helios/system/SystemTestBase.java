@@ -72,6 +72,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.master.MasterMain;
+import com.spotify.helios.servicescommon.ZooKeeperAclProviders;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.sun.jersey.api.client.ClientResponse;
@@ -166,6 +167,15 @@ public abstract class SystemTestBase {
   public static final String TEST_HOST = "test-host";
   public static final String TEST_MASTER = "test-master";
 
+  public static final String MASTER_USER = "helios-master";
+  public static final String MASTER_PASSWORD = "master-password";
+  public static final String AGENT_USER = "helios-agent";
+  public static final String AGENT_PASSWORD = "agent-password";
+  public static final String MASTER_DIGEST =
+      ZooKeeperAclProviders.digest(MASTER_USER, MASTER_PASSWORD);
+  public static final String AGENT_DIGEST = ZooKeeperAclProviders.digest(
+      AGENT_USER, AGENT_PASSWORD);
+
   @Rule public final TemporaryPorts temporaryPorts = TemporaryPorts.create();
 
   @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
@@ -185,7 +195,6 @@ public abstract class SystemTestBase {
   private Path masterStateDirs;
 
   private ZooKeeperTestManager zk;
-  protected static String zooKeeperNamespace = null;
   protected final String zkClusterId = String.valueOf(ThreadLocalRandom.current().nextInt(10000));
 
   /** An HttpClient that can be used for sending arbitrary HTTP requests */
@@ -324,7 +333,7 @@ public abstract class SystemTestBase {
   }
 
   protected ZooKeeperTestManager zooKeeperTestManager() {
-    return new ZooKeeperTestingServerManager(zooKeeperNamespace);
+    return new ZooKeeperTestingServerManager();
   }
 
   @After
@@ -450,7 +459,7 @@ public abstract class SystemTestBase {
 
   protected List<String> setupDefaultMaster(final int offset, String... args) throws Exception {
     // TODO (dano): Move this bootstrapping to something reusable
-    final CuratorFramework curator = zk.curator();
+    final CuratorFramework curator = zk.curatorWithSuperAuth();
     curator.newNamespaceAwareEnsurePath(Paths.configHosts()).ensure(curator.getZookeeperClient());
     curator.newNamespaceAwareEnsurePath(Paths.configJobs()).ensure(curator.getZookeeperClient());
     curator.newNamespaceAwareEnsurePath(Paths.configJobRefs()).ensure(curator.getZookeeperClient());
@@ -466,7 +475,12 @@ public abstract class SystemTestBase {
         "--http", "http://0.0.0.0:" + (masterPort() + offset),
         "--admin=" + (masterAdminPort() + offset),
         "--domain", "",
-        "--zk", zk.connectString()
+        "--zk", zk.connectString(),
+        "--zk-enable-acls",
+        "--zk-acl-agent-user", AGENT_USER,
+        "--zk-acl-agent-digest", AGENT_DIGEST,
+        "--zk-acl-master-user", MASTER_USER,
+        "--zk-acl-master-password", MASTER_PASSWORD
     );
 
     final String name;
@@ -567,19 +581,25 @@ public abstract class SystemTestBase {
   protected AgentMain startDefaultAgent(final String host, final String... args)
       throws Exception {
     final String stateDir = agentStateDirs.resolve(host).toString();
-    final List<String> argsList = Lists.newArrayList("-vvvv",
-                                                     "--no-log-setup",
-                                                     "--no-http",
-                                                     "--name", host,
-                                                     "--docker=" + DOCKER_HOST,
-                                                     "--zk", zk.connectString(),
-                                                     "--zk-session-timeout", "100",
-                                                     "--zk-connection-timeout", "100",
-                                                     "--state-dir", stateDir,
-                                                     "--domain", "",
-                                                     "--port-range=" +
-                                                     dockerPortRange.lowerEndpoint() + ":" +
-                                                     dockerPortRange.upperEndpoint()
+    final List<String> argsList = Lists.newArrayList(
+        "-vvvv",
+        "--no-log-setup",
+        "--no-http",
+        "--name", host,
+        "--docker=" + DOCKER_HOST,
+        "--zk", zk.connectString(),
+        "--zk-session-timeout", "100",
+        "--zk-connection-timeout", "100",
+        "--zk-enable-acls",
+        "--zk-acl-master-user", MASTER_USER,
+        "--zk-acl-master-digest", MASTER_DIGEST,
+        "--zk-acl-agent-user", AGENT_USER,
+        "--zk-acl-agent-password", AGENT_PASSWORD,
+        "--state-dir", stateDir,
+        "--domain", "",
+        "--port-range=" +
+        dockerPortRange.lowerEndpoint() + ":" +
+        dockerPortRange.upperEndpoint()
     );
     argsList.addAll(asList(args));
     return startAgent(argsList.toArray(new String[argsList.size()]));

@@ -41,13 +41,17 @@ public class MasterConfig extends Configuration {
   private Path serviceRegistrarPlugin;
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
-  private String zooKeeperNamespace;
   private String zooKeeperClusterId;
   private boolean noZooKeeperMasterRegistration;
   private int adminPort;
   private InetSocketAddress httpEndpoint;
   private List<String> kafkaBrokers;
   private Path stateDirectory;
+  private boolean zooKeeperEnableAcls;
+  private String zookeeperAclAgentUser;
+  private String zooKeeperAclAgentDigest;
+  private String zookeeperAclMasterUser;
+  private String zooKeeperAclMasterPassword;
 
   public String getDomain() {
     return domain;
@@ -92,15 +96,6 @@ public class MasterConfig extends Configuration {
 
   public int getZooKeeperConnectionTimeoutMillis() {
     return zooKeeperConnectionTimeoutMillis;
-  }
-
-  public String getZooKeeperNamespace() {
-    return this.zooKeeperNamespace;
-  }
-
-  public MasterConfig setZooKeeperNamespace(String zooKeeperNamespace) {
-    this.zooKeeperNamespace = zooKeeperNamespace;
-    return this;
   }
 
   public String getZooKeeperClusterId() {
@@ -209,5 +204,50 @@ public class MasterConfig extends Configuration {
 
   public InetSocketAddress getHttpEndpoint() {
     return httpEndpoint;
+  }
+
+  public MasterConfig setZooKeeperEnableAcls(final boolean zooKeeperEnableAcls) {
+    this.zooKeeperEnableAcls = zooKeeperEnableAcls;
+    return this;
+  }
+
+  public boolean isZooKeeperEnableAcls() {
+    return zooKeeperEnableAcls;
+  }
+
+  public MasterConfig setZooKeeperAclAgentDigest(final String zooKeeperAclAgentDigest) {
+    this.zooKeeperAclAgentDigest = zooKeeperAclAgentDigest;
+    return this;
+  }
+
+  public String getZooKeeperAclAgentDigest() {
+    return zooKeeperAclAgentDigest;
+  }
+
+  public MasterConfig setZooKeeperAclMasterPassword(final String zooKeeperAclMasterPassword) {
+    this.zooKeeperAclMasterPassword = zooKeeperAclMasterPassword;
+    return this;
+  }
+
+  public String getZooKeeperAclMasterPassword() {
+    return zooKeeperAclMasterPassword;
+  }
+
+  public String getZookeeperAclMasterUser() {
+    return zookeeperAclMasterUser;
+  }
+
+  public MasterConfig setZookeeperAclMasterUser(final String zookeeperAclMasterUser) {
+    this.zookeeperAclMasterUser = zookeeperAclMasterUser;
+    return this;
+  }
+
+  public String getZookeeperAclAgentUser() {
+    return zookeeperAclAgentUser;
+  }
+
+  public MasterConfig setZookeeperAclAgentUser(final String zookeeperAclAgentUser) {
+    this.zookeeperAclAgentUser = zookeeperAclAgentUser;
+    return this;
   }
 }

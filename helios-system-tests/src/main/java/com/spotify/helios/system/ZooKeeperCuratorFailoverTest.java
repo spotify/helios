@@ -64,8 +64,8 @@ public class ZooKeeperCuratorFailoverTest {
     zk.awaitUp(5, MINUTES);
 
     try {
-      zk.curator().create().forPath(FOO, FOO_DATA);
-      assertArrayEquals(FOO_DATA, zk.curator().getData().forPath(FOO));
+      zk.curatorWithSuperAuth().create().forPath(FOO, FOO_DATA);
+      assertArrayEquals(FOO_DATA, zk.curatorWithSuperAuth().getData().forPath(FOO));
     } catch (KeeperException.NodeExistsException ignore) {
     }
   }
@@ -78,7 +78,7 @@ public class ZooKeeperCuratorFailoverTest {
 
     expectedException.expect(KeeperException.ConnectionLossException.class);
 
-    zk.curator().create().forPath(FOO, FOO_DATA);
+    zk.curatorWithSuperAuth().create().forPath(FOO, FOO_DATA);
   }
 
 
@@ -93,8 +93,8 @@ public class ZooKeeperCuratorFailoverTest {
     zk.awaitUp(5, MINUTES);
 
     try {
-      zk.curator().create().forPath(FOO, FOO_DATA);
-      assertArrayEquals(FOO_DATA, zk.curator().getData().forPath(FOO));
+      zk.curatorWithSuperAuth().create().forPath(FOO, FOO_DATA);
+      assertArrayEquals(FOO_DATA, zk.curatorWithSuperAuth().getData().forPath(FOO));
     } catch (KeeperException.NodeExistsException ignore) {
     }
   }
@@ -102,8 +102,8 @@ public class ZooKeeperCuratorFailoverTest {
   @Test
   public void verifyZooKeeperToleratesOneNodeDataLoss() throws Exception {
     try {
-      zk.curator().create().forPath(FOO, FOO_DATA);
-      assertArrayEquals(FOO_DATA, zk.curator().getData().forPath(FOO));
+      zk.curatorWithSuperAuth().create().forPath(FOO, FOO_DATA);
+      assertArrayEquals(FOO_DATA, zk.curatorWithSuperAuth().getData().forPath(FOO));
     } catch (KeeperException.NodeExistsException ignore) {
     }
 
@@ -113,7 +113,7 @@ public class ZooKeeperCuratorFailoverTest {
 
     zk.stopPeer(1);
 
-    assertArrayEquals(FOO_DATA, zk.curator().getData().forPath(FOO));
+    assertArrayEquals(FOO_DATA, zk.curatorWithSuperAuth().getData().forPath(FOO));
   }
 
 

@@ -157,7 +157,11 @@ public class Paths {
   }
 
   public static String statusHostJob(final String host, final JobId jobId) {
-    return STATUS_HOSTS.path(host, JOBS, jobId.toString());
+    return statusHostJob(host, jobId.toString());
+  }
+
+  public static String statusHostJob(final String host, final String jobIdString) {
+    return STATUS_HOSTS.path(host, JOBS, jobIdString);
   }
 
   public static String statusHostUp(final String host) {
@@ -219,7 +223,11 @@ public class Paths {
   }
 
   public static String historyJobHostEvents(final JobId jobId, final String host) {
-    return HISTORY_JOBS.path(jobId.toString(), HOSTS, host, EVENTS);
+    return historyJobHostEvents(jobId.toString(), host);
+  }
+
+  public static String historyJobHostEvents(final String jobIdString, final String host) {
+    return HISTORY_JOBS.path(jobIdString, HOSTS, host, EVENTS);
   }
 
   public static String historyJobHosts(final JobId jobId) {

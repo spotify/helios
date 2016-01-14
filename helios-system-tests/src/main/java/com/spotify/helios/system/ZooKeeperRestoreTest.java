@@ -127,6 +127,6 @@ public class ZooKeeperRestoreTest extends SystemTestBase {
     awaitJobState(client, testHost(), fooJob.getId(), RUNNING, LONG_WAIT_SECONDS, SECONDS);
 
     // Remove task status
-    zkc.curator().delete().forPath(Paths.statusHostJob(testHost(), fooJob.getId()));
+    zkc.curatorWithSuperAuth().delete().forPath(Paths.statusHostJob(testHost(), fooJob.getId()));
   }
 }

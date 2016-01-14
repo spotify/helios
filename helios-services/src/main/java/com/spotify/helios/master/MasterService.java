@@ -20,10 +20,13 @@ package com.spotify.helios.master;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.codahale.metrics.MetricRegistry;
+import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
@@ -56,8 +59,11 @@ import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 
 import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.zookeeper.data.ACL;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -70,6 +76,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
@@ -85,7 +92,10 @@ import io.dropwizard.server.DefaultServerFactory;
 import io.dropwizard.setup.Environment;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
 
 /**
  * The Helios master service.
@@ -308,18 +318,68 @@ public class MasterService extends AbstractIdleService {
    * @return A zookeeper client.
    */
   private ZooKeeperClient setupZookeeperClient(final MasterConfig config) {
+    ACLProvider aclProvider = null;
+    List<AuthInfo> authorization = null;
+
+    if (config.isZooKeeperEnableAcls()) {
+      final String masterUser = config.getZookeeperAclMasterUser();
+      final String masterPassword = config.getZooKeeperAclMasterPassword();
+      final String agentUser = config.getZookeeperAclAgentUser();
+      final String agentDigest = config.getZooKeeperAclAgentDigest();
+
+      if (isNullOrEmpty(masterUser) || isNullOrEmpty(masterPassword)) {
+        throw new HeliosRuntimeException(
+            "ZooKeeper ACLs enabled but master username and/or password not set");
+      }
+
+      if (isNullOrEmpty(agentUser) || isNullOrEmpty(agentDigest)) {
+        throw new HeliosRuntimeException(
+            "ZooKeeper ACLs enabled but agent username and/or digest not set");
+      }
+
+      aclProvider = heliosAclProvider(
+          masterUser, digest(masterUser, masterPassword),
+          agentUser, agentDigest);
+      authorization = Lists.newArrayList(new AuthInfo(
+          "digest", String.format("%s:%s", masterUser, masterPassword).getBytes()));
+    }
+
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
     final CuratorFramework curator = curatorClientFactory.newClient(
         config.getZooKeeperConnectionString(),
         config.getZooKeeperSessionTimeoutMillis(),
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy,
-        config.getZooKeeperNamespace());
+        aclProvider,
+        authorization);
     final ZooKeeperClient client =
         new DefaultZooKeeperClient(curator, config.getZooKeeperClusterId());
     client.start();
     zkRegistrar = new ZooKeeperRegistrarService(
         client, new MasterZooKeeperRegistrar(config.getName()));
+
+    // TODO: This is perhaps not the correct place to do this - but at present it's the only
+    // place where we have access to the ACL provider.
+    if (aclProvider != null) {
+      // Set ACLs on the ZK root, if they aren't already set correctly.
+      // This is handy since it avoids having to manually do this operation when setting up
+      // a new ZK cluster.
+      // Note that this is slightly racey -- if two masters start at the same time both might
+      // attempt to update the ACLs but only one will succeed. That said, it's unlikely and the
+      // effects are limited to a spurious log line.
+      try {
+        final List<ACL> curAcls = client.getAcl("/");
+        final List<ACL> wantedAcls = aclProvider.getAclForPath("/");
+        if (!Sets.newHashSet(curAcls).equals(Sets.newHashSet(wantedAcls))) {
+          log.info(
+              "Current ACL's on the zookeeper root node differ from desired, updating: {} -> {}",
+              curAcls, wantedAcls);
+          client.getCuratorFramework().setACL().withACL(wantedAcls).forPath("/");
+        }
+      } catch (Exception e) {
+        log.error("Failed to get/set ACLs on the zookeeper root node", e);
+      }
+    }
 
     return client;
   }

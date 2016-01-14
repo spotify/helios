@@ -53,8 +53,8 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
   @Test
   public void testZooKeeperClient() throws Exception {
     // Create the cluster ID node
-    zk().curator().newNamespaceAwareEnsurePath(Paths.configId(zkClusterId))
-          .ensure(zk().curator().getZookeeperClient());
+    zk().curatorWithSuperAuth().newNamespaceAwareEnsurePath(Paths.configId(zkClusterId))
+          .ensure(zk().curatorWithSuperAuth().getZookeeperClient());
 
     // We need to create a new curator because ZooKeeperClient will try to start it,
     // and zk().curator() has already been started.
@@ -94,7 +94,7 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
     client.jobs().get();
 
     // Delete the cluster ID
-    zk().curator().delete().forPath(Paths.configId(zkClusterId));
+    zk().curatorWithSuperAuth().delete().forPath(Paths.configId(zkClusterId));
 
     // Call jobs again, and this time it should throw an exception because the cluster ID is gone
     try {
@@ -117,7 +117,7 @@ public class ZooKeeperClusterIdTest extends SystemTestBase {
     final String containerId = runningStatus.getContainerId();
 
     // Delete the config node which contains the cluster ID and all the job definitions
-    zk().curator().delete().deletingChildrenIfNeeded().forPath("/config");
+    zk().curatorWithSuperAuth().delete().deletingChildrenIfNeeded().forPath("/config");
 
     // Sleep for a second so agent has a chance to react to deletion
     Thread.sleep(1000);

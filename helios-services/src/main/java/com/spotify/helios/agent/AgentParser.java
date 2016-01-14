@@ -45,6 +45,8 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
  */
 public class AgentParser extends ServiceParser {
 
+  private static final String ZK_AGENT_PASSWORD_ENVVAR = "HELIOS_ZK_AGENT_PASSWORD";
+
   private final AgentConfig agentConfig;
 
   private Argument noHttpArg;
@@ -60,6 +62,8 @@ public class AgentParser extends ServiceParser {
   private Argument bindArg;
   private Argument labelsArg;
   private Argument zkRegistrationTtlMinutesArg;
+  private Argument zkAclMasterDigest;
+  private Argument zkAclAgentPassword;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -97,14 +101,24 @@ public class AgentParser extends ServiceParser {
       throw new IllegalArgumentException("Bad port range: " + portRangeString);
     }
 
+
+    String agentPassword = System.getenv(ZK_AGENT_PASSWORD_ENVVAR);
+    if (agentPassword == null) {
+      agentPassword = options.getString(zkAclAgentPassword.getDest());
+    }
+
     this.agentConfig = new AgentConfig()
         .setName(getName())
         .setZooKeeperConnectionString(getZooKeeperConnectString())
         .setZooKeeperSessionTimeoutMillis(getZooKeeperSessionTimeoutMillis())
         .setZooKeeperConnectionTimeoutMillis(getZooKeeperConnectionTimeoutMillis())
-        .setZooKeeperNamespace(getZooKeeperNamespace())
         .setZooKeeperClusterId(getZooKeeperClusterId())
         .setZooKeeperRegistrationTtlMinutes(options.getInt(zkRegistrationTtlMinutesArg.getDest()))
+        .setZooKeeperEnableAcls(getZooKeeperEnableAcls())
+        .setZookeeperAclMasterUser(getZooKeeperAclMasterUser())
+        .setZooKeeperAclMasterDigest(options.getString(zkAclMasterDigest.getDest()))
+        .setZookeeperAclAgentUser(getZooKeeperAclAgentUser())
+        .setZooKeeperAclAgentPassword(agentPassword)
         .setDomain(getDomain())
         .setEnvVars(envVars)
         .setDockerHost(dockerHost)
@@ -217,6 +231,15 @@ public class AgentParser extends ServiceParser {
               + "registration ID of this one can automatically deregister this one and register "
               + "itself. This is useful when the agent loses its registration ID and you don't "
               + "want to waste time debugging why the master lists your agent as constantly DOWN.");
+
+    zkAclMasterDigest = parser.addArgument("--zk-acl-master-digest")
+        .type(String.class);
+
+    zkAclAgentPassword = parser.addArgument("--zk-acl-agent-password")
+        .type(String.class)
+        .help("ZooKeeper agent password (for ZooKeeper ACLs). If the "
+              + ZK_AGENT_PASSWORD_ENVVAR
+              + " environment variable is present this argument is ignored.");
   }
 
   public AgentConfig getAgentConfig() {

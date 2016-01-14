@@ -66,10 +66,6 @@ Specify these options in the `HELIOS_MASTER_OPTS` variable in `/etc/default/heli
 * `--zk-connection-timeout ZK_CONNECTION_TIMEOUT`
   Optional. Zookeeper connection timeout (default: 15000)
 
-* `--zk-namespace ZK_NAMESPACE`
-  Optional. Namespace under which Helios will put things in ZooKeeper. This is effectively a prefix
-  which will be applied to all Helios ZooZeeper operations, minus any leading or trailing /.
-
 * `--no-metrics`
   Turn off all collection and reporting of metrics (default: false)
 
@@ -124,10 +120,6 @@ Specify these options in the `HELIOS_AGENT_OPTS` variable in `/etc/default/helio
 
 * `--zk-connection-timeout ZK_CONNECTION_TIMEOUT`
   Optional. Zookeeper connection timeout (default: 15000)
-
-* `--zk-namespace ZK_NAMESPACE`
-  Optional. Namespace under which Helios will put things in ZooKeeper. This is effectively a prefix
-  which will be applied to all Helios ZooKeeper operations, minus any leading or trailing /.
 
 * `--no-metrics`
   Turn off all collection and reporting of metrics (default: false)

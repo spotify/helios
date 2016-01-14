@@ -64,12 +64,13 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
   public void setUp() throws Exception {
     backupDir = Files.createTempDirectory("helios-zk-updating-persistent-dir-test-backup-");
     stateFile = Files.createTempFile("helios-zk-updating-persistent-dir-test-", "");
-    zk.curator().newNamespaceAwareEnsurePath(PARENT_PATH).ensure(zk.curator().getZookeeperClient());
+    zk.curatorWithSuperAuth().newNamespaceAwareEnsurePath(PARENT_PATH).ensure(
+        zk.curatorWithSuperAuth().getZookeeperClient());
     setupDirectory();
   }
 
   private void setupDirectory() throws IOException, InterruptedException {
-    final DefaultZooKeeperClient client = new DefaultZooKeeperClient(zk.curator());
+    final DefaultZooKeeperClient client = new DefaultZooKeeperClient(zk.curatorWithSuperAuth());
     final ZooKeeperClientProvider provider = new ZooKeeperClientProvider(client, noop());
     sut = ZooKeeperUpdatingPersistentDirectory.create("test", provider, stateFile, PARENT_PATH);
     sut.startAsync();
@@ -95,7 +96,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
   @Test
   public void verifyUpdatesDifferingNode() throws Exception {
     try {
-      zk.curator().create().forPath(FOO_PATH, "old".getBytes());
+      zk.curatorWithSuperAuth().create().forPath(FOO_PATH, "old".getBytes());
     } catch (NodeExistsException ignore) {
     }
     sut.put(FOO_NODE, BAR1_DATA);
@@ -114,7 +115,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
   public void verifyRecoversFromBackupRestoreOnline() throws Exception {
     // Create backup
     try {
-      zk.curator().create().forPath("/version", "1".getBytes());
+      zk.curatorWithSuperAuth().create().forPath("/version", "1".getBytes());
     } catch (NodeExistsException ignore) {
     }
     sut.put(FOO_NODE, BAR1_DATA);
@@ -122,7 +123,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     zk.backup(backupDir);
 
     // Write data after backup
-    zk.curator().setData().forPath("/version", "2".getBytes());
+    zk.curatorWithSuperAuth().setData().forPath("/version", "2".getBytes());
     sut.put(FOO_NODE, BAR2_DATA);
     sut.put(BAZ_NODE, BAR3_DATA);
     awaitNodeWithData(FOO_PATH, BAR2_DATA);
@@ -132,7 +133,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     zk.stop();
     zk.restore(backupDir);
     zk.start();
-    assertArrayEquals("1".getBytes(), zk.curator().getData().forPath("/version"));
+    assertArrayEquals("1".getBytes(), zk.curatorWithSuperAuth().getData().forPath("/version"));
 
     // Verify that latest data is pushed
     awaitNodeWithData(FOO_PATH, BAR2_DATA);
@@ -143,7 +144,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
   public void verifyRecoversFromBackupRestoreOffline() throws Exception {
     // Create backup
     try {
-      zk.curator().create().forPath("/version", "1".getBytes());
+      zk.curatorWithSuperAuth().create().forPath("/version", "1".getBytes());
     } catch (NodeExistsException ignore) {
     }
     sut.put(FOO_NODE, BAR1_DATA);
@@ -151,7 +152,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     zk.backup(backupDir);
 
     // Write data after backup
-    zk.curator().setData().forPath("/version", "2".getBytes());
+    zk.curatorWithSuperAuth().setData().forPath("/version", "2".getBytes());
     sut.put(FOO_NODE, BAR2_DATA);
     sut.put(BAZ_NODE, BAR3_DATA);
     awaitNodeWithData(FOO_PATH, BAR2_DATA);
@@ -164,7 +165,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
     zk.stop();
     zk.restore(backupDir);
     zk.start();
-    assertArrayEquals("1".getBytes(), zk.curator().getData().forPath("/version"));
+    assertArrayEquals("1".getBytes(), zk.curatorWithSuperAuth().getData().forPath("/version"));
 
     // Start new persistent directory
     setupDirectory();
@@ -179,7 +180,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
       @Override
       public byte[] call() throws Exception {
         try {
-          return zk.curator().getData().forPath(path);
+          return zk.curatorWithSuperAuth().getData().forPath(path);
         } catch (KeeperException.NoNodeException e) {
           return null;
         }
@@ -192,7 +193,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
       @Override
       public Boolean call() throws Exception {
         try {
-          final byte[] remote = zk.curator().getData().forPath(path);
+          final byte[] remote = zk.curatorWithSuperAuth().getData().forPath(path);
           return Arrays.equals(data, remote) ? true : null;
         } catch (KeeperException.NoNodeException e) {
           return null;
@@ -206,7 +207,7 @@ public class ZooKeeperUpdatingPersistentDirectoryTest {
       @Override
       public Boolean call() throws Exception {
         try {
-          zk.curator().getData().forPath(path);
+          zk.curatorWithSuperAuth().getData().forPath(path);
           return null;
         } catch (KeeperException.NoNodeException e) {
           return true;

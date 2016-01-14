@@ -53,7 +53,7 @@ public class ZooKeeperHealthCheckerTest {
 
   @Test
   public void test() throws Exception {
-    final DefaultZooKeeperClient client = new DefaultZooKeeperClient(zk.curator());
+    final DefaultZooKeeperClient client = new DefaultZooKeeperClient(zk.curatorWithSuperAuth());
     client.ensurePath("/foo/bar");
     final ZooKeeperHealthChecker hc = new ZooKeeperHealthChecker(
         client, "/foo", riemannClient.facade(), MILLISECONDS, 1);

@@ -63,9 +63,11 @@ public class ServiceParser {
   private final Argument zooKeeperConnectStringArg;
   private final Argument zooKeeperSessiontimeoutArg;
   private final Argument zooKeeperConnectiontimeoutArg;
-  private final Argument zooKeeperNamespace;
   private final Argument zooKeeperClusterId;
   private final Argument noZooKeeperRegistrationArg;
+  private final Argument zooKeeperEnableAcls;
+  private final Argument zooKeeperAclMasterUser;
+  private final Argument zooKeeperAclAgentUser;
   private final Argument noMetricsArg;
   private final Argument statsdHostPortArg;
   private final Argument riemannHostPortArg;
@@ -112,11 +114,6 @@ public class ServiceParser {
         .setDefault((int) SECONDS.toMillis(15))
         .help("zookeeper connection timeout");
 
-    zooKeeperNamespace = parser.addArgument("--zk-namespace")
-        .type(String.class)
-        .setDefault((String) null)
-        .help("Prefix for helios zookeeper namespace");
-
     zooKeeperClusterId = parser.addArgument("--zk-cluster-id")
         .type(String.class)
         .setDefault((String) null)
@@ -126,6 +123,21 @@ public class ServiceParser {
         .setDefault(SUPPRESS)
         .action(storeTrue())
         .help("Do not register this master in zookeeper. Useful for debugging.");
+
+    zooKeeperEnableAcls = parser.addArgument("--zk-enable-acls")
+        .action(storeTrue())
+        .setDefault(false)
+        .help("Enable zookeeper ACLs.");
+
+    zooKeeperAclMasterUser = parser.addArgument("--zk-acl-master-user")
+        .type(String.class)
+        .setDefault("helios-master")
+        .help("zookeeper ACL username used for masters.");
+
+    zooKeeperAclAgentUser = parser.addArgument("--zk-acl-agent-user")
+        .type(String.class)
+        .setDefault("helios-agent")
+        .help("zookeeper ACL username used for agents.");
 
     noMetricsArg = parser.addArgument("--no-metrics")
         .setDefault(SUPPRESS)
@@ -239,16 +251,24 @@ public class ServiceParser {
     return options.getInt(zooKeeperSessiontimeoutArg.getDest());
   }
 
-  public String getZooKeeperNamespace() {
-    return options.getString(zooKeeperNamespace.getDest());
-  }
-
   public String getZooKeeperClusterId() {
     return options.getString(zooKeeperClusterId.getDest());
   }
 
   public Boolean getNoZooKeeperRegistration() {
     return fromNullable(options.getBoolean(noZooKeeperRegistrationArg.getDest())).or(false);
+  }
+
+  public boolean getZooKeeperEnableAcls() {
+    return options.getBoolean(zooKeeperEnableAcls.getDest());
+  }
+
+  public String getZooKeeperAclMasterUser() {
+    return options.getString(zooKeeperAclMasterUser.getDest());
+  }
+
+  public String getZooKeeperAclAgentUser() {
+    return options.getString(zooKeeperAclAgentUser.getDest());
   }
 
   public List<String> getKafkaBrokers() {

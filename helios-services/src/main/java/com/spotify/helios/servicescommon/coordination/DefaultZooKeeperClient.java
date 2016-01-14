@@ -17,39 +17,42 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
-import com.google.common.collect.ImmutableList;
-
 import com.fasterxml.jackson.databind.JavaType;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionFinal;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
+import org.apache.curator.framework.imps.CuratorFrameworkState;
 import org.apache.curator.framework.listen.Listenable;
 import org.apache.curator.framework.recipes.nodes.PersistentEphemeralNode;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.curator.utils.EnsurePath;
+import org.apache.curator.utils.PathUtils;
 import org.apache.curator.utils.ZKPaths;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.WatchedEvent;
 import org.apache.zookeeper.Watcher;
-import org.apache.zookeeper.ZKUtil;
 import org.apache.zookeeper.ZooKeeper;
+import org.apache.zookeeper.data.ACL;
 import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.regex.Pattern;
 
 import static com.google.common.base.Strings.emptyToNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.base.Throwables.propagate;
 import static com.google.common.base.Throwables.propagateIfInstanceOf;
+import static com.google.common.collect.Lists.newArrayList;
+import static com.google.common.collect.Lists.newLinkedList;
 import static com.google.common.collect.Lists.reverse;
 import static java.util.Arrays.asList;
 import static java.util.Collections.emptyList;
@@ -108,23 +111,25 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   /** {@inheritDoc} */
   public void ensurePath(final String path) throws KeeperException {
-    assertClusterIdFlagTrue();
     ensurePath(path, false);
   }
 
   @Override
   /** {@inheritDoc} */
   public void ensurePath(final String path, final boolean excludingLast) throws KeeperException {
+    PathUtils.validatePath(path);
+
     assertClusterIdFlagTrue();
-    EnsurePath ensurePath = client.newNamespaceAwareEnsurePath(path);
-    if (excludingLast) {
-      ensurePath = ensurePath.excludingLast();
-    }
-    try {
-      ensurePath.ensure(client.getZookeeperClient());
-    } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
+
+    final String[] parts = path.substring(1).split(Pattern.quote("/"));
+
+    final int end = excludingLast ? parts.length - 1 : parts.length;
+    String current = "";
+    for (int i = 0; i < end; i++) {
+      current += "/" + parts[i];
+      if (exists(current) == null) {
+        create(current);
+      }
     }
   }
 
@@ -159,10 +164,13 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void start() {
-    client.start();
-    if (clusterId != null) {
-      client.getConnectionStateListenable().addListener(connectionStateListener);
-      checkClusterIdExists(clusterId, "start");
+    if (client.getState() != CuratorFrameworkState.STARTED) {
+      client.start();
+
+      if (clusterId != null) {
+        client.getConnectionStateListenable().addListener(connectionStateListener);
+        checkClusterIdExists(clusterId, "start");
+      }
     }
   }
 
@@ -179,7 +187,20 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
                                                          final PersistentEphemeralNode.Mode mode,
                                                          final byte[] data) {
     assertClusterIdFlagTrue();
-    return new PersistentEphemeralNode(client, mode, path, data);
+
+    final PersistentEphemeralNode node = new PersistentEphemeralNode(client, mode, path, data);
+
+    // ugly hack to work around a problem with curator, wherein PersistentEphemeralNode creates
+    // all parent paths if they don't exist but applies the ACL for its own path to its parents
+    try {
+      final Field field = node.getClass().getDeclaredField("createMethod");
+      field.setAccessible(true);
+      field.set(node, client.create());
+    } catch (NoSuchFieldException | IllegalAccessException e) {
+      throw propagate(e);
+    }
+
+    return node;
   }
 
   @Override
@@ -231,39 +252,24 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   @Override
   public List<String> listRecursive(final String path) throws KeeperException {
     assertClusterIdFlagTrue();
+    final Deque<String> queue = newLinkedList();
+    final List<String> tree = newArrayList();
 
-    // namespace the path since we're using zookeeper directly
-    final String namespace = emptyToNull(client.getNamespace());
-    final String namespacedPath = ZKPaths.fixForNamespace(namespace, path);
+    queue.add(path);
+    tree.add(path);
 
-    try {
-      final List<String> paths = ZKUtil.listSubTreeBFS(
-          client.getZookeeperClient().getZooKeeper(), namespacedPath);
+    while (!queue.isEmpty()) {
+      final String node = queue.pollFirst();
+      final List<String> children = getChildren(node);
 
-      if (isNullOrEmpty(namespace)) {
-        return paths;
-      } else {
-        // hide the namespace in the paths returned from zookeeper
-        final ImmutableList.Builder<String> builder = ImmutableList.builder();
-        for (final String p : paths) {
-          final String fixed;
-          if (p.startsWith("/" + namespace)) {
-            fixed = (p.length() > namespace.length() + 1)
-                    ? p.substring(namespace.length() + 1)
-                    : "/";
-          } else {
-            fixed = p;
-          }
-
-          builder.add(fixed);
-        }
-
-        return builder.build();
+      for (final String child : children) {
+        final String childPath = node.replaceAll("/$", "") + "/" + child;
+        queue.add(childPath);
+        tree.add(childPath);
       }
-    } catch (Exception e) {
-      propagateIfInstanceOf(e, KeeperException.class);
-      throw propagate(e);
     }
+
+    return tree;
   }
 
   @Override
@@ -387,6 +393,28 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   public Collection<CuratorTransactionResult> transaction(final ZooKeeperOperation... operations)
       throws KeeperException {
     return transaction(asList(operations));
+  }
+
+  @Override
+  public void setAcl(final String path, final List<ACL> aclList) throws KeeperException {
+    assertClusterIdFlagTrue();
+    try {
+      client.setACL().withACL(aclList).forPath(path);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
+  }
+
+  @Override
+  public List<ACL> getAcl(final String path) throws KeeperException {
+    assertClusterIdFlagTrue();
+    try {
+      return client.getACL().forPath(path);
+    } catch (Exception e) {
+      propagateIfInstanceOf(e, KeeperException.class);
+      throw propagate(e);
+    }
   }
 
   private void assertClusterIdFlagTrue() {

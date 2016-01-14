@@ -28,6 +28,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.docker.client.DockerCertificateException;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
+import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
@@ -53,7 +54,9 @@ import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 import com.sun.management.OperatingSystemMXBean;
 
 import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
@@ -78,6 +81,8 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -320,13 +325,40 @@ public class AgentService extends AbstractIdleService implements Managed {
    */
   private ZooKeeperClient setupZookeeperClient(final AgentConfig config, final String id,
                                                final CountDownLatch zkRegistrationSignal) {
+    ACLProvider aclProvider = null;
+    List<AuthInfo> authorization = null;
+
+    if (config.isZooKeeperEnableAcls()) {
+      final String agentUser = config.getZookeeperAclAgentUser();
+      final String agentPassword = config.getZooKeeperAclAgentPassword();
+      final String masterUser = config.getZookeeperAclMasterUser();
+      final String masterDigest = config.getZooKeeperAclMasterDigest();
+
+      if (isNullOrEmpty(agentUser) || isNullOrEmpty(agentPassword)) {
+        throw new HeliosRuntimeException(
+            "ZooKeeper ACLs enabled but agent username and/or password not set");
+      }
+
+      if (isNullOrEmpty(masterUser) || isNullOrEmpty(masterDigest)) {
+        throw new HeliosRuntimeException(
+            "ZooKeeper ACLs enabled but master username and/or digest not set");
+      }
+
+      aclProvider = heliosAclProvider(
+          masterUser, masterDigest,
+          agentUser, digest(agentUser, agentPassword));
+      authorization = Lists.newArrayList(new AuthInfo(
+          "digest", String.format("%s:%s", agentUser, agentPassword).getBytes()));
+    }
+
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
     final CuratorFramework curator = new CuratorClientFactoryImpl().newClient(
         config.getZooKeeperConnectionString(),
         config.getZooKeeperSessionTimeoutMillis(),
         config.getZooKeeperConnectionTimeoutMillis(),
         zooKeeperRetryPolicy,
-        config.getZooKeeperNamespace());
+        aclProvider,
+        authorization);
 
     final ZooKeeperClient client = new DefaultZooKeeperClient(curator,
                                                               config.getZooKeeperClusterId());
