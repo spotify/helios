@@ -90,7 +90,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private final String heliosContainerId;
   private final HostAndPort deploymentAddress;
   private final HeliosClient heliosClient;
-  private final ExecutorService executorService;
+  // Maintains a TCP connection to the watchdog process. The absence of this connection
+  // signals the watchdog to clean up the helios-solo container and any containers deployed via
+  // helios-solo.
+  private final ExecutorService watchdogConnection;
 
   private HeliosSoloDeployment(final Builder builder) {
     final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
@@ -130,7 +133,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         .setEndpoints("http://" + deploymentAddress)
         .build();
 
-    executorService = Executors.newSingleThreadExecutor(
+    watchdogConnection = Executors.newSingleThreadExecutor(
         new ThreadFactoryBuilder()
             .setNameFormat("helios-solo-watchdog-%d")
             .setDaemon(true).build());
@@ -150,14 +153,14 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    */
   @VisibleForTesting
   protected boolean disconnectFromWatchdog() throws InterruptedException {
-    executorService.shutdownNow();
-    return executorService.awaitTermination(1, TimeUnit.MINUTES);
+    watchdogConnection.shutdownNow();
+    return watchdogConnection.awaitTermination(1, TimeUnit.MINUTES);
   }
 
   private void connectToWatchdog(final String host, final int port) {
     log.info("Connecting to helios-solo watchdog at %s:%d", host, port);
 
-    executorService.submit(new Runnable() {
+    watchdogConnection.submit(new Runnable() {
       @Override
       public void run() {
         // 1. Connect
@@ -192,11 +195,12 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         log.info("Connected to helios-solo watchdog");
 
         // 2. ..then just sleep forever
-        //noinspection InfiniteLoopStatement
         while (true) {
           try {
-            Thread.sleep(TimeUnit.SECONDS.toMillis(10));
+            Thread.sleep(TimeUnit.SECONDS.toMillis(5));
           } catch (InterruptedException ignored) {
+            // If we get an IntterruptedException here, it means disconnectFromWatchdog()
+            // was called. So we stop this runnable and connection.
             break;
           }
         }
@@ -346,7 +350,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * @throws HeliosDeploymentException if Helios Solo could not be deployed.
    */
   private String deploySolo(final String heliosHost) throws HeliosDeploymentException {
-    //TODO(negz): Don't make this.env immutable so early?
     final List<String> env = new ArrayList<>();
     env.addAll(this.env);
     env.add("HELIOS_NAME=" + HELIOS_NAME_PREFIX + namespace);
@@ -443,18 +446,22 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   /**
    * @return A helios client connected to the master of this HeliosSoloDeployment.
    */
+  @Override
   public HeliosClient client() {
     return heliosClient;
   }
 
   /**
-   * Undeploy (shut down) this HeliosSoloDeployment.
+   * @return A {@link HostAndPort} representing the address of the Helios master
    */
   @Override
   public HostAndPort address() {
     return deploymentAddress;
   }
 
+  /**
+   * Undeploy (shut down) this HeliosSoloDeployment.
+   */
   public void close() {
     log.info("Shutting down HeliosSoloDeployment.");
     killContainer(heliosContainerId);

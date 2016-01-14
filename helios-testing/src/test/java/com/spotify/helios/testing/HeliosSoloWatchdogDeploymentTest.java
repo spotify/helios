@@ -54,7 +54,7 @@ public class HeliosSoloWatchdogDeploymentTest {
 
   // Don't use @Rule so that we don't invoke after()
   private static final TemporaryJobs TEMPORARY_JOBS = TemporaryJobs.builder()
-      .jobPrefix("HeliosSoloDeploymentTest2")
+      .jobPrefix("HeliosSoloWatchdogDeploymentTest")
       .client(SOLO_RESOURCE.client())
       .build();
 
@@ -77,8 +77,7 @@ public class HeliosSoloWatchdogDeploymentTest {
     final TemporaryJob job2 =
         TEMPORARY_JOBS.job().hostFilter(hostFilter).command(IDLE_COMMAND).deploy();
 
-    // Make a list of container IDs related to this test, ie the solo container with the two above
-    // jobs
+    // Make a list of container IDs related to test, ie the solo container with the two above jobs
     final List<String> containerIds = Lists.newArrayList(SOLO_DEPLOYMENT.heliosContainerId());
     for (Map.Entry<String, TaskStatus> s : job1.statuses().entrySet()) {
       containerIds.add(s.getValue().getContainerId());
