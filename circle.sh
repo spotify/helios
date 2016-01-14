@@ -41,6 +41,16 @@ case "$1" in
 
     case $CIRCLE_NODE_INDEX in
       0)
+        sudo apt-get install -y jq
+
+        # build images for integration tests
+        mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true \
+          -B -V -pl helios-services
+
+        # tag the helios-solo image we just built
+        solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
+        docker tag -f $solo_image spotify/helios-solo:latest
+
         # run all tests *except* helios-system-tests
         sed -i'' 's/<module>helios-system-tests<\/module>//' pom.xml
         mvn test -B -Pjacoco
