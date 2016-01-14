@@ -109,7 +109,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testDockerHostContainsLocalhost() throws Exception {
-    final  DockerClient dockerClient = mock(DockerClient.class);
+    final DockerClient dockerClient = mock(DockerClient.class);
 
     // the anonymous classes to override a method are to workaround the docker-client "messages"
     // having no mutators, fun
@@ -136,7 +136,7 @@ public class HeliosSoloDeploymentTest {
     when(dockerClient.inspectContainer(containerId)).thenReturn(new ContainerInfo() {
       @Override
       public NetworkSettings networkSettings() {
-        final PortBinding binding = PortBinding.of("192.168.1.1",  5801);
+        final PortBinding binding = PortBinding.of("192.168.1.1", 5801);
         final Map<String, List<PortBinding>> ports =
             ImmutableMap.<String, List<PortBinding>>of("5801/tcp", ImmutableList.of(binding));
 
@@ -157,6 +157,8 @@ public class HeliosSoloDeploymentTest {
     // finally build the thing ...
     HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
+        // a custom dockerhost to trigger the localhost logic
+        .dockerHost(DockerHost.from("tcp://localhost:2375", ""))
         .build();
 
     // .. so we can test what was passed
