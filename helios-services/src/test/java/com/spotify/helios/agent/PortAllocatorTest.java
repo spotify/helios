@@ -70,16 +70,4 @@ public class PortAllocatorTest {
     final Map<String, Integer> allocation = sut.allocate(mapping, used);
     assertNull(allocation);
   }
-
-  @Test
-  public void verifyStaticPortsNotCheckedAgainstRange() throws Exception {
-    final PortAllocator sut = new PortAllocator(20000, 20001);
-    final Map<String, PortMapping> mapping = ImmutableMap.of("p1", PortMapping.of(1),
-                                                             "p2", PortMapping.of(18, 18));
-    final Set<Integer> used = ImmutableSet.of();
-    final Map<String, Integer> allocation = sut.allocate(mapping, used);
-    assertThat(allocation, hasEntry(is("p1"),
-                                    allOf(greaterThanOrEqualTo(20000), lessThanOrEqualTo(20001))));
-    assertThat(allocation, hasEntry("p2", 18));
-  }
 }
