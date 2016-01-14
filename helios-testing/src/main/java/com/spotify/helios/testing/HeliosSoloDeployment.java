@@ -68,7 +68,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public static final int HELIOS_MASTER_PORT = 5801;
 
   private final DockerClient dockerClient;
+  /** The DockerHost we use to communicate with docker */
   private final DockerHost dockerHost;
+  /** The DockerHost the container uses to communicate with docker */
   private final DockerHost containerDockerHost;
   private final String namespace;
   private final List<String> env;
@@ -83,7 +85,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
     this.dockerHost = Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
     this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
-            .or(containerDockerHostFromEnv());
+        .or(containerDockerHost());
     this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
     this.env = containerEnv();
     this.binds = containerBinds();
@@ -113,20 +115,33 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .build();
   }
 
+  /** Returns the DockerHost that the container should use to refer to the docker daemon. */
+  private DockerHost containerDockerHost() {
+    if (isBoot2Docker(dockerInfo())) {
+      return DockerHost.from(DefaultDockerClient.DEFAULT_UNIX_ENDPOINT, null);
+    }
+
+    // otherwise use the normal DockerHost, *unless* DOCKER_HOST is set to
+    // localhost or 127.0.0.1 - which will never work inside a container. For those cases, we
+    // override the settings and use the unix socket instead.
+    if (this.dockerHost.address().equals("localhost") ||
+        this.dockerHost.address().equals("127.0.0.1")) {
+      final String endpoint = DockerHost.DEFAULT_UNIX_ENDPOINT;
+      log.warn("DOCKER_HOST points to localhost or 127.0.0.1. Replacing this with {} "
+               + "as localhost/127.0.0.1 will not work inside a container to talk to the docker "
+               + "daemon on the host itself.", endpoint);
+      return DockerHost.from(endpoint, dockerHost.dockerCertPath());
+    }
+
+    return dockerHost;
+  }
+
   @Override
   public HostAndPort address() {
       return deploymentAddress;
   }
 
-  private DockerHost containerDockerHostFromEnv() {
-    if (isBoot2Docker(dockerInfo())) {
-      return DockerHost.from(DefaultDockerClient.DEFAULT_UNIX_ENDPOINT, null);
-    } else {
-      return DockerHost.fromEnv();
-    }
-  }
-
-  private Boolean isBoot2Docker(final Info dockerInfo) {
+  private boolean isBoot2Docker(final Info dockerInfo) {
     return dockerInfo.operatingSystem().contains(BOOT2DOCKER_SIGNATURE);
   }
 
@@ -151,8 +166,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private List<String> containerBinds() {
     final HashSet<String> binds = new HashSet<>();
     if (containerDockerHost.bindURI().getScheme().equals("unix")) {
-      binds.add(containerDockerHost.bindURI().getSchemeSpecificPart() + ":" +
-              containerDockerHost.bindURI().getSchemeSpecificPart());
+      final String path = containerDockerHost.bindURI().getPath();
+      binds.add(path + ":" + path);
     }
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       binds.add(containerDockerHost.dockerCertPath() + ":/certs");
@@ -197,12 +212,12 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       exit = dockerClient.waitContainer(creation.id());
     } catch (DockerException | InterruptedException e) {
       killContainer(creation.id());
-      removeContainer(creation.id());
       throw new HeliosDeploymentException("helios-solo probe container failed", e);
+    } finally {
+      removeContainer(creation.id());
     }
 
     if (exit.statusCode() != 0) {
-      removeContainer(creation.id());
       throw new HeliosDeploymentException(String.format(
               "Docker was not reachable (curl exit status %d) using DOCKER_HOST=%s and "
                       + "DOCKER_CERT_PATH=%s from within a container. Please ensure that "
@@ -213,7 +228,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
               containerDockerHost.dockerCertPath()));
     }
 
-    removeContainer(creation.id());
     return gateway;
   }
 
@@ -374,7 +388,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    */
   public static Builder fromEnv()  {
     try {
-      DefaultDockerClient.fromEnv().uri();
       return builder().dockerClient(DefaultDockerClient.fromEnv().build());
     } catch (DockerCertificateException e) {
       throw new RuntimeException("unable to create Docker client from environment", e);

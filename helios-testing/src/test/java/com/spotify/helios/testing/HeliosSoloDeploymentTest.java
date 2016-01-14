@@ -18,23 +18,41 @@
 package com.spotify.helios.testing;
 
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.messages.ContainerConfig;
+import com.spotify.docker.client.messages.ContainerCreation;
+import com.spotify.docker.client.messages.ContainerExit;
+import com.spotify.docker.client.messages.ContainerInfo;
+import com.spotify.docker.client.messages.Info;
+import com.spotify.docker.client.messages.NetworkSettings;
+import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Map;
 
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class HeliosSoloDeploymentTest {
 
@@ -87,5 +105,71 @@ public class HeliosSoloDeploymentTest {
         assertEquals("wrong job running", IMAGE_NAME, j.getImage());
       }
     }
+  }
+
+  @Test
+  public void testDockerHostContainsLocalhost() throws Exception {
+    final DockerClient dockerClient = mock(DockerClient.class);
+
+    // the anonymous classes to override a method are to workaround the docker-client "messages"
+    // having no mutators, fun
+    when(dockerClient.info()).thenReturn(new Info() {
+      @Override
+      public String operatingSystem() {
+        return "foo";
+      }
+    });
+
+    // mock the call to dockerClient.createContainer so we can test the arguments passed to it
+    final ArgumentCaptor<ContainerConfig> containerConfig =
+        ArgumentCaptor.forClass(ContainerConfig.class);
+
+    final ContainerCreation creation = mock(ContainerCreation.class);
+    final String containerId = "abc123";
+    when(creation.id()).thenReturn(containerId);
+
+    // we have to mock out several other calls to get the HeliosSoloDeployment ctor
+    // to return non-exceptionally:
+
+    when(dockerClient.createContainer(containerConfig.capture(), anyString())).thenReturn(creation);
+
+    when(dockerClient.inspectContainer(containerId)).thenReturn(new ContainerInfo() {
+      @Override
+      public NetworkSettings networkSettings() {
+        final PortBinding binding = PortBinding.of("192.168.1.1", 5801);
+        final Map<String, List<PortBinding>> ports =
+            ImmutableMap.<String, List<PortBinding>>of("5801/tcp", ImmutableList.of(binding));
+
+        return NetworkSettings.builder()
+            .gateway("a-gate-way")
+            .ports(ports)
+            .build();
+      }
+    });
+
+    when(dockerClient.waitContainer(containerId)).thenReturn(new ContainerExit() {
+      @Override
+      public Integer statusCode() {
+        return 0;
+      }
+    });
+
+    // finally build the thing ...
+    HeliosSoloDeployment.builder()
+        .dockerClient(dockerClient)
+        // a custom dockerhost to trigger the localhost logic
+        .dockerHost(DockerHost.from("tcp://localhost:2375", ""))
+        .build();
+
+    // .. so we can test what was passed
+    boolean foundSolo = false;
+    for (ContainerConfig cc : containerConfig.getAllValues()) {
+      if (cc.image().contains("helios-solo")) {
+        assertThat(containerConfig.getValue().hostConfig().binds(),
+                   hasItem("/var/run/docker.sock:/var/run/docker.sock"));
+        foundSolo = true;
+      }
+    }
+    assertTrue("Could not find helios-solo container creation", foundSolo);
   }
 }
