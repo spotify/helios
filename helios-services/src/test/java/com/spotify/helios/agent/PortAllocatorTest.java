@@ -24,13 +24,16 @@ import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.junit.Test;
 
-import java.net.ServerSocket;
-import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 public class PortAllocatorTest {
 
@@ -41,7 +44,9 @@ public class PortAllocatorTest {
                                                              "p2", PortMapping.of(18, 18));
     final Set<Integer> used = ImmutableSet.of(10, 11);
     final Map<String, Integer> allocation = sut.allocate(mapping, used);
-    assertEquals(ImmutableMap.of("p1", 20000, "p2", 18), allocation);
+    assertThat(allocation, hasEntry(is("p1"),
+                                    allOf(greaterThanOrEqualTo(20000), lessThanOrEqualTo(20010))));
+    assertThat(allocation, hasEntry("p2", 18));
   }
 
   @Test
@@ -73,19 +78,8 @@ public class PortAllocatorTest {
                                                              "p2", PortMapping.of(18, 18));
     final Set<Integer> used = ImmutableSet.of();
     final Map<String, Integer> allocation = sut.allocate(mapping, used);
-    assertEquals(ImmutableMap.of("p1", 20000, "p2", 18), allocation);
-  }
-
-  @Test
-  public void testAllocateCheckSystem() throws Exception {
-    final PortAllocator sut = new PortAllocator(20000, 20010);
-    final Map<String, PortMapping> mapping = ImmutableMap.of("p1", PortMapping.of(17),
-                                                             "p2", PortMapping.of(18, 20001));
-    final Set<Integer> used = Collections.emptySet();
-
-    // Occupy a port and check that Helios doesn't use it.
-    new ServerSocket(20000);
-    final Map<String, Integer> allocation = sut.allocate(mapping, used);
-    assertEquals(ImmutableMap.of("p1", 20002, "p2", 20001), allocation);
+    assertThat(allocation, hasEntry(is("p1"),
+                                    allOf(greaterThanOrEqualTo(20000), lessThanOrEqualTo(20001))));
+    assertThat(allocation, hasEntry("p2", 18));
   }
 }
