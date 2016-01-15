@@ -33,7 +33,9 @@ import org.bouncycastle.openssl.PEMParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -121,17 +123,23 @@ class HttpsHandlers {
 
       final CertificateFactory cf = CertificateFactory.getInstance("X.509");
       final Path certPath = clientCertificatePath.getCertificatePath();
-      final Certificate certificate = cf.generateCertificate(Files.newInputStream(certPath));
 
-      final Object pemObj = new PEMParser(Files
-          .newBufferedReader(clientCertificatePath.getKeyPath(), Charset.defaultCharset()))
-          .readObject();
+      final Certificate certificate;
+      try (final InputStream is = Files.newInputStream(certPath)) {
+        certificate = cf.generateCertificate(is);
+      }
+
+      final Object parsedPem;
+      try (final BufferedReader br = Files.newBufferedReader(clientCertificatePath.getKeyPath(),
+                                                             Charset.defaultCharset())) {
+        parsedPem = new PEMParser(br).readObject();
+      }
 
       final PrivateKeyInfo keyInfo;
-      if (pemObj instanceof PEMKeyPair) {
-        keyInfo = ((PEMKeyPair) pemObj).getPrivateKeyInfo();
-      } else if (pemObj instanceof PrivateKeyInfo) {
-        keyInfo = (PrivateKeyInfo) pemObj;
+      if (parsedPem instanceof PEMKeyPair) {
+        keyInfo = ((PEMKeyPair) parsedPem).getPrivateKeyInfo();
+      } else if (parsedPem instanceof PrivateKeyInfo) {
+        keyInfo = (PrivateKeyInfo) parsedPem;
       } else {
         throw new UnsupportedOperationException("Unable to parse x509 certificate.");
       }
