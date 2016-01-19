@@ -321,12 +321,22 @@ public class MasterService extends AbstractIdleService {
     ACLProvider aclProvider = null;
     List<AuthInfo> authorization = null;
 
-    if (config.isZooKeeperEnableAcls()) {
-      final String masterUser = config.getZookeeperAclMasterUser();
-      final String masterPassword = config.getZooKeeperAclMasterPassword();
-      final String agentUser = config.getZookeeperAclAgentUser();
-      final String agentDigest = config.getZooKeeperAclAgentDigest();
+    final String masterUser = config.getZookeeperAclMasterUser();
+    final String masterPassword = config.getZooKeeperAclMasterPassword();
+    final String agentUser = config.getZookeeperAclAgentUser();
+    final String agentDigest = config.getZooKeeperAclAgentDigest();
 
+    if (!isNullOrEmpty(masterPassword)) {
+      if (isNullOrEmpty(masterUser)) {
+        throw new HeliosRuntimeException(
+            "Master username must be set if a password is set");
+      }
+
+      authorization = Lists.newArrayList(new AuthInfo(
+          "digest", String.format("%s:%s", masterUser, masterPassword).getBytes()));
+    }
+
+    if (config.isZooKeeperEnableAcls()) {
       if (isNullOrEmpty(masterUser) || isNullOrEmpty(masterPassword)) {
         throw new HeliosRuntimeException(
             "ZooKeeper ACLs enabled but master username and/or password not set");
@@ -340,8 +350,6 @@ public class MasterService extends AbstractIdleService {
       aclProvider = heliosAclProvider(
           masterUser, digest(masterUser, masterPassword),
           agentUser, agentDigest);
-      authorization = Lists.newArrayList(new AuthInfo(
-          "digest", String.format("%s:%s", masterUser, masterPassword).getBytes()));
     }
 
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);

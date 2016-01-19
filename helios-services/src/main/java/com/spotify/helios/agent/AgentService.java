@@ -328,12 +328,22 @@ public class AgentService extends AbstractIdleService implements Managed {
     ACLProvider aclProvider = null;
     List<AuthInfo> authorization = null;
 
-    if (config.isZooKeeperEnableAcls()) {
-      final String agentUser = config.getZookeeperAclAgentUser();
-      final String agentPassword = config.getZooKeeperAclAgentPassword();
-      final String masterUser = config.getZookeeperAclMasterUser();
-      final String masterDigest = config.getZooKeeperAclMasterDigest();
+    final String agentUser = config.getZookeeperAclAgentUser();
+    final String agentPassword = config.getZooKeeperAclAgentPassword();
+    final String masterUser = config.getZookeeperAclMasterUser();
+    final String masterDigest = config.getZooKeeperAclMasterDigest();
 
+    if (!isNullOrEmpty(agentPassword)) {
+      if (isNullOrEmpty(agentUser)) {
+        throw new HeliosRuntimeException(
+            "Agent username must be set if a password is set");
+      }
+
+      authorization = Lists.newArrayList(new AuthInfo(
+          "digest", String.format("%s:%s", agentUser, agentPassword).getBytes()));
+    }
+
+    if (config.isZooKeeperEnableAcls()) {
       if (isNullOrEmpty(agentUser) || isNullOrEmpty(agentPassword)) {
         throw new HeliosRuntimeException(
             "ZooKeeper ACLs enabled but agent username and/or password not set");
@@ -347,8 +357,6 @@ public class AgentService extends AbstractIdleService implements Managed {
       aclProvider = heliosAclProvider(
           masterUser, masterDigest,
           agentUser, digest(agentUser, agentPassword));
-      authorization = Lists.newArrayList(new AuthInfo(
-          "digest", String.format("%s:%s", agentUser, agentPassword).getBytes()));
     }
 
     final RetryPolicy zooKeeperRetryPolicy = new ExponentialBackoffRetry(1000, 3);
