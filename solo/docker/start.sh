@@ -32,6 +32,7 @@ cd /agent
 java -cp '/*' \
 -Xmx128m \
 -Djava.net.preferIPv4Stack=true \
+-Dhelios.solo=true \
 com.spotify.helios.agent.AgentMain \
 --name ${HELIOS_NAME} \
 --service-registrar-plugin /usr/share/helios/lib/plugins/helios-skydns-0.1.jar \
@@ -72,6 +73,7 @@ cd /master
 java -cp '/*' \
 -Xmx128m \
 -Djava.net.preferIPv4Stack=true \
+-Dhelios.solo=true \
 com.spotify.helios.master.MasterMain \
 --service-registrar-plugin /usr/share/helios/lib/plugins/helios-skydns-0.1.jar \
 --domain '' \
