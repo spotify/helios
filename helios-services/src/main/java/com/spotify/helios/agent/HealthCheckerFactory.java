@@ -19,6 +19,7 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 
 import com.spotify.docker.client.DockerClient;
@@ -35,13 +36,17 @@ import org.slf4j.LoggerFactory;
 
 import java.net.HttpURLConnection;
 import java.net.InetSocketAddress;
+import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URL;
 import java.util.List;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class HealthCheckerFactory {
+public final class HealthCheckerFactory {
+
+  private HealthCheckerFactory() {
+  }
 
   public static HealthChecker create(final TaskConfig taskConfig, final DockerClient docker,
                                      final DockerHost dockerHost) {
@@ -135,6 +140,9 @@ public class HealthCheckerFactory {
 
   private static class HttpHealthChecker implements HealthChecker {
 
+    private static final Logger log = LoggerFactory.getLogger(HttpHealthChecker.class);
+
+
     private static final int CONNECT_TIMEOUT_MILLIS = 500;
     private static final long READ_TIMEOUT_MILLIS = SECONDS.toMillis(10);
 
@@ -153,21 +161,35 @@ public class HealthCheckerFactory {
     public boolean check(final String containerId) throws InterruptedException, DockerException {
       final Integer port = taskConfig.ports().get(healthCheck.getPort()).getExternalPort();
 
+      final URL url;
       try {
-        final URL url = new URL("http", dockerHost.address(), port, healthCheck.getPath());
+        url = new URL("http", dockerHost.address(), port, healthCheck.getPath());
+      } catch (MalformedURLException e) {
+        throw Throwables.propagate(e);
+      }
+
+      log.info("about to healthcheck containerId={} with url={} for task={}",
+               containerId, url, taskConfig);
+
+      try {
         HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setConnectTimeout(CONNECT_TIMEOUT_MILLIS);
         conn.setReadTimeout((int) READ_TIMEOUT_MILLIS);
 
         final int response = conn.getResponseCode();
+        log.warn("healthcheck for containerId={} with url={} returned status={}",
+                 containerId, url, response);
         return response >= 200 && response <= 399;
       } catch (Exception e) {
+        log.warn("exception in healthchecking containerId={} with url={}", containerId, url, e);
         return false;
       }
     }
   }
 
   private static class TcpHealthChecker implements HealthChecker {
+
+    private static final Logger log = LoggerFactory.getLogger(TcpHealthChecker.class);
 
     private static final int CONNECT_TIMEOUT_MILLIS = 500;
 
@@ -196,6 +218,9 @@ public class HealthCheckerFactory {
         final String bridge = docker.inspectContainer(containerId).networkSettings().gateway();
         address = new InetSocketAddress(bridge, port);
       }
+
+      log.info("about to healthcheck containerId={} with address={} for task={}",
+               containerId, address, taskConfig);
 
       try (final Socket s = new Socket()) {
         s.connect(address, CONNECT_TIMEOUT_MILLIS);

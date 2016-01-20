@@ -70,27 +70,32 @@ public class Utils {
     return out;
   }
 
-  public static String masterImage() throws IOException {
+  public static String masterImage() {
     final String path = System.getProperty("masterImage",
                                            DEFAULT_IMAGE_INFO_PATH + "master-image.json");
     return imageInfo(path);
   }
 
-  public static String agentImage() throws IOException {
+  public static String agentImage() {
     final String path = System.getProperty("agentImage",
                                            DEFAULT_IMAGE_INFO_PATH + "agent-image.json");
     return imageInfo(path);
   }
 
-  public static String soloImage() throws IOException {
+  public static String soloImage() {
     final String path = System.getProperty("soloImage",
                                            DEFAULT_IMAGE_INFO_PATH + "solo-image.json");
     return imageInfo(path);
   }
 
-  private static String imageInfo(final String path) throws IOException {
-    final String json = new String(Files.readAllBytes(Paths.get(path)));
-    final JsonNode node = Json.readTree(json);
+  private static String imageInfo(final String path) {
+    final JsonNode node;
+    try {
+      final String json = new String(Files.readAllBytes(Paths.get(path)));
+      node = Json.readTree(json);
+    } catch (IOException e) {
+      throw Throwables.propagate(e);
+    }
     final JsonNode imageNode = node.get("image");
     return (imageNode == null || imageNode.getNodeType() != STRING) ? null : imageNode.asText();
   }

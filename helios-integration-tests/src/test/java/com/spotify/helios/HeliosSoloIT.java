@@ -17,6 +17,7 @@
 
 package com.spotify.helios;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.net.HostAndPort;
 
@@ -80,6 +81,7 @@ public class HeliosSoloIT {
         .hostStatus(probe.hosts().get(0)).get();
     final Map<String, String> hostEnvironment = hostStatus.getEnvironment();
     final HostInfo hostInfo = hostStatus.getHostInfo();
+    Preconditions.checkNotNull(hostInfo);
     probe.undeploy();
 
     // get values from the agent environment
@@ -138,7 +140,7 @@ public class HeliosSoloIT {
       solo.volume("/var/run/docker.sock", dockerHost.replace("unix://", ""));
     }
 
-    // deploy the helios-solo job and create a Helios client for talking to it
+    // create a Helios client for talking to helios-solo
     final String masterEndpoint = "http://" + solo.deploy().address("helios").toString();
     soloClient = HeliosClient.newBuilder()
         .setEndpoints(masterEndpoint)
