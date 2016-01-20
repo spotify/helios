@@ -120,8 +120,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
                    + "I'll assume it's dead and deregister it.", name, hostInfoPath);
         }
 
-        ZooKeeperRegistrarUtil.deregisterHost(client, name);
-        ZooKeeperRegistrarUtil.registerHost(client, idPath, name, id);
+        ZooKeeperRegistrarUtil.reRegisterHost(client, name, id);
       } else {
         log.info("Matching agent id node already present, not registering agent {}: {}", id, name);
       }
