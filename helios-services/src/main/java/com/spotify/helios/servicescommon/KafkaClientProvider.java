@@ -41,7 +41,7 @@ public class KafkaClientProvider {
 
   private static final String KAFKA_HELIOS_CLIENT_ID = "Helios";
   private static final String KAFKA_QUORUM_PARAMETER = "1";
-  public static final int MAX_BLOCK_TIMEOUT = 5000;
+  public static final int MAX_BLOCK_TIMEOUT = 1000;
 
   private final Optional<ImmutableMap<String, Object>> partialConfigs;
 
