@@ -439,7 +439,10 @@ public class JobCreateCommand extends ControlCommand {
       explicitRegistration.put(ServiceEndpoint.of(service, proto), ServicePorts.of(port));
     }
 
-    builder.setRegistrationDomain(options.getString(registrationDomainArg.getDest()));
+    final String registrationDomain = options.getString(registrationDomainArg.getDest());
+    if (!isNullOrEmpty(registrationDomain)) {
+      builder.setRegistrationDomain(registrationDomain);
+    }
 
     // Merge service registrations
     final Map<ServiceEndpoint, ServicePorts> registration = Maps.newHashMap();

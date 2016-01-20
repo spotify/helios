@@ -71,6 +71,7 @@ public class CliJobCreationTest extends SystemTestBase {
     final Map<ServiceEndpoint, ServicePorts> registration = ImmutableMap.of(
         ServiceEndpoint.of("foo-service", "tcp"), ServicePorts.of("foo"),
         ServiceEndpoint.of("bar-service", "http"), ServicePorts.of("bar"));
+    final String registrationDomain = "my-domain";
     final Map<String, String> env = ImmutableMap.of("BAD", "f00d");
     final Map<String, String> volumes = Maps.newHashMap();
     volumes.put("/etc/spotify/secret-keys.yaml:ro", "/etc/spotify/secret-keys.yaml");
@@ -81,6 +82,7 @@ public class CliJobCreationTest extends SystemTestBase {
         .setEnv(env)
         .setPorts(ports)
         .setRegistration(registration)
+        .setRegistrationDomain(registrationDomain)
         .setVolumes(volumes)
         .setCreatingUser(TEST_USER)
         .setToken("foo-token")
