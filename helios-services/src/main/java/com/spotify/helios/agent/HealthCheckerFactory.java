@@ -57,7 +57,7 @@ public final class HealthCheckerFactory {
     } else if (healthCheck instanceof ExecHealthCheck) {
       return new ExecHealthChecker((ExecHealthCheck) healthCheck, docker);
     } else if (healthCheck instanceof HttpHealthCheck) {
-      return new HttpHealthChecker((HttpHealthCheck) healthCheck, taskConfig, dockerHost);
+      return new HttpHealthChecker((HttpHealthCheck) healthCheck, taskConfig, docker, dockerHost);
     } else if (healthCheck instanceof TcpHealthCheck) {
       return new TcpHealthChecker((TcpHealthCheck) healthCheck, taskConfig, docker, dockerHost);
     }
@@ -138,7 +138,20 @@ public final class HealthCheckerFactory {
     }
   }
 
-  private static class HttpHealthChecker implements HealthChecker {
+  private abstract static class NetworkHealthchecker implements HealthChecker {
+    private final DockerClient dockerClient;
+
+    protected NetworkHealthchecker(final DockerClient dockerClient) {
+      this.dockerClient = dockerClient;
+    }
+
+    protected String getBridgeAddress(String containerId)
+        throws DockerException, InterruptedException {
+      return dockerClient.inspectContainer(containerId).networkSettings().gateway();
+    }
+  }
+
+  private static class HttpHealthChecker extends NetworkHealthchecker {
 
     private static final Logger log = LoggerFactory.getLogger(HttpHealthChecker.class);
 
@@ -151,7 +164,8 @@ public final class HealthCheckerFactory {
     private final DockerHost dockerHost;
 
     private HttpHealthChecker(final HttpHealthCheck healthCheck, final TaskConfig taskConfig,
-                              final DockerHost dockerHost) {
+                              final DockerClient dockerClient, final DockerHost dockerHost) {
+      super(dockerClient);
       this.healthCheck = healthCheck;
       this.taskConfig = taskConfig;
       this.dockerHost = dockerHost;
@@ -159,13 +173,22 @@ public final class HealthCheckerFactory {
 
     @Override
     public boolean check(final String containerId) throws InterruptedException, DockerException {
-      final Integer port = taskConfig.ports().get(healthCheck.getPort()).getExternalPort();
+
+      final String host;
+      if (dockerHost.host().startsWith("unix://")) {
+        host = getBridgeAddress(containerId);
+        log.info("Using bridge address {} for healthchecks", host);
+      } else {
+        host = dockerHost.address();
+      }
 
       final URL url;
+      // TODO (mbrown): is port always non-null? it is unconditionally unboxed on the next line
+      final Integer port = taskConfig.ports().get(healthCheck.getPort()).getExternalPort();
       try {
-        url = new URL("http", dockerHost.address(), port, healthCheck.getPath());
-      } catch (MalformedURLException e) {
-        throw Throwables.propagate(e);
+        url = new URL("http", host, port, healthCheck.getPath());
+      } catch (MalformedURLException e1) {
+        throw Throwables.propagate(e1);
       }
 
       log.info("about to healthcheck containerId={} with url={} for task={}",
@@ -185,9 +208,10 @@ public final class HealthCheckerFactory {
         return false;
       }
     }
+
   }
 
-  private static class TcpHealthChecker implements HealthChecker {
+  private static class TcpHealthChecker extends NetworkHealthchecker {
 
     private static final Logger log = LoggerFactory.getLogger(TcpHealthChecker.class);
 
@@ -195,15 +219,14 @@ public final class HealthCheckerFactory {
 
     private final TcpHealthCheck healthCheck;
     private final TaskConfig taskConfig;
-    private final DockerClient docker;
     private final DockerHost dockerHost;
 
 
     private TcpHealthChecker(final TcpHealthCheck healthCheck, final TaskConfig taskConfig,
                              final DockerClient docker, final DockerHost dockerHost) {
+      super(docker);
       this.healthCheck = healthCheck;
       this.taskConfig = taskConfig;
-      this.docker = docker;
       this.dockerHost = dockerHost;
     }
 
@@ -215,8 +238,7 @@ public final class HealthCheckerFactory {
       if (address.getAddress().isLoopbackAddress()) {
         // tcp connections to a container-mapped port on loopback always succeed,
         // regardless of if the container is listening or not. use the bridge address instead.
-        final String bridge = docker.inspectContainer(containerId).networkSettings().gateway();
-        address = new InetSocketAddress(bridge, port);
+        address = new InetSocketAddress(getBridgeAddress(containerId), port);
       }
 
       log.info("about to healthcheck containerId={} with address={} for task={}",
