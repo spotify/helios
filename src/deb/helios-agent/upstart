@@ -28,6 +28,8 @@ end script
 script
   [ -f $DEFAULTFILE ] && . $DEFAULTFILE
   export HELIOS_AGENT_JVM_OPTS
+  export HELIOS_ZK_AGENT_PASSWORD
+
   exec /usr/bin/helios-agent $HELIOS_AGENT_OPTS
 end script
 
