@@ -25,6 +25,7 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.net.InetSocketAddress;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Parses command-line arguments to produce the {@link MasterConfig}.
@@ -39,6 +40,7 @@ public class MasterParser extends ServiceParser {
   private Argument adminArg;
   private Argument zkAclAgentDigest;
   private Argument zkAclMasterPassword;
+  private Argument agentReapingTimeout;
 
   public MasterParser(final String... args) throws ArgumentParserException {
     super("helios-master", "Spotify Helios Master", args);
@@ -73,7 +75,8 @@ public class MasterParser extends ServiceParser {
         .setAdminPort(options.getInt(adminArg.getDest()))
         .setHttpEndpoint(httpAddress)
         .setKafkaBrokers(getKafkaBrokers())
-        .setStateDirectory(getStateDirectory());
+        .setStateDirectory(getStateDirectory())
+        .setAgentReapingTimeout(options.getInt(agentReapingTimeout.getDest()));
 
     this.masterConfig = config;
   }
@@ -97,6 +100,12 @@ public class MasterParser extends ServiceParser {
         .help("ZooKeeper master password (for ZooKeeper ACLs). If the "
               + ZK_MASTER_PASSWORD_ENVVAR
               + " environment variable is present this argument is ignored.");
+
+    agentReapingTimeout = parser.addArgument("--agent-reaping-timeout")
+        .type(Integer.class)
+        .setDefault(TimeUnit.DAYS.toHours(14))
+        .help("In hours. Agents will be automatically de-registered if they are DOWN for more " +
+              "than the specified timeout.");
   }
 
   public MasterConfig getMasterConfig() {

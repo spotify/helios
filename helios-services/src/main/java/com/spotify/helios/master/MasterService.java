@@ -115,6 +115,7 @@ public class MasterService extends AbstractIdleService {
   private final CuratorClientFactory curatorClientFactory;
   private final RollingUpdateService rollingUpdateService;
   private final Map<String, String> environmentVariables;
+  private final DeadAgentReaper agentReaper;
 
   private ZooKeeperRegistrarService zkRegistrar;
 
@@ -200,6 +201,9 @@ public class MasterService extends AbstractIdleService {
     // Set up rolling update service
     final ReactorFactory reactorFactory = new ReactorFactory();
     this.rollingUpdateService = new RollingUpdateService(model, reactorFactory);
+
+    // Set up agent reaper (de-registering hosts that have been DOWN for more than X time)
+    this.agentReaper = new DeadAgentReaper(model, config.getAgentReapingTimeout(), TimeUnit.HOURS);
 
     // Set up http server
     environment.servlets()

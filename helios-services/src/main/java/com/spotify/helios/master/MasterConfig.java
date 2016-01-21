@@ -52,6 +52,7 @@ public class MasterConfig extends Configuration {
   private String zooKeeperAclAgentDigest;
   private String zookeeperAclMasterUser;
   private String zooKeeperAclMasterPassword;
+  private long agentReapingTimeout;
 
   public String getDomain() {
     return domain;
@@ -249,5 +250,14 @@ public class MasterConfig extends Configuration {
   public MasterConfig setZookeeperAclAgentUser(final String zookeeperAclAgentUser) {
     this.zookeeperAclAgentUser = zookeeperAclAgentUser;
     return this;
+  }
+
+  public MasterConfig setAgentReapingTimeout(final long agentReapingTimeout) {
+    this.agentReapingTimeout = agentReapingTimeout;
+    return this;
+  }
+
+  public long getAgentReapingTimeout() {
+    return agentReapingTimeout;
   }
 }
