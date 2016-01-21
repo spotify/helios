@@ -29,7 +29,6 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.state.ConnectionState;
 import org.apache.curator.framework.state.ConnectionStateListener;
-import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,15 +121,17 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
             zkRegistrationSignal.countDown();
           }
           return;
-        } catch (KeeperException e) {
+        } catch (Exception e) {
           if (e instanceof ConnectionLossException) {
             log.warn("ZooKeeper connection lost, retrying registration in {} ms", sleep);
+          } else if (e instanceof HostNotFoundException || e instanceof HostStillInUseException) {
+            log.error("ZooKeeper deregistration of old hostname failed, retrying in {} ms: {}",
+                      sleep, e);
           } else {
             log.error("ZooKeeper registration failed, retrying in {} ms", sleep, e);
           }
+
           Thread.sleep(sleep);
-        } catch (HostNotFoundException | HostStillInUseException e) {
-          log.error("ZooKeeper deregistration of old hostname failed, retrying in {} ms", sleep, e);
         }
       }
     }
