@@ -27,8 +27,6 @@ end script
 script
   [ -f $DEFAULTFILE ] && . $DEFAULTFILE
   export HELIOS_MASTER_JVM_OPTS
-  export HELIOS_ZK_MASTER_PASSWORD
-
   exec /usr/bin/helios-master $HELIOS_MASTER_OPTS
 end script
 
