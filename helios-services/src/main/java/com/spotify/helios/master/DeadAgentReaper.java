@@ -35,7 +35,7 @@ import java.util.concurrent.TimeUnit;
 import static com.google.common.base.Preconditions.checkArgument;
 
 /**
- * De-registers dead agents, where an agent that has been DOWN for more than X time is considered
+ * De-registers dead agents, where an agent that has been DOWN for more than X hours is considered
  * dead.
  */
 public class DeadAgentReaper extends InterruptingScheduledService {
@@ -51,22 +51,16 @@ public class DeadAgentReaper extends InterruptingScheduledService {
   private final Clock clock;
 
   public DeadAgentReaper(final MasterModel masterModel,
-                         final long timeout,
-                         final TimeUnit timeUnit) {
-    this(masterModel, timeout, timeUnit, SYSTEM_CLOCK);
+                         final long timeoutHours) {
+    this(masterModel, timeoutHours, SYSTEM_CLOCK);
   }
 
-  /**
-   * We check for dead agents every 30 minutes, which means the actual timeout the specified timeout
-   * plus up to 30 minutes. I.e. very low timeouts will not work in practice.
-   */
   public DeadAgentReaper(final MasterModel masterModel,
-                         final long timeout,
-                         final TimeUnit timeUnit,
+                         final long timeoutHours,
                          final Clock clock) {
     this.masterModel = masterModel;
-    checkArgument(timeout > 0);
-    this.timeoutMillis = timeUnit.toMillis(timeout);
+    checkArgument(timeoutHours > 0);
+    this.timeoutMillis = TimeUnit.HOURS.toMillis(timeoutHours);
     this.clock = clock;
   }
 

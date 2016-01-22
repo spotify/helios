@@ -33,8 +33,8 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
+import static java.util.concurrent.TimeUnit.HOURS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 
 public class DeadAgentReaperTest {
 
-  private static  final long TIMEOUT_MILLIS = 1000;
+  private static  final long TIMEOUT_HOURS = 1000;
 
   private static class Datapoint {
 
@@ -52,11 +52,11 @@ public class DeadAgentReaperTest {
     private final HostStatus.Status status;
     private final boolean expectReap;
 
-    private Datapoint(final String host, final long startTime, final long uptime,
+    private Datapoint(final String host, final long startTimeHours, final long uptimeHours,
                       final HostStatus.Status status, final boolean expectReap) {
       this.host = host;
-      this.startTime = startTime;
-      this.uptime = uptime;
+      this.startTime = HOURS.toMillis(startTimeHours);
+      this.uptime = HOURS.toMillis(uptimeHours);
       this.status = status;
       this.expectReap = expectReap;
     }
@@ -66,12 +66,11 @@ public class DeadAgentReaperTest {
   public void testDeadAgentReaper() throws Exception {
     final MasterModel masterModel = mock(MasterModel.class);
     final Clock clock = mock(Clock.class);
-    // Current time is 2000 (ms)
-    when(clock.now()).thenReturn(new Instant(2000));
+    when(clock.now()).thenReturn(new Instant(HOURS.toMillis(2000)));
 
     final List<Datapoint> datapoints = Lists.newArrayList(
-        new Datapoint("host1", 0, TIMEOUT_MILLIS - 1, HostStatus.Status.DOWN, true),
-        new Datapoint("host2", 0, TIMEOUT_MILLIS + 1, HostStatus.Status.DOWN, false),
+        new Datapoint("host1", 0, TIMEOUT_HOURS - 1, HostStatus.Status.DOWN, true),
+        new Datapoint("host2", 0, TIMEOUT_HOURS + 1, HostStatus.Status.DOWN, false),
         new Datapoint("host3", 1000, 1000, HostStatus.Status.UP, false),
         new Datapoint("host4", 500, 300, HostStatus.Status.DOWN, true),
         // Agents started in the future should not be reaped, even if they are reported as down
@@ -103,7 +102,7 @@ public class DeadAgentReaperTest {
     }
 
     final DeadAgentReaper reaper = new DeadAgentReaper(
-        masterModel, TIMEOUT_MILLIS, TimeUnit.MILLISECONDS, clock);
+        masterModel, TIMEOUT_HOURS, clock);
     reaper.startAsync().awaitRunning();
 
     verify(masterModel, timeout(5000)).listHosts();

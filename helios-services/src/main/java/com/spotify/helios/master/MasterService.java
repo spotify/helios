@@ -202,10 +202,9 @@ public class MasterService extends AbstractIdleService {
     final ReactorFactory reactorFactory = new ReactorFactory();
     this.rollingUpdateService = new RollingUpdateService(model, reactorFactory);
 
-    // Set up agent reaper (de-registering hosts that have been DOWN for more than X time)
+    // Set up agent reaper (de-registering hosts that have been DOWN for more than X hours)
     if (config.getAgentReapingTimeout() > 0) {
-      this.agentReaper = new DeadAgentReaper(
-          model, config.getAgentReapingTimeout(), TimeUnit.HOURS);
+      this.agentReaper = new DeadAgentReaper(model, config.getAgentReapingTimeout());
     } else {
       log.info("Reaping of dead agents disabled");
       this.agentReaper = null;
