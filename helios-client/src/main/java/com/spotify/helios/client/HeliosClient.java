@@ -71,6 +71,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -104,7 +105,7 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class HeliosClient implements AutoCloseable {
+public class HeliosClient implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosClient.class);
 
@@ -516,6 +517,7 @@ public class HeliosClient implements AutoCloseable {
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
     private ListeningScheduledExecutorService executorService;
+    private boolean shutDownExecutorOnClose = true;
 
     private Builder() {
     }
@@ -573,6 +575,11 @@ public class HeliosClient implements AutoCloseable {
       return this;
     }
 
+    public Builder setShutDownExecutorOnClose(final boolean shutDownExecutorOnClose) {
+      this.shutDownExecutorOnClose = shutDownExecutorOnClose;
+      return this;
+    }
+
     public HeliosClient build() {
       return new HeliosClient(user, createDispatcher());
     }
@@ -589,7 +596,7 @@ public class HeliosClient implements AutoCloseable {
       }
 
       final RequestDispatcher dispatcher = new DefaultRequestDispatcher(
-          createHttpConnector(sslHostnameVerification), executorService);
+          createHttpConnector(sslHostnameVerification), executorService, shutDownExecutorOnClose);
 
       return new RetryingRequestDispatcher(dispatcher,
           executorService,

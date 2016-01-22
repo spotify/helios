@@ -50,11 +50,14 @@ class DefaultRequestDispatcher implements RequestDispatcher {
 
   private final ListeningExecutorService executorService;
   private final HttpConnector httpConnector;
+  private final boolean shutDownExecutorOnClose;
 
   DefaultRequestDispatcher(final HttpConnector httpConnector,
-                           final ListeningExecutorService executorService) {
+                           final ListeningExecutorService executorService,
+                           final boolean shutDownExecutorOnClose) {
     this.executorService = executorService;
     this.httpConnector = httpConnector;
+    this.shutDownExecutorOnClose = shutDownExecutorOnClose;
   }
 
   @Override
@@ -127,7 +130,9 @@ class DefaultRequestDispatcher implements RequestDispatcher {
 
   @Override
   public void close() throws Exception {
-    executorService.shutdownNow();
+    if (shutDownExecutorOnClose) {
+      executorService.shutdownNow();
+    }
     httpConnector.close();
   }
 
