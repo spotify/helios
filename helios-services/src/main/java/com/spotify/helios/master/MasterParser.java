@@ -76,7 +76,7 @@ public class MasterParser extends ServiceParser {
         .setHttpEndpoint(httpAddress)
         .setKafkaBrokers(getKafkaBrokers())
         .setStateDirectory(getStateDirectory())
-        .setAgentReapingTimeout(options.getInt(agentReapingTimeout.getDest()));
+        .setAgentReapingTimeout(options.getLong(agentReapingTimeout.getDest()));
 
     this.masterConfig = config;
   }
@@ -102,7 +102,7 @@ public class MasterParser extends ServiceParser {
               + " environment variable is present this argument is ignored.");
 
     agentReapingTimeout = parser.addArgument("--agent-reaping-timeout")
-        .type(Integer.class)
+        .type(Long.class)
         .setDefault(TimeUnit.DAYS.toHours(14))
         .help("In hours. Agents will be automatically de-registered if they are DOWN for more " +
               "than the specified timeout. To disable reaping, set to 0.");
