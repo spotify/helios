@@ -21,6 +21,8 @@ import com.google.common.util.concurrent.SettableFuture;
 
 import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
 import com.spotify.helios.agent.RetryIntervalPolicy;
+import com.spotify.helios.agent.Sleeper;
+import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -41,8 +43,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.apache.curator.framework.state.ConnectionState.RECONNECTED;
+import static org.hamcrest.Matchers.both;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.mockito.Matchers.longThat;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -50,6 +58,7 @@ public class ZooKeeperRegistrarServiceTest {
 
   @Mock ZooKeeperClient zkClient;
   @Mock Listenable<ConnectionStateListener> connectionStateListenerListenable;
+  @Mock Sleeper sleeper;
 
   @Captor ArgumentCaptor<ConnectionStateListener> zkClientConnectionListenerCaptor;
 
@@ -69,10 +78,7 @@ public class ZooKeeperRegistrarServiceTest {
 
   @Test
   public void testAllGood() throws Exception {
-
-    final ZooKeeperRegistrarService init = new ZooKeeperRegistrarService(
-        zkClient, new ZooKeeperRegistrar() {
-
+    final ZooKeeperRegistrar zooKeeperRegistrar = new ZooKeeperRegistrar() {
       @Override
       public void startUp() throws Exception {
       }
@@ -85,7 +91,12 @@ public class ZooKeeperRegistrarServiceTest {
       public void tryToRegister(ZooKeeperClient client) throws KeeperException {
         complete.set(null);
       }
-    });
+    };
+
+    final ZooKeeperRegistrarService init = ZooKeeperRegistrarService.newBuilder()
+        .setZooKeeperClient(zkClient)
+        .setZooKeeperRegistrar(zooKeeperRegistrar)
+        .build();
 
     init.startUp();
 
@@ -97,9 +108,7 @@ public class ZooKeeperRegistrarServiceTest {
 
     final SettableFuture<Void> shutdownComplete = SettableFuture.create();
 
-    final ZooKeeperRegistrarService init = new ZooKeeperRegistrarService(
-        zkClient, new ZooKeeperRegistrar() {
-
+    final ZooKeeperRegistrar zooKeeperRegistrar = new ZooKeeperRegistrar() {
       @Override
       public void startUp() throws Exception {
       }
@@ -113,7 +122,12 @@ public class ZooKeeperRegistrarServiceTest {
       public void tryToRegister(ZooKeeperClient client) throws KeeperException {
         complete.set(null);
       }
-    });
+    };
+
+    final ZooKeeperRegistrarService init = ZooKeeperRegistrarService.newBuilder()
+        .setZooKeeperClient(zkClient)
+        .setZooKeeperRegistrar(zooKeeperRegistrar)
+        .build();
 
     init.startUp();
 
@@ -130,34 +144,44 @@ public class ZooKeeperRegistrarServiceTest {
 
     final AtomicInteger counter = new AtomicInteger(0);
 
-    final ZooKeeperRegistrarService init = new ZooKeeperRegistrarService(
-        zkClient, new ZooKeeperRegistrar() {
-
+    final ZooKeeperRegistrar zooKeeperRegistrar = new ZooKeeperRegistrar() {
       @Override
       public void startUp() throws Exception {
-
       }
 
       @Override
       public void shutDown() throws Exception {
-
       }
 
       @Override
-      public void tryToRegister(ZooKeeperClient client) throws KeeperException {
-        if (counter.incrementAndGet() == 1) {
+      public void tryToRegister(ZooKeeperClient client)
+          throws KeeperException, HostNotFoundException {
+        final int count = counter.incrementAndGet();
+        if (count == 1) {
           throw new KeeperException.ConnectionLossException();
+        }
+
+        if (count == 2) {
+          throw new HostNotFoundException("Host not found");
         }
 
         complete.set(null);
       }
-    }, null, retryIntervalPolicy
-    );
+    };
+
+    final ZooKeeperRegistrarService init = ZooKeeperRegistrarService.newBuilder()
+        .setZooKeeperClient(zkClient)
+        .setZooKeeperRegistrar(zooKeeperRegistrar)
+        .setRetryIntervalPolicy(retryIntervalPolicy)
+        .setSleeper(sleeper)
+        .build();
 
     init.startUp();
 
     Assert.assertNull(complete.get(30, SECONDS));
     Assert.assertTrue("Count must have been called at least once", counter.get() > 1);
+    verify(sleeper, times(2))
+        .sleep(longThat(both(greaterThanOrEqualTo(1L)).and(lessThanOrEqualTo(30L))));
   }
 
   @Test
@@ -165,27 +189,28 @@ public class ZooKeeperRegistrarServiceTest {
 
     final AtomicInteger counter = new AtomicInteger(0);
 
-    final ZooKeeperRegistrarService init =
-        new ZooKeeperRegistrarService(zkClient, new ZooKeeperRegistrar() {
+    final ZooKeeperRegistrar zooKeeperRegistrar = new ZooKeeperRegistrar() {
+      @Override
+      public void startUp() throws Exception {
+      }
 
-          @Override
-          public void startUp() throws Exception {
+      @Override
+      public void shutDown() throws Exception {
+      }
 
-          }
+      @Override
+      public void tryToRegister(ZooKeeperClient client) throws KeeperException {
+        counter.incrementAndGet();
 
-          @Override
-          public void shutDown() throws Exception {
+        complete.set(null);
+      }
+    };
 
-          }
-
-          @Override
-          public void tryToRegister(ZooKeeperClient client) throws KeeperException {
-            counter.incrementAndGet();
-
-            complete.set(null);
-
-          }
-        }, null, retryIntervalPolicy);
+    final ZooKeeperRegistrarService init = ZooKeeperRegistrarService.newBuilder()
+        .setZooKeeperClient(zkClient)
+        .setZooKeeperRegistrar(zooKeeperRegistrar)
+        .setRetryIntervalPolicy(retryIntervalPolicy)
+        .build();
 
     init.startUp();
 
@@ -198,8 +223,6 @@ public class ZooKeeperRegistrarServiceTest {
     zkClientConnectionListenerCaptor.getValue().stateChanged(curatorFramework, RECONNECTED);
 
     Assert.assertNull(complete.get(30, SECONDS));
-
     Assert.assertTrue("Count must have been called at least once", counter.get() > 1);
   }
-
 }

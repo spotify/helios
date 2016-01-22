@@ -22,6 +22,8 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.spotify.helios.agent.BoundedRandomExponentialBackoff;
 import com.spotify.helios.agent.RetryIntervalPolicy;
 import com.spotify.helios.agent.RetryScheduler;
+import com.spotify.helios.agent.Sleeper;
+import com.spotify.helios.agent.ThreadSleeper;
 import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -35,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CountDownLatch;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Service.State.STOPPING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -47,12 +50,20 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperRegistrarService.class);
 
   private final ZooKeeperClient client;
-
-  private final Reactor reactor;
   private final ZooKeeperRegistrar zooKeeperRegistrar;
   private final CountDownLatch zkRegistrationSignal;
-
   private final RetryIntervalPolicy retryIntervalPolicy;
+  private final Sleeper sleeper;
+  private final Reactor reactor;
+
+  private ZooKeeperRegistrarService(final Builder builder) {
+    this.client = checkNotNull(builder.zooKeeperClient);
+    this.zooKeeperRegistrar = checkNotNull(builder.zooKeeperRegistrar);
+    this.zkRegistrationSignal = builder.zkRegistrationSignal;
+    this.retryIntervalPolicy = checkNotNull(builder.retryIntervalPolicy);
+    this.sleeper = checkNotNull(builder.sleeper);
+    this.reactor = new DefaultReactor("zk-client-async-init", new Update());
+  }
 
   private ConnectionStateListener listener = new ConnectionStateListener() {
     @Override
@@ -63,34 +74,59 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
     }
   };
 
-  public ZooKeeperRegistrarService(final ZooKeeperClient client,
-                                   final ZooKeeperRegistrar zooKeeperRegistrar) {
-    this(client, zooKeeperRegistrar, null,
-         BoundedRandomExponentialBackoff.newBuilder()
-             .setMinInterval(1, SECONDS)
-             .setMaxInterval(30, SECONDS)
-             .build());
+  public static Builder newBuilder() {
+    return new Builder();
   }
 
-  public ZooKeeperRegistrarService(final ZooKeeperClient client,
-                                   final ZooKeeperRegistrar zooKeeperRegistrar,
-                                   final CountDownLatch zkRegistrationSignal) {
-    this(client, zooKeeperRegistrar, zkRegistrationSignal,
-         BoundedRandomExponentialBackoff.newBuilder()
-             .setMinInterval(1, SECONDS)
-             .setMaxInterval(30, SECONDS)
-             .build());
-  }
+  public static class Builder {
 
-  public ZooKeeperRegistrarService(final ZooKeeperClient client,
-                                   final ZooKeeperRegistrar zooKeeperRegistrar,
-                                   final CountDownLatch zkRegistrationSignal,
-                                   final RetryIntervalPolicy retryIntervalPolicy) {
-    this.client = client;
-    this.zooKeeperRegistrar = zooKeeperRegistrar;
-    this.zkRegistrationSignal = zkRegistrationSignal;
-    this.retryIntervalPolicy = retryIntervalPolicy;
-    this.reactor = new DefaultReactor("zk-client-async-init", new Update());
+    private ZooKeeperClient zooKeeperClient;
+    private ZooKeeperRegistrar zooKeeperRegistrar;
+    private CountDownLatch zkRegistrationSignal;
+    private RetryIntervalPolicy retryIntervalPolicy;
+    private Sleeper sleeper;
+
+    private Builder() { }
+
+    public Builder setZooKeeperClient(final ZooKeeperClient zooKeeperClient) {
+      this.zooKeeperClient = zooKeeperClient;
+      return this;
+    }
+
+    public Builder setZooKeeperRegistrar(final ZooKeeperRegistrar zooKeeperRegistrar) {
+      this.zooKeeperRegistrar = zooKeeperRegistrar;
+      return this;
+    }
+
+    public Builder setZKRegistrationSignal(final CountDownLatch zkRegistrationSignal) {
+      this.zkRegistrationSignal = zkRegistrationSignal;
+      return this;
+    }
+
+    public Builder setRetryIntervalPolicy(final RetryIntervalPolicy retryIntervalPolicy) {
+      this.retryIntervalPolicy = retryIntervalPolicy;
+      return this;
+    }
+
+    public Builder setSleeper(final Sleeper sleeper) {
+      this.sleeper = sleeper;
+      return this;
+    }
+
+    public ZooKeeperRegistrarService build() {
+      if (this.retryIntervalPolicy == null) {
+        this.retryIntervalPolicy = BoundedRandomExponentialBackoff.newBuilder()
+            .setMinInterval(1, SECONDS)
+            .setMaxInterval(30, SECONDS)
+            .build();
+      }
+
+      if (this.sleeper == null) {
+        this.sleeper = new ThreadSleeper();
+      }
+
+      return new ZooKeeperRegistrarService(this);
+    }
   }
 
   @Override
@@ -131,7 +167,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
             log.error("ZooKeeper registration failed, retrying in {} ms", sleep, e);
           }
 
-          Thread.sleep(sleep);
+          sleeper.sleep(sleep);
         }
       }
     }
