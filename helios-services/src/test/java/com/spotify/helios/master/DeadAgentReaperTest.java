@@ -18,8 +18,6 @@
 package com.spotify.helios.master;
 
 import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
@@ -35,10 +33,11 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class DeadAgentReaperTest {
@@ -75,7 +74,10 @@ public class DeadAgentReaperTest {
         new Datapoint("host2", 0, TIMEOUT_MILLIS + 1, HostStatus.Status.DOWN, false),
         new Datapoint("host3", 1000, 1000, HostStatus.Status.UP, false),
         new Datapoint("host4", 500, 300, HostStatus.Status.DOWN, true),
+        // Agents started in the future should not be reaped, even if they are reported as down
         new Datapoint("host5", 5000, 0, HostStatus.Status.DOWN, false),
+        // Agents that are UP should not be reaped even if the start and uptime indicate that
+        // they should
         new Datapoint("host6", 0, 0, HostStatus.Status.UP, false)
     );
 
@@ -100,23 +102,16 @@ public class DeadAgentReaperTest {
               .build());
     }
 
-    final List<String> expected = FluentIterable.from(datapoints)
-        .filter(new Predicate<Datapoint>() {
-          @Override
-          public boolean apply(final Datapoint input) {
-            return input.expectReap;
-          }
-        })
-        .transform(new Function<Datapoint, String>() {
-          @Override
-          public String apply(final Datapoint input) {
-            return input.host;
-          }
-        })
-        .toList();
+    final DeadAgentReaper reaper = new DeadAgentReaper(
+        masterModel, TIMEOUT_MILLIS, TimeUnit.MILLISECONDS, clock);
+    reaper.startAsync().awaitRunning();
 
-    assertThat(
-        DeadAgentReaper.getDeadAgents(masterModel, TIMEOUT_MILLIS, clock),
-        containsInAnyOrder(expected.toArray()));
+    verify(masterModel, timeout(5000)).listHosts();
+
+    for (final Datapoint datapoint : datapoints) {
+      if (datapoint.expectReap) {
+        verify(masterModel).deregisterHost(datapoint.host);
+      }
+    }
   }
 }

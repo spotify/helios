@@ -105,7 +105,7 @@ public class MasterParser extends ServiceParser {
         .type(Integer.class)
         .setDefault(TimeUnit.DAYS.toHours(14))
         .help("In hours. Agents will be automatically de-registered if they are DOWN for more " +
-              "than the specified timeout.");
+              "than the specified timeout. To disable reaping, set to 0.");
   }
 
   public MasterConfig getMasterConfig() {
