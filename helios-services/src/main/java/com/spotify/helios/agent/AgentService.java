@@ -373,11 +373,13 @@ public class AgentService extends AbstractIdleService implements Managed {
     client.start();
 
     // Register the agent
-    zkRegistrar = new ZooKeeperRegistrarService(
-        client,
-        new AgentZooKeeperRegistrar(this, config.getName(),
-                                    id, config.getZooKeeperRegistrationTtlMinutes()),
-        zkRegistrationSignal);
+    final AgentZooKeeperRegistrar agentZooKeeperRegistrar = new AgentZooKeeperRegistrar(
+        this, config.getName(), id, config.getZooKeeperRegistrationTtlMinutes());
+    zkRegistrar = ZooKeeperRegistrarService.newBuilder()
+        .setZooKeeperClient(client)
+        .setZooKeeperRegistrar(agentZooKeeperRegistrar)
+        .setZKRegistrationSignal(zkRegistrationSignal)
+        .build();
 
     return client;
   }

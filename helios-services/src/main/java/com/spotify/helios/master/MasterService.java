@@ -94,8 +94,8 @@ import io.dropwizard.setup.Environment;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
-import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 
 /**
  * The Helios master service.
@@ -363,8 +363,10 @@ public class MasterService extends AbstractIdleService {
     final ZooKeeperClient client =
         new DefaultZooKeeperClient(curator, config.getZooKeeperClusterId());
     client.start();
-    zkRegistrar = new ZooKeeperRegistrarService(
-        client, new MasterZooKeeperRegistrar(config.getName()));
+    zkRegistrar = ZooKeeperRegistrarService.newBuilder()
+        .setZooKeeperClient(client)
+        .setZooKeeperRegistrar(new MasterZooKeeperRegistrar(config.getName()))
+        .build();
 
     // TODO: This is perhaps not the correct place to do this - but at present it's the only
     // place where we have access to the ACL provider.
