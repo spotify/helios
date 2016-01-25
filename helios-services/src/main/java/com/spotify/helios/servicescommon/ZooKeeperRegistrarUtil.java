@@ -56,6 +56,8 @@ import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.check;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
 import static java.util.Collections.emptyMap;
 
@@ -85,6 +87,46 @@ public class ZooKeeperRegistrarUtil {
 
     // Finish registration by creating the id node last
     client.createAndSetData(idPath, hostId.getBytes(UTF_8));
+  }
+
+  /**
+   * Re-register an agent with a different host id. Will remove the existing status of the agent
+   * but preserve any jobs deployed to the host and their history.
+   */
+  public static void reRegisterHost(final ZooKeeperClient client,
+                                    final String host, final String hostId)
+      throws HostNotFoundException, KeeperException {
+    // * Delete everything in the /status/hosts/<hostname> subtree
+    // * Don't delete any history for the job (on the host)
+    // * DON'T touch anything in the /config/hosts/<hostname> subtree, except updating the host id
+    log.info("re-registering host: {}, new host id: {}", host, hostId);
+    try {
+      final List<ZooKeeperOperation> operations = Lists.newArrayList();
+
+      // Check that the host exists in ZK
+      operations.add(check(Paths.configHost(host)));
+
+      // Remove the host status
+      final List<String> nodes = safeListRecursive(client, Paths.statusHost(host));
+      for (final String node : reverse(nodes)) {
+        operations.add(delete(node));
+      }
+
+      // ...and re-create the /status/hosts/<host>/jobs node + parent
+      operations.add(create(Paths.statusHost(host)));
+      operations.add(create(Paths.statusHostJobs(host)));
+
+      // Update the host ID
+      // We don't have WRITE permissions to the node, so delete and re-create it.
+      operations.add(delete(Paths.configHostId(host)));
+      operations.add(create(Paths.configHostId(host), hostId.getBytes(UTF_8)));
+
+      client.transaction(operations);
+    } catch (NoNodeException e) {
+      throw new HostNotFoundException(host);
+    } catch (KeeperException e) {
+      throw new HeliosRuntimeException(e);
+    }
   }
 
   public static void deregisterHost(final ZooKeeperClient client, final String host)

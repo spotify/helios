@@ -115,6 +115,7 @@ public class MasterService extends AbstractIdleService {
   private final CuratorClientFactory curatorClientFactory;
   private final RollingUpdateService rollingUpdateService;
   private final Map<String, String> environmentVariables;
+  private final DeadAgentReaper agentReaper;
 
   private ZooKeeperRegistrarService zkRegistrar;
 
@@ -201,6 +202,14 @@ public class MasterService extends AbstractIdleService {
     final ReactorFactory reactorFactory = new ReactorFactory();
     this.rollingUpdateService = new RollingUpdateService(model, reactorFactory);
 
+    // Set up agent reaper (de-registering hosts that have been DOWN for more than X hours)
+    if (config.getAgentReapingTimeout() > 0) {
+      this.agentReaper = new DeadAgentReaper(model, config.getAgentReapingTimeout());
+    } else {
+      log.info("Reaping of dead agents disabled");
+      this.agentReaper = null;
+    }
+
     // Set up http server
     environment.servlets()
         .addFilter("VersionResponseFilter", new VersionResponseFilter(metrics.getMasterMetrics()))
@@ -278,6 +287,11 @@ public class MasterService extends AbstractIdleService {
     }
     expiredJobReaper.startAsync().awaitRunning();
     rollingUpdateService.startAsync().awaitRunning();
+
+    if (agentReaper != null) {
+      agentReaper.startAsync().awaitRunning();
+    }
+
     try {
       server.start();
     } catch (Exception e) {
@@ -297,6 +311,11 @@ public class MasterService extends AbstractIdleService {
     server.stop();
     server.join();
     registrar.close();
+
+    if (agentReaper != null) {
+      agentReaper.stopAsync().awaitTerminated();
+    }
+
     rollingUpdateService.stopAsync().awaitTerminated();
     expiredJobReaper.stopAsync().awaitTerminated();
     zkRegistrar.stopAsync().awaitTerminated();

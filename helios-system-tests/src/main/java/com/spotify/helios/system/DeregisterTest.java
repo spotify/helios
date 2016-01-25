@@ -167,4 +167,36 @@ public class DeregisterTest extends SystemTestBase {
     }
     awaitHostStatus(client, host, UP, 10, SECONDS);
   }
+
+  @Test
+  public void testJobsArePreservedWhenReregistering() throws Exception {
+    startDefaultMaster();
+    final String host = testHost();
+    AgentMain agent = startDefaultAgent(host, "--labels", "num=1");
+
+    final HeliosClient client = defaultClient();
+
+    // Deploy a job and wait for it to be running
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+    deployJob(jobId, host);
+    awaitJobState(client, host, jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
+
+    // Kill off agent
+    agent.stopAsync().awaitTerminated();
+    awaitHostStatus(client, host, DOWN, LONG_WAIT_SECONDS, SECONDS);
+
+    // Start a new agent with the same hostname but have it generate a different ID
+    resetAgentStateDir();
+
+    startDefaultAgent(host, "--zk-registration-ttl", "0", "--labels", "num=2");
+
+    // Check that the new host is registered
+    awaitHostRegistered(client, host, LONG_WAIT_SECONDS, SECONDS);
+    final HostStatus hostStatus2 =
+        awaitHostStatusWithLabels(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
+    assertThat(hostStatus2.getLabels(), Matchers.hasEntry("num", "2"));
+
+    // Check that the job we previously deployed is preserved
+    awaitJobState(client, host, jobId, RUNNING, WAIT_TIMEOUT_SECONDS, SECONDS);
+  }
 }
