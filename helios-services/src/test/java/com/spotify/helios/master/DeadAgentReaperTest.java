@@ -105,11 +105,11 @@ public class DeadAgentReaperTest {
         masterModel, TIMEOUT_HOURS, clock);
     reaper.startAsync().awaitRunning();
 
-    verify(masterModel, timeout(5000)).listHosts();
+    verify(masterModel, timeout(5000).atLeastOnce()).listHosts();
 
     for (final Datapoint datapoint : datapoints) {
       if (datapoint.expectReap) {
-        verify(masterModel).deregisterHost(datapoint.host);
+        verify(masterModel, timeout(500)).deregisterHost(datapoint.host);
       }
     }
   }
