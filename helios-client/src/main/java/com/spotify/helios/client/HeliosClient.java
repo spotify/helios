@@ -71,6 +71,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -104,7 +105,7 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class HeliosClient implements AutoCloseable {
+public class HeliosClient implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosClient.class);
 
@@ -118,7 +119,7 @@ public class HeliosClient implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() throws IOException {
     dispatcher.close();
   }
 

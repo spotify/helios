@@ -129,7 +129,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() throws IOException {
     if (shutDownExecutorOnClose) {
       executorService.shutdownNow();
     }

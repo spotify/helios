@@ -30,6 +30,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
@@ -82,7 +83,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() throws IOException {
     delegate.close();
   }
 
