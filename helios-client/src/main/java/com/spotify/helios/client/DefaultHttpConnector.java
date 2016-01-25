@@ -172,7 +172,7 @@ public class DefaultHttpConnector implements HttpConnector {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() throws IOException {
   }
 
   public void setExtraHttpsHandler(final HttpsHandler extraHttpsHandler) {

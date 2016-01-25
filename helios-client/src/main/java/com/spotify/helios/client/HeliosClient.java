@@ -71,6 +71,7 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -104,7 +105,7 @@ import static java.util.Collections.singletonList;
 import static java.util.concurrent.Executors.newScheduledThreadPool;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public class HeliosClient implements AutoCloseable {
+public class HeliosClient implements Closeable {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosClient.class);
 
@@ -118,7 +119,7 @@ public class HeliosClient implements AutoCloseable {
   }
 
   @Override
-  public void close() throws Exception {
+  public void close() throws IOException {
     dispatcher.close();
   }
 
@@ -511,6 +512,8 @@ public class HeliosClient implements AutoCloseable {
     private ClientCertificatePath clientCertificatePath;
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
+    private ListeningScheduledExecutorService executorService;
+    private boolean shutDownExecutorOnClose = true;
 
     private Builder() {
     }
@@ -563,22 +566,36 @@ public class HeliosClient implements AutoCloseable {
       return this;
     }
 
+    public Builder setExecutorService(final ScheduledExecutorService executorService) {
+      this.executorService = MoreExecutors.listeningDecorator(executorService);
+      return this;
+    }
+
+    public Builder setShutDownExecutorOnClose(final boolean shutDownExecutorOnClose) {
+      this.shutDownExecutorOnClose = shutDownExecutorOnClose;
+      return this;
+    }
+
     public HeliosClient build() {
       return new HeliosClient(user, createDispatcher());
     }
 
-    private RequestDispatcher createDispatcher() {
+    private static ListeningScheduledExecutorService defaultExecutorService() {
       final ScheduledExecutorService executor = MoreExecutors.getExitingScheduledExecutorService(
           (ScheduledThreadPoolExecutor) newScheduledThreadPool(4), 0, SECONDS);
+      return MoreExecutors.listeningDecorator(executor);
+    }
 
-      final ListeningScheduledExecutorService listeningExecutor =
-          MoreExecutors.listeningDecorator(executor);
+    private RequestDispatcher createDispatcher() {
+      if (executorService == null) {
+        executorService = defaultExecutorService();
+      }
 
       final RequestDispatcher dispatcher = new DefaultRequestDispatcher(
-          createHttpConnector(sslHostnameVerification), listeningExecutor);
+          createHttpConnector(sslHostnameVerification), executorService, shutDownExecutorOnClose);
 
       return new RetryingRequestDispatcher(dispatcher,
-          listeningExecutor,
+          executorService,
           new SystemClock(),
           5,
           TimeUnit.SECONDS);

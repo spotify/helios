@@ -19,11 +19,12 @@ package com.spotify.helios.client;
 
 import com.google.common.util.concurrent.ListenableFuture;
 
+import java.io.Closeable;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
 
-interface RequestDispatcher extends AutoCloseable {
+interface RequestDispatcher extends Closeable {
 
   ListenableFuture<Response> request(
       URI uri, String method, byte[] entityBytes, Map<String, List<String>> headers);
