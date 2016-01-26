@@ -39,14 +39,12 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.KeeperException.NotEmptyException;
 import org.apache.zookeeper.data.Stat;
 import org.jetbrains.annotations.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -137,33 +135,31 @@ public class ZooKeeperRegistrarUtil {
     try {
       final List<ZooKeeperOperation> operations = Lists.newArrayList();
 
+      if (client.exists(Paths.configHost(host)) == null) {
+        throw new HostNotFoundException("host [" + host + "] does not exist");
+      }
+
       // Remove all jobs deployed to this host
-      final List<JobId> jobs = listHostJobs(client, host);
+      final List<String> jobs = safeGetChildren(client, Paths.configHostJobs(host));
 
-      if (jobs == null) {
-        if (client.exists(Paths.configHost(host)) == null) {
-          throw new HostNotFoundException("host [" + host + "] does not exist");
+      for (final String jobString : jobs) {
+        final JobId job = JobId.fromString(jobString);
+        final String hostJobPath = Paths.configHostJob(host, job);
+
+        final List<String> nodes = safeListRecursive(client, hostJobPath);
+        for (final String node : reverse(nodes)) {
+          operations.add(delete(node));
+        }
+        if (client.exists(Paths.configJobHost(job, host)) != null) {
+          operations.add(delete(Paths.configJobHost(job, host)));
+        }
+        // Clean out the history for each job
+        final List<String> history = safeListRecursive(client, Paths.historyJobHost(job, host));
+        for (final String s : reverse(history)) {
+          operations.add(delete(s));
         }
       }
 
-      if (jobs != null) {
-        for (final JobId job : jobs) {
-          final String hostJobPath = Paths.configHostJob(host, job);
-
-          final List<String> nodes = safeListRecursive(client, hostJobPath);
-          for (final String node : reverse(nodes)) {
-            operations.add(delete(node));
-          }
-          if (client.exists(Paths.configJobHost(job, host)) != null) {
-            operations.add(delete(Paths.configJobHost(job, host)));
-          }
-          // Clean out the history for each job
-          final List<String> history = safeListRecursive(client, Paths.historyJobHost(job, host));
-          for (final String s : reverse(history)) {
-            operations.add(delete(s));
-          }
-        }
-      }
       operations.add(delete(Paths.configHostJobs(host)));
 
       // Remove the host status
@@ -189,12 +185,6 @@ public class ZooKeeperRegistrarUtil {
       operations.add(delete(Paths.configHost(host)));
 
       client.transaction(operations);
-    } catch (NotEmptyException e) {
-      final HostStatus hostStatus = getHostStatus(client, host);
-      final List<JobId> jobs = hostStatus != null
-                               ? ImmutableList.copyOf(hostStatus.getJobs().keySet())
-                               : Collections.<JobId>emptyList();
-      throw new HostStillInUseException(host, jobs);
     } catch (NoNodeException e) {
       throw new HostNotFoundException(host);
     } catch (KeeperException e) {
