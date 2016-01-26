@@ -49,7 +49,7 @@ public final class HealthCheckerFactory {
   }
 
   public static HealthChecker create(final TaskConfig taskConfig, final DockerClient docker,
-                                     final DockerHost dockerHost) {
+                                     final DockerHost dockerHost, final boolean agentInContainer) {
     final HealthCheck healthCheck = taskConfig.healthCheck();
 
     if (healthCheck == null) {
@@ -57,16 +57,13 @@ public final class HealthCheckerFactory {
     } else if (healthCheck instanceof ExecHealthCheck) {
       return new ExecHealthChecker((ExecHealthCheck) healthCheck, docker);
     } else if (healthCheck instanceof HttpHealthCheck) {
-      return new HttpHealthChecker((HttpHealthCheck) healthCheck, taskConfig, docker, dockerHost);
+      return new HttpHealthChecker((HttpHealthCheck) healthCheck, taskConfig, docker, dockerHost,
+                                   agentInContainer);
     } else if (healthCheck instanceof TcpHealthCheck) {
       return new TcpHealthChecker((TcpHealthCheck) healthCheck, taskConfig, docker, dockerHost);
     }
 
     throw new IllegalArgumentException("Unknown healthCheck type");
-  }
-
-  private static boolean isHeliosSolo() {
-    return "true".equals(System.getProperty("helios.solo"));
   }
 
   static class ExecHealthChecker implements HealthChecker {
@@ -166,13 +163,16 @@ public final class HealthCheckerFactory {
     private final HttpHealthCheck healthCheck;
     private final TaskConfig taskConfig;
     private final DockerHost dockerHost;
+    private final boolean agentInContainer;
 
     private HttpHealthChecker(final HttpHealthCheck healthCheck, final TaskConfig taskConfig,
-                              final DockerClient dockerClient, final DockerHost dockerHost) {
+                              final DockerClient dockerClient, final DockerHost dockerHost,
+                              final boolean agentInContainer) {
       super(dockerClient);
       this.healthCheck = healthCheck;
       this.taskConfig = taskConfig;
       this.dockerHost = dockerHost;
+      this.agentInContainer = agentInContainer;
     }
 
     @Override
@@ -183,7 +183,7 @@ public final class HealthCheckerFactory {
       // in this case we cannot reach the job's container with "localhost" at the external port
       // since "localhost" will refer to the agent's container and it's network namespace.
       // The agent is only run in a container sibling to the job's container when in helios-solo.
-      if (isHeliosSolo() && dockerHost.host().startsWith("unix://")) {
+      if (agentInContainer && dockerHost.host().startsWith("unix://")) {
         host = getBridgeAddress(containerId);
         log.info("Using bridge address {} for healthchecks", host);
       } else {
