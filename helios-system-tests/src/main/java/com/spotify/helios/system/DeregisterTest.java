@@ -31,11 +31,15 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
+import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.Paths;
 
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.UUID;
 import java.util.concurrent.TimeoutException;
 
 import static com.spotify.helios.common.descriptors.Goal.START;
@@ -95,6 +99,48 @@ public class DeregisterTest extends SystemTestBase {
 
     // Kill off agent
     agent.stopAsync().awaitTerminated();
+
+    // Deregister agent
+    final HostDeregisterResponse deregisterResponse = client.deregisterHost(host).get();
+    assertEquals(HostDeregisterResponse.Status.OK, deregisterResponse.getStatus());
+
+    // Verify that it's possible to remove the job
+    final JobDeleteResponse deleteResponse = client.deleteJob(jobId).get();
+    assertEquals(JobDeleteResponse.Status.OK, deleteResponse.getStatus());
+  }
+
+  // Verify that we can deregister a host there are jobs deployed to it, for for which there's no
+  // corresponding status information. For example, if a job was deployed to the host after is went
+  // down.
+  @Test
+  public void testDeregisterJobDeployedWithoutStatus() throws Exception {
+    startDefaultMaster();
+    final String host = testHost();
+
+    final HeliosClient client = defaultClient();
+    final DefaultZooKeeperClient zkClient =
+        new DefaultZooKeeperClient(zk().curatorWithSuperAuth());
+
+    final String idPath = Paths.configHostId(host);
+    ZooKeeperRegistrarUtil.registerHost(zkClient, idPath, host, UUID.randomUUID().toString());
+
+    // Create a job
+    final Job job = Job.newBuilder()
+        .setName(testJobName)
+        .setVersion(testJobVersion)
+        .setImage(BUSYBOX)
+        .setCommand(IDLE_COMMAND)
+        .setPorts(ImmutableMap.of("foo", PortMapping.of(4711),
+                                  "bar", PortMapping.of(4712, ports.localPort("bar"))))
+        .build();
+    final JobId jobId = job.getId();
+    final CreateJobResponse created = client.createJob(job).get();
+    assertEquals(CreateJobResponse.Status.OK, created.getStatus());
+
+    // Deploy the job on the agent
+    final Deployment deployment = Deployment.of(jobId, START);
+    final JobDeployResponse deployed = client.deploy(deployment, host).get();
+    assertEquals(JobDeployResponse.Status.OK, deployed.getStatus());
 
     // Deregister agent
     final HostDeregisterResponse deregisterResponse = client.deregisterHost(host).get();
