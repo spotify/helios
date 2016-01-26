@@ -615,7 +615,7 @@ public class HeliosClient implements Closeable {
         // the user likely doesn't have ssh-agent setup. This may not matter at all if the masters
         // do not require authentication, so we delay reporting any sort of error to the user until
         // the servers return 401 Unauthorized.
-        log.debug("{}", e);
+        log.debug("Exception (possibly benign) while loading AgentProxy", e);
       }
 
       // set up the ClientCertificatePath, giving precedence to any values set
