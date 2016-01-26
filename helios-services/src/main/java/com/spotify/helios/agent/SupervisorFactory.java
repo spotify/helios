@@ -24,6 +24,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
+import java.io.File;
 import java.util.List;
 import java.util.Map;
 
@@ -47,6 +48,7 @@ public class SupervisorFactory {
   private final SupervisorMetrics metrics;
   private final String defaultRegistrationDomain;
   private final List<String> dns;
+  private final boolean agentRunningInContainer;
 
   public SupervisorFactory(final AgentModel model, final DockerClient dockerClient,
                            final Map<String, String> envVars,
@@ -70,6 +72,11 @@ public class SupervisorFactory {
     this.defaultRegistrationDomain = checkNotNull(defaultRegistrationDomain,
                                                   "defaultRegistrationDomain");
     this.dns = checkNotNull(dns, "dns");
+    this.agentRunningInContainer = checkIfAgentRunningInContainer();
+  }
+
+  private static boolean checkIfAgentRunningInContainer() {
+    return new File("/", ".dockerenv").exists();
   }
 
   /**
@@ -104,7 +111,8 @@ public class SupervisorFactory {
     final TaskMonitor taskMonitor = new TaskMonitor(job.getId(), flapController, statusUpdater);
 
     final HealthChecker healthChecker = HealthCheckerFactory.create(
-        taskConfig, dockerClient, dockerHost);
+        taskConfig, dockerClient, dockerHost, agentRunningInContainer);
+
     final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
         .config(taskConfig)
         .registrar(registrar)

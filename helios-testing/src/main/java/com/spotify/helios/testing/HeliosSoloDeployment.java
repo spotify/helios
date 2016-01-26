@@ -19,6 +19,7 @@ package com.spotify.helios.testing;
 
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -62,7 +63,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   public static final String BOOT2DOCKER_SIGNATURE = "Boot2Docker";
   public static final String PROBE_IMAGE = "onescience/alpine:latest";
-  public static final String HELIOS_IMAGE = "spotify/helios-solo:latest";
   public static final String HELIOS_NAME_PREFIX = "solo.local.";
   public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
   public static final int HELIOS_MASTER_PORT = 5801;
@@ -72,14 +72,21 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private final DockerHost dockerHost;
   /** The DockerHost the container uses to communicate with docker */
   private final DockerHost containerDockerHost;
+  private final String heliosSoloImage;
+  private final boolean pullBeforeCreate;
   private final String namespace;
   private final List<String> env;
   private final List<String> binds;
   private final String heliosContainerId;
   private final HostAndPort deploymentAddress;
   private final HeliosClient heliosClient;
+  private boolean removeHeliosSoloContainerOnExit;
 
   HeliosSoloDeployment(final Builder builder) {
+    this.heliosSoloImage = builder.heliosSoloImage;
+    this.pullBeforeCreate = builder.pullBeforeCreate;
+    this.removeHeliosSoloContainerOnExit = builder.removeHeliosSoloContainerOnExit;
+
     final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
 
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
@@ -276,14 +283,16 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     final ContainerConfig containerConfig = ContainerConfig.builder()
             .env(ImmutableList.copyOf(env))
             .hostConfig(hostConfig)
-            .image(HELIOS_IMAGE)
+            .image(heliosSoloImage)
             .build();
 
-    log.info("starting container for helios-solo with image={}", HELIOS_IMAGE);
+    log.info("starting container for helios-solo with image={}", heliosSoloImage);
 
     final ContainerCreation creation;
     try {
-      dockerClient.pull(HELIOS_IMAGE);
+      if (pullBeforeCreate) {
+        dockerClient.pull(heliosSoloImage);
+      }
       final String containerName = HELIOS_CONTAINER_PREFIX + this.namespace;
       creation = dockerClient.createContainer(containerConfig, containerName);
     } catch (DockerException | InterruptedException e) {
@@ -368,9 +377,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     log.info("shutting ourselves down");
 
     killContainer(heliosContainerId);
-    removeContainer(heliosContainerId);
-    log.info("Stopped and removed HeliosSolo on host={} containerId={}",
-        containerDockerHost, heliosContainerId);
+    if (removeHeliosSoloContainerOnExit) {
+      removeContainer(heliosContainerId);
+      log.info("Stopped and removed HeliosSolo on host={} containerId={}",
+               containerDockerHost, heliosContainerId);
+    } else {
+      log.info("Stopped (but did not remove) HeliosSolo on host={} containerId={}",
+               containerDockerHost, heliosContainerId);
+    }
+
     this.dockerClient.close();
   }
 
@@ -407,8 +422,31 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private DockerClient dockerClient;
     private DockerHost dockerHost;
     private DockerHost containerDockerHost;
+    private String heliosSoloImage = "spotify/helios-solo:latest";
     private String namespace;
     private String heliosUsername;
+    private boolean pullBeforeCreate = true;
+    private boolean removeHeliosSoloContainerOnExit = true;
+
+    /**
+     * By default, the {@link #heliosSoloImage} will be checked for updates before creating a
+     * container by doing a "docker pull". Call this method with "false" to disable this behavior.
+     */
+    public Builder checkForNewImages(boolean enabled) {
+      this.pullBeforeCreate = enabled;
+      return this;
+    }
+
+    /**
+     * By default the container running helios-solo is removed when
+     * {@link HeliosSoloDeployment#close()} is called. Call this method with "false" to disable this
+     * (which is probably only useful for developing helios-solo or this class itself and
+     * inspecting logs).
+     */
+    public Builder removeHeliosSoloOnExit(boolean enabled) {
+      this.removeHeliosSoloContainerOnExit = enabled;
+      return this;
+    }
 
     /**
      * Specify a Docker client to be used for this Helios Solo deployment. A Docker client is
@@ -448,6 +486,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      */
     public Builder containerDockerHost(final DockerHost containerDockerHost) {
       this.containerDockerHost = containerDockerHost;
+      return this;
+    }
+
+    /**
+     * Customize the image used for helios-solo. If not set defaults to
+     * "spotify/helios-solo:latest".
+     */
+    public Builder heliosSoloImage(String image) {
+      this.heliosSoloImage = Preconditions.checkNotNull(image);
       return this;
     }
 
