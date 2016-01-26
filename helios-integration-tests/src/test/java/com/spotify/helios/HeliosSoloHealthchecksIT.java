@@ -45,6 +45,8 @@ public class HeliosSoloHealthchecksIT {
   public TemporaryJobs jobs = TemporaryJobs.builder()
       .client(solo.client())
       .deployTimeoutMillis(TimeUnit.MINUTES.toMillis(1))
+      // ensure that HELIOS_HOST_FILTER is ignored
+      .hostFilter(".+")
       .build();
 
   private final TemporaryJobBuilder nginx = jobs.job()
