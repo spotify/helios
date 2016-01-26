@@ -574,6 +574,7 @@ public class TemporaryJobs implements TestRule {
 
       // Configuration from profile may be overridden by environment variables
       configureWithEnv();
+
     }
 
     private void configureWithEnv() {

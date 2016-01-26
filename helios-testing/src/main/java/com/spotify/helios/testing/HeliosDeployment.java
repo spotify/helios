@@ -32,7 +32,7 @@ public interface HeliosDeployment extends AutoCloseable {
   HeliosClient client();
 
   /**
-   * Returns the host and port information  that the deployment is available at.
+   * Returns the host and port information that the deployment is available at.
    */
   // TODO (mbrown): should this be URI to capture scheme info also?
   HostAndPort address();
