@@ -29,10 +29,9 @@ import com.spotify.helios.common.descriptors.HostStatus.Builder;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
+import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
+import org.junit.rules.ExpectedException;
 
 import java.util.List;
 import java.util.Map;
@@ -42,10 +41,9 @@ import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
 public class DefaultDeployerTest {
   private static final String HOSTB = "hostb";
   private static final String HOSTA = "hosta";
@@ -65,19 +63,22 @@ public class DefaultDeployerTest {
       return hosts.get(0);
     }
   };
-  
-  @Mock private HeliosClient client;
-  
+
+  @Rule
+  public ExpectedException exception = ExpectedException.none();
+
+  private final HeliosClient client = mock(HeliosClient.class);
+
+  private final DefaultDeployer deployer =
+      new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "", TIMEOUT);
+
   @Test
   public void testTryAgainOnHostDown() throws Exception {
-    final DefaultDeployer sut =
-        new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "", TIMEOUT);
-    
-    // hosta is down, hostb is up. 
+    // hosta is down, hostb is up.
     when(client.hostStatus(HOSTA)).thenReturn(DOWN_STATUS);
     when(client.hostStatus(HOSTB)).thenReturn(UP_STATUS);
     
-    assertEquals(HOSTB, sut.pickHost(HOSTS));
+    assertEquals(HOSTB, deployer.pickHost(HOSTS));
   }
 
   @Test
@@ -88,25 +89,25 @@ public class DefaultDeployerTest {
     // hosta is down, hostb is down too. 
     when(client.hostStatus(HOSTA)).thenReturn(DOWN_STATUS);
     when(client.hostStatus(HOSTB)).thenReturn(DOWN_STATUS);
-    
-    try {
-      sut.pickHost(HOSTS);
-      throw new RuntimeException("Didn't throw exception!?");
-    } catch (AssertionError e) {
-      // OK!
-    } catch (RuntimeException e) {
-      if (e.getMessage().startsWith("Didn't")) {
-        fail("should have thrown assertion failure");
-      }
-    }
+
+    exception.expect(AssertionError.class);
+
+    sut.pickHost(HOSTS);
   }
 
   private static Builder makeDummyStatusBuilder() {
     final Map<JobId, Deployment> jobs = emptyMap();
     final Map<JobId, TaskStatus> statuses = emptyMap();
-    final Builder builder = HostStatus.newBuilder()
+    return HostStatus.newBuilder()
         .setStatuses(statuses)
         .setJobs(jobs);
-    return builder;
+  }
+
+  @Test
+  public void testHostStatusIsNull() throws Exception {
+    when(client.hostStatus(HOSTA)).thenReturn(Futures.<HostStatus>immediateFuture(null));
+    when(client.hostStatus(HOSTB)).thenReturn(UP_STATUS);
+
+    assertEquals(HOSTB, deployer.pickHost(HOSTS));
   }
 }

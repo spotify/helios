@@ -24,6 +24,7 @@ import com.google.common.collect.FluentIterable;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.HostStatus.Status;
 import com.spotify.helios.common.descriptors.Job;
 
@@ -107,7 +108,8 @@ public class DefaultDeployer implements Deployer {
     while (true) {
       final String candidateHost = hostPicker.pickHost(mutatedList);
       try {
-        if (Status.UP == client.hostStatus(candidateHost).get().getStatus()) {
+        final HostStatus hostStatus = client.hostStatus(candidateHost).get();
+        if (hostStatus != null && Status.UP == hostStatus.getStatus()) {
           return candidateHost;
         } 
         mutatedList.remove(candidateHost);
