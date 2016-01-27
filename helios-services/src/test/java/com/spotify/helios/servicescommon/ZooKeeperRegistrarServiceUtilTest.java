@@ -17,22 +17,21 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.collect.ImmutableList;
-
 import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import org.apache.zookeeper.data.Stat;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
@@ -41,7 +40,6 @@ import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -51,14 +49,9 @@ public class ZooKeeperRegistrarServiceUtilTest {
   private static final String ID = UUID.randomUUID().toString();
   private static final JobId JOB_ID1 =
       JobId.newBuilder().setName("job1").setVersion("0.1.0").build();
-  private static final JobId JOB_ID2 =
-      JobId.newBuilder().setName("job2").setVersion("0.2.0").build();
-  private static final List<JobId> JOB_IDS = ImmutableList.of(JOB_ID1, JOB_ID2);
-  private static final String JOB_STRING1 = JOB_ID1.toString();
-  private static final String JOB_STRING2 = JOB_ID2.toString();
-  private static final List<String> JOB_STRINGS = ImmutableList.of(JOB_STRING1, JOB_STRING2);
 
   @Mock ZooKeeperClient zkClient;
+  @Rule public final ExpectedException exception = ExpectedException.none();
 
   @Test
   public void testRegisterHost() throws Exception {
@@ -73,9 +66,9 @@ public class ZooKeeperRegistrarServiceUtilTest {
   }
 
   @Test
-  public void testDeregisterHost() throws Exception {
+  public void testDeregisterNonExistentHost() throws Exception {
+    exception.expect(HostNotFoundException.class);
     ZooKeeperRegistrarUtil.deregisterHost(zkClient, HOSTNAME);
-    verify(zkClient).transaction(anyListOf(ZooKeeperOperation.class));
   }
 
   // Verify that the re-registering:
