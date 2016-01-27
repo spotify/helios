@@ -17,65 +17,73 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.collect.ImmutableList;
-
 import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import org.apache.zookeeper.data.Stat;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Charsets.UTF_8;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Mockito.verify;
 
-@RunWith(MockitoJUnitRunner.class)
 public class ZooKeeperRegistrarServiceUtilTest {
 
   private static final String HOSTNAME = "host";
   private static final String ID = UUID.randomUUID().toString();
   private static final JobId JOB_ID1 =
       JobId.newBuilder().setName("job1").setVersion("0.1.0").build();
-  private static final JobId JOB_ID2 =
-      JobId.newBuilder().setName("job2").setVersion("0.2.0").build();
-  private static final List<JobId> JOB_IDS = ImmutableList.of(JOB_ID1, JOB_ID2);
-  private static final String JOB_STRING1 = JOB_ID1.toString();
-  private static final String JOB_STRING2 = JOB_ID2.toString();
-  private static final List<String> JOB_STRINGS = ImmutableList.of(JOB_STRING1, JOB_STRING2);
 
-  @Mock ZooKeeperClient zkClient;
+  private ZooKeeperTestingServerManager testingServerManager;
+  private ZooKeeperClient zkClient;
+
+  @Before
+  public void setUp() throws Exception {
+    testingServerManager = new ZooKeeperTestingServerManager();
+    testingServerManager.awaitUp(5, TimeUnit.SECONDS);
+    zkClient = new DefaultZooKeeperClient(testingServerManager.curatorWithSuperAuth());
+  }
+
+  @After
+  public void tearDown() throws Exception {
+    zkClient.close();
+    if (testingServerManager != null) {
+      testingServerManager.close();
+    }
+  }
 
   @Test
   public void testRegisterHost() throws Exception {
     final String idPath = Paths.configHostId(HOSTNAME);
     ZooKeeperRegistrarUtil.registerHost(zkClient, idPath, HOSTNAME, ID);
-    verify(zkClient).ensurePath(Paths.configHost(HOSTNAME));
-    verify(zkClient).ensurePath(Paths.configHostJobs(HOSTNAME));
-    verify(zkClient).ensurePath(Paths.configHostPorts(HOSTNAME));
-    verify(zkClient).ensurePath(Paths.statusHost(HOSTNAME));
-    verify(zkClient).ensurePath(Paths.statusHostJobs(HOSTNAME));
-    verify(zkClient).createAndSetData(idPath, ID.getBytes(UTF_8));
+
+    assertNotNull(zkClient.exists(Paths.configHost(HOSTNAME)));
+    assertNotNull(zkClient.exists(Paths.configHostJobs(HOSTNAME)));
+    assertNotNull(zkClient.exists(Paths.configHostPorts(HOSTNAME)));
+    assertNotNull(zkClient.exists(Paths.statusHost(HOSTNAME)));
+    assertNotNull(zkClient.exists(Paths.statusHostJobs(HOSTNAME)));
+    assertEquals(ID, new String(zkClient.getData(idPath)));
   }
 
   @Test
   public void testDeregisterHost() throws Exception {
+    final String idPath = Paths.configHostId(HOSTNAME);
+    ZooKeeperRegistrarUtil.registerHost(zkClient, idPath, HOSTNAME, ID);
+
     ZooKeeperRegistrarUtil.deregisterHost(zkClient, HOSTNAME);
-    verify(zkClient).transaction(anyListOf(ZooKeeperOperation.class));
+
+    assertNull(zkClient.exists(Paths.configHost(HOSTNAME)));
+    assertNull(zkClient.exists(Paths.statusHost(HOSTNAME)));
   }
 
   // Verify that the re-registering:
@@ -83,41 +91,28 @@ public class ZooKeeperRegistrarServiceUtilTest {
   // * deletes everything under /status/hosts/<host> subtree.
   @Test
   public void testReRegisterHost() throws Exception {
-    ZooKeeperTestingServerManager testingServerManager = null;
-    try {
-      testingServerManager = new ZooKeeperTestingServerManager();
-      testingServerManager.awaitUp(5, TimeUnit.SECONDS);
+    // Register the host & add some fake data to its status & config dirs
+    final String idPath = Paths.configHostId(HOSTNAME);
+    ZooKeeperRegistrarUtil.registerHost(zkClient, idPath, HOSTNAME, ID);
+    zkClient.ensurePath(Paths.statusHostJob(HOSTNAME, JOB_ID1));
+    zkClient.ensurePath(Paths.configHostJob(HOSTNAME, JOB_ID1));
+    final Stat jobConfigStat = zkClient.stat(Paths.configHostJob(HOSTNAME, JOB_ID1));
 
-      final ZooKeeperClient zkClient = new DefaultZooKeeperClient(
-          testingServerManager.curatorWithSuperAuth());
+    // ... and then re-register it
+    final String newId = UUID.randomUUID().toString();
+    ZooKeeperRegistrarUtil.reRegisterHost(zkClient, HOSTNAME, newId);
 
-      // Register the host & add some fake data to its status & config dirs
-      final String idPath = Paths.configHostId(HOSTNAME);
-      ZooKeeperRegistrarUtil.registerHost(zkClient, idPath, HOSTNAME, ID);
-      zkClient.ensurePath(Paths.statusHostJob(HOSTNAME, JOB_ID1));
-      zkClient.ensurePath(Paths.configHostJob(HOSTNAME, JOB_ID1));
-      final Stat jobConfigStat = zkClient.stat(Paths.configHostJob(HOSTNAME, JOB_ID1));
+    // Verify that the host-id was updated
+    assertEquals(newId, new String(zkClient.getData(idPath)));
 
-      // ... and then re-register it
-      final String newId = UUID.randomUUID().toString();
-      ZooKeeperRegistrarUtil.reRegisterHost(zkClient, HOSTNAME, newId);
-
-      // Verify that the host-id was updated
-      assertEquals(newId, new String(zkClient.getData(idPath)));
-
-      // Verify that /status/hosts/<host>/jobs exists and is EMPTY
-      assertNotNull(zkClient.exists(Paths.statusHostJobs(HOSTNAME)));
-      assertThat(zkClient.listRecursive(Paths.statusHostJobs(HOSTNAME)),
-                 contains(Paths.statusHostJobs(HOSTNAME)));
-      // Verify that re-registering didn't change the nodes in /config/hosts/<host>/jobs
-      assertEquals(
-          jobConfigStat,
-          zkClient.stat(Paths.configHostJob(HOSTNAME, JOB_ID1))
-      );
-    } finally {
-      if (testingServerManager != null) {
-        testingServerManager.close();
-      }
-    }
+    // Verify that /status/hosts/<host>/jobs exists and is EMPTY
+    assertNotNull(zkClient.exists(Paths.statusHostJobs(HOSTNAME)));
+    assertThat(zkClient.listRecursive(Paths.statusHostJobs(HOSTNAME)),
+               contains(Paths.statusHostJobs(HOSTNAME)));
+    // Verify that re-registering didn't change the nodes in /config/hosts/<host>/jobs
+    assertEquals(
+        jobConfigStat,
+        zkClient.stat(Paths.configHostJob(HOSTNAME, JOB_ID1))
+    );
   }
 }
