@@ -23,7 +23,9 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 import com.google.common.util.concurrent.AbstractIdleService;
 
+import com.codahale.metrics.Gauge;
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.health.HealthCheck;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.docker.client.DockerCertificateException;
 import com.spotify.docker.client.DockerCertificates;
@@ -303,9 +305,17 @@ public class AgentService extends AbstractIdleService implements Managed {
     if (!config.getNoHttp()) {
 
       environment.healthChecks().register("docker", dockerHealthChecker);
+      environment.healthChecks().register("zookeeper", zkHealthChecker);
+
+      // Report health checks as a boolean gauge metric
+      environment.healthChecks().getNames().forEach(
+          name -> environment.metrics().register("helios." + name + ".ok", (Gauge<Boolean>) () -> {
+            final HealthCheck.Result result = environment.healthChecks().runHealthCheck(name);
+            return result.isHealthy();
+          }));
+
       environment.jersey().register(new AgentModelTaskResource(model));
       environment.jersey().register(new AgentModelTaskStatusResource(model));
-      environment.healthChecks().register("zookeeper", zkHealthChecker);
       environment.lifecycle().manage(this);
 
       this.server = ServiceUtil.createServerFactory(config.getHttpEndpoint(),
