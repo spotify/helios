@@ -3,7 +3,7 @@ Version: [[version]]
 Section: non-free/net
 Priority: optional
 Architecture: all
-Depends: java7-runtime-headless, helios-services (= [[version]])
+Depends: java8-runtime-headless, helios-services (= [[version]])
 Maintainer: Daniel Norberg <dano@spotify.com>
 Description: Helios Master
 Distribution: development

@@ -34,3 +34,13 @@ RUN mkdir /etcd \
     && cd /etcd \
     && curl -L $ETCD_ARCHIVE_URI | tar --strip-components 1 -xzvf - \
     && cp ./etcd /usr/bin
+
+# Install Java 8 from webupd8team PPA
+RUN \
+  echo deb http://ppa.launchpad.net/webupd8team/java/ubuntu trusty main > /etc/apt/sources.list.d/webupd8team-java-trusty.list && \
+  apt-key adv --keyserver keyserver.ubuntu.com --recv-keys EEA14886 && \
+  echo oracle-java8-installer shared/accepted-oracle-license-v1-1 select true | debconf-set-selections && \
+  apt-get update && \
+  apt-get install -y --no-install-recommends oracle-java8-installer && \
+  rm -rf /var/lib/apt/lists/* && \
+  rm -rf /var/cache/oracle-jdk8-installer
