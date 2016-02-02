@@ -473,7 +473,7 @@ public abstract class SystemTestBase {
         "-vvvv",
         "--no-log-setup",
         "--http", "http://0.0.0.0:" + (masterPort() + offset),
-        "--admin=" + (masterAdminPort() + offset),
+        "--admin", "http://0.0.0.0:" + (masterAdminPort() + offset),
         "--domain", "",
         "--zk", zk.connectString(),
         "--zk-enable-acls",

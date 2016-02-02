@@ -83,6 +83,8 @@ public class AgentParser extends ServiceParser {
     }
 
     final InetSocketAddress httpAddress = parseSocketAddress(options.getString(httpArg.getDest()));
+    final InetSocketAddress adminAddress = parseSocketAddress(
+        options.getString(adminArg.getDest()));
 
     final String portRangeString = options.getString(portRangeArg.getDest());
     final List<String> parts = Splitter.on(':').splitToList(portRangeString);
@@ -131,7 +133,7 @@ public class AgentParser extends ServiceParser {
         .setSentryDsn(getSentryDsn())
         .setServiceRegistryAddress(getServiceRegistryAddress())
         .setServiceRegistrarPlugin(getServiceRegistrarPlugin())
-        .setAdminPort(options.getInt(adminArg.getDest()))
+        .setAdminAddress(adminAddress)
         .setHttpEndpoint(httpAddress)
         .setNoHttp(options.getBoolean(noHttpArg.getDest()))
         .setKafkaBrokers(getKafkaBrokers())
@@ -179,8 +181,7 @@ public class AgentParser extends ServiceParser {
         .help("http endpoint");
 
     adminArg = parser.addArgument("--admin")
-        .type(Integer.class)
-        .setDefault(5804)
+        .setDefault("http://0.0.0.0:5804")
         .help("admin http port");
 
     agentIdArg = parser.addArgument("--id")

@@ -43,7 +43,7 @@ public class MasterConfig extends Configuration {
   private int zooKeeperConnectionTimeoutMillis;
   private String zooKeeperClusterId;
   private boolean noZooKeeperMasterRegistration;
-  private int adminPort;
+  private InetSocketAddress adminEndpoint;
   private InetSocketAddress httpEndpoint;
   private List<String> kafkaBrokers;
   private Path stateDirectory;
@@ -171,8 +171,8 @@ public class MasterConfig extends Configuration {
     return this;
   }
 
-  public MasterConfig setAdminPort(int adminPort) {
-    this.adminPort = adminPort;
+  public MasterConfig setAdminEndpoint(InetSocketAddress adminEndpoint) {
+    this.adminEndpoint = adminEndpoint;
     return this;
   }
 
@@ -199,8 +199,8 @@ public class MasterConfig extends Configuration {
     return this;
   }
 
-  public int getAdminPort() {
-    return adminPort;
+  public InetSocketAddress getAdminEndpoint() {
+    return adminEndpoint;
   }
 
   public InetSocketAddress getHttpEndpoint() {

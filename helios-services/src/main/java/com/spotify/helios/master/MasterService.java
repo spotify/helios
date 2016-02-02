@@ -225,7 +225,7 @@ public class MasterService extends AbstractIdleService {
     environment.jersey().register(new DeploymentGroupResource(model));
 
     final DefaultServerFactory serverFactory = ServiceUtil.createServerFactory(
-        config.getHttpEndpoint(), config.getAdminPort(), false);
+        config.getHttpEndpoint(), config.getAdminEndpoint(), false);
 
     final RequestLogFactory requestLog = new RequestLogFactory();
     requestLog.setAppenders(ImmutableList.<AppenderFactory>of());

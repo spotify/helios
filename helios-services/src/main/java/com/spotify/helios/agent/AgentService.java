@@ -308,7 +308,8 @@ public class AgentService extends AbstractIdleService implements Managed {
       environment.healthChecks().register("zookeeper", zkHealthChecker);
       environment.lifecycle().manage(this);
 
-      this.server = ServiceUtil.createServerFactory(config.getHttpEndpoint(), config.getAdminPort(),
+      this.server = ServiceUtil.createServerFactory(config.getHttpEndpoint(),
+                                                    config.getAdminEndpoint(),
                                                     config.getNoHttp())
           .build(environment);
     } else {

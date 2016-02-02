@@ -52,7 +52,7 @@ public class AgentConfig extends Configuration {
   private Path serviceRegistrarPlugin;
   private String id;
   private List<String> dns;
-  private int adminPort;
+  private InetSocketAddress adminEndpoint;
   private InetSocketAddress httpEndpoint;
   private boolean noHttp;
   private List<String> binds;
@@ -248,8 +248,8 @@ public class AgentConfig extends Configuration {
     return this;
   }
 
-  public AgentConfig setAdminPort(int adminPort) {
-    this.adminPort = adminPort;
+  public AgentConfig setAdminAddress(InetSocketAddress adminEndpoint) {
+    this.adminEndpoint = adminEndpoint;
     return this;
   }
 
@@ -258,8 +258,8 @@ public class AgentConfig extends Configuration {
     return this;
   }
 
-  public int getAdminPort() {
-    return adminPort;
+  public InetSocketAddress getAdminEndpoint() {
+    return adminEndpoint;
   }
 
   public InetSocketAddress getHttpEndpoint() {
