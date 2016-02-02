@@ -25,9 +25,6 @@
           <name>build-images</name>
         </property>
       </activation>
-      <properties>
-        <baseImage>java:8u66-jre</baseImage>
-      </properties>
       <build>
         <plugins>
           <plugin>
@@ -42,7 +39,7 @@
                   <goal>build</goal>
                 </goals>
                 <configuration>
-                  <baseImage>${baseImage}</baseImage>
+                  <baseImage>java:7u71-jre</baseImage>
                   <resources>
                     <resource>
                       <targetPath>/usr/share/helios/lib/services/</targetPath>
@@ -67,7 +64,7 @@
                   <goal>build</goal>
                 </goals>
                 <configuration>
-                  <baseImage>${baseImage}</baseImage>
+                  <baseImage>java:7u71-jre</baseImage>
                   <resources>
                     <resource>
                       <targetPath>/usr/share/helios/lib/services/</targetPath>
