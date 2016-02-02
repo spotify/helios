@@ -47,6 +47,8 @@ public class MasterParser extends ServiceParser {
 
     final Namespace options = getNamespace();
     final InetSocketAddress httpAddress = parseSocketAddress(options.getString(httpArg.getDest()));
+    final InetSocketAddress adminAddress = parseSocketAddress(
+        options.getString(adminArg.getDest()));
 
     String masterPassword = System.getenv(ZK_MASTER_PASSWORD_ENVVAR);
     if (masterPassword == null) {
@@ -72,7 +74,7 @@ public class MasterParser extends ServiceParser {
         .setSentryDsn(getSentryDsn())
         .setServiceRegistryAddress(getServiceRegistryAddress())
         .setServiceRegistrarPlugin(getServiceRegistrarPlugin())
-        .setAdminPort(options.getInt(adminArg.getDest()))
+        .setAdminEndpoint(adminAddress)
         .setHttpEndpoint(httpAddress)
         .setKafkaBrokers(getKafkaBrokers())
         .setStateDirectory(getStateDirectory())
@@ -88,8 +90,7 @@ public class MasterParser extends ServiceParser {
         .help("http endpoint");
 
     adminArg = parser.addArgument("--admin")
-        .type(Integer.class)
-        .setDefault(5802)
+        .setDefault("http://0.0.0.0:5802")
         .help("admin http port");
 
     zkAclAgentDigest = parser.addArgument("--zk-acl-agent-digest")

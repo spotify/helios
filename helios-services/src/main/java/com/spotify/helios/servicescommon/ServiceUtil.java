@@ -28,11 +28,8 @@ import java.util.Collections;
 
 public class ServiceUtil {
   public static DefaultServerFactory createServerFactory(final InetSocketAddress httpEndpoint,
-                                                         final int adminPort,
+                                                         final InetSocketAddress adminEndpoint,
                                                          final boolean noHttp) {
-    // TODO(drewc) be more flexible on the httpEndpoint -- make it a URI -- so if/when we support
-    // SSL, it'll *just work*
-
     final DefaultServerFactory serverFactory = new DefaultServerFactory();
     if (noHttp) {
       serverFactory.setApplicationConnectors(Collections.<ConnectorFactory>emptyList());
@@ -44,7 +41,8 @@ public class ServiceUtil {
       serverFactory.setApplicationConnectors(ImmutableList.<ConnectorFactory>of(serviceConnector));
 
       final HttpConnectorFactory adminConnector = new HttpConnectorFactory();
-      adminConnector.setPort(adminPort);
+      adminConnector.setPort(adminEndpoint.getPort());
+      adminConnector.setBindHost(adminEndpoint.getHostString());
       serverFactory.setAdminConnectors(ImmutableList.<ConnectorFactory>of(adminConnector));
     }
     return serverFactory;
