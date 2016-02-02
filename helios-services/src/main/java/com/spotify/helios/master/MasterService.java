@@ -17,6 +17,7 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -150,8 +151,10 @@ public class MasterService extends AbstractIdleService {
       metrics = new MetricsImpl(metricsRegistry);
       metrics.start();
       environment.lifecycle().manage(riemannSupport);
-      environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
-          "helios-master", metricsRegistry));
+      if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
+        environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
+                                                                 metricsRegistry));
+      }
     }
 
     // Set up the master model

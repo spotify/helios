@@ -17,6 +17,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -176,9 +177,11 @@ public class AgentService extends AbstractIdleService implements Managed {
     } else {
       log.info("Starting metrics");
       metrics = new MetricsImpl(metricsRegistry);
-      environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
-          "helios-agent", metricsRegistry));
       environment.lifecycle().manage(riemannSupport);
+      if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
+        environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
+                                                                 metricsRegistry));
+      }
     }
 
     // This CountDownLatch will signal EnvironmentVariableReporter and LabelReporter when to report
