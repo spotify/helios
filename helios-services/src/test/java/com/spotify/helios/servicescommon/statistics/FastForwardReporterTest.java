@@ -24,6 +24,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
+import com.spotify.helios.common.Version;
 
 import eu.toolchain.ffwd.FastForward;
 import eu.toolchain.ffwd.Metric;
@@ -211,5 +212,14 @@ public class FastForwardReporterTest {
 
     verifyHistogramStats("blah-timer", "timer");
     verifyMeterStats("blah-timer", "timer");
+  }
+
+  @Test
+  public void testAttributesIncludeHeliosVersion() throws Exception {
+    metricRegistry.register("something", (Gauge<Integer>) () -> 1);
+
+    reporter.start();
+
+    verify().send(argThat(containsAttributes("helios_version", Version.POM_VERSION)));
   }
 }

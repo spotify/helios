@@ -28,6 +28,7 @@ import com.codahale.metrics.Metered;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
+import com.spotify.helios.common.Version;
 
 import eu.toolchain.ffwd.FastForward;
 import eu.toolchain.ffwd.Metric;
@@ -99,8 +100,8 @@ public class FastForwardReporter implements Managed {
   private final TimeUnit intervalTimeUnit;
 
   FastForwardReporter(FastForward fastForward, MetricRegistry metricRegistry,
-                             ScheduledExecutorService executor, String key,
-                             long interval, TimeUnit intervalTimeUnit) {
+                      ScheduledExecutorService executor, String key,
+                      long interval, TimeUnit intervalTimeUnit) {
     this.fastForward = fastForward;
     this.metricRegistry = metricRegistry;
     this.executor = executor;
@@ -192,8 +193,9 @@ public class FastForwardReporter implements Managed {
 
   private Metric createMetric(String metricName, String metricType) {
     return FastForward.metric(key)
-        .attribute("what", metricName)
-        .attribute("metric_type", metricType);
+        .attribute("helios_version", Version.POM_VERSION)
+        .attribute("metric_type", metricType)
+        .attribute("what", metricName);
   }
 
   private double convert(Object value) {
