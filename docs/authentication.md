@@ -49,10 +49,12 @@ you on the fly. Here's how it works:
 2. The Helios client generates a temporary X.509 certificate containing your username.
    It then signs it with your private SSH key via ssh-agent and sends it to the HTTPS server.
 
-3. The server looks up the public key for the username specified in the certificate, and
-   uses it to verify that the certificate was signed by the corresponding private key. If the
-   signature can be verified we know that the user is who they claim to be. Each user
-   essentially acts as a certificate authority.
+3. The server should then look up the public key for the username specified in the certificate and
+   use it to verify that the certificate was signed by the corresponding private key. If the
+   signature is successfully verified we know that the user is who they claim to be.
+   **Note that this step must be implemented by the cluster administrator.**
+
+When using the Helios CLI the username in the generated certificate comes from the `--username` argument, which defaults to your login user. When using the API the username has to be set explicitly via the `HeliosClient.Builder.setUser()` method.
 
 The actual handshake procedure is carried out by the TLS implementation -
 the only thing the Helios client does it generate and sign the X.509 certificate used, instead
