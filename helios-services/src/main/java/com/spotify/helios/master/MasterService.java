@@ -150,7 +150,7 @@ public class MasterService extends AbstractIdleService {
     if (config.isInhibitMetrics()) {
       metrics = new NoopMetrics();
     } else {
-      metrics = new MetricsImpl(metricsRegistry);
+      metrics = new MetricsImpl(metricsRegistry, MetricsImpl.Type.MASTER);
       metrics.start();
       environment.lifecycle().manage(riemannSupport);
       if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {

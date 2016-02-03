@@ -178,7 +178,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       metrics = new NoopMetrics();
     } else {
       log.info("Starting metrics");
-      metrics = new MetricsImpl(metricsRegistry);
+      metrics = new MetricsImpl(metricsRegistry, MetricsImpl.Type.AGENT);
       environment.lifecycle().manage(riemannSupport);
       if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
         environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
