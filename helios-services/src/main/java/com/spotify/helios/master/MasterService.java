@@ -39,6 +39,7 @@ import com.spotify.helios.master.resources.VersionResource;
 import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.servicescommon.FastForwardConfig;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
@@ -55,6 +56,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperHealthChecker;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
+import com.spotify.helios.servicescommon.statistics.FastForwardReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
@@ -154,6 +156,16 @@ public class MasterService extends AbstractIdleService {
       if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
         environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
                                                                  metricsRegistry));
+      }
+
+      final FastForwardConfig ffwdConfig = config.getFfwdConfig();
+      if (ffwdConfig != null) {
+        environment.lifecycle().manage(FastForwardReporter.create(
+            metricsRegistry,
+            ffwdConfig.getAddress(),
+            ffwdConfig.getMetricKey(),
+            ffwdConfig.getReportingIntervalSeconds())
+        );
       }
     }
 

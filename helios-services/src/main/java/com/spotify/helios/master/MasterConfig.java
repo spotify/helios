@@ -17,6 +17,8 @@
 
 package com.spotify.helios.master;
 
+import com.spotify.helios.servicescommon.FastForwardConfig;
+
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.List;
@@ -53,6 +55,7 @@ public class MasterConfig extends Configuration {
   private String zookeeperAclMasterUser;
   private String zooKeeperAclMasterPassword;
   private long agentReapingTimeout;
+  private FastForwardConfig fastForwardConfig;
 
   public String getDomain() {
     return domain;
@@ -259,5 +262,14 @@ public class MasterConfig extends Configuration {
 
   public long getAgentReapingTimeout() {
     return agentReapingTimeout;
+  }
+
+  public FastForwardConfig getFfwdConfig() {
+    return this.fastForwardConfig;
+  }
+
+  public MasterConfig setFfwdConfig(FastForwardConfig config) {
+    this.fastForwardConfig = config;
+    return this;
   }
 }

@@ -98,7 +98,7 @@ public class FastForwardReporter implements Managed {
   private final long interval;
   private final TimeUnit intervalTimeUnit;
 
-  public FastForwardReporter(FastForward fastForward, MetricRegistry metricRegistry,
+  FastForwardReporter(FastForward fastForward, MetricRegistry metricRegistry,
                              ScheduledExecutorService executor, String key,
                              long interval, TimeUnit intervalTimeUnit) {
     this.fastForward = fastForward;

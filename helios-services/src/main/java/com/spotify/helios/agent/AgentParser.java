@@ -135,7 +135,8 @@ public class AgentParser extends ServiceParser {
         .setHttpEndpoint(httpAddress)
         .setNoHttp(options.getBoolean(noHttpArg.getDest()))
         .setKafkaBrokers(getKafkaBrokers())
-        .setLabels(labels);
+        .setLabels(labels)
+        .setFfwdConfig(ffwdConfig(options));
 
     final String explicitId = options.getString(agentIdArg.getDest());
     if (explicitId != null) {

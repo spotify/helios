@@ -32,6 +32,7 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.servicescommon.FastForwardConfig;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
@@ -49,6 +50,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperHealthChecker;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdaterFactory;
+import com.spotify.helios.servicescommon.statistics.FastForwardReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
@@ -125,7 +127,7 @@ public class AgentService extends AbstractIdleService implements Managed {
    * @throws InterruptedException If the thread is interrupted.
    */
   public AgentService(final AgentConfig config, final Environment environment)
-      throws ConfigurationException, InterruptedException {
+      throws ConfigurationException, InterruptedException, IOException {
     // Create state directory, if necessary
     final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
     if (!Files.exists(stateDirectory)) {
@@ -181,6 +183,16 @@ public class AgentService extends AbstractIdleService implements Managed {
       if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
         environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
                                                                  metricsRegistry));
+      }
+
+      final FastForwardConfig ffwdConfig = config.getFfwdConfig();
+      if (ffwdConfig != null) {
+        environment.lifecycle().manage(FastForwardReporter.create(
+            metricsRegistry,
+            ffwdConfig.getAddress(),
+            ffwdConfig.getMetricKey(),
+            ffwdConfig.getReportingIntervalSeconds())
+        );
       }
     }
 
