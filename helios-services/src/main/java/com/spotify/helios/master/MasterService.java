@@ -140,8 +140,7 @@ public class MasterService extends AbstractIdleService {
     this.environmentVariables = environmentVariables;
 
     // Configure metrics
-    // TODO (dano): do something with the riemann facade
-    final MetricRegistry metricsRegistry = new MetricRegistry();
+    final MetricRegistry metricsRegistry = environment.metrics();
     final RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry,
         config.getRiemannHostPort(), config.getName(), "helios-master");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();

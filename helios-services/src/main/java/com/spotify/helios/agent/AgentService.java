@@ -169,7 +169,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     }
 
     // Configure metrics
-    final MetricRegistry metricsRegistry = new MetricRegistry();
+    final MetricRegistry metricsRegistry = environment.metrics();
     RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(),
                                                        config.getName(), "helios-agent");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();
