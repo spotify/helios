@@ -19,6 +19,8 @@ package com.spotify.helios.testing;
 
 import com.google.common.base.Optional;
 
+import com.spotify.helios.common.descriptors.PortMapping;
+
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,7 +41,7 @@ public class ProberTest extends TemporaryJobsTestBase {
     private boolean probed;
 
     @Override
-    public boolean probe(String host, int port) {
+    public boolean probe(String host, PortMapping port) {
       return probed = true;
     }
 

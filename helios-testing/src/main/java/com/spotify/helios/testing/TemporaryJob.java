@@ -339,13 +339,14 @@ public class TemporaryJob {
     final String endpoint = endpointFromHost(host);
     final TaskStatus taskStatus = statuses.get(host);
     assert taskStatus != null;
-    final Integer externalPort = taskStatus.getPorts().get(port).getExternalPort();
+    final PortMapping portMapping = taskStatus.getPorts().get(port);
+    final Integer externalPort = portMapping.getExternalPort();
     assert externalPort != null;
     Polling.awaitUnchecked(TIMEOUT_MILLIS, MILLISECONDS, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
-        log.info("Probing: {} @ {}:{}", port, endpoint, externalPort);
-        final boolean up = prober.probe(endpoint, externalPort);
+        log.info("Probing: {} @ {}:{}", port, endpoint, portMapping);
+        final boolean up = prober.probe(endpoint, portMapping);
         if (up) {
           log.info("Up: {} @ {}:{}", port, endpoint, externalPort);
           return true;
