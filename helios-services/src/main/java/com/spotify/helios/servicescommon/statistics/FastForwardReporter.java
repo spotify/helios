@@ -17,6 +17,7 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 
@@ -118,7 +119,7 @@ public class FastForwardReporter implements Managed {
     // wrap the runnable in a try-catch as uncaught exceptions will prevent subsequent executions
     executor.scheduleAtFixedRate(() -> {
       try {
-        report();
+        reportOnce();
       } catch (Exception e) {
         log.error("Exception in reporting loop", e);
       }
@@ -130,7 +131,8 @@ public class FastForwardReporter implements Managed {
     executor.shutdown();
   }
 
-  private void report() {
+  @VisibleForTesting
+  void reportOnce() {
     metricRegistry.getGauges().forEach(this::reportGauge);
 
     metricRegistry.getCounters().forEach(this::reportCounter);

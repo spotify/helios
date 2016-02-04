@@ -32,10 +32,8 @@ import eu.toolchain.ffwd.Metric;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.Mockito;
 
 import java.util.Map;
 import java.util.Set;
@@ -47,12 +45,9 @@ import java.util.stream.IntStream;
 
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 public class FastForwardReporterTest {
-
-  private static final int REPORTING_INTERVAL_MILLIS = 10;
-  private static final int VERIFY_TIMEOUT = REPORTING_INTERVAL_MILLIS * 2;
 
   private final FastForward ffwd = mock(FastForward.class);
   private final MetricRegistry metricRegistry = new MetricRegistry();
@@ -67,17 +62,8 @@ public class FastForwardReporterTest {
         Executors.newSingleThreadScheduledExecutor(threadFactory);
 
     this.reporter = new FastForwardReporter(ffwd, metricRegistry, executor, "helios.test",
-                                            REPORTING_INTERVAL_MILLIS, TimeUnit.MILLISECONDS);
-  }
-
-  @After
-  public void tearDown() throws Exception {
-    reporter.stop();
-  }
-
-  // shortcut to Mockito.verify(ffwd, timeout(..).times(..))...
-  private FastForward verify() {
-    return Mockito.verify(ffwd, timeout(VERIFY_TIMEOUT).atLeastOnce());
+                                            // these values do not matter:
+                                            30, TimeUnit.SECONDS);
   }
 
   /**
@@ -135,15 +121,15 @@ public class FastForwardReporterTest {
     metricRegistry.register("some.gauge1", (Gauge<Integer>) () -> 1);
     metricRegistry.register("some.gauge2", (Gauge<Integer>) () -> 2);
 
-    reporter.start();
+    reporter.reportOnce();
 
-    verify().send(argThat(allOf(
+    verify(ffwd).send(argThat(allOf(
         hasKey("helios.test"),
         containsAttributes("what", "some.gauge1", "metric_type", "gauge"),
         hasValue(1)
     )));
 
-    verify().send(argThat(allOf(
+    verify(ffwd).send(argThat(allOf(
         hasKey("helios.test"),
         containsAttributes("what", "some.gauge2", "metric_type", "gauge"),
         hasValue(2)
@@ -155,9 +141,9 @@ public class FastForwardReporterTest {
     metricRegistry.counter("counting.is.fun")
         .inc(7982);
 
-    reporter.start();
+    reporter.reportOnce();
 
-    verify().send(argThat(allOf(
+    verify(ffwd).send(argThat(allOf(
         hasKey("helios.test"),
         containsAttributes("what", "counting.is.fun", "metric_type", "counter"),
         hasValue(7982)
@@ -168,14 +154,14 @@ public class FastForwardReporterTest {
   public void testMeter() throws Exception {
     metricRegistry.meter("the-meter");
 
-    reporter.start();
+    reporter.reportOnce();
 
     verifyMeterStats("the-meter", "meter");
   }
 
   private void verifyMeterStats(String what, String type) throws Exception {
     for (String stat : new String[]{"1m", "5m"}) {
-      verify().send(argThat(allOf(
+      verify(ffwd).send(argThat(allOf(
           hasKey("helios.test"),
           containsAttributes("what", what, "metric_type", type, "stat", stat),
           hasValue(0)
@@ -188,7 +174,7 @@ public class FastForwardReporterTest {
     final Histogram h = metricRegistry.histogram("histo.gram");
     IntStream.range(1, 10).forEach(h::update);
 
-    reporter.start();
+    reporter.reportOnce();
 
     verifyHistogramStats("histo.gram", "histogram");
   }
@@ -198,7 +184,8 @@ public class FastForwardReporterTest {
         ImmutableSet.of("median", "p75", "p99", "mean", "min", "max", "stddev");
 
     for (String stat : expectedStats) {
-      verify().send(argThat(allOf(
+
+      verify(ffwd).send(argThat(allOf(
           hasKey("helios.test"),
           containsAttributes("what", what, "metric_type", type, "stat", stat))));
     }
@@ -208,7 +195,7 @@ public class FastForwardReporterTest {
   public void testTimer() throws Exception {
     metricRegistry.timer("blah-timer");
 
-    reporter.start();
+    reporter.reportOnce();
 
     verifyHistogramStats("blah-timer", "timer");
     verifyMeterStats("blah-timer", "timer");
@@ -218,8 +205,8 @@ public class FastForwardReporterTest {
   public void testAttributesIncludeHeliosVersion() throws Exception {
     metricRegistry.register("something", (Gauge<Integer>) () -> 1);
 
-    reporter.start();
+    reporter.reportOnce();
 
-    verify().send(argThat(containsAttributes("helios_version", Version.POM_VERSION)));
+    verify(ffwd).send(argThat(containsAttributes("helios_version", Version.POM_VERSION)));
   }
 }
