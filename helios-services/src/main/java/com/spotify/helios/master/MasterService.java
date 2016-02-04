@@ -17,6 +17,7 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
@@ -38,6 +39,7 @@ import com.spotify.helios.master.resources.VersionResource;
 import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.servicescommon.FastForwardConfig;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
@@ -54,6 +56,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperHealthChecker;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
+import com.spotify.helios.servicescommon.statistics.FastForwardReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
@@ -137,8 +140,7 @@ public class MasterService extends AbstractIdleService {
     this.environmentVariables = environmentVariables;
 
     // Configure metrics
-    // TODO (dano): do something with the riemann facade
-    final MetricRegistry metricsRegistry = new MetricRegistry();
+    final MetricRegistry metricsRegistry = environment.metrics();
     final RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry,
         config.getRiemannHostPort(), config.getName(), "helios-master");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();
@@ -147,11 +149,23 @@ public class MasterService extends AbstractIdleService {
     if (config.isInhibitMetrics()) {
       metrics = new NoopMetrics();
     } else {
-      metrics = new MetricsImpl(metricsRegistry);
+      metrics = new MetricsImpl(metricsRegistry, MetricsImpl.Type.MASTER);
       metrics.start();
       environment.lifecycle().manage(riemannSupport);
-      environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
-          "helios-master", metricsRegistry));
+      if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
+        environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
+                                                                 metricsRegistry));
+      }
+
+      final FastForwardConfig ffwdConfig = config.getFfwdConfig();
+      if (ffwdConfig != null) {
+        environment.lifecycle().manage(FastForwardReporter.create(
+            metricsRegistry,
+            ffwdConfig.getAddress(),
+            ffwdConfig.getMetricKey(),
+            ffwdConfig.getReportingIntervalSeconds())
+        );
+      }
     }
 
     // Set up the master model

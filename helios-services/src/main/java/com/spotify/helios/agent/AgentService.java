@@ -17,6 +17,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Strings;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
@@ -31,6 +32,7 @@ import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.servicescommon.FastForwardConfig;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
@@ -48,6 +50,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperHealthChecker;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdaterFactory;
+import com.spotify.helios.servicescommon.statistics.FastForwardReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
@@ -124,7 +127,7 @@ public class AgentService extends AbstractIdleService implements Managed {
    * @throws InterruptedException If the thread is interrupted.
    */
   public AgentService(final AgentConfig config, final Environment environment)
-      throws ConfigurationException, InterruptedException {
+      throws ConfigurationException, InterruptedException, IOException {
     // Create state directory, if necessary
     final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
     if (!Files.exists(stateDirectory)) {
@@ -166,7 +169,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     }
 
     // Configure metrics
-    final MetricRegistry metricsRegistry = new MetricRegistry();
+    final MetricRegistry metricsRegistry = environment.metrics();
     RiemannSupport riemannSupport = new RiemannSupport(metricsRegistry, config.getRiemannHostPort(),
                                                        config.getName(), "helios-agent");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();
@@ -175,10 +178,22 @@ public class AgentService extends AbstractIdleService implements Managed {
       metrics = new NoopMetrics();
     } else {
       log.info("Starting metrics");
-      metrics = new MetricsImpl(metricsRegistry);
-      environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
-          "helios-agent", metricsRegistry));
+      metrics = new MetricsImpl(metricsRegistry, MetricsImpl.Type.AGENT);
       environment.lifecycle().manage(riemannSupport);
+      if (!Strings.isNullOrEmpty(config.getStatsdHostPort())) {
+        environment.lifecycle().manage(new ManagedStatsdReporter(config.getStatsdHostPort(),
+                                                                 metricsRegistry));
+      }
+
+      final FastForwardConfig ffwdConfig = config.getFfwdConfig();
+      if (ffwdConfig != null) {
+        environment.lifecycle().manage(FastForwardReporter.create(
+            metricsRegistry,
+            ffwdConfig.getAddress(),
+            ffwdConfig.getMetricKey(),
+            ffwdConfig.getReportingIntervalSeconds())
+        );
+      }
     }
 
     // This CountDownLatch will signal EnvironmentVariableReporter and LabelReporter when to report

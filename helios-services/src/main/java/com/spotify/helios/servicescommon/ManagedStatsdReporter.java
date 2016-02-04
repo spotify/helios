@@ -17,16 +17,16 @@
 
 package com.spotify.helios.servicescommon;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
 
+import com.codahale.metrics.MetricRegistry;
 import com.readytalk.metrics.StatsDReporter;
 
-import io.dropwizard.lifecycle.Managed;
-
-import com.codahale.metrics.MetricRegistry;
-
 import java.util.List;
+
+import io.dropwizard.lifecycle.Managed;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -37,12 +37,9 @@ public class ManagedStatsdReporter implements Managed {
 
   private final StatsDReporter statsdReporter;
 
-  public ManagedStatsdReporter(final String endpoint, final String name,
-                               final MetricRegistry registry) {
-    if (Strings.isNullOrEmpty(endpoint)) {
-      statsdReporter = null;
-      return;
-    }
+  public ManagedStatsdReporter(final String endpoint, final MetricRegistry registry) {
+    Preconditions.checkArgument(!Strings.isNullOrEmpty(endpoint));
+
     final List<String> parts = Splitter.on(":").splitToList(endpoint);
     checkArgument(parts.size() == 2, "Specification of statsd host port has wrong number of " +
                                      "parts. Should be host:port");
@@ -53,15 +50,11 @@ public class ManagedStatsdReporter implements Managed {
 
   @Override
   public void start() throws Exception {
-    if (statsdReporter != null) {
-      statsdReporter.start(POLL_INTERVAL_SECONDS, SECONDS);
-    }
+    statsdReporter.start(POLL_INTERVAL_SECONDS, SECONDS);
   }
 
   @Override
   public void stop() throws Exception {
-    if (statsdReporter != null) {
-      statsdReporter.close();
-    }
+    statsdReporter.close();
   }
 }

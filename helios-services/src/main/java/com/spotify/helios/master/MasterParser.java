@@ -78,7 +78,8 @@ public class MasterParser extends ServiceParser {
         .setHttpEndpoint(httpAddress)
         .setKafkaBrokers(getKafkaBrokers())
         .setStateDirectory(getStateDirectory())
-        .setAgentReapingTimeout(options.getLong(agentReapingTimeout.getDest()));
+        .setAgentReapingTimeout(options.getLong(agentReapingTimeout.getDest()))
+        .setFfwdConfig(ffwdConfig(options));
 
     this.masterConfig = config;
   }

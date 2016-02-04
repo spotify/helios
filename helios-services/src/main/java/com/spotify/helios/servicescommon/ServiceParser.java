@@ -38,6 +38,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
@@ -77,6 +78,12 @@ public class ServiceParser {
   private final Argument noLogSetupArg;
   private final Argument kafkaArg;
   private final Argument stateDirArg;
+
+  // ffwd arguments:
+  private final Argument ffwdEnabled;
+  private final Argument ffwdAddress;
+  private final Argument ffwdInterval;
+  private final Argument ffwdMetricKey;
 
   public ServiceParser(final String programName, final String description, final String... args)
       throws ArgumentParserException {
@@ -181,6 +188,26 @@ public class ServiceParser {
     stateDirArg = parser.addArgument("--state-dir")
         .setDefault(".")
         .help("Directory for persisting state locally.");
+
+    ffwdEnabled = parser.addArgument("--ffwd-enabled")
+        .action(storeTrue())
+        .setDefault(false)
+        .help("Enables reporting of metrics to FastForward. "
+              + "Only functional when --no-metrics is not set.");
+
+    ffwdAddress = parser.addArgument("--ffwd-address")
+        .help("Overrides the default FastForward address, "
+              + "should contain host and port like `host:port`.");
+
+    ffwdInterval = parser.addArgument("--ffwd-interval-secs")
+        .type(Integer.class)
+        .setDefault(30)
+        .help("Interval in seconds at which to report metrics to FastForward.");
+
+    ffwdMetricKey = parser.addArgument("--ffwd-key")
+        .setDefault(programName)
+        .help("Value to use for `key` in metric data sent to FastForward. "
+              + "Defaults to '" + programName + "'");
 
     addArgs(parser);
 
@@ -302,5 +329,16 @@ public class ServiceParser {
       throw new IllegalArgumentException("Bad address: " + addressString, e);
     }
     return address;
+  }
+
+  protected FastForwardConfig ffwdConfig(final Namespace options) {
+    if (!options.getBoolean(ffwdEnabled.getDest())) {
+      return null;
+    }
+
+    return new FastForwardConfig(
+        Optional.ofNullable(options.getString(ffwdAddress.getDest())),
+        options.getInt(ffwdInterval.getDest()),
+        options.getString(ffwdMetricKey.getDest()));
   }
 }

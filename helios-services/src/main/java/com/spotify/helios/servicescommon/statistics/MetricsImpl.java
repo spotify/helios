@@ -22,6 +22,10 @@ import com.codahale.metrics.MetricRegistry;
 
 public class MetricsImpl implements Metrics {
 
+  public enum Type {
+    MASTER, AGENT
+  }
+
   private static final String GROUP = "helios";
 
   private final SupervisorMetrics supervisorMetrics;
@@ -29,9 +33,14 @@ public class MetricsImpl implements Metrics {
   private final ZooKeeperMetrics zooKeeperMetrics;
   private final JmxReporter jmxReporter;
 
-  public MetricsImpl(final MetricRegistry registry) {
-    this.masterMetrics = new MasterMetricsImpl(GROUP, registry);
-    this.supervisorMetrics = new SupervisorMetricsImpl(GROUP, registry);
+  public MetricsImpl(final MetricRegistry registry, final Type type) {
+    // MasterMetrics is only for masters, and SupervisorMetrics only for agents
+    this.masterMetrics = type == Type.MASTER ? new MasterMetricsImpl(GROUP, registry)
+                                             : new NoopMasterMetrics();
+
+    this.supervisorMetrics = type == Type.AGENT ? new SupervisorMetricsImpl(GROUP, registry)
+                                                : new NoopSupervisorMetrics();
+
     this.zooKeeperMetrics = new ZooKeeperMetricsImpl(GROUP, registry);
     this.jmxReporter = JmxReporter.forRegistry(registry).build();
   }

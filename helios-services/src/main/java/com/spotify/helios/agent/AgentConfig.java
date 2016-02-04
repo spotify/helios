@@ -18,6 +18,7 @@
 package com.spotify.helios.agent;
 
 import com.spotify.docker.client.DockerHost;
+import com.spotify.helios.servicescommon.FastForwardConfig;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
@@ -63,6 +64,7 @@ public class AgentConfig extends Configuration {
   private String zooKeeperAclMasterDigest;
   private String zookeeperAclAgentUser;
   private String zooKeeperAclAgentPassword;
+  private FastForwardConfig fastForwardConfig;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -344,6 +346,15 @@ public class AgentConfig extends Configuration {
 
   public AgentConfig setZookeeperAclAgentUser(final String zookeeperAclAgentUser) {
     this.zookeeperAclAgentUser = zookeeperAclAgentUser;
+    return this;
+  }
+
+  public FastForwardConfig getFfwdConfig() {
+    return this.fastForwardConfig;
+  }
+
+  public AgentConfig setFfwdConfig(FastForwardConfig config) {
+    this.fastForwardConfig = config;
     return this;
   }
 }

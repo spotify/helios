@@ -46,9 +46,6 @@
   <logger name="org.eclipse.jetty" level="${externalLoggingLevel:-ERROR}">
     <appender-ref ref="EXTERNAL_STDERR"/>
   </logger>
-  <logger name="com.yammer.metrics" level="${externalLoggingLevel:-ERROR}">
-    <appender-ref ref="EXTERNAL_STDERR"/>
-  </logger>
 
   <logger name="com.spotify.helios" level="${heliosLoggingLevel:-DEBUG}"/>
 
