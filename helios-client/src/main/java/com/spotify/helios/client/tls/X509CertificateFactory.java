@@ -18,6 +18,7 @@
 package com.spotify.helios.client.tls;
 
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.io.BaseEncoding;
 
 import com.eaio.uuid.UUID;
@@ -40,23 +41,44 @@ import org.bouncycastle.cert.X509ExtensionUtils;
 import org.bouncycastle.cert.X509v3CertificateBuilder;
 import org.bouncycastle.cert.jcajce.JcaX509CertificateConverter;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
+import org.bouncycastle.openssl.jcajce.JcaPEMWriter;
 import org.bouncycastle.operator.DigestCalculator;
 import org.bouncycastle.operator.bc.BcDigestCalculatorProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import sun.security.provider.X509Factory;
-
+import java.io.IOException;
+import java.io.StringWriter;
 import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.FileAttribute;
+import java.nio.file.attribute.PosixFilePermission;
+import java.nio.file.attribute.PosixFilePermissions;
+import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.SecureRandom;
 import java.security.Security;
-import java.security.cert.Certificate;
+import java.security.cert.X509Certificate;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+
+import static com.spotify.helios.common.Hash.sha1digest;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
 
 public class X509CertificateFactory {
+
+  private static final Path HELIOS_HOME = Paths.get(System.getProperty("user.home"), ".helios");
+
+  private static final BaseEncoding HEX_ENCODING = BaseEncoding.base16().lowerCase();
 
   private static final Logger log = LoggerFactory.getLogger(X509CertificateFactory.class);
 
@@ -65,28 +87,81 @@ public class X509CertificateFactory {
 
   private static final BaseEncoding KEY_ID_ENCODING =
       BaseEncoding.base16().upperCase().withSeparator(":", 2);
-  private static final BaseEncoding CERT_ENCODING =
-      BaseEncoding.base64().withSeparator("\n", 64);
 
   private static final int KEY_SIZE = 2048;
-  private static final int HOURS_BEFORE = 1;
-  private static final int HOURS_AFTER = 48;
+
+  private final Path cacheDirectory;
+  private final int validBeforeMilliseconds;
+  private final int validAfterMilliseconds;
 
   static {
     Security.addProvider(new BouncyCastleProvider());
   }
 
-  public static CertificateAndKeyPair get(final AgentProxy agentProxy, final Identity identity,
-                                          final String username) {
+  public X509CertificateFactory() {
+    this(HELIOS_HOME, (int) TimeUnit.HOURS.toMillis(1), (int) TimeUnit.HOURS.toMillis(48));
+  }
+
+  public X509CertificateFactory(final Path cacheDirectory, final int validBeforeMilliseconds,
+                                final int validAfterMillieconds) {
+    this.cacheDirectory = cacheDirectory;
+    this.validBeforeMilliseconds = validBeforeMilliseconds;
+    this.validAfterMilliseconds = validAfterMillieconds;
+  }
+
+  public CertificateAndPrivateKey get(final AgentProxy agentProxy, final Identity identity,
+                                      final String username) {
+    final String identityHex = HEX_ENCODING.encode(
+        sha1digest(identity.getKeyBlob())).substring(0, 8);
+    final Path cacheCertPath = cacheDirectory.resolve(identityHex + ".crt");
+    final Path cacheKeyPath = cacheDirectory.resolve(identityHex + ".pem");
+
+    boolean useCached = false;
+    CertificateAndPrivateKey cached = null;
+
+    try {
+      if (Files.exists(cacheCertPath) && Files.exists(cacheKeyPath)) {
+        cached = CertificateAndPrivateKey.from(cacheCertPath, cacheKeyPath);
+      }
+    } catch (IOException | GeneralSecurityException e) {
+      // some sort of issue with cached certificate, that's fine
+      log.debug("error reading cached certificate and key from {} for identity={}",
+                cacheDirectory, identity.getComment(), e);
+    }
+
+    if ((cached != null) && (cached.getCertificate() instanceof X509Certificate)) {
+      final X509Certificate cachedX509 = (X509Certificate) cached.getCertificate();
+      final Date now = new Date();
+
+      if (now.after(cachedX509.getNotBefore()) && now.before(cachedX509.getNotAfter())) {
+        useCached = true;
+      }
+    }
+
+    if (useCached) {
+      log.info("using existing certificate for {} from {}", username, cacheCertPath);
+      return cached;
+    } else {
+      final CertificateAndPrivateKey generated = generate(agentProxy, identity, username);
+      saveToCache(cacheDirectory, cacheCertPath, cacheKeyPath, generated);
+
+      return generated;
+    }
+  }
+
+  private CertificateAndPrivateKey generate(final AgentProxy agentProxy, final Identity identity,
+                                            final String username) {
+    log.info("generating an X509 certificate for {}", username);
+
     final UUID uuid = new UUID();
     final Calendar calendar = Calendar.getInstance();
     final X500Name issuerDN = new X500Name("C=US,O=Spotify,CN=helios-client");
     final X500Name subjectDN = new X500NameBuilder().addRDN(BCStyle.UID, username).build();
 
-    calendar.add(Calendar.HOUR, -HOURS_BEFORE);
+    calendar.add(Calendar.MILLISECOND, -validBeforeMilliseconds);
     final Date notBefore = calendar.getTime();
 
-    calendar.add(Calendar.HOUR, HOURS_BEFORE + HOURS_AFTER);
+    calendar.add(Calendar.MILLISECOND, validBeforeMilliseconds + validAfterMilliseconds);
     final Date notAfter = calendar.getTime();
 
     // Reuse the UUID time as a SN
@@ -122,34 +197,57 @@ public class X509CertificateFactory {
 
       final X509CertificateHolder holder = builder.build(new SshAgentContentSigner(agentProxy,
                                                                                    identity));
-      log.debug("generated certificate:\n{}\n{}\n{}",
-                X509Factory.BEGIN_CERT,
-                CERT_ENCODING.encode(holder.getEncoded()),
-                X509Factory.END_CERT);
 
+      final X509Certificate certificate = CERTIFICATE_CONVERTER.getCertificate(holder);
+      log.debug("generated certificate:\n{}", asPEMString(certificate));
 
-      return new CertificateAndKeyPair(CERTIFICATE_CONVERTER.getCertificate(holder), keyPair);
+      return new CertificateAndPrivateKey(certificate, keyPair.getPrivate());
     } catch (Exception e) {
       throw Throwables.propagate(e);
     }
   }
 
-  public static class CertificateAndKeyPair {
-    private final Certificate certificate;
-    private final KeyPair keyPair;
+  private static void saveToCache(final Path cacheDirectory,
+                                  final Path cacheCertPath,
+                                  final Path cacheKeyPath,
+                                  final CertificateAndPrivateKey certificateAndPrivateKey) {
+    try {
+      Files.createDirectories(cacheDirectory);
 
-    public CertificateAndKeyPair(final Certificate certificate,
-                                 final KeyPair keyPair) {
-      this.certificate = certificate;
-      this.keyPair = keyPair;
+      final String certPem = asPEMString(certificateAndPrivateKey.getCertificate());
+      final String keyPem = asPEMString(certificateAndPrivateKey.getPrivateKey());
+
+      // overwrite any existing file, and make sure it's only readable by the current user
+      final Set<StandardOpenOption> options = ImmutableSet.of(CREATE, WRITE);
+      final Set<PosixFilePermission> perms = ImmutableSet.of(PosixFilePermission.OWNER_READ,
+                                                             PosixFilePermission.OWNER_WRITE);
+      final FileAttribute<Set<PosixFilePermission>> attrs =
+          PosixFilePermissions.asFileAttribute(perms);
+
+      try (final SeekableByteChannel sbc =
+               Files.newByteChannel(cacheCertPath, options, attrs)) {
+        sbc.write(ByteBuffer.wrap(certPem.getBytes()));
+      }
+
+      try (final SeekableByteChannel sbc =
+               Files.newByteChannel(cacheKeyPath, options, attrs)) {
+        sbc.write(ByteBuffer.wrap(keyPem.getBytes()));
+      }
+
+      log.debug("cached generated certificate to {}", cacheCertPath);
+    } catch (IOException e) {
+      // couldn't save to the cache, oh well
+      log.warn("error caching generated certificate", e);
+    }
+  }
+
+  private static String asPEMString(final Object o) throws IOException {
+    final StringWriter sw = new StringWriter();
+
+    try (final JcaPEMWriter pw = new JcaPEMWriter(sw)) {
+      pw.writeObject(o);
     }
 
-    public Certificate getCertificate() {
-      return certificate;
-    }
-
-    public KeyPair getKeyPair() {
-      return keyPair;
-    }
+    return sw.toString();
   }
 }

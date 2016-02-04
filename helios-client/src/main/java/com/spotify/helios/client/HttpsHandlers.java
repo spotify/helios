@@ -21,26 +21,17 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 
+import com.spotify.helios.client.tls.CertificateAndPrivateKey;
 import com.spotify.helios.client.tls.X509CertificateFactory;
-import com.spotify.helios.client.tls.X509CertificateFactory.CertificateAndKeyPair;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 
 import org.apache.http.ssl.SSLContexts;
-import org.bouncycastle.asn1.pkcs.PrivateKeyInfo;
-import org.bouncycastle.openssl.PEMKeyPair;
-import org.bouncycastle.openssl.PEMParser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.Charset;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.security.GeneralSecurityException;
-import java.security.KeyFactory;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -49,8 +40,6 @@ import java.security.PrivateKey;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.security.spec.PKCS8EncodedKeySpec;
 
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
@@ -65,8 +54,12 @@ class HttpsHandlers {
 
   static class SshAgentHttpsHandler extends CertificateHttpsHandler {
 
+    private static final Logger log = LoggerFactory.getLogger(SshAgentHttpsHandler.class);
+
     private final AgentProxy agentProxy;
     private final Identity identity;
+
+    private final X509CertificateFactory x509CertificateFactory = new X509CertificateFactory();
 
     SshAgentHttpsHandler(final String user,
                          final boolean failOnCertificateError,
@@ -89,10 +82,7 @@ class HttpsHandlers {
 
     @Override
     protected CertificateAndPrivateKey createCertificateAndPrivateKey() {
-      final CertificateAndKeyPair certificateAndKeyPair =
-          X509CertificateFactory.get(agentProxy, identity, getUser());
-
-      return CertificateAndPrivateKey.from(certificateAndKeyPair);
+      return x509CertificateFactory.get(agentProxy, identity, getUser());
     }
 
     @Override
@@ -120,34 +110,8 @@ class HttpsHandlers {
     @Override
     protected CertificateAndPrivateKey createCertificateAndPrivateKey()
         throws IOException, GeneralSecurityException {
-
-      final CertificateFactory cf = CertificateFactory.getInstance("X.509");
-      final Path certPath = clientCertificatePath.getCertificatePath();
-
-      final Certificate certificate;
-      try (final InputStream is = Files.newInputStream(certPath)) {
-        certificate = cf.generateCertificate(is);
-      }
-
-      final Object parsedPem;
-      try (final BufferedReader br = Files.newBufferedReader(clientCertificatePath.getKeyPath(),
-                                                             Charset.defaultCharset())) {
-        parsedPem = new PEMParser(br).readObject();
-      }
-
-      final PrivateKeyInfo keyInfo;
-      if (parsedPem instanceof PEMKeyPair) {
-        keyInfo = ((PEMKeyPair) parsedPem).getPrivateKeyInfo();
-      } else if (parsedPem instanceof PrivateKeyInfo) {
-        keyInfo = (PrivateKeyInfo) parsedPem;
-      } else {
-        throw new UnsupportedOperationException("Unable to parse x509 certificate.");
-      }
-
-      final PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(keyInfo.getEncoded());
-      final KeyFactory kf = KeyFactory.getInstance("RSA");
-
-      return new CertificateAndPrivateKey(certificate, kf.generatePrivate(spec));
+      return CertificateAndPrivateKey.from(clientCertificatePath.getCertificatePath(),
+                                           clientCertificatePath.getKeyPath());
     }
 
     @Override
@@ -170,9 +134,12 @@ class HttpsHandlers {
       this.failOnCertificateError = failOnCertificateError;
     }
 
-    @VisibleForTesting
     protected String getUser() {
       return user;
+    }
+
+    protected boolean getFailOnCertificateError() {
+      return failOnCertificateError;
     }
 
     /**
@@ -210,8 +177,8 @@ class HttpsHandlers {
         }
       }
 
-      final Certificate certificate = certificateAndPrivateKey.certificate;
-      final PrivateKey privateKey = certificateAndPrivateKey.privateKey;
+      final Certificate certificate = certificateAndPrivateKey.getCertificate();
+      final PrivateKey privateKey = certificateAndPrivateKey.getPrivateKey();
 
       try {
         /*
@@ -241,33 +208,6 @@ class HttpsHandlers {
         // so many dumb ways to die. see https://www.youtube.com/watch?v=IJNR2EpS0jw for more.
         throw Throwables.propagate(e);
       }
-    }
-  }
-
-  @VisibleForTesting
-  protected static class CertificateAndPrivateKey {
-    private final Certificate certificate;
-    private final PrivateKey privateKey;
-
-    public CertificateAndPrivateKey(final Certificate certificate, final PrivateKey privateKey) {
-      this.certificate = certificate;
-      this.privateKey = privateKey;
-    }
-
-    public Certificate getCertificate() {
-      return certificate;
-    }
-
-    public PrivateKey getPrivateKey() {
-      return privateKey;
-    }
-
-    static CertificateAndPrivateKey from(
-        X509CertificateFactory.CertificateAndKeyPair certificateAndKeyPair) {
-
-      return new CertificateAndPrivateKey(
-          certificateAndKeyPair.getCertificate(),
-          certificateAndKeyPair.getKeyPair().getPrivate());
     }
   }
 }
