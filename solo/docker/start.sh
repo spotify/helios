@@ -8,6 +8,7 @@ etcd $ETCD_OPTS &
 
 NAMESERVERS=$(cat /etc/resolv.conf | grep nameserver |
               python -c "import json, sys; ns=['%s:53' % (l.strip().split()[1], ) for l in sys.stdin]; print json.dumps(ns or ['8.8.8.8:53', '8.8.4.4:53']);")
+SKYDNS_PATH=$(echo $HELIOS_NAME|python -c "import sys;h=sys.stdin.read().strip().split('.');h.reverse();print '/'.join(h)")
 
 # Write skydns configuration and retry for 30 seconds until successful
 for i in {1..30}; do
@@ -19,7 +20,7 @@ for i in {1..30}; do
 done
 
 # Create A record for the solo host
-curl -XPUT http://127.0.0.1:4001/v2/keys/skydns/local/solo \
+curl -XPUT http://127.0.0.1:4001/v2/keys/skydns/${SKYDNS_PATH} \
     -d value="{\"host\":\"$HOST_ADDRESS\"}"
 
 skydns $SKYDNS_OPTS &
@@ -27,6 +28,8 @@ skydns $SKYDNS_OPTS &
 /usr/share/zookeeper/bin/zkServer.sh start
 
 # Start agent
+# SPOTIFY_POD and SPOTIFY_DOMAIN must be overridden to <job prefix>.local by the
+# TemporaryJobs config files in order for service discovery to work.
 mkdir -p /agent
 cd /agent
 java -cp '/*' \
