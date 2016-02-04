@@ -47,7 +47,7 @@ class DefaultProber implements Prober {
       return probeUdpPort(host, portMapping);
     }
 
-    throw new IllegalArgumentException("Unsupported protocol "+portMapping.getProtocol());
+    throw new IllegalArgumentException("Unsupported protocol " + portMapping.getProtocol());
   }
 
   private boolean probeUdpPort(String host, PortMapping portMapping) {
@@ -57,7 +57,8 @@ class DefaultProber implements Prober {
     try {
       // Let's send a PING
       // A UDP service should ignore any messages that do not conform to its protocol
-      // If it does then you probably should implement your own Prober or skip the probing by using a Dummy prober
+      // If it does then you probably should implement your own Prober or
+      // skip the probing by using a Dummy prober
       byte[] pingData = "PING".getBytes("UTF-8");
 
       // Use ephemeral port number
@@ -81,7 +82,8 @@ class DefaultProber implements Prober {
       // OK we got a timeout. That means that the UDP port is up and listening
       return true;
     } catch (PortUnreachableException e) {
-      // The port is unreachable which of course means that there is no-one listening to the UDP port
+      // The port is unreachable which of course means that
+      // there is no-one listening to the UDP port
       return false;
     } catch (SocketException e) {
       LOG.warn(e.getMessage(), e);
