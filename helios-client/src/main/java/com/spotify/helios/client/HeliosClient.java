@@ -604,6 +604,10 @@ public class HeliosClient implements Closeable {
     private HttpConnector createHttpConnector(final boolean sslHostnameVerification) {
 
       final EndpointIterator endpointIterator = EndpointIterator.of(endpointSupplier.get());
+      if (!endpointIterator.hasNext()) {
+        throw new IllegalStateException(
+            "no endpoints found to connect to, check your configuration");
+      }
 
       final DefaultHttpConnector connector = new DefaultHttpConnector(endpointIterator, 10000,
                                                                       sslHostnameVerification);
