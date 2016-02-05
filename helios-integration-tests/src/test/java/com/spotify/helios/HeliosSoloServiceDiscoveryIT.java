@@ -36,7 +36,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-public class HeliosSoloIT {
+public class HeliosSoloServiceDiscoveryIT {
 
   @Rule
   public HeliosDeploymentResource solo = new HeliosDeploymentResource(
@@ -59,7 +59,7 @@ public class HeliosSoloIT {
 
 
   @Test
-  public void soloTest() throws Exception {
+  public void testServiceDiscovery() throws Exception {
     // start a container that runs nginx and registers with SkyDNS
     jobs.job()
         .image(NGINX)
