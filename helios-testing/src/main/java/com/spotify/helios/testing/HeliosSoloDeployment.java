@@ -63,7 +63,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   public static final String BOOT2DOCKER_SIGNATURE = "Boot2Docker";
   public static final String PROBE_IMAGE = "onescience/alpine:latest";
-  public static final String HELIOS_NAME_PREFIX = "solo.local.";
+  public static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
   public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
   public static final int HELIOS_MASTER_PORT = 5801;
 
@@ -270,7 +270,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     //TODO(negz): Don't make this.env immutable so early?
     final List<String> env = new ArrayList<>();
     env.addAll(this.env);
-    env.add("HELIOS_NAME=" + HELIOS_NAME_PREFIX + this.namespace);
+    env.add("HELIOS_NAME=" + this.namespace + HELIOS_NAME_SUFFIX);
     env.add("HOST_ADDRESS=" + heliosHost);
 
     final String heliosPort = String.format("%d/tcp", HELIOS_MASTER_PORT);
