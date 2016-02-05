@@ -119,7 +119,7 @@ public class TemporaryJobs implements TestRule {
     checkArgument(builder.deployTimeoutMillis >= 0, "deployTimeoutMillis");
 
     this.deployer = fromNullable(builder.deployer).or(
-        new DefaultDeployer(client, jobs, builder.hostPickingStrategy, 
+        new DefaultDeployer(client, jobs, builder.hostPickingStrategy,
             builder.jobDeployedMessageFormat, builder.deployTimeoutMillis));
 
     final Path prefixDirectory = Paths.get(fromNullable(builder.prefixDirectory)
@@ -508,7 +508,12 @@ public class TemporaryJobs implements TestRule {
   }
 
   static Builder builder(final String profile, final Map<String, String> env) {
-    return new Builder(profile, TemporaryJobs.loadConfig(), env);
+    return builder(profile, env, HeliosClient.newBuilder());
+  }
+
+  static Builder builder(final String profile, final Map<String, String> env,
+                         final HeliosClient.Builder clientBuilder) {
+    return new Builder(profile, TemporaryJobs.loadConfig(), env, clientBuilder);
   }
 
   public static class Builder {
@@ -519,6 +524,7 @@ public class TemporaryJobs implements TestRule {
     private Prober prober = DEFAULT_PROBER;
     private Deployer deployer;
     private String hostFilter;
+    private HeliosClient.Builder clientBuilder;
     private HeliosClient client;
     private String prefixDirectory;
     private String testReportDirectory;
@@ -527,8 +533,10 @@ public class TemporaryJobs implements TestRule {
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
     private long deployTimeoutMillis = DEFAULT_DEPLOY_TIMEOUT_MILLIS;
 
-    Builder(String profile, Config rootConfig, Map<String, String> env) {
+    Builder(String profile, Config rootConfig, Map<String, String> env,
+            HeliosClient.Builder clientBuilder) {
       this.env = env;
+      this.clientBuilder = clientBuilder;
 
       // No profile specified so see if there is one specified in the config object.
       if (profile == null) {
@@ -663,8 +671,7 @@ public class TemporaryJobs implements TestRule {
     }
 
     public Builder domain(final String domain) {
-      return client(HeliosClient.newBuilder()
-                        .setUser(user)
+      return client(clientBuilder.setUser(user)
                         .setDomain(domain)
                         .build());
     }
@@ -674,8 +681,7 @@ public class TemporaryJobs implements TestRule {
     }
 
     public Builder endpointStrings(final List<String> endpoints) {
-      return client(HeliosClient.newBuilder()
-                        .setUser(user)
+      return client(clientBuilder.setUser(user)
                         .setEndpointStrings(endpoints)
                         .build());
     }
@@ -685,8 +691,7 @@ public class TemporaryJobs implements TestRule {
     }
 
     public Builder endpoints(final List<URI> endpoints) {
-      return client(HeliosClient.newBuilder()
-                        .setUser(user)
+      return client(clientBuilder.setUser(user)
                         .setEndpoints(endpoints)
                         .build());
     }

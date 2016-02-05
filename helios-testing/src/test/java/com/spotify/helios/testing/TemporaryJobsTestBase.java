@@ -77,8 +77,4 @@ public abstract class TemporaryJobsTestBase extends SystemTestBase {
   public static TemporaryJobs.Builder temporaryJobsBuilder() {
     return TemporaryJobs.builder(emptyEnv());
   }
-
-  public static TemporaryJobs.Builder temporaryJobsBuilder(final String profile) {
-    return TemporaryJobs.builder(profile, emptyEnv());
-  }
 }

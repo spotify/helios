@@ -28,9 +28,11 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,6 +46,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -53,6 +56,9 @@ public class ConfigTest {
 
   @Mock
   private static HeliosClient client;
+
+  @Mock(answer = Answers.CALLS_REAL_METHODS)
+  private static HeliosClient.Builder clientBuilder;
 
   @Before
   public void setup() {
@@ -148,9 +154,13 @@ public class ConfigTest {
       }
     };
 
-    // Specify the helios-ci profile explicitly
-    parameters = new TestParameters(temporaryJobsBuilder("helios-ci"),
-                                    ".+\\.helios-ci\\.cloud", validator);
+    // Specify the helios-ci profile explicitly, but make sure that the construction of the
+    // HeliosClient used by TemporaryJobs is mocked out to avoid attempting to connect to
+    // possibly-unresolvable hosts.
+    doReturn(client).when(clientBuilder).build();
+    final TemporaryJobs.Builder builder =
+        TemporaryJobs.builder("helios-ci", Collections.<String, String>emptyMap(), clientBuilder);
+    parameters = new TestParameters(builder, ".+\\.helios-ci\\.cloud", validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }
 
