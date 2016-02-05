@@ -15,16 +15,16 @@
  * under the License.
  */
 
-package com.spotify.helios.servicescommon.statistics;
+package com.spotify.helios.servicescommon.coordination;
 
-import com.codahale.metrics.Timer;
+import org.apache.zookeeper.KeeperException;
 
-public class NoopZooKeeperMetrics implements ZooKeeperMetrics {
-  @Override
-  public void zookeeperTransientError() {}
-
-  @Override
-  public Timer timer(String name) {
-    return new Timer();
-  }
+/**
+ * A task that returns a result and may throw a {@link KeeperException}.
+ * We use this class when we don't want a {@link java.util.concurrent.Callable}
+ * that throws an Exception.
+ */
+@FunctionalInterface
+public interface ZooKeeperCallable<T> {
+  T call() throws KeeperException;
 }

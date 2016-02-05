@@ -17,6 +17,7 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
@@ -68,6 +69,18 @@ public class ZooKeeperModelReporter {
         .tags(tagList)
         .send();
     metrics.zookeeperTransientError();
+  }
+
+  public <T> T time(final String tag, final String name, ZooKeeperCallable<T> callable)
+      throws KeeperException {
+    try {
+      return metrics.timer(name).time(callable::call);
+    } catch (KeeperException e) {
+      checkException(e, tag, name);
+      throw e;
+    } catch (Exception e) {
+      throw Throwables.propagate(e);
+    }
   }
 
   public static ZooKeeperModelReporter noop() {

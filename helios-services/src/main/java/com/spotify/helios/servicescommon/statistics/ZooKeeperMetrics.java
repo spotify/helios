@@ -17,8 +17,11 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
+import com.codahale.metrics.Timer;
+
 public interface ZooKeeperMetrics {
 
   void zookeeperTransientError();
 
+  Timer timer(String name);
 }
