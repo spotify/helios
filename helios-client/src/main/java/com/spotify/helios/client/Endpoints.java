@@ -94,7 +94,7 @@ public class Endpoints {
           endpoints.add(new DefaultEndpoint(uri, ip));
         }
       } catch (UnknownHostException e) {
-        log.warn("Unable to resolve hostname {} into IP address: {}", uri.getHost(), e);
+        log.warn("Unable to resolve hostname {} into IP address", uri.getHost(), e);
       }
     }
 
