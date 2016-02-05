@@ -32,6 +32,7 @@ import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
@@ -307,12 +308,10 @@ public class AgentService extends AbstractIdleService implements Managed {
       environment.healthChecks().register("docker", dockerHealthChecker);
       environment.healthChecks().register("zookeeper", zkHealthChecker);
 
-      // Report health checks as a boolean gauge metric
+      // Report health checks as a gauge metric
       environment.healthChecks().getNames().forEach(
-          name -> environment.metrics().register("helios." + name + ".ok", (Gauge<Boolean>) () -> {
-            final HealthCheck.Result result = environment.healthChecks().runHealthCheck(name);
-            return result.isHealthy();
-          }));
+          name -> environment.metrics().register(
+            "helios." + name + ".ok", new HealthCheckGauge(environment.healthChecks(), name)));
 
       environment.jersey().register(new AgentModelTaskResource(model));
       environment.jersey().register(new AgentModelTaskStatusResource(model));
