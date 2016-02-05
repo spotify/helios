@@ -31,6 +31,7 @@ import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.FastForwardConfig;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
@@ -84,8 +85,8 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
 import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
-import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
 import static java.lang.management.ManagementFactory.getRuntimeMXBean;
 import static java.nio.file.StandardOpenOption.CREATE;
@@ -318,9 +319,15 @@ public class AgentService extends AbstractIdleService implements Managed {
     if (!config.getNoHttp()) {
 
       environment.healthChecks().register("docker", dockerHealthChecker);
+      environment.healthChecks().register("zookeeper", zkHealthChecker);
+
+      // Report health checks as a gauge metric
+      environment.healthChecks().getNames().forEach(
+          name -> environment.metrics().register(
+            "helios." + name + ".ok", new HealthCheckGauge(environment.healthChecks(), name)));
+
       environment.jersey().register(new AgentModelTaskResource(model));
       environment.jersey().register(new AgentModelTaskStatusResource(model));
-      environment.healthChecks().register("zookeeper", zkHealthChecker);
       environment.lifecycle().manage(this);
 
       this.server = ServiceUtil.createServerFactory(config.getHttpEndpoint(),

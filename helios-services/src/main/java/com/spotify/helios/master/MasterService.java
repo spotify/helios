@@ -29,6 +29,7 @@ import com.google.common.util.concurrent.AbstractIdleService;
 import com.codahale.metrics.MetricRegistry;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.master.http.VersionResponseFilter;
+import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
 import com.spotify.helios.master.resources.HistoryResource;
@@ -200,6 +201,12 @@ public class MasterService extends AbstractIdleService {
 
     environment.lifecycle().manage(zooKeeperHealthChecker);
     environment.healthChecks().register("zookeeper", zooKeeperHealthChecker);
+
+    // Report health checks as a gauge metric
+    environment.healthChecks().getNames().forEach(
+        name -> environment.metrics().register(
+            "helios." + name + ".ok", new HealthCheckGauge(environment.healthChecks(), name)));
+
     environment.lifecycle().manage(new RiemannHeartBeat(TimeUnit.MINUTES, 2, riemannFacade));
 
     // Set up service registrar
