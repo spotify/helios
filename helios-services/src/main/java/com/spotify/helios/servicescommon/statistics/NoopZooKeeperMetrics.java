@@ -17,14 +17,13 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.codahale.metrics.Timer;
+import java.util.concurrent.TimeUnit;
 
 public class NoopZooKeeperMetrics implements ZooKeeperMetrics {
   @Override
   public void zookeeperTransientError() {}
 
   @Override
-  public Timer timer(String name) {
-    return new Timer();
+  public void updateTimer(String name, long duration, TimeUnit timeUnit) {
   }
 }

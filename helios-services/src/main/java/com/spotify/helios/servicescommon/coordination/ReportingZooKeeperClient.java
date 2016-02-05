@@ -35,6 +35,10 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * This class instruments ZooKeeper calls by timing them and reporting exceptions.
+ * Calls are delegated to a {@link ZooKeeperClient}.
+ */
 public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   private final ZooKeeperClient client;

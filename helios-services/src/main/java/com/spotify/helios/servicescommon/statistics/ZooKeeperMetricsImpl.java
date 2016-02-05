@@ -20,7 +20,8 @@ package com.spotify.helios.servicescommon.statistics;
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
-import com.codahale.metrics.Timer;
+
+import java.util.concurrent.TimeUnit;
 
 public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
 
@@ -45,7 +46,7 @@ public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
   }
 
   @Override
-  public Timer timer(final String name) {
-    return registry.timer(prefix + name);
+  public void updateTimer(final String name, final long duration, final TimeUnit timeUnit) {
+    registry.timer(prefix + name).update(duration, timeUnit);
   }
 }

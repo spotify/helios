@@ -17,11 +17,20 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.codahale.metrics.Timer;
+import java.util.concurrent.TimeUnit;
 
+/**
+ * This interface lets us report ZooKeeper metrics.
+ */
 public interface ZooKeeperMetrics {
 
+  /**
+   * Call this to report a transient ZooKeeper error.
+   */
   void zookeeperTransientError();
 
-  Timer timer(String name);
+  /**
+   * Call this to update the appropriate {@link Timer}.
+   */
+  void updateTimer(String name, long duration, TimeUnit timeUnit);
 }
