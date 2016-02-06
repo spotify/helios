@@ -23,6 +23,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
 
 import com.spotify.docker.client.DefaultDockerClient;
@@ -38,6 +39,11 @@ import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.client.HeliosClient;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigParseOptions;
+import com.typesafe.config.ConfigResolveOptions;
+import com.typesafe.config.ConfigValue;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,6 +53,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+import java.util.Set;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -65,6 +72,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public static final String PROBE_IMAGE = "onescience/alpine:latest";
   public static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
   public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
+  public static final String HELIOS_SOLO_PROFILE = "helios.solo.profile";
+  public static final String HELIOS_SOLO_PROFILES = "helios.solo.profiles.";
   public static final int HELIOS_MASTER_PORT = 5801;
 
   private final DockerClient dockerClient;
@@ -94,7 +103,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
         .or(containerDockerHost());
     this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
-    this.env = containerEnv();
+    this.env = containerEnv(builder.env);
     this.binds = containerBinds();
 
     final String heliosHost;
@@ -161,8 +170,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
   }
 
-  private List<String> containerEnv() {
+  private List<String> containerEnv(final Set builderEnv) {
     final HashSet<String> env = new HashSet<>();
+    env.addAll(builderEnv);
     env.add("DOCKER_HOST=" + containerDockerHost.bindURI().toString());
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       env.add("DOCKER_CERT_PATH=/certs");
@@ -390,10 +400,39 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
+   * @return The root configuration for this Helios Solo
+   */
+  static Config loadConfig() {
+    final ConfigResolveOptions resolveOptions =
+        ConfigResolveOptions.defaults().setAllowUnresolved(true);
+
+    final Config baseConfig = ConfigFactory.load(
+        "helios-base.conf", ConfigParseOptions.defaults(), resolveOptions);
+    log.debug("helios solo base config: " + baseConfig);
+
+    final Config appConfig = ConfigFactory.load(
+        "helios.conf", ConfigParseOptions.defaults(), resolveOptions);
+    log.debug("helios solo app config: " + appConfig);
+
+    final Config returnConfig = appConfig.withFallback(baseConfig);
+    log.debug("helios solo result config: " + returnConfig);
+
+    return returnConfig;
+  }
+
+  /**
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
   public static Builder builder() {
-    return new Builder();
+    return builder((String) null);
+  }
+
+  /**
+   * @param profile A configuration profile used to populate builder options.
+   * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
+   */
+  public static Builder builder(final String profile) {
+    return new Builder(profile, loadConfig());
   }
 
   /**
@@ -401,9 +440,19 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or sensible
    * defaults if they are absent.
    */
-  public static Builder fromEnv()  {
+  public static Builder fromEnv() {
+    return fromEnv(null);
+  }
+
+  /**
+   * @param profile A configuration profile used to populate builder options.
+   * @return A Builder with its Docker Client configured automatically using the
+   * <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or sensible
+   * defaults if they are absent.
+   */
+  public static Builder fromEnv(final String profile)  {
     try {
-      return builder().dockerClient(DefaultDockerClient.fromEnv().build());
+      return builder(profile).dockerClient(DefaultDockerClient.fromEnv().build());
     } catch (DockerCertificateException e) {
       throw new RuntimeException("unable to create Docker client from environment", e);
     }
@@ -425,8 +474,57 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private String heliosSoloImage = "spotify/helios-solo:latest";
     private String namespace;
     private String heliosUsername;
+    private Set<String> env;
     private boolean pullBeforeCreate = true;
     private boolean removeHeliosSoloContainerOnExit = true;
+
+    Builder(String profile, Config rootConfig) {
+      this.env = new HashSet<>();
+
+      // No profile specified so see if there is one specified in the config object.
+      if (profile == null) {
+        profile = getProfileFromConfig(rootConfig);
+      }
+
+      final Config config;
+      // If profile is null, use empty config, otherwise load config for this profile. Note,
+      // the config for each profile is a subnode in the rootConfig object.
+      if (profile == null) {
+        config = ConfigFactory.empty();
+      } else {
+        final String key = HELIOS_SOLO_PROFILES + profile;
+        if (rootConfig.hasPath(key)) {
+          config = rootConfig.getConfig(key);
+        } else {
+          throw new RuntimeException("The configuration profile " + profile + " does not exist");
+        }
+      }
+
+      log.info("Using helios-solo profile: " + profile);
+
+      if (config.hasPath("image")) {
+        heliosSoloImage(config.getString("image"));
+      }
+      if (config.hasPath("namespace")) {
+        namespace(config.getString("namespace"));
+      }
+      if (config.hasPath("username")) {
+        namespace(config.getString("username"));
+      }
+      if (config.hasPath("env")) {
+        for (final Map.Entry<String, ConfigValue> entry : config.getConfig("env").entrySet()) {
+          env(entry.getKey(), entry.getValue().unwrapped());
+        }
+      }
+
+    }
+
+    private String getProfileFromConfig(final Config config) {
+      if (config.hasPath(HELIOS_SOLO_PROFILE)) {
+        return config.getString(HELIOS_SOLO_PROFILE);
+      }
+      return null;
+    }
 
     /**
      * By default, the {@link #heliosSoloImage} will be checked for updates before creating a
@@ -524,12 +622,24 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     /**
+     * Optionally specify an environment variable to be set inside the Helios solo container.
+     * @param key Environment variable to set.
+     * @param value Environment variable value.
+     * @return This Builder, with the environment variable configured.
+     */
+    public Builder env(final String key, final Object value) {
+      this.env.add(key + "=" + value.toString());
+      return this;
+    }
+
+    /**
      * Configures, deploys, and returns a {@link HeliosSoloDeployment} using the as specified by
      * this Builder.
      *
      * @return A Helios Solo deployment configured by this Builder.
      */
     public HeliosDeployment build() {
+      this.env = ImmutableSet.copyOf(this.env);
       return new HeliosSoloDeployment(this);
     }
   }

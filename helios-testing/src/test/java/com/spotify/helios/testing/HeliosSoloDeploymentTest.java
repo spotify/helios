@@ -32,6 +32,9 @@ import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValueFactory;
 
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -166,11 +169,85 @@ public class HeliosSoloDeploymentTest {
     boolean foundSolo = false;
     for (ContainerConfig cc : containerConfig.getAllValues()) {
       if (cc.image().contains("helios-solo")) {
-        assertThat(containerConfig.getValue().hostConfig().binds(),
-                   hasItem("/var/run/docker.sock:/var/run/docker.sock"));
+        assertThat(cc.hostConfig().binds(), hasItem("/var/run/docker.sock:/var/run/docker.sock"));
         foundSolo = true;
       }
     }
     assertTrue("Could not find helios-solo container creation", foundSolo);
+  }
+
+  @Test
+  public void testConfig() throws Exception {
+
+    final DockerClient dockerClient = mock(DockerClient.class);
+
+    // the anonymous classes to override a method are to workaround the docker-client "messages"
+    // having no mutators, fun
+    when(dockerClient.info()).thenReturn(new Info() {
+      @Override
+      public String operatingSystem() {
+        return "foo";
+      }
+    });
+
+    // mock the call to dockerClient.createContainer so we can test the arguments passed to it
+    final ArgumentCaptor<ContainerConfig> containerConfig =
+        ArgumentCaptor.forClass(ContainerConfig.class);
+
+    final ContainerCreation creation = mock(ContainerCreation.class);
+    final String containerId = "abc123";
+    when(creation.id()).thenReturn(containerId);
+
+    // we have to mock out several other calls to get the HeliosSoloDeployment ctor
+    // to return non-exceptionally:
+
+    when(dockerClient.createContainer(containerConfig.capture(), anyString())).thenReturn(creation);
+
+    when(dockerClient.inspectContainer(containerId)).thenReturn(new ContainerInfo() {
+      @Override
+      public NetworkSettings networkSettings() {
+        final PortBinding binding = PortBinding.of("192.168.1.1", 5801);
+        final Map<String, List<PortBinding>> ports =
+            ImmutableMap.<String, List<PortBinding>>of("5801/tcp", ImmutableList.of(binding));
+
+        return NetworkSettings.builder()
+            .gateway("a-gate-way")
+            .ports(ports)
+            .build();
+      }
+    });
+
+    when(dockerClient.waitContainer(containerId)).thenReturn(new ContainerExit() {
+      @Override
+      public Integer statusCode() {
+        return 0;
+      }
+    });
+
+    final String image = "helios-test";
+    final String ns = "namespace";
+    final String env = "stuff";
+
+    Config config = ConfigFactory.empty()
+        .withValue("helios.solo.profile", ConfigValueFactory.fromAnyRef("test"))
+        .withValue("helios.solo.profiles.test.image", ConfigValueFactory.fromAnyRef(image))
+        .withValue("helios.solo.profiles.test.namespace", ConfigValueFactory.fromAnyRef(ns))
+        .withValue("helios.solo.profiles.test.env.TEST", ConfigValueFactory.fromAnyRef(env));
+
+    // finally build the thing ...
+    HeliosSoloDeployment.Builder builder = new HeliosSoloDeployment.Builder(null, config);
+    builder.dockerClient(dockerClient).build();
+
+    // .. so we can test what was passed
+    boolean foundSolo = false;
+    for (ContainerConfig cc : containerConfig.getAllValues()) {
+      if (cc.image().contains(image)) {
+        foundSolo = true;
+        assertThat(cc.env(), hasItem("TEST=" + env));
+        assertThat(cc.env(), hasItem("HELIOS_NAME=" + ns + ".solo.local"));
+      }
+    }
+    assertTrue("Could not find helios-solo container creation", foundSolo);
+
   }
 }
