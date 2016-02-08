@@ -44,6 +44,8 @@ public interface ZooKeeperRegistrar {
    *
    * @param client The zookeeper client.
    * @throws KeeperException If an unexpected zookeeper error occurs.
+   * @throws HostStillInUseException
+   * @throws HostNotFoundException
    */
   void tryToRegister(final ZooKeeperClient client)
       throws KeeperException, HostStillInUseException, HostNotFoundException;

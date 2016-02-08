@@ -31,6 +31,9 @@ public interface ZooKeeperMetrics {
 
   /**
    * Call this to update the appropriate {@link Timer}.
+   * @param name Durations with the same name get recorded under the same timer.
+   * @param duration Duration of the event.
+   * @param timeUnit Time unit of the duration.
    */
   void updateTimer(String name, long duration, TimeUnit timeUnit);
 }

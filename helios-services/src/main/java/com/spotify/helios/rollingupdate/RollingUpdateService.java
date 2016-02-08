@@ -60,7 +60,8 @@ public class RollingUpdateService extends AbstractIdleService {
   /**
    * Create a new RollingUpdateService.
    *
-   * @param reactorFactory    The factory to use for creating reactors.
+   * @param masterModel    The {@link MasterModel} to use for retrieving data.
+   * @param reactorFactory The factory to use for creating reactors.
    */
   public RollingUpdateService(final MasterModel masterModel,
                               final ReactorFactory reactorFactory) {

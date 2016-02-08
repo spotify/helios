@@ -90,6 +90,11 @@ public class ZooKeeperRegistrarUtil {
   /**
    * Re-register an agent with a different host id. Will remove the existing status of the agent
    * but preserve any jobs deployed to the host and their history.
+   * @param client ZooKeeperClient
+   * @param host Host
+   * @param hostId ID of the host
+   * @throws HostNotFoundException
+   * @throws KeeperException
    */
   public static void reRegisterHost(final ZooKeeperClient client,
                                     final String host, final String hostId)
