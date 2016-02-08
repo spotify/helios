@@ -30,86 +30,24 @@ import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.experimental.results.PrintableResult.testResult;
-import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class HeliosSoloDeploymentTest {
-
-  @Test
-  public void heliosSoloDeploymentTest() {
-    assertThat(testResult(HeliosSoloDeploymentTestImpl.class), isSuccessful());
-  }
-
-  public static class HeliosSoloDeploymentTestImpl {
-
-    public static final String IMAGE_NAME = "onescience/alpine:latest";
-
-    private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeploymentTestImpl.class);
-
-    // TODO(negz): We want one deployment per test run, not one per test class.
-    @ClassRule
-    public static final HeliosDeploymentResource DEPLOYMENT = new HeliosDeploymentResource(
-        HeliosSoloDeployment.fromEnv().build());
-
-    @Rule
-    public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-        .jobPrefix("HeliosSoloDeploymentTest")
-        .client(DEPLOYMENT.client())
-        .build();
-
-    @Test
-    public void testDeployToSolo() throws Exception {
-      temporaryJobs.job()
-          // while ".*" is the default in the local testing profile, explicitly specify it here
-          // to avoid any extraneous environment variables for HELIOS_HOST_FILTER that might be set
-          // on the build agent executing this test from interfering with the behavior we want here.
-          // Since we are deploying on a self-contained helios-solo container, any
-          // HELIOS_HOST_FILTER value set for other tests will never match the agent hostname
-          // inside helios-solo.
-          .hostFilter(".*")
-          .command(asList("sh", "-c", "nc -l -v -p 4711 -e true"))
-          .image(IMAGE_NAME)
-          .port("netcat", 4711)
-          .registration("foobar", "tcp", "netcat")
-          .deploy();
-
-      final Map<JobId, Job> jobs = DEPLOYMENT.client().jobs().get(15, SECONDS);
-      log.info("{} jobs deployed on helios-solo", jobs.size());
-      for (Job job : jobs.values()) {
-        log.info("job on helios-solo: {}", job);
-      }
-
-      assertEquals("wrong number of jobs running", 1, jobs.size());
-      for (Job j : jobs.values()) {
-        assertEquals("wrong job running", IMAGE_NAME, j.getImage());
-      }
-    }
-  }
 
   @Test
   public void testDockerHostContainsLocalhost() throws Exception {
