@@ -21,14 +21,20 @@ import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
+import java.util.concurrent.TimeUnit;
+
 public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
+
   private static final String TYPE = "zookeeper";
 
+  private final String prefix;
   private final Counter transientErrorCounter;
   private final Meter transientErrorMeter;
+  private final MetricRegistry registry;
 
-  public ZooKeeperMetricsImpl(String group, MetricRegistry registry) {
-    final String prefix = MetricRegistry.name(group, TYPE) + ".";
+  public ZooKeeperMetricsImpl(final String group, final MetricRegistry registry) {
+    prefix = MetricRegistry.name(group, TYPE) + ".";
+    this.registry = registry;
     transientErrorCounter = registry.counter(prefix + "transient_error_count");
     transientErrorMeter = registry.meter(prefix + "transient_error_meter");
   }
@@ -37,5 +43,10 @@ public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
   public void zookeeperTransientError() {
     transientErrorCounter.inc();
     transientErrorMeter.mark();
+  }
+
+  @Override
+  public void updateTimer(final String name, final long duration, final TimeUnit timeUnit) {
+    registry.timer(prefix + name).update(duration, timeUnit);
   }
 }

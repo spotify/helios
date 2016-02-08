@@ -17,7 +17,13 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
+import java.util.concurrent.TimeUnit;
+
 public class NoopZooKeeperMetrics implements ZooKeeperMetrics {
   @Override
   public void zookeeperTransientError() {}
+
+  @Override
+  public void updateTimer(String name, long duration, TimeUnit timeUnit) {
+  }
 }

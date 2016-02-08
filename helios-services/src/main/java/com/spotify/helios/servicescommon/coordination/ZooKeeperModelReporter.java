@@ -17,9 +17,11 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
+import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
+import com.codahale.metrics.Clock;
 import com.spotify.helios.servicescommon.NoOpRiemannClient;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.NoopZooKeeperMetrics;
@@ -31,6 +33,7 @@ import org.apache.zookeeper.KeeperException.OperationTimeoutException;
 import org.apache.zookeeper.KeeperException.RuntimeInconsistencyException;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -42,6 +45,7 @@ public class ZooKeeperModelReporter {
           OperationTimeoutException.class, "timeout",
           ConnectionLossException.class, "connection_loss",
           RuntimeInconsistencyException.class, "inconsistency");
+  private final Clock clock = Clock.defaultClock();
 
   public ZooKeeperModelReporter(final RiemannFacade riemannFacade,
                                 final ZooKeeperMetrics metrics) {
@@ -70,7 +74,27 @@ public class ZooKeeperModelReporter {
     metrics.zookeeperTransientError();
   }
 
+  public <T> T time(final String tag, final String name, ZooKeeperCallable<T> callable)
+      throws KeeperException {
+    final long startTime = clock.getTick();
+    try {
+      return callable.call();
+    } catch (KeeperException e) {
+      checkException(e, tag, name);
+      throw e;
+    } catch (Exception e) {
+      throw Throwables.propagate(e);
+    } finally {
+      metrics.updateTimer(name, clock.getTick() - startTime, TimeUnit.NANOSECONDS);
+    }
+  }
+
   public static ZooKeeperModelReporter noop() {
     return new ZooKeeperModelReporter(new NoOpRiemannClient().facade(), new NoopZooKeeperMetrics());
+  }
+
+  @FunctionalInterface
+  public interface ZooKeeperCallable<T> {
+    T call() throws KeeperException;
   }
 }

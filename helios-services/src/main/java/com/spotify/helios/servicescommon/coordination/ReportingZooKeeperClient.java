@@ -35,6 +35,10 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 
+/**
+ * This class instruments ZooKeeper calls by timing them and reporting exceptions.
+ * Calls are delegated to a {@link ZooKeeperClient}.
+ */
 public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   private final ZooKeeperClient client;
@@ -51,122 +55,86 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void ensurePath(String path) throws KeeperException {
-    try {
+    reporter.time(tag, "ensurePath", () -> {
       client.ensurePath(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "ensurePath");
-      throw e;
-    }
+      return null;
+    });
   }
 
   @Override
   public void ensurePath(String path, boolean excludingLast) throws KeeperException {
-    try {
+    reporter.time(tag, "ensurePath", () -> {
       client.ensurePath(path, excludingLast);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "ensurePath");
-      throw e;
-    }
+      return null;
+    });
   }
 
   @Override
   public byte[] getData(String path) throws KeeperException {
-    try {
-      return client.getData(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "getData");
-      throw e;
-    }
+    return reporter.time(tag, "getData", () -> client.getData(path));
   }
 
   @Override
   public List<String> getChildren(String path) throws KeeperException {
-    try {
-      return client.getChildren(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "getChildren");
-      throw e;
-    }
+    return reporter.time(tag, "getChildren", () -> client.getChildren(path));
   }
 
   @Override
   public void delete(String path) throws KeeperException {
-    try {
+    reporter.time(tag, "delete", () -> {
       client.delete(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "delete");
-      throw e;
-    }
+      return null;
+    });
   }
 
   @Override
   public void setData(String path, byte[] bytes) throws KeeperException {
-    try {
+    reporter.time(tag, "setData", () -> {
       client.setData(path, bytes);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "setData");
-      throw e;
-    }
+      return null;
+    });
   }
 
   @Override
   public void createAndSetData(String path, byte[] data) throws KeeperException {
-    try {
+    reporter.time(tag, "createAndSetData", () -> {
       client.createAndSetData(path, data);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "createAndSetData");
-      throw e;
-    }
+      return null;
+    });
   }
 
   @Override
   public void createWithMode(String path, CreateMode mode) throws KeeperException {
-    try {
+    reporter.time(tag, "createWithMode", () -> {
       client.createWithMode(path, mode);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "createWithMode");
-      throw e;
-    }
+      return null;
+    });
   }
 
   @Override
   public Stat stat(String path) throws KeeperException {
-    try {
-      return client.stat(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "stat");
-      throw e;
-    }
+    return reporter.time(tag, "stat", () -> client.stat(path));
   }
 
   @Override
   public void deleteRecursive(String path) throws KeeperException {
-    try {
+    reporter.time(tag, "deleteRecursive", () -> {
       client.deleteRecursive(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "deleteRecursive");
-      throw e;
-    }
+      return null;
+    });
   }
 
   @Override
   public List<String> listRecursive(String path) throws KeeperException {
-    try {
-      return client.listRecursive(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "listRecursive");
-      throw e;
-    }
+    return reporter.time(tag, "listRecursive", () -> client.listRecursive(path));
   }
 
   @Override
   public void create(String path) throws KeeperException {
-    try {
+    reporter.time(tag, "create", () -> {
       client.create(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "create");
-      throw e;
-    }
+      return null;
+    });
   }
 
   @Override
@@ -179,53 +147,31 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   @Override
   public Collection<CuratorTransactionResult> transaction(List<ZooKeeperOperation> operations)
       throws KeeperException {
-    try {
-      return client.transaction(operations);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "transaction");
-      throw e;
-    }
+    return reporter.time(tag, "transaction", () -> client.transaction(operations));
   }
 
   @Override
   public Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations)
       throws KeeperException {
-    try {
-      return client.transaction(operations);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "transaction");
-      throw e;
-    }
+    return reporter.time(tag, "transaction", () -> client.transaction(operations));
   }
 
   @Override
   public void delete(String path, int version) throws KeeperException {
-    try {
+    reporter.time(tag, "delete", () -> {
       client.delete(path, version);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "delete");
-      throw e;
-    }
+      return null;
+    });
   }
 
   @Override
   public Node getNode(String path) throws KeeperException {
-    try {
-      return client.getNode(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "getNode");
-      throw e;
-    }
+    return reporter.time(tag, "getNode", () -> client.getNode(path));
   }
 
   @Override
   public Stat exists(String path) throws KeeperException {
-    try {
-      return client.exists(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "exists");
-      throw e;
-    }
+    return reporter.time(tag, "exists", () -> client.exists(path));
   }
 
   @Override
@@ -235,12 +181,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public ZooKeeper.States getState() throws KeeperException {
-    try {
-      return client.getState();
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "getState");
-      throw e;
-    }
+    return reporter.time(tag, "getState", client::getState);
   }
 
   @Override
@@ -267,22 +208,14 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void setAcl(final String path, final List<ACL> aclList) throws KeeperException {
-    try {
+    reporter.time(tag, "setAcl", () -> {
       client.setAcl(path, aclList);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "setAcl");
-      throw e;
-    }
+      return null;
+    });
   }
 
   @Override
   public List<ACL> getAcl(final String path) throws KeeperException {
-    try {
-      return client.getAcl(path);
-    } catch (KeeperException e) {
-      reporter.checkException(e, tag, "getAcl");
-      throw e;
-    }
+    return reporter.time(tag, "getAcl", () -> client.getAcl(path));
   }
 }
-

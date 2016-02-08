@@ -17,8 +17,20 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
+import java.util.concurrent.TimeUnit;
+
+/**
+ * This interface lets us report ZooKeeper metrics.
+ */
 public interface ZooKeeperMetrics {
 
+  /**
+   * Call this to report a transient ZooKeeper error.
+   */
   void zookeeperTransientError();
 
+  /**
+   * Call this to update the appropriate {@link Timer}.
+   */
+  void updateTimer(String name, long duration, TimeUnit timeUnit);
 }
