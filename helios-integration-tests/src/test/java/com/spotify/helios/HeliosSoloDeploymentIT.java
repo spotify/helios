@@ -44,7 +44,11 @@ public class HeliosSoloDeploymentIT {
 
   @ClassRule
   public static final HeliosDeploymentResource DEPLOYMENT = new HeliosDeploymentResource(
-      HeliosSoloDeployment.fromEnv().build());
+      HeliosSoloDeployment.fromEnv()
+          .heliosSoloImage(Utils.soloImage())
+          .checkForNewImages(false)
+          .removeHeliosSoloOnExit(false)
+          .build());
 
   @Rule
   public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
