@@ -32,8 +32,6 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigList;
-import com.typesafe.config.ConfigParseOptions;
-import com.typesafe.config.ConfigResolveOptions;
 import com.typesafe.config.ConfigValue;
 import com.typesafe.config.ConfigValueFactory;
 import com.typesafe.config.ConfigValueType;
@@ -470,31 +468,6 @@ public class TemporaryJobs implements TestRule {
     return client;
   }
 
-  static Config loadConfig() {
-    final ConfigResolveOptions resolveOptions =
-        ConfigResolveOptions.defaults().setAllowUnresolved(true);
-
-    final Config baseConfig = ConfigFactory.load(
-        "helios-base.conf", ConfigParseOptions.defaults(), resolveOptions);
-    log.debug("base config: " + baseConfig);
-
-    final Config appConfig = ConfigFactory.load(
-        "helios.conf", ConfigParseOptions.defaults(), resolveOptions);
-    log.debug("app config: " + appConfig);
-
-    final Config returnConfig = appConfig.withFallback(baseConfig);
-    log.debug("result config: " + returnConfig);
-
-    return returnConfig;
-  }
-
-  static String getProfileFromConfig(final Config preConfig) {
-    if (preConfig.hasPath(HELIOS_TESTING_PROFILE)) {
-      return preConfig.getString(HELIOS_TESTING_PROFILE);
-    }
-    return null;
-  }
-
   public static Builder builder() {
     return builder((String) null);
   }
@@ -513,7 +486,7 @@ public class TemporaryJobs implements TestRule {
 
   static Builder builder(final String profile, final Map<String, String> env,
                          final HeliosClient.Builder clientBuilder) {
-    return new Builder(profile, TemporaryJobs.loadConfig(), env, clientBuilder);
+    return new Builder(profile, HeliosConfig.loadConfig("helios-testing"), env, clientBuilder);
   }
 
   public static class Builder {
@@ -538,25 +511,12 @@ public class TemporaryJobs implements TestRule {
       this.env = env;
       this.clientBuilder = clientBuilder;
 
-      // No profile specified so see if there is one specified in the config object.
       if (profile == null) {
-        profile = TemporaryJobs.getProfileFromConfig(rootConfig);
-      }
-
-      // If profile is null, use empty config, otherwise load config for this profile. Note,
-      // the config for each profile is a subnode in the rootConfig object.
-      if (profile == null) {
-        this.config = ConfigFactory.empty();
+        this.config = HeliosConfig.getDefaultProfile(
+            HELIOS_TESTING_PROFILE, HELIOS_TESTING_PROFILES, rootConfig);
       } else {
-        final String key = HELIOS_TESTING_PROFILES + profile;
-        if (rootConfig.hasPath(key)) {
-          this.config = rootConfig.getConfig(key);
-        } else {
-          throw new RuntimeException("The configuration profile " + profile + " does not exist");
-        }
+        this.config = HeliosConfig.getProfile(HELIOS_TESTING_PROFILES, profile, rootConfig);
       }
-
-      log.info("Using profile: " + profile);
 
       if (this.config.hasPath("jobDeployedMessageFormat")) {
         jobDeployedMessageFormat(this.config.getString("jobDeployedMessageFormat"));

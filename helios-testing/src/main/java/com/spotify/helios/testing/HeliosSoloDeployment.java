@@ -40,9 +40,6 @@ import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.client.HeliosClient;
 import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigParseOptions;
-import com.typesafe.config.ConfigResolveOptions;
 import com.typesafe.config.ConfigValue;
 
 import org.slf4j.Logger;
@@ -400,27 +397,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
-   * @return The root configuration for this Helios Solo
-   */
-  static Config loadConfig() {
-    final ConfigResolveOptions resolveOptions =
-        ConfigResolveOptions.defaults().setAllowUnresolved(true);
-
-    final Config baseConfig = ConfigFactory.load(
-        "helios-base.conf", ConfigParseOptions.defaults(), resolveOptions);
-    log.debug("helios solo base config: " + baseConfig);
-
-    final Config appConfig = ConfigFactory.load(
-        "helios.conf", ConfigParseOptions.defaults(), resolveOptions);
-    log.debug("helios solo app config: " + appConfig);
-
-    final Config returnConfig = appConfig.withFallback(baseConfig);
-    log.debug("helios solo result config: " + returnConfig);
-
-    return returnConfig;
-  }
-
-  /**
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
   public static Builder builder() {
@@ -432,7 +408,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
   public static Builder builder(final String profile) {
-    return new Builder(profile, loadConfig());
+    return new Builder(profile, HeliosConfig.loadConfig("helios-solo"));
   }
 
   /**
@@ -481,26 +457,13 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     Builder(String profile, Config rootConfig) {
       this.env = new HashSet<>();
 
-      // No profile specified so see if there is one specified in the config object.
-      if (profile == null) {
-        profile = getProfileFromConfig(rootConfig);
-      }
-
       final Config config;
-      // If profile is null, use empty config, otherwise load config for this profile. Note,
-      // the config for each profile is a subnode in the rootConfig object.
       if (profile == null) {
-        config = ConfigFactory.empty();
+        config = HeliosConfig.getDefaultProfile(
+            HELIOS_SOLO_PROFILE, HELIOS_SOLO_PROFILES, rootConfig);
       } else {
-        final String key = HELIOS_SOLO_PROFILES + profile;
-        if (rootConfig.hasPath(key)) {
-          config = rootConfig.getConfig(key);
-        } else {
-          throw new RuntimeException("The configuration profile " + profile + " does not exist");
-        }
+        config = HeliosConfig.getProfile(HELIOS_SOLO_PROFILES, profile, rootConfig);
       }
-
-      log.info("Using helios-solo profile: " + profile);
 
       if (config.hasPath("image")) {
         heliosSoloImage(config.getString("image"));
@@ -517,13 +480,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         }
       }
 
-    }
-
-    private String getProfileFromConfig(final Config config) {
-      if (config.hasPath(HELIOS_SOLO_PROFILE)) {
-        return config.getString(HELIOS_SOLO_PROFILE);
-      }
-      return null;
     }
 
     /**
