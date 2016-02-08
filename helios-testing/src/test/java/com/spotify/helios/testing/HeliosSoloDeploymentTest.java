@@ -34,6 +34,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 
@@ -49,13 +50,19 @@ import static org.mockito.Mockito.when;
 
 public class HeliosSoloDeploymentTest {
 
-  @Test
-  public void testDockerHostContainsLocalhost() throws Exception {
-    final DockerClient dockerClient = mock(DockerClient.class);
+  private static final String CONTAINER_ID = "abc123";
+
+  private DockerClient dockerClient;
+  private ArgumentCaptor<ContainerConfig> containerConfig;
+  private ContainerCreation creation;
+
+  @Before
+  public void setup() throws Exception {
+    this.dockerClient = mock(DockerClient.class);
 
     // the anonymous classes to override a method are to workaround the docker-client "messages"
     // having no mutators, fun
-    when(dockerClient.info()).thenReturn(new Info() {
+    when(this.dockerClient.info()).thenReturn(new Info() {
       @Override
       public String operatingSystem() {
         return "foo";
@@ -63,19 +70,25 @@ public class HeliosSoloDeploymentTest {
     });
 
     // mock the call to dockerClient.createContainer so we can test the arguments passed to it
-    final ArgumentCaptor<ContainerConfig> containerConfig =
-        ArgumentCaptor.forClass(ContainerConfig.class);
+    this.containerConfig = ArgumentCaptor.forClass(ContainerConfig.class);
 
-    final ContainerCreation creation = mock(ContainerCreation.class);
-    final String containerId = "abc123";
-    when(creation.id()).thenReturn(containerId);
+    this.creation = mock(ContainerCreation.class);
+    when(this.creation.id()).thenReturn(CONTAINER_ID);
+
+    when(this.dockerClient.createContainer(
+        this.containerConfig.capture(), anyString())).thenReturn(this.creation);
 
     // we have to mock out several other calls to get the HeliosSoloDeployment ctor
-    // to return non-exceptionally:
+    // to return non-exceptionally. the anonymous classes to override a method are to workaround
+    // the docker-client "messages" having no mutators, fun
+    when(this.dockerClient.info()).thenReturn(new Info() {
+      @Override
+      public String operatingSystem() {
+        return "foo";
+      }
+    });
 
-    when(dockerClient.createContainer(containerConfig.capture(), anyString())).thenReturn(creation);
-
-    when(dockerClient.inspectContainer(containerId)).thenReturn(new ContainerInfo() {
+    when(this.dockerClient.inspectContainer(CONTAINER_ID)).thenReturn(new ContainerInfo() {
       @Override
       public NetworkSettings networkSettings() {
         final PortBinding binding = PortBinding.of("192.168.1.1", 5801);
@@ -89,21 +102,22 @@ public class HeliosSoloDeploymentTest {
       }
     });
 
-    when(dockerClient.waitContainer(containerId)).thenReturn(new ContainerExit() {
+    when(this.dockerClient.waitContainer(CONTAINER_ID)).thenReturn(new ContainerExit() {
       @Override
       public Integer statusCode() {
         return 0;
       }
     });
+  }
 
-    // finally build the thing ...
+  @Test
+  public void testDockerHostContainsLocalhost() throws Exception {
     HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         // a custom dockerhost to trigger the localhost logic
         .dockerHost(DockerHost.from("tcp://localhost:2375", ""))
         .build();
 
-    // .. so we can test what was passed
     boolean foundSolo = false;
     for (ContainerConfig cc : containerConfig.getAllValues()) {
       if (cc.image().contains("helios-solo")) {
@@ -117,51 +131,6 @@ public class HeliosSoloDeploymentTest {
   @Test
   public void testConfig() throws Exception {
 
-    final DockerClient dockerClient = mock(DockerClient.class);
-
-    // the anonymous classes to override a method are to workaround the docker-client "messages"
-    // having no mutators, fun
-    when(dockerClient.info()).thenReturn(new Info() {
-      @Override
-      public String operatingSystem() {
-        return "foo";
-      }
-    });
-
-    // mock the call to dockerClient.createContainer so we can test the arguments passed to it
-    final ArgumentCaptor<ContainerConfig> containerConfig =
-        ArgumentCaptor.forClass(ContainerConfig.class);
-
-    final ContainerCreation creation = mock(ContainerCreation.class);
-    final String containerId = "abc123";
-    when(creation.id()).thenReturn(containerId);
-
-    // we have to mock out several other calls to get the HeliosSoloDeployment ctor
-    // to return non-exceptionally:
-
-    when(dockerClient.createContainer(containerConfig.capture(), anyString())).thenReturn(creation);
-
-    when(dockerClient.inspectContainer(containerId)).thenReturn(new ContainerInfo() {
-      @Override
-      public NetworkSettings networkSettings() {
-        final PortBinding binding = PortBinding.of("192.168.1.1", 5801);
-        final Map<String, List<PortBinding>> ports =
-            ImmutableMap.<String, List<PortBinding>>of("5801/tcp", ImmutableList.of(binding));
-
-        return NetworkSettings.builder()
-            .gateway("a-gate-way")
-            .ports(ports)
-            .build();
-      }
-    });
-
-    when(dockerClient.waitContainer(containerId)).thenReturn(new ContainerExit() {
-      @Override
-      public Integer statusCode() {
-        return 0;
-      }
-    });
-
     final String image = "helios-test";
     final String ns = "namespace";
     final String env = "stuff";
@@ -172,11 +141,9 @@ public class HeliosSoloDeploymentTest {
         .withValue("helios.solo.profiles.test.namespace", ConfigValueFactory.fromAnyRef(ns))
         .withValue("helios.solo.profiles.test.env.TEST", ConfigValueFactory.fromAnyRef(env));
 
-    // finally build the thing ...
     HeliosSoloDeployment.Builder builder = new HeliosSoloDeployment.Builder(null, config);
     builder.dockerClient(dockerClient).build();
 
-    // .. so we can test what was passed
     boolean foundSolo = false;
     for (ContainerConfig cc : containerConfig.getAllValues()) {
       if (cc.image().contains(image)) {
