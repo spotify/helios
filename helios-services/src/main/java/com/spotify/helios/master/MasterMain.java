@@ -48,7 +48,12 @@ public class MasterMain extends ServiceMain {
     this(new CuratorClientFactoryImpl(), new MasterParser(args), System.getenv());
   }
 
-  /** Allows mock environment variables to be passed in for testing purposes. */
+  /**
+   * Allows mock environment variables to be passed in for testing purposes.
+   * @param environmentVariables Env vars
+   * @param args args
+   * @throws ArgumentParserException If we cannot parse an argument.
+   */
   @VisibleForTesting
   public MasterMain(Map<String, String> environmentVariables, final String[] args)
       throws ArgumentParserException {

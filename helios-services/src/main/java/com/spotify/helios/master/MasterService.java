@@ -129,7 +129,10 @@ public class MasterService extends AbstractIdleService {
    * @param config The service configuration.
    * @param environment The DropWizard environment.
    * @param curatorClientFactory The zookeeper curator factory.
+   * @param environmentVariables Env vars
    * @throws ConfigurationException If there is a problem with the DropWizard configuration.
+   * @throws IOException IOException
+   * @throws InterruptedException InterruptedException
    */
   public MasterService(final MasterConfig config,
                        final Environment environment,

@@ -22,7 +22,6 @@ import com.google.common.util.concurrent.Service;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.master.HostNotFoundException;
-import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -88,7 +87,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
 
   @Override
   public void tryToRegister(ZooKeeperClient client)
-      throws KeeperException, HostStillInUseException, HostNotFoundException {
+      throws KeeperException, HostNotFoundException {
     final String idPath = Paths.configHostId(name);
     final String hostInfoPath = Paths.statusHostInfo(name);
 

@@ -147,6 +147,7 @@ public class RollingUpdateOpFactory {
   /**
    * Don't advance to the next task -- yield and have the current task be executed again in the
    * next iteration.
+   * @return {@link RollingUpdateOp}
    */
   public RollingUpdateOp yield() {
     // Do nothing

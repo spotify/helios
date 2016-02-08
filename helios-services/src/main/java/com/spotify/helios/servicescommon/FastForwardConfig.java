@@ -33,7 +33,10 @@ public class FastForwardConfig {
     this.key = key;
   }
 
-  /** connection address, empty means use default */
+  /**
+   * Connection address, empty means use default
+   * @return An {@link Optional} of {@link HostAndPort}
+   */
   public Optional<HostAndPort> getAddress() {
     return address;
   }

@@ -18,7 +18,6 @@
 package com.spotify.helios.servicescommon;
 
 import com.spotify.helios.master.HostNotFoundException;
-import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 import org.apache.zookeeper.KeeperException;
@@ -44,7 +43,8 @@ public interface ZooKeeperRegistrar {
    *
    * @param client The zookeeper client.
    * @throws KeeperException If an unexpected zookeeper error occurs.
+   * @throws HostNotFoundException If the hostname we are trying to re-register as doesn't exist.
    */
   void tryToRegister(final ZooKeeperClient client)
-      throws KeeperException, HostStillInUseException, HostNotFoundException;
+      throws KeeperException, HostNotFoundException;
 }
