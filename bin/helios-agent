@@ -34,7 +34,14 @@ if [ $JMXPORT ]; then
           -Dcom.sun.management.jmxremote.authenticate=false )
 fi
 
-exec java \
+# Allow the path to the java installation to be specified in the JAVA environment variable.
+# This can be useful if you want to run helios-agent using a different version of Java than the
+# default version on the host (possibly set up through update-alternatives)
+if [ -z $JAVA ]; then
+    JAVA=java
+fi
+
+exec $JAVA \
     $HELIOS_AGENT_JVM_OPTS \
     "${args[@]}" \
     -Djava.net.preferIPv4Stack=true \
