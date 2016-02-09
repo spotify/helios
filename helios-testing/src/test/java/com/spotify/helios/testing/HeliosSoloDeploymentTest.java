@@ -30,91 +30,39 @@ import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValueFactory;
 
-import org.junit.ClassRule;
-import org.junit.Rule;
+import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.experimental.results.PrintableResult.testResult;
-import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 public class HeliosSoloDeploymentTest {
 
-  @Test
-  public void heliosSoloDeploymentTest() {
-    assertThat(testResult(HeliosSoloDeploymentTestImpl.class), isSuccessful());
-  }
+  private static final String CONTAINER_ID = "abc123";
 
-  public static class HeliosSoloDeploymentTestImpl {
+  private DockerClient dockerClient;
+  private ArgumentCaptor<ContainerConfig> containerConfig;
+  private ContainerCreation creation;
 
-    public static final String IMAGE_NAME = "onescience/alpine:latest";
-
-    private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeploymentTestImpl.class);
-
-    // TODO(negz): We want one deployment per test run, not one per test class.
-    @ClassRule
-    public static final HeliosDeploymentResource DEPLOYMENT = new HeliosDeploymentResource(
-        HeliosSoloDeployment.fromEnv().build());
-
-    @Rule
-    public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-        .jobPrefix("HeliosSoloDeploymentTest")
-        .client(DEPLOYMENT.client())
-        .build();
-
-    @Test
-    public void testDeployToSolo() throws Exception {
-      temporaryJobs.job()
-          // while ".*" is the default in the local testing profile, explicitly specify it here
-          // to avoid any extraneous environment variables for HELIOS_HOST_FILTER that might be set
-          // on the build agent executing this test from interfering with the behavior we want here.
-          // Since we are deploying on a self-contained helios-solo container, any
-          // HELIOS_HOST_FILTER value set for other tests will never match the agent hostname
-          // inside helios-solo.
-          .hostFilter(".*")
-          .command(asList("sh", "-c", "nc -l -v -p 4711 -e true"))
-          .image(IMAGE_NAME)
-          .port("netcat", 4711)
-          .registration("foobar", "tcp", "netcat")
-          .deploy();
-
-      final Map<JobId, Job> jobs = DEPLOYMENT.client().jobs().get(15, SECONDS);
-      log.info("{} jobs deployed on helios-solo", jobs.size());
-      for (Job job : jobs.values()) {
-        log.info("job on helios-solo: {}", job);
-      }
-
-      assertEquals("wrong number of jobs running", 1, jobs.size());
-      for (Job j : jobs.values()) {
-        assertEquals("wrong job running", IMAGE_NAME, j.getImage());
-      }
-    }
-  }
-
-  @Test
-  public void testDockerHostContainsLocalhost() throws Exception {
-    final DockerClient dockerClient = mock(DockerClient.class);
+  @Before
+  public void setup() throws Exception {
+    this.dockerClient = mock(DockerClient.class);
 
     // the anonymous classes to override a method are to workaround the docker-client "messages"
     // having no mutators, fun
-    when(dockerClient.info()).thenReturn(new Info() {
+    when(this.dockerClient.info()).thenReturn(new Info() {
       @Override
       public String operatingSystem() {
         return "foo";
@@ -122,19 +70,25 @@ public class HeliosSoloDeploymentTest {
     });
 
     // mock the call to dockerClient.createContainer so we can test the arguments passed to it
-    final ArgumentCaptor<ContainerConfig> containerConfig =
-        ArgumentCaptor.forClass(ContainerConfig.class);
+    this.containerConfig = ArgumentCaptor.forClass(ContainerConfig.class);
 
-    final ContainerCreation creation = mock(ContainerCreation.class);
-    final String containerId = "abc123";
-    when(creation.id()).thenReturn(containerId);
+    this.creation = mock(ContainerCreation.class);
+    when(this.creation.id()).thenReturn(CONTAINER_ID);
+
+    when(this.dockerClient.createContainer(
+        this.containerConfig.capture(), anyString())).thenReturn(this.creation);
 
     // we have to mock out several other calls to get the HeliosSoloDeployment ctor
-    // to return non-exceptionally:
+    // to return non-exceptionally. the anonymous classes to override a method are to workaround
+    // the docker-client "messages" having no mutators, fun
+    when(this.dockerClient.info()).thenReturn(new Info() {
+      @Override
+      public String operatingSystem() {
+        return "foo";
+      }
+    });
 
-    when(dockerClient.createContainer(containerConfig.capture(), anyString())).thenReturn(creation);
-
-    when(dockerClient.inspectContainer(containerId)).thenReturn(new ContainerInfo() {
+    when(this.dockerClient.inspectContainer(CONTAINER_ID)).thenReturn(new ContainerInfo() {
       @Override
       public NetworkSettings networkSettings() {
         final PortBinding binding = PortBinding.of("192.168.1.1", 5801);
@@ -148,29 +102,57 @@ public class HeliosSoloDeploymentTest {
       }
     });
 
-    when(dockerClient.waitContainer(containerId)).thenReturn(new ContainerExit() {
+    when(this.dockerClient.waitContainer(CONTAINER_ID)).thenReturn(new ContainerExit() {
       @Override
       public Integer statusCode() {
         return 0;
       }
     });
+  }
 
-    // finally build the thing ...
+  @Test
+  public void testDockerHostContainsLocalhost() throws Exception {
     HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         // a custom dockerhost to trigger the localhost logic
         .dockerHost(DockerHost.from("tcp://localhost:2375", ""))
         .build();
 
-    // .. so we can test what was passed
     boolean foundSolo = false;
     for (ContainerConfig cc : containerConfig.getAllValues()) {
       if (cc.image().contains("helios-solo")) {
-        assertThat(containerConfig.getValue().hostConfig().binds(),
-                   hasItem("/var/run/docker.sock:/var/run/docker.sock"));
+        assertThat(cc.hostConfig().binds(), hasItem("/var/run/docker.sock:/var/run/docker.sock"));
         foundSolo = true;
       }
     }
     assertTrue("Could not find helios-solo container creation", foundSolo);
+  }
+
+  @Test
+  public void testConfig() throws Exception {
+
+    final String image = "helios-test";
+    final String ns = "namespace";
+    final String env = "stuff";
+
+    Config config = ConfigFactory.empty()
+        .withValue("helios.solo.profile", ConfigValueFactory.fromAnyRef("test"))
+        .withValue("helios.solo.profiles.test.image", ConfigValueFactory.fromAnyRef(image))
+        .withValue("helios.solo.profiles.test.namespace", ConfigValueFactory.fromAnyRef(ns))
+        .withValue("helios.solo.profiles.test.env.TEST", ConfigValueFactory.fromAnyRef(env));
+
+    HeliosSoloDeployment.Builder builder = new HeliosSoloDeployment.Builder(null, config);
+    builder.dockerClient(dockerClient).build();
+
+    boolean foundSolo = false;
+    for (ContainerConfig cc : containerConfig.getAllValues()) {
+      if (cc.image().contains(image)) {
+        foundSolo = true;
+        assertThat(cc.env(), hasItem("TEST=" + env));
+        assertThat(cc.env(), hasItem("HELIOS_NAME=" + ns + ".solo.local"));
+      }
+    }
+    assertTrue("Could not find helios-solo container creation", foundSolo);
+
   }
 }
