@@ -198,9 +198,6 @@ public class PersistentPathChildrenCacheTest {
 
     verify(listener, atLeastOnce()).nodesChanged(cache);
 
-    // Take down zk
-    zk.stop();
-
     // Wait for connection to be lost
     final SettableFuture<Void> connectionLost = SettableFuture.create();
     doAnswer(new Answer<Object>() {
@@ -212,6 +209,9 @@ public class PersistentPathChildrenCacheTest {
         return null;
       }
     }).when(listener).connectionStateChanged(any(ConnectionState.class));
+
+    // Take down zk
+    zk.stop();
     connectionLost.get(5, MINUTES);
 
     // Keep probing for 30 seconds to build some confidence that the snapshot is not going away
