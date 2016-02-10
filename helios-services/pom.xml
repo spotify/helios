@@ -12,8 +12,8 @@
   <packaging>jar</packaging>
 
   <properties>
-    <masterImageName>helios-master:${project.version}-${gitShortCommitId}</masterImageName>
-    <agentImageName>helios-agent:${project.version}-${gitShortCommitId}</agentImageName>
+    <masterImageName>helios-master:${project.version}</masterImageName>
+    <agentImageName>helios-agent:${project.version}</agentImageName>
     <soloImageName>helios-solo:${project.version}</soloImageName>
   </properties>
 
