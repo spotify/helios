@@ -65,7 +65,7 @@ public class ZooKeeperAclTest extends SystemTestBase {
 
     final CuratorFramework curator = zk().curatorWithSuperAuth();
 
-    final String path = Paths.statusHostUp(TEST_HOST);
+    final String path = Paths.configHost(TEST_HOST);
     final List<ACL> acls = curator.getACL().forPath(path);
     assertEquals(
         Sets.newHashSet(aclProvider.getAclForPath(path)),
