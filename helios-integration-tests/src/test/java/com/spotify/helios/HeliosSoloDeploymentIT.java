@@ -74,12 +74,10 @@ public class HeliosSoloDeploymentIT {
 
     final Map<JobId, Job> jobs = DEPLOYMENT.client().jobs().get(15, SECONDS);
     log.info("{} jobs deployed on helios-solo", jobs.size());
-    for (Job job : jobs.values()) {
-      log.info("job on helios-solo: {}", job);
-    }
-
     assertEquals("wrong number of jobs running", 1, jobs.size());
-    for (Job j : jobs.values()) {
+
+    for (final Job j : jobs.values()) {
+      log.info("job on helios-solo: {}", j);
       assertEquals("wrong job running", IMAGE_NAME, j.getImage());
     }
   }
