@@ -218,9 +218,9 @@ public class DeregisterTest extends SystemTestBase {
   public void testJobsArePreservedWhenReregistering() throws Exception {
     startDefaultMaster();
     final String host = testHost();
-    AgentMain agent = startDefaultAgent(host, "--labels", "num=1");
-
+    final AgentMain agent = startDefaultAgent(host, "--labels", "num=1");
     final HeliosClient client = defaultClient();
+    awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Deploy a job and wait for it to be running
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
