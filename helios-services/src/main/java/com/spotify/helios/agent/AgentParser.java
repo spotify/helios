@@ -17,6 +17,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.net.InetAddresses;
 
@@ -172,11 +173,12 @@ public class AgentParser extends ServiceParser {
    * Verifies that all entries in the Collection satisfy the predicate. If any do not, throw an
    * IllegalArgumentException with the specified message for the first invalid entry.
    */
-  private static <T> List<T> validateArgument(List<T> list, Predicate<T> predicate,
+  @VisibleForTesting
+  protected static <T> List<T> validateArgument(List<T> list, Predicate<T> predicate,
                                               Function<T, String> msgFn) {
 
     final Optional<T> firstInvalid = list.stream()
-        .filter(predicate)
+        .filter(predicate.negate())
         .findAny();
 
     if (firstInvalid.isPresent()) {
