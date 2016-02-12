@@ -65,6 +65,7 @@ public class AgentConfig extends Configuration {
   private String zookeeperAclAgentUser;
   private String zooKeeperAclAgentPassword;
   private FastForwardConfig fastForwardConfig;
+  private List<String> extraHosts;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -355,6 +356,15 @@ public class AgentConfig extends Configuration {
 
   public AgentConfig setFfwdConfig(FastForwardConfig config) {
     this.fastForwardConfig = config;
+    return this;
+  }
+
+  public List<String> getExtraHosts() {
+    return extraHosts;
+  }
+
+  public AgentConfig setExtraHosts(final List<String> extraHosts) {
+    this.extraHosts = extraHosts;
     return this;
   }
 }

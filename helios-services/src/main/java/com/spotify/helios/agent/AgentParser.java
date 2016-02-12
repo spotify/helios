@@ -18,6 +18,7 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Splitter;
+import com.google.common.net.InetAddresses;
 
 import com.spotify.docker.client.DockerHost;
 import com.spotify.helios.servicescommon.ServiceParser;
@@ -32,10 +33,11 @@ import java.security.SecureRandom;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
 
 import static com.google.common.io.BaseEncoding.base16;
-import static com.google.common.net.InetAddresses.isInetAddress;
-import static com.spotify.helios.agent.BindVolumeContainerDecorator.isValidBind;
 import static com.spotify.helios.cli.Utils.argToStringMap;
 import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
@@ -60,6 +62,7 @@ public class AgentParser extends ServiceParser {
   private Argument agentIdArg;
   private Argument dnsArg;
   private Argument bindArg;
+  private Argument addHostArg;
   private Argument labelsArg;
   private Argument zkRegistrationTtlMinutesArg;
   private Argument zkAclMasterDigest;
@@ -149,25 +152,37 @@ public class AgentParser extends ServiceParser {
       agentConfig.setId(base16().encode(idBytes));
     }
 
-    final List<String> dns = options.getList(dnsArg.getDest());
-    if (!dns.isEmpty()) {
-      for (final String d : dns) {
-        if (!isInetAddress(d)) {
-          throw new IllegalArgumentException("Invalid IP address " + d);
-        }
-      }
-    }
-    agentConfig.setDns(dns);
+    agentConfig.setDns(validateArgument(
+        options.getList(dnsArg.getDest()),
+        InetAddresses::isInetAddress,
+        arg -> "Invalid IP address " + arg));
 
-    final List<String> binds = options.getList(bindArg.getDest());
-    if (!binds.isEmpty()) {
-      for (final String b : binds) {
-        if (!isValidBind(b)) {
-          throw new IllegalArgumentException("Invalid bind " + b);
-        }
-      }
+    agentConfig.setBinds(validateArgument(
+        options.getList(bindArg.getDest()),
+        BindVolumeContainerDecorator::isValidBind,
+        arg -> "Invalid bind " + arg));
+
+    agentConfig.setExtraHosts(validateArgument(
+        options.getList(addHostArg.getDest()),
+        AddExtraHostContainerDecorator::isValidArg,
+        arg -> "Invalid ExtraHost " + arg));
+  }
+
+  /**
+   * Verifies that all entries in the Collection satisfy the predicate. If any do not, throw an
+   * IllegalArgumentException with the specified message for the first invalid entry.
+   */
+  private static <T> List<T> validateArgument(List<T> list, Predicate<T> predicate,
+                                              Function<T, String> msgFn) {
+
+    final Optional<T> firstInvalid = list.stream()
+        .filter(predicate)
+        .findAny();
+
+    if (firstInvalid.isPresent()) {
+      throw new IllegalArgumentException(firstInvalid.map(msgFn).get());
     }
-    agentConfig.setBinds(binds);
+    return list;
   }
 
   @Override
@@ -198,7 +213,7 @@ public class AgentParser extends ServiceParser {
 
     envArg = parser.addArgument("--env")
         .action(append())
-        .setDefault(new ArrayList<String>())
+        .setDefault(new ArrayList<>())
         .nargs("+")
         .help("Specify environment variables that will pass down to all containers");
 
@@ -211,13 +226,19 @@ public class AgentParser extends ServiceParser {
 
     dnsArg = parser.addArgument("--dns")
         .action(append())
-        .setDefault(new ArrayList<String>())
+        .setDefault(new ArrayList<>())
         .help("Dns servers to use.");
 
     bindArg = parser.addArgument("--bind")
         .action(append())
-        .setDefault(new ArrayList<String>())
+        .setDefault(new ArrayList<>())
         .help("volumes to bind to all containers");
+
+    addHostArg = parser.addArgument("--add-host")
+        .action(append())
+        .setDefault(new ArrayList<>())
+        .help("extra hosts to add to /etc/hosts of created containers, in form `host:ip`. "
+              + "See docker documentation for --add-host for more info.");
 
     labelsArg = parser.addArgument("--labels")
         .action(append())
