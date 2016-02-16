@@ -36,21 +36,19 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-public class BindVolumeTest extends SystemTestBase {
+/** Test of --add-host in the agent. */
+public class AddExtraHostTest extends SystemTestBase {
 
   @Test
   public void test() throws Exception {
     try (final DockerClient docker = getNewDockerClient()) {
       // Start Helios agent, configured to bind host /etc/hostname into container /mnt/hostname
       startDefaultMaster();
-      startDefaultAgent(testHost(), "--bind", "/etc/hostname:/mnt/hostname:ro");
+      startDefaultAgent(testHost(), "--add-host", "secrethost:169.254.169.254");
       awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
-      // Figure out the host kernel version
-      final String hostname = docker.info().name();
-
-      // Run a job that cat's /mnt/hostname, which should be the host's name
-      final List<String> command = ImmutableList.of("cat", "/mnt/hostname");
+      // a job that cat's /etc/hosts
+      final List<String> command = ImmutableList.of("cat", "/etc/hosts");
       final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, command);
       deployJob(jobId, testHost());
 
@@ -59,11 +57,9 @@ public class BindVolumeTest extends SystemTestBase {
       final String log;
       try (LogStream logs = docker.logs(taskStatus.getContainerId(), stdout(), stderr())) {
         log = logs.readFully();
-      }
 
-      // the kernel version from the host should be in the log
-      assertThat(log, containsString(hostname));
+        assertThat(log, containsString("169.254.169.254\tsecrethost"));
+      }
     }
   }
-
 }
