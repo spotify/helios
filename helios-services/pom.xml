@@ -33,7 +33,12 @@
           <plugin>
             <groupId>com.spotify</groupId>
             <artifactId>docker-maven-plugin</artifactId>
-            <version>0.1.1</version>
+            <version>0.4.1</version>
+            <configuration>
+              <labels>
+                <label>com.spotify.helios.version="${project.version}"</label>
+              </labels>
+            </configuration>
             <executions>
               <execution>
                 <id>master</id>
@@ -58,6 +63,9 @@
                   <imageName>${masterImageName}</imageName>
                   <entryPoint>["helios-master"]</entryPoint>
                   <tagInfoFile>${project.build.testOutputDirectory}/master-image.json</tagInfoFile>
+                  <labels>
+                    <label>com.spotify.helios.version="${project.version}"</label>
+                  </labels>
                 </configuration>
               </execution>
               <execution>
@@ -83,6 +91,9 @@
                   <imageName>${agentImageName}</imageName>
                   <entryPoint>["helios-agent"]</entryPoint>
                   <tagInfoFile>${project.build.testOutputDirectory}/agent-image.json</tagInfoFile>
+                  <labels>
+                    <label>com.spotify.helios.version="${project.version}"</label>
+                  </labels>
                 </configuration>
               </execution>
             </executions>
@@ -98,7 +109,12 @@
           <plugin>
             <groupId>com.spotify</groupId>
             <artifactId>docker-maven-plugin</artifactId>
-            <version>0.1.1</version>
+            <version>0.4.1</version>
+            <configuration>
+              <labels>
+                <label>com.spotify.helios.version="${project.version}"</label>
+              </labels>
+            </configuration>
             <executions>
               <execution>
                 <phase>package</phase>
