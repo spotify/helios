@@ -25,6 +25,7 @@ import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
 
 import org.apache.commons.io.IOUtils;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,8 +39,8 @@ import static org.junit.Assert.assertThat;
 
 public class HeliosSoloIT {
 
-  @Rule
-  public HeliosDeploymentResource solo = new HeliosDeploymentResource(
+  @ClassRule
+  public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
       HeliosSoloDeployment.fromEnv()
           .heliosSoloImage(Utils.soloImage())
           .checkForNewImages(false)
