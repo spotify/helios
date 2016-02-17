@@ -36,7 +36,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-public class HeliosSoloServiceDiscoveryIT {
+public class HeliosSoloIT {
 
   @Rule
   public HeliosDeploymentResource solo = new HeliosDeploymentResource(
@@ -57,6 +57,24 @@ public class HeliosSoloServiceDiscoveryIT {
       .hostFilter(".+")
       .build();
 
+
+  @Test
+  public void testHttpHealthcheck() {
+    jobs.job()
+        .image("nginx:1.9.9")
+        .port("http", 80)
+        .httpHealthCheck("http", "/")
+        .deploy();
+  }
+
+  @Test
+  public void testTcpHealthcheck() {
+    jobs.job()
+        .image("nginx:1.9.9")
+        .port("http", 80)
+        .tcpHealthCheck("http")
+        .deploy();
+  }
 
   @Test
   public void testServiceDiscovery() throws Exception {
