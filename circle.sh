@@ -86,14 +86,6 @@ case "$1" in
         solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
         docker tag -f $solo_image spotify/helios-solo:latest
 
-        # TODO(negz): Use a HeliosSoloDeployment for the HeliosIT and kill this.
-        # bring up helios-solo for integration tests
-        cd solo
-        # need to patch helios-up to not docker run --rm, since --rm doesn't work on CircleCI
-        sed -i 's/docker run --rm/docker run/' ./helios-up
-        ./helios-up
-        cd ..
-
         mvn verify -B -pl helios-integration-tests
         ;;
 
