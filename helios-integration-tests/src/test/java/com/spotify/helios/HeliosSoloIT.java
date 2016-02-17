@@ -25,6 +25,7 @@ import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
 
 import org.apache.commons.io.IOUtils;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -36,10 +37,10 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
-public class HeliosSoloServiceDiscoveryIT {
+public class HeliosSoloIT {
 
-  @Rule
-  public HeliosDeploymentResource solo = new HeliosDeploymentResource(
+  @ClassRule
+  public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
       HeliosSoloDeployment.fromEnv()
           .heliosSoloImage(Utils.soloImage())
           .checkForNewImages(false)
@@ -57,6 +58,24 @@ public class HeliosSoloServiceDiscoveryIT {
       .hostFilter(".+")
       .build();
 
+
+  @Test
+  public void testHttpHealthcheck() {
+    jobs.job()
+        .image("nginx:1.9.9")
+        .port("http", 80)
+        .httpHealthCheck("http", "/")
+        .deploy();
+  }
+
+  @Test
+  public void testTcpHealthcheck() {
+    jobs.job()
+        .image("nginx:1.9.9")
+        .port("http", 80)
+        .tcpHealthCheck("http")
+        .deploy();
+  }
 
   @Test
   public void testServiceDiscovery() throws Exception {
