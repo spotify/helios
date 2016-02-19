@@ -23,10 +23,12 @@ import com.google.common.collect.ImmutableMap;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
+import com.spotify.docker.client.ImageNotFoundException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
 import com.spotify.docker.client.messages.ContainerInfo;
+import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
@@ -46,6 +48,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class HeliosSoloDeploymentTest {
@@ -154,5 +158,29 @@ public class HeliosSoloDeploymentTest {
     }
     assertTrue("Could not find helios-solo container creation", foundSolo);
 
+  }
+
+  @Test
+  public void testDoesNotPullPresentProbeImage() throws Exception {
+    when(this.dockerClient.inspectImage(HeliosSoloDeployment.PROBE_IMAGE))
+        .thenReturn(mock(ImageInfo.class));
+
+    HeliosSoloDeployment.builder()
+        .dockerClient(this.dockerClient)
+        .build();
+
+    verify(this.dockerClient, never()).pull(HeliosSoloDeployment.PROBE_IMAGE);
+  }
+
+  @Test
+  public void testDoesPullAbsentProbeImage() throws Exception {
+    when(this.dockerClient.inspectImage(HeliosSoloDeployment.PROBE_IMAGE))
+        .thenThrow(new ImageNotFoundException(HeliosSoloDeployment.PROBE_IMAGE));
+
+    HeliosSoloDeployment.builder()
+        .dockerClient(this.dockerClient)
+        .build();
+
+    verify(this.dockerClient).pull(HeliosSoloDeployment.PROBE_IMAGE);
   }
 }
