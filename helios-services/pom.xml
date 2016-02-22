@@ -66,6 +66,7 @@
                   <labels>
                     <label>com.spotify.helios.version="${project.version}"</label>
                   </labels>
+                  <pullOnBuild>true</pullOnBuild>
                 </configuration>
               </execution>
               <execution>
@@ -94,6 +95,7 @@
                   <labels>
                     <label>com.spotify.helios.version="${project.version}"</label>
                   </labels>
+                  <pullOnBuild>true</pullOnBuild>
                 </configuration>
               </execution>
             </executions>
@@ -114,6 +116,7 @@
               <labels>
                 <label>com.spotify.helios.version="${project.version}"</label>
               </labels>
+              <pullOnBuild>true</pullOnBuild>
             </configuration>
             <executions>
               <execution>
