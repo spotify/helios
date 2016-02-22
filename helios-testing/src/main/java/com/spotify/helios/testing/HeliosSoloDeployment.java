@@ -31,6 +31,7 @@ import com.spotify.docker.client.DockerCertificateException;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.DockerHost;
+import com.spotify.docker.client.ImageNotFoundException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
@@ -209,9 +210,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .cmd(probeCommand(probeName))
             .build();
 
+
     final ContainerCreation creation;
     try {
-      dockerClient.pull(PROBE_IMAGE);
+      pullIfAbsent(PROBE_IMAGE);
       creation = dockerClient.createContainer(containerConfig, probeName);
     } catch (DockerException | InterruptedException e) {
       throw new HeliosDeploymentException("helios-solo probe container creation failed", e);
@@ -243,6 +245,17 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     return gateway;
+  }
+
+  private void pullIfAbsent(final String image) throws DockerException, InterruptedException {
+    try {
+      dockerClient.inspectImage(image);
+      log.info("helios-solo image {} is present. Not pulling it.", image);
+      return;
+    } catch (ImageNotFoundException e) {
+      log.info("helios-solo pulling new image: {}", image);
+    }
+    dockerClient.pull(PROBE_IMAGE);
   }
 
   private List<String> probeCommand(final String probeName) {
