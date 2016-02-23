@@ -1,0 +1,175 @@
+/*
+ * Copyright (c) 2016 Spotify AB.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *   http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing,
+ * software distributed under the License is distributed on an
+ * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
+ * KIND, either express or implied.  See the License for the
+ * specific language governing permissions and limitations
+ * under the License.
+ */
+
+package com.spotify.helios.master;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+
+import com.spotify.helios.common.Clock;
+import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TaskStatus.State;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
+
+import org.joda.time.Instant;
+import org.junit.Test;
+
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+public class OldJobReaperTest {
+
+  private static final long RETENTION_DAYS = 1;
+  private static final Job DUMMY_JOB = Job.newBuilder().build();
+
+  private static class Datapoint {
+
+    private final Job job;
+    private final List<TaskStatusEvent> history;
+    private final Map<String, Deployment> deployments;
+    private final JobStatus jobStatus;
+    private final boolean expectReap;
+
+    private Datapoint(final String jobName, final Map<String, Deployment> deployments,
+                      final List<TaskStatusEvent> history, final boolean expectReap) {
+      this.job = Job.newBuilder().setName(jobName).build();
+      this.history = ImmutableList.copyOf(history);
+      this.deployments = ImmutableMap.copyOf(deployments);
+      this.jobStatus = JobStatus.newBuilder().setDeployments(this.deployments).build();
+      this.expectReap = expectReap;
+    }
+
+    public Job getJob() {
+      return job;
+    }
+
+    public JobId getJobId() {
+      return job.getId();
+    }
+
+    public List<TaskStatusEvent> getHistory() {
+      return this.history;
+    }
+
+    public Map<String, Deployment> getDeployments() {
+      return this.deployments;
+    }
+
+    public JobStatus getJobStatus() {
+      return this.jobStatus;
+    }
+  }
+
+  private List<TaskStatusEvent> events(final List<Long> timestamps) {
+    final ImmutableList.Builder<TaskStatusEvent> builder = ImmutableList.builder();
+
+    // First sort by timestamps ascending
+    final List<Long> copy = Lists.newArrayList(timestamps);
+    copy.sort((t1, t2) -> {
+      if (t1 > t2) {
+        return 1;
+      } else if (t1 < t2) {
+        return -1;
+      }
+
+      return 0;
+    });
+
+    for (final Long timestamp : copy) {
+      final TaskStatus taskStatus = TaskStatus.newBuilder()
+          .setJob(DUMMY_JOB)
+          .setGoal(Goal.START)
+          .setState(State.RUNNING)
+          .build();
+      builder.add(new TaskStatusEvent(taskStatus, timestamp, ""));
+    }
+
+    return builder.build();
+  }
+
+  private Map<String, Deployment> deployments(final JobId jobId, final int numHosts) {
+    final ImmutableMap.Builder<String, Deployment> builder = ImmutableMap.builder();
+
+    for (int i = 0; i < numHosts; i++) {
+      builder.put("host" + i, Deployment.of(jobId, Goal.START));
+    }
+    return builder.build();
+  }
+
+  @Test
+  public void testOldJobReaper() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final Clock clock = mock(Clock.class);
+    when(clock.now()).thenReturn(new Instant(HOURS.toMillis(48)));
+
+    final List<Datapoint> datapoints = Lists.newArrayList(
+        // A job not deployed, with history, and last used too long ago should BE reaped
+        new Datapoint("job1", emptyMap(),
+                      events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))), true),
+        // A job not deployed, with history, and last used recently should NOT BE reaped
+        new Datapoint("job2", emptyMap(),
+                      events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))), false),
+        // A job not deployed and without history should NOT BE reaped
+        // We're being conservative here in case the agent couldn't write the history or the reaper
+        // happens to be running right in between the time the job is created and when it's deployed
+        new Datapoint("job3", emptyMap(), emptyList(), false),
+
+        // A job deployed and without history should NOT BE reaped
+        new Datapoint("job4", deployments(JobId.fromString("job4"), 2), emptyList(), false),
+        // A job deployed, with history, and last used too long ago should NOT BE reaped
+        new Datapoint("job5", deployments(JobId.fromString("job5"), 3),
+                      events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))), false),
+        // A job deployed, with history, and last used recently should NOT BE reaped
+        new Datapoint("job6", deployments(JobId.fromString("job6"), 3),
+                      events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))), false)
+    );
+
+    when(masterModel.getJobs()).thenReturn(
+        datapoints.stream().collect(Collectors.toMap(Datapoint::getJobId, Datapoint::getJob)));
+
+    for (final Datapoint datapoint : datapoints) {
+      when(masterModel.getJobHistory(datapoint.getJobId())).thenReturn(datapoint.getHistory());
+      when(masterModel.getJobStatus(datapoint.getJobId())).thenReturn(datapoint.getJobStatus());
+    }
+
+    final OldJobReaper reaper = new OldJobReaper(masterModel, RETENTION_DAYS, clock);
+    reaper.startAsync().awaitRunning();
+
+    verify(masterModel, timeout(5000).atLeastOnce()).getJobs();
+
+    for (final Datapoint datapoint : datapoints) {
+      if (datapoint.expectReap) {
+        verify(masterModel, timeout(500)).removeJob(datapoint.getJobId(), Job.EMPTY_TOKEN);
+      }
+    }
+  }
+}

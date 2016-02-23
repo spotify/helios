@@ -42,7 +42,7 @@ import static org.mockito.Mockito.when;
 
 public class DeadAgentReaperTest {
 
-  private static  final long TIMEOUT_HOURS = 1000;
+  private static final long TIMEOUT_HOURS = 1000;
 
   private static class Datapoint {
 

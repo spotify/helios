@@ -55,6 +55,7 @@ public class MasterConfig extends Configuration {
   private String zookeeperAclMasterUser;
   private String zooKeeperAclMasterPassword;
   private long agentReapingTimeout;
+  private long jobRetention;
   private FastForwardConfig fastForwardConfig;
 
   public String getDomain() {
@@ -262,6 +263,15 @@ public class MasterConfig extends Configuration {
 
   public long getAgentReapingTimeout() {
     return agentReapingTimeout;
+  }
+
+  public MasterConfig setJobRetention(final long jobRetention) {
+    this.jobRetention = jobRetention;
+    return this;
+  }
+
+  public long getJobRetention() {
+    return jobRetention;
   }
 
   public FastForwardConfig getFfwdConfig() {

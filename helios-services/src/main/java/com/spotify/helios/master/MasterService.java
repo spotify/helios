@@ -120,6 +120,7 @@ public class MasterService extends AbstractIdleService {
   private final RollingUpdateService rollingUpdateService;
   private final Map<String, String> environmentVariables;
   private final DeadAgentReaper agentReaper;
+  private final OldJobReaper oldJobReaper;
 
   private ZooKeeperRegistrarService zkRegistrar;
 
@@ -234,6 +235,14 @@ public class MasterService extends AbstractIdleService {
       this.agentReaper = null;
     }
 
+    // Set up old job reaper (removes jobs not deployed anywhere and created more than X days ago)
+    if (config.getJobRetention() > 0) {
+      this.oldJobReaper = new OldJobReaper(model, config.getJobRetention());
+    } else {
+      log.info("Reaping of old jobs disabled");
+      this.oldJobReaper = null;
+    }
+
     // Set up http server
     environment.servlets()
         .addFilter("VersionResponseFilter", new VersionResponseFilter(metrics.getMasterMetrics()))
@@ -316,6 +325,10 @@ public class MasterService extends AbstractIdleService {
       agentReaper.startAsync().awaitRunning();
     }
 
+    if (oldJobReaper != null) {
+      oldJobReaper.startAsync().awaitRunning();
+    }
+
     try {
       server.start();
     } catch (Exception e) {
@@ -338,6 +351,10 @@ public class MasterService extends AbstractIdleService {
 
     if (agentReaper != null) {
       agentReaper.stopAsync().awaitTerminated();
+    }
+
+    if (oldJobReaper != null) {
+      oldJobReaper.stopAsync().awaitTerminated();
     }
 
     rollingUpdateService.stopAsync().awaitTerminated();

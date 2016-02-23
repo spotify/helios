@@ -55,9 +55,9 @@ public class DeadAgentReaper extends InterruptingScheduledService {
     this(masterModel, timeoutHours, SYSTEM_CLOCK);
   }
 
-  public DeadAgentReaper(final MasterModel masterModel,
-                         final long timeoutHours,
-                         final Clock clock) {
+  DeadAgentReaper(final MasterModel masterModel,
+                  final long timeoutHours,
+                  final Clock clock) {
     this.masterModel = masterModel;
     checkArgument(timeoutHours > 0);
     this.timeoutMillis = TimeUnit.HOURS.toMillis(timeoutHours);
