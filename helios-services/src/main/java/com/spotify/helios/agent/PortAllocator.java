@@ -59,9 +59,9 @@ public class PortAllocator {
   /**
    * Allocate ports for port mappings with no external ports configured.
    *
-   * @param ports A mutable map of port mappings for a container, both with statically configured
+   * @param ports A map of port mappings for a container, both with statically configured
    *              external ports and dynamic unconfigured external ports.
-   * @param used  A mutable set of used ports. The ports allocated will not clash with these ports.
+   * @param used  A set of used ports. The ports allocated will not clash with these ports.
    * @return The allocated ports.
    */
   public Map<String, Integer> allocate(final Map<String, PortMapping> ports,
@@ -74,53 +74,52 @@ public class PortAllocator {
 
     final ImmutableMap.Builder<String, Integer> allocation = ImmutableMap.builder();
 
-    // Allocate static ports
     for (Map.Entry<String, PortMapping> entry : mappings.entrySet()) {
       final String name = entry.getKey();
       final PortMapping portMapping = entry.getValue();
       final Integer externalPort = portMapping.getExternalPort();
 
-      // Skip dynamic ports
       if (externalPort == null) {
-        continue;
-      }
-
-      // Verify that this port is not in use
-      if (used.contains(externalPort)) {
-        return null;
-      }
-      used.add(externalPort);
-      allocation.put(name, externalPort);
-    }
-
-    // Allocate dynamic ports
-    for (Map.Entry<String, PortMapping> entry : mappings.entrySet()) {
-      final String name = entry.getKey();
-      final PortMapping portMapping = entry.getValue();
-      final Integer externalPort = portMapping.getExternalPort();
-
-      // Skip static ports
-      if (externalPort != null) {
-        continue;
-      }
-
-      // Look for an available port, checking at most (end - start) ports.
-      Integer port = null;
-      for (int i = start; i < end; i++) {
-        final int candidate = next();
-        if (!used.contains(candidate) && portAvailable(candidate)) {
-          port = candidate;
-          break;
+        if (!allocateDynamic(allocation, used, name)) {
+          return null;
+        }
+      } else {
+        if (!allocateStatic(allocation, used, name, externalPort)) {
+          return null;
         }
       }
-      if (port == null) {
-        return null;
-      }
-      used.add(port);
-      allocation.put(name, port);
     }
 
     return allocation.build();
+  }
+
+  private boolean allocateStatic(final ImmutableMap.Builder<String, Integer> allocation,
+                              final Set<Integer> used,
+                              final String name,
+                              final Integer port) {
+    // Verify that this port is not in use
+    if (used.contains(port)) {
+      return false;
+    }
+
+    used.add(port);
+    allocation.put(name, port);
+    return true;
+  }
+
+  private boolean allocateDynamic(final ImmutableMap.Builder<String, Integer> allocation,
+                               final Set<Integer> used,
+                               final String name) {
+    // Look for an available port, checking at most (end - start) ports.
+    for (int i = this.start; i < this.end; i++) {
+      final int port = next();
+      if (!used.contains(port) && portAvailable(port)) {
+        used.add(port);
+        allocation.put(name, port);
+        return true;
+      }
+    }
+    return false;
   }
 
   /**
@@ -142,13 +141,12 @@ public class PortAllocator {
    * @return True if port is available. False otherwise.
    */
   private boolean portAvailable(final int port) {
-    boolean available = false;
-
     ServerSocket s = null;
     try {
       s = new ServerSocket(port);
-      available = true;
+      return true;
     } catch (IOException ignored) {
+      return false;
     } finally {
       if (s != null) {
         try {
@@ -158,7 +156,5 @@ public class PortAllocator {
         }
       }
     }
-
-    return available;
   }
 }
