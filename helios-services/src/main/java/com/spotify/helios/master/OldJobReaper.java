@@ -51,6 +51,7 @@ public class OldJobReaper extends InterruptingScheduledService {
 
   private final MasterModel masterModel;
   private final long retentionMillis;
+  private final String retentionString;
   private final Clock clock;
 
   public OldJobReaper(final MasterModel masterModel, final long retentionDays) {
@@ -63,6 +64,7 @@ public class OldJobReaper extends InterruptingScheduledService {
     this.masterModel = masterModel;
     checkArgument(retentionDays > 0);
     this.retentionMillis = TimeUnit.DAYS.toMillis(retentionDays);
+    this.retentionString = DurationFormatUtils.formatDuration(retentionMillis, "DD H:mm");
     this.clock = clock;
   }
 
@@ -75,32 +77,57 @@ public class OldJobReaper extends InterruptingScheduledService {
       final JobId jobId = jobEntry.getKey();
 
       try {
+        final JobStatus jobStatus = masterModel.getJobStatus(jobId);
+        final Map<String, Deployment> deployments = jobStatus.getDeployments();
         final List<TaskStatusEvent> events = masterModel.getJobHistory(jobId);
 
-        //noinspection StatementWithEmptyBody
-        if (events.isEmpty()) {
-          // Don't reap. We're being conservative here in case the agent couldn't write the
-          // history or the reaper happens to be running right in between the time the job is
-          // created and when it's deployed.
-        } else {
-          // Get the last event which is the most recent
-          final TaskStatusEvent event = events.get(events.size() - 1);
-          // Calculate the amount of time in milliseconds that has elapsed since the last event
-          final long unusedDurationMillis = clock.now().getMillis() - event.getTimestamp();
+        boolean reap;
 
-          if (unusedDurationMillis > retentionMillis) {
-            // Check the job isn't deployed anywhere
-            final JobStatus jobStatus = masterModel.getJobStatus(jobId);
-            final Map<String, Deployment> deployments = jobStatus.getDeployments();
-            if (deployments.size() == 0) {
-              try {
-                log.info("Reaping old job '{}' (unused for {} days)", jobId,
-                         DurationFormatUtils.formatDuration(unusedDurationMillis, "DD H:mm"));
-                masterModel.removeJob(jobId, jobEntry.getValue().getToken());
-              } catch (Exception e) {
-                log.warn("Failed to reap old job '{}'", jobId, e);
-              }
+        if (deployments.isEmpty()) {
+          if (events.isEmpty()) {
+            final Long created = jobEntry.getValue().getCreated();
+            if (created == null) {
+              log.info("Marked job '{}' for reaping (not deployed, no history, no creation date)",
+                       jobId);
+              reap = true;
+            } else if ((clock.now().getMillis() - created) > retentionMillis) {
+              log.info("Marked job '{}' for reaping (not deployed, no history, creation date "
+                       + "before retention time of {})", jobId, retentionString);
+              reap = true;
+            } else {
+              log.info("NOT reaping job '{}' (not deployed, no history, creation date after "
+                       + "retention time of {})", jobId, retentionString);
+              reap = false;
             }
+          } else {
+            // Get the last event which is the most recent
+            final TaskStatusEvent event = events.get(events.size() - 1);
+            // Calculate the amount of time in milliseconds that has elapsed since the last event
+            final long unusedDurationMillis = clock.now().getMillis() - event.getTimestamp();
+
+            // A job not deployed, with history, and last used too long ago should BE reaped
+            // A job not deployed, with history, and last used recently should NOT BE reaped
+            if (unusedDurationMillis > retentionMillis) {
+              log.info("Marked job '{}' for reaping (not deployed, has history whose last event "
+                       + "was before the retention time of {})", jobId, retentionString);
+              reap = true;
+            } else {
+              log.info("NOT reaping job '{}' (not deployed, has history whose last event "
+                       + "was after the retention time of {})", jobId, retentionString);
+              reap = false;
+            }
+          }
+        } else {
+          // A job that's deployed should NOT BE reaped regardless of its history or creation date
+          log.info("NOT reaping job '{}' (it is deployed)", jobId);
+          reap = false;
+        }
+
+        if (reap) {
+          try {
+            masterModel.removeJob(jobId, jobEntry.getValue().getToken());
+          } catch (Exception e) {
+            log.warn("Failed to reap old job '{}'", jobId, e);
           }
         }
       } catch (Exception e) {

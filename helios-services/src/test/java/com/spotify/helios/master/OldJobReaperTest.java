@@ -63,7 +63,17 @@ public class OldJobReaperTest {
 
     private Datapoint(final String jobName, final Map<String, Deployment> deployments,
                       final List<TaskStatusEvent> history, final boolean expectReap) {
-      this.job = Job.newBuilder().setName(jobName).build();
+      this(jobName, deployments, history, null, expectReap);
+    }
+
+    private Datapoint(final String jobName, final Map<String, Deployment> deployments,
+                      final List<TaskStatusEvent> history, final Long created,
+                      final boolean expectReap) {
+      final Job.Builder builder = Job.newBuilder().setName(jobName);
+      if (created != null) {
+        builder.setCreated(created);
+      }
+      this.job = builder.build();
       this.history = ImmutableList.copyOf(history);
       this.deployments = ImmutableMap.copyOf(deployments);
       this.jobStatus = JobStatus.newBuilder().setDeployments(this.deployments).build();
@@ -128,18 +138,19 @@ public class OldJobReaperTest {
         // A job not deployed, with history, and last used recently should NOT BE reaped
         new Datapoint("job2", emptyMap(),
                       events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))), false),
-        // A job not deployed and without history should NOT BE reaped
-        // We're being conservative here in case the agent couldn't write the history or the reaper
-        // happens to be running right in between the time the job is created and when it's deployed
-        new Datapoint("job3", emptyMap(), emptyList(), false),
-
+        // A job not deployed, without history, and without a creation date should BE reaped
+        new Datapoint("job3", emptyMap(), emptyList(), true),
+        // A job not deployed, without history, and created before retention time should BE reaped
+        new Datapoint("job4", emptyMap(), emptyList(), HOURS.toMillis(23), true),
+        // A job not deployed, without history, created after retention time should NOT BE reaped
+        new Datapoint("job5", emptyMap(), emptyList(), HOURS.toMillis(25), false),
         // A job deployed and without history should NOT BE reaped
-        new Datapoint("job4", deployments(JobId.fromString("job4"), 2), emptyList(), false),
+        new Datapoint("job6", deployments(JobId.fromString("job6"), 2), emptyList(), false),
         // A job deployed, with history, and last used too long ago should NOT BE reaped
-        new Datapoint("job5", deployments(JobId.fromString("job5"), 3),
+        new Datapoint("job7", deployments(JobId.fromString("job7"), 3),
                       events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(22))), false),
         // A job deployed, with history, and last used recently should NOT BE reaped
-        new Datapoint("job6", deployments(JobId.fromString("job6"), 3),
+        new Datapoint("job8", deployments(JobId.fromString("job8"), 3),
                       events(ImmutableList.of(HOURS.toMillis(20), HOURS.toMillis(40))), false)
     );
 
@@ -153,6 +164,9 @@ public class OldJobReaperTest {
 
     final OldJobReaper reaper = new OldJobReaper(masterModel, RETENTION_DAYS, clock);
     reaper.startAsync().awaitRunning();
+
+    // Wait one second to give the reaper enough time to process all the jobs before verifying :(
+    Thread.sleep(1000);
 
     for (final Datapoint datapoint : datapoints) {
       if (datapoint.expectReap) {
