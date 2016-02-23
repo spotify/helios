@@ -34,6 +34,7 @@ import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import org.joda.time.Instant;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -42,6 +43,7 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -80,10 +82,6 @@ public class OldJobReaperTest {
       return this.history;
     }
 
-    public Map<String, Deployment> getDeployments() {
-      return this.deployments;
-    }
-
     public JobStatus getJobStatus() {
       return this.jobStatus;
     }
@@ -94,17 +92,9 @@ public class OldJobReaperTest {
 
     // First sort by timestamps ascending
     final List<Long> copy = Lists.newArrayList(timestamps);
-    copy.sort((t1, t2) -> {
-      if (t1 > t2) {
-        return 1;
-      } else if (t1 < t2) {
-        return -1;
-      }
+    Collections.sort(copy);
 
-      return 0;
-    });
-
-    for (final Long timestamp : copy) {
+    for (final Long timestamp : timestamps) {
       final TaskStatus taskStatus = TaskStatus.newBuilder()
           .setJob(DUMMY_JOB)
           .setGoal(Goal.START)
@@ -164,11 +154,11 @@ public class OldJobReaperTest {
     final OldJobReaper reaper = new OldJobReaper(masterModel, RETENTION_DAYS, clock);
     reaper.startAsync().awaitRunning();
 
-    verify(masterModel, timeout(5000).atLeastOnce()).getJobs();
-
     for (final Datapoint datapoint : datapoints) {
       if (datapoint.expectReap) {
         verify(masterModel, timeout(500)).removeJob(datapoint.getJobId(), Job.EMPTY_TOKEN);
+      } else {
+        verify(masterModel, never()).removeJob(datapoint.getJobId(), Job.EMPTY_TOKEN);
       }
     }
   }

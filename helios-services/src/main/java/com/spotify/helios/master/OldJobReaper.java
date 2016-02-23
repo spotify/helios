@@ -76,16 +76,15 @@ public class OldJobReaper extends InterruptingScheduledService {
 
       try {
         final List<TaskStatusEvent> events = masterModel.getJobHistory(jobId);
-        final int numEvents = events.size();
 
         //noinspection StatementWithEmptyBody
-        if (numEvents == 0) {
+        if (events.isEmpty()) {
           // Don't reap. We're being conservative here in case the agent couldn't write the
           // history or the reaper happens to be running right in between the time the job is
           // created and when it's deployed.
         } else {
           // Get the last event which is the most recent
-          final TaskStatusEvent event = events.get(numEvents - 1);
+          final TaskStatusEvent event = events.get(events.size() - 1);
           // Calculate the amount of time in milliseconds that has elapsed since the last event
           final long unusedDurationMillis = clock.now().getMillis() - event.getTimestamp();
 

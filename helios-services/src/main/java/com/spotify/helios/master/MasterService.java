@@ -82,6 +82,7 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
@@ -119,8 +120,8 @@ public class MasterService extends AbstractIdleService {
   private final CuratorClientFactory curatorClientFactory;
   private final RollingUpdateService rollingUpdateService;
   private final Map<String, String> environmentVariables;
-  private final DeadAgentReaper agentReaper;
-  private final OldJobReaper oldJobReaper;
+  private final Optional<DeadAgentReaper> agentReaper;
+  private final Optional<OldJobReaper> oldJobReaper;
 
   private ZooKeeperRegistrarService zkRegistrar;
 
@@ -229,18 +230,18 @@ public class MasterService extends AbstractIdleService {
 
     // Set up agent reaper (de-registering hosts that have been DOWN for more than X hours)
     if (config.getAgentReapingTimeout() > 0) {
-      this.agentReaper = new DeadAgentReaper(model, config.getAgentReapingTimeout());
+      this.agentReaper = Optional.of(new DeadAgentReaper(model, config.getAgentReapingTimeout()));
     } else {
       log.info("Reaping of dead agents disabled");
-      this.agentReaper = null;
+      this.agentReaper = Optional.empty();
     }
 
     // Set up old job reaper (removes jobs not deployed anywhere and created more than X days ago)
     if (config.getJobRetention() > 0) {
-      this.oldJobReaper = new OldJobReaper(model, config.getJobRetention());
+      this.oldJobReaper = Optional.of(new OldJobReaper(model, config.getJobRetention()));
     } else {
       log.info("Reaping of old jobs disabled");
-      this.oldJobReaper = null;
+      this.oldJobReaper = Optional.empty();
     }
 
     // Set up http server
@@ -321,13 +322,8 @@ public class MasterService extends AbstractIdleService {
     expiredJobReaper.startAsync().awaitRunning();
     rollingUpdateService.startAsync().awaitRunning();
 
-    if (agentReaper != null) {
-      agentReaper.startAsync().awaitRunning();
-    }
-
-    if (oldJobReaper != null) {
-      oldJobReaper.startAsync().awaitRunning();
-    }
+    agentReaper.ifPresent(reaper -> reaper.startAsync().awaitRunning());
+    oldJobReaper.ifPresent(reaper -> reaper.startAsync().awaitRunning());
 
     try {
       server.start();
@@ -349,13 +345,8 @@ public class MasterService extends AbstractIdleService {
     server.join();
     registrar.close();
 
-    if (agentReaper != null) {
-      agentReaper.stopAsync().awaitTerminated();
-    }
-
-    if (oldJobReaper != null) {
-      oldJobReaper.stopAsync().awaitTerminated();
-    }
+    agentReaper.ifPresent(reaper -> reaper.stopAsync().awaitTerminated());
+    oldJobReaper.ifPresent(reaper -> reaper.stopAsync().awaitTerminated());
 
     rollingUpdateService.stopAsync().awaitTerminated();
     expiredJobReaper.stopAsync().awaitTerminated();
