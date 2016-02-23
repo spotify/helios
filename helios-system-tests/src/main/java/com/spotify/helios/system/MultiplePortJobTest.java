@@ -53,6 +53,8 @@ public class MultiplePortJobTest extends SystemTestBase {
 
   private final int externalPort1 = temporaryPorts.localPort("external-1");
   private final int externalPort2 = temporaryPorts.localPort("external-2");
+  private final PortMapping staticMapping1 = PortMapping.of(4712, externalPort1);
+  private final PortMapping staticMapping2 = PortMapping.of(4712, externalPort2);
 
   @Test
   public void test() throws Exception {
@@ -72,26 +74,14 @@ public class MultiplePortJobTest extends SystemTestBase {
       awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
       // foo is a mapping of 4711 -> A port dynamically allocated by the agent's PortAllocator
-      // bar is a mapping of 4712 -> A port randomly selected by temporaryPorts
-      final Map<String, PortMapping> ports1 =
-          ImmutableMap.of("foo", PortMapping.of(4711),
-                          "bar", PortMapping.of(4712, externalPort1));
-
-      // Expect a mapping of 4711 -> The first port in the agent's range.
-      final ImmutableMap<String, PortMapping> expectedMapping1 =
-          ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint()),
-                          "bar", PortMapping.of(4712, externalPort1));
+      // bar is a mapping of 4712 -> A static port randomly selected by temporaryPorts
+      final Map<String, PortMapping> ports1 = ImmutableMap.of("foo", PortMapping.of(4711),
+                                                              "bar", staticMapping1);
 
       // foo is a mapping of 4711 -> A port dynamically allocated by the agent's PortAllocator
-      // bar is a mapping of 4712 -> A port randomly selected by temporaryPorts
-      final Map<String, PortMapping> ports2 =
-          ImmutableMap.of("foo", PortMapping.of(4711),
-                          "bar", PortMapping.of(4712, externalPort2));
-
-      // Expect a mapping of 4711 -> The second (and last) port in the agent's range.
-      final ImmutableMap<String, PortMapping> expectedMapping2 =
-          ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint() + 1),
-                          "bar", PortMapping.of(4712, externalPort2));
+      // bar is a mapping of 4712 -> A static port randomly selected by temporaryPorts
+      final Map<String, PortMapping> ports2 = ImmutableMap.of("foo", PortMapping.of(4711),
+                                                              "bar", staticMapping2);
 
       final JobId jobId1 = createJob(testJobName + 1, testJobVersion, BUSYBOX, IDLE_COMMAND,
                                      EMPTY_ENV, ports1);
@@ -99,6 +89,7 @@ public class MultiplePortJobTest extends SystemTestBase {
       deployJob(jobId1, testHost());
       final TaskStatus firstTaskStatus1 = awaitJobState(client, testHost(), jobId1, RUNNING,
                                                         LONG_WAIT_SECONDS, SECONDS);
+
       final JobId jobId2 = createJob(testJobName + 2, testJobVersion, BUSYBOX, IDLE_COMMAND,
                                      EMPTY_ENV, ports2);
       assertNotNull(jobId2);
@@ -111,8 +102,8 @@ public class MultiplePortJobTest extends SystemTestBase {
       assertTrue(portRange.contains(firstTaskStatus2.getPorts().get("foo").getExternalPort()));
 
       // Verify we allocated the static ports we asked for.
-      assertEquals(expectedMapping1.get("bar"), firstTaskStatus1.getPorts().get("bar"));
-      assertEquals(expectedMapping2.get("bar"), firstTaskStatus2.getPorts().get("bar"));
+      assertEquals(staticMapping1, firstTaskStatus1.getPorts().get("bar"));
+      assertEquals(staticMapping2, firstTaskStatus2.getPorts().get("bar"));
 
       // Verify we didn't allocate the same dynamic port to both jobs.
       assertNotEquals(firstTaskStatus1.getPorts().get("foo"),
@@ -161,7 +152,7 @@ public class MultiplePortJobTest extends SystemTestBase {
     awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final Map<String, PortMapping> ports =
-        ImmutableMap.of("bar", PortMapping.of(4712, externalPort1));
+        ImmutableMap.of("bar", staticMapping1);
 
     try (final DockerClient dockerClient = getNewDockerClient()) {
       final JobId jobId = createJob(testJobName + 1, testJobVersion, BUSYBOX,
