@@ -17,8 +17,6 @@
 
 package com.spotify.helios.master;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.Clock;
@@ -33,16 +31,18 @@ import org.junit.Test;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.HOURS;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class DeadAgentReaperTest {
 
-  private static  final long TIMEOUT_HOURS = 1000;
+  private static final long TIMEOUT_HOURS = 1000;
 
   private static class Datapoint {
 
@@ -81,12 +81,7 @@ public class DeadAgentReaperTest {
     );
 
     when(masterModel.listHosts()).thenReturn(Lists.newArrayList(
-        Iterables.transform(datapoints, new Function<Datapoint, String>() {
-          @Override
-          public String apply(final Datapoint input) {
-            return input.host;
-          }
-        })));
+        datapoints.stream().map(input -> input.host).collect(Collectors.toList())));
 
     for (final Datapoint datapoint : datapoints) {
       when(masterModel.getHostStatus(datapoint.host)).thenReturn(
@@ -101,15 +96,14 @@ public class DeadAgentReaperTest {
               .build());
     }
 
-    final DeadAgentReaper reaper = new DeadAgentReaper(
-        masterModel, TIMEOUT_HOURS, clock);
+    final DeadAgentReaper reaper = new DeadAgentReaper(masterModel, TIMEOUT_HOURS, clock);
     reaper.startAsync().awaitRunning();
-
-    verify(masterModel, timeout(5000).atLeastOnce()).listHosts();
 
     for (final Datapoint datapoint : datapoints) {
       if (datapoint.expectReap) {
         verify(masterModel, timeout(500)).deregisterHost(datapoint.host);
+      } else {
+        verify(masterModel, never()).deregisterHost(datapoint.host);
       }
     }
   }

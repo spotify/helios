@@ -41,6 +41,7 @@ public class MasterParser extends ServiceParser {
   private Argument zkAclAgentDigest;
   private Argument zkAclMasterPassword;
   private Argument agentReapingTimeout;
+  private Argument jobRetention;
 
   public MasterParser(final String... args) throws ArgumentParserException {
     super("helios-master", "Spotify Helios Master", args);
@@ -79,6 +80,7 @@ public class MasterParser extends ServiceParser {
         .setKafkaBrokers(getKafkaBrokers())
         .setStateDirectory(getStateDirectory())
         .setAgentReapingTimeout(options.getLong(agentReapingTimeout.getDest()))
+        .setJobRetention(options.getLong(jobRetention.getDest()))
         .setFfwdConfig(ffwdConfig(options));
 
     this.masterConfig = config;
@@ -108,6 +110,13 @@ public class MasterParser extends ServiceParser {
         .setDefault(TimeUnit.DAYS.toHours(14))
         .help("In hours. Agents will be automatically de-registered if they are DOWN for more " +
               "than the specified timeout. To disable reaping, set to 0.");
+
+    jobRetention = parser.addArgument("--job-retention")
+        .type(Long.class)
+        .setDefault(-1L)
+        .help("In days. Jobs not deployed anywhere and with a job history showing they were last " +
+              "used before the specified retention time will be removed. " +
+              "This is disabled by default by setting it to a sentinel value of -1.");
   }
 
   public MasterConfig getMasterConfig() {
