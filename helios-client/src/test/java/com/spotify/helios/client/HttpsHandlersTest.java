@@ -17,8 +17,8 @@
 
 package com.spotify.helios.client;
 
-import com.spotify.helios.client.HttpsHandlers.CertificateAndPrivateKey;
 import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
+import com.spotify.helios.client.tls.CertificateAndPrivateKey;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
 
@@ -27,6 +27,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import java.nio.file.Paths;
+import java.util.Random;
 
 import static com.google.common.io.Resources.getResource;
 import static com.spotify.helios.common.Hash.sha1digest;
@@ -55,8 +56,12 @@ public class HttpsHandlersTest {
 
   @Test
   public void testSshAgent() throws Exception {
+    final byte[] random = new byte[255];
+    new Random().nextBytes(random);
+
     final AgentProxy proxy = mock(AgentProxy.class);
     final Identity identity = mock(Identity.class);
+    when(identity.getKeyBlob()).thenReturn(random);
 
     when(proxy.sign(any(Identity.class), any(byte[].class))).thenAnswer(new Answer<byte[]>() {
       @Override
