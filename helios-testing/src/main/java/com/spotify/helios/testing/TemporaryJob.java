@@ -230,7 +230,7 @@ public class TemporaryJob {
 
   /**
    * Undeploys and removes this TemporaryJob from the Helios cluster. This is normally done
-   * automatically by TemporaryJObs at the end of the test run. Use this method if you need to
+   * automatically by TemporaryJobs at the end of the test run. Use this method if you need to
    * manually undeploy a job prior to the end of the test run.
    */
   public void undeploy() {
