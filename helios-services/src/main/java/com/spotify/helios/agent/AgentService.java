@@ -251,6 +251,7 @@ public class AgentService extends AbstractIdleService implements Managed {
                                                                           dockerClient);
 
     this.hostInfoReporter = HostInfoReporter.newBuilder()
+        .setZKRegistrationSignal(zkRegistrationSignal)
         .setNodeUpdaterFactory(nodeUpdaterFactory)
         .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
         .setHost(config.getName())

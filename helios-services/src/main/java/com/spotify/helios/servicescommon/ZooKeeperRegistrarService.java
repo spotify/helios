@@ -25,7 +25,6 @@ import com.spotify.helios.agent.RetryScheduler;
 import com.spotify.helios.agent.Sleeper;
 import com.spotify.helios.agent.ThreadSleeper;
 import com.spotify.helios.master.HostNotFoundException;
-import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -59,7 +58,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
   private ZooKeeperRegistrarService(final Builder builder) {
     this.client = checkNotNull(builder.zooKeeperClient);
     this.zooKeeperRegistrar = checkNotNull(builder.zooKeeperRegistrar);
-    this.zkRegistrationSignal = builder.zkRegistrationSignal;
+    this.zkRegistrationSignal = checkNotNull(builder.zkRegistrationSignal, "zkRegistrationSignal");
     this.retryIntervalPolicy = checkNotNull(builder.retryIntervalPolicy);
     this.sleeper = checkNotNull(builder.sleeper);
     this.reactor = new DefaultReactor("zk-client-async-init", new Update());
@@ -153,14 +152,12 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
 
         try {
           zooKeeperRegistrar.tryToRegister(client);
-          if (zkRegistrationSignal != null) {
-            zkRegistrationSignal.countDown();
-          }
+          zkRegistrationSignal.countDown();
           return;
         } catch (Exception e) {
           if (e instanceof ConnectionLossException) {
             log.warn("ZooKeeper connection lost, retrying registration in {} ms", sleep);
-          } else if (e instanceof HostNotFoundException || e instanceof HostStillInUseException) {
+          } else if (e instanceof HostNotFoundException) {
             log.error("ZooKeeper deregistration of old hostname failed, retrying in {} ms: {}",
                       sleep, e);
           } else {
