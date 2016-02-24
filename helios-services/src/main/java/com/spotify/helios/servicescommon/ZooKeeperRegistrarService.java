@@ -25,7 +25,6 @@ import com.spotify.helios.agent.RetryScheduler;
 import com.spotify.helios.agent.Sleeper;
 import com.spotify.helios.agent.ThreadSleeper;
 import com.spotify.helios.master.HostNotFoundException;
-import com.spotify.helios.master.HostStillInUseException;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -35,6 +34,7 @@ import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 
 import static com.google.common.base.Preconditions.checkNotNull;
@@ -51,7 +51,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
 
   private final ZooKeeperClient client;
   private final ZooKeeperRegistrar zooKeeperRegistrar;
-  private final CountDownLatch zkRegistrationSignal;
+  private final Optional<CountDownLatch> zkRegistrationSignal;
   private final RetryIntervalPolicy retryIntervalPolicy;
   private final Sleeper sleeper;
   private final Reactor reactor;
@@ -82,7 +82,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
 
     private ZooKeeperClient zooKeeperClient;
     private ZooKeeperRegistrar zooKeeperRegistrar;
-    private CountDownLatch zkRegistrationSignal;
+    private Optional<CountDownLatch> zkRegistrationSignal;
     private RetryIntervalPolicy retryIntervalPolicy;
     private Sleeper sleeper;
 
@@ -99,7 +99,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
     }
 
     public Builder setZKRegistrationSignal(final CountDownLatch zkRegistrationSignal) {
-      this.zkRegistrationSignal = zkRegistrationSignal;
+      this.zkRegistrationSignal = Optional.of(zkRegistrationSignal);
       return this;
     }
 
@@ -151,22 +151,31 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
       while (isAlive()) {
         final long sleep = retryScheduler.nextMillis();
 
+        boolean successfullyRegistered = false;
+
         try {
-          zooKeeperRegistrar.tryToRegister(client);
-          if (zkRegistrationSignal != null) {
-            zkRegistrationSignal.countDown();
-          }
-          return;
+          successfullyRegistered = zooKeeperRegistrar.tryToRegister(client);
         } catch (Exception e) {
           if (e instanceof ConnectionLossException) {
             log.warn("ZooKeeper connection lost, retrying registration in {} ms", sleep);
-          } else if (e instanceof HostNotFoundException || e instanceof HostStillInUseException) {
+          } else if (e instanceof HostNotFoundException) {
             log.error("ZooKeeper deregistration of old hostname failed, retrying in {} ms: {}",
                       sleep, e);
           } else {
             log.error("ZooKeeper registration failed, retrying in {} ms", sleep, e);
           }
+        }
 
+        // only exit the loop when zookeeper registration is successful. if registration does not
+        // succeed because another host is already registered, this will cause another registration
+        // attempt after sleeping. if zookeeper is cannot be connected to, this will also cause
+        // another attempt after sleeping.
+        if (successfullyRegistered) {
+          log.info("Successfully registered host in zookeeper");
+          zkRegistrationSignal.ifPresent(CountDownLatch::countDown);
+          return;
+        } else {
+          log.info("registration not successful, sleeping for {} ms", sleep);
           sleeper.sleep(sleep);
         }
       }

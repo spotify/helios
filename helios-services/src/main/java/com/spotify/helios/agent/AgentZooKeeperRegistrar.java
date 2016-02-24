@@ -50,7 +50,6 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
 
   private static final byte[] EMPTY_BYTES = new byte[]{};
 
-  private final Service agentService;
   private final String name;
   private final String id;
   private final long zooKeeperRegistrationTtlMillis;
@@ -58,9 +57,8 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
 
   private PersistentEphemeralNode upNode;
 
-  public AgentZooKeeperRegistrar(final Service agentService, final String name, final String id,
+  public AgentZooKeeperRegistrar(final String name, final String id,
                                  final int zooKeeperRegistrationTtlMinutes) {
-    this.agentService = agentService;
     this.name = name;
     this.id = id;
     this.zooKeeperRegistrationTtlMillis =
@@ -86,7 +84,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
   }
 
   @Override
-  public void tryToRegister(ZooKeeperClient client)
+  public boolean tryToRegister(ZooKeeperClient client)
       throws KeeperException, HostNotFoundException {
     final String idPath = Paths.configHostId(name);
     final String hostInfoPath = Paths.statusHostInfo(name);
@@ -106,8 +104,8 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
             final String message = format("Another agent already registered as '%s' " +
                                           "(local=%s remote=%s).", name, id, existingId);
             log.error(message);
-            agentService.stopAsync();
-            return;
+            // signal to the caller if registration was successful or not
+            return false;
           }
 
           log.info("Another agent has already registered as '{}', but its ID node was last " +
@@ -135,6 +133,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
     }
 
     log.info("ZooKeeper registration complete");
+    return true;
   }
 
 }

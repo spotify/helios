@@ -64,7 +64,7 @@ public class MasterZooKeeperRegistrar implements ZooKeeperRegistrar {
   }
 
   @Override
-  public void tryToRegister(final ZooKeeperClient client) throws KeeperException {
+  public boolean tryToRegister(final ZooKeeperClient client) throws KeeperException {
 
     client.ensurePath(Paths.configHosts());
     client.ensurePath(Paths.configJobs());
@@ -83,5 +83,6 @@ public class MasterZooKeeperRegistrar implements ZooKeeperRegistrar {
     }
 
     log.info("ZooKeeper registration complete");
+    return true;
   }
 }

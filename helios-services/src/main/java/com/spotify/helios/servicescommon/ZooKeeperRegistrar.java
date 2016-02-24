@@ -42,9 +42,10 @@ public interface ZooKeeperRegistrar {
    * Called when ZK client connects. Handler should attempt to do on connection initialization here.
    *
    * @param client The zookeeper client.
+   * @return if registration was successful
    * @throws KeeperException If an unexpected zookeeper error occurs.
    * @throws HostNotFoundException If the hostname we are trying to re-register as doesn't exist.
    */
-  void tryToRegister(final ZooKeeperClient client)
+  boolean tryToRegister(final ZooKeeperClient client)
       throws KeeperException, HostNotFoundException;
 }
