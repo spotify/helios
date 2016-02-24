@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
@@ -46,12 +47,14 @@ public class LabelReporter extends InterruptingScheduledService {
                        final CountDownLatch zkRegistrationSignal) {
     this.labels = labels;
     this.nodeUpdater = nodeUpdaterFactory.create(Paths.statusHostLabels(host));
-    this.zkRegistrationSignal = zkRegistrationSignal;
+    this.zkRegistrationSignal = checkNotNull(zkRegistrationSignal, "zkRegistrationSignal");
   }
 
 
   @Override
   protected void runOneIteration() throws InterruptedException {
+    // Wait for the agent to register itself with ZooKeeper to prevent this reporter from winning a
+    // race and then having its data erased.
     zkRegistrationSignal.await();
     final boolean succesful = nodeUpdater.update(Json.asBytesUnchecked(labels));
     if (succesful) {

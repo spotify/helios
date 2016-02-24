@@ -31,6 +31,7 @@ import com.sun.management.OperatingSystemMXBean;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -48,6 +49,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
   public static final int DEFAULT_INTERVAL = 1;
   public static final TimeUnit DEFAUL_TIMEUNIT = MINUTES;
 
+  private final CountDownLatch zkRegistrationSignal;
   private final OperatingSystemMXBean operatingSystemMXBean;
   private final ZooKeeperNodeUpdater nodeUpdater;
   private final int interval;
@@ -56,6 +58,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
   private final DockerHost dockerHost;
 
   HostInfoReporter(final Builder builder) {
+    this.zkRegistrationSignal = checkNotNull(builder.zkRegistrationSignal);
     this.operatingSystemMXBean = checkNotNull(builder.operatingSystemMXBean,
                                               "operatingSystemMXBean");
     this.nodeUpdater = builder.nodeUpdaterFactory.create(
@@ -88,6 +91,9 @@ public class HostInfoReporter extends InterruptingScheduledService {
         .setDockerCertPath(dockerHost.dockerCertPath())
         .build();
 
+    // Wait for the agent to register itself with ZooKeeper to prevent this reporter from winning a
+    // race in updating the ZooKeeper node that'll prevent the agent from registering itself in ZK.
+    zkRegistrationSignal.await();
     nodeUpdater.update(hostInfo.toJsonBytes());
   }
 
@@ -145,6 +151,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
     Builder() {
     }
 
+    private CountDownLatch zkRegistrationSignal;
     private NodeUpdaterFactory nodeUpdaterFactory;
     private OperatingSystemMXBean operatingSystemMXBean;
     private String host;
@@ -186,6 +193,11 @@ public class HostInfoReporter extends InterruptingScheduledService {
 
     public Builder setTimeUnit(final TimeUnit timeUnit) {
       this.timeUnit = timeUnit;
+      return this;
+    }
+
+    public Builder setZKRegistrationSignal(final CountDownLatch zkRegistrationSignal) {
+      this.zkRegistrationSignal = zkRegistrationSignal;
       return this;
     }
 
