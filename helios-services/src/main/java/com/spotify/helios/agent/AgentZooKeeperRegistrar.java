@@ -17,8 +17,6 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.util.concurrent.Service;
-
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.master.HostNotFoundException;
@@ -104,7 +102,6 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
             final String message = format("Another agent already registered as '%s' " +
                                           "(local=%s remote=%s).", name, id, existingId);
             log.error(message);
-            // signal to the caller if registration was successful or not
             return false;
           }
 

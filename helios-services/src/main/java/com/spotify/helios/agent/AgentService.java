@@ -256,12 +256,14 @@ public class AgentService extends AbstractIdleService implements Managed {
         .setHost(config.getName())
         .setDockerClient(dockerClient)
         .setDockerHost(config.getDockerHost())
+        .setLatch(zkRegistrationSignal)
         .build();
 
     this.agentInfoReporter = AgentInfoReporter.newBuilder()
         .setNodeUpdaterFactory(nodeUpdaterFactory)
         .setRuntimeMXBean(getRuntimeMXBean())
         .setHost(config.getName())
+        .setLatch(zkRegistrationSignal)
         .build();
 
     this.environmentVariableReporter = new EnvironmentVariableReporter(

@@ -33,28 +33,26 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  * Puts the labels the agent has been assigned into ZK so they can be
  * visible to the master and via the API.
  */
-public class LabelReporter extends InterruptingScheduledService {
+public class LabelReporter extends SignalAwaitingService {
 
   private static final int RETRY_INTERVAL_MILLIS = 1000;
 
   private final Map<String, String> labels;
   private final ZooKeeperNodeUpdater nodeUpdater;
-  private final CountDownLatch zkRegistrationSignal;
 
   public LabelReporter(final String host, final Map<String, String> labels,
                        final NodeUpdaterFactory nodeUpdaterFactory,
                        final CountDownLatch zkRegistrationSignal) {
+    super(zkRegistrationSignal);
     this.labels = labels;
     this.nodeUpdater = nodeUpdaterFactory.create(Paths.statusHostLabels(host));
-    this.zkRegistrationSignal = zkRegistrationSignal;
   }
 
 
   @Override
   protected void runOneIteration() throws InterruptedException {
-    zkRegistrationSignal.await();
-    final boolean succesful = nodeUpdater.update(Json.asBytesUnchecked(labels));
-    if (succesful) {
+    final boolean successful = nodeUpdater.update(Json.asBytesUnchecked(labels));
+    if (successful) {
       stopAsync();
     }
   }

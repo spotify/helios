@@ -24,6 +24,7 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 
 import java.lang.management.RuntimeMXBean;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -34,10 +35,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 /**
  * Report various Agent runtime information via ZK so it can be visible to clients of Helios.
  */
-public class AgentInfoReporter extends InterruptingScheduledService {
+public class AgentInfoReporter extends SignalAwaitingService {
 
-  public static final int DEFAULT_INTERVAL = 1;
-  public static final TimeUnit DEFAUL_TIMEUNIT = MINUTES;
 
   private final RuntimeMXBean runtimeMXBean;
   private final ZooKeeperNodeUpdater nodeUpdater;
@@ -45,6 +44,7 @@ public class AgentInfoReporter extends InterruptingScheduledService {
   private final TimeUnit timeUnit;
 
   AgentInfoReporter(final Builder builder) {
+    super(checkNotNull(builder.latch));
     this.runtimeMXBean = checkNotNull(builder.runtimeMXBean);
     this.nodeUpdater = builder.nodeUpdaterFactory.create(Paths.statusHostAgentInfo(builder.host));
     this.interval = builder.interval;
@@ -88,8 +88,9 @@ public class AgentInfoReporter extends InterruptingScheduledService {
     private NodeUpdaterFactory nodeUpdaterFactory;
     private RuntimeMXBean runtimeMXBean;
     private String host;
-    private int interval = DEFAULT_INTERVAL;
-    private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
+    private int interval = 1;
+    private TimeUnit timeUnit = MINUTES;
+    private CountDownLatch latch;
 
     public Builder setNodeUpdaterFactory(final NodeUpdaterFactory nodeUpdaterFactory) {
       this.nodeUpdaterFactory = nodeUpdaterFactory;
@@ -114,6 +115,11 @@ public class AgentInfoReporter extends InterruptingScheduledService {
 
     public Builder setTimeUnit(final TimeUnit timeUnit) {
       this.timeUnit = timeUnit;
+      return this;
+    }
+
+    public Builder setLatch(CountDownLatch latch) {
+      this.latch = latch;
       return this;
     }
 

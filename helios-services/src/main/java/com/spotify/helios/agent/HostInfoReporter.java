@@ -31,6 +31,7 @@ import com.sun.management.OperatingSystemMXBean;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -43,10 +44,8 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 /**
  * Reports various bits of system information to ZK so it can be viewed via the the API.
  */
-public class HostInfoReporter extends InterruptingScheduledService {
+public class HostInfoReporter extends SignalAwaitingService {
 
-  public static final int DEFAULT_INTERVAL = 1;
-  public static final TimeUnit DEFAUL_TIMEUNIT = MINUTES;
 
   private final OperatingSystemMXBean operatingSystemMXBean;
   private final ZooKeeperNodeUpdater nodeUpdater;
@@ -56,6 +55,7 @@ public class HostInfoReporter extends InterruptingScheduledService {
   private final DockerHost dockerHost;
 
   HostInfoReporter(final Builder builder) {
+    super(checkNotNull(builder.latch));
     this.operatingSystemMXBean = checkNotNull(builder.operatingSystemMXBean,
                                               "operatingSystemMXBean");
     this.nodeUpdater = builder.nodeUpdaterFactory.create(
@@ -150,8 +150,9 @@ public class HostInfoReporter extends InterruptingScheduledService {
     private String host;
     private DockerClient dockerClient;
     private DockerHost dockerHost;
-    private int interval = DEFAULT_INTERVAL;
-    private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
+    private int interval = 1;
+    private TimeUnit timeUnit = MINUTES;
+    private CountDownLatch latch;
 
     public Builder setNodeUpdaterFactory(final NodeUpdaterFactory nodeUpdaterFactory) {
       this.nodeUpdaterFactory = nodeUpdaterFactory;
@@ -186,6 +187,11 @@ public class HostInfoReporter extends InterruptingScheduledService {
 
     public Builder setTimeUnit(final TimeUnit timeUnit) {
       this.timeUnit = timeUnit;
+      return this;
+    }
+
+    public Builder setLatch(CountDownLatch latch) {
+      this.latch = latch;
       return this;
     }
 
