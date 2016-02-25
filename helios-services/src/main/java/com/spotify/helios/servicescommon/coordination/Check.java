@@ -38,4 +38,24 @@ public class Check implements ZooKeeperOperation {
            "path='" + path + '\'' +
            '}';
   }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final Check check = (Check) o;
+
+    return path != null ? path.equals(check.path) : check.path == null;
+
+  }
+
+  @Override
+  public int hashCode() {
+    return path != null ? path.hashCode() : 0;
+  }
 }

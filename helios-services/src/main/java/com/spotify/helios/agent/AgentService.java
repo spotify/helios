@@ -30,6 +30,7 @@ import com.spotify.docker.client.DockerCertificateException;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.HeliosRuntimeException;
+import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
@@ -404,7 +405,7 @@ public class AgentService extends AbstractIdleService implements Managed {
 
     // Register the agent
     final AgentZooKeeperRegistrar agentZooKeeperRegistrar = new AgentZooKeeperRegistrar(
-        config.getName(), id, config.getZooKeeperRegistrationTtlMinutes());
+        config.getName(), id, config.getZooKeeperRegistrationTtlMinutes(), new SystemClock());
     zkRegistrar = ZooKeeperRegistrarService.newBuilder()
         .setZooKeeperClient(client)
         .setZooKeeperRegistrar(agentZooKeeperRegistrar)

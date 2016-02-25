@@ -18,7 +18,6 @@
 package com.spotify.helios.agent;
 
 import com.spotify.helios.common.Clock;
-import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
@@ -56,12 +55,12 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
   private PersistentEphemeralNode upNode;
 
   public AgentZooKeeperRegistrar(final String name, final String id,
-                                 final int zooKeeperRegistrationTtlMinutes) {
+                                 final int zooKeeperRegistrationTtlMinutes, final Clock clock) {
     this.name = name;
     this.id = id;
     this.zooKeeperRegistrationTtlMillis =
         TimeUnit.MILLISECONDS.convert(zooKeeperRegistrationTtlMinutes, TimeUnit.MINUTES);
-    this.clock = new SystemClock();
+    this.clock = clock;
   }
 
   @Override
