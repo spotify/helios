@@ -63,14 +63,16 @@ public class ZooKeeperRegistrarServiceTest {
   @Mock private Listenable<ConnectionStateListener> connectionStateListenerListenable;
   @Mock private Sleeper sleeper;
 
-  private @Captor ArgumentCaptor<ConnectionStateListener> zkClientConnectionListenerCaptor;
+  @Captor private ArgumentCaptor<ConnectionStateListener> zkClientConnectionListenerCaptor;
 
   private SettableFuture<Void> complete = SettableFuture.create();
+  private final SettableFuture<Void> shutdownComplete = SettableFuture.create();
 
-  private final RetryIntervalPolicy retryIntervalPolicy = BoundedRandomExponentialBackoff.newBuilder()
-      .setMinInterval(1, MILLISECONDS)
-      .setMaxInterval(30, MILLISECONDS)
-      .build();
+  private final RetryIntervalPolicy retryIntervalPolicy =
+      BoundedRandomExponentialBackoff.newBuilder()
+          .setMinInterval(1, MILLISECONDS)
+          .setMaxInterval(30, MILLISECONDS)
+          .build();
 
   @Before
   public void setup() {
@@ -79,23 +81,56 @@ public class ZooKeeperRegistrarServiceTest {
         .addListener(zkClientConnectionListenerCaptor.capture());
   }
 
-  @Test
-  public void testAllGood() throws Exception {
-    final ZooKeeperRegistrar zooKeeperRegistrar = new ZooKeeperRegistrar() {
+  /**
+   * Creates a new ZooKeeperRegistrar that completes {@link #complete} when tryToRegister is
+   * called and {@link #shutdownComplete} when shutDown is called..
+   *
+   * @param registered what the return value from
+   *                   {@link ZooKeeperRegistrar#tryToRegister(ZooKeeperClient)} should be
+   */
+  private ZooKeeperRegistrar createStubRegistrar(boolean registered) {
+    return createStubRegistrar(registered, client -> { });
+  }
+
+  /**
+   * An overload of {@link #createStubRegistrar(boolean)} which invokes the Consumer in
+   * tryToRegister before completing {@link #complete}. This can be used to customize the behavior
+   * of tryToRegister without having to declare yet another subclass of ZooKeeperRegistrar.
+   */
+  private ZooKeeperRegistrar createStubRegistrar(
+      boolean registered, ClientConsumer clientConsumer) {
+
+    return new ZooKeeperRegistrar() {
       @Override
       public void startUp() throws Exception {
       }
 
       @Override
       public void shutDown() throws Exception {
+        shutdownComplete.set(null);
       }
 
       @Override
-      public boolean tryToRegister(ZooKeeperClient client) throws KeeperException {
+      public boolean tryToRegister(ZooKeeperClient client)
+          throws KeeperException, HostNotFoundException {
+
+        clientConsumer.accept(client);
+
         complete.set(null);
-        return true;
+        return registered;
       }
     };
+  }
+
+  // Would just use Consumer<ZooKeeperClient> but Consumer does not throw checked exceptions
+  @FunctionalInterface
+  private interface ClientConsumer{
+    void accept(ZooKeeperClient client) throws KeeperException, HostNotFoundException;
+  }
+
+  @Test
+  public void testAllGood() throws Exception {
+    final ZooKeeperRegistrar zooKeeperRegistrar = createStubRegistrar(true);
 
     final CountDownLatch latch = new CountDownLatch(1);
 
@@ -117,25 +152,7 @@ public class ZooKeeperRegistrarServiceTest {
 
   @Test
   public void testShutdown() throws Exception {
-
-    final SettableFuture<Void> shutdownComplete = SettableFuture.create();
-
-    final ZooKeeperRegistrar zooKeeperRegistrar = new ZooKeeperRegistrar() {
-      @Override
-      public void startUp() throws Exception {
-      }
-
-      @Override
-      public void shutDown() throws Exception {
-        shutdownComplete.set(null);
-      }
-
-      @Override
-      public boolean tryToRegister(ZooKeeperClient client) throws KeeperException {
-        complete.set(null);
-        return true;
-      }
-    };
+    final ZooKeeperRegistrar zooKeeperRegistrar = createStubRegistrar(true);
 
     final ZooKeeperRegistrarService init = ZooKeeperRegistrarService.newBuilder()
         .setZooKeeperClient(zkClient)
@@ -157,18 +174,7 @@ public class ZooKeeperRegistrarServiceTest {
 
     final AtomicInteger counter = new AtomicInteger(0);
 
-    final ZooKeeperRegistrar zooKeeperRegistrar = new ZooKeeperRegistrar() {
-      @Override
-      public void startUp() throws Exception {
-      }
-
-      @Override
-      public void shutDown() throws Exception {
-      }
-
-      @Override
-      public boolean tryToRegister(ZooKeeperClient client)
-          throws KeeperException, HostNotFoundException {
+    final ZooKeeperRegistrar zooKeeperRegistrar = createStubRegistrar(true, client -> {
         final int count = counter.incrementAndGet();
         if (count == 1) {
           throw new KeeperException.ConnectionLossException();
@@ -177,11 +183,7 @@ public class ZooKeeperRegistrarServiceTest {
         if (count == 2) {
           throw new HostNotFoundException("Host not found");
         }
-
-        complete.set(null);
-        return true;
-      }
-    };
+      });
 
     final ZooKeeperRegistrarService init = ZooKeeperRegistrarService.newBuilder()
         .setZooKeeperClient(zkClient)
@@ -203,23 +205,8 @@ public class ZooKeeperRegistrarServiceTest {
 
     final AtomicInteger counter = new AtomicInteger(0);
 
-    final ZooKeeperRegistrar zooKeeperRegistrar = new ZooKeeperRegistrar() {
-      @Override
-      public void startUp() throws Exception {
-      }
-
-      @Override
-      public void shutDown() throws Exception {
-      }
-
-      @Override
-      public boolean tryToRegister(ZooKeeperClient client) throws KeeperException {
-        counter.incrementAndGet();
-
-        complete.set(null);
-        return true;
-      }
-    };
+    final ZooKeeperRegistrar zooKeeperRegistrar =
+        createStubRegistrar(true, client -> counter.incrementAndGet());
 
     final ZooKeeperRegistrarService init = ZooKeeperRegistrarService.newBuilder()
         .setZooKeeperClient(zkClient)
@@ -243,21 +230,7 @@ public class ZooKeeperRegistrarServiceTest {
 
   @Test
   public void testLatchNotSignalledOnRegistrationConflict() throws Exception {
-    final ZooKeeperRegistrar zooKeeperRegistrar = new ZooKeeperRegistrar() {
-      @Override
-      public void startUp() throws Exception {
-      }
-
-      @Override
-      public void shutDown() throws Exception {
-      }
-
-      @Override
-      public boolean tryToRegister(ZooKeeperClient client) throws KeeperException {
-        complete.set(null);
-        return false;
-      }
-    };
+    final ZooKeeperRegistrar zooKeeperRegistrar =  createStubRegistrar(false);
 
     final int initialCount = 1;
     final CountDownLatch latch = new CountDownLatch(initialCount);
