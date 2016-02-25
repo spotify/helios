@@ -98,17 +98,21 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
         final Stat hostInfoStat = client.stat(hostInfoPath);
         if (hostInfoStat != null) {
           final long mtime = hostInfoStat.getMtime();
-          if ((clock.now().getMillis() - mtime) < zooKeeperRegistrationTtlMillis) {
-            final String message = format("Another agent already registered as '%s' " +
-                                          "(local=%s remote=%s).", name, id, existingId);
-            log.error(message);
+          final long diff = clock.now().getMillis() - mtime;
+          if (diff < zooKeeperRegistrationTtlMillis) {
+            final String message = format(
+                "Another agent already registered as '%s' (local=%s remote=%s). "
+                + "That agent's registration expires in %d seconds",
+                name, id.trim(), existingId.trim(),
+                TimeUnit.MILLISECONDS.toSeconds(zooKeeperRegistrationTtlMillis - diff));
+            log.warn(message);
             return false;
           }
 
           log.info("Another agent has already registered as '{}', but its ID node was last " +
                    "updated more than {} milliseconds ago. I\'m deregistering the agent with the "
                    + "old ID of {} and replacing it with this new agent with ID '{}'.",
-                   name, zooKeeperRegistrationTtlMillis, existingId, id);
+                   name, zooKeeperRegistrationTtlMillis, existingId.trim(), id.trim());
         } else {
           log.info("Another agent has registered as '{}', but it never updated '{}' in ZooKeeper. "
                    + "I'll assume it's dead and deregister it.", name, hostInfoPath);

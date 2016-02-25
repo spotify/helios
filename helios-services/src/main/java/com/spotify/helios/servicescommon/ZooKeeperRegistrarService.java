@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.Service.State.STOPPING;
@@ -175,7 +176,8 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
           zkRegistrationSignal.ifPresent(CountDownLatch::countDown);
           return;
         } else {
-          log.info("registration not successful, sleeping for {} ms", sleep);
+          log.warn("registration not successful, sleeping for {} seconds",
+                   TimeUnit.MILLISECONDS.toSeconds(sleep));
           sleeper.sleep(sleep);
         }
       }
