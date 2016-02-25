@@ -17,6 +17,7 @@
 
 package com.spotify.helios.agent;
 
+import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -35,7 +36,7 @@ public abstract class SignalAwaitingService extends InterruptingScheduledService
   private final CountDownLatch signal;
 
   public SignalAwaitingService(final CountDownLatch signal) {
-    this.signal = signal;
+    this.signal = Objects.requireNonNull(signal);
   }
 
   @Override

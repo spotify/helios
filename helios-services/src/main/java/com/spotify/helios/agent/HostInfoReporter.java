@@ -37,8 +37,8 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Reports various bits of system information to ZK so it can be viewed via the the API.
@@ -57,13 +57,14 @@ public class HostInfoReporter extends SignalAwaitingService {
                    NodeUpdaterFactory nodeUpdaterFactory, String host, DockerClient dockerClient,
                    DockerHost dockerHost, int interval, TimeUnit timeUnit, CountDownLatch latch) {
 
-    super(checkNotNull(latch));
-    this.operatingSystemMXBean = checkNotNull(operatingSystemMXBean, "operatingSystemMXBean");
-    this.nodeUpdater = nodeUpdaterFactory.create(Paths.statusHostInfo(checkNotNull(host, "host")));
-    this.dockerClient = checkNotNull(dockerClient, "dockerClient");
-    this.dockerHost = checkNotNull(dockerHost, "dockerHost");
+    super(latch);
+    this.operatingSystemMXBean = requireNonNull(operatingSystemMXBean, "operatingSystemMXBean");
+    final String hostInfoPath = Paths.statusHostInfo(requireNonNull(host, "host"));
+    this.nodeUpdater = nodeUpdaterFactory.create(hostInfoPath);
+    this.dockerClient = requireNonNull(dockerClient, "dockerClient");
+    this.dockerHost = requireNonNull(dockerHost, "dockerHost");
     this.interval = interval;
-    this.timeUnit = checkNotNull(timeUnit, "timeUnit");
+    this.timeUnit = requireNonNull(timeUnit, "timeUnit");
   }
 
   @Override

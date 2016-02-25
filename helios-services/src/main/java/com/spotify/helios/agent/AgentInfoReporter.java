@@ -29,7 +29,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkNotNull;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Report various Agent runtime information via ZK so it can be visible to clients of Helios.
@@ -44,11 +44,11 @@ public class AgentInfoReporter extends SignalAwaitingService {
 
   AgentInfoReporter(RuntimeMXBean runtimeMXBean, NodeUpdaterFactory nodeUpdaterFactory, String host,
                     int interval, TimeUnit timeUnit, CountDownLatch latch) {
-    super(checkNotNull(latch));
-    this.runtimeMXBean = checkNotNull(runtimeMXBean);
+    super(latch);
+    this.runtimeMXBean = requireNonNull(runtimeMXBean);
     this.nodeUpdater = nodeUpdaterFactory.create(Paths.statusHostAgentInfo(host));
     this.interval = interval;
-    this.timeUnit = checkNotNull(timeUnit);
+    this.timeUnit = requireNonNull(timeUnit);
   }
 
   @Override
