@@ -26,12 +26,15 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 
-import org.apache.commons.lang.time.DurationFormatUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.TimeZone;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -46,12 +49,14 @@ public class OldJobReaper extends InterruptingScheduledService {
   private static final Clock SYSTEM_CLOCK = new SystemClock();
   private static final long INTERVAL = 1;
   private static final TimeUnit INTERVAL_TIME_UNIT = TimeUnit.DAYS;
+  private static final DateFormat DATE_FORMATTER =
+      new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z");
 
   private static final Logger log = LoggerFactory.getLogger(OldJobReaper.class);
 
   private final MasterModel masterModel;
+  private final long retentionDays;
   private final long retentionMillis;
-  private final String retentionString;
   private final Clock clock;
 
   public OldJobReaper(final MasterModel masterModel, final long retentionDays) {
@@ -63,9 +68,10 @@ public class OldJobReaper extends InterruptingScheduledService {
                final Clock clock) {
     this.masterModel = masterModel;
     checkArgument(retentionDays > 0);
+    this.retentionDays = retentionDays;
     this.retentionMillis = TimeUnit.DAYS.toMillis(retentionDays);
-    this.retentionString = DurationFormatUtils.formatDuration(retentionMillis, "DD H:mm");
     this.clock = clock;
+    DATE_FORMATTER.setTimeZone(TimeZone.getTimeZone("UTC"));
   }
 
   @Override
@@ -92,16 +98,19 @@ public class OldJobReaper extends InterruptingScheduledService {
               reap = true;
             } else if ((clock.now().getMillis() - created) > retentionMillis) {
               log.info("Marked job '{}' for reaping (not deployed, no history, creation date "
-                       + "before retention time of {})", jobId, retentionString);
+                       + "of {} before retention time of {} days)", jobId,
+                       DATE_FORMATTER.format(new Date(created)), retentionDays);
               reap = true;
             } else {
-              log.info("NOT reaping job '{}' (not deployed, no history, creation date after "
-                       + "retention time of {})", jobId, retentionString);
+              log.info("NOT reaping job '{}' (not deployed, no history, creation date of {} after "
+                       + "retention time of {} days)", jobId,
+                       DATE_FORMATTER.format(new Date(created)), retentionDays);
               reap = false;
             }
           } else {
             // Get the last event which is the most recent
             final TaskStatusEvent event = events.get(events.size() - 1);
+            final String eventDate = DATE_FORMATTER.format(new Date(event.getTimestamp()));
             // Calculate the amount of time in milliseconds that has elapsed since the last event
             final long unusedDurationMillis = clock.now().getMillis() - event.getTimestamp();
 
@@ -109,11 +118,13 @@ public class OldJobReaper extends InterruptingScheduledService {
             // A job not deployed, with history, and last used recently should NOT BE reaped
             if (unusedDurationMillis > retentionMillis) {
               log.info("Marked job '{}' for reaping (not deployed, has history whose last event "
-                       + "was before the retention time of {})", jobId, retentionString);
+                       + "on {} was before the retention time of {} days)", jobId, eventDate,
+                       retentionDays);
               reap = true;
             } else {
               log.info("NOT reaping job '{}' (not deployed, has history whose last event "
-                       + "was after the retention time of {})", jobId, retentionString);
+                       + "on {} was after the retention time of {} days)", jobId, eventDate,
+                       retentionDays);
               reap = false;
             }
           }
