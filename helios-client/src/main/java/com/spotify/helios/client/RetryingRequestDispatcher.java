@@ -22,9 +22,11 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
 
 import com.spotify.helios.common.Clock;
+import com.spotify.helios.common.SystemClock;
 
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -34,9 +36,8 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * A {@link RequestDispatcher} that retries.
@@ -45,24 +46,22 @@ class RetryingRequestDispatcher implements RequestDispatcher {
 
   private static final Logger log = LoggerFactory.getLogger(RetryingRequestDispatcher.class);
 
-  private static final long RETRY_TIMEOUT_MILLIS = SECONDS.toMillis(60);
-
   private final ListeningScheduledExecutorService executorService;
   private final RequestDispatcher delegate;
   private final Clock clock;
-  private final long delay;
-  private final TimeUnit delayTimeUnit;
+  private final long retryTimeoutMillis;
+  private final long delayMillis;
 
-  RetryingRequestDispatcher(final RequestDispatcher delegate,
+  private RetryingRequestDispatcher(final RequestDispatcher delegate,
                             final ListeningScheduledExecutorService executorService,
                             final Clock clock,
-                            final long delay,
-                            final TimeUnit delayTimeUnit) {
+                            final long retryTimeoutMillis,
+                            final long delayMillis) {
     this.delegate = delegate;
     this.executorService = executorService;
     this.clock = clock;
-    this.delay = delay;
-    this.delayTimeUnit = delayTimeUnit;
+    this.retryTimeoutMillis = retryTimeoutMillis;
+    this.delayMillis = delayMillis;
   }
 
   @Override
@@ -70,7 +69,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
                                             final String method,
                                             final byte[] entityBytes,
                                             final Map<String, List<String>> headers) {
-    final long deadline = clock.now().getMillis() + RETRY_TIMEOUT_MILLIS;
+    final long deadline = clock.now().getMillis() + retryTimeoutMillis;
     final SettableFuture<Response> future = SettableFuture.create();
     final Supplier<ListenableFuture<Response>> code = new Supplier<ListenableFuture<Response>>() {
       @Override
@@ -78,7 +77,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
         return delegate.request(uri, method, entityBytes, headers);
       }
     };
-    startRetry(future, code, deadline, delay, delayTimeUnit);
+    startRetry(future, code, deadline, delayMillis);
     return future;
   }
 
@@ -90,14 +89,13 @@ class RetryingRequestDispatcher implements RequestDispatcher {
   private void startRetry(final SettableFuture<Response> future,
                           final Supplier<ListenableFuture<Response>> code,
                           final long deadline,
-                          final long delay,
-                          final TimeUnit timeUnit) {
+                          final long delayMillis) {
 
     ListenableFuture<Response> codeFuture;
     try {
       codeFuture = code.get();
     } catch (Exception e) {
-      handleFailure(future, code, deadline, delay, timeUnit, e);
+      handleFailure(future, code, deadline, delayMillis, e);
       return;
     }
 
@@ -110,9 +108,9 @@ class RetryingRequestDispatcher implements RequestDispatcher {
       @Override
       public void onFailure(@NotNull Throwable t) {
         log.warn("Failed to connect, retrying in {} seconds.",
-                 timeUnit.convert(delay, TimeUnit.SECONDS));
+                 TimeUnit.MILLISECONDS.toSeconds(delayMillis));
         log.debug("Specific reason for connection failure follows", t);
-        handleFailure(future, code, deadline, delay, timeUnit, t);
+        handleFailure(future, code, deadline, delayMillis, t);
       }
     });
   }
@@ -120,22 +118,72 @@ class RetryingRequestDispatcher implements RequestDispatcher {
   private void handleFailure(final SettableFuture<Response> future,
                                  final Supplier<ListenableFuture<Response>> code,
                                  final long deadline,
-                                 final long delay,
-                                 final TimeUnit timeUnit,
+                                 final long delayMillis,
                                  final Throwable t) {
     if (clock.now().getMillis() < deadline) {
-      if (delay > 0) {
+      if (delayMillis > 0) {
         executorService.schedule(new Runnable() {
           @Override
           public void run() {
-            startRetry(future, code, deadline - 1, delay, timeUnit);
+            startRetry(future, code, deadline - 1, delayMillis);
           }
-        }, delay, timeUnit);
+        }, delayMillis, TimeUnit.MILLISECONDS);
       } else {
-        startRetry(future, code, deadline - 1, delay, timeUnit);
+        startRetry(future, code, deadline - 1, delayMillis);
       }
     } else {
       future.setException(t);
+    }
+  }
+
+  static Builder forDispatcher(RequestDispatcher delegate) {
+    return new Builder(delegate);
+  }
+
+  public static final class Builder {
+
+    private final RequestDispatcher delegate;
+    private ListeningScheduledExecutorService executor;
+    private Clock clock = new SystemClock();
+    private long retryTimeoutMillis = 60000;
+    private long delayMillis = 5000;
+
+    private Builder(final RequestDispatcher delegate) {
+      this.delegate = delegate;
+    }
+
+    public Builder setExecutor(ScheduledExecutorService executorService) {
+      this.executor = MoreExecutors.listeningDecorator(executorService);
+      return this;
+    }
+
+    /** Defaults to SystemClock. */
+    public Builder setClock(Clock clock) {
+      this.clock = clock;
+      return this;
+    }
+
+    /**
+     * Set the total amount of time that the RetryingRequestDispatcher allows before giving up on
+     * the request. Defaults to 60 seconds.
+     */
+    public Builder setRetryTimeout(long timeout, TimeUnit unit) {
+      this.retryTimeoutMillis = unit.toMillis(timeout);
+      return this;
+    }
+
+    /**
+     * Set how much time the RetryingRequestDispatcher waits to retry the request. Defaults to 5
+     * seconds.
+     */
+    public Builder setDelayOnFailure(long delay, TimeUnit unit) {
+      this.delayMillis = unit.toMillis(delay);
+      return this;
+    }
+
+    public RetryingRequestDispatcher build() {
+      return new RetryingRequestDispatcher(
+          delegate, executor, clock, retryTimeoutMillis, delayMillis);
     }
   }
 }

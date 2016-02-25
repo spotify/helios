@@ -19,13 +19,12 @@ package com.spotify.helios.client;
 
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
 
 import com.spotify.helios.common.Clock;
 
 import org.hamcrest.CoreMatchers;
 import org.joda.time.Instant;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -55,17 +54,25 @@ public class RetryingRequestDispatcherTest {
   private final RequestDispatcher delegate = mock(RequestDispatcher.class);
   private final Clock clock = mock(Clock.class);
 
+  private RetryingRequestDispatcher dispatcher;
+
+  @Before
+  public void setUp() {
+    dispatcher = RetryingRequestDispatcher.forDispatcher(delegate)
+        .setExecutor(newSingleThreadScheduledExecutor())
+        .setClock(clock)
+        .setDelayOnFailure(0, SECONDS)
+        .build();
+  }
+
   @Test
   public void testSuccess() throws Exception {
     when(delegate.request(any(URI.class), anyString(), any(byte[].class),
                           Matchers.<Map<String, List<String>>>any()))
         .thenReturn(Futures.<Response>immediateFuture(null));
-    final ListeningScheduledExecutorService executorService = mock(
-        ListeningScheduledExecutorService.class);
+
     when(clock.now()).thenReturn(new Instant(0));
 
-    final RetryingRequestDispatcher dispatcher =
-        new RetryingRequestDispatcher(delegate, executorService, clock, 0, SECONDS);
     dispatcher.request(new URI("http://example.com"), "GET", null,
                        Collections.<String, List<String>>emptyMap());
 
@@ -81,12 +88,8 @@ public class RetryingRequestDispatcherTest {
         .thenReturn(Futures.<Response>immediateFailedFuture(new IOException()))
         .thenReturn(Futures.<Response>immediateFuture(null));
 
-    final ListeningScheduledExecutorService executorService =
-        MoreExecutors.listeningDecorator(newSingleThreadScheduledExecutor());
     when(clock.now()).thenReturn(new Instant(0));
 
-    final RetryingRequestDispatcher dispatcher =
-        new RetryingRequestDispatcher(delegate, executorService, clock, 0, SECONDS);
     dispatcher.request(new URI("http://example.com"), "GET", null,
                        Collections.<String, List<String>>emptyMap());
 
@@ -103,12 +106,8 @@ public class RetryingRequestDispatcherTest {
         .thenReturn(Futures.<Response>immediateFailedFuture(new IOException()))
         .thenReturn(Futures.<Response>immediateFuture(null));
 
-    final ListeningScheduledExecutorService executorService =
-        MoreExecutors.listeningDecorator(newSingleThreadScheduledExecutor());
     when(clock.now()).thenReturn(new Instant(0)).thenReturn(new Instant(80000));
 
-    final RetryingRequestDispatcher dispatcher =
-        new RetryingRequestDispatcher(delegate, executorService, clock, 0, SECONDS);
     final ListenableFuture<Response> future = dispatcher.request(
         new URI("http://example.com"), "GET", null, Collections.<String, List<String>>emptyMap());
 
