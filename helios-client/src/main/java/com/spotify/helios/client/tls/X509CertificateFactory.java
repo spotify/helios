@@ -151,7 +151,6 @@ public class X509CertificateFactory {
 
   private CertificateAndPrivateKey generate(final AgentProxy agentProxy, final Identity identity,
                                             final String username) {
-    log.info("generating an X509 certificate for {}", username);
 
     final UUID uuid = new UUID();
     final Calendar calendar = Calendar.getInstance();
@@ -186,7 +185,8 @@ public class X509CertificateFactory {
 
       final SubjectKeyIdentifier keyId = utils.createSubjectKeyIdentifier(subjectPublicKeyInfo);
       final String keyIdHex = KEY_ID_ENCODING.encode(keyId.getKeyIdentifier());
-      log.info("generating an X509 certificate with key ID {}", keyIdHex);
+      log.info("generating an X509 certificate for {} with key ID={} and identity={}",
+               username, keyIdHex, identity.getComment());
 
       builder.addExtension(Extension.subjectKeyIdentifier, false, keyId);
       builder.addExtension(Extension.authorityKeyIdentifier, false,
