@@ -251,21 +251,14 @@ public class AgentService extends AbstractIdleService implements Managed {
     final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,
                                                                           dockerClient);
 
-    this.hostInfoReporter = HostInfoReporter.newBuilder()
-        .setNodeUpdaterFactory(nodeUpdaterFactory)
-        .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
-        .setHost(config.getName())
-        .setDockerClient(dockerClient)
-        .setDockerHost(config.getDockerHost())
-        .setLatch(zkRegistrationSignal)
-        .build();
+    this.hostInfoReporter =
+        new HostInfoReporter((OperatingSystemMXBean) getOperatingSystemMXBean(), nodeUpdaterFactory,
+                             config.getName(), dockerClient, config.getDockerHost(),
+                             1, TimeUnit.MINUTES, zkRegistrationSignal);
 
-    this.agentInfoReporter = AgentInfoReporter.newBuilder()
-        .setNodeUpdaterFactory(nodeUpdaterFactory)
-        .setRuntimeMXBean(getRuntimeMXBean())
-        .setHost(config.getName())
-        .setLatch(zkRegistrationSignal)
-        .build();
+    this.agentInfoReporter =
+        new AgentInfoReporter(getRuntimeMXBean(), nodeUpdaterFactory, config.getName(),
+                              1, TimeUnit.MINUTES, zkRegistrationSignal);
 
     this.environmentVariableReporter = new EnvironmentVariableReporter(
         config.getName(), config.getEnvVars(), nodeUpdaterFactory, zkRegistrationSignal);
