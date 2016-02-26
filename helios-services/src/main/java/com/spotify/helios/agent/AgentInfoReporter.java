@@ -24,31 +24,31 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdater;
 
 import java.lang.management.RuntimeMXBean;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Report various Agent runtime information via ZK so it can be visible to clients of Helios.
  */
-public class AgentInfoReporter extends InterruptingScheduledService {
+public class AgentInfoReporter extends SignalAwaitingService {
 
-  public static final int DEFAULT_INTERVAL = 1;
-  public static final TimeUnit DEFAUL_TIMEUNIT = MINUTES;
 
   private final RuntimeMXBean runtimeMXBean;
   private final ZooKeeperNodeUpdater nodeUpdater;
   private final int interval;
   private final TimeUnit timeUnit;
 
-  AgentInfoReporter(final Builder builder) {
-    this.runtimeMXBean = checkNotNull(builder.runtimeMXBean);
-    this.nodeUpdater = builder.nodeUpdaterFactory.create(Paths.statusHostAgentInfo(builder.host));
-    this.interval = builder.interval;
-    this.timeUnit = checkNotNull(builder.timeUnit);
+  AgentInfoReporter(RuntimeMXBean runtimeMXBean, NodeUpdaterFactory nodeUpdaterFactory, String host,
+                    int interval, TimeUnit timeUnit, CountDownLatch latch) {
+    super(latch);
+    this.runtimeMXBean = requireNonNull(runtimeMXBean);
+    this.nodeUpdater = nodeUpdaterFactory.create(Paths.statusHostAgentInfo(host));
+    this.interval = interval;
+    this.timeUnit = requireNonNull(timeUnit);
   }
 
   @Override
@@ -74,51 +74,5 @@ public class AgentInfoReporter extends InterruptingScheduledService {
   protected ScheduledFuture<?> schedule(final Runnable runnable,
                                         final ScheduledExecutorService executorService) {
     return executorService.scheduleWithFixedDelay(runnable, 0, interval, timeUnit);
-  }
-
-  public static Builder newBuilder() {
-    return new Builder();
-  }
-
-  public static class Builder {
-
-    Builder() {
-    }
-
-    private NodeUpdaterFactory nodeUpdaterFactory;
-    private RuntimeMXBean runtimeMXBean;
-    private String host;
-    private int interval = DEFAULT_INTERVAL;
-    private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
-
-    public Builder setNodeUpdaterFactory(final NodeUpdaterFactory nodeUpdaterFactory) {
-      this.nodeUpdaterFactory = nodeUpdaterFactory;
-      return this;
-    }
-
-    public Builder setRuntimeMXBean(
-        final RuntimeMXBean runtimeMXBean) {
-      this.runtimeMXBean = runtimeMXBean;
-      return this;
-    }
-
-    public Builder setHost(final String host) {
-      this.host = host;
-      return this;
-    }
-
-    public Builder setInterval(final int interval) {
-      this.interval = interval;
-      return this;
-    }
-
-    public Builder setTimeUnit(final TimeUnit timeUnit) {
-      this.timeUnit = timeUnit;
-      return this;
-    }
-
-    public AgentInfoReporter build() {
-      return new AgentInfoReporter(this);
-    }
   }
 }

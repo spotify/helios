@@ -36,6 +36,10 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 /**
  * Runs {@link #runOneIteration()} on a {@link ScheduledExecutorService} (see {@link #schedule})
  * to do periodic operations.
+ * <p>
+ * This class is similar to {@link com.google.common.util.concurrent.AbstractScheduledService}
+ * except that this class's {@link #shutDown()} method will interrupt the thread running the
+ * periodic operation.</p>
  */
 public abstract class InterruptingScheduledService extends AbstractIdleService {
 
@@ -53,6 +57,7 @@ public abstract class InterruptingScheduledService extends AbstractIdleService {
     @Override
     public void run() {
       try {
+        beforeIteration();
         runOneIteration();
       } catch (InterruptedException e) {
         log.debug("scheduled service interrupted: {}", serviceName());
@@ -68,6 +73,9 @@ public abstract class InterruptingScheduledService extends AbstractIdleService {
 
   private ScheduledFuture<?> future;
 
+  /** A hook for subclasses to insert extra steps before {@link #runOneIteration()}  */
+  protected void beforeIteration() throws InterruptedException {}
+
   protected abstract void runOneIteration() throws InterruptedException;
 
   @Override
@@ -77,7 +85,9 @@ public abstract class InterruptingScheduledService extends AbstractIdleService {
 
   @Override
   protected void shutDown() throws Exception {
-    future.cancel(true);
+    if (future != null) {
+      future.cancel(true);
+    }
     executorService.shutdownNow();
     executorService.awaitTermination(1, DAYS);
   }

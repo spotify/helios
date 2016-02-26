@@ -30,6 +30,7 @@ import com.spotify.docker.client.DockerCertificateException;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.common.HeliosRuntimeException;
+import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
@@ -250,19 +251,14 @@ public class AgentService extends AbstractIdleService implements Managed {
     final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,
                                                                           dockerClient);
 
-    this.hostInfoReporter = HostInfoReporter.newBuilder()
-        .setNodeUpdaterFactory(nodeUpdaterFactory)
-        .setOperatingSystemMXBean((OperatingSystemMXBean) getOperatingSystemMXBean())
-        .setHost(config.getName())
-        .setDockerClient(dockerClient)
-        .setDockerHost(config.getDockerHost())
-        .build();
+    this.hostInfoReporter =
+        new HostInfoReporter((OperatingSystemMXBean) getOperatingSystemMXBean(), nodeUpdaterFactory,
+                             config.getName(), dockerClient, config.getDockerHost(),
+                             1, TimeUnit.MINUTES, zkRegistrationSignal);
 
-    this.agentInfoReporter = AgentInfoReporter.newBuilder()
-        .setNodeUpdaterFactory(nodeUpdaterFactory)
-        .setRuntimeMXBean(getRuntimeMXBean())
-        .setHost(config.getName())
-        .build();
+    this.agentInfoReporter =
+        new AgentInfoReporter(getRuntimeMXBean(), nodeUpdaterFactory, config.getName(),
+                              1, TimeUnit.MINUTES, zkRegistrationSignal);
 
     this.environmentVariableReporter = new EnvironmentVariableReporter(
         config.getName(), config.getEnvVars(), nodeUpdaterFactory, zkRegistrationSignal);
@@ -402,7 +398,7 @@ public class AgentService extends AbstractIdleService implements Managed {
 
     // Register the agent
     final AgentZooKeeperRegistrar agentZooKeeperRegistrar = new AgentZooKeeperRegistrar(
-        this, config.getName(), id, config.getZooKeeperRegistrationTtlMinutes());
+        config.getName(), id, config.getZooKeeperRegistrationTtlMinutes(), new SystemClock());
     zkRegistrar = ZooKeeperRegistrarService.newBuilder()
         .setZooKeeperClient(client)
         .setZooKeeperRegistrar(agentZooKeeperRegistrar)

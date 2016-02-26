@@ -42,4 +42,24 @@ public class DeleteMany implements ZooKeeperOperation {
            "paths=" + paths +
            '}';
   }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final DeleteMany that = (DeleteMany) o;
+
+    return paths != null ? paths.equals(that.paths) : that.paths == null;
+
+  }
+
+  @Override
+  public int hashCode() {
+    return paths != null ? paths.hashCode() : 0;
+  }
 }

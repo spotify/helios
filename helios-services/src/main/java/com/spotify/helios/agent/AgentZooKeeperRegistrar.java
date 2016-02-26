@@ -17,10 +17,7 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.util.concurrent.Service;
-
 import com.spotify.helios.common.Clock;
-import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.master.HostNotFoundException;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrar;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
@@ -50,7 +47,6 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
 
   private static final byte[] EMPTY_BYTES = new byte[]{};
 
-  private final Service agentService;
   private final String name;
   private final String id;
   private final long zooKeeperRegistrationTtlMillis;
@@ -58,14 +54,13 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
 
   private PersistentEphemeralNode upNode;
 
-  public AgentZooKeeperRegistrar(final Service agentService, final String name, final String id,
-                                 final int zooKeeperRegistrationTtlMinutes) {
-    this.agentService = agentService;
+  public AgentZooKeeperRegistrar(final String name, final String id,
+                                 final int zooKeeperRegistrationTtlMinutes, final Clock clock) {
     this.name = name;
     this.id = id;
     this.zooKeeperRegistrationTtlMillis =
         TimeUnit.MILLISECONDS.convert(zooKeeperRegistrationTtlMinutes, TimeUnit.MINUTES);
-    this.clock = new SystemClock();
+    this.clock = clock;
   }
 
   @Override
@@ -86,7 +81,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
   }
 
   @Override
-  public void tryToRegister(ZooKeeperClient client)
+  public boolean tryToRegister(ZooKeeperClient client)
       throws KeeperException, HostNotFoundException {
     final String idPath = Paths.configHostId(name);
     final String hostInfoPath = Paths.statusHostInfo(name);
@@ -102,18 +97,21 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
         final Stat hostInfoStat = client.stat(hostInfoPath);
         if (hostInfoStat != null) {
           final long mtime = hostInfoStat.getMtime();
-          if ((clock.now().getMillis() - mtime) < zooKeeperRegistrationTtlMillis) {
-            final String message = format("Another agent already registered as '%s' " +
-                                          "(local=%s remote=%s).", name, id, existingId);
-            log.error(message);
-            agentService.stopAsync();
-            return;
+          final long diff = clock.now().getMillis() - mtime;
+          if (diff < zooKeeperRegistrationTtlMillis) {
+            final String message = format(
+                "Another agent already registered as '%s' (local=%s remote=%s). "
+                + "That agent's registration expires in %d seconds",
+                name, id.trim(), existingId.trim(),
+                TimeUnit.MILLISECONDS.toSeconds(zooKeeperRegistrationTtlMillis - diff));
+            log.warn(message);
+            return false;
           }
 
           log.info("Another agent has already registered as '{}', but its ID node was last " +
                    "updated more than {} milliseconds ago. I\'m deregistering the agent with the "
                    + "old ID of {} and replacing it with this new agent with ID '{}'.",
-                   name, zooKeeperRegistrationTtlMillis, existingId, id);
+                   name, zooKeeperRegistrationTtlMillis, existingId.trim(), id.trim());
         } else {
           log.info("Another agent has registered as '{}', but it never updated '{}' in ZooKeeper. "
                    + "I'll assume it's dead and deregister it.", name, hostInfoPath);
@@ -135,6 +133,7 @@ public class AgentZooKeeperRegistrar implements ZooKeeperRegistrar {
     }
 
     log.info("ZooKeeper registration complete");
+    return true;
   }
 
 }

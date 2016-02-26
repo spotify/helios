@@ -31,22 +31,20 @@ import com.sun.management.OperatingSystemMXBean;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
-import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.Objects.requireNonNull;
 
 /**
  * Reports various bits of system information to ZK so it can be viewed via the the API.
  */
-public class HostInfoReporter extends InterruptingScheduledService {
+public class HostInfoReporter extends SignalAwaitingService {
 
-  public static final int DEFAULT_INTERVAL = 1;
-  public static final TimeUnit DEFAUL_TIMEUNIT = MINUTES;
 
   private final OperatingSystemMXBean operatingSystemMXBean;
   private final ZooKeeperNodeUpdater nodeUpdater;
@@ -55,15 +53,18 @@ public class HostInfoReporter extends InterruptingScheduledService {
   private final DockerClient dockerClient;
   private final DockerHost dockerHost;
 
-  HostInfoReporter(final Builder builder) {
-    this.operatingSystemMXBean = checkNotNull(builder.operatingSystemMXBean,
-                                              "operatingSystemMXBean");
-    this.nodeUpdater = builder.nodeUpdaterFactory.create(
-        Paths.statusHostInfo(checkNotNull(builder.host, "host")));
-    this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
-    this.dockerHost = checkNotNull(builder.dockerHost, "dockerHost");
-    this.interval = builder.interval;
-    this.timeUnit = checkNotNull(builder.timeUnit, "timeUnit");
+  HostInfoReporter(OperatingSystemMXBean operatingSystemMXBean,
+                   NodeUpdaterFactory nodeUpdaterFactory, String host, DockerClient dockerClient,
+                   DockerHost dockerHost, int interval, TimeUnit timeUnit, CountDownLatch latch) {
+
+    super(latch);
+    this.operatingSystemMXBean = requireNonNull(operatingSystemMXBean, "operatingSystemMXBean");
+    final String hostInfoPath = Paths.statusHostInfo(requireNonNull(host, "host"));
+    this.nodeUpdater = nodeUpdaterFactory.create(hostInfoPath);
+    this.dockerClient = requireNonNull(dockerClient, "dockerClient");
+    this.dockerHost = requireNonNull(dockerHost, "dockerHost");
+    this.interval = interval;
+    this.timeUnit = requireNonNull(timeUnit, "timeUnit");
   }
 
   @Override
@@ -133,64 +134,6 @@ public class HostInfoReporter extends InterruptingScheduledService {
       return CharStreams.toString(new InputStreamReader(process.getInputStream(), UTF_8));
     } catch (IOException e) {
       throw propagate(e);
-    }
-  }
-
-  public static Builder newBuilder() {
-    return new Builder();
-  }
-
-  public static class Builder {
-
-    Builder() {
-    }
-
-    private NodeUpdaterFactory nodeUpdaterFactory;
-    private OperatingSystemMXBean operatingSystemMXBean;
-    private String host;
-    private DockerClient dockerClient;
-    private DockerHost dockerHost;
-    private int interval = DEFAULT_INTERVAL;
-    private TimeUnit timeUnit = DEFAUL_TIMEUNIT;
-
-    public Builder setNodeUpdaterFactory(final NodeUpdaterFactory nodeUpdaterFactory) {
-      this.nodeUpdaterFactory = nodeUpdaterFactory;
-      return this;
-    }
-
-    public Builder setOperatingSystemMXBean(
-        final OperatingSystemMXBean operatingSystemMXBean) {
-      this.operatingSystemMXBean = operatingSystemMXBean;
-      return this;
-    }
-
-    public Builder setHost(final String host) {
-      this.host = host;
-      return this;
-    }
-
-    public Builder setDockerClient(final DockerClient dockerClient) {
-      this.dockerClient = dockerClient;
-      return this;
-    }
-
-    public Builder setDockerHost(final DockerHost dockerHost) {
-      this.dockerHost = dockerHost;
-      return this;
-    }
-
-    public Builder setInterval(final int interval) {
-      this.interval = interval;
-      return this;
-    }
-
-    public Builder setTimeUnit(final TimeUnit timeUnit) {
-      this.timeUnit = timeUnit;
-      return this;
-    }
-
-    public HostInfoReporter build() {
-      return new HostInfoReporter(this);
     }
   }
 }

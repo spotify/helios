@@ -41,4 +41,29 @@ public class CheckWithVersion implements ZooKeeperOperation {
            ", version=" + version +
            '}';
   }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final CheckWithVersion that = (CheckWithVersion) o;
+
+    if (version != that.version) {
+      return false;
+    }
+    return path != null ? path.equals(that.path) : that.path == null;
+
+  }
+
+  @Override
+  public int hashCode() {
+    int result = path != null ? path.hashCode() : 0;
+    result = 31 * result + version;
+    return result;
+  }
 }

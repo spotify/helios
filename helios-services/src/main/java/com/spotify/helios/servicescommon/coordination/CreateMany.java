@@ -42,4 +42,24 @@ public class CreateMany implements ZooKeeperOperation {
            "nodes=" + nodes.keySet() +
            '}';
   }
+
+  @Override
+  public boolean equals(final Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    final CreateMany that = (CreateMany) o;
+
+    return nodes != null ? nodes.equals(that.nodes) : that.nodes == null;
+
+  }
+
+  @Override
+  public int hashCode() {
+    return nodes != null ? nodes.hashCode() : 0;
+  }
 }
