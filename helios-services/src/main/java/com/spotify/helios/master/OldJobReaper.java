@@ -26,15 +26,13 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.DateFormat;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
 import java.util.Map;
-import java.util.TimeZone;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -49,8 +47,8 @@ public class OldJobReaper extends InterruptingScheduledService {
   private static final Clock SYSTEM_CLOCK = new SystemClock();
   private static final long INTERVAL = 1;
   private static final TimeUnit INTERVAL_TIME_UNIT = TimeUnit.DAYS;
-  private static final DateFormat DATE_FORMATTER =
-      new SimpleDateFormat("EEE, d MMM yyyy HH:mm:ss Z");
+  private static final DateTimeFormatter DATE_FORMATTER =
+      DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss");
 
   private static final Logger log = LoggerFactory.getLogger(OldJobReaper.class);
 
@@ -71,7 +69,6 @@ public class OldJobReaper extends InterruptingScheduledService {
     this.retentionDays = retentionDays;
     this.retentionMillis = TimeUnit.DAYS.toMillis(retentionDays);
     this.clock = clock;
-    DATE_FORMATTER.setTimeZone(TimeZone.getTimeZone("UTC"));
   }
 
   @Override
@@ -98,19 +95,19 @@ public class OldJobReaper extends InterruptingScheduledService {
               reap = true;
             } else if ((clock.now().getMillis() - created) > retentionMillis) {
               log.info("Marked job '{}' for reaping (not deployed, no history, creation date "
-                       + "of {} before retention time of {} days)", jobId,
-                       DATE_FORMATTER.format(new Date(created)), retentionDays);
+                       + "of {} before retention time of {} days)",
+                       jobId, DATE_FORMATTER.print(created), retentionDays);
               reap = true;
             } else {
               log.info("NOT reaping job '{}' (not deployed, no history, creation date of {} after "
-                       + "retention time of {} days)", jobId,
-                       DATE_FORMATTER.format(new Date(created)), retentionDays);
+                       + "retention time of {} days)",
+                       jobId, DATE_FORMATTER.print(created), retentionDays);
               reap = false;
             }
           } else {
             // Get the last event which is the most recent
             final TaskStatusEvent event = events.get(events.size() - 1);
-            final String eventDate = DATE_FORMATTER.format(new Date(event.getTimestamp()));
+            final String eventDate = DATE_FORMATTER.print(event.getTimestamp());
             // Calculate the amount of time in milliseconds that has elapsed since the last event
             final long unusedDurationMillis = clock.now().getMillis() - event.getTimestamp();
 
@@ -118,13 +115,13 @@ public class OldJobReaper extends InterruptingScheduledService {
             // A job not deployed, with history, and last used recently should NOT BE reaped
             if (unusedDurationMillis > retentionMillis) {
               log.info("Marked job '{}' for reaping (not deployed, has history whose last event "
-                       + "on {} was before the retention time of {} days)", jobId, eventDate,
-                       retentionDays);
+                       + "on {} was before the retention time of {} days)",
+                       jobId, eventDate, retentionDays);
               reap = true;
             } else {
               log.info("NOT reaping job '{}' (not deployed, has history whose last event "
-                       + "on {} was after the retention time of {} days)", jobId, eventDate,
-                       retentionDays);
+                       + "on {} was after the retention time of {} days)",
+                       jobId, eventDate, retentionDays);
               reap = false;
             }
           }
