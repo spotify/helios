@@ -27,11 +27,10 @@ import org.slf4j.LoggerFactory;
 
 public class HeliosConfig {
 
-  private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeployment.class);
+  private static final Logger log = LoggerFactory.getLogger(HeliosConfig.class);
 
   public static final String BASE_CONFIG_FILE = "helios-base.conf";
   public static final String APP_CONFIG_FILE = "helios.conf";
-
 
   /**
    * @param component The name of the component we're loading config for
@@ -57,10 +56,9 @@ public class HeliosConfig {
   }
 
   /**
-   *
-   * @param profilePath The path at which the default profile is specified.
+   * @param profilePath  The path at which the default profile is specified.
    * @param profilesPath The path at which profiles are nested.
-   * @param rootConfig The config file root to read the default profile from.
+   * @param rootConfig   The config file root to read the default profile from.
    * @return The name of the default profile.
    */
   static Config getDefaultProfile(
@@ -75,8 +73,8 @@ public class HeliosConfig {
 
   /**
    * @param profilesPath The path at which profiles are nested.
-   * @param profile The name of the profile to load.
-   * @param rootConfig The config file root to load profiles from.
+   * @param profile      The name of the profile to load.
+   * @param rootConfig   The config file root to load profiles from.
    * @return The requested configuration, or an empty configuration if profile is null.
    */
   static Config getProfile(
