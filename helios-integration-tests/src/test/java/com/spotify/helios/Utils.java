@@ -25,6 +25,7 @@ import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.testing.Prober;
 
 import java.io.ByteArrayOutputStream;
@@ -115,7 +116,7 @@ public class Utils {
     }
 
     @Override
-    public boolean probe(String host, int port) {
+    public boolean probe(String host, PortMapping portMapping) {
       try {
         final HostStatus hostStatus = client.hostStatus(hostName).get(10, TimeUnit.SECONDS);
         return hostStatus != null && hostStatus.getStatus() == HostStatus.Status.UP;

@@ -18,6 +18,7 @@
 package com.spotify.helios.testing;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.system.SystemTestBase;
 
 import org.junit.Before;
@@ -47,10 +48,10 @@ public abstract class TemporaryJobsTestBase extends SystemTestBase {
   protected static final class TestProber extends DefaultProber {
 
     @Override
-    public boolean probe(final String host, final int port) {
+    public boolean probe(final String host, final PortMapping portMapping) {
       // Probe for ports where docker is running instead of on the mock testHost address
       assertEquals(testHost1, host);
-      return super.probe(DOCKER_HOST.address(), port);
+      return super.probe(DOCKER_HOST.address(), portMapping);
     }
   }
 

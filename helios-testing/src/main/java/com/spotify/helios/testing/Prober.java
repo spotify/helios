@@ -17,6 +17,8 @@
 
 package com.spotify.helios.testing;
 
+import com.spotify.helios.common.descriptors.PortMapping;
+
 public interface Prober {
-  boolean probe(String host, int port);
+  boolean probe(String host, PortMapping portMapping);
 }

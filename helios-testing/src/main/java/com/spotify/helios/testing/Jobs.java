@@ -68,8 +68,8 @@ class Jobs {
    * @return the list of errors
    */
   static List<AssertionError> undeploy(final HeliosClient client, final Job job,
-                                              final List<String> hosts,
-                                              final List<AssertionError> errors) {
+                                       final List<String> hosts,
+                                       final List<AssertionError> errors) {
     final JobId id = job.getId();
     for (String host : hosts) {
       log.info("Undeploying {} from {}", getJobDescription(job), host);
