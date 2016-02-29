@@ -265,8 +265,6 @@ public class CliParser {
     private final Argument verbose;
     private final Argument noLogSetup;
     private final Argument jsonArg;
-    private final Argument insecureHttps;
-
     private final ArgumentGroup globalArgs;
     private final boolean topLevel;
 
@@ -311,13 +309,28 @@ public class CliParser {
           .action(storeTrue())
           .help(SUPPRESS);
 
-      insecureHttps = addArgument("-k", "--insecure")
+      // note: because of the way the HeliosClient is constructed, these next arguments are
+      // read indirectly in cli/Utils.java:
+
+      addArgument("-k", "--insecure")
           .action(storeTrue())
           .help("Disables hostname verification of HTTPS connections. "
                 + "Similar to 'curl -k'. "
                 + "Useful when using -z flag to connect directly to a master using HTTPS which "
                 + "presents a certificate whose subject does not match the actual hostname."
           );
+
+      addArgument("--http-timeout")
+          .type(Integer.class)
+          .setDefault(10)
+          .help("Timeout (in seconds) for each HTTP/S request to the master.");
+
+      addArgument("--retry-timeout")
+          .type(Integer.class)
+          .setDefault(60)
+          .help("Total timeout (in seconds) for all of the requests that helios makes to the "
+                + "master. If an individual request fails, helios will retry the request again "
+                + "until successful or until this timeout elapses.");
     }
 
     private Argument addArgument(final String... nameOrFlags) {

@@ -40,7 +40,6 @@ import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
-import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.Version;
 import com.spotify.helios.common.VersionCompatibility;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -404,7 +403,7 @@ public class HeliosClient implements Closeable {
     final ConvertResponseToPojo<Map<JobId, JobStatus>> converter = ConvertResponseToPojo.create(
         TypeFactory.defaultInstance().constructMapType(Map.class, JobId.class, JobStatus.class),
         ImmutableSet.of(HTTP_OK));
-    
+
     return transform(request(uri("/jobs/statuses"), "POST", jobs), converter);
   }
 
@@ -514,6 +513,8 @@ public class HeliosClient implements Closeable {
     private boolean sslHostnameVerification = true;
     private ListeningScheduledExecutorService executorService;
     private boolean shutDownExecutorOnClose = true;
+    private int httpTimeout = 10000;
+    private long requestRetryTimeout = 60000;
 
     private Builder() {
     }
@@ -576,6 +577,24 @@ public class HeliosClient implements Closeable {
       return this;
     }
 
+    /**
+     * Set the per-request HTTP connect/read timeout used when communicating with master. Default is
+     * 10 seconds.
+     */
+    public Builder setHttpTimeout(final int timeout, TimeUnit unit) {
+      this.httpTimeout = (int) unit.toMillis(timeout);
+      return this;
+    }
+
+    /**
+     * Set the total amount of time for which the HeliosClient will retrying failed requests to the
+     * Helios masters.
+     */
+    public Builder setRetryTimeout(final int timeout, TimeUnit unit) {
+      this.requestRetryTimeout = (int) unit.toMillis(timeout);
+      return this;
+    }
+
     public HeliosClient build() {
       return new HeliosClient(user, createDispatcher());
     }
@@ -594,11 +613,10 @@ public class HeliosClient implements Closeable {
       final RequestDispatcher dispatcher = new DefaultRequestDispatcher(
           createHttpConnector(sslHostnameVerification), executorService, shutDownExecutorOnClose);
 
-      return new RetryingRequestDispatcher(dispatcher,
-          executorService,
-          new SystemClock(),
-          5,
-          TimeUnit.SECONDS);
+      return RetryingRequestDispatcher.forDispatcher(dispatcher)
+          .setExecutor(executorService)
+          .setRetryTimeout(requestRetryTimeout, TimeUnit.MILLISECONDS)
+          .build();
     }
 
     private HttpConnector createHttpConnector(final boolean sslHostnameVerification) {
@@ -609,8 +627,8 @@ public class HeliosClient implements Closeable {
             "no endpoints found to connect to, check your configuration");
       }
 
-      final DefaultHttpConnector connector = new DefaultHttpConnector(endpointIterator, 10000,
-                                                                      sslHostnameVerification);
+      final DefaultHttpConnector connector =
+          new DefaultHttpConnector(endpointIterator, httpTimeout, sslHostnameVerification);
 
       Optional<AgentProxy> agentProxyOpt = Optional.absent();
       try {

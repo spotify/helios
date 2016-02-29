@@ -41,6 +41,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static java.lang.String.format;
 
@@ -71,6 +72,9 @@ public class Utils {
 
     return HeliosClient.newBuilder()
         .setEndpointSupplier(Endpoints.of(target.getEndpointSupplier()))
+        //argparse4j converts names like "--http-timeout" to dests of "http_timeout"
+        .setHttpTimeout(options.getInt("http_timeout"), TimeUnit.SECONDS)
+        .setRetryTimeout(options.getInt("retry_timeout"), TimeUnit.SECONDS)
         .setSslHostnameVerification(!options.getBoolean("insecure"))
         .setUser(username)
         .build();
