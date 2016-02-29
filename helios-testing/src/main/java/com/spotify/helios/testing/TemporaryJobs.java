@@ -17,6 +17,8 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
 import com.google.common.base.Splitter;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -165,8 +167,18 @@ public class TemporaryJobs implements TestRule {
    * Perform teardown. This is normally called by JUnit when TemporaryJobs is used with @Rule.
    * If @Rule cannot be used, call this method after running tests.
    */
-  public void after(final TemporaryJobReports.ReportWriter writer) {
-    final TemporaryJobReports.Step undeploy = writer.step("undeploy");
+  public void after() {
+    after(Optional.<TemporaryJobReports.ReportWriter>absent());
+  }
+
+  void after(final Optional<TemporaryJobReports.ReportWriter> writer) {
+    final Optional<TemporaryJobReports.Step> undeploy = writer
+        .transform(new Function<TemporaryJobReports.ReportWriter, TemporaryJobReports.Step>() {
+          @Override
+          public TemporaryJobReports.Step apply(final TemporaryJobReports.ReportWriter writer) {
+            return writer.step("undeploy");
+          }
+        });
     final List<JobId> jobIds = Lists.newArrayListWithCapacity(jobs.size());
 
     // Stop the test runner thread
@@ -186,7 +198,9 @@ public class TemporaryJobs implements TestRule {
       job.undeploy(errors);
     }
 
-    undeploy.tag("jobs", jobIds);
+    for (TemporaryJobReports.Step step : undeploy.asSet()) {
+      step.tag("jobs", jobIds);
+    }
 
     for (AssertionError error : errors) {
       log.error(error.getMessage());
@@ -196,10 +210,14 @@ public class TemporaryJobs implements TestRule {
     // try to undeploy them the next time TemporaryJobs is run.
     if (errors.isEmpty()) {
       jobPrefixFile.delete();
-      undeploy.markSuccess();
+      for (TemporaryJobReports.Step step : undeploy.asSet()) {
+        step.markSuccess();
+      }
     }
 
-    undeploy.finish();
+    for (TemporaryJobReports.Step step : undeploy.asSet()) {
+      step.finish();
+    }
   }
 
   public TemporaryJobBuilder job() {
@@ -325,7 +343,7 @@ public class TemporaryJobs implements TestRule {
           perform(base, writer);
           test.markSuccess();
         } finally {
-          after(writer);
+          after(Optional.of(writer));
 
           test.finish();
           writer.close();
@@ -670,7 +688,7 @@ public class TemporaryJobs implements TestRule {
       this.jobDeployedMessageFormat = jobLinkFormat;
       return this;
     }
-    
+
     public Builder prober(final Prober prober) {
       this.prober = prober;
       return this;
