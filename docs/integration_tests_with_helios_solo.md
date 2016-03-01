@@ -44,8 +44,8 @@ Since there is a bit of set up work in creating a `HeliosSoloDeployment`, this
 will add a lot of overhead to each test. We recommend using
 `HeliosSoloDeployment` as a `@ClassRule`.
 
-[helios-solo]: docs/helios_solo.md
-[TemporaryJobs]: docs/testing_framework.md
+[helios-solo]: ./helios_solo.md
+[TemporaryJobs]: ./testing_framework.md
 
 ## Issues if `DOCKER_HOST` refers to `localhost` or `127.0.0.1`
 
