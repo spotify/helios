@@ -60,7 +60,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
   private ZooKeeperRegistrarService(final Builder builder) {
     this.client = checkNotNull(builder.zooKeeperClient);
     this.zooKeeperRegistrar = checkNotNull(builder.zooKeeperRegistrar);
-    this.zkRegistrationSignal = builder.zkRegistrationSignal;
+    this.zkRegistrationSignal = Optional.ofNullable(builder.zkRegistrationSignal);
     this.retryIntervalPolicy = checkNotNull(builder.retryIntervalPolicy);
     this.sleeper = checkNotNull(builder.sleeper);
     this.reactor = new DefaultReactor("zk-client-async-init", new Update());
@@ -83,7 +83,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
 
     private ZooKeeperClient zooKeeperClient;
     private ZooKeeperRegistrar zooKeeperRegistrar;
-    private Optional<CountDownLatch> zkRegistrationSignal;
+    private CountDownLatch zkRegistrationSignal;
     private RetryIntervalPolicy retryIntervalPolicy;
     private Sleeper sleeper;
 
@@ -100,7 +100,7 @@ public class ZooKeeperRegistrarService extends AbstractIdleService {
     }
 
     public Builder setZKRegistrationSignal(final CountDownLatch zkRegistrationSignal) {
-      this.zkRegistrationSignal = Optional.of(zkRegistrationSignal);
+      this.zkRegistrationSignal = zkRegistrationSignal;
       return this;
     }
 
