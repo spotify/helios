@@ -8,7 +8,7 @@ etcd $ETCD_OPTS &
 
 NAMESERVERS=$(cat /etc/resolv.conf | grep nameserver |
               python -c "import json, sys; ns=['%s:53' % (l.strip().split()[1], ) for l in sys.stdin]; print json.dumps(ns or ['8.8.8.8:53', '8.8.4.4:53']);")
-SKYDNS_PATH=$(echo $HELIOS_NAME|python -c "import sys;h=sys.stdin.read().strip().split('.');h.reverse();print '/'.join(h)")
+SKYDNS_PATH=$(echo $HELIOS_NAME|python -c "import sys;h=sys.stdin.read().strip().rstrip('.').split('.');h.reverse();print '/'.join(h)")
 
 # Write skydns configuration and retry for 30 seconds until successful
 for i in {1..30}; do
