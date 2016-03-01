@@ -129,4 +129,18 @@ public class X509CertificateFactoryTest {
                not(equalTo(original.getPrivateKey().getEncoded())));
   }
 
+  @Test
+  public void testCacheWithNewUsername() throws Exception {
+    final CertificateAndPrivateKey original = sut.get(agentProxy, identity, USERNAME);
+
+    // invocation with a different username should return different cert & keypair
+    final CertificateAndPrivateKey shouldBeNew = sut.get(agentProxy, identity, USERNAME + "2");
+    assertThat("cached certificate being used with new username",
+               shouldBeNew.getCertificate().getEncoded(),
+               not(equalTo(original.getCertificate().getEncoded())));
+    assertThat("cached key being used with new username",
+               shouldBeNew.getPrivateKey().getEncoded(),
+               not(equalTo(original.getPrivateKey().getEncoded())));
+  }
+
 }
