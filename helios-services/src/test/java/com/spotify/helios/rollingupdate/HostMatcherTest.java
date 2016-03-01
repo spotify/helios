@@ -18,53 +18,75 @@
 package com.spotify.helios.rollingupdate;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 
 import org.junit.Test;
 
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.Assert.assertThat;
 
 public class HostMatcherTest {
 
-  public static final Map<String, Map<String, String>> HOSTS_AND_LABELS = ImmutableMap.of(
-      "host3", (Map<String, String>) ImmutableMap.of("x", "y"),
-      "host11", (Map<String, String>) ImmutableMap.of("foo", "bar"),
-      "host2", (Map<String, String>) ImmutableMap.of("foo", "bar"),
-      "host1", (Map<String, String>) ImmutableMap.of("foo", "bar")
+  private final Map<String, Map<String, String>> hosts = ImmutableMap.of(
+      "foo-a1", ImmutableMap.of("role", "foo"),
+      "foo-a2", ImmutableMap.of("role", "foo", "special", "yes"),
+      "bar-a1", ImmutableMap.of("role", "bar", "pool", "a"),
+      "bar-b1", ImmutableMap.of("role", "bar", "pool", "b"),
+      "bar-c1", ImmutableMap.of("role", "bar", "pool", "c")
   );
 
-  @Test
-  public void testHostMatcher() {
-    final RollingUpdateService.HostMatcher hostMatcher = new
-        RollingUpdateService.HostMatcher(HOSTS_AND_LABELS);
-    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
-        .setName("my_group")
-        .setHostSelectors(Lists.newArrayList(
-            HostSelector.parse("foo=bar")
-        ))
-        .build();
+  private final RollingUpdateService.HostMatcher matcher = new
+      RollingUpdateService.HostMatcher(hosts);
 
-    assertArrayEquals(hostMatcher.getMatchingHosts(deploymentGroup).toArray(),
-                      new String[]{"host1", "host2", "host11"});
+  private static DeploymentGroup group(String... selectorStrings) {
+    final List<HostSelector> selectors = new ArrayList<>();
+    for (String selectorString : selectorStrings) {
+      final HostSelector selector = HostSelector.parse(selectorString);
+      if (selector == null) {
+        throw new IllegalArgumentException("bad selector: " + selectorString);
+      }
+      selectors.add(selector);
+    }
+
+    return DeploymentGroup.newBuilder()
+        .setHostSelectors(selectors)
+        .build();
   }
 
   @Test
-  public void testDeploymentGroupWithNoSelectors() {
-    final RollingUpdateService.HostMatcher hostMatcher = new
-        RollingUpdateService.HostMatcher(HOSTS_AND_LABELS);
-    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
-        .setName("my_group")
-        .setHostSelectors(Collections.<HostSelector>emptyList())
-        .build();
+  public void testHostMatcher() {
+    assertThat(matcher.getMatchingHosts(group("role=foo")), contains("foo-a1", "foo-a2"));
 
-    assertTrue(hostMatcher.getMatchingHosts(deploymentGroup).isEmpty());
+    assertThat(matcher.getMatchingHosts(group("role=foo", "special=yes")), contains("foo-a2"));
+    // does not match foo-a1 because it has no 'special' label
+    assertThat(matcher.getMatchingHosts(group("role=foo", "special!=yes")), empty());
+
+    assertThat(matcher.getMatchingHosts(group("pool=a")), contains("bar-a1"));
+    assertThat(matcher.getMatchingHosts(group("pool=a", "role=bar")), contains("bar-a1"));
+
+    assertThat(matcher.getMatchingHosts(group("pool=b")), contains("bar-b1"));
+    assertThat(matcher.getMatchingHosts(group("pool=b", "role=bar")), contains("bar-b1"));
+
+    assertThat(matcher.getMatchingHosts(group("pool=c")), contains("bar-c1"));
+    assertThat(matcher.getMatchingHosts(group("pool=c", "role=bar")), contains("bar-c1"));
+
+    // groups where some selectors match hosts but others do not, should return no matches
+    assertThat(matcher.getMatchingHosts(group("pool=c", "role=awesome")), empty());
+    assertThat(matcher.getMatchingHosts(group("special=yes", "role=awesome")), empty());
+  }
+
+
+  @Test
+  public void testDeploymentGroupWithNoSelectors() {
+    final DeploymentGroup deploymentGroup = group();
+    assertThat(matcher.getMatchingHosts(deploymentGroup), empty());
   }
 
 }
