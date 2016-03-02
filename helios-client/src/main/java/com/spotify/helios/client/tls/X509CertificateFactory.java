@@ -62,6 +62,7 @@ import java.nio.file.attribute.PosixFilePermissions;
 import java.security.GeneralSecurityException;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
+import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.security.Security;
 import java.security.cert.X509Certificate;
@@ -70,7 +71,7 @@ import java.util.Date;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static com.spotify.helios.common.Hash.sha1digest;
+import static com.spotify.helios.common.Hash.sha1;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.WRITE;
 
@@ -111,8 +112,11 @@ public class X509CertificateFactory {
 
   public CertificateAndPrivateKey get(final AgentProxy agentProxy, final Identity identity,
                                       final String username) {
-    final String identityHex = HEX_ENCODING.encode(
-        sha1digest(identity.getKeyBlob())).substring(0, 8);
+    final MessageDigest identityHash = sha1();
+    identityHash.update(identity.getKeyBlob());
+    identityHash.update(username.getBytes());
+
+    final String identityHex = HEX_ENCODING.encode(identityHash.digest()).substring(0, 8);
     final Path cacheCertPath = cacheDirectory.resolve(identityHex + ".crt");
     final Path cacheKeyPath = cacheDirectory.resolve(identityHex + ".pem");
 
