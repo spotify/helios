@@ -66,7 +66,7 @@ public class TemporaryJobBuilder {
   private final String jobNamePrefix;
   private final Map<String, String> env;
   private final TemporaryJobReports.ReportWriter reportWriter;
-  
+
   private String hostFilter;
   private Prober prober;
   private TemporaryJob job;
@@ -85,6 +85,13 @@ public class TemporaryJobBuilder {
     this.builder.setRegistrationDomain(jobNamePrefix);
     this.env = env;
     this.reportWriter = reportWriter;
+
+    // make sure waitPorts is up-to-date with ports from the Job.Builder
+    for (Map.Entry<String, PortMapping> entry : jobBuilder.getPorts().entrySet()) {
+      final String name = entry.getKey();
+      final PortMapping mapping = entry.getValue();
+      this.port(name, mapping.getInternalPort(), mapping.getExternalPort());
+    }
   }
 
   public TemporaryJobBuilder version(final String jobVersion) {
