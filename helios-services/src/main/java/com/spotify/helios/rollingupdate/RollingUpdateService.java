@@ -24,7 +24,6 @@ import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractIdleService;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.Reactor;
@@ -154,24 +153,19 @@ public class RollingUpdateService extends AbstractIdleService {
       }
 
       // determine the hosts that match the current deployment group
-      hostLoop:
       for (final Map.Entry<String, Map<String, String>> entry : hostsAndLabels.entrySet()) {
         final String host = entry.getKey();
         final Map<String, String> hostLabels = entry.getValue();
 
-        for (final HostSelector hostSelector : deploymentGroup.getHostSelectors()) {
-          final String key = hostSelector.getLabel();
-          if (!hostLabels.containsKey(key)) {
-            continue hostLoop;
-          }
+        // every hostSelector in the group has to have a match in this host.
+        // a match meaning the host has a label for that key and the value matches
+        final boolean match = deploymentGroup.getHostSelectors().stream()
+            .allMatch(selector -> hostLabels.containsKey(selector.getLabel())
+                                  && selector.matches(hostLabels.get(selector.getLabel())));
 
-          final String hostValue = hostLabels.get(key);
-          if (!hostSelector.matches(hostValue)) {
-            continue hostLoop;
-          }
+        if (match) {
+          matchingHosts.add(host);
         }
-
-        matchingHosts.add(host);
       }
 
       Collections.sort(matchingHosts, new AlphaNumericComparator(Locale.ENGLISH));
