@@ -25,6 +25,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificateException;
@@ -40,9 +43,17 @@ import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -52,6 +63,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -396,6 +410,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public void close() {
     log.info("shutting ourselves down");
 
+    undeployLeftoverJobs();
+
     killContainer(heliosContainerId);
     if (removeHeliosSoloContainerOnExit) {
       removeContainer(heliosContainerId);
@@ -410,10 +426,78 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
+   * Undeploy jobs left over by {@link TemporaryJobs}. TemporaryJobs should clean these up,
+   * but sometimes a few are left behind for whatever reason.
+   */
+  private void undeployLeftoverJobs() {
+    try {
+      // List all jobs. TemporaryJobs should delete jobs in addition to undeploying them.
+      // So any jobs found at this point have only been partially cleaned up.
+      final Map<JobId, Job> jobs = heliosClient.jobs().get();
+      if (jobs.size() > 0) {
+        log.info("There are jobs in helios-solo left over by TemporaryJobs. " +
+                 "Undeploying and deleting them now. Jobs: {}", jobs.keySet());
+      }
+
+      for (final JobId jobId : jobs.keySet()) {
+        final JobStatus jobStatus = heliosClient.jobStatus(jobId).get();
+        final Map<String, TaskStatus> statuses = jobStatus.getTaskStatuses();
+
+        for (Map.Entry<String, TaskStatus> status : statuses.entrySet()) {
+          final String host = status.getKey();
+          if (status.getValue().getGoal().equals(Goal.START)) {
+            log.info("Job {} is still set to START on host {}. Undeploying it now.", jobId, host);
+            final JobUndeployResponse undeployResponse = heliosClient.undeploy(jobId, host).get();
+            log.info("Undeploy response for job {} is {}.", jobId, undeployResponse.getStatus());
+
+            log.info("Waiting for job {} to actually be undeployed...", jobId);
+            awaitJobUndeployed(heliosClient, host, jobId, 400, TimeUnit.SECONDS);
+            log.info("Job {} successfully undeployed.", jobId);
+          }
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Something went wrong.", e);
+    }
+  }
+
+  protected Boolean awaitJobUndeployed(final HeliosClient client, final String host,
+                                       final JobId jobId, final int timeout,
+                                       final TimeUnit timeunit) throws Exception {
+    return Polling.await(timeout, timeunit, new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
+        if (hostStatus == null) {
+          log.debug("Job {} host status is null. Waiting...", jobId);
+          return null;
+        }
+        final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
+        if (taskStatus != null) {
+          log.debug("Job {} task status is {}.", jobId, taskStatus.getState());
+          return null;
+        }
+        log.info("Task status is null which means job {} has been successfully undeployed.", jobId);
+        return true;
+      }
+    });
+  }
+
+  protected <T> T getOrNull(final ListenableFuture<T> future)
+      throws ExecutionException, InterruptedException {
+    return Futures.withFallback(future, new FutureFallback<T>() {
+      @Override
+      public ListenableFuture<T> create(@NotNull final Throwable t) throws Exception {
+        return Futures.immediateFuture(null);
+      }
+    }).get();
+  }
+
+  /**
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
   public static Builder builder() {
-    return builder((String) null);
+    return builder(null);
   }
 
   /**
