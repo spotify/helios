@@ -17,6 +17,7 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
@@ -42,6 +43,7 @@ import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
+import com.spotify.docker.client.shaded.javax.ws.rs.core.Response;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
@@ -140,10 +142,11 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     // Running the String host:port through HostAndPort does some validation for us.
     this.deploymentAddress = HostAndPort.fromString(dockerHost.address() + ":" + heliosPort);
-    this.heliosClient = HeliosClient.newBuilder()
+    this.heliosClient = Optional.fromNullable(builder.heliosClient).or(
+        HeliosClient.newBuilder()
             .setUser(username)
             .setEndpoints("http://" + deploymentAddress)
-            .build();
+            .build());
   }
 
   /** Returns the DockerHost that the container should use to refer to the docker daemon. */
@@ -439,7 +442,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * Undeploy jobs left over by {@link TemporaryJobs}. TemporaryJobs should clean these up,
    * but sometimes a few are left behind for whatever reason.
    */
-  private void undeployLeftoverJobs() {
+  @VisibleForTesting
+  protected void undeployLeftoverJobs() {
     try {
       // List all jobs. TemporaryJobs should delete jobs in addition to undeploying them.
       // So any jobs found at this point have only been partially cleaned up.
@@ -460,6 +464,11 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             final JobUndeployResponse undeployResponse = heliosClient.undeploy(jobId, host).get();
             log.info("Undeploy response for job {} is {}.", jobId, undeployResponse.getStatus());
 
+            if (undeployResponse.getStatus() != JobUndeployResponse.Status.OK) {
+              log.warn("Undeploy response for job {} was not OK. Not waiting for job to " +
+                       "actually be undeployed.", jobId);
+            }
+
             log.info("Waiting for job {} to actually be undeployed...", jobId);
             awaitJobUndeployed(heliosClient, host, jobId, jobUndeployWaitSeconds, TimeUnit.SECONDS);
             log.info("Job {} successfully undeployed.", jobId);
@@ -471,9 +480,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
   }
 
-  protected Boolean awaitJobUndeployed(final HeliosClient client, final String host,
-                                       final JobId jobId, final int timeout,
-                                       final TimeUnit timeunit) throws Exception {
+  private Boolean awaitJobUndeployed(final HeliosClient client, final String host,
+                                     final JobId jobId, final int timeout,
+                                     final TimeUnit timeunit) throws Exception {
     return Polling.await(timeout, timeunit, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
@@ -493,7 +502,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     });
   }
 
-  protected <T> T getOrNull(final ListenableFuture<T> future)
+  private <T> T getOrNull(final ListenableFuture<T> future)
       throws ExecutionException, InterruptedException {
     return Futures.withFallback(future, new FutureFallback<T>() {
       @Override
@@ -554,6 +563,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private DockerClient dockerClient;
     private DockerHost dockerHost;
     private DockerHost containerDockerHost;
+    private HeliosClient heliosClient;
     private String heliosSoloImage = "spotify/helios-solo:latest";
     private String namespace;
     private String heliosUsername;
@@ -658,6 +668,17 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      */
     public Builder containerDockerHost(final DockerHost containerDockerHost) {
       this.containerDockerHost = containerDockerHost;
+      return this;
+    }
+
+    /**
+     * Optionally specify a {@link HeliosClient}. Used for unit tests.
+     *
+     * @param heliosClient HeliosClient
+     * @return This Builder, with its HeliosClient configured.
+     */
+    public Builder heliosClient(final HeliosClient heliosClient) {
+      this.heliosClient = heliosClient;
       return this;
     }
 
