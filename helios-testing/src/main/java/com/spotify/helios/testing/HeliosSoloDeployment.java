@@ -444,11 +444,12 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   @VisibleForTesting
   protected void undeployLeftoverJobs() {
     try {
-      // List all jobs. TemporaryJobs should delete jobs in addition to undeploying them.
+      // List all jobs. If we are using TemporaryJobs, that class should've deleted them at this
+      // point in addition to undeploying them.
       // So any jobs found at this point have only been partially cleaned up.
       final Map<JobId, Job> jobs = heliosClient.jobs().get();
       if (jobs.size() > 0) {
-        log.info("There are jobs in helios-solo left over by TemporaryJobs. " +
+        log.info("There are leftover jobs deployed by helios-solo. " +
                  "Undeploying and deleting them now. Jobs: {}", jobs.keySet());
       }
 
@@ -477,7 +478,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         }
       }
     } catch (Exception e) {
-      log.warn("Exception occurred when trying to clean up leftover temp jobs.", e);
+      log.warn("Exception occurred when trying to clean up leftover jobs.", e);
     }
   }
 
