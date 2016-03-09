@@ -405,6 +405,13 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
+   * @return The container ID of the Helios Solo container.
+   */
+  public String heliosContainerId() {
+    return heliosContainerId;
+  }
+
+  /**
    * Undeploy (shut down) this HeliosSoloDeployment.
    */
   public void close() {
@@ -457,7 +464,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         }
       }
     } catch (Exception e) {
-      log.warn("Something went wrong.", e);
+      log.warn("Exception occurred when trying to clean up leftover temp jobs.", e);
     }
   }
 
