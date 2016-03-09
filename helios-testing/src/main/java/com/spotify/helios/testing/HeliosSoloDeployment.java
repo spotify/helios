@@ -87,6 +87,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public static final String HELIOS_SOLO_PROFILE = "helios.solo.profile";
   public static final String HELIOS_SOLO_PROFILES = "helios.solo.profiles.";
   public static final int HELIOS_MASTER_PORT = 5801;
+  private static final int DEFAULT_WAIT_SECONDS = 30;
 
   private final DockerClient dockerClient;
   /** The DockerHost we use to communicate with docker */
@@ -102,11 +103,13 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private final HostAndPort deploymentAddress;
   private final HeliosClient heliosClient;
   private boolean removeHeliosSoloContainerOnExit;
+  private final int jobUndeployWaitSeconds;
 
   HeliosSoloDeployment(final Builder builder) {
     this.heliosSoloImage = builder.heliosSoloImage;
     this.pullBeforeCreate = builder.pullBeforeCreate;
     this.removeHeliosSoloContainerOnExit = builder.removeHeliosSoloContainerOnExit;
+    this.jobUndeployWaitSeconds = builder.jobUndeployWaitSeconds;
 
     final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
 
@@ -458,7 +461,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             log.info("Undeploy response for job {} is {}.", jobId, undeployResponse.getStatus());
 
             log.info("Waiting for job {} to actually be undeployed...", jobId);
-            awaitJobUndeployed(heliosClient, host, jobId, 400, TimeUnit.SECONDS);
+            awaitJobUndeployed(heliosClient, host, jobId, jobUndeployWaitSeconds, TimeUnit.SECONDS);
             log.info("Job {} successfully undeployed.", jobId);
           }
         }
@@ -557,6 +560,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private Set<String> env;
     private boolean pullBeforeCreate = true;
     private boolean removeHeliosSoloContainerOnExit = true;
+    private int jobUndeployWaitSeconds = DEFAULT_WAIT_SECONDS;
 
     Builder(String profile, Config rootConfig) {
       this.env = new HashSet<>();
@@ -603,6 +607,16 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      */
     public Builder removeHeliosSoloOnExit(boolean enabled) {
       this.removeHeliosSoloContainerOnExit = enabled;
+      return this;
+    }
+
+    /**
+     * Set the number of seconds Helios solo will wait for jobs to be undeployed and, as a result,
+     * their associated Docker containers to stop running before shutting itself down.
+     * The default is 30 seconds.
+     */
+    public Builder jobUndeployWaitSeconds(int seconds) {
+      this.jobUndeployWaitSeconds = seconds;
       return this;
     }
 
