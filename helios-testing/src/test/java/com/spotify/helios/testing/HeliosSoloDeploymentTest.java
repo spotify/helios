@@ -18,18 +18,14 @@
 package com.spotify.helios.testing;
 
 
-import com.google.common.base.Function;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.SettableFuture;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 
-import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.DockerHost;
 import com.spotify.docker.client.ImageNotFoundException;
-import com.spotify.docker.client.messages.Container;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
@@ -60,10 +56,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
@@ -75,9 +68,6 @@ import static org.mockito.Mockito.when;
 public class HeliosSoloDeploymentTest {
 
   private static final String CONTAINER_ID = "abc123";
-  private static final String BUSYBOX = "busybox:latest";
-  private static final List<String> IDLE_COMMAND = asList(
-      "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
   private static final String HOST1 = "host1";
   private static final String HOST2 = "host2";
   private static final Job JOB1 = Job.newBuilder()
@@ -239,44 +229,36 @@ public class HeliosSoloDeploymentTest {
         .heliosClient(heliosClient)
         .build();
 
-    final SettableFuture<Map<JobId, Job>> jobsFuture = SettableFuture.create();
-    jobsFuture.set(ImmutableMap.of(JOB1.getId(), JOB1, JOB2.getId(), JOB2));
+    final ListenableFuture<Map<JobId, Job>> jobsFuture = Futures.<Map<JobId, Job>>immediateFuture(
+        ImmutableMap.of(JOB1.getId(), JOB1, JOB2.getId(), JOB2));
     when(heliosClient.jobs()).thenReturn(jobsFuture);
 
-    final SettableFuture<JobStatus> statusFuture1 = SettableFuture.create();
-    statusFuture1.set(JobStatus.newBuilder().setTaskStatuses(ImmutableMap.of(
-        HOST1, TASK_STATUS1
-    )).build());
-    final SettableFuture<JobStatus> statusFuture2 = SettableFuture.create();
-    statusFuture2.set(JobStatus.newBuilder().setTaskStatuses(ImmutableMap.of(
-        HOST2, TASK_STATUS2
-    )).build());
+    final ListenableFuture<JobStatus> statusFuture1 = Futures.immediateFuture(
+        JobStatus.newBuilder().setTaskStatuses(ImmutableMap.of(HOST1, TASK_STATUS1)).build());
+    final ListenableFuture<JobStatus> statusFuture2 = Futures.immediateFuture(
+        JobStatus.newBuilder().setTaskStatuses(ImmutableMap.of(HOST2, TASK_STATUS2)).build());
     when(heliosClient.jobStatus(JOB1.getId())).thenReturn(statusFuture1);
     when(heliosClient.jobStatus(JOB2.getId())).thenReturn(statusFuture2);
 
-    final SettableFuture<JobUndeployResponse> undeployFuture1 = SettableFuture.create();
-    undeployFuture1.set(new JobUndeployResponse(
-        JobUndeployResponse.Status.OK, HOST1, JOB1.getId()));
-    final SettableFuture<JobUndeployResponse> undeployFuture2 = SettableFuture.create();
-    undeployFuture2.set(new JobUndeployResponse(
-        JobUndeployResponse.Status.OK, HOST2, JOB1.getId()));
+    final ListenableFuture<JobUndeployResponse> undeployFuture1 = Futures.immediateFuture(
+        new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST1, JOB1.getId()));
+    final ListenableFuture<JobUndeployResponse> undeployFuture2 = Futures.immediateFuture(
+        new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST2, JOB2.getId()));
     when(heliosClient.undeploy(JOB1.getId(), HOST1)).thenReturn(undeployFuture1);
     when(heliosClient.undeploy(JOB2.getId(), HOST2)).thenReturn(undeployFuture2);
 
-    final SettableFuture<HostStatus> hostStatusFuture1 = SettableFuture.create();
-    hostStatusFuture1.set(HostStatus.newBuilder()
-                              .setStatus(HostStatus.Status.UP)
-                              .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
-                              .setJobs(ImmutableMap.of(JOB1.getId(),
-                                                       Deployment.of(JOB1.getId(), Goal.START)))
-                              .build());
-    final SettableFuture<HostStatus> hostStatusFuture2 = SettableFuture.create();
-    hostStatusFuture2.set(HostStatus.newBuilder()
-                              .setStatus(HostStatus.Status.UP)
-                              .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
-                              .setJobs(ImmutableMap.of(JOB2.getId(),
-                                                       Deployment.of(JOB2.getId(), Goal.START)))
-                              .build());
+    final ListenableFuture<HostStatus> hostStatusFuture1 = Futures.immediateFuture(
+        HostStatus.newBuilder()
+            .setStatus(HostStatus.Status.UP)
+            .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
+            .setJobs(ImmutableMap.of(JOB1.getId(), Deployment.of(JOB1.getId(), Goal.START)))
+            .build());
+    final ListenableFuture<HostStatus> hostStatusFuture2 = Futures.immediateFuture(
+        HostStatus.newBuilder()
+            .setStatus(HostStatus.Status.UP)
+            .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
+            .setJobs(ImmutableMap.of(JOB2.getId(), Deployment.of(JOB2.getId(), Goal.START)))
+            .build());
     when(heliosClient.hostStatus(HOST1)).thenReturn(hostStatusFuture1);
     when(heliosClient.hostStatus(HOST2)).thenReturn(hostStatusFuture2);
 
@@ -293,82 +275,13 @@ public class HeliosSoloDeploymentTest {
         .heliosClient(heliosClient)
         .build();
 
-    final SettableFuture<Map<JobId, Job>> jobsFuture = SettableFuture.create();
-    jobsFuture.set(Collections.<JobId, Job>emptyMap());
+    final ListenableFuture<Map<JobId, Job>> jobsFuture = Futures.immediateFuture(
+        Collections.<JobId, Job>emptyMap());
     when(heliosClient.jobs()).thenReturn(jobsFuture);
 
     solo.undeployLeftoverJobs();
 
     // There should be no more calls to any HeliosClient methods.
     verify(heliosClient, never()).jobStatus(Matchers.any(JobId.class));
-  }
-
-  @Test
-  public void testAfterCleansUpLeftoverJobs() throws Throwable {
-    final HeliosSoloDeployment soloDeployment =
-        (HeliosSoloDeployment) HeliosSoloDeployment.fromEnv().build();
-    final HeliosDeploymentResource soloResource = new HeliosDeploymentResource(soloDeployment);
-    // Since we're not using @Rule, we have to call these methods explicitly.
-    // Ensure helios-solo is ready.
-    soloResource.before();
-
-    final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-        .client(soloResource.client())
-        .build();
-
-    temporaryJobs.before();
-
-    final TemporaryJob job1 = temporaryJobs.job()
-        .image(BUSYBOX)
-        .command(IDLE_COMMAND)
-        .deploy();
-    final TemporaryJob job2 = temporaryJobs.job()
-        .image(BUSYBOX)
-        .command(IDLE_COMMAND)
-        .deploy();
-
-    final Map<String, TaskStatus> statuses1 = job1.statuses();
-    final Map<String, TaskStatus> statuses2 = job2.statuses();
-    final List<String> containerIds = ImmutableList.<String>builder()
-        .addAll(taskStatusesToContainerIds(statuses1))
-        .addAll(taskStatusesToContainerIds(statuses2))
-        .build();
-
-    assertThat(containerIds.size(), equalTo(2));
-
-    // Run HeliosSoloDeployment's after() before TemporaryJobs.after() to test if it'll clean up
-    // leftover jobs not cleaned up by TemporaryJobs.
-    soloResource.after();
-
-    final List<String> runningContainerIds = runningContainerIds(
-        DefaultDockerClient.fromEnv().build());
-    // We expect the containers associated with the two temp jobs above to not be running.
-    for (final String containerId : containerIds) {
-      assertFalse(runningContainerIds.contains(containerId));
-    }
-    // The solo container should also not be running.
-    assertFalse(runningContainerIds.contains(soloDeployment.heliosContainerId()));
-  }
-
-  private List<String> taskStatusesToContainerIds(final Map<String, TaskStatus> map) {
-    final List<TaskStatus> statuses = Lists.newArrayList(map.values());
-
-    return Lists.transform(statuses, new Function<TaskStatus, String>() {
-      @Override
-      public String apply(final TaskStatus status) {
-        return status.getContainerId();
-      }
-    });
-  }
-
-  private List<String> runningContainerIds(final DockerClient client)
-      throws DockerException, InterruptedException {
-    final List<Container> containers = client.listContainers();
-    return Lists.transform(containers, new Function<Container, String>() {
-          @Override
-          public String apply(final Container container) {
-            return container.id();
-          }
-        });
   }
 }
