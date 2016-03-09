@@ -43,7 +43,6 @@ import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
-import com.spotify.docker.client.shaded.javax.ws.rs.core.Response;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
@@ -459,8 +458,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
         for (Map.Entry<String, TaskStatus> status : statuses.entrySet()) {
           final String host = status.getKey();
-          if (status.getValue().getGoal().equals(Goal.START)) {
-            log.info("Job {} is still set to START on host {}. Undeploying it now.", jobId, host);
+          final Goal goal = status.getValue().getGoal();
+          if (goal != Goal.UNDEPLOY) {
+            log.info("Job {} is still set to {} on host {}. Undeploying it now.",
+                     jobId, goal, host);
             final JobUndeployResponse undeployResponse = heliosClient.undeploy(jobId, host).get();
             log.info("Undeploy response for job {} is {}.", jobId, undeployResponse.getStatus());
 
@@ -468,11 +469,11 @@ public class HeliosSoloDeployment implements HeliosDeployment {
               log.warn("Undeploy response for job {} was not OK. Not waiting for job to " +
                        "actually be undeployed.", jobId);
             }
-
-            log.info("Waiting for job {} to actually be undeployed...", jobId);
-            awaitJobUndeployed(heliosClient, host, jobId, jobUndeployWaitSeconds, TimeUnit.SECONDS);
-            log.info("Job {} successfully undeployed.", jobId);
           }
+
+          log.info("Waiting for job {} to actually be undeployed...", jobId);
+          awaitJobUndeployed(heliosClient, host, jobId, jobUndeployWaitSeconds, TimeUnit.SECONDS);
+          log.info("Job {} successfully undeployed.", jobId);
         }
       }
     } catch (Exception e) {
