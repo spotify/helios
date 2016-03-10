@@ -45,18 +45,25 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class MultiplePortJobTest extends SystemTestBase {
 
   private final int externalPort1 = temporaryPorts.localPort("external-1");
   private final int externalPort2 = temporaryPorts.localPort("external-2");
+  private final PortMapping staticMapping1 = PortMapping.of(4712, externalPort1);
+  private final PortMapping staticMapping2 = PortMapping.of(4712, externalPort2);
 
   @Test
   public void test() throws Exception {
     startDefaultMaster();
 
+    // 'Reserve' a 2 port wide range of ports.
     final Range<Integer> portRange = temporaryPorts.localPortRange("agent1", 2);
+
+    // Start an agent using the aforementioned 2 port wide range.
     final AgentMain agent1 = startDefaultAgent(testHost(), "--port-range=" +
                                                           portRange.lowerEndpoint() + ":" +
                                                           portRange.upperEndpoint());
@@ -66,25 +73,18 @@ public class MultiplePortJobTest extends SystemTestBase {
 
       awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
-      final Map<String, PortMapping> ports1 =
-          ImmutableMap.of("foo", PortMapping.of(4711),
-                          "bar", PortMapping.of(4712, externalPort1));
+      // foo is a mapping of 4711 -> A port dynamically allocated by the agent's PortAllocator
+      // bar is a mapping of 4712 -> A static port randomly selected by temporaryPorts
+      final Map<String, PortMapping> ports1 = ImmutableMap.of("foo", PortMapping.of(4711),
+                                                              "bar", staticMapping1);
 
-      final ImmutableMap<String, PortMapping> expectedMapping1 =
-          ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint()),
-                          "bar", PortMapping.of(4712, externalPort1));
-
-      final Map<String, PortMapping> ports2 =
-          ImmutableMap.of("foo", PortMapping.of(4711),
-                          "bar", PortMapping.of(4712, externalPort2));
-
-      final ImmutableMap<String, PortMapping> expectedMapping2 =
-          ImmutableMap.of("foo", PortMapping.of(4711, portRange.lowerEndpoint() + 1),
-                          "bar", PortMapping.of(4712, externalPort2));
+      // foo is a mapping of 4711 -> A port dynamically allocated by the agent's PortAllocator
+      // bar is a mapping of 4712 -> A static port randomly selected by temporaryPorts
+      final Map<String, PortMapping> ports2 = ImmutableMap.of("foo", PortMapping.of(4711),
+                                                              "bar", staticMapping2);
 
       final JobId jobId1 = createJob(testJobName + 1, testJobVersion, BUSYBOX, IDLE_COMMAND,
                                      EMPTY_ENV, ports1);
-
       assertNotNull(jobId1);
       deployJob(jobId1, testHost());
       final TaskStatus firstTaskStatus1 = awaitJobState(client, testHost(), jobId1, RUNNING,
@@ -92,14 +92,22 @@ public class MultiplePortJobTest extends SystemTestBase {
 
       final JobId jobId2 = createJob(testJobName + 2, testJobVersion, BUSYBOX, IDLE_COMMAND,
                                      EMPTY_ENV, ports2);
-
       assertNotNull(jobId2);
       deployJob(jobId2, testHost());
       final TaskStatus firstTaskStatus2 = awaitJobState(client, testHost(), jobId2, RUNNING,
                                                         LONG_WAIT_SECONDS, SECONDS);
 
-      assertEquals(expectedMapping1, firstTaskStatus1.getPorts());
-      assertEquals(expectedMapping2, firstTaskStatus2.getPorts());
+      // Verify we allocated dynamic ports from within the specified range.
+      assertTrue(portRange.contains(firstTaskStatus1.getPorts().get("foo").getExternalPort()));
+      assertTrue(portRange.contains(firstTaskStatus2.getPorts().get("foo").getExternalPort()));
+
+      // Verify we allocated the static ports we asked for.
+      assertEquals(staticMapping1, firstTaskStatus1.getPorts().get("bar"));
+      assertEquals(staticMapping2, firstTaskStatus2.getPorts().get("bar"));
+
+      // Verify we didn't allocate the same dynamic port to both jobs.
+      assertNotEquals(firstTaskStatus1.getPorts().get("foo"),
+                      firstTaskStatus2.getPorts().get("foo"));
 
       // TODO (dano): the supervisor should report the allocated ports at all times
 
@@ -116,7 +124,7 @@ public class MultiplePortJobTest extends SystemTestBase {
                  ? taskStatus : null;
         }
       });
-      assertEquals(expectedMapping1, restartedTaskStatus1.getPorts());
+      assertEquals(firstTaskStatus1.getPorts(), restartedTaskStatus1.getPorts());
 
       // Verify that port allocation is kept across agent restarts
       agent1.stopAsync().awaitTerminated();
@@ -133,7 +141,7 @@ public class MultiplePortJobTest extends SystemTestBase {
                  ? taskStatus : null;
         }
       });
-      assertEquals(expectedMapping2, restartedTaskStatus2.getPorts());
+      assertEquals(firstTaskStatus2.getPorts(), restartedTaskStatus2.getPorts());
     }
   }
 
@@ -144,7 +152,7 @@ public class MultiplePortJobTest extends SystemTestBase {
     awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     final Map<String, PortMapping> ports =
-        ImmutableMap.of("bar", PortMapping.of(4712, externalPort1));
+        ImmutableMap.of("bar", staticMapping1);
 
     try (final DockerClient dockerClient = getNewDockerClient()) {
       final JobId jobId = createJob(testJobName + 1, testJobVersion, BUSYBOX,
