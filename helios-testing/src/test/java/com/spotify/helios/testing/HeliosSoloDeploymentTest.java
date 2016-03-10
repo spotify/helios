@@ -38,9 +38,9 @@ import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.HostStatus.Status;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.typesafe.config.Config;
@@ -82,6 +82,8 @@ public class HeliosSoloDeploymentTest {
       .setName("NAME")
       .setVersion("VERSION")
       .build();
+  private static final JobId JOB_ID1 = JOB1.getId();
+  private static final JobId JOB_ID2 = JOB2.getId();
   private static final TaskStatus TASK_STATUS1 = TaskStatus.newBuilder()
       .setJob(JOB1)
       .setGoal(Goal.START)
@@ -229,43 +231,53 @@ public class HeliosSoloDeploymentTest {
         .heliosClient(heliosClient)
         .build();
 
-    final ListenableFuture<Map<JobId, Job>> jobsFuture = Futures.<Map<JobId, Job>>immediateFuture(
-        ImmutableMap.of(JOB1.getId(), JOB1, JOB2.getId(), JOB2));
-    when(heliosClient.jobs()).thenReturn(jobsFuture);
+    final ListenableFuture<List<String>> hostsFuture = Futures.<List<String>>immediateFuture(
+        ImmutableList.of(HOST1, HOST2));
+    when(heliosClient.listHosts()).thenReturn(hostsFuture);
 
-    final ListenableFuture<JobStatus> statusFuture1 = Futures.immediateFuture(
-        JobStatus.newBuilder().setTaskStatuses(ImmutableMap.of(HOST1, TASK_STATUS1)).build());
-    final ListenableFuture<JobStatus> statusFuture2 = Futures.immediateFuture(
-        JobStatus.newBuilder().setTaskStatuses(ImmutableMap.of(HOST2, TASK_STATUS2)).build());
-    when(heliosClient.jobStatus(JOB1.getId())).thenReturn(statusFuture1);
-    when(heliosClient.jobStatus(JOB2.getId())).thenReturn(statusFuture2);
+    // These futures represent HostStatuses when the job is still deployed
+    final ListenableFuture<HostStatus> statusFuture1_1 = Futures.immediateFuture(
+        HostStatus.newBuilder()
+            .setStatus(Status.UP)
+            .setStatuses(ImmutableMap.of(JOB_ID1, TASK_STATUS1))
+            .setJobs(ImmutableMap.of(JOB_ID1, Deployment.of(JOB_ID1, Goal.START)))
+            .build());
+    final ListenableFuture<HostStatus> statusFuture2_1 = Futures.immediateFuture(
+        HostStatus.newBuilder()
+            .setStatus(Status.UP)
+            .setStatuses(ImmutableMap.of(JOB_ID2, TASK_STATUS2))
+            .setJobs(ImmutableMap.of(JOB_ID2, Deployment.of(JOB_ID2, Goal.START)))
+            .build());
+
+    // These futures represent HostStatuses when the job is undeployed
+    final ListenableFuture<HostStatus> statusFuture1_2 = Futures.immediateFuture(
+        HostStatus.newBuilder()
+            .setStatus(Status.UP)
+            .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
+            .setJobs(ImmutableMap.of(JOB_ID1, Deployment.of(JOB_ID1, Goal.START)))
+            .build());
+    final ListenableFuture<HostStatus> statusFuture2_2 = Futures.immediateFuture(
+        HostStatus.newBuilder()
+            .setStatus(Status.UP)
+            .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
+            .setJobs(ImmutableMap.of(JOB_ID2, Deployment.of(JOB_ID2, Goal.START)))
+            .build());
+    //noinspection unchecked
+    when(heliosClient.hostStatus(HOST1)).thenReturn(statusFuture1_1, statusFuture1_2);
+    //noinspection unchecked
+    when(heliosClient.hostStatus(HOST2)).thenReturn(statusFuture2_1, statusFuture2_2);
 
     final ListenableFuture<JobUndeployResponse> undeployFuture1 = Futures.immediateFuture(
-        new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST1, JOB1.getId()));
+        new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST1, JOB_ID1));
     final ListenableFuture<JobUndeployResponse> undeployFuture2 = Futures.immediateFuture(
-        new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST2, JOB2.getId()));
-    when(heliosClient.undeploy(JOB1.getId(), HOST1)).thenReturn(undeployFuture1);
-    when(heliosClient.undeploy(JOB2.getId(), HOST2)).thenReturn(undeployFuture2);
-
-    final ListenableFuture<HostStatus> hostStatusFuture1 = Futures.immediateFuture(
-        HostStatus.newBuilder()
-            .setStatus(HostStatus.Status.UP)
-            .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
-            .setJobs(ImmutableMap.of(JOB1.getId(), Deployment.of(JOB1.getId(), Goal.START)))
-            .build());
-    final ListenableFuture<HostStatus> hostStatusFuture2 = Futures.immediateFuture(
-        HostStatus.newBuilder()
-            .setStatus(HostStatus.Status.UP)
-            .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
-            .setJobs(ImmutableMap.of(JOB2.getId(), Deployment.of(JOB2.getId(), Goal.START)))
-            .build());
-    when(heliosClient.hostStatus(HOST1)).thenReturn(hostStatusFuture1);
-    when(heliosClient.hostStatus(HOST2)).thenReturn(hostStatusFuture2);
+        new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST2, JOB_ID2));
+    when(heliosClient.undeploy(JOB_ID1, HOST1)).thenReturn(undeployFuture1);
+    when(heliosClient.undeploy(JOB_ID2, HOST2)).thenReturn(undeployFuture2);
 
     solo.undeployLeftoverJobs();
 
-    verify(heliosClient).undeploy(JOB1.getId(), HOST1);
-    verify(heliosClient).undeploy(JOB2.getId(), HOST2);
+    verify(heliosClient).undeploy(JOB_ID1, HOST1);
+    verify(heliosClient).undeploy(JOB_ID2, HOST2);
   }
 
   @Test
