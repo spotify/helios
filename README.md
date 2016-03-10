@@ -52,7 +52,7 @@ The binary release of Helios is built for Ubuntu 14.04.1 LTS, but Helios should
 be buildable on any platform with at least Java 7 and a recent Maven 3
 available.
 
-Other components are that are required for a helios installation are:
+Other components that are required for a helios installation are:
 
 * [Docker 1.0](https://github.com/docker/docker) or newer
 * [Zookeeper 3.4.0](https://zookeeper.apache.org/) or newer
