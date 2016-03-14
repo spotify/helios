@@ -46,9 +46,7 @@ import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.typesafe.config.Config;
@@ -444,21 +442,18 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   @VisibleForTesting
   protected void undeployLeftoverJobs() {
     try {
-      // List all jobs. If we are using TemporaryJobs, that class should've deleted them at this
-      // point in addition to undeploying them.
-      // So any jobs found at this point have only been partially cleaned up.
-      final Map<JobId, Job> jobs = heliosClient.jobs().get();
-      if (jobs.size() > 0) {
-        log.info("There are leftover jobs deployed by helios-solo. " +
-                 "Undeploying and deleting them now. Jobs: {}", jobs.keySet());
-      }
+      // See if there are jobs running on any helios agent. If we are using TemporaryJobs,
+      // that class should've undeployed them at this point.
+      // Any jobs still running at this point have only been partially cleaned up.
+      // We look for jobs via hostStatus() because the job may have been deleted from the master,
+      // but the agent may still not have had enough time to undeploy the job from itself.
+      final List<String> hosts = heliosClient.listHosts().get();
+      for (final String host : hosts) {
+        final HostStatus hostStatus = heliosClient.hostStatus(host).get();
+        final Map<JobId, TaskStatus> statuses = hostStatus.getStatuses();
 
-      for (final JobId jobId : jobs.keySet()) {
-        final JobStatus jobStatus = heliosClient.jobStatus(jobId).get();
-        final Map<String, TaskStatus> statuses = jobStatus.getTaskStatuses();
-
-        for (Map.Entry<String, TaskStatus> status : statuses.entrySet()) {
-          final String host = status.getKey();
+        for (Map.Entry<JobId, TaskStatus> status : statuses.entrySet()) {
+          final JobId jobId = status.getKey();
           final Goal goal = status.getValue().getGoal();
           if (goal != Goal.UNDEPLOY) {
             log.info("Job {} is still set to {} on host {}. Undeploying it now.",
@@ -467,8 +462,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             log.info("Undeploy response for job {} is {}.", jobId, undeployResponse.getStatus());
 
             if (undeployResponse.getStatus() != JobUndeployResponse.Status.OK) {
-              log.warn("Undeploy response for job {} was not OK. Not waiting for job to " +
-                       "actually be undeployed.", jobId);
+              log.warn("Undeploy response for job {} was not OK. This could mean that something " +
+                       "beat the helios-solo master in telling the helios-solo agent to undeploy.",
+                       jobId);
             }
           }
 
