@@ -163,7 +163,7 @@ public class HeliosSoloDeploymentTest {
         .build();
 
     boolean foundSolo = false;
-    for (ContainerConfig cc : containerConfig.getAllValues()) {
+    for (final ContainerConfig cc : containerConfig.getAllValues()) {
       if (cc.image().contains("helios-solo")) {
         assertThat(cc.hostConfig().binds(), hasItem("/var/run/docker.sock:/var/run/docker.sock"));
         foundSolo = true;
@@ -179,17 +179,17 @@ public class HeliosSoloDeploymentTest {
     final String ns = "namespace";
     final String env = "stuff";
 
-    Config config = ConfigFactory.empty()
+    final Config config = ConfigFactory.empty()
         .withValue("helios.solo.profile", ConfigValueFactory.fromAnyRef("test"))
         .withValue("helios.solo.profiles.test.image", ConfigValueFactory.fromAnyRef(image))
         .withValue("helios.solo.profiles.test.namespace", ConfigValueFactory.fromAnyRef(ns))
         .withValue("helios.solo.profiles.test.env.TEST", ConfigValueFactory.fromAnyRef(env));
 
-    HeliosSoloDeployment.Builder builder = new HeliosSoloDeployment.Builder(null, config);
+    final HeliosSoloDeployment.Builder builder = new HeliosSoloDeployment.Builder(null, config);
     builder.dockerClient(dockerClient).build();
 
     boolean foundSolo = false;
-    for (ContainerConfig cc : containerConfig.getAllValues()) {
+    for (final ContainerConfig cc : containerConfig.getAllValues()) {
       if (cc.image().contains(image)) {
         foundSolo = true;
         assertThat(cc.env(), hasItem("TEST=" + env));

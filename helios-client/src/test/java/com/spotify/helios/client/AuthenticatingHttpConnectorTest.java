@@ -102,7 +102,7 @@ public class AuthenticatingHttpConnectorTest {
     return new CustomTypeSafeMatcher<URI>("A URI matching one of the endpoints in " + endpoints) {
       @Override
       protected boolean matchesSafely(final URI item) {
-        for (Endpoint endpoint : endpoints) {
+        for (final Endpoint endpoint : endpoints) {
           final InetAddress ip = endpoint.getIp();
           final URI uri = endpoint.getUri();
 
@@ -187,7 +187,7 @@ public class AuthenticatingHttpConnectorTest {
     ).thenReturn(connection);
     when(connection.getResponseCode()).thenReturn(200);
 
-    URI uri = new URI("https://helios" + path);
+    final URI uri = new URI("https://helios" + path);
 
     authConnector.connect(uri, method, entity, headers);
 
@@ -213,9 +213,10 @@ public class AuthenticatingHttpConnectorTest {
     ).thenReturn(connection);
     when(connection.getResponseCode()).thenReturn(401);
 
-    URI uri = new URI("https://helios" + path);
+    final URI uri = new URI("https://helios" + path);
 
-    HttpURLConnection returnedConnection = authConnector.connect(uri, method, entity, headers);
+    final HttpURLConnection returnedConnection = authConnector.connect(
+        uri, method, entity, headers);
 
     verify(connector).setExtraHttpsHandler(sshAgentHttpsHandlerWithArgs(USER, proxy, identity));
 
@@ -249,9 +250,10 @@ public class AuthenticatingHttpConnectorTest {
         eq(headers))
     ).thenReturn(connection1, connection2);
 
-    URI uri = new URI("https://helios" + path);
+    final URI uri = new URI("https://helios" + path);
 
-    HttpURLConnection returnedConnection = authConnector.connect(uri, method, entity, headers);
+    final HttpURLConnection returnedConnection = authConnector.connect(
+        uri, method, entity, headers);
 
     verify(connector).setExtraHttpsHandler(sshAgentHttpsHandlerWithArgs(USER, proxy, id1));
     verify(connector).setExtraHttpsHandler(sshAgentHttpsHandlerWithArgs(USER, proxy, id2));
@@ -329,9 +331,10 @@ public class AuthenticatingHttpConnectorTest {
     ).thenReturn(connection);
     when(connection.getResponseCode()).thenReturn(502);
 
-    URI uri = new URI("https://helios" + path);
+    final URI uri = new URI("https://helios" + path);
 
-    HttpURLConnection returnedConnection = authConnector.connect(uri, method, entity, headers);
+    final HttpURLConnection returnedConnection = authConnector.connect(
+        uri, method, entity, headers);
 
     assertSame("If there is only one identity do not expect any additional endpoints to "
                + "be called after the first returns Unauthorized",

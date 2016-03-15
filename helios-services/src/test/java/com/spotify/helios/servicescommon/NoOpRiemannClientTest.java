@@ -25,7 +25,7 @@ public class NoOpRiemannClientTest {
   public void test() {
     // quick test to make sure nothing goes kaboom since we assume some behavior of the
     // abstract client
-    NoOpRiemannClient c = new NoOpRiemannClient();
+    final NoOpRiemannClient c = new NoOpRiemannClient();
     c.event().
         service("fridge").
         state("running").

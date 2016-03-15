@@ -60,7 +60,7 @@ public class TaskConfigTest {
       .job(job)
       .build();
 
-    ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
+    final ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
     assertEquals(path, endpoint.getHealthCheck().getPath());
     assertEquals(EndpointHealthCheck.HTTP, endpoint.getHealthCheck().getType());
     assertEquals(EXTERNAL_PORT, endpoint.getPort());
@@ -79,7 +79,7 @@ public class TaskConfigTest {
       .job(job)
       .build();
 
-    ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
+    final ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
     assertEquals(EndpointHealthCheck.TCP, endpoint.getHealthCheck().getType());
     assertEquals(EXTERNAL_PORT, endpoint.getPort());
   }
@@ -92,7 +92,7 @@ public class TaskConfigTest {
       .job(JOB)
       .build();
 
-    ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
+    final ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
     assertNull(endpoint.getHealthCheck());
   }
 }

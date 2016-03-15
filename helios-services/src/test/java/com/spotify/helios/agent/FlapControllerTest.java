@@ -72,7 +72,7 @@ public class FlapControllerTest {
 
   @Test
   public void testEnterAndExitFlapping() throws Exception {
-    FlapController controller = FlapController.newBuilder()
+    final FlapController controller = FlapController.newBuilder()
         .setClock(clock)
         .setRestartCount(2)
         .setTimeRangeMillis(1000)

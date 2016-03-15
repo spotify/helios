@@ -77,7 +77,7 @@ public class CliParserTest {
   public void testComputeTargetsMultipleEndpoints() throws Exception {
     final List<String> argsList = Lists.newArrayList(
         SUBCOMMAND, "-d", Joiner.on(",").join(DOMAINS));
-    for (String endpoint : ENDPOINTS) {
+    for (final String endpoint : ENDPOINTS) {
       argsList.add("--master");
       argsList.add(endpoint);
     }
@@ -88,7 +88,7 @@ public class CliParserTest {
 
     // We expect only the specified master endpoint targets since they take precedence over domains
     final List<Target> expectedTargets = Lists.newArrayListWithExpectedSize(ENDPOINTS.length);
-    for (String endpoint : ENDPOINTS) {
+    for (final String endpoint : ENDPOINTS) {
       expectedTargets.add(Target.from(URI.create(endpoint)));
     }
     assertEquals(expectedTargets, targets);

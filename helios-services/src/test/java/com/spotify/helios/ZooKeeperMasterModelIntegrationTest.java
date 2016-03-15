@@ -212,11 +212,11 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testHostRegistration() throws Exception {
     model.registerHost(HOST, "foo");
-    List<String> hosts1 = model.listHosts();
+    final List<String> hosts1 = model.listHosts();
     assertThat(hosts1, hasItem(HOST));
 
     model.deregisterHost(HOST);
-    List<String> hosts2 = model.listHosts();
+    final List<String> hosts2 = model.listHosts();
     assertEquals(0, hosts2.size());
   }
 
@@ -242,7 +242,7 @@ public class ZooKeeperMasterModelIntegrationTest {
     }
 
     model.registerHost(HOST, "foo");
-    List<String> hosts = model.listHosts();
+    final List<String> hosts = model.listHosts();
     assertThat(hosts, hasItem(HOST));
 
     try {
@@ -258,13 +258,13 @@ public class ZooKeeperMasterModelIntegrationTest {
         .setGoal(Goal.START)
         .setJobId(JOB.getId())
         .build());
-    Map<JobId, Job> jobsOnHost = model.getJobs();
+    final Map<JobId, Job> jobsOnHost = model.getJobs();
     assertEquals(1, jobsOnHost.size());
-    Job descriptor = jobsOnHost.get(JOB.getId());
+    final Job descriptor = jobsOnHost.get(JOB.getId());
     assertEquals(JOB, descriptor);
 
     stopJob(model, JOB); // should succeed this time!
-    Deployment jobCfg = model.getDeployment(HOST, JOB.getId());
+    final Deployment jobCfg = model.getDeployment(HOST, JOB.getId());
     assertEquals(Goal.STOP, jobCfg.getGoal());
   }
 
