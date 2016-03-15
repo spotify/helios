@@ -67,9 +67,9 @@ public abstract class ControlCommand implements CliCommand {
     // a {"$DOMAIN": $VALUE} dict before json serializing and returning it.
 
     // Execute the control command over each target cluster
-    Iterator<Target> targetIterator = targets.iterator();
+    final Iterator<Target> targetIterator = targets.iterator();
     while (targetIterator.hasNext()) {
-      Target target = targetIterator.next();
+      final Target target = targetIterator.next();
 
       if (targets.size() > 1) {
         if (!json) {

@@ -69,7 +69,7 @@ public class DefaultHttpConnector implements HttpConnector {
     final String endpointHost = endpoint.getUri().getHost();
 
     try {
-      HttpURLConnection connection = connect0(uri, method, entity, headers, endpointHost);
+      final HttpURLConnection connection = connect0(uri, method, entity, headers, endpointHost);
 
       if (connection.getResponseCode() == HTTP_BAD_GATEWAY) {
         throw new HeliosException(
@@ -109,7 +109,7 @@ public class DefaultHttpConnector implements HttpConnector {
     connection.setInstanceFollowRedirects(false);
     connection.setConnectTimeout(httpTimeoutMillis);
     connection.setReadTimeout(httpTimeoutMillis);
-    for (Map.Entry<String, List<String>> header : headers.entrySet()) {
+    for (final Map.Entry<String, List<String>> header : headers.entrySet()) {
       for (final String value : header.getValue()) {
         connection.addRequestProperty(header.getKey(), value);
       }

@@ -83,7 +83,7 @@ public class Task extends Descriptor {
       return false;
     }
 
-    Task task = (Task) o;
+    final Task task = (Task) o;
 
     if (job != null ? !job.equals(task.job) : task.job != null) {
       return false;

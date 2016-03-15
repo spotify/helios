@@ -54,7 +54,7 @@ public class JobStatusTable {
       table.row(jobIdString, host, goal, "", "", "");
     } else {
       final List<String> portMappings = new ArrayList<>();
-      for (Map.Entry<String, PortMapping> entry : ts.getPorts().entrySet()) {
+      for (final Map.Entry<String, PortMapping> entry : ts.getPorts().entrySet()) {
         final PortMapping portMapping = entry.getValue();
         portMappings.add(String.format("%s=%d:%d", entry.getKey(),
                                        portMapping.getInternalPort(),

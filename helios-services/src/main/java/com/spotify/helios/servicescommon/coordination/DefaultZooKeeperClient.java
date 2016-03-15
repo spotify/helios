@@ -149,7 +149,7 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
     assertClusterIdFlagTrue();
     final Stat stat = new Stat();
     try {
-      byte[] bytes = client.getData().storingStatIn(stat).forPath(path);
+      final byte[] bytes = client.getData().storingStatIn(stat).forPath(path);
       return new Node(path, bytes, stat);
     } catch (Exception e) {
       propagateIfInstanceOf(e, KeeperException.class);

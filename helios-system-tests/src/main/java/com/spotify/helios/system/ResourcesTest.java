@@ -80,7 +80,7 @@ public class ResourcesTest extends SystemTestBase {
     final CreateJobResponse created = client.createJob(job).get();
     assertEquals(CreateJobResponse.Status.OK, created.getStatus());
 
-    JobId jobId = job.getId();
+    final JobId jobId = job.getId();
     // Wait for agent to come up
     awaitHostRegistered(client, testHost(), LONG_WAIT_SECONDS, SECONDS);
     awaitHostStatus(client, testHost(), UP, LONG_WAIT_SECONDS, SECONDS);

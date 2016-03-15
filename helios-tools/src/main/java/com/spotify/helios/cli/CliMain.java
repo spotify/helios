@@ -50,7 +50,7 @@ public class CliMain {
   @SuppressWarnings("UseOfSystemOutOrSystemErr")
   public static void main(final String... args) {
     try {
-      int exitCode = new CliMain(System.out, System.err, args).run();
+      final int exitCode = new CliMain(System.out, System.err, args).run();
       System.exit(exitCode);
     } catch (Throwable e) {
       // don't print error message for arg parser exception, because parser will do that

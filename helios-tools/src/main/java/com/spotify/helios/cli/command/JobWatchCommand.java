@@ -126,7 +126,7 @@ public class JobWatchCommand extends MultiTargetControlCommand {
       final Instant now = new Instant();
       out.printf("-------------------- ------------------------------ -------- "
           + "---------- [%s UTC]%n", now.toString(formatter));
-      for (TargetAndClient cc : clients) {
+      for (final TargetAndClient cc : clients) {
         final Optional<Target> target = cc.getTarget();
         if (clients.size() > 1) {
           final String header;
@@ -185,7 +185,7 @@ public class JobWatchCommand extends MultiTargetControlCommand {
     if (prefixes.isEmpty()) {
       return true;
     }
-    for (String prefix : prefixes) {
+    for (final String prefix : prefixes) {
       if (host.startsWith(prefix)) {
         return true;
       }

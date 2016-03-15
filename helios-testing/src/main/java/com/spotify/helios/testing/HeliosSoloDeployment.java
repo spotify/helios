@@ -378,7 +378,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     final String heliosPort = String.format("%d/tcp", containerPort);
     try {
       final NetworkSettings settings = dockerClient.inspectContainer(containerId).networkSettings();
-      for (Map.Entry<String, List<PortBinding>> entry : settings.ports().entrySet()) {
+      for (final Map.Entry<String, List<PortBinding>> entry : settings.ports().entrySet()) {
         if (entry.getKey().equals(heliosPort)) {
           return entry.getValue().get(0).hostPort();
         }
@@ -452,7 +452,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         final HostStatus hostStatus = heliosClient.hostStatus(host).get();
         final Map<JobId, TaskStatus> statuses = hostStatus.getStatuses();
 
-        for (Map.Entry<JobId, TaskStatus> status : statuses.entrySet()) {
+        for (final Map.Entry<JobId, TaskStatus> status : statuses.entrySet()) {
           final JobId jobId = status.getKey();
           final Goal goal = status.getValue().getGoal();
           if (goal != Goal.UNDEPLOY) {

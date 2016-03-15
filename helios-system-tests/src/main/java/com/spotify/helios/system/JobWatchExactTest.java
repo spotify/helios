@@ -87,7 +87,7 @@ public class JobWatchExactTest extends SystemTestBase {
           return;
         }
 
-        String line = Charsets.UTF_8.decode(
+        final String line = Charsets.UTF_8.decode(
             ByteBuffer.wrap(lineBuffer, 0, counter)).toString();
         outputLines.add(line);
         counter = 0;

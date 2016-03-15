@@ -236,13 +236,13 @@ public class HeliosSoloDeploymentTest {
     when(heliosClient.listHosts()).thenReturn(hostsFuture);
 
     // These futures represent HostStatuses when the job is still deployed
-    final ListenableFuture<HostStatus> statusFuture1_1 = Futures.immediateFuture(
+    final ListenableFuture<HostStatus> statusFuture11 = Futures.immediateFuture(
         HostStatus.newBuilder()
             .setStatus(Status.UP)
             .setStatuses(ImmutableMap.of(JOB_ID1, TASK_STATUS1))
             .setJobs(ImmutableMap.of(JOB_ID1, Deployment.of(JOB_ID1, Goal.START)))
             .build());
-    final ListenableFuture<HostStatus> statusFuture2_1 = Futures.immediateFuture(
+    final ListenableFuture<HostStatus> statusFuture21 = Futures.immediateFuture(
         HostStatus.newBuilder()
             .setStatus(Status.UP)
             .setStatuses(ImmutableMap.of(JOB_ID2, TASK_STATUS2))
@@ -250,22 +250,22 @@ public class HeliosSoloDeploymentTest {
             .build());
 
     // These futures represent HostStatuses when the job is undeployed
-    final ListenableFuture<HostStatus> statusFuture1_2 = Futures.immediateFuture(
+    final ListenableFuture<HostStatus> statusFuture12 = Futures.immediateFuture(
         HostStatus.newBuilder()
             .setStatus(Status.UP)
             .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
             .setJobs(ImmutableMap.of(JOB_ID1, Deployment.of(JOB_ID1, Goal.START)))
             .build());
-    final ListenableFuture<HostStatus> statusFuture2_2 = Futures.immediateFuture(
+    final ListenableFuture<HostStatus> statusFuture22 = Futures.immediateFuture(
         HostStatus.newBuilder()
             .setStatus(Status.UP)
             .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
             .setJobs(ImmutableMap.of(JOB_ID2, Deployment.of(JOB_ID2, Goal.START)))
             .build());
     //noinspection unchecked
-    when(heliosClient.hostStatus(HOST1)).thenReturn(statusFuture1_1, statusFuture1_2);
+    when(heliosClient.hostStatus(HOST1)).thenReturn(statusFuture11, statusFuture12);
     //noinspection unchecked
-    when(heliosClient.hostStatus(HOST2)).thenReturn(statusFuture2_1, statusFuture2_2);
+    when(heliosClient.hostStatus(HOST2)).thenReturn(statusFuture21, statusFuture22);
 
     final ListenableFuture<JobUndeployResponse> undeployFuture1 = Futures.immediateFuture(
         new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST1, JOB_ID1));

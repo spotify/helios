@@ -59,7 +59,7 @@ public class ZooKeeperHealthChecker extends HealthCheck
 
   @Override
   public void run() {
-    String reason = reasonString.get();
+    final String reason = reasonString.get();
     if (UNKNOWN.equals(reasonString.get())) {
       return; // don't report anything until we get a known status
     }

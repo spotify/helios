@@ -165,7 +165,8 @@ public class CliParser {
       return Target.from(srvName, domains);
     } else if (!cliConfig.getMasterEndpoints().isEmpty()) {
       final List<URI> cliConfigMasterEndpoints = cliConfig.getMasterEndpoints();
-      List<Target> targets = Lists.newArrayListWithExpectedSize(cliConfigMasterEndpoints.size());
+      final List<Target> targets = Lists.newArrayListWithExpectedSize(
+          cliConfigMasterEndpoints.size());
       for (final URI endpoint : cliConfigMasterEndpoints) {
         targets.add(Target.from(endpoint));
       }

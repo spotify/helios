@@ -191,7 +191,7 @@ public class Agent extends AbstractIdleService {
         @Override
         public Set<String> get() {
           final Set<String> active = Sets.newHashSet();
-          for (Supervisor supervisor : supervisors.values()) {
+          for (final Supervisor supervisor : supervisors.values()) {
             final String containerId = supervisor.containerId();
             if (containerId != null) {
               active.add(containerId);
@@ -209,7 +209,7 @@ public class Agent extends AbstractIdleService {
 
       // Create and update executions
       final Map<JobId, Execution> newExecutions = Maps.newHashMap(executions.get());
-      for (Entry<JobId, Task> entry : tasks.entrySet()) {
+      for (final Entry<JobId, Task> entry : tasks.entrySet()) {
         final JobId jobId = entry.getKey();
         final Task task = entry.getValue();
         final Execution existing = newExecutions.get(jobId);
@@ -224,7 +224,7 @@ public class Agent extends AbstractIdleService {
       }
 
       // Create undeploy goals for removed tasks
-      for (Entry<JobId, Execution> entry : newExecutions.entrySet()) {
+      for (final Entry<JobId, Execution> entry : newExecutions.entrySet()) {
         final JobId jobId = entry.getKey();
         final Execution execution = entry.getValue();
 
@@ -299,7 +299,7 @@ public class Agent extends AbstractIdleService {
 
       // Reap dead executions
       final Set<JobId> reapedTasks = Sets.newHashSet();
-      for (Entry<JobId, Execution> entry : executions.get().entrySet()) {
+      for (final Entry<JobId, Execution> entry : executions.get().entrySet()) {
         final JobId jobId = entry.getKey();
         final Execution execution = entry.getValue();
         if (execution.getGoal() == UNDEPLOY) {

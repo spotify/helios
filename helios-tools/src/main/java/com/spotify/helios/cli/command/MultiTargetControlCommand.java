@@ -77,7 +77,7 @@ public abstract class MultiTargetControlCommand implements CliCommand {
       }
       return 1;
     } finally {
-      for (TargetAndClient cc : clients) {
+      for (final TargetAndClient cc : clients) {
         cc.getClient().close();
       }
     }

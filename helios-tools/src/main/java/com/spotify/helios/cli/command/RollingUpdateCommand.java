@@ -214,7 +214,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
       }
 
       if (!json) {
-        for (DeploymentGroupStatusResponse.HostStatus hostStatus : status.getHostStatuses()) {
+        for (final DeploymentGroupStatusResponse.HostStatus hostStatus : status.getHostStatuses()) {
           final JobId hostJobId = hostStatus.getJobId();
           final String host = hostStatus.getHost();
           final TaskStatus.State state = hostStatus.getState();

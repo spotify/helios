@@ -80,7 +80,7 @@ public class RolloutTask extends Descriptor {
       return false;
     }
 
-    RolloutTask that = (RolloutTask) o;
+    final RolloutTask that = (RolloutTask) o;
 
     if (action != that.action) {
       return false;

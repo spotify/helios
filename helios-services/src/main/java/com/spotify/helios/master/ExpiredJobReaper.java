@@ -64,17 +64,18 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
 
   @Override
   protected void runOneIteration() {
-    for (Entry<JobId, Job> entry : masterModel.getJobs().entrySet()) {
+    for (final Entry<JobId, Job> entry : masterModel.getJobs().entrySet()) {
       final JobId jobId = entry.getKey();
       final Job job = entry.getValue();
 
       if (job.getExpires() == null) {
+        //noinspection UnnecessaryContinue
         continue;
       } else if (job.getExpires().getTime() <= clock.now().getMillis()) {
         final JobStatus status = masterModel.getJobStatus(jobId);
         final List<String> hosts = ImmutableList.copyOf(status.getDeployments().keySet());
 
-        for (String host : hosts) {
+        for (final String host : hosts) {
           try {
             masterModel.undeployJob(host, jobId, job.getToken());
           } catch (HostNotFoundException e) {

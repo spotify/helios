@@ -208,7 +208,7 @@ public class HostListCommand extends ControlCommand {
           boolean skipHost = false;
           if (selectedLabels != null && !selectedLabels.isEmpty()) {
             final Map<String, String> hostLabels = s.getLabels();
-            for (Entry<String, String> label : selectedLabels.entrySet()) {
+            for (final Entry<String, String> label : selectedLabels.entrySet()) {
               final String key = label.getKey();
               final String value = label.getValue();
 

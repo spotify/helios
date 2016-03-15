@@ -265,7 +265,7 @@ public class PersistentPathChildrenCache<T> extends AbstractIdleService {
   }
 
   private List<String> getChildren() throws Exception {
-    Stat childrenStat = new Stat();
+    final Stat childrenStat = new Stat();
 
     while (true) {
       final List<String> possibleChildren = curator.getChildren()

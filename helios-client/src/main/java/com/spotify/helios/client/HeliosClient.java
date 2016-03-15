@@ -542,7 +542,7 @@ public class HeliosClient implements Closeable {
 
     public Builder setEndpointStrings(final List<String> endpoints) {
       final List<URI> uris = Lists.newArrayList();
-      for (String endpoint : endpoints) {
+      for (final String endpoint : endpoints) {
         uris.add(URI.create(endpoint));
       }
       return setEndpoints(uris);

@@ -199,7 +199,7 @@ public class TaskStatus extends Descriptor {
       return false;
     }
 
-    TaskStatus that = (TaskStatus) o;
+    final TaskStatus that = (TaskStatus) o;
 
     if (containerId != null ? !containerId.equals(that.containerId) : that.containerId != null) {
       return false;

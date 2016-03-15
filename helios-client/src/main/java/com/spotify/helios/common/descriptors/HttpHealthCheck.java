@@ -67,7 +67,7 @@ public class HttpHealthCheck extends HealthCheck {
       return false;
     }
 
-    HttpHealthCheck that = (HttpHealthCheck) o;
+    final HttpHealthCheck that = (HttpHealthCheck) o;
 
     if (path != null ? !path.equals(that.path) : that.path != null) {
       return false;

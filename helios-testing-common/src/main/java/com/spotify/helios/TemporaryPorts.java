@@ -98,9 +98,7 @@ public class TemporaryPorts extends ExternalResource {
   }
 
   private void releasePorts() {
-    for (AllocatedPort port : ports) {
-      port.release();
-    }
+    ports.forEach(AllocatedPort::release);
     ports.clear();
   }
 
@@ -155,9 +153,7 @@ public class TemporaryPorts extends ExternalResource {
         ports.addAll(rangePorts);
         return Range.closedOpen(base, base + n);
       } else {
-        for (AllocatedPort port : rangePorts) {
-          port.release();
-        }
+        rangePorts.forEach(AllocatedPort::release);
       }
     }
     throw new AllocationFailedException();
@@ -206,8 +202,8 @@ public class TemporaryPorts extends ExternalResource {
   private AllocatedPort lock(final int port, final String name) {
     final Path path = lockDirectory.resolve(String.valueOf(port));
     try {
-      FileChannel file = FileChannel.open(path, CREATE, WRITE);
-      FileLock lock = file.tryLock();
+      final FileChannel file = FileChannel.open(path, CREATE, WRITE);
+      final FileLock lock = file.tryLock();
       if (lock == null) {
         return null;
       }

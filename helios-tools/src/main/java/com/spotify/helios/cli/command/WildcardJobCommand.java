@@ -61,7 +61,7 @@ abstract class WildcardJobCommand extends ControlCommand {
       if (!json) {
         out.printf("Unknown job: %s%n", jobIdString);
       } else {
-        JobDeployResponse jobDeployResponse =
+        final JobDeployResponse jobDeployResponse =
             new JobDeployResponse(JobDeployResponse.Status.JOB_NOT_FOUND, null, null);
         out.print(jobDeployResponse.toJsonString());
       }
@@ -70,7 +70,7 @@ abstract class WildcardJobCommand extends ControlCommand {
       if (!json) {
         out.printf("Ambiguous job reference: %s%n", jobIdString);
       } else {
-        JobDeployResponse jobDeployResponse =
+        final JobDeployResponse jobDeployResponse =
             new JobDeployResponse(JobDeployResponse.Status.AMBIGUOUS_JOB_REFERENCE, null, null);
         out.print(jobDeployResponse.toJsonString());
       }

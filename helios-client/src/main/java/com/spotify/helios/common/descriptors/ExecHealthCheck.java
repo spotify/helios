@@ -59,7 +59,7 @@ public class ExecHealthCheck extends HealthCheck {
       return false;
     }
 
-    ExecHealthCheck that = (ExecHealthCheck) o;
+    final ExecHealthCheck that = (ExecHealthCheck) o;
 
     if (command != null ? !command.equals(that.command) : that.command != null) {
       return false;
@@ -70,8 +70,7 @@ public class ExecHealthCheck extends HealthCheck {
 
   @Override
   public int hashCode() {
-    int result = command != null ? command.hashCode() : 0;
-    return result;
+    return command != null ? command.hashCode() : 0;
   }
 
   @Override

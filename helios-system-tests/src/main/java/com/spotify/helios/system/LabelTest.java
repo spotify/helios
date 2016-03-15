@@ -50,7 +50,7 @@ public class LabelTest extends SystemTestBase {
          @Override
          public Map<String, String> call()
              throws Exception {
-           Map<String, HostStatus> status = Json.read(
+           final Map<String, HostStatus> status = Json.read(
                cli("hosts", testHost(), "--json"),
                new TypeReference<Map<String, HostStatus>>() {
                });
@@ -80,7 +80,7 @@ public class LabelTest extends SystemTestBase {
          @Override
          public Map<String, String> call()
              throws Exception {
-           Map<String, HostStatus> status = Json.read(
+           final Map<String, HostStatus> status = Json.read(
                cli("hosts", testHost(), "--json"),
                new TypeReference<Map<String, HostStatus>>() {
                });

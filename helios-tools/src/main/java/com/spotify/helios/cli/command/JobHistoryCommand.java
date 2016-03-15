@@ -62,7 +62,7 @@ public class JobHistoryCommand extends ControlCommand {
           final boolean json, final BufferedReader stdin)
       throws ExecutionException, InterruptedException {
 
-    String jobIdString = options.getString(jobIdArg.getDest());
+    final String jobIdString = options.getString(jobIdArg.getDest());
 
     final Map<JobId, Job> jobs = client.jobs(jobIdString).get();
 
@@ -76,7 +76,7 @@ public class JobHistoryCommand extends ControlCommand {
 
     final JobId jobId = getLast(jobs.keySet());
 
-    TaskStatusEvents result = client.jobHistory(jobId).get();
+    final TaskStatusEvents result = client.jobHistory(jobId).get();
 
     if (json) {
       out.println(Json.asPrettyStringUnchecked(result));
@@ -85,14 +85,14 @@ public class JobHistoryCommand extends ControlCommand {
 
     final Table table = table(out);
     table.row("HOST", "TIMESTAMP", "STATE", "THROTTLED", "CONTAINERID");
-    List<TaskStatusEvent> events = result.getEvents();
-    DateTimeFormatter format = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS");
+    final List<TaskStatusEvent> events = result.getEvents();
+    final DateTimeFormatter format = DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss.SSS");
 
-    for (TaskStatusEvent event : events) {
-      String host = checkNotNull(event.getHost());
-      long timestamp = checkNotNull(event.getTimestamp());
-      TaskStatus status = checkNotNull(event.getStatus());
-      State state = checkNotNull(status.getState());
+    for (final TaskStatusEvent event : events) {
+      final String host = checkNotNull(event.getHost());
+      final long timestamp = checkNotNull(event.getTimestamp());
+      final TaskStatus status = checkNotNull(event.getStatus());
+      final State state = checkNotNull(status.getState());
       String containerId = status.getContainerId();
       containerId = containerId == null ? "<none>" : containerId;
 

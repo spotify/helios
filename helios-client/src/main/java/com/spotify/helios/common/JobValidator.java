@@ -87,7 +87,7 @@ public class JobValidator {
     // Check that there's not external port collision
     final Set<Integer> externalPorts = Sets.newHashSet();
     for (final PortMapping mapping : job.getPorts().values()) {
-      Integer externalMappedPort = mapping.getExternalPort();
+      final Integer externalMappedPort = mapping.getExternalPort();
       if (externalPorts.contains(externalMappedPort) && externalMappedPort != null) {
         errors.add(format("Duplicate external port mapping: %s", externalMappedPort));
       }
@@ -127,7 +127,7 @@ public class JobValidator {
     }
 
     // Validate volumes
-    for (Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
+    for (final Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
       final String path = entry.getKey();
       final String source = entry.getValue();
       if (!path.startsWith("/")) {

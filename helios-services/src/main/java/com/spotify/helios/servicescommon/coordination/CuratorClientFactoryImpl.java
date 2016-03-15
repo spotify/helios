@@ -38,7 +38,7 @@ public class CuratorClientFactoryImpl implements CuratorClientFactory {
                                     RetryPolicy retryPolicy,
                                     final ACLProvider aclProvider,
                                     final List<AuthInfo> authorization) {
-    Builder builder = CuratorFrameworkFactory.builder()
+    final Builder builder = CuratorFrameworkFactory.builder()
         .connectString(connectString)
         .sessionTimeoutMs(sessionTimeoutMs)
         .connectionTimeoutMs(connectionTimeoutMs)

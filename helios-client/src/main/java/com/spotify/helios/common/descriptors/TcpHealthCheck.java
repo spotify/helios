@@ -56,7 +56,7 @@ public class TcpHealthCheck extends HealthCheck {
       return false;
     }
 
-    TcpHealthCheck that = (TcpHealthCheck) o;
+    final TcpHealthCheck that = (TcpHealthCheck) o;
 
     if (port != null ? !port.equals(that.port) : that.port != null) {
       return false;
@@ -67,8 +67,7 @@ public class TcpHealthCheck extends HealthCheck {
 
   @Override
   public int hashCode() {
-    int result = port != null ? port.hashCode() : 0;
-    return result;
+    return port != null ? port.hashCode() : 0;
   }
 
   @Override

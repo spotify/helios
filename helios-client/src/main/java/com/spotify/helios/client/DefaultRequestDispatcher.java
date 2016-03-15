@@ -83,13 +83,13 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         final ByteArrayOutputStream payload = new ByteArrayOutputStream();
         if (stream != null) {
           int n;
-          byte[] buffer = new byte[4096];
+          final byte[] buffer = new byte[4096];
           while ((n = stream.read(buffer, 0, buffer.length)) != -1) {
             payload.write(buffer, 0, n);
           }
         }
 
-        URI realUri = connection.getURL().toURI();
+        final URI realUri = connection.getURL().toURI();
         if (log.isTraceEnabled()) {
           log.trace("rep: {} {} {} {} {} gzip:{}",
                     method, realUri, status, payload.size(), decode(payload), gzip);
@@ -108,7 +108,7 @@ class DefaultRequestDispatcher implements RequestDispatcher {
         if (encodings == null) {
           return false;
         }
-        for (String encoding : encodings) {
+        for (final String encoding : encodings) {
           if ("gzip".equals(encoding)) {
             return true;
           }

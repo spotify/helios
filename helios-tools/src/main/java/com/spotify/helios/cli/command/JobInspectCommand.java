@@ -160,7 +160,7 @@ public class JobInspectCommand extends WildcardJobCommand {
     final String prefix = "Volumes: ";
     out.print(prefix);
     boolean first = true;
-    for (Map.Entry<String, String> entry : volumes.entrySet()) {
+    for (final Map.Entry<String, String> entry : volumes.entrySet()) {
       if (!first) {
         out.print(Strings.repeat(" ", prefix.length()));
       }
@@ -191,7 +191,7 @@ public class JobInspectCommand extends WildcardJobCommand {
 
   private static List<String> quote(final List<String> ss) {
     final List<String> output = Lists.newArrayList();
-    for (String s : ss) {
+    for (final String s : ss) {
       output.add(quote(s));
     }
     return output;

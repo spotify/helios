@@ -114,7 +114,7 @@ public abstract class Target {
 
     @Override
     public Supplier<List<URI>> getEndpointSupplier() {
-      List<URI> endpoints = ImmutableList.of(endpoint);
+      final List<URI> endpoints = ImmutableList.of(endpoint);
       return Suppliers.ofInstance(endpoints);
     }
 

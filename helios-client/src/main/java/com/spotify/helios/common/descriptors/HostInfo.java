@@ -315,7 +315,7 @@ public class HostInfo extends Descriptor {
       return false;
     }
 
-    HostInfo hostInfo = (HostInfo) o;
+    final HostInfo hostInfo = (HostInfo) o;
 
     if (cpus != hostInfo.cpus) {
       return false;

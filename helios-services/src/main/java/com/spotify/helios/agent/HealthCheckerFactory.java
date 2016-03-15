@@ -203,7 +203,7 @@ public final class HealthCheckerFactory {
                containerId, url, taskConfig);
 
       try {
-        HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+        final HttpURLConnection conn = (HttpURLConnection) url.openConnection();
         conn.setConnectTimeout(CONNECT_TIMEOUT_MILLIS);
         conn.setReadTimeout((int) READ_TIMEOUT_MILLIS);
 

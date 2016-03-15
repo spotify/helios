@@ -81,7 +81,7 @@ public class FlapController {
 
   private long totalRunningTimeMillis() {
     int duration = 0;
-    for (Long exit : exits) {
+    for (final Long exit : exits) {
       duration += exit;
     }
     if (running) {

@@ -145,7 +145,7 @@ public class VersionResponseFilterTest extends SystemTestBase {
     final HttpURLConnection connection;
     connection = (HttpURLConnection) uri.toURL().openConnection();
     connection.setInstanceFollowRedirects(false);
-    for (Map.Entry<String, List<String>> header : headers.entrySet()) {
+    for (final Map.Entry<String, List<String>> header : headers.entrySet()) {
       for (final String value : header.getValue()) {
         connection.addRequestProperty(header.getKey(), value);
       }

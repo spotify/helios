@@ -65,7 +65,7 @@ public class JobExpirationTest extends SystemTestBase {
     deployJob(jobId, testHost());
 
     // Make sure the job runs
-    TaskStatus taskStatus = awaitJobState(
+    final TaskStatus taskStatus = awaitJobState(
         client,
         testHost(),
         jobId,

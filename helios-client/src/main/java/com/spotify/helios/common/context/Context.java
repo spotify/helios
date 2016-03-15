@@ -205,7 +205,7 @@ public final class Context {
   static <T> List<Callable<T>> makeContextWrappedCollection(
       Collection<? extends Callable<T>> tasks) {
     final List<Callable<T>> contexted = Lists.newArrayList();
-    for (Callable<T> task : tasks) {
+    for (final Callable<T> task : tasks) {
       contexted.add(makeContextCallable(task));
     }
     return contexted;

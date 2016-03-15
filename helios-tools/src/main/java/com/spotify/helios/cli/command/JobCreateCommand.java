@@ -294,7 +294,7 @@ public class JobCreateCommand extends ControlCommand {
         if (!json) {
           out.printf("Unknown job: %s%n", templateJobId);
         } else {
-          CreateJobResponse createJobResponse =
+          final CreateJobResponse createJobResponse =
               new CreateJobResponse(CreateJobResponse.Status.UNKNOWN_JOB, null, null);
           out.print(createJobResponse.toJsonString());
         }
@@ -303,7 +303,7 @@ public class JobCreateCommand extends ControlCommand {
         if (!json) {
           out.printf("Ambiguous job reference: %s%n", templateJobId);
         } else {
-          CreateJobResponse createJobResponse =
+          final CreateJobResponse createJobResponse =
               new CreateJobResponse(CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, null, null);
           out.print(createJobResponse.toJsonString());
         }
@@ -369,7 +369,7 @@ public class JobCreateCommand extends ControlCommand {
       builder.setEnv(env);
     }
 
-    Map<String, String> metadata = Maps.newHashMap();
+    final Map<String, String> metadata = Maps.newHashMap();
     metadata.putAll(defaultMetadata());
     final List<String> metadataList = options.getList(metadataArg.getDest());
     if (!metadataList.isEmpty()) {
@@ -540,11 +540,11 @@ public class JobCreateCommand extends ControlCommand {
     final Collection<String> errors = JOB_VALIDATOR.validate(job);
     if (!errors.isEmpty()) {
       if (!json) {
-        for (String error : errors) {
+        for (final String error : errors) {
           out.println(error);
         }
       } else {
-        CreateJobResponse createJobResponse = new CreateJobResponse(
+        final CreateJobResponse createJobResponse = new CreateJobResponse(
             CreateJobResponse.Status.INVALID_JOB_DEFINITION, ImmutableList.copyOf(errors),
             job.getId().toString());
         out.println(createJobResponse.toJsonString());

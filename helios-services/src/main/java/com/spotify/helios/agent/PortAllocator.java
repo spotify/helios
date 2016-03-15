@@ -72,7 +72,7 @@ public class PortAllocator {
 
     final ImmutableMap.Builder<String, Integer> allocation = ImmutableMap.builder();
 
-    for (Map.Entry<String, PortMapping> entry : mappings.entrySet()) {
+    for (final Map.Entry<String, PortMapping> entry : mappings.entrySet()) {
       final String name = entry.getKey();
       final PortMapping portMapping = entry.getValue();
       final Integer externalPort = portMapping.getExternalPort();

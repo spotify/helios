@@ -75,8 +75,8 @@ public class NamespaceTest extends SystemTestBase {
     try (final DockerClient docker = getNewDockerClient()) {
       final List<Container> containers = docker.listContainers();
       Container jobContainer = null;
-      for (Container container : containers) {
-        for (String name : container.names()) {
+      for (final Container container : containers) {
+        for (final String name : container.names()) {
           if (name.startsWith("/" + namespace)) {
             jobContainer = container;
           }

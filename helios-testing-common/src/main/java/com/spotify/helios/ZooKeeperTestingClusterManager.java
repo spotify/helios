@@ -109,7 +109,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
   @Override
   public void close() {
     try {
-      for (CuratorFramework curator : peerCurators) {
+      for (final CuratorFramework curator : peerCurators) {
         curator.close();
       }
       curator.close();
@@ -207,7 +207,7 @@ public class ZooKeeperTestingClusterManager implements ZooKeeperTestManager {
 
   private List<CuratorFramework> createCurators(final List<InetSocketAddress> addresses) {
     final ImmutableList.Builder<CuratorFramework> curators = ImmutableList.builder();
-    for (InetSocketAddress address : addresses) {
+    for (final InetSocketAddress address : addresses) {
       curators.add(createCurator(connectString(address)));
     }
 
