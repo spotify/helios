@@ -140,7 +140,7 @@ public class TaskConfig {
     final Map<String, String> env = Maps.newHashMap(envVars);
 
     // Put in variables that tell the container where it's exposed
-    for (Entry<String, Integer> entry : ports.entrySet()) {
+    for (final Entry<String, Integer> entry : ports.entrySet()) {
       env.put("HELIOS_PORT_" + entry.getKey(), host + ":" + entry.getValue());
     }
     // Job environment variables take precedence.
@@ -194,7 +194,7 @@ public class TaskConfig {
    */
   private ServiceRegistration.EndpointHealthCheck endpointHealthCheck(String portName) {
     if (healthCheck() instanceof HttpHealthCheck) {
-      HttpHealthCheck httpHealthCheck = (HttpHealthCheck) healthCheck();
+      final HttpHealthCheck httpHealthCheck = (HttpHealthCheck) healthCheck();
       if (portName.equals(httpHealthCheck.getPort())) {
         return ServiceRegistration.EndpointHealthCheck.newHttpCheck(httpHealthCheck.getPath());
       }
@@ -306,7 +306,7 @@ public class TaskConfig {
    */
   private Set<String> volumes() {
     final ImmutableSet.Builder<String> volumes = ImmutableSet.builder();
-    for (Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
+    for (final Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
       final String path = entry.getKey();
       final String source = entry.getValue();
       if (Strings.isNullOrEmpty(source)) {
@@ -322,7 +322,7 @@ public class TaskConfig {
    */
   private List<String> binds() {
     final ImmutableList.Builder<String> binds = ImmutableList.builder();
-    for (Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
+    for (final Map.Entry<String, String> entry : job.getVolumes().entrySet()) {
       final String path = entry.getKey();
       final String source = entry.getValue();
       if (Strings.isNullOrEmpty(source)) {

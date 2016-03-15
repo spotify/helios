@@ -39,7 +39,7 @@ class DefaultProber implements Prober {
 
   @Override
   public boolean probe(final String host, final PortMapping portMapping) {
-    String protocol = portMapping.getProtocol();
+    final String protocol = portMapping.getProtocol();
 
     if (PortMapping.TCP.equals(protocol)) {
       return probeTcpPort(host, portMapping);
@@ -52,28 +52,28 @@ class DefaultProber implements Prober {
 
   private boolean probeUdpPort(String host, PortMapping portMapping) {
 
-    Integer port = portMapping.getExternalPort();
+    final Integer port = portMapping.getExternalPort();
 
     try {
       // Let's send a PING
       // A UDP service should ignore any messages that do not conform to its protocol
       // If it does then you probably should implement your own Prober or
       // skip the probing by using a Dummy prober
-      byte[] pingData = "PING".getBytes("UTF-8");
+      final byte[] pingData = "PING".getBytes("UTF-8");
 
       // Use ephemeral port number
-      DatagramSocket serverSocket = new DatagramSocket(0);
-      SocketAddress socketAddr = new InetSocketAddress(host, port);
+      final DatagramSocket serverSocket = new DatagramSocket(0);
+      final SocketAddress socketAddr = new InetSocketAddress(host, port);
       serverSocket.connect(socketAddr);
 
-      InetAddress address = InetAddress.getByName(host);
-      DatagramPacket sendPacket =
+      final InetAddress address = InetAddress.getByName(host);
+      final DatagramPacket sendPacket =
           new DatagramPacket(pingData, pingData.length, address, port);
       serverSocket.send(sendPacket);
 
       // Wait for a response: This will cause either a timeout (OK) or a port not reachable (NOT OK)
-      byte[] receiveData = new byte[8];
-      DatagramPacket receivePacket =
+      final byte[] receiveData = new byte[8];
+      final DatagramPacket receivePacket =
           new DatagramPacket(receiveData, receiveData.length);
       serverSocket.setSoTimeout(200);
       serverSocket.receive(receivePacket);
@@ -96,7 +96,7 @@ class DefaultProber implements Prober {
   }
 
   private boolean probeTcpPort(String host, PortMapping portMapping) {
-    Integer port = portMapping.getExternalPort();
+    final Integer port = portMapping.getExternalPort();
     try (final Socket ignored = new Socket(host, port)) {
       return true;
     } catch (IOException e) {

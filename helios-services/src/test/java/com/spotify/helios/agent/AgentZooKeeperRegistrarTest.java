@@ -132,7 +132,7 @@ public class AgentZooKeeperRegistrarTest {
     // expect a transaction containing a delete of the idpath followed by a create
     // // TODO (mbrown): this should really be in a test of ZooKeeperRegistrarUtil, and
     // AgentZooKeeperRegistrar should not call a static method to do this
-    ArgumentCaptor<List> opsCaptor = ArgumentCaptor.forClass(List.class);
+    final ArgumentCaptor<List> opsCaptor = ArgumentCaptor.forClass(List.class);
     verify(client).transaction(opsCaptor.capture());
 
     // note that we are not testing full equality of the list, just that it contains

@@ -47,7 +47,7 @@ public class HostMatcherTest {
 
   private static DeploymentGroup group(String... selectorStrings) {
     final List<HostSelector> selectors = new ArrayList<>();
-    for (String selectorString : selectorStrings) {
+    for (final String selectorString : selectorStrings) {
       final HostSelector selector = HostSelector.parse(selectorString);
       if (selector == null) {
         throw new IllegalArgumentException("bad selector: " + selectorString);

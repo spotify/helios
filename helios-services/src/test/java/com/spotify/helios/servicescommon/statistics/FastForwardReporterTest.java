@@ -160,7 +160,7 @@ public class FastForwardReporterTest {
   }
 
   private void verifyMeterStats(String what, String type) throws Exception {
-    for (String stat : new String[]{"1m", "5m"}) {
+    for (final String stat : new String[]{"1m", "5m"}) {
       verify(ffwd).send(argThat(allOf(
           hasKey("helios.test"),
           containsAttributes("what", what, "metric_type", type, "stat", stat),
@@ -183,7 +183,7 @@ public class FastForwardReporterTest {
     final Set<String> expectedStats =
         ImmutableSet.of("median", "p75", "p99", "mean", "min", "max", "stddev");
 
-    for (String stat : expectedStats) {
+    for (final String stat : expectedStats) {
 
       verify(ffwd).send(argThat(allOf(
           hasKey("helios.test"),

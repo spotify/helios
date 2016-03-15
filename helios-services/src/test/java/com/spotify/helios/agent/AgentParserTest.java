@@ -36,7 +36,7 @@ public class AgentParserTest {
   public void testValidateArgument() {
     final Predicate<Integer> isOdd = num -> num % 2 == 1;
 
-    UnaryOperator<List<Integer>> testFn =
+    final UnaryOperator<List<Integer>> testFn =
         nums -> AgentParser.validateArgument(nums, isOdd, n -> n + " is expected to be odd");
 
     testFn.apply(ImmutableList.of(1, 3, 5, 7));

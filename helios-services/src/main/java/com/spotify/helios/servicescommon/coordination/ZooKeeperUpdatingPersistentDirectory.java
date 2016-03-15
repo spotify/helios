@@ -312,7 +312,7 @@ public class ZooKeeperUpdatingPersistentDirectory extends AbstractIdleService {
 
       // Get new remote state
       remote = Maps.newHashMap();
-      for (String node : nodes) {
+      for (final String node : nodes) {
         final String nodePath = ZKPaths.makePath(path, node);
         final byte[] data = client.getData(nodePath);
         remote.put(node, data);

@@ -184,7 +184,7 @@ public class PersistentPathChildrenCacheTest {
     final String foo1 = "/foos/foo1";
     final String foo2 = "/foos/foo2";
     final Set<String> paths = ImmutableSet.of(foo1, foo2);
-    for (String path : paths) {
+    for (final String path : paths) {
       ensure(path, new DataPojo(path));
     }
 
@@ -227,7 +227,7 @@ public class PersistentPathChildrenCacheTest {
     final String foo1 = "/foos/foo1";
     final String foo2 = "/foos/foo2";
     final Set<String> paths = ImmutableSet.of(foo1, foo2);
-    for (String path : paths) {
+    for (final String path : paths) {
       ensure(path, new DataPojo(path));
     }
 

@@ -85,7 +85,7 @@ public class RetryingZooKeeperNodeWriter extends AbstractIdleService {
         return;
       }
       synchronized (lock) {
-        for (Map.Entry<String, Write> entry : front.entrySet()) {
+        for (final Map.Entry<String, Write> entry : front.entrySet()) {
           final Write prev = back.put(entry.getKey(), entry.getValue());
           if (prev != null) {
             prev.cancel(false);
@@ -94,7 +94,7 @@ public class RetryingZooKeeperNodeWriter extends AbstractIdleService {
         front.clear();
       }
       log.debug("writing: {}", back.keySet());
-      for (Map.Entry<String, Write> entry : ImmutableMap.copyOf(back).entrySet()) {
+      for (final Map.Entry<String, Write> entry : ImmutableMap.copyOf(back).entrySet()) {
         final String path = entry.getKey();
         final Write write = entry.getValue();
         try {

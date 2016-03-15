@@ -109,14 +109,14 @@ public class TaskHistoryWriter extends AbstractIdleService implements Runnable {
     // Clean out any errant null values.  Normally shouldn't have any, but we did have a few
     // where it happened, and this will make sure we can get out of a bad state if we get into it.
     final ImmutableSet<JobId> curKeys = ImmutableSet.copyOf(this.items.keySet());
-    for (JobId key : curKeys) {
+    for (final JobId key : curKeys) {
       if (this.items.get(key) == null) {
         this.items.remove(key);
       }
     }
 
     int itemCount = 0;
-    for (Deque<TaskStatusEvent> deque : items.values()) {
+    for (final Deque<TaskStatusEvent> deque : items.values()) {
       itemCount += deque.size();
     }
     this.count = new AtomicInteger(itemCount);
@@ -166,7 +166,7 @@ public class TaskHistoryWriter extends AbstractIdleService implements Runnable {
       final Deque<TaskStatusEvent> deque = items.get(key);
       if (deque == null) {  // try more assertively to get a deque
         final ConcurrentLinkedDeque<TaskStatusEvent> newDeque =
-            new ConcurrentLinkedDeque<TaskStatusEvent>();
+            new ConcurrentLinkedDeque<>();
         items.put(key, newDeque);
         return newDeque;
       }
@@ -251,7 +251,7 @@ public class TaskHistoryWriter extends AbstractIdleService implements Runnable {
     // within the same job id.  Whether this is the best strategy (as opposed to fullest deque)
     // is arguable.
     TaskStatusEvent current = null;
-    for (Deque<TaskStatusEvent> queue : items.values()) {
+    for (final Deque<TaskStatusEvent> queue : items.values()) {
       if (queue == null) {
         continue;
       }

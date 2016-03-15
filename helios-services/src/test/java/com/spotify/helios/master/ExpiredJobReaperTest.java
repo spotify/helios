@@ -97,9 +97,9 @@ public class ExpiredJobReaperTest {
       .then(new Answer<JobStatus>() {
         @Override
         public JobStatus answer(final InvocationOnMock invocation) throws Throwable {
-          JobId jobId = (JobId) invocation.getArguments()[0];
+          final JobId jobId = (JobId) invocation.getArguments()[0];
 
-          Map<String, Deployment> deployments = ImmutableMap.of(
+          final Map<String, Deployment> deployments = ImmutableMap.of(
               "hostA", Deployment.of(jobId, Goal.START),
               "hostB", Deployment.of(jobId, Goal.START));
 

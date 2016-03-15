@@ -155,7 +155,7 @@ public class TemporaryJob {
   public List<HostAndPort> addresses(final String port) {
     checkArgument(job.getPorts().containsKey(port), "port %s not found", port);
     final List<HostAndPort> addresses = Lists.newArrayList();
-    for (Map.Entry<String, TaskStatus> entry : statuses.entrySet()) {
+    for (final Map.Entry<String, TaskStatus> entry : statuses.entrySet()) {
       final Integer externalPort = entry.getValue().getPorts().get(port).getExternalPort();
       assert externalPort != null;
       final String host = endpointFromHost(entry.getKey());
@@ -313,7 +313,7 @@ public class TemporaryJob {
     if (status == null) {
       return;
     }
-    for (Map.Entry<String, TaskStatus> entry : status.getTaskStatuses().entrySet()) {
+    for (final Map.Entry<String, TaskStatus> entry : status.getTaskStatuses().entrySet()) {
       verifyHealthy(entry.getKey(), entry.getValue());
     }
   }

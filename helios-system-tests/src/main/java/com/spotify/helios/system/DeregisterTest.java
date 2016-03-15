@@ -155,7 +155,7 @@ public class DeregisterTest extends SystemTestBase {
   public void testRegistrationResolution() throws Exception {
     startDefaultMaster();
     final String host = testHost();
-    AgentMain agent = startDefaultAgent(host, "--labels", "num=1");
+    final AgentMain agent = startDefaultAgent(host, "--labels", "num=1");
 
     final HeliosClient client = defaultClient();
 
@@ -187,7 +187,7 @@ public class DeregisterTest extends SystemTestBase {
   public void testRegistrationResolutionTtlNotExpired() throws Exception {
     startDefaultMaster();
     final String host = testHost();
-    AgentMain agent = startDefaultAgent(host);
+    final AgentMain agent = startDefaultAgent(host);
 
     final HeliosClient client = defaultClient();
 

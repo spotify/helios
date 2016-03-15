@@ -132,7 +132,7 @@ class HostResolver {
   private List<String> findMatchesWithLowestScore(final List<ScoredHost> scored) {
     final int minScore = scored.get(0).score;
     final ImmutableList.Builder<String> minScoreHosts = ImmutableList.builder();
-    for (ScoredHost score : scored) {
+    for (final ScoredHost score : scored) {
       if (score.score == minScore) {
         minScoreHosts.add(score.host);
       }

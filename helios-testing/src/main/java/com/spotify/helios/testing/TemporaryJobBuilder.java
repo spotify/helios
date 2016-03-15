@@ -87,7 +87,7 @@ public class TemporaryJobBuilder {
     this.reportWriter = reportWriter;
 
     // make sure waitPorts is up-to-date with ports from the Job.Builder
-    for (Map.Entry<String, PortMapping> entry : jobBuilder.getPorts().entrySet()) {
+    for (final Map.Entry<String, PortMapping> entry : jobBuilder.getPorts().entrySet()) {
       final String name = entry.getKey();
       final PortMapping mapping = entry.getValue();
       this.port(name, mapping.getInternalPort(), mapping.getExternalPort());

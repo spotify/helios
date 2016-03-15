@@ -143,7 +143,7 @@ public class Endpoints {
         return false;
       }
 
-      DefaultEndpoint that = (DefaultEndpoint) o;
+      final DefaultEndpoint that = (DefaultEndpoint) o;
 
       //noinspection SimplifiableIfStatement
       if (ip != null ? !ip.equals(that.ip) : that.ip != null) {

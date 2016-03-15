@@ -173,8 +173,8 @@ public class CliDeploymentTest extends SystemTestBase {
     });
 
     // Verify that deploying a nonexistent job to the host fails
-    String output = cli("deploy", "--json", BOGUS_JOB.toString(), testHost());
-    JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
+    final String output = cli("deploy", "--json", BOGUS_JOB.toString(), testHost());
+    final JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
     assertEquals(JobDeployResponse.Status.JOB_NOT_FOUND, jobDeployResponse.getStatus());
   }
 
@@ -195,8 +195,8 @@ public class CliDeploymentTest extends SystemTestBase {
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
     // Verify that deploying a job to a nonexistent host fails
-    String output = cli("deploy", "--json", jobId.toString(), BOGUS_HOST);
-    JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
+    final String output = cli("deploy", "--json", jobId.toString(), BOGUS_HOST);
+    final JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
     assertEquals(JobDeployResponse.Status.HOST_NOT_FOUND, jobDeployResponse.getStatus());
   }
 
@@ -214,8 +214,8 @@ public class CliDeploymentTest extends SystemTestBase {
     });
 
     // Verify that undeploying a nonexistent job from a host fails
-    String output = cli("undeploy", "--json", BOGUS_JOB.toString(), testHost());
-    JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
+    final String output = cli("undeploy", "--json", BOGUS_JOB.toString(), testHost());
+    final JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
     assertEquals(JobDeployResponse.Status.JOB_NOT_FOUND, jobDeployResponse.getStatus());
   }
 
@@ -236,8 +236,8 @@ public class CliDeploymentTest extends SystemTestBase {
     final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
 
     // Verify that undeploying a nonexistent job from a host fails
-    String output = cli("undeploy", "--json", jobId.toString(), BOGUS_HOST);
-    JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
+    final String output = cli("undeploy", "--json", jobId.toString(), BOGUS_HOST);
+    final JobDeployResponse jobDeployResponse = Json.read(output, JobDeployResponse.class);
     assertEquals(JobDeployResponse.Status.HOST_NOT_FOUND, jobDeployResponse.getStatus());
   }
 }

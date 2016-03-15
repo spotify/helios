@@ -52,7 +52,7 @@ public class TaskStatusTest {
   @Test
   public void testSerializationOfEnvironment() throws Exception {
 
-    byte[] bytes = Json.asBytes(STATUS);
+    final byte[] bytes = Json.asBytes(STATUS);
 
     final TaskStatus read = Json.read(bytes, TaskStatus.class);
     assertEquals(1, read.getEnv().size());
@@ -61,7 +61,7 @@ public class TaskStatusTest {
 
   @Test
   public void testToBuilderAndBackEnvironment() throws Exception {
-    TaskStatus s = STATUS.asBuilder().build();
+    final TaskStatus s = STATUS.asBuilder().build();
     assertEquals(1, s.getEnv().size());
     assertEquals("VALUE", s.getEnv().get("VAR"));
   }

@@ -179,7 +179,7 @@ public class JobTest {
     for (final Map.Entry<ServiceEndpoint, ServicePorts> entry : addRegistration.entrySet()) {
       builder.addRegistration(entry.getKey(), entry.getValue());
     }
-    for (Map.Entry<String, String> entry : addVolumes.entrySet()) {
+    for (final Map.Entry<String, String> entry : addVolumes.entrySet()) {
       builder.addVolume(entry.getKey(), entry.getValue());
     }
     assertEquals("name", expectedName, builder.getName());
@@ -411,7 +411,7 @@ public class JobTest {
     final Map<String, Object> fields = objectMapper.readValue(
         jobJson, new TypeReference<Map<String, Object>>() {});
 
-    for (String field : fieldNames) {
+    for (final String field : fieldNames) {
       fields.remove(field);
     }
     final String modifiedJobJson = objectMapper.writeValueAsString(fields);

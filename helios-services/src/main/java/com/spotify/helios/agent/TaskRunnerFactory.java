@@ -27,7 +27,7 @@ import java.util.List;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.concat;
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 
 /**
  * As you might guess, creates {@link TaskRunner}s
@@ -57,7 +57,7 @@ public class TaskRunnerFactory {
         .docker(docker)
         .healthChecker(healthChecker.orNull())
         .existingContainerId(containerId)
-        .listener(new BroadcastingListener(concat(this.listeners, asList(listener))))
+        .listener(new BroadcastingListener(concat(this.listeners, singletonList(listener))))
         .registrar(registrar)
         .build();
   }
@@ -117,77 +117,77 @@ public class TaskRunnerFactory {
 
     @Override
     public void failed(final Throwable t, final String containerError) {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.failed(t, containerError);
       }
     }
 
     @Override
     public void pulling() {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.pulling();
       }
     }
 
     @Override
     public void pulled() {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.pulled();
       }
     }
 
     @Override
     public void pullFailed() {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.pullFailed();
       }
     }
 
     @Override
     public void creating() {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.creating();
       }
     }
 
     @Override
     public void created(final String containerId) {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.created(containerId);
       }
     }
 
     @Override
     public void starting() {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.starting();
       }
     }
 
     @Override
     public void started() {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.started();
       }
     }
 
     @Override
     public void healthChecking() {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.healthChecking();
       }
     }
 
     @Override
     public void running() {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.running();
       }
     }
 
     @Override
     public void exited(final int code) {
-      for (TaskRunner.Listener l : listeners) {
+      for (final TaskRunner.Listener l : listeners) {
         l.exited(code);
       }
     }

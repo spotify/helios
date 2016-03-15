@@ -76,7 +76,7 @@ public class ServicePortParameters extends Descriptor {
       return false;
     }
 
-    ServicePortParameters that = (ServicePortParameters) o;
+    final ServicePortParameters that = (ServicePortParameters) o;
 
     if (tags != null ? !tags.equals(that.tags) : that.tags != null) {
       return false;

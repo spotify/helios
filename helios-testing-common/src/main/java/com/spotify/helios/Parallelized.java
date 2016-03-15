@@ -31,9 +31,8 @@ public class Parallelized extends BlockJUnit4ClassRunner {
     private ExecutorService executor;
 
     public ThreadPoolScheduler() {
-      String threads = System.getProperty("junit.parallel.threads", "16");
-      int numThreads = Integer.parseInt(threads);
-      executor = Executors.newFixedThreadPool(numThreads);
+      final String threads = System.getProperty("junit.parallel.threads", "16");
+      executor = Executors.newFixedThreadPool(Integer.parseInt(threads));
     }
 
     @Override

@@ -113,7 +113,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
 
       final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 2, jobs.size());
-      for (Job job : jobs.values()) {
+      for (final Job job : jobs.values()) {
         assertEquals("wrong job running", BUSYBOX, job.getImage());
       }
 
@@ -132,7 +132,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
 
       final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 2, jobs.size());
-      for (Job job : jobs.values()) {
+      for (final Job job : jobs.values()) {
         assertEquals("wrong job running", BUSYBOX, job.getImage());
       }
 
@@ -198,7 +198,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
 
     private void ping(final String host, final int port) throws Exception {
       try (final Socket s = new Socket(host, port)) {
-        byte[] ping = "ping".getBytes(UTF_8);
+        final byte[] ping = "ping".getBytes(UTF_8);
         s.getOutputStream().write(ping);
         final byte[] pong = new byte[4];
         final int n = s.getInputStream().read(pong);

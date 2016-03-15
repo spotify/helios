@@ -73,7 +73,7 @@ public class JobListCommandTest {
 
     when(client.jobs()).thenReturn(Futures.immediateFuture(jobs));
 
-    Map<JobId, JobStatus> statuses = new HashMap<>();
+    final Map<JobId, JobStatus> statuses = new HashMap<>();
     for (final JobId jobId : jobs.keySet()) {
       // pretend each job is deployed
       final JobStatus status = JobStatus.newBuilder()

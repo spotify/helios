@@ -76,7 +76,7 @@ public class JobListTest extends SystemTestBase {
     } catch (JsonParseException ignored) {
     }
 
-    HeliosClient client = defaultClient();
+    final HeliosClient client = defaultClient();
     client.deploy(Deployment.of(jobId, Goal.START), testHost());
     awaitJobState(client, testHost(), jobId, RUNNING, LONG_WAIT_SECONDS, SECONDS);
 

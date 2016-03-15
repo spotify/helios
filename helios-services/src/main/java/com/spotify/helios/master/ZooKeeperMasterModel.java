@@ -292,7 +292,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final List<TaskStatusEvent> jsEvents = Lists.newArrayList();
 
-    for (String h : hosts) {
+    for (final String h : hosts) {
       final List<String> events;
       try {
         events = client.getChildren(Paths.historyJobHostEvents(jobId, h));
@@ -302,9 +302,9 @@ public class ZooKeeperMasterModel implements MasterModel {
         throw Throwables.propagate(e);
       }
 
-      for (String event : events) {
+      for (final String event : events) {
         try {
-          byte[] data = client.getData(Paths.historyJobHostEventsTimestamp(
+          final byte[] data = client.getData(Paths.historyJobHostEventsTimestamp(
               jobId, h, Long.valueOf(event)));
           final TaskStatus status = Json.read(data, TaskStatus.class);
           jsEvents.add(new TaskStatusEvent(status, Long.valueOf(event), h));
@@ -628,7 +628,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     final Map<String, VersionedValue<DeploymentGroupTasks>> tasksMap =
         getDeploymentGroupTasks(client);
 
-    for (Map.Entry<String, VersionedValue<DeploymentGroupTasks>> entry : tasksMap.entrySet()) {
+    for (final Map.Entry<String, VersionedValue<DeploymentGroupTasks>> entry :
+        tasksMap.entrySet()) {
       final String deploymentGroupName = entry.getKey();
       final VersionedValue<DeploymentGroupTasks> versionedTasks = entry.getValue();
       final DeploymentGroupTasks tasks = versionedTasks.value();
@@ -1523,7 +1524,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       throw new HeliosRuntimeException("List tasks for host failed: " + host, e);
     }
     final ImmutableList.Builder<JobId> jobIds = ImmutableList.builder();
-    for (String jobIdString : jobIdStrings) {
+    for (final String jobIdString : jobIdStrings) {
       jobIds.add(JobId.fromString(jobIdString));
     }
     return jobIds.build();
@@ -1610,7 +1611,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       nodes.add(Paths.configJobHost(jobId, host));
 
       final List<Integer> staticPorts = staticPorts(job);
-      for (int port : staticPorts) {
+      for (final int port : staticPorts) {
           nodes.add(Paths.configHostPort(host, port));
       }
 
@@ -1649,7 +1650,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       nodes.add(Paths.configJobHost(jobId, host));
 
       final List<Integer> staticPorts = staticPorts(job);
-      for (int port : staticPorts) {
+      for (final int port : staticPorts) {
         nodes.add(Paths.configHostPort(host, port));
       }
 
@@ -1753,7 +1754,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       final List<TaskStatusEvent> jobHistory = getJobHistory(jobId, host);
       final List<TaskStatusEvent> cappedJobHistory = jobHistory.subList(
           0, Math.min(maxStates, jobHistory.size()));
-      Function<TaskStatusEvent, TaskStatus.State> statusesToStrings =
+      final Function<TaskStatusEvent, TaskStatus.State> statusesToStrings =
           new Function<TaskStatusEvent, TaskStatus.State>() {
             @Override
             public TaskStatus.State apply(@Nullable TaskStatusEvent input) {

@@ -70,8 +70,8 @@ public class X509CertificateFactoryTest {
 
   @Before
   public void setUp() throws Exception {
-    X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(Base64.decode(ROHAN_PUB_KEY));
-    KeyFactory keyFactory = KeyFactory.getInstance("RSA");
+    final X509EncodedKeySpec pubKeySpec = new X509EncodedKeySpec(Base64.decode(ROHAN_PUB_KEY));
+    final KeyFactory keyFactory = KeyFactory.getInstance("RSA");
     publicKey = keyFactory.generatePublic(pubKeySpec);
 
     when(identity.getPublicKey()).thenReturn(publicKey);

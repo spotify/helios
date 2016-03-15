@@ -54,7 +54,7 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
   @Override
   public void decorateContainerConfig(Job job, ImageInfo imageInfo,
                                       ContainerConfig.Builder containerConfig) {
-    ContainerConfig imageConfig = imageInfo.config();
+    final ContainerConfig imageConfig = imageInfo.config();
 
     // Inject syslog-redirector in the entrypoint to capture std out/err
     final String syslogRedirectorPath = Optional.fromNullable(job.getEnv().get("SYSLOG_REDIRECTOR"))

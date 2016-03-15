@@ -193,16 +193,16 @@ public class TemporaryJobs implements TestRule {
 
     final List<AssertionError> errors = newArrayList();
 
-    for (TemporaryJob job : jobs) {
+    for (final TemporaryJob job : jobs) {
       jobIds.add(job.job().getId());
       job.undeploy(errors);
     }
 
-    for (TemporaryJobReports.Step step : undeploy.asSet()) {
+    for (final TemporaryJobReports.Step step : undeploy.asSet()) {
       step.tag("jobs", jobIds);
     }
 
-    for (AssertionError error : errors) {
+    for (final AssertionError error : errors) {
       log.error(error.getMessage());
     }
 
@@ -210,12 +210,12 @@ public class TemporaryJobs implements TestRule {
     // try to undeploy them the next time TemporaryJobs is run.
     if (errors.isEmpty()) {
       jobPrefixFile.delete();
-      for (TemporaryJobReports.Step step : undeploy.asSet()) {
+      for (final TemporaryJobReports.Step step : undeploy.asSet()) {
         step.markSuccess();
       }
     }
 
-    for (TemporaryJobReports.Step step : undeploy.asSet()) {
+    for (final TemporaryJobReports.Step step : undeploy.asSet()) {
       step.finish();
     }
   }
@@ -396,7 +396,7 @@ public class TemporaryJobs implements TestRule {
   }
 
   private void verifyJobsHealthy() throws AssertionError {
-    for (TemporaryJob job : jobs) {
+    for (final TemporaryJob job : jobs) {
       job.verifyHealthy();
     }
   }
@@ -424,7 +424,7 @@ public class TemporaryJobs implements TestRule {
     final Map<JobId, Job> jobs = client.jobs().get();
 
     // Iterate over all files in the directory
-    for (File file : files) {
+    for (final File file : files) {
       // Skip .tmp files which are generated when JobPrefixFiles are created. Also skip
       // directories. We don't expect any, but skip them just in case.
       if (file.getName().endsWith(".tmp") || file.isDirectory()) {
@@ -442,7 +442,7 @@ public class TemporaryJobs implements TestRule {
 
         boolean jobRemovalFailed = false;
         // Iterate over jobs, looking for ones with a matching prefix.
-        for (Map.Entry<JobId, Job> entry : jobs.entrySet()) {
+        for (final Map.Entry<JobId, Job> entry : jobs.entrySet()) {
           final JobId jobId = entry.getKey();
           // Skip over job if the id doesn't start with current filename.
           if (!jobId.getName().startsWith(prefixFile.prefix())) {

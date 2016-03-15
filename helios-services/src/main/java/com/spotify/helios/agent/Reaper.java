@@ -58,8 +58,8 @@ public class Reaper {
       throws DockerException, InterruptedException {
     final List<String> candidates = Lists.newArrayList();
     final List<Container> containers = docker.listContainers();
-    for (Container container : containers) {
-      for (String name : container.names()) {
+    for (final Container container : containers) {
+      for (final String name : container.names()) {
         if (name.startsWith(prefix)) {
           candidates.add(container.id());
         }

@@ -62,12 +62,12 @@ public class Deployment extends Descriptor {
    * @param deployerMaster The master that created this deployment.
    * @param deploymentGroupName The deployment group this deployment is created by.
    */
-  public Deployment(@JsonProperty("job") final JobId jobId,
-                    @JsonProperty("goal") final Goal goal,
-                    @JsonProperty("deployerUser") @Nullable final String deployerUser,
-                    @JsonProperty("deployerMaster") @Nullable final String deployerMaster,
-                    @JsonProperty("deploymentGroupName") @Nullable final String deploymentGroupName)
-  {
+  public Deployment(
+      @JsonProperty("job") final JobId jobId,
+      @JsonProperty("goal") final Goal goal,
+      @JsonProperty("deployerUser") @Nullable final String deployerUser,
+      @JsonProperty("deployerMaster") @Nullable final String deployerMaster,
+      @JsonProperty("deploymentGroupName") @Nullable final String deploymentGroupName) {
     this.jobId  = jobId;
     this.goal = goal;
     this.deployerUser = deployerUser;
@@ -91,8 +91,7 @@ public class Deployment extends Descriptor {
   }
 
   public static Deployment of(final JobId jobId, final Goal goal, final String deployerUser,
-                              final String deployerMaster, final String deploymentGroupName)
-  {
+                              final String deployerMaster, final String deploymentGroupName) {
     return newBuilder()
         .setJobId(jobId)
         .setGoal(goal)
@@ -142,7 +141,7 @@ public class Deployment extends Descriptor {
       return false;
     }
 
-    Deployment that = (Deployment) o;
+    final Deployment that = (Deployment) o;
 
     if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
       return false;

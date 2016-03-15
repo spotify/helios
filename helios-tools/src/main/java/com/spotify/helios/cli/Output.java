@@ -70,7 +70,7 @@ public class Output {
     if (currentConfig != null) {
       final Name[] searchPath = currentConfig.searchPath();
       if (searchPath != null) {
-        for (Name domain : searchPath) {
+        for (final Name domain : searchPath) {
           if (hostname.subdomain(domain)) {
             return hostname.relativize(domain).toString();
           }

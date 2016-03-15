@@ -55,7 +55,6 @@ import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.cli.CliMain;
-import com.spotify.helios.cli.command.JobCreateCommand;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -121,6 +120,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
+import static com.spotify.helios.cli.command.JobCreateCommand.DEFAULT_METADATA_ENVVARS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
@@ -343,14 +343,14 @@ public abstract class SystemTestBase {
     }
     clients.clear();
 
-    for (Service service : services) {
+    for (final Service service : services) {
       try {
         service.stopAsync();
       } catch (Exception e) {
         log.error("Uncaught exception", e);
       }
     }
-    for (Service service : services) {
+    for (final Service service : services) {
       try {
         service.awaitTerminated();
       } catch (Exception e) {
@@ -569,7 +569,7 @@ public abstract class SystemTestBase {
 
   protected void startDefaultMasterDontWaitForZK(final CuratorClientFactory curatorClientFactory,
                                                  String... args) throws Exception {
-    List<String> argsList = setupDefaultMaster(args);
+    final List<String> argsList = setupDefaultMaster(args);
 
     if (argsList == null) {
       return;
@@ -1024,7 +1024,7 @@ public abstract class SystemTestBase {
 
   protected String readLogFully(final ClientResponse logs) throws IOException {
     final LogReader logReader = new LogReader(logs.getEntityInputStream());
-    StringBuilder stringBuilder = new StringBuilder();
+    final StringBuilder stringBuilder = new StringBuilder();
     LogMessage logMessage;
     while ((logMessage = logReader.nextMessage()) != null) {
       stringBuilder.append(UTF_8.decode(logMessage.content()));
@@ -1094,7 +1094,7 @@ public abstract class SystemTestBase {
 
   protected List<String> flatten(final Iterable<?> values) {
     final List<String> list = new ArrayList<>();
-    for (Object value : values) {
+    for (final Object value : values) {
       if (value instanceof Iterable) {
         list.addAll(flatten((Iterable<?>) value));
       } else if (value.getClass() == String[].class) {
@@ -1123,7 +1123,7 @@ public abstract class SystemTestBase {
     // from the actual when we assert the equality below
     final Builder actualBuilder = actual.toBuilder();
     final Map<String, String> metadata = Maps.newHashMap(actual.getMetadata());
-    for (Map.Entry<String, String> entry : JobCreateCommand.DEFAULT_METADATA_ENVVARS.entrySet()) {
+    for (final Map.Entry<String, String> entry : DEFAULT_METADATA_ENVVARS.entrySet()) {
       final String envVar = entry.getKey();
       final String metadataKey = entry.getValue();
       final String envValue = System.getenv(envVar);

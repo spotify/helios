@@ -86,7 +86,7 @@ public class JobCreateCommandTest {
     final ArgumentParser parser = ArgumentParsers.newArgumentParser("test");
     final Subparser subparser = parser.addSubparsers().addParser("create");
 
-    Supplier<Map<String, String>> envVarSupplier = new Supplier<Map<String, String>>() {
+    final Supplier<Map<String, String>> envVarSupplier = new Supplier<Map<String, String>>() {
       @Override
       public Map<String, String> get() {
         return ImmutableMap.copyOf(envVars);

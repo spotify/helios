@@ -82,7 +82,7 @@ public class Resources extends Descriptor {
       return false;
     }
 
-    Resources that = (Resources) o;
+    final Resources that = (Resources) o;
 
     if (cpuShares != null ? !cpuShares.equals(that.cpuShares) : that.cpuShares != null) {
       return false;

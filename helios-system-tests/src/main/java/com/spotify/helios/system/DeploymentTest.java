@@ -195,7 +195,7 @@ public class DeploymentTest extends SystemTestBase {
     assertEquals(JobDeployResponse.Status.HOST_NOT_FOUND, deployed4.getStatus());
 
     // undeploy and redeploy to make sure things still work in the face of the tombstone
-    JobUndeployResponse undeployResp = client.undeploy(jobId, testHost()).get();
+    final JobUndeployResponse undeployResp = client.undeploy(jobId, testHost()).get();
     assertEquals(JobUndeployResponse.Status.OK, undeployResp.getStatus());
 
     final JobDeployResponse redeployed = client.deploy(deployment, testHost()).get();

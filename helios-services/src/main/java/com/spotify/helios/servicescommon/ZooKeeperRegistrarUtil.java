@@ -208,7 +208,7 @@ public class ZooKeeperRegistrarUtil {
       throw new HeliosRuntimeException("List tasks for host failed: " + host, e);
     }
     final ImmutableList.Builder<JobId> jobIds = ImmutableList.builder();
-    for (String jobIdString : jobIdStrings) {
+    for (final String jobIdString : jobIdStrings) {
       jobIds.add(JobId.fromString(jobIdString));
     }
     return jobIds.build();

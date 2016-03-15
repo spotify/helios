@@ -32,7 +32,7 @@ public class CallPathToExecutorException extends Exception {
   CallPathToExecutorException(StackTraceElement[] trace) {
     super();
     int c = 0;
-    for (StackTraceElement element : trace) {
+    for (final StackTraceElement element : trace) {
       c++;
       // Trim the head exception so that it should start at makeContext*able
       final String className = element.getClassName();

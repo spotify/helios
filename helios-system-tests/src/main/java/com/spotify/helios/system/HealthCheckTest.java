@@ -262,7 +262,7 @@ public class HealthCheckTest extends ServiceRegistrationTestBase {
       @Override
       public Object call() throws Exception {
         final TaskStatusEvents jobHistory = getOrNull(client.jobHistory(jobId));
-        for (TaskStatusEvent event : jobHistory.getEvents()) {
+        for (final TaskStatusEvent event : jobHistory.getEvents()) {
           if (event.getStatus().getState() == FAILED) {
             return true;
           }

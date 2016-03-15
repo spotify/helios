@@ -108,7 +108,7 @@ public class CliJobCreationTest extends SystemTestBase {
       // Compare to make sure the created job has the expected configuration,
       // i.e. the configuration resulting from a merge of the JSON file and CLI args.
       final Job actualJob = Json.read(actualJobConfigJson, Job.class);
-      Job.Builder actualJobBuilder = actualJob.toBuilder();
+      final Job.Builder actualJobBuilder = actualJob.toBuilder();
       builder.setName(testJobName).setVersion(testJobVersion).setImage(BUSYBOX);
       assertJobEquals(builder.build(), actualJobBuilder.build());
     }
@@ -133,8 +133,9 @@ public class CliJobCreationTest extends SystemTestBase {
   public void testInvalidJobJsonOutput() throws Exception {
     // Trying to create a job with an invalid image name should return JSON with
     // INVALID_JOB_DEFINITION
-    String output = cli("create", "--json", testJobNameAndVersion, "DOES_NOT_LIKE_AT_ALL-CAPITALS");
-    CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
+    final String output = cli("create", "--json", testJobNameAndVersion,
+                              "DOES_NOT_LIKE_AT_ALL-CAPITALS");
+    final CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
     assertEquals(CreateJobResponse.Status.INVALID_JOB_DEFINITION, createJobResponse.getStatus());
     assertTrue(createJobResponse.getId().startsWith(testJobNameAndVersion));
   }
@@ -143,9 +144,9 @@ public class CliJobCreationTest extends SystemTestBase {
   public void testTemplateUnknownJobJsonOutput() throws Exception {
     // Trying to create a job with a non-existant job as a template should return JSON with
     // UNKNOWN_JOB
-    String output =
+    final String output =
         cli("create", "--json", "--template", "non-existant-job", testJobNameAndVersion, BUSYBOX);
-    CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
+    final CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
     assertEquals(CreateJobResponse.Status.UNKNOWN_JOB, createJobResponse.getStatus());
   }
 
@@ -157,9 +158,9 @@ public class CliJobCreationTest extends SystemTestBase {
 
     // Trying to create a job with an ambiguous template reference should return JSON with
     // AMBIGUOUS_JOB_REFERENCE
-    String output = cli("create", "--json", "--template", testJobNameAndVersion,
-                        testJobNameAndVersion, BUSYBOX);
-    CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
+    final String output = cli("create", "--json", "--template", testJobNameAndVersion,
+                              testJobNameAndVersion, BUSYBOX);
+    final CreateJobResponse createJobResponse = Json.read(output, CreateJobResponse.class);
     assertEquals(CreateJobResponse.Status.AMBIGUOUS_JOB_REFERENCE, createJobResponse.getStatus());
   }
 
@@ -205,7 +206,7 @@ public class CliJobCreationTest extends SystemTestBase {
       // Compare to make sure the created job has the expected configuration,
       // i.e. the configuration resulting from a merge of the JSON file and CLI args.
       final Job actualJob = Json.read(actualJobConfigJson, Job.class);
-      Job.Builder actualJobBuilder = actualJob.toBuilder();
+      final Job.Builder actualJobBuilder = actualJob.toBuilder();
       builder.setName(testJobName).setVersion(testJobVersion).setImage(BUSYBOX)
           .setEnv(ImmutableMap.of(redundantEnvKey, "FOOD"));
       assertJobEquals(builder.build(), actualJobBuilder.build());

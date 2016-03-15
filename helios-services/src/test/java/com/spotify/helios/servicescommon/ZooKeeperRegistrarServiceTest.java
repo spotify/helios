@@ -221,7 +221,7 @@ public class ZooKeeperRegistrarServiceTest {
     // simulate the reconnect
     complete = SettableFuture.create();
 
-    CuratorFramework curatorFramework = mock(CuratorFramework.class);
+    final CuratorFramework curatorFramework = mock(CuratorFramework.class);
     zkClientConnectionListenerCaptor.getValue().stateChanged(curatorFramework, RECONNECTED);
 
     assertNull(complete.get(30, SECONDS));

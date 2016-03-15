@@ -48,7 +48,7 @@ public class DockerHealthCheckerTest {
   private CapturingRiemannClient riemannClient;
 
   private static MeterRates makeMeter(double percentage) {
-    int value = (int) (percentage * 100);
+    final int value = (int) (percentage * 100);
     return new MeterRates(value, value, value);
   }
 

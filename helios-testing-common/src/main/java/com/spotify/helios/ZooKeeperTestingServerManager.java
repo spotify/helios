@@ -88,7 +88,7 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
 
     final ExponentialBackoffRetry retryPolicy = new ExponentialBackoffRetry(1000, 3);
 
-    Builder builder = CuratorFrameworkFactory.builder()
+    final Builder builder = CuratorFrameworkFactory.builder()
         .connectString(endpoint)
         .retryPolicy(retryPolicy)
         .authorization("digest", (SUPER_USER + ":" + SUPER_PASSWORD).getBytes());
@@ -130,31 +130,25 @@ public class ZooKeeperTestingServerManager implements ZooKeeperTestManager {
 
   @Override
   public void awaitUp(long timeout, TimeUnit timeunit) throws TimeoutException {
-    Polling.awaitUnchecked(timeout, timeunit, new Callable<Object>() {
-      @Override
-      public Object call() throws Exception {
-        try {
-          return curatorWithSuperAuth().usingNamespace(null).getChildren().forPath("/");
-        } catch (Exception e) {
-          return null;
-        }
+    Polling.awaitUnchecked(timeout, timeunit, (Callable<Object>) () -> {
+      try {
+        return curatorWithSuperAuth().usingNamespace(null).getChildren().forPath("/");
+      } catch (Exception e) {
+        return null;
       }
     });
   }
 
   @Override
   public void awaitDown(int timeout, TimeUnit timeunit) throws TimeoutException {
-    Polling.awaitUnchecked(timeout, timeunit, new Callable<Object>() {
-      @Override
-      public Object call() throws Exception {
-        try {
-          curatorWithSuperAuth().usingNamespace(null).getChildren().forPath("/");
-          return null;
-        } catch (KeeperException.ConnectionLossException e) {
-          return true;
-        } catch (Exception e) {
-          return null;
-        }
+    Polling.awaitUnchecked(timeout, timeunit, (Callable<Object>) () -> {
+      try {
+        curatorWithSuperAuth().usingNamespace(null).getChildren().forPath("/");
+        return null;
+      } catch (KeeperException.ConnectionLossException e) {
+        return true;
+      } catch (Exception e) {
+        return null;
       }
     });
   }

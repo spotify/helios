@@ -118,7 +118,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   @Override
   public Map<JobId, Task> getTasks() {
     final Map<JobId, Task> tasks = Maps.newHashMap();
-    for (Map.Entry<String, Task> entry : this.tasks.getNodes().entrySet()) {
+    for (final Map.Entry<String, Task> entry : this.tasks.getNodes().entrySet()) {
       final JobId id = jobIdFromTaskPath(entry.getKey());
       tasks.put(id, entry.getValue());
     }
@@ -131,7 +131,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   @Override
   public Map<JobId, TaskStatus> getTaskStatuses() {
     final Map<JobId, TaskStatus> statuses = Maps.newHashMap();
-    for (Map.Entry<String, byte[]> entry : this.taskStatuses.entrySet()) {
+    for (final Map.Entry<String, byte[]> entry : this.taskStatuses.entrySet()) {
       try {
         final JobId id = JobId.fromString(entry.getKey());
         final TaskStatus status = Json.read(entry.getValue(), TaskStatus.class);

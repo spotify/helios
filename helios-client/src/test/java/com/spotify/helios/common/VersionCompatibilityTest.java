@@ -26,7 +26,7 @@ public class VersionCompatibilityTest {
 
   @Test
   public void test() {
-    PomVersion server = PomVersion.parse("1.3.9");
+    final PomVersion server = PomVersion.parse("1.3.9");
     assertEquals(Status.EQUAL, VersionCompatibility.getStatus(server, server));
     assertEquals(Status.COMPATIBLE, VersionCompatibility.getStatus(
         server, PomVersion.parse("1.3.10")));

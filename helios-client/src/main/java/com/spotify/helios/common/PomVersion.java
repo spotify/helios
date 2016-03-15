@@ -69,14 +69,14 @@ public class PomVersion implements Comparable<PomVersion> {
       version = version.substring(0, s.length() - 9);
     }
 
-    Iterable<String> bits = Splitter.on(".").split(version);
+    final Iterable<String> bits = Splitter.on(".").split(version);
     if (size(bits) != 3) {
       throw new RuntimeException("Version string format is invalid");
     }
     try {
-      Integer newMajor = Integer.valueOf(get(bits, 0));
-      Integer newMinor = Integer.valueOf(get(bits, 1));
-      Integer newPatch = Integer.valueOf(get(bits, 2));
+      final Integer newMajor = Integer.valueOf(get(bits, 0));
+      final Integer newMinor = Integer.valueOf(get(bits, 1));
+      final Integer newPatch = Integer.valueOf(get(bits, 2));
       return new PomVersion(isSnapshot, newMajor, newMinor, newPatch);
     } catch (NumberFormatException e) {
       throw new RuntimeException("Version portions are not numbers! " + s, e);
@@ -105,7 +105,7 @@ public class PomVersion implements Comparable<PomVersion> {
     if (getClass() != obj.getClass()) {
       return false;
     }
-    PomVersion other = (PomVersion) obj;
+    final PomVersion other = (PomVersion) obj;
     if (isSnapshot != other.isSnapshot) {
       return false;
     }

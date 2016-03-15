@@ -71,7 +71,7 @@ class Jobs {
                                        final List<String> hosts,
                                        final List<AssertionError> errors) {
     final JobId id = job.getId();
-    for (String host : hosts) {
+    for (final String host : hosts) {
       log.info("Undeploying {} from {}", getJobDescription(job), host);
       final JobUndeployResponse response;
       try {
