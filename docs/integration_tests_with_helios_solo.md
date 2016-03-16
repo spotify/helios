@@ -9,13 +9,14 @@ running the integration test have Docker installed.
 # How to use it
 
 If you have a test that is already using [TemporaryJobs][], the test can run
-within a self-contained helios-solo instance with a few small modifications.
+through a self-contained helios-solo Docker container with a few small modifications.
+Your test will create and run a Docker container that has a running Helios cluster
+inside and tear it down when the tests finish.
 
-Add a `@ClassRule` that for helios-solo to install itself on your docker instance:
+Instantiate a `HeliosDeploymentResource`:
 
 ```java
-@ClassRule
-public static HeliosDeploymentResource soloResource =
+private static final HeliosDeploymentResource soloResource =
     new HeliosDeploymentResource(HeliosSoloDeployment.fromEnv().build());
 ```
 
@@ -28,14 +29,26 @@ Then modify the `TemporaryJobs` declaration to use the client that points to
 your `HeliosSoloDeployment`:
 
 ```java
-@Rule
-public TemporaryJobs temporaryJobs = TemporaryJobs.builder()
+private static final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
     .client(soloResource.client())
     .build();
 ```
 
+Then use a `RuleChain` to guarantee that `HeliosSoloDeployment` and then `TemporaryJobs`
+are created in that order and torn down in the reverse order. Otherwise, you might
+have leftover containers from your tests.
+
+
+```java
+@ClassRule
+public static final RuleChain chain = RuleChain
+    .outerRule(soloResource)
+    .around(temporaryJobs);
+```
+
+
 ## @ClassRule vs @Rule
-The example above will set up `HeliosSoloDeployment` once for all of the tests
+The `@ClassRule RuleChain` above will set up `HeliosSoloDeployment` once for all of the tests
 in your `Test` class. To instead set up (and tear down) a
 `HeliosSoloDeployment` for *each individual* test in the class, change the
 `@ClassRule` to a `@Rule` and remove the `static` modifier. 
