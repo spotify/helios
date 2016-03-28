@@ -19,6 +19,7 @@ package com.spotify.helios.common.descriptors;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
@@ -34,6 +35,7 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkArgument;
@@ -98,6 +100,9 @@ public class JobTest {
         .build();
     final List<String> setSecurityOpt = Lists.newArrayList("label:user:dxia", "apparmor:foo");
     final String setNetworkMode = "host";
+    final Map<String, String> setMetadata = ImmutableMap.of("set_metadata_key", "set_metadata_val");
+    final Set<String> setAddedCapabilities = ImmutableSet.of("set_cap_add1", "set_cap_add2");
+    final Set<String> setDroppedCapabilities = ImmutableSet.of("set_cap_drop1", "set_cap_drop2");
 
     // Input to addXXX
     final Map<String, String> addEnv = ImmutableMap.of("add", "env");
@@ -112,6 +117,7 @@ public class JobTest {
     final Map<ServiceEndpoint, ServicePorts> addRegistration = ImmutableMap.of(
         ServiceEndpoint.of("add_service", "add_proto"), addServicePorts);
     final Map<String, String> addVolumes = ImmutableMap.of("/add", "/volume");
+    final Map<String, String> addMetadata = ImmutableMap.of("add_metadata_key", "add_metadata_val");
 
     // Expected output from getXXX
     final String expectedName = setName;
@@ -132,6 +138,9 @@ public class JobTest {
     final HealthCheck expectedHealthCheck = setHealthCheck;
     final List<String> expectedSecurityOpt = setSecurityOpt;
     final String expectedNetworkMode = setNetworkMode;
+    final Map<String, String> expectedMetadata = concat(setMetadata, addMetadata);
+    final Set<String> expectedAddedCapabilities = setAddedCapabilities;
+    final Set<String> expectedDroppedCapabilities = setDroppedCapabilities;
 
     // Check setXXX methods
     builder.setName(setName);
@@ -151,23 +160,9 @@ public class JobTest {
     builder.setHealthCheck(setHealthCheck);
     builder.setSecurityOpt(setSecurityOpt);
     builder.setNetworkMode(setNetworkMode);
-    assertEquals("name", setName, builder.getName());
-    assertEquals("version", setVersion, builder.getVersion());
-    assertEquals("image", setImage, builder.getImage());
-    assertEquals("hostname", setHostname, builder.getHostname());
-    assertEquals("command", setCommand, builder.getCommand());
-    assertEquals("env", setEnv, builder.getEnv());
-    assertEquals("ports", setPorts, builder.getPorts());
-    assertEquals("registration", setRegistration, builder.getRegistration());
-    assertEquals("gracePeriod", setGracePeriod, builder.getGracePeriod());
-    assertEquals("volumes", setVolumes, builder.getVolumes());
-    assertEquals("expires", setExpires, builder.getExpires());
-    assertEquals("registrationDomain", setRegistrationDomain, builder.getRegistrationDomain());
-    assertEquals("creatingUser", setCreatingUser, builder.getCreatingUser());
-    assertEquals("resources", setResources, builder.getResources());
-    assertEquals("healthCheck", setHealthCheck, builder.getHealthCheck());
-    assertEquals("securityOpt", setSecurityOpt, builder.getSecurityOpt());
-    assertEquals("networkMode", setNetworkMode, builder.getNetworkMode());
+    builder.setMetadata(setMetadata);
+    builder.setAddedCapabilities(setAddedCapabilities);
+    builder.setDroppedCapabilities(setDroppedCapabilities);
 
     // Check addXXX methods
     for (final Map.Entry<String, String> entry : addEnv.entrySet()) {
@@ -182,6 +177,10 @@ public class JobTest {
     for (final Map.Entry<String, String> entry : addVolumes.entrySet()) {
       builder.addVolume(entry.getKey(), entry.getValue());
     }
+    for (final Map.Entry<String, String> entry : addMetadata.entrySet()) {
+      builder.addMetadata(entry.getKey(), entry.getValue());
+    }
+
     assertEquals("name", expectedName, builder.getName());
     assertEquals("version", expectedVersion, builder.getVersion());
     assertEquals("image", expectedImage, builder.getImage());
@@ -196,6 +195,13 @@ public class JobTest {
     assertEquals("registrationDomain", expectedRegistrationDomain, builder.getRegistrationDomain());
     assertEquals("creatingUser", expectedCreatingUser, builder.getCreatingUser());
     assertEquals("resources", expectedResources, builder.getResources());
+    assertEquals("healthCheck", expectedHealthCheck, builder.getHealthCheck());
+    assertEquals("securityOpt", expectedSecurityOpt, builder.getSecurityOpt());
+    assertEquals("networkMode", expectedNetworkMode, builder.getNetworkMode());
+    assertEquals("metadata", expectedMetadata, builder.getMetadata());
+    assertEquals("addedCapabilities", expectedAddedCapabilities, builder.getAddedCapabilities());
+    assertEquals("droppedCapabilities", expectedDroppedCapabilities,
+                 builder.getDroppedCapabilities());
 
     // Check final output
     final Job job = builder.build();
@@ -216,6 +222,9 @@ public class JobTest {
     assertEquals("healthCheck", expectedHealthCheck, job.getHealthCheck());
     assertEquals("securityOpt", expectedSecurityOpt, job.getSecurityOpt());
     assertEquals("networkMode", expectedNetworkMode, job.getNetworkMode());
+    assertEquals("metadata", expectedMetadata, job.getMetadata());
+    assertEquals("addedCapabilities", expectedAddedCapabilities, job.getAddedCapabilities());
+    assertEquals("droppedCapabilities", expectedDroppedCapabilities, job.getDroppedCapabilities());
 
     // Check toBuilder
     final Job.Builder rebuilder = job.toBuilder();
@@ -237,6 +246,10 @@ public class JobTest {
     assertEquals("healthCheck", expectedHealthCheck, rebuilder.getHealthCheck());
     assertEquals("securityOpt", expectedSecurityOpt, rebuilder.getSecurityOpt());
     assertEquals("networkMode", expectedNetworkMode, rebuilder.getNetworkMode());
+    assertEquals("metadata", expectedMetadata, rebuilder.getMetadata());
+    assertEquals("addedCapabilities", expectedAddedCapabilities, rebuilder.getAddedCapabilities());
+    assertEquals("droppedCapabilities", expectedDroppedCapabilities,
+                 rebuilder.getDroppedCapabilities());
 
     // Check clone
     final Job.Builder cloned = builder.clone();
@@ -258,6 +271,10 @@ public class JobTest {
     assertEquals("healthCheck", expectedHealthCheck, cloned.getHealthCheck());
     assertEquals("securityOpt", expectedSecurityOpt, cloned.getSecurityOpt());
     assertEquals("networkMode", expectedNetworkMode, cloned.getNetworkMode());
+    assertEquals("metadata", expectedMetadata, cloned.getMetadata());
+    assertEquals("addedCapabilities", expectedAddedCapabilities, cloned.getAddedCapabilities());
+    assertEquals("droppedCapabilities", expectedDroppedCapabilities,
+                 cloned.getDroppedCapabilities());
 
     final Job clonedJob = cloned.build();
     assertEquals("name", expectedName, clonedJob.getId().getName());
@@ -272,12 +289,16 @@ public class JobTest {
     assertEquals("volumes", expectedVolumes, clonedJob.getVolumes());
     assertEquals("expires", expectedExpires, clonedJob.getExpires());
     assertEquals("registrationDomain", expectedRegistrationDomain,
-        clonedJob.getRegistrationDomain());
+                 clonedJob.getRegistrationDomain());
     assertEquals("creatingUser", expectedCreatingUser, clonedJob.getCreatingUser());
     assertEquals("resources", expectedResources, clonedJob.getResources());
     assertEquals("healthCheck", expectedHealthCheck, clonedJob.getHealthCheck());
     assertEquals("securityOpt", expectedSecurityOpt, clonedJob.getSecurityOpt());
     assertEquals("networkMode", expectedNetworkMode, clonedJob.getNetworkMode());
+    assertEquals("metadata", expectedMetadata, clonedJob.getMetadata());
+    assertEquals("addedCapabilities", expectedAddedCapabilities, clonedJob.getAddedCapabilities());
+    assertEquals("droppedCapabilities", expectedDroppedCapabilities,
+                 clonedJob.getDroppedCapabilities());
   }
 
   @SafeVarargs

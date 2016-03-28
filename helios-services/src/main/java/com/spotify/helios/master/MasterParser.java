@@ -17,6 +17,8 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.collect.ImmutableSet;
+
 import com.spotify.helios.servicescommon.ServiceParser;
 
 import net.sourceforge.argparse4j.inf.Argument;
@@ -25,7 +27,10 @@ import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 import java.net.InetSocketAddress;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
+
+import static net.sourceforge.argparse4j.impl.Arguments.append;
 
 /**
  * Parses command-line arguments to produce the {@link MasterConfig}.
@@ -42,6 +47,7 @@ public class MasterParser extends ServiceParser {
   private Argument zkAclMasterPassword;
   private Argument agentReapingTimeout;
   private Argument jobRetention;
+  private Argument whitelistedCapabilities;
 
   public MasterParser(final String... args) throws ArgumentParserException {
     super("helios-master", "Spotify Helios Master", args);
@@ -81,7 +87,9 @@ public class MasterParser extends ServiceParser {
         .setStateDirectory(getStateDirectory())
         .setAgentReapingTimeout(options.getLong(agentReapingTimeout.getDest()))
         .setJobRetention(options.getLong(jobRetention.getDest()))
-        .setFfwdConfig(ffwdConfig(options));
+        .setFfwdConfig(ffwdConfig(options))
+        .setWhitelistedCapabilities(ImmutableSet.copyOf(
+            options.getList(whitelistedCapabilities.getDest())));
 
     this.masterConfig = config;
   }
@@ -117,6 +125,12 @@ public class MasterParser extends ServiceParser {
         .help("In days. Jobs not deployed anywhere and with a job history showing they were last " +
               "used before the specified retention time will be removed. " +
               "This is disabled by default by setting it to a sentinel value of -1.");
+
+    whitelistedCapabilities = parser.addArgument("--whitelisted-capability")
+        .action(append())
+        .setDefault(new ArrayList<>())
+        .help("The Linux capabilities containers on this agent are allowed to add. "
+              + "Defaults to allowing nothing.");
   }
 
   public MasterConfig getMasterConfig() {

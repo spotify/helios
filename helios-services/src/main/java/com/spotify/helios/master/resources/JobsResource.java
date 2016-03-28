@@ -68,15 +68,17 @@ public class JobsResource {
 
   private static final Logger log = LoggerFactory.getLogger(JobsResource.class);
 
-  private static final JobValidator JOB_VALIDATOR = new JobValidator();
 
   private final MasterModel model;
   private final MasterMetrics metrics;
+  private final JobValidator jobValidator;
   private Clock clock = new SystemClock();
 
-  public JobsResource(final MasterModel model, final MasterMetrics metrics) {
+  public JobsResource(final MasterModel model, final MasterMetrics metrics,
+                      final Set<String> whitelistedCapabilities) {
     this.model = model;
     this.metrics = metrics;
+    this.jobValidator = new JobValidator(true, whitelistedCapabilities);
   }
 
   /**
@@ -149,7 +151,7 @@ public class JobsResource {
         // If the job had a hash coming in, preserve it
         .setHash(job.getId().getHash());
     final Job actualJob = clone.build();
-    final Collection<String> errors = JOB_VALIDATOR.validate(actualJob);
+    final Collection<String> errors = jobValidator.validate(actualJob);
     final String jobIdString = actualJob.getId().toString();
     if (!errors.isEmpty()) {
       throw badRequest(new CreateJobResponse(INVALID_JOB_DEFINITION, ImmutableList.copyOf(errors),

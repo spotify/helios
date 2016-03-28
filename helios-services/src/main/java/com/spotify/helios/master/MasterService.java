@@ -250,7 +250,8 @@ public class MasterService extends AbstractIdleService {
         .addMappingForUrlPatterns(EnumSet.of(DispatcherType.REQUEST), true, "/*");
     environment.jersey().register(
         new ReportingResourceMethodDispatchAdapter(metrics.getMasterMetrics()));
-    environment.jersey().register(new JobsResource(model, metrics.getMasterMetrics()));
+    environment.jersey().register(new JobsResource(
+        model, metrics.getMasterMetrics(), config.getWhitelistedCapabilities()));
     environment.jersey().register(new HistoryResource(model, metrics.getMasterMetrics()));
     environment.jersey().register(new HostsResource(model));
     environment.jersey().register(new MastersResource(model));
