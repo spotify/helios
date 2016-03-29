@@ -17,8 +17,6 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.MoreObjects;
-
 import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
@@ -439,11 +437,11 @@ public class Supervisor {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("job", job)
-        .add("currentCommand", currentCommand)
-        .add("performedCommand", performedCommand)
-        .toString();
+    return "Supervisor{" +
+           "job=" + job +
+           ", currentCommand=" + currentCommand +
+           ", performedCommand=" + performedCommand +
+           '}';
   }
 
   private class TaskListener extends TaskRunner.NopListener {

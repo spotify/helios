@@ -17,11 +17,10 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.google.common.base.MoreObjects;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.List;
 
@@ -47,10 +46,10 @@ public class TaskStatusEvents {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("status", status)
-        .add("events", events)
-        .toString();
+    return "TaskStatusEvents{" +
+           "events=" + events +
+           ", status=" + status +
+           '}';
   }
 
   public String toJsonString() {

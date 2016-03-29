@@ -17,7 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.base.Optional;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -141,10 +140,10 @@ public class PortMapping extends Descriptor {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("internalPort", internalPort)
-        .add("externalPort", externalPort)
-        .add("protocol", protocol)
-        .toString();
+    return "PortMapping{" +
+           "internalPort=" + internalPort +
+           ", externalPort=" + externalPort +
+           ", protocol='" + protocol + '\'' +
+           "} " + super.toString();
   }
 }

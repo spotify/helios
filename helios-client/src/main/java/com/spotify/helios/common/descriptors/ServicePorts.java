@@ -17,7 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -76,9 +75,9 @@ public class ServicePorts extends Descriptor {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("ports", ports)
-        .toString();
+    return "ServicePorts{" +
+           "ports=" + ports +
+           "} " + super.toString();
   }
 
   public static ServicePorts of(final String... ports) {

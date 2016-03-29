@@ -17,8 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
@@ -75,9 +73,9 @@ public class ExecHealthCheck extends HealthCheck {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("command", command)
-        .toString();
+    return "ExecHealthCheck{" +
+           "command=" + command +
+           "} " + super.toString();
   }
 
   static Builder newBuilder() {

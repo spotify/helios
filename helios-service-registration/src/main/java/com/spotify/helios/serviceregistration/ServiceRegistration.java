@@ -17,8 +17,6 @@
 
 package com.spotify.helios.serviceregistration;
 
-import com.google.common.base.MoreObjects;
-
 import java.util.ArrayList;
 import java.util.List;
 
@@ -146,15 +144,15 @@ public class ServiceRegistration {
 
     @Override
     public String toString() {
-      return MoreObjects.toStringHelper(this)
-          .add("name", name)
-          .add("protocol", protocol)
-          .add("port", port)
-          .add("domain", domain)
-          .add("host", host)
-          .add("tags", tags)
-          .add("healthCheck", healthCheck)
-          .toString();
+      return "Endpoint{" +
+             "name='" + name + '\'' +
+             ", protocol='" + protocol + '\'' +
+             ", port=" + port +
+             ", domain='" + domain + '\'' +
+             ", host='" + host + '\'' +
+             ", tags=" + tags +
+             ", healthCheck=" + healthCheck +
+             '}';
     }
   }
 
@@ -188,10 +186,10 @@ public class ServiceRegistration {
 
     @Override
     public String toString() {
-      return MoreObjects.toStringHelper(this)
-          .add("type", type)
-          .add("path", path)
-          .toString();
+      return "EndpointHealthCheck{" +
+             "type='" + type + '\'' +
+             ", path='" + path + '\'' +
+             '}';
     }
   }
 }

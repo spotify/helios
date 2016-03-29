@@ -17,14 +17,13 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.google.common.base.MoreObjects;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -139,13 +138,13 @@ public class DeploymentGroupStatusResponse {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("deploymentGroup", deploymentGroup)
-        .add("status", status)
-        .add("error", error)
-        .add("hostStatuses", hostStatuses)
-        .add("deploymentGroupStatus", deploymentGroupStatus)
-        .toString();
+    return "DeploymentGroupStatusResponse{" +
+           "deploymentGroup=" + deploymentGroup +
+           ", status=" + status +
+           ", error='" + error + '\'' +
+           ", hostStatuses=" + hostStatuses +
+           ", deploymentGroupStatus=" + deploymentGroupStatus +
+           '}';
   }
 
   public String toJsonString() {

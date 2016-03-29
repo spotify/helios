@@ -17,10 +17,9 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.google.common.base.MoreObjects;
+import com.spotify.helios.common.Json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.helios.common.Json;
 
 import java.util.List;
 
@@ -61,11 +60,11 @@ public class CreateJobResponse {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("status", status)
-        .add("errors", errors)
-        .add("id", id)
-        .toString();
+    return "CreateJobResponse{" +
+           "status=" + status +
+           ", errors=" + errors +
+           ", id='" + id + '\'' +
+           '}';
   }
 
   public String toJsonString() {

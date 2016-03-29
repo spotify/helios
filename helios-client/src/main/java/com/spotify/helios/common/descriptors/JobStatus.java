@@ -17,8 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -126,11 +124,11 @@ public class JobStatus {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("job", job)
-        .add("taskStatuses", taskStatuses)
-        .add("deployments", deployments)
-        .toString();
+    return "JobStatus{" +
+           "job=" + job +
+           ", taskStatuses=" + taskStatuses +
+           ", deployments=" + deployments +
+           '}';
   }
 
   public static Builder newBuilder() {

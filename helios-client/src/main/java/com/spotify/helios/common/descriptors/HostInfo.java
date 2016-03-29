@@ -17,8 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -288,22 +286,22 @@ public class HostInfo extends Descriptor {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("hostname", hostname)
-        .add("uname", uname)
-        .add("architecture", architecture)
-        .add("osName", osName)
-        .add("osVersion", osVersion)
-        .add("cpus", cpus)
-        .add("loadAvg", loadAvg)
-        .add("memoryTotalBytes", memoryTotalBytes)
-        .add("memoryFreeBytes", memoryFreeBytes)
-        .add("swapTotalBytes", swapTotalBytes)
-        .add("swapFreeBytes", swapFreeBytes)
-        .add("dockerVersion", dockerVersion)
-        .add("dockerHost", dockerHost)
-        .add("dockerCertPath", dockerCertPath)
-        .toString();
+    return "HostInfo{" +
+           "hostname='" + hostname + '\'' +
+           ", uname='" + uname + '\'' +
+           ", architecture='" + architecture + '\'' +
+           ", osName='" + osName + '\'' +
+           ", osVersion='" + osVersion + '\'' +
+           ", cpus=" + cpus +
+           ", loadAvg=" + loadAvg +
+           ", memoryTotalBytes=" + memoryTotalBytes +
+           ", memoryFreeBytes=" + memoryFreeBytes +
+           ", swapTotalBytes=" + swapTotalBytes +
+           ", swapFreeBytes=" + swapFreeBytes +
+           ", dockerVersion=" + dockerVersion +
+           ", dockerHost='" + dockerHost + '\'' +
+           ", dockerCertPath='" + dockerCertPath + '\'' +
+           "} " + super.toString();
   }
 
   @Override

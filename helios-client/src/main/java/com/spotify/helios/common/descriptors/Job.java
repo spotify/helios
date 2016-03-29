@@ -17,17 +17,16 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
+import com.spotify.helios.common.Json;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.helios.common.Json;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -423,26 +422,27 @@ public class Job extends Descriptor implements Comparable<Job> {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("id", id)
-        .add("image", image)
-        .add("hostname", hostname)
-        .add("created", created)
-        .add("command", command)
-        .add("env", env)
-        .add("resources", resources)
-        .add("ports", ports)
-        .add("registration", registration)
-        .add("gracePeriod", gracePeriod)
-        .add("expires", expires)
-        .add("registrationDomain", registrationDomain)
-        .add("creatingUser", creatingUser)
-        .add("token", token)
-        .add("healthCheck", healthCheck)
-        .add("securityOpt", securityOpt)
-        .add("networkMode", networkMode)
-        .add("metadata", metadata)
-        .toString();
+    return "Job{" +
+           "id=" + id +
+           ", image='" + image + '\'' +
+           ", hostname='" + hostname + '\'' +
+           ", created=" + created +
+           ", command=" + command +
+           ", env=" + env +
+           ", resources=" + resources +
+           ", ports=" + ports +
+           ", registration=" + registration +
+           ", gracePeriod=" + gracePeriod +
+           ", volumes=" + volumes +
+           ", expires=" + expires +
+           ", registrationDomain='" + registrationDomain + '\'' +
+           ", creatingUser='" + creatingUser + '\'' +
+           ", token='" + token + '\'' +
+           ", healthCheck=" + healthCheck +
+           ", securityOpt=" + securityOpt +
+           ", networkMode='" + networkMode + '\'' +
+           ", metadata=" + metadata +
+           "} " + super.toString();
   }
 
   public Builder toBuilder() {

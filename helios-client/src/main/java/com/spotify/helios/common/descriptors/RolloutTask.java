@@ -17,8 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -65,10 +63,10 @@ public class RolloutTask extends Descriptor {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("action", action)
-        .add("target", target)
-        .toString();
+    return "RolloutTask{" +
+           "action=" + action +
+           ", target='" + target + '\'' +
+           "} " + super.toString();
   }
 
   @Override

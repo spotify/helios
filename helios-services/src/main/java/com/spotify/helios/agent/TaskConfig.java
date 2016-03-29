@@ -17,15 +17,6 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
-
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
@@ -40,6 +31,14 @@ import com.spotify.helios.common.descriptors.ServicePortParameters;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -416,15 +415,16 @@ public class TaskConfig {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("job", job)
-        .add("host", host)
-        .add("ports", ports)
-        .add("envVars", envVars)
-        .add("containerDecorators", containerDecorators)
-        .add("defaultRegistrationDomain", defaultRegistrationDomain)
-        .add("dns", dns)
-        .toString();
+    return "TaskConfig{" +
+           "host='" + host + '\'' +
+           ", ports=" + ports +
+           ", job=" + job +
+           ", envVars=" + envVars +
+           ", containerDecorators=" + containerDecorators +
+           ", namespace='" + namespace + '\'' +
+           ", defaultRegistrationDomain='" + defaultRegistrationDomain + '\'' +
+           ", dns=" + dns +
+           '}';
   }
 }
 

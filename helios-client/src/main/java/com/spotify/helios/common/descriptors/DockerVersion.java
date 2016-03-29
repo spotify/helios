@@ -17,8 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -164,15 +162,15 @@ public class DockerVersion {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("apiVersion", apiVersion)
-        .add("arch", arch)
-        .add("gitCommit", gitCommit)
-        .add("goVersion", goVersion)
-        .add("kernelVersion", kernelVersion)
-        .add("os", os)
-        .add("version", version)
-        .toString();
+    return "DockerVersion{" +
+           "apiVersion='" + apiVersion + '\'' +
+           ", arch='" + arch + '\'' +
+           ", gitCommit='" + gitCommit + '\'' +
+           ", goVersion='" + goVersion + '\'' +
+           ", kernelVersion='" + kernelVersion + '\'' +
+           ", os='" + os + '\'' +
+           ", version='" + version + '\'' +
+           '}';
   }
 
   public static Builder builder() {

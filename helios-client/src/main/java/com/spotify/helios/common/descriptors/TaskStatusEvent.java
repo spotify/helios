@@ -17,8 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -72,10 +70,10 @@ public class TaskStatusEvent extends Descriptor {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(TaskStatusEvent.class)
-        .add("timestamp", timestamp)
-        .add("host", host)
-        .add("status", status)
-        .toString();
+    return "TaskStatusEvent{" +
+           "status=" + status +
+           ", timestamp=" + timestamp +
+           ", host='" + host + '\'' +
+           "} " + super.toString();
   }
 }
