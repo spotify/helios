@@ -17,12 +17,11 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.google.common.base.MoreObjects;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 
@@ -47,10 +46,10 @@ public class RollingUpdateRequest {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("job", job)
-        .add("rolloutOptions", rolloutOptions)
-        .toString();
+    return "RollingUpdateRequest{" +
+           "job=" + job +
+           ", rolloutOptions=" + rolloutOptions +
+           '}';
   }
 
   public String toJsonString() {

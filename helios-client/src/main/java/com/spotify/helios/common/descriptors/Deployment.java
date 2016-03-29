@@ -17,8 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -123,13 +121,13 @@ public class Deployment extends Descriptor {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("jobId", jobId)
-        .add("goal", goal)
-        .add("deployerUser", deployerUser)
-        .add("deployerMaster", deployerMaster)
-        .add("deploymentGroupName", deploymentGroupName)
-        .toString();
+    return "Deployment{" +
+           "jobId=" + jobId +
+           ", goal=" + goal +
+           ", deployerUser='" + deployerUser + '\'' +
+           ", deployerMaster='" + deployerMaster + '\'' +
+           ", deploymentGroupName='" + deploymentGroupName + '\'' +
+           "} " + super.toString();
   }
 
   @Override

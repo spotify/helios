@@ -17,7 +17,6 @@
 
 package com.spotify.helios.testing.descriptors;
 
-import com.google.common.base.MoreObjects;
 import com.google.common.collect.ImmutableMap;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -93,14 +92,14 @@ public class TemporaryJobEvent {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("timestamp", timestamp)
-        .add("duration", duration)
-        .add("testClassName", testClassName)
-        .add("testName", testName)
-        .add("step", step)
-        .add("success", success)
-        .add("tags", tags)
-        .toString();
+    return "TemporaryJobEvent{" +
+           "timestamp=" + timestamp +
+           ", duration=" + duration +
+           ", testClassName='" + testClassName + '\'' +
+           ", testName='" + testName + '\'' +
+           ", step='" + step + '\'' +
+           ", success=" + success +
+           ", tags=" + tags +
+           '}';
   }
 }

@@ -17,10 +17,9 @@
 
 package com.spotify.helios.common.protocol;
 
-import com.google.common.base.MoreObjects;
+import com.spotify.helios.common.Json;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.helios.common.Json;
 
 public class RemoveDeploymentGroupResponse {
 
@@ -41,9 +40,9 @@ public class RemoveDeploymentGroupResponse {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("status", status)
-        .toString();
+    return "RemoveDeploymentGroupResponse{" +
+           "status=" + status +
+           '}';
   }
 
   public String toJsonString() {

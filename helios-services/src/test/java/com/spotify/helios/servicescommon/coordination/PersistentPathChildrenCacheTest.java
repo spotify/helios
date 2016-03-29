@@ -17,17 +17,16 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Iterables;
-import com.google.common.util.concurrent.SettableFuture;
-
 import com.spotify.helios.Parallelized;
 import com.spotify.helios.Polling;
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.common.Json;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Iterables;
+import com.google.common.util.concurrent.SettableFuture;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.curator.framework.state.ConnectionState;
@@ -105,15 +104,6 @@ public class PersistentPathChildrenCacheTest {
       result = 31 * result + bar;
       result = 31 * result + (baz != null ? baz.hashCode() : 0);
       return result;
-    }
-
-    @Override
-    public String toString() {
-      return MoreObjects.toStringHelper(this)
-          .add("name", name)
-          .add("bar", bar)
-          .add("baz", baz)
-          .toString();
     }
   }
 

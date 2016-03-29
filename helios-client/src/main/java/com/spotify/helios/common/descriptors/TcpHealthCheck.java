@@ -17,8 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -72,9 +70,9 @@ public class TcpHealthCheck extends HealthCheck {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("port", port)
-        .toString();
+    return "TcpHealthCheck{" +
+           "port='" + port + '\'' +
+           "} " + super.toString();
   }
 
   static Builder newBuilder() {

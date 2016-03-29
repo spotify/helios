@@ -17,8 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -99,10 +97,10 @@ public class DeploymentGroupStatus extends Descriptor {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("state", state)
-        .add("error", error)
-        .toString();
+    return "DeploymentGroupStatus{" +
+           "state=" + state +
+           ", error='" + error + '\'' +
+           "} " + super.toString();
   }
 
   public static class Builder {

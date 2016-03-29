@@ -299,6 +299,11 @@ page at http://checkstyle.sourceforge.net/config.html -->
       <property name="severity" value="warning"/>
     </module>
 
+    <module name="RegexpSinglelineJava">
+      <property name="format" value="MoreObjects\.toStringHelper"/>
+      <property name="message" value="Avoid using MoreObjects.toStringHelper as it places an unnecessary dependency on very recent versions of Guava" />
+    </module>
+
   </module>
 </module>
 

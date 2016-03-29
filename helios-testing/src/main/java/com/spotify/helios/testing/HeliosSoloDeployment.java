@@ -17,19 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.FutureFallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificateException;
 import com.spotify.docker.client.DockerClient;
@@ -49,6 +36,18 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 
@@ -550,11 +549,11 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("deploymentAddress", deploymentAddress)
-        .add("dockerHost", dockerHost)
-        .add("heliosContainerId", heliosContainerId)
-        .toString();
+    return "HeliosSoloDeployment{" +
+           "deploymentAddress=" + deploymentAddress +
+           ", dockerHost=" + dockerHost +
+           ", heliosContainerId=" + heliosContainerId +
+           '}';
   }
 
   public static class Builder {

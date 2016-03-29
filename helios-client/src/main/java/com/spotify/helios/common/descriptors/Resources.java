@@ -17,8 +17,6 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.base.MoreObjects;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -111,11 +109,11 @@ public class Resources extends Descriptor {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("memory", memory)
-        .add("memorySwap", memorySwap)
-        .add("cpuShares", cpuShares)
-        .add("cpuset", cpuset)
-        .toString();
+    return "Resources{" +
+           "memory=" + memory +
+           ", memorySwap=" + memorySwap +
+           ", cpuShares=" + cpuShares +
+           ", cpuset='" + cpuset + '\'' +
+           "} " + super.toString();
   }
 }

@@ -17,13 +17,12 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Supplier;
-import com.google.common.base.Throwables;
+import com.spotify.helios.common.Json;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JavaType;
-import com.spotify.helios.common.Json;
+import com.google.common.base.Supplier;
+import com.google.common.base.Throwables;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -162,8 +161,8 @@ public class PersistentAtomicReference<T> {
 
   @Override
   public String toString() {
-    return MoreObjects.toStringHelper(this)
-        .add("filename", filename)
-        .toString();
+    return "PersistentAtomicReference{" +
+           "filename=" + filename +
+           '}';
   }
 }
