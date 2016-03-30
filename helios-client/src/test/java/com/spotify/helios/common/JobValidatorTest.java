@@ -33,6 +33,7 @@ import com.spotify.helios.common.descriptors.ServicePorts;
 import org.junit.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CAPS;
@@ -424,7 +425,7 @@ public class JobValidatorTest {
         .setName("foo")
         .setVersion("1")
         .setImage("foobar")
-        .setAddedCapabilities(ImmutableSet.of("cap1", "cap2"))
+        .setAddCapabilities(ImmutableSet.of("cap1", "cap2"))
         .build();
 
     assertEquals(1, validator.validate(job).size());
@@ -437,11 +438,16 @@ public class JobValidatorTest {
         .setName("foo")
         .setVersion("1")
         .setImage("foobar")
-        .setAddedCapabilities(ImmutableSet.of("cap1", "cap2"))
+        .setAddCapabilities(ImmutableSet.of("cap1", "cap2"))
         .build();
-    assertEquals(1, validator.validate(job).size());
+    final Set<String> errors = validator.validate(job);
+    assertEquals(1, errors.size());
+    assertThat(errors.iterator().next(), equalTo(
+        "The following Linux capabilities aren't allowed by the Helios master: 'cap2'. "
+        + "The allowed capabilities are: 'cap1'."));
 
     final JobValidator validator2 = new JobValidator(true, ImmutableSet.of("cap1", "cap2"));
-    assertEquals(0, validator2.validate(job).size());
+    final Set<String> errors2 = validator2.validate(job);
+    assertEquals(0, errors2.size());
   }
 }

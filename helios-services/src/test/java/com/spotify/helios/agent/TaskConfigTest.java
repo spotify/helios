@@ -52,8 +52,8 @@ public class TaskConfigTest {
       .setVersion("4711")
       .addPort(PORT_NAME, PortMapping.of(8080, EXTERNAL_PORT))
       .addRegistration(ServiceEndpoint.of("service", "http"), ServicePorts.of(PORT_NAME))
-      .setAddedCapabilities(CAP_ADDS)
-      .setDroppedCapabilities(CAP_DROPS)
+      .setAddCapabilities(CAP_ADDS)
+      .setDropCapabilities(CAP_DROPS)
       .build();
 
   @Test

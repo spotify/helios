@@ -129,7 +129,7 @@ public class MasterParser extends ServiceParser {
     whitelistedCapabilities = parser.addArgument("--whitelisted-capability")
         .action(append())
         .setDefault(new ArrayList<>())
-        .help("The Linux capabilities containers on this agent are allowed to add. "
+        .help("The Linux capabilities Helios jobs are allowed to add to their Docker containers. "
               + "Defaults to allowing nothing.");
   }
 

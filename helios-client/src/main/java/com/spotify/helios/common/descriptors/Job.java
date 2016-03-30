@@ -40,6 +40,7 @@ import java.util.Objects;
 import java.util.Set;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.helios.common.Hash.sha1digest;
@@ -53,8 +54,8 @@ import static java.util.Collections.emptySet;
  * An sample expression of it in JSON might be:
  * <pre>
  * {
- *   "addedCapabilities" : [ "IPC_LOCK", "SYSLOG" ],
- *   "droppedCapabilities" : [ "SYS_BOOT", "KILL" ],
+ *   "addCapabilities" : [ "IPC_LOCK", "SYSLOG" ],
+ *   "dropCapabilities" : [ "SYS_BOOT", "KILL" ],
  *   "created" : 1410308461448,
  *   "command" : [ "server", "serverconfig.yaml" ],
  *   "env" : {
@@ -144,8 +145,8 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final List<String> securityOpt;
   private final String networkMode;
   private final Map<String, String> metadata;
-  private final Set<String> addedCapabilities;
-  private final Set<String> droppedCapabilities;
+  private final Set<String> addCapabilities;
+  private final Set<String> dropCapabilities;
 
   /**
    * Create a Job.
@@ -177,8 +178,8 @@ public class Job extends Descriptor implements Comparable<Job> {
    *    host, and container:&lt;name|id&gt;.
    *    See <a href="https://docs.docker.com/reference/run/#network-settings">Docker docs</a>.
    * @param metadata Arbitrary key-value pairs that can be stored with the Job. Optional.
-   * @param addedCapabilities Linux capabilities to add for the container. Optional.
-   * @param droppedCapabilities Linux capabilities to drop for the container. Optional.
+   * @param addCapabilities Linux capabilities to add for the container. Optional.
+   * @param dropCapabilities Linux capabilities to drop for the container. Optional.
    * @see <a href="https://docs.docker.com/reference/run/#network-settings">Docker run reference</a>
    */
   public Job(
@@ -201,8 +202,8 @@ public class Job extends Descriptor implements Comparable<Job> {
       @JsonProperty("securityOpt") @Nullable final List<String> securityOpt,
       @JsonProperty("networkMode") @Nullable final String networkMode,
       @JsonProperty("metadata") @Nullable final Map<String, String> metadata,
-      @JsonProperty("addedCapabilities") @Nullable final Set<String> addedCapabilities,
-      @JsonProperty("droppedCapabilities") @Nullable final Set<String> droppedCapabilities) {
+      @JsonProperty("addCapabilities") @Nullable final Set<String> addCapabilities,
+      @JsonProperty("dropCapabilities") @Nullable final Set<String> dropCapabilities) {
     this.id = id;
     this.image = image;
 
@@ -225,8 +226,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.securityOpt = Optional.fromNullable(securityOpt).or(EMPTY_SECURITY_OPT);
     this.networkMode = Optional.fromNullable(networkMode).orNull();
     this.metadata = Optional.fromNullable(metadata).or(EMPTY_METADATA);
-    this.addedCapabilities = Optional.fromNullable(addedCapabilities).or(EMPTY_CAPS);
-    this.droppedCapabilities = Optional.fromNullable(droppedCapabilities).or(EMPTY_CAPS);
+    this.addCapabilities = firstNonNull(addCapabilities, EMPTY_CAPS);
+    this.dropCapabilities = firstNonNull(dropCapabilities, EMPTY_CAPS);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -251,8 +252,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.securityOpt = p.securityOpt;
     this.networkMode = p.networkMode;
     this.metadata = ImmutableMap.copyOf(p.metadata);
-    this.addedCapabilities = ImmutableSet.copyOf(p.addedCapabilities);
-    this.droppedCapabilities = ImmutableSet.copyOf(p.droppedCapabilities);
+    this.addCapabilities = ImmutableSet.copyOf(p.addCapabilities);
+    this.dropCapabilities = ImmutableSet.copyOf(p.dropCapabilities);
   }
 
   public JobId getId() {
@@ -331,12 +332,12 @@ public class Job extends Descriptor implements Comparable<Job> {
     return metadata;
   }
 
-  public Set<String> getAddedCapabilities() {
-    return addedCapabilities;
+  public Set<String> getAddCapabilities() {
+    return addCapabilities;
   }
 
-  public Set<String> getDroppedCapabilities() {
-    return droppedCapabilities;
+  public Set<String> getDropCapabilities() {
+    return dropCapabilities;
   }
 
   public static Builder newBuilder() {
@@ -378,8 +379,8 @@ public class Job extends Descriptor implements Comparable<Job> {
            Objects.equals(this.securityOpt, that.securityOpt) &&
            Objects.equals(this.networkMode, that.networkMode) &&
            Objects.equals(this.metadata, that.metadata) &&
-           Objects.equals(this.addedCapabilities, that.addedCapabilities) &&
-           Objects.equals(this.droppedCapabilities, that.droppedCapabilities);
+           Objects.equals(this.addCapabilities, that.addCapabilities) &&
+           Objects.equals(this.dropCapabilities, that.dropCapabilities);
   }
 
   @Override
@@ -387,8 +388,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     return Objects.hash(
         id, image, hostname, expires, created, command, env, resources,
         ports, registration, registrationDomain, gracePeriod, volumes, creatingUser,
-        token, healthCheck, securityOpt, networkMode, metadata, addedCapabilities,
-        droppedCapabilities);
+        token, healthCheck, securityOpt, networkMode, metadata, addCapabilities,
+        dropCapabilities);
   }
 
   @Override
@@ -413,8 +414,8 @@ public class Job extends Descriptor implements Comparable<Job> {
            ", securityOpt=" + securityOpt +
            ", networkMode='" + networkMode + '\'' +
            ", metadata=" + metadata +
-           ", addedCapabilities=" + addedCapabilities +
-           ", droppedCapabilities=" + droppedCapabilities +
+           ", addCapabilities=" + addCapabilities +
+           ", dropCapabilities=" + dropCapabilities +
            "} " + super.toString();
   }
 
@@ -444,8 +445,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setSecurityOpt(securityOpt)
         .setNetworkMode(networkMode)
         .setMetadata(metadata)
-        .setAddedCapabilities(addedCapabilities)
-        .setDroppedCapabilities(droppedCapabilities);
+        .setAddCapabilities(addCapabilities)
+        .setDropCapabilities(dropCapabilities);
   }
 
   public static class Builder implements Cloneable {
@@ -484,8 +485,8 @@ public class Job extends Descriptor implements Comparable<Job> {
       public List<String> securityOpt;
       public String networkMode;
       public Map<String, String> metadata;
-      public Set<String> addedCapabilities;
-      public Set<String> droppedCapabilities;
+      public Set<String> addCapabilities;
+      public Set<String> dropCapabilities;
 
       private Parameters() {
         this.created = EMPTY_CREATED;
@@ -502,8 +503,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.healthCheck = EMPTY_HEALTH_CHECK;
         this.securityOpt = EMPTY_SECURITY_OPT;
         this.metadata = Maps.newHashMap();
-        this.addedCapabilities = EMPTY_CAPS;
-        this.droppedCapabilities = EMPTY_CAPS;
+        this.addCapabilities = EMPTY_CAPS;
+        this.dropCapabilities = EMPTY_CAPS;
       }
 
       private Parameters(final Parameters p) {
@@ -527,8 +528,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.securityOpt = p.securityOpt;
         this.networkMode = p.networkMode;
         this.metadata = p.metadata;
-        this.addedCapabilities = p.addedCapabilities;
-        this.droppedCapabilities = p.droppedCapabilities;
+        this.addCapabilities = p.addCapabilities;
+        this.dropCapabilities = p.dropCapabilities;
       }
 
       private Parameters withoutMetaParameters() {
@@ -675,13 +676,13 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
-    public Builder setAddedCapabilities(final Set<String> addedCapabilities) {
-      p.addedCapabilities = ImmutableSet.copyOf(addedCapabilities);
+    public Builder setAddCapabilities(final Set<String> addCapabilities) {
+      p.addCapabilities = ImmutableSet.copyOf(addCapabilities);
       return this;
     }
 
-    public Builder setDroppedCapabilities(final Set<String> droppedCapabilities) {
-      p.droppedCapabilities = ImmutableSet.copyOf(droppedCapabilities);
+    public Builder setDropCapabilities(final Set<String> dropCapabilities) {
+      p.dropCapabilities = ImmutableSet.copyOf(dropCapabilities);
       return this;
     }
 
@@ -757,12 +758,12 @@ public class Job extends Descriptor implements Comparable<Job> {
       return ImmutableMap.copyOf(p.metadata);
     }
 
-    public Set<String> getAddedCapabilities() {
-      return p.addedCapabilities;
+    public Set<String> getAddCapabilities() {
+      return p.addCapabilities;
     }
 
-    public Set<String> getDroppedCapabilities() {
-      return p.droppedCapabilities;
+    public Set<String> getDropCapabilities() {
+      return p.dropCapabilities;
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})

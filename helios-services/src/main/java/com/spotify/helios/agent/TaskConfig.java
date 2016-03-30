@@ -292,8 +292,8 @@ public class TaskConfig {
       builder.cpuShares(resources.getCpuShares());
     }
 
-    builder.capAdd(ImmutableList.copyOf(job.getAddedCapabilities()));
-    builder.capDrop(ImmutableList.copyOf(job.getDroppedCapabilities()));
+    builder.capAdd(ImmutableList.copyOf(job.getAddCapabilities()));
+    builder.capDrop(ImmutableList.copyOf(job.getDropCapabilities()));
 
     for (final ContainerDecorator decorator : containerDecorators) {
       decorator.decorateHostConfig(builder);

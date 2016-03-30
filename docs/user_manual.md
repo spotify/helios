@@ -133,8 +133,8 @@ example that uses all the available configuration keys with an explanation of ea
 
 ```json
 {
- "addedCapabilities" : [ "IPC_LOCK", "SYSLOG" ],
- "droppedCapabilities" : [ "SYS_BOOT", "KILL" ],
+ "addCapabilities" : [ "IPC_LOCK", "SYSLOG" ],
+ "dropCapabilities" : [ "SYS_BOOT", "KILL" ],
   "command" : [ "server", "serverconfig.yaml" ],
   "env" : {
     "JVM_ARGS" : "-Ddw.feature.randomFeatureFlagEnabled=true"
@@ -187,10 +187,10 @@ Note that the recommended best practice is to save all your job creation
 parameters in version-controlled files in your project directory. This allows
 you to tie your Helios job params to changes in your application code.
 
-#### addedCapabilities
+#### addCapabilities
 The Linux capabilities to add to the container. Optional. See [Docker docs][1].
 
-#### droppedCapabilities
+#### dropCapabilities
 The Linux capabilities to remove from the container. Optional. See [Docker docs][1].
 
 #### command

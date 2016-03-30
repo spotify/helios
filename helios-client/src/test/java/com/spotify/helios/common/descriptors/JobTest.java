@@ -101,8 +101,8 @@ public class JobTest {
     final List<String> setSecurityOpt = Lists.newArrayList("label:user:dxia", "apparmor:foo");
     final String setNetworkMode = "host";
     final Map<String, String> setMetadata = ImmutableMap.of("set_metadata_key", "set_metadata_val");
-    final Set<String> setAddedCapabilities = ImmutableSet.of("set_cap_add1", "set_cap_add2");
-    final Set<String> setDroppedCapabilities = ImmutableSet.of("set_cap_drop1", "set_cap_drop2");
+    final Set<String> setAddCapabilities = ImmutableSet.of("set_cap_add1", "set_cap_add2");
+    final Set<String> setDropCapabilities = ImmutableSet.of("set_cap_drop1", "set_cap_drop2");
 
     // Input to addXXX
     final Map<String, String> addEnv = ImmutableMap.of("add", "env");
@@ -139,8 +139,8 @@ public class JobTest {
     final List<String> expectedSecurityOpt = setSecurityOpt;
     final String expectedNetworkMode = setNetworkMode;
     final Map<String, String> expectedMetadata = concat(setMetadata, addMetadata);
-    final Set<String> expectedAddedCapabilities = setAddedCapabilities;
-    final Set<String> expectedDroppedCapabilities = setDroppedCapabilities;
+    final Set<String> expectedAddCapabilities = setAddCapabilities;
+    final Set<String> expectedDropCapabilities = setDropCapabilities;
 
     // Check setXXX methods
     builder.setName(setName);
@@ -161,8 +161,8 @@ public class JobTest {
     builder.setSecurityOpt(setSecurityOpt);
     builder.setNetworkMode(setNetworkMode);
     builder.setMetadata(setMetadata);
-    builder.setAddedCapabilities(setAddedCapabilities);
-    builder.setDroppedCapabilities(setDroppedCapabilities);
+    builder.setAddCapabilities(setAddCapabilities);
+    builder.setDropCapabilities(setDropCapabilities);
 
     // Check addXXX methods
     for (final Map.Entry<String, String> entry : addEnv.entrySet()) {
@@ -199,9 +199,9 @@ public class JobTest {
     assertEquals("securityOpt", expectedSecurityOpt, builder.getSecurityOpt());
     assertEquals("networkMode", expectedNetworkMode, builder.getNetworkMode());
     assertEquals("metadata", expectedMetadata, builder.getMetadata());
-    assertEquals("addedCapabilities", expectedAddedCapabilities, builder.getAddedCapabilities());
-    assertEquals("droppedCapabilities", expectedDroppedCapabilities,
-                 builder.getDroppedCapabilities());
+    assertEquals("addCapabilities", expectedAddCapabilities, builder.getAddCapabilities());
+    assertEquals("dropCapabilities", expectedDropCapabilities,
+                 builder.getDropCapabilities());
 
     // Check final output
     final Job job = builder.build();
@@ -223,8 +223,8 @@ public class JobTest {
     assertEquals("securityOpt", expectedSecurityOpt, job.getSecurityOpt());
     assertEquals("networkMode", expectedNetworkMode, job.getNetworkMode());
     assertEquals("metadata", expectedMetadata, job.getMetadata());
-    assertEquals("addedCapabilities", expectedAddedCapabilities, job.getAddedCapabilities());
-    assertEquals("droppedCapabilities", expectedDroppedCapabilities, job.getDroppedCapabilities());
+    assertEquals("addCapabilities", expectedAddCapabilities, job.getAddCapabilities());
+    assertEquals("dropCapabilities", expectedDropCapabilities, job.getDropCapabilities());
 
     // Check toBuilder
     final Job.Builder rebuilder = job.toBuilder();
@@ -247,9 +247,9 @@ public class JobTest {
     assertEquals("securityOpt", expectedSecurityOpt, rebuilder.getSecurityOpt());
     assertEquals("networkMode", expectedNetworkMode, rebuilder.getNetworkMode());
     assertEquals("metadata", expectedMetadata, rebuilder.getMetadata());
-    assertEquals("addedCapabilities", expectedAddedCapabilities, rebuilder.getAddedCapabilities());
-    assertEquals("droppedCapabilities", expectedDroppedCapabilities,
-                 rebuilder.getDroppedCapabilities());
+    assertEquals("addCapabilities", expectedAddCapabilities, rebuilder.getAddCapabilities());
+    assertEquals("dropCapabilities", expectedDropCapabilities,
+                 rebuilder.getDropCapabilities());
 
     // Check clone
     final Job.Builder cloned = builder.clone();
@@ -272,9 +272,9 @@ public class JobTest {
     assertEquals("securityOpt", expectedSecurityOpt, cloned.getSecurityOpt());
     assertEquals("networkMode", expectedNetworkMode, cloned.getNetworkMode());
     assertEquals("metadata", expectedMetadata, cloned.getMetadata());
-    assertEquals("addedCapabilities", expectedAddedCapabilities, cloned.getAddedCapabilities());
-    assertEquals("droppedCapabilities", expectedDroppedCapabilities,
-                 cloned.getDroppedCapabilities());
+    assertEquals("addCapabilities", expectedAddCapabilities, cloned.getAddCapabilities());
+    assertEquals("dropCapabilities", expectedDropCapabilities,
+                 cloned.getDropCapabilities());
 
     final Job clonedJob = cloned.build();
     assertEquals("name", expectedName, clonedJob.getId().getName());
@@ -296,9 +296,9 @@ public class JobTest {
     assertEquals("securityOpt", expectedSecurityOpt, clonedJob.getSecurityOpt());
     assertEquals("networkMode", expectedNetworkMode, clonedJob.getNetworkMode());
     assertEquals("metadata", expectedMetadata, clonedJob.getMetadata());
-    assertEquals("addedCapabilities", expectedAddedCapabilities, clonedJob.getAddedCapabilities());
-    assertEquals("droppedCapabilities", expectedDroppedCapabilities,
-                 clonedJob.getDroppedCapabilities());
+    assertEquals("addCapabilities", expectedAddCapabilities, clonedJob.getAddCapabilities());
+    assertEquals("dropCapabilities", expectedDropCapabilities,
+                 clonedJob.getDropCapabilities());
   }
 
   @SafeVarargs

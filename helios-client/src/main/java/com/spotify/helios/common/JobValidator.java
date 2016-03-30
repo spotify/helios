@@ -162,7 +162,7 @@ public class JobValidator {
 
     errors.addAll(validateJobHealthCheck(job));
     errors.addAll(validateJobNetworkMode(job));
-    errors.addAll(validateAddedCapabilities(job));
+    errors.addAll(validateAddCapabilities(job));
 
     return errors;
   }
@@ -505,8 +505,8 @@ public class JobValidator {
    * @param job The Job to check.
    * @return A set of error Strings
    */
-  private Set<String> validateAddedCapabilities(final Job job) {
-    final Set<String> caps = job.getAddedCapabilities();
+  private Set<String> validateAddCapabilities(final Job job) {
+    final Set<String> caps = job.getAddCapabilities();
 
     if (caps == null) {
       return emptySet();
@@ -514,17 +514,12 @@ public class JobValidator {
 
     final Set<String> errors = Sets.newHashSet();
 
-    final Set<String> disallowedCaps = Sets.newHashSet();
-    for (final String cap : caps) {
-      if (!whitelistedCapabilities.contains(cap)) {
-        disallowedCaps.add(cap);
-      }
-    }
+    final Set<String> disallowedCaps = Sets.difference(caps, whitelistedCapabilities);
 
     if (!disallowedCaps.isEmpty()) {
       errors.add(String.format(
-          "The following Linux capabilities haven't been whitelisted by the Helios master: '%s'. "
-          + "The current whitelist is: '%s'.",
+          "The following Linux capabilities aren't allowed by the Helios master: '%s'. "
+          + "The allowed capabilities are: '%s'.",
           Joiner.on(", ").join(disallowedCaps), Joiner.on(", ").join(whitelistedCapabilities)));
     }
 
