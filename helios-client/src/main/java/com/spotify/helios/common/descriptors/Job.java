@@ -95,6 +95,12 @@ import static java.util.Collections.emptySet;
  *     }
  *   },
  *   "registrationDomain" : "",
+ *   "resources" : {
+ *     "memory" : 10485760,
+ *     "memorySwap" : 10485760,
+ *     "cpuset" : "0",
+ *     "cpuShares" : 512
+ *   }
  *   "securityOpt" : [ "label:user:USER", "apparmor:PROFILE" ],
  *   "token": "insecure-access-token",
  *   "volumes" : {
