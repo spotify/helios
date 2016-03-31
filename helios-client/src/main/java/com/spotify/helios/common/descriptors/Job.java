@@ -33,6 +33,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -676,12 +677,12 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
-    public Builder setAddCapabilities(final Set<String> addCapabilities) {
+    public Builder setAddCapabilities(final Collection<String> addCapabilities) {
       p.addCapabilities = ImmutableSet.copyOf(addCapabilities);
       return this;
     }
 
-    public Builder setDropCapabilities(final Set<String> dropCapabilities) {
+    public Builder setDropCapabilities(final Collection<String> dropCapabilities) {
       p.dropCapabilities = ImmutableSet.copyOf(dropCapabilities);
       return this;
     }

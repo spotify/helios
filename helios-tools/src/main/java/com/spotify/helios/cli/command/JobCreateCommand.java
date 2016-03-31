@@ -22,7 +22,6 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -57,7 +56,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -77,9 +75,7 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class JobCreateCommand extends ControlCommand {
 
-  private static final JobValidator JOB_VALIDATOR = JobValidator.newBuilder()
-      .setShouldValidateJobHash(false)
-      .build();
+  private static final JobValidator JOB_VALIDATOR = new JobValidator(false);
 
   /**
    * If any of the keys of this map are set as environment variables (i.e. an environment variable
@@ -550,16 +546,8 @@ public class JobCreateCommand extends ControlCommand {
       builder.setToken(token);
     }
 
-    final Set<String> addCapabilities = ImmutableSet.copyOf(
-        options.<String>getList(addCapabilityArg.getDest()));
-    if (!addCapabilities.isEmpty()) {
-      builder.setAddCapabilities(addCapabilities);
-    }
-    final Set<String> dropCapabilities = ImmutableSet.copyOf(
-        options.<String>getList(dropCapabilityArg.getDest()));
-    if (!dropCapabilities.isEmpty()) {
-      builder.setDropCapabilities(dropCapabilities);
-    }
+    builder.setAddCapabilities(options.<String>getList(addCapabilityArg.getDest()));
+    builder.setDropCapabilities(options.<String>getList(dropCapabilityArg.getDest()));
 
     // We build without a hash here because we want the hash to be calculated server-side.
     // This allows different CLI versions to be cross-compatible with different master versions

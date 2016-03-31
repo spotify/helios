@@ -78,9 +78,7 @@ public class JobsResource {
                       final Set<String> whitelistedCapabilities) {
     this.model = model;
     this.metrics = metrics;
-    this.jobValidator = JobValidator.newBuilder()
-        .setWhitelistedCapabilities(whitelistedCapabilities)
-        .build();
+    this.jobValidator = new JobValidator(true, true, whitelistedCapabilities);
   }
 
   /**
