@@ -173,6 +173,12 @@ example that uses all the available configuration keys with an explanation of ea
     }
   },
   "registrationDomain" : "",
+  "resources" : {
+    "memory" : 10485760,
+    "memorySwap" : 10485760,
+    "cpuset" : "0",
+    "cpuShares" : 512
+  }
   "securityOpt" : [ "label:user:USER", "apparmor:PROFILE" ],
   "token": "insecure-access-token",
   "volumes" : {
@@ -286,6 +292,16 @@ name, e.g. `{"wordpress": {}}`.
 #### registrationDomain
 If set, overrides the default domain in which discovery service registration
 occurs. Optional.
+
+#### resources
+Sets the runtime constraints for a container. Available keys are "memory" (,
+"memorySwap", "cpuset", and "cpuShares".
+* "memory": a positive integer limiting the number of bytes of memory
+* "memorySwap": a positive integer limiting the number of bytes of total memory (memory + swap)
+* "cpuset": CPUs in which to allow execution, e.g. 0-3
+* "cpuShares": CPU shares (relative weight, defaults to 1024)
+
+These settings correspond to the ones in the [Docker docs][2].
 
 What is allowed here will vary based upon the discovery service plugin used.
 
@@ -475,3 +491,4 @@ in your job creation commmand, once deployed on a host named
 depending on what port was allocated when it was deployed.
 
   [1]: https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities
+  [2]: https://docs.docker.com/engine/reference/run/#runtime-constraints-on-resources
