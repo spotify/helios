@@ -17,11 +17,14 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.collect.ImmutableSet;
+
 import com.spotify.helios.servicescommon.FastForwardConfig;
 
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 import io.dropwizard.Configuration;
 
@@ -57,6 +60,7 @@ public class MasterConfig extends Configuration {
   private long agentReapingTimeout;
   private long jobRetention;
   private FastForwardConfig fastForwardConfig;
+  private Set<String> whitelistedCapabilities;
 
   public String getDomain() {
     return domain;
@@ -280,6 +284,15 @@ public class MasterConfig extends Configuration {
 
   public MasterConfig setFfwdConfig(FastForwardConfig config) {
     this.fastForwardConfig = config;
+    return this;
+  }
+
+  public Set<String> getWhitelistedCapabilities() {
+    return whitelistedCapabilities;
+  }
+
+  public MasterConfig setWhitelistedCapabilities(final Set<String> whitelistedCapabilities) {
+    this.whitelistedCapabilities = ImmutableSet.copyOf(whitelistedCapabilities);
     return this;
   }
 }

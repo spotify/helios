@@ -33,8 +33,10 @@ import com.spotify.helios.common.descriptors.ServicePorts;
 import org.junit.Test;
 
 import java.util.Map;
+import java.util.Set;
 
 import static com.google.common.collect.Sets.newHashSet;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_CAPS;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATED;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_COMMAND;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_CREATING_USER;
@@ -191,7 +193,7 @@ public class JobValidatorTest {
                             EMPTY_REGISTRATION, EMPTY_GRACE_PERIOD, EMPTY_VOLUMES, EMPTY_EXPIRES,
                             EMPTY_REGISTRATION_DOMAIN, EMPTY_CREATING_USER, EMPTY_TOKEN,
                             EMPTY_HEALTH_CHECK, EMPTY_SECURITY_OPT, DEFAULT_NETWORK_MODE,
-                            EMPTY_METADATA);
+                            EMPTY_METADATA, EMPTY_CAPS, EMPTY_CAPS);
     final JobId recomputedId = job.toBuilder().build().getId();
     assertEquals(ImmutableSet.of("Id hash mismatch: " + job.getId().getHash()
         + " != " + recomputedId.getHash()), validator.validate(job));
@@ -415,5 +417,37 @@ public class JobValidatorTest {
     final Job j = Job.newBuilder().setName("foo").setVersion("1").setImage("foobar")
         .setExpires(d).build();
     assertEquals(newHashSet("Job expires in the past"), validator.validate(j));
+  }
+
+  @Test
+  public void testWhitelistedCapabilities_noWhitelist() throws Exception {
+    final Job job = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("foobar")
+        .setAddCapabilities(ImmutableSet.of("cap1", "cap2"))
+        .build();
+
+    assertEquals(1, validator.validate(job).size());
+  }
+
+  @Test
+  public void testWhitelistedCapabilities_withWhitelist() throws Exception {
+    final JobValidator validator = new JobValidator(true, ImmutableSet.of("cap1"));
+    final Job job = Job.newBuilder()
+        .setName("foo")
+        .setVersion("1")
+        .setImage("foobar")
+        .setAddCapabilities(ImmutableSet.of("cap1", "cap2"))
+        .build();
+    final Set<String> errors = validator.validate(job);
+    assertEquals(1, errors.size());
+    assertThat(errors.iterator().next(), equalTo(
+        "The following Linux capabilities aren't allowed by the Helios master: 'cap2'. "
+        + "The allowed capabilities are: 'cap1'."));
+
+    final JobValidator validator2 = new JobValidator(true, ImmutableSet.of("cap1", "cap2"));
+    final Set<String> errors2 = validator2.validate(job);
+    assertEquals(0, errors2.size());
   }
 }

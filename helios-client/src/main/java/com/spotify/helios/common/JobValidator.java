@@ -41,6 +41,7 @@ import java.util.regex.Pattern;
 
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.lang.String.format;
+import static java.util.Collections.emptySet;
 import static java.util.regex.Pattern.compile;
 
 public class JobValidator {
@@ -68,13 +69,20 @@ public class JobValidator {
   public static final List<String> VALID_NETWORK_MODES = ImmutableList.of("bridge", "host");
 
   private final boolean shouldValidateJobHash;
+  private final Set<String> whitelistedCapabilities;
 
   public JobValidator() {
     this(true);
   }
 
   public JobValidator(final boolean shouldValidateJobHash) {
+    this(shouldValidateJobHash, Collections.<String>emptySet());
+  }
+
+  public JobValidator(final boolean shouldValidateJobHash,
+                      final Set<String> whitelistedCapabilities) {
     this.shouldValidateJobHash = shouldValidateJobHash;
+    this.whitelistedCapabilities = whitelistedCapabilities;
   }
 
   public Set<String> validate(final Job job) {
@@ -154,6 +162,7 @@ public class JobValidator {
 
     errors.addAll(validateJobHealthCheck(job));
     errors.addAll(validateJobNetworkMode(job));
+    errors.addAll(validateAddCapabilities(job));
 
     return errors;
   }
@@ -438,7 +447,7 @@ public class JobValidator {
     final HealthCheck healthCheck = job.getHealthCheck();
 
     if (healthCheck == null) {
-      return Collections.emptySet();
+      return emptySet();
     }
 
     final Set<String> errors = Sets.newHashSet();
@@ -477,7 +486,7 @@ public class JobValidator {
     final String networkMode = job.getNetworkMode();
 
     if (networkMode == null) {
-      return Collections.emptySet();
+      return emptySet();
     }
 
     final Set<String> errors = Sets.newHashSet();
@@ -486,6 +495,32 @@ public class JobValidator {
       errors.add(String.format(
           "A Docker container's network mode must be %s, or container:<name|id>.",
           Joiner.on(", ").join(VALID_NETWORK_MODES)));
+    }
+
+    return errors;
+  }
+
+  /**
+   * Validate the Job's added Linux capabilities.
+   * @param job The Job to check.
+   * @return A set of error Strings
+   */
+  private Set<String> validateAddCapabilities(final Job job) {
+    final Set<String> caps = job.getAddCapabilities();
+
+    if (caps == null) {
+      return emptySet();
+    }
+
+    final Set<String> errors = Sets.newHashSet();
+
+    final Set<String> disallowedCaps = Sets.difference(caps, whitelistedCapabilities);
+
+    if (!disallowedCaps.isEmpty()) {
+      errors.add(String.format(
+          "The following Linux capabilities aren't allowed by the Helios master: '%s'. "
+          + "The allowed capabilities are: '%s'.",
+          Joiner.on(", ").join(disallowedCaps), Joiner.on(", ").join(whitelistedCapabilities)));
     }
 
     return errors;

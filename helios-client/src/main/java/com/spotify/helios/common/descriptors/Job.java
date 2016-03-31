@@ -17,16 +17,17 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.spotify.helios.common.Json;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.spotify.helios.common.Json;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -35,13 +36,17 @@ import java.io.IOException;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Throwables.propagate;
 import static com.spotify.helios.common.Hash.sha1digest;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
 
 /**
  * Represents a Helios job.
@@ -49,6 +54,8 @@ import static java.util.Collections.emptyMap;
  * An sample expression of it in JSON might be:
  * <pre>
  * {
+ *   "addCapabilities" : [ "IPC_LOCK", "SYSLOG" ],
+ *   "dropCapabilities" : [ "SYS_BOOT", "KILL" ],
  *   "created" : 1410308461448,
  *   "command" : [ "server", "serverconfig.yaml" ],
  *   "env" : {
@@ -117,6 +124,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final String DEFAULT_NETWORK_MODE = "bridge";
   public static final String EMPTY_HOSTNAME = null;
   public static final Map<String, String> EMPTY_METADATA = emptyMap();
+  public static final Set<String> EMPTY_CAPS = emptySet();
 
   private final JobId id;
   private final String image;
@@ -137,6 +145,8 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final List<String> securityOpt;
   private final String networkMode;
   private final Map<String, String> metadata;
+  private final Set<String> addCapabilities;
+  private final Set<String> dropCapabilities;
 
   /**
    * Create a Job.
@@ -167,28 +177,33 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param networkMode Sets the networking mode for the container. Supported values are: bridge,
    *    host, and container:&lt;name|id&gt;.
    *    See <a href="https://docs.docker.com/reference/run/#network-settings">Docker docs</a>.
+   * @param metadata Arbitrary key-value pairs that can be stored with the Job. Optional.
+   * @param addCapabilities Linux capabilities to add for the container. Optional.
+   * @param dropCapabilities Linux capabilities to drop for the container. Optional.
    * @see <a href="https://docs.docker.com/reference/run/#network-settings">Docker run reference</a>
    */
-  public Job(@JsonProperty("id") final JobId id,
-             @JsonProperty("image") final String image,
-             @JsonProperty("hostname") final String hostname,
-             @JsonProperty("created") @Nullable final Long created,
-             @JsonProperty("command") @Nullable final List<String> command,
-             @JsonProperty("env") @Nullable final Map<String, String> env,
-             @JsonProperty("resources") @Nullable final Resources resources,
-             @JsonProperty("ports") @Nullable final Map<String, PortMapping> ports,
-             @JsonProperty("registration") @Nullable
-                 final Map<ServiceEndpoint, ServicePorts> registration,
-             @JsonProperty("gracePeriod") @Nullable final Integer gracePeriod,
-             @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
-             @JsonProperty("expires") @Nullable final Date expires,
-             @JsonProperty("registrationDomain") @Nullable String registrationDomain,
-             @JsonProperty("creatingUser") @Nullable String creatingUser,
-             @JsonProperty("token") @Nullable String token,
-             @JsonProperty("healthCheck") @Nullable HealthCheck healthCheck,
-             @JsonProperty("securityOpt") @Nullable final List<String> securityOpt,
-             @JsonProperty("networkMode") @Nullable final String networkMode,
-             @JsonProperty("metadata") @Nullable final Map<String, String> metadata) {
+  public Job(
+      @JsonProperty("id") final JobId id,
+      @JsonProperty("image") final String image,
+      @JsonProperty("hostname") final String hostname,
+      @JsonProperty("created") @Nullable final Long created,
+      @JsonProperty("command") @Nullable final List<String> command,
+      @JsonProperty("env") @Nullable final Map<String, String> env,
+      @JsonProperty("resources") @Nullable final Resources resources,
+      @JsonProperty("ports") @Nullable final Map<String, PortMapping> ports,
+      @JsonProperty("registration") @Nullable final Map<ServiceEndpoint, ServicePorts> registration,
+      @JsonProperty("gracePeriod") @Nullable final Integer gracePeriod,
+      @JsonProperty("volumes") @Nullable final Map<String, String> volumes,
+      @JsonProperty("expires") @Nullable final Date expires,
+      @JsonProperty("registrationDomain") @Nullable String registrationDomain,
+      @JsonProperty("creatingUser") @Nullable String creatingUser,
+      @JsonProperty("token") @Nullable String token,
+      @JsonProperty("healthCheck") @Nullable HealthCheck healthCheck,
+      @JsonProperty("securityOpt") @Nullable final List<String> securityOpt,
+      @JsonProperty("networkMode") @Nullable final String networkMode,
+      @JsonProperty("metadata") @Nullable final Map<String, String> metadata,
+      @JsonProperty("addCapabilities") @Nullable final Set<String> addCapabilities,
+      @JsonProperty("dropCapabilities") @Nullable final Set<String> dropCapabilities) {
     this.id = id;
     this.image = image;
 
@@ -211,6 +226,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.securityOpt = Optional.fromNullable(securityOpt).or(EMPTY_SECURITY_OPT);
     this.networkMode = Optional.fromNullable(networkMode).orNull();
     this.metadata = Optional.fromNullable(metadata).or(EMPTY_METADATA);
+    this.addCapabilities = firstNonNull(addCapabilities, EMPTY_CAPS);
+    this.dropCapabilities = firstNonNull(dropCapabilities, EMPTY_CAPS);
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -235,6 +252,8 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.securityOpt = p.securityOpt;
     this.networkMode = p.networkMode;
     this.metadata = ImmutableMap.copyOf(p.metadata);
+    this.addCapabilities = ImmutableSet.copyOf(p.addCapabilities);
+    this.dropCapabilities = ImmutableSet.copyOf(p.dropCapabilities);
   }
 
   public JobId getId() {
@@ -313,6 +332,14 @@ public class Job extends Descriptor implements Comparable<Job> {
     return metadata;
   }
 
+  public Set<String> getAddCapabilities() {
+    return addCapabilities;
+  }
+
+  public Set<String> getDropCapabilities() {
+    return dropCapabilities;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -331,93 +358,38 @@ public class Job extends Descriptor implements Comparable<Job> {
       return false;
     }
 
-    final Job job = (Job) o;
+    final Job that = (Job) o;
 
-    if (created != null ? !created.equals(job.created) : job.created != null) {
-      return false;
-    }
-    if (command != null ? !command.equals(job.command) : job.command != null) {
-      return false;
-    }
-    if (env != null ? !env.equals(job.env) : job.env != null) {
-      return false;
-    }
-    if (resources != null ? !resources.equals(job.resources) : job.resources != null) {
-      return false;
-    }
-    if (expires != null ? !expires.equals(job.expires) : job.expires != null) {
-      return false;
-    }
-    if (id != null ? !id.equals(job.id) : job.id != null) {
-      return false;
-    }
-    if (image != null ? !image.equals(job.image) : job.image != null) {
-      return false;
-    }
-    if (hostname != null ? !hostname.equals(job.hostname) : job.hostname != null) {
-        return false;
-      }
-    if (ports != null ? !ports.equals(job.ports) : job.ports != null) {
-      return false;
-    }
-    if (registration != null ? !registration.equals(job.registration) : job.registration != null) {
-      return false;
-    }
-    if (registrationDomain != null
-        ? !registrationDomain.equals(job.registrationDomain)
-        : job.registrationDomain != null) {
-      return false;
-    }
-    if (gracePeriod != null ? !gracePeriod.equals(job.gracePeriod) : job.gracePeriod != null) {
-      return false;
-    }
-    if (volumes != null ? !volumes.equals(job.volumes) : job.volumes != null) {
-      return false;
-    }
-    if (creatingUser != null ? !creatingUser.equals(job.creatingUser) : job.creatingUser != null) {
-      return false;
-    }
-    if (!token.equals(job.token)) {
-      return false;
-    }
-    if (healthCheck != null ? !healthCheck.equals(job.healthCheck) : job.healthCheck != null) {
-      return false;
-    }
-    if (securityOpt != null ? !securityOpt.equals(job.securityOpt) : job.securityOpt != null) {
-      return false;
-    }
-    if (networkMode != null ? !networkMode.equals(job.networkMode) : job.networkMode != null) {
-      return false;
-    }
-    if (metadata != null ? !metadata.equals(job.metadata) : job.metadata != null) {
-      return false;
-    }
-
-    return true;
+    return Objects.equals(this.id, that.id) &&
+           Objects.equals(this.image, that.image) &&
+           Objects.equals(this.hostname, that.hostname) &&
+           Objects.equals(this.expires, that.expires) &&
+           Objects.equals(this.created, that.created) &&
+           Objects.equals(this.command, that.command) &&
+           Objects.equals(this.env, that.env) &&
+           Objects.equals(this.resources, that.resources) &&
+           Objects.equals(this.ports, that.ports) &&
+           Objects.equals(this.registration, that.registration) &&
+           Objects.equals(this.registrationDomain, that.registrationDomain) &&
+           Objects.equals(this.gracePeriod, that.gracePeriod) &&
+           Objects.equals(this.volumes, that.volumes) &&
+           Objects.equals(this.creatingUser, that.creatingUser) &&
+           Objects.equals(this.token, that.token) &&
+           Objects.equals(this.healthCheck, that.healthCheck) &&
+           Objects.equals(this.securityOpt, that.securityOpt) &&
+           Objects.equals(this.networkMode, that.networkMode) &&
+           Objects.equals(this.metadata, that.metadata) &&
+           Objects.equals(this.addCapabilities, that.addCapabilities) &&
+           Objects.equals(this.dropCapabilities, that.dropCapabilities);
   }
 
   @Override
   public int hashCode() {
-    int result = id != null ? id.hashCode() : 0;
-    result = 31 * result + (image != null ? image.hashCode() : 0);
-    result = 31 * result + (hostname != null ? hostname.hashCode() : 0);
-    result = 31 * result + (expires != null ? expires.hashCode() : 0);
-    result = 31 * result + (created != null ? created.hashCode() : 0);
-    result = 31 * result + (command != null ? command.hashCode() : 0);
-    result = 31 * result + (env != null ? env.hashCode() : 0);
-    result = 31 * result + (resources != null ? resources.hashCode() : 0);
-    result = 31 * result + (ports != null ? ports.hashCode() : 0);
-    result = 31 * result + (registration != null ? registration.hashCode() : 0);
-    result = 31 * result + (registrationDomain != null ? registrationDomain.hashCode() : 0);
-    result = 31 * result + (gracePeriod != null ? gracePeriod.hashCode() : 0);
-    result = 31 * result + (volumes != null ? volumes.hashCode() : 0);
-    result = 31 * result + (creatingUser != null ? creatingUser.hashCode() : 0);
-    result = 31 * result + token.hashCode();
-    result = 31 * result + (healthCheck != null ? healthCheck.hashCode() : 0);
-    result = 31 * result + (securityOpt != null ? securityOpt.hashCode() : 0);
-    result = 31 * result + (networkMode != null ? networkMode.hashCode() : 0);
-    result = 31 * result + (metadata != null ? metadata.hashCode() : 0);
-    return result;
+    return Objects.hash(
+        id, image, hostname, expires, created, command, env, resources,
+        ports, registration, registrationDomain, gracePeriod, volumes, creatingUser,
+        token, healthCheck, securityOpt, networkMode, metadata, addCapabilities,
+        dropCapabilities);
   }
 
   @Override
@@ -442,6 +414,8 @@ public class Job extends Descriptor implements Comparable<Job> {
            ", securityOpt=" + securityOpt +
            ", networkMode='" + networkMode + '\'' +
            ", metadata=" + metadata +
+           ", addCapabilities=" + addCapabilities +
+           ", dropCapabilities=" + dropCapabilities +
            "} " + super.toString();
   }
 
@@ -470,7 +444,9 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setHealthCheck(healthCheck)
         .setSecurityOpt(securityOpt)
         .setNetworkMode(networkMode)
-        .setMetadata(metadata);
+        .setMetadata(metadata)
+        .setAddCapabilities(addCapabilities)
+        .setDropCapabilities(dropCapabilities);
   }
 
   public static class Builder implements Cloneable {
@@ -509,6 +485,8 @@ public class Job extends Descriptor implements Comparable<Job> {
       public List<String> securityOpt;
       public String networkMode;
       public Map<String, String> metadata;
+      public Set<String> addCapabilities;
+      public Set<String> dropCapabilities;
 
       private Parameters() {
         this.created = EMPTY_CREATED;
@@ -525,6 +503,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.healthCheck = EMPTY_HEALTH_CHECK;
         this.securityOpt = EMPTY_SECURITY_OPT;
         this.metadata = Maps.newHashMap();
+        this.addCapabilities = EMPTY_CAPS;
+        this.dropCapabilities = EMPTY_CAPS;
       }
 
       private Parameters(final Parameters p) {
@@ -548,6 +528,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.securityOpt = p.securityOpt;
         this.networkMode = p.networkMode;
         this.metadata = p.metadata;
+        this.addCapabilities = p.addCapabilities;
+        this.dropCapabilities = p.dropCapabilities;
       }
 
       private Parameters withoutMetaParameters() {
@@ -675,7 +657,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     }
 
     public Builder setSecurityOpt(final List<String> securityOpt) {
-      p.securityOpt = securityOpt;
+      p.securityOpt = ImmutableList.copyOf(securityOpt);
       return this;
     }
 
@@ -691,6 +673,16 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Builder addMetadata(final String name, final String value) {
       p.metadata.put(name, value);
+      return this;
+    }
+
+    public Builder setAddCapabilities(final Set<String> addCapabilities) {
+      p.addCapabilities = ImmutableSet.copyOf(addCapabilities);
+      return this;
+    }
+
+    public Builder setDropCapabilities(final Set<String> dropCapabilities) {
+      p.dropCapabilities = ImmutableSet.copyOf(dropCapabilities);
       return this;
     }
 
@@ -764,6 +756,14 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Map<String, String> getMetadata() {
       return ImmutableMap.copyOf(p.metadata);
+    }
+
+    public Set<String> getAddCapabilities() {
+      return p.addCapabilities;
+    }
+
+    public Set<String> getDropCapabilities() {
+      return p.dropCapabilities;
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})

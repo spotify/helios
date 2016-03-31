@@ -17,6 +17,9 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.collect.ImmutableSet;
+
+import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -24,25 +27,34 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 import com.spotify.helios.serviceregistration.ServiceRegistration.EndpointHealthCheck;
+
 import org.junit.Test;
 
+import java.util.Set;
+
 import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 public class TaskConfigTest {
   private static final String HOST = "HOST";
   private static final String IMAGE = "spotify:17";
   private static final String PORT_NAME = "default-port";
   private static final int EXTERNAL_PORT = 20000;
+  private static final Set<String> CAP_ADDS = ImmutableSet.of("cap1", "cap2");
+  private static final Set<String> CAP_DROPS = ImmutableSet.of("cap3", "cap4");
   private static final Job JOB = Job.newBuilder()
-    .setName("foobar")
-    .setCommand(asList("foo", "bar"))
-    .setImage(IMAGE)
-    .setVersion("4711")
-    .addPort(PORT_NAME, PortMapping.of(8080, EXTERNAL_PORT))
-    .addRegistration(ServiceEndpoint.of("service", "http"), ServicePorts.of(PORT_NAME))
-    .build();
+      .setName("foobar")
+      .setCommand(asList("foo", "bar"))
+      .setImage(IMAGE)
+      .setVersion("4711")
+      .addPort(PORT_NAME, PortMapping.of(8080, EXTERNAL_PORT))
+      .addRegistration(ServiceEndpoint.of("service", "http"), ServicePorts.of(PORT_NAME))
+      .setAddCapabilities(CAP_ADDS)
+      .setDropCapabilities(CAP_DROPS)
+      .build();
 
   @Test
   public void testRegistrationWithHttpHealthCheck() throws Exception {
@@ -94,5 +106,18 @@ public class TaskConfigTest {
 
     final ServiceRegistration.Endpoint endpoint = taskConfig.registration().getEndpoints().get(0);
     assertNull(endpoint.getHealthCheck());
+  }
+
+  @Test
+  public void testHostConfig() throws Exception {
+    final TaskConfig taskConfig = TaskConfig.builder()
+        .namespace("test")
+        .host(HOST)
+        .job(JOB)
+        .build();
+
+    final HostConfig hostConfig = taskConfig.hostConfig();
+    assertThat(ImmutableSet.copyOf(hostConfig.capAdd()), equalTo(CAP_ADDS));
+    assertThat(ImmutableSet.copyOf(hostConfig.capDrop()), equalTo(CAP_DROPS));
   }
 }

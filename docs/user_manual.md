@@ -133,6 +133,8 @@ example that uses all the available configuration keys with an explanation of ea
 
 ```json
 {
+ "addCapabilities" : [ "IPC_LOCK", "SYSLOG" ],
+ "dropCapabilities" : [ "SYS_BOOT", "KILL" ],
   "command" : [ "server", "serverconfig.yaml" ],
   "env" : {
     "JVM_ARGS" : "-Ddw.feature.randomFeatureFlagEnabled=true"
@@ -184,6 +186,12 @@ All fields are optional except for `id` and `image`.
 Note that the recommended best practice is to save all your job creation
 parameters in version-controlled files in your project directory. This allows
 you to tie your Helios job params to changes in your application code.
+
+#### addCapabilities
+The Linux capabilities to add to the container. Optional. See [Docker docs][1].
+
+#### dropCapabilities
+The Linux capabilities to remove from the container. Optional. See [Docker docs][1].
 
 #### command
 The command(s) to pass to the container. Optional.
@@ -465,3 +473,5 @@ in your job creation commmand, once deployed on a host named
 `foo.example.com`, from inside the container you would see
 `HELIOS_PORT_foo` set to something like `foo.example.com:23238`
 depending on what port was allocated when it was deployed.
+
+  [1]: https://docs.docker.com/engine/reference/run/#runtime-privilege-and-linux-capabilities
