@@ -32,7 +32,6 @@ import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -69,20 +68,13 @@ public class JobValidator {
   public static final List<String> VALID_NETWORK_MODES = ImmutableList.of("bridge", "host");
 
   private final boolean shouldValidateJobHash;
+  private final boolean shouldValidateAddCapabilities;
   private final Set<String> whitelistedCapabilities;
 
-  public JobValidator() {
-    this(true);
-  }
-
-  public JobValidator(final boolean shouldValidateJobHash) {
-    this(shouldValidateJobHash, Collections.<String>emptySet());
-  }
-
-  public JobValidator(final boolean shouldValidateJobHash,
-                      final Set<String> whitelistedCapabilities) {
-    this.shouldValidateJobHash = shouldValidateJobHash;
-    this.whitelistedCapabilities = whitelistedCapabilities;
+  public JobValidator(final Builder builder) {
+    this.shouldValidateJobHash = builder.shouldValidateJobHash;
+    this.shouldValidateAddCapabilities = builder.shouldValidateAddCapabilities;
+    this.whitelistedCapabilities = builder.whitelistedCapabilities;
   }
 
   public Set<String> validate(final Job job) {
@@ -162,7 +154,9 @@ public class JobValidator {
 
     errors.addAll(validateJobHealthCheck(job));
     errors.addAll(validateJobNetworkMode(job));
-    errors.addAll(validateAddCapabilities(job));
+    if (shouldValidateAddCapabilities) {
+      errors.addAll(validateAddCapabilities(job));
+    }
 
     return errors;
   }
@@ -528,5 +522,35 @@ public class JobValidator {
 
   private boolean legalPort(final int port) {
     return port >= 0 && port <= 65535;
+  }
+
+  public static Builder newBuilder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+
+    private boolean shouldValidateJobHash = true;
+    private boolean shouldValidateAddCapabilities = false;
+    private Set<String> whitelistedCapabilities = emptySet();
+
+    public Builder setShouldValidateJobHash(final boolean shouldValidateJobHash) {
+      this.shouldValidateJobHash = shouldValidateJobHash;
+      return this;
+    }
+
+    public Builder setShouldValidateAddCapabilities(final boolean shouldValidateAddCapabilities) {
+      this.shouldValidateAddCapabilities = shouldValidateAddCapabilities;
+      return this;
+    }
+
+    public Builder setWhitelistedCapabilities(final Set<String> whitelistedCapabilities) {
+      this.whitelistedCapabilities = whitelistedCapabilities;
+      return this;
+    }
+
+    public JobValidator build() {
+      return new JobValidator(this);
+    }
   }
 }

@@ -18,6 +18,7 @@
 package com.spotify.helios.cli.command;
 
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 
 import com.spotify.helios.client.HeliosClient;
@@ -56,6 +57,8 @@ public class JobInspectCommandTest {
       .setVersion(JOB_VERSION)
       .setCreated((long) 0)
       .setExpires(new Date(0))
+      .setAddCapabilities(ImmutableSet.of("cap1", "cap2"))
+      .setDropCapabilities(ImmutableSet.of("cap3", "cap4"))
       .build();
 
   private final Namespace options = mock(Namespace.class);
@@ -88,6 +91,8 @@ public class JobInspectCommandTest {
     final String output = baos.toString();
     assertThat(output, containsString("Created: Thu, 1 Jan 1970 00:00:00 +0000"));
     assertThat(output, containsString("Expires: Thu, 1 Jan 1970 00:00:00 +0000"));
+    assertThat(output, containsString("Add capabilities: cap1, cap2"));
+    assertThat(output, containsString("Drop capabilities: cap3, cap4"));
   }
 
   @Test

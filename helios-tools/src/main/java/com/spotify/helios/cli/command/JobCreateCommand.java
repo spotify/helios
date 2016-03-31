@@ -22,6 +22,7 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -56,6 +57,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -75,7 +77,9 @@ import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class JobCreateCommand extends ControlCommand {
 
-  private static final JobValidator JOB_VALIDATOR = new JobValidator(false);
+  private static final JobValidator JOB_VALIDATOR = JobValidator.newBuilder()
+      .setShouldValidateJobHash(false)
+      .build();
 
   /**
    * If any of the keys of this map are set as environment variables (i.e. an environment variable
@@ -122,6 +126,8 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument securityOptArg;
   private final Argument networkModeArg;
   private final Argument metadataArg;
+  private final Argument addCapabilityArg;
+  private final Argument dropCapabilityArg;
   private final Supplier<Map<String, String>> envVarSupplier;
 
   public JobCreateCommand(final Subparser parser) {
@@ -253,6 +259,18 @@ public class JobCreateCommand extends ControlCommand {
     networkModeArg = parser.addArgument("--network-mode")
         .help("Sets the networking mode for the container. Supported values are: bridge, host, and "
               + "container:<name|id>. Docker defaults to bridge.");
+
+    addCapabilityArg = parser.addArgument("--add-capability")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("The Linux capabilities this Helios job adds to its Docker container. "
+              + "Defaults to nothing.");
+
+    dropCapabilityArg = parser.addArgument("--drop-capability")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("The Linux capabilities this Helios job drops from its Docker container. "
+              + "Defaults to nothing.");
 
     this.envVarSupplier = envVarSupplier;
   }
@@ -530,6 +548,17 @@ public class JobCreateCommand extends ControlCommand {
     final String token = options.getString(tokenArg.getDest());
     if (!isNullOrEmpty(token)) {
       builder.setToken(token);
+    }
+
+    final Set<String> addCapabilities = ImmutableSet.copyOf(
+        options.<String>getList(addCapabilityArg.getDest()));
+    if (!addCapabilities.isEmpty()) {
+      builder.setAddCapabilities(addCapabilities);
+    }
+    final Set<String> dropCapabilities = ImmutableSet.copyOf(
+        options.<String>getList(dropCapabilityArg.getDest()));
+    if (!dropCapabilities.isEmpty()) {
+      builder.setDropCapabilities(dropCapabilities);
     }
 
     // We build without a hash here because we want the hash to be calculated server-side.
