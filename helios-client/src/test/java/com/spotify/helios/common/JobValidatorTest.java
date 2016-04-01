@@ -76,7 +76,7 @@ public class JobValidatorTest {
       .setHealthCheck(HEALTH_CHECK)
       .build();
 
-  final JobValidator validator = new JobValidator();
+  final JobValidator validator = new JobValidator(true, true);
 
   @Test
   public void testValidJobPasses() {
@@ -433,7 +433,7 @@ public class JobValidatorTest {
 
   @Test
   public void testWhitelistedCapabilities_withWhitelist() throws Exception {
-    final JobValidator validator = new JobValidator(true, ImmutableSet.of("cap1"));
+    final JobValidator validator = new JobValidator(true, true, ImmutableSet.of("cap1"));
     final Job job = Job.newBuilder()
         .setName("foo")
         .setVersion("1")
@@ -446,7 +446,7 @@ public class JobValidatorTest {
         "The following Linux capabilities aren't allowed by the Helios master: 'cap2'. "
         + "The allowed capabilities are: 'cap1'."));
 
-    final JobValidator validator2 = new JobValidator(true, ImmutableSet.of("cap1", "cap2"));
+    final JobValidator validator2 = new JobValidator(true, true, ImmutableSet.of("cap1", "cap2"));
     final Set<String> errors2 = validator2.validate(job);
     assertEquals(0, errors2.size());
   }

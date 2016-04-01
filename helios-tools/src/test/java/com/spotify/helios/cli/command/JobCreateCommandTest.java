@@ -113,6 +113,8 @@ public class JobCreateCommandTest {
     doReturn(SECURITY_OPT).when(options).getList("security_opt");
     when(options.getString("network_mode")).thenReturn(NETWORK_MODE);
     when(options.getList("metadata")).thenReturn(Lists.<Object>newArrayList("a=1", "b=2"));
+    doReturn(ImmutableList.of("cap1", "cap2")).when(options).getList("add_capability");
+    doReturn(ImmutableList.of("cap3", "cap4")).when(options).getList("drop_capability");
 
     final int ret = command.run(options, client, out, false, null);
 
@@ -129,6 +131,8 @@ public class JobCreateCommandTest {
     assertThat(output, containsString("\"securityOpt\":[\"label:user:dxia\",\"apparmor:foo\"]"));
     assertThat(output, containsString("\"networkMode\":\"host\""));
     assertThat(output, containsString("\"expires\":null"));
+    assertThat(output, containsString("\"addCapabilities\":[\"cap1\",\"cap2\"]"));
+    assertThat(output, containsString("\"dropCapabilities\":[\"cap3\",\"cap4\"]"));
   }
 
   @Test

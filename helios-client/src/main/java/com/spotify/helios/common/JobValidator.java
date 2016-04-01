@@ -69,6 +69,7 @@ public class JobValidator {
   public static final List<String> VALID_NETWORK_MODES = ImmutableList.of("bridge", "host");
 
   private final boolean shouldValidateJobHash;
+  private final boolean shouldValidateAddCapabilities;
   private final Set<String> whitelistedCapabilities;
 
   public JobValidator() {
@@ -76,12 +77,19 @@ public class JobValidator {
   }
 
   public JobValidator(final boolean shouldValidateJobHash) {
-    this(shouldValidateJobHash, Collections.<String>emptySet());
+    this(shouldValidateJobHash, false);
   }
 
   public JobValidator(final boolean shouldValidateJobHash,
+                      final boolean shouldValidateAddCapabilities) {
+    this(shouldValidateJobHash, shouldValidateAddCapabilities, Collections.<String>emptySet());
+  }
+
+  public JobValidator(final boolean shouldValidateJobHash,
+                      final boolean shouldValidateAddCapabilities,
                       final Set<String> whitelistedCapabilities) {
     this.shouldValidateJobHash = shouldValidateJobHash;
+    this.shouldValidateAddCapabilities = shouldValidateAddCapabilities;
     this.whitelistedCapabilities = whitelistedCapabilities;
   }
 
@@ -162,7 +170,9 @@ public class JobValidator {
 
     errors.addAll(validateJobHealthCheck(job));
     errors.addAll(validateJobNetworkMode(job));
-    errors.addAll(validateAddCapabilities(job));
+    if (shouldValidateAddCapabilities) {
+      errors.addAll(validateAddCapabilities(job));
+    }
 
     return errors;
   }

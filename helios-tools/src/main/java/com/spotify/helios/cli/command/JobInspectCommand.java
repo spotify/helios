@@ -151,6 +151,8 @@ public class JobInspectCommand extends WildcardJobCommand {
       out.printf("Network mode: %s%n", job.getNetworkMode());
       out.printf("Token: %s%n", job.getToken());
       printVolumes(out, job.getVolumes());
+      out.printf("Add capabilities: %s%n", Joiner.on(", ").join(job.getAddCapabilities()));
+      out.printf("Drop capabilities: %s%n", Joiner.on(", ").join(job.getDropCapabilities()));
     }
 
     return 0;

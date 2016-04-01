@@ -122,6 +122,8 @@ public class JobCreateCommand extends ControlCommand {
   private final Argument securityOptArg;
   private final Argument networkModeArg;
   private final Argument metadataArg;
+  private final Argument addCapabilityArg;
+  private final Argument dropCapabilityArg;
   private final Supplier<Map<String, String>> envVarSupplier;
 
   public JobCreateCommand(final Subparser parser) {
@@ -253,6 +255,18 @@ public class JobCreateCommand extends ControlCommand {
     networkModeArg = parser.addArgument("--network-mode")
         .help("Sets the networking mode for the container. Supported values are: bridge, host, and "
               + "container:<name|id>. Docker defaults to bridge.");
+
+    addCapabilityArg = parser.addArgument("--add-capability")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("The Linux capabilities this Helios job adds to its Docker container. "
+              + "Defaults to nothing.");
+
+    dropCapabilityArg = parser.addArgument("--drop-capability")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("The Linux capabilities this Helios job drops from its Docker container. "
+              + "Defaults to nothing.");
 
     this.envVarSupplier = envVarSupplier;
   }
@@ -531,6 +545,9 @@ public class JobCreateCommand extends ControlCommand {
     if (!isNullOrEmpty(token)) {
       builder.setToken(token);
     }
+
+    builder.setAddCapabilities(options.<String>getList(addCapabilityArg.getDest()));
+    builder.setDropCapabilities(options.<String>getList(dropCapabilityArg.getDest()));
 
     // We build without a hash here because we want the hash to be calculated server-side.
     // This allows different CLI versions to be cross-compatible with different master versions
