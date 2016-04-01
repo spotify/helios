@@ -98,6 +98,14 @@
       <id>bintray-readytalk</id>
       <url>http://dl.bintray.com/readytalk/maven</url>
     </repository>
+    <repository>
+      <id>ossrh</id>
+      <name>Sonatype OSS</name>
+      <url>https://oss.sonatype.org/content/repositories/releases/</url>
+      <snapshots>
+        <enabled>false</enabled>
+      </snapshots>
+    </repository>
   </repositories>
 
   <dependencies>
