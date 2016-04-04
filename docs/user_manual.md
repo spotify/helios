@@ -178,7 +178,7 @@ example that uses all the available configuration keys with an explanation of ea
     "memorySwap" : 10485760,
     "cpuset" : "0",
     "cpuShares" : 512
-  }
+  },
   "securityOpt" : [ "label:user:USER", "apparmor:PROFILE" ],
   "token": "insecure-access-token",
   "volumes" : {
