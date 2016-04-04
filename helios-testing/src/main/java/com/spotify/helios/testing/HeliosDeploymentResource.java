@@ -55,7 +55,7 @@ public class HeliosDeploymentResource extends ExternalResource {
 
   /** Ensure that the HeliosDeployment is up. */
   @Override
-  protected void before() throws Throwable {
+  public void before() throws Throwable {
     super.before();
 
     // wait for the helios master to be available
@@ -109,7 +109,7 @@ public class HeliosDeploymentResource extends ExternalResource {
   }
 
   @Override
-  protected void after() {
+  public void after() {
     log.info("Tearing down {}", this.deployment);
     deployment.close();
   }
