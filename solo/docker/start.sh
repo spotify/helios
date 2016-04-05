@@ -23,7 +23,7 @@ done
 curl -XPUT http://127.0.0.1:4001/v2/keys/skydns/${SKYDNS_PATH} \
     -d value="{\"host\":\"$HOST_ADDRESS\"}"
 
-skydns $SKYDNS_OPTS &
+skydns $SKYDNS_OPTS -verbose &
 
 /usr/share/zookeeper/bin/zkServer.sh start
 
