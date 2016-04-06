@@ -2,8 +2,11 @@ FROM ubuntu:trusty
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y curl dnsutils zookeeper git mercurial \
+    && apt-get install --no-install-recommends -y curl dnsutils zookeeper git mercurial unbound \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ADD unbound-to-skydns.conf /etc/unbound/unbound-to-skydns.conf
+ADD skydns-to-unbound.conf /etc/unbound/skydns-to-unbound.conf
 
 # Install helios-skydns plugin
 ENV SKYDNS_PLUGIN_VERSION 0.1
@@ -14,7 +17,7 @@ RUN curl -o $SKYDNS_PLUGIN_DEB -L $SKYDNS_PLUGIN_DEB_URI \
     && rm $SKYDNS_PLUGIN_DEB
 
 # Install Go (from the official golang Dockerfile)
-ENV GOLANG_VERSION 1.4.2
+ENV GOLANG_VERSION 1.6
 ENV PATH /go/bin:/usr/local/go/bin:$PATH
 ENV GOPATH /go
 
