@@ -2,8 +2,10 @@ FROM ubuntu:trusty
 
 ENV DEBIAN_FRONTEND noninteractive
 RUN apt-get update \
-    && apt-get install --no-install-recommends -y curl dnsutils zookeeper git mercurial \
+    && apt-get install --no-install-recommends -y curl dnsutils zookeeper git mercurial unbound \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+ADD unbound-skydns.conf /etc/unbound/unbound.conf
 
 # Install helios-skydns plugin
 ENV SKYDNS_PLUGIN_VERSION 0.1
