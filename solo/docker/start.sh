@@ -13,7 +13,7 @@ SKYDNS_PATH=$(echo $HELIOS_NAME|python -c "import sys;h=sys.stdin.read().strip()
 # Write skydns configuration and retry for 30 seconds until successful
 for i in {1..30}; do
 	if curl --retry 30 -XPUT http://127.0.0.1:4001/v2/keys/skydns/config \
-		-d value="{\"dns_addr\":\"0.0.0.0:5353\", \"ttl\":3600, \"nameservers\": $NAMESERVERS, \"domain\":\"local.\"}"; then
+		-d value="{\"dns_addr\":\"0.0.0.0:5353\", \"ttl\":3600, \"nameservers\": ["127.0.0.1:5454"], \"domain\":\"local.\"}"; then
 		break
 	fi
 	sleep 1
@@ -24,7 +24,14 @@ curl -XPUT http://127.0.0.1:4001/v2/keys/skydns/${SKYDNS_PATH} \
     -d value="{\"host\":\"$HOST_ADDRESS\"}"
 
 skydns $SKYDNS_OPTS -verbose &
-unbound
+unbound -c /etc/unbound/unbound-to-skydns.conf
+
+# Take the upstream DNS resolvers from /etc/resolv.conf and tell our
+# second unbound to forward to them.
+for upstream in $(echo $NAMESERVERS | tr -d '[],' | tr ':' '@'); do
+  echo "    forward-addr: ${upstream}" >> /etc/unbound/skydns-to-unbound.conf
+done
+unbound -c /etc/unbound/skydns-to-unbound.conf
 
 /usr/share/zookeeper/bin/zkServer.sh start
 

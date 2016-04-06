@@ -5,7 +5,8 @@ RUN apt-get update \
     && apt-get install --no-install-recommends -y curl dnsutils zookeeper git mercurial unbound \
     && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-ADD unbound-skydns.conf /etc/unbound/unbound.conf
+ADD unbound-to-skydns.conf /etc/unbound/unbound-to-skydns.conf
+ADD skydns-to-unbound.conf /etc/unbound/skydns-to-unbound.conf
 
 # Install helios-skydns plugin
 ENV SKYDNS_PLUGIN_VERSION 0.1
