@@ -13,7 +13,7 @@ SKYDNS_PATH=$(echo $HELIOS_NAME|python -c "import sys;h=sys.stdin.read().strip()
 # Write skydns configuration and retry for 30 seconds until successful
 for i in {1..30}; do
 	if curl --retry 30 -XPUT http://127.0.0.1:4001/v2/keys/skydns/config \
-		-d value="{\"dns_addr\":\"0.0.0.0:53\", \"ttl\":3600, \"nameservers\": $NAMESERVERS, \"domain\":\"local.\"}"; then
+		-d value="{\"dns_addr\":\"0.0.0.0:5353\", \"ttl\":3600, \"nameservers\": $NAMESERVERS, \"domain\":\"local.\"}"; then
 		break
 	fi
 	sleep 1
@@ -24,6 +24,7 @@ curl -XPUT http://127.0.0.1:4001/v2/keys/skydns/${SKYDNS_PATH} \
     -d value="{\"host\":\"$HOST_ADDRESS\"}"
 
 skydns $SKYDNS_OPTS -verbose &
+unbound
 
 /usr/share/zookeeper/bin/zkServer.sh start
 
