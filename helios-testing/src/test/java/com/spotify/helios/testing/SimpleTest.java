@@ -17,14 +17,14 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
+
+import com.google.common.base.Optional;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -182,7 +182,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
     @Test
     public void testImageFromBuild() {
       temporaryJobs.job()
-          .imageFromBuild()
+          .image(BUSYBOX)
           .command("sh", "-c", "while :; do sleep 5; done")
           .deploy();
     }
