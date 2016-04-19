@@ -17,13 +17,12 @@
 
 package com.spotify.helios.common.protocol;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RollingOperationStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
-
-import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -97,27 +96,31 @@ public class DeploymentGroupStatusResponse {
     }
   }
 
-  private final DeploymentGroup deploymentGroup;
+  private final DeploymentGroupResponse deploymentGroupResponse;
   private final Status status;
   private final String error;
   private final List<HostStatus> hostStatuses;
   private final DeploymentGroupStatus deploymentGroupStatus;
+  private final RollingOperationStatus lastRollingOpStatus;
 
   public DeploymentGroupStatusResponse(
-      @JsonProperty("deploymentGroup") final DeploymentGroup deploymentGroup,
+      // Named deploymentGroup rather than deploymentGroupResponse to avoid breaking Helios API.
+      @JsonProperty("deploymentGroup") final DeploymentGroupResponse deploymentGroupResponse,
       @JsonProperty("status") final Status status,
       @JsonProperty("error") final String error,
       @JsonProperty("hostStatuses") final List<HostStatus> hostStatuses,
-      @JsonProperty("deploymentGroupStatus") @Nullable final DeploymentGroupStatus dgs) {
-    this.deploymentGroup = deploymentGroup;
+      @JsonProperty("deploymentGroupStatus") @Nullable final DeploymentGroupStatus dgs,
+      @JsonProperty("lastRollingOpStatus") @Nullable final RollingOperationStatus lros) {
+    this.deploymentGroupResponse = deploymentGroupResponse;
     this.status = status;
     this.error = error;
     this.hostStatuses = hostStatuses;
     this.deploymentGroupStatus = dgs;
+    this.lastRollingOpStatus = lros;
   }
 
-  public DeploymentGroup getDeploymentGroup() {
-    return deploymentGroup;
+  public DeploymentGroupResponse getDeploymentGroupResponse() {
+    return deploymentGroupResponse;
   }
 
   public Status getStatus() {
@@ -136,14 +139,19 @@ public class DeploymentGroupStatusResponse {
     return deploymentGroupStatus;
   }
 
+  public RollingOperationStatus getLastRollingOpStatus() {
+    return lastRollingOpStatus;
+  }
+
   @Override
   public String toString() {
     return "DeploymentGroupStatusResponse{" +
-           "deploymentGroup=" + deploymentGroup +
+           "deploymentGroupResponse=" + deploymentGroupResponse +
            ", status=" + status +
            ", error='" + error + '\'' +
            ", hostStatuses=" + hostStatuses +
            ", deploymentGroupStatus=" + deploymentGroupStatus +
+           ", lastRollingOpStatus=" + lastRollingOpStatus +
            '}';
   }
 
@@ -162,13 +170,18 @@ public class DeploymentGroupStatusResponse {
 
     final DeploymentGroupStatusResponse response = (DeploymentGroupStatusResponse) o;
 
-    if (deploymentGroup != null ? !deploymentGroup.equals(response.deploymentGroup)
-                                : response.deploymentGroup != null) {
+    if (deploymentGroupResponse != null ? !deploymentGroupResponse
+        .equals(response.deploymentGroupResponse)
+                                        : response.deploymentGroupResponse != null) {
       return false;
     }
     if (deploymentGroupStatus != null ? !deploymentGroupStatus
         .equals(response.deploymentGroupStatus)
                                       : response.deploymentGroupStatus != null) {
+      return false;
+    }
+    if (lastRollingOpStatus != null ? !lastRollingOpStatus.equals(response.lastRollingOpStatus)
+                                    : response.lastRollingOpStatus != null) {
       return false;
     }
     if (error != null ? !error.equals(response.error) : response.error != null) {
@@ -187,11 +200,65 @@ public class DeploymentGroupStatusResponse {
 
   @Override
   public int hashCode() {
-    int result = deploymentGroup != null ? deploymentGroup.hashCode() : 0;
+    int result = deploymentGroupResponse != null ? deploymentGroupResponse.hashCode() : 0;
     result = 31 * result + (status != null ? status.hashCode() : 0);
     result = 31 * result + (error != null ? error.hashCode() : 0);
     result = 31 * result + (hostStatuses != null ? hostStatuses.hashCode() : 0);
     result = 31 * result + (deploymentGroupStatus != null ? deploymentGroupStatus.hashCode() : 0);
+    result = 31 * result + (lastRollingOpStatus != null ? lastRollingOpStatus.hashCode() : 0);
     return result;
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static class Builder {
+    private DeploymentGroupResponse deploymentGroupResponse;
+    private Status status;
+    private String error;
+    private List<HostStatus> hostStatuses;
+    private DeploymentGroupStatus deploymentGroupStatus;
+    private RollingOperationStatus lastRollingOpStatus;
+
+    public Builder deploymentGroupResponse(final DeploymentGroupResponse response) {
+      this.deploymentGroupResponse = response;
+      return this;
+    }
+
+    public Builder status(final Status status) {
+      this.status = status;
+      return this;
+    }
+
+    public Builder error(final String error) {
+      this.error = error;
+      return this;
+    }
+
+    public Builder hostStatuses(final List<HostStatus> hostStatuses) {
+      this.hostStatuses = hostStatuses;
+      return this;
+    }
+
+    public Builder deploymentGroupStatus(final DeploymentGroupStatus dgs) {
+      this.deploymentGroupStatus = dgs;
+      return this;
+    }
+
+    public Builder lastRollingOpStatus(final RollingOperationStatus lros) {
+      this.lastRollingOpStatus = lros;
+      return this;
+    }
+
+    public DeploymentGroupStatusResponse build() {
+      return new DeploymentGroupStatusResponse(
+          this.deploymentGroupResponse,
+          this.status,
+          this.error,
+          this.hostStatuses,
+          this.deploymentGroupStatus,
+          this.lastRollingOpStatus);
+    }
   }
 }

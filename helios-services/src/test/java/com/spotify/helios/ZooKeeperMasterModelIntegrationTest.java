@@ -278,7 +278,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testAddDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableList.of(HostSelector.parse("role=foo")), null, null);
+        "my_group", ImmutableList.of(HostSelector.parse("role=foo")));
     model.addDeploymentGroup(dg);
     assertEquals(dg, model.getDeploymentGroup("my_group"));
   }
@@ -286,7 +286,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testAddExistingDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableList.of(HostSelector.parse("role=foo")), null, null);
+        "my_group", ImmutableList.of(HostSelector.parse("role=foo")));
     model.addDeploymentGroup(dg);
     exception.expect(DeploymentGroupExistsException.class);
     model.addDeploymentGroup(dg);
@@ -295,7 +295,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   @Test
   public void testRemoveDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableList.of(HostSelector.parse("role=foo")), null, null);
+        "my_group", ImmutableList.of(HostSelector.parse("role=foo")));
     model.addDeploymentGroup(dg);
     model.removeDeploymentGroup("my_group");
     exception.expect(DeploymentGroupDoesNotExistException.class);

@@ -19,25 +19,20 @@ package com.spotify.helios.rollingupdate;
 
 import com.google.common.collect.Maps;
 
-import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.RollingOperation;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
 import java.util.Collections;
 import java.util.Map;
 
-public class DeploymentGroupEventFactory {
-
-  public enum RollingUpdateReason {
-    MANUAL,
-    HOSTS_CHANGED
-  }
+public class RollingOperationEventFactory {
 
   private Map<String, Object> createEvent(final String eventType,
-                                          final DeploymentGroup deploymentGroup) {
+                                          final RollingOperation rolling) {
     final Map<String, Object> ev = Maps.newHashMap();
     ev.put("eventType", eventType);
     ev.put("timestamp", System.currentTimeMillis());
-    ev.put("deploymentGroup", deploymentGroup);
+    ev.put("rollingOperation", rolling);
     return ev;
   }
 
@@ -48,20 +43,20 @@ public class DeploymentGroupEventFactory {
     return ev;
   }
 
-  public Map<String, Object> rollingUpdateTaskFailed(final DeploymentGroup deploymentGroup,
+  public Map<String, Object> rollingUpdateTaskFailed(final RollingOperation rolling,
                                                      final RolloutTask task,
                                                      final String error,
-                                                     final RollingUpdateError errorCode) {
-    return rollingUpdateTaskFailed(deploymentGroup, task, error, errorCode,
+                                                     final RollingOperationError errorCode) {
+    return rollingUpdateTaskFailed(rolling, task, error, errorCode,
                                    Collections.<String, Object>emptyMap());
   }
 
-  public Map<String, Object> rollingUpdateTaskFailed(final DeploymentGroup deploymentGroup,
+  public Map<String, Object> rollingUpdateTaskFailed(final RollingOperation rolling,
                                                      final RolloutTask task,
                                                      final String error,
-                                                     final RollingUpdateError errorCode,
+                                                     final RollingOperationError errorCode,
                                                      final Map<String, Object> metadata) {
-    final Map<String, Object> ev = createEvent("rollingUpdateTaskResult", deploymentGroup);
+    final Map<String, Object> ev = createEvent("rollingUpdateTaskResult", rolling);
     ev.putAll(metadata);
     ev.put("success", 0);
     ev.put("error", error);
@@ -69,29 +64,27 @@ public class DeploymentGroupEventFactory {
     return addTaskFields(ev, task);
   }
 
-  public Map<String, Object> rollingUpdateTaskSucceeded(final DeploymentGroup deploymentGroup,
+  public Map<String, Object> rollingUpdateTaskSucceeded(final RollingOperation rolling,
                                                         final RolloutTask task) {
-    final Map<String, Object> ev = createEvent("rollingUpdateTaskResult", deploymentGroup);
+    final Map<String, Object> ev = createEvent("rollingUpdateTaskResult", rolling);
     ev.put("success", 1);
     return addTaskFields(ev, task);
   }
 
-  public Map<String, Object> rollingUpdateStarted(final DeploymentGroup deploymentGroup,
-                                                  final RollingUpdateReason reason) {
-    final Map<String, Object> ev = createEvent("rollingUpdateStarted", deploymentGroup);
-    ev.put("reason", reason);
+  public Map<String, Object> rollingUpdateStarted(final RollingOperation rolling) {
+    final Map<String, Object> ev = createEvent("rollingUpdateStarted", rolling);
     return ev;
   }
 
-  public Map<String, Object> rollingUpdateDone(final DeploymentGroup deploymentGroup) {
-    final Map<String, Object> ev = createEvent("rollingUpdateFinished", deploymentGroup);
+  public Map<String, Object> rollingUpdateDone(final RollingOperation rolling) {
+    final Map<String, Object> ev = createEvent("rollingUpdateFinished", rolling);
     ev.put("success", 1);
     return ev;
   }
 
-  public Map<String, Object> rollingUpdateFailed(final DeploymentGroup deploymentGroup,
+  public Map<String, Object> rollingUpdateFailed(final RollingOperation rolling,
                                                  final Map<String, Object> failEvent) {
-    final Map<String, Object> ev = createEvent("rollingUpdateFinished", deploymentGroup);
+    final Map<String, Object> ev = createEvent("rollingUpdateFinished", rolling);
     ev.put("success", 0);
     ev.put("failedTask", failEvent);
     return ev;

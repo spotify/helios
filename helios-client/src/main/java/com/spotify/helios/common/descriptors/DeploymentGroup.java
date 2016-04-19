@@ -23,8 +23,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import org.jetbrains.annotations.Nullable;
-
 import java.util.List;
 
 import static java.util.Collections.emptyList;
@@ -36,7 +34,6 @@ import static java.util.Collections.emptyList;
  * <pre>
  * {
  *   "name":"foo-group",
- *   "job":"foo:0.1.0",
  *   "hostSelectors":[
  *     {
  *       "label":"foo",
@@ -48,14 +45,7 @@ import static java.util.Collections.emptyList;
  *       "operator":"EQUALS"
  *       "operand":"qux",
  *     }
- *   ],
- *   "rolloutOptions":{
- *     "migrate":false,
- *     "parallelism":2,
- *     "timeout":1000,
- *     "overlap":true,
- *     "token": "insecure-access-token"
- *   }
+ *   ]
  * }
  * </pre>
  */
@@ -64,46 +54,30 @@ import static java.util.Collections.emptyList;
 public class DeploymentGroup extends Descriptor {
 
   public static final String EMPTY_NAME = "";
-  public static final JobId EMPTY_JOB_ID = null;
 
   private final String name;
   private final List<HostSelector> hostSelectors;
-  private final JobId jobId;
-  private final RolloutOptions rolloutOptions;
 
   /**
    * Create a Job.
    *
    * @param name The docker name to use.
-   * @param jobId The job ID for the deployment group.
    * @param hostSelectors The selectors that determine which agents are part of the deployment
    *                       group.
    */
   public DeploymentGroup(
       @JsonProperty("name") final String name,
-      @JsonProperty("hostSelectors") final List<HostSelector> hostSelectors,
-      @JsonProperty("job") @Nullable final JobId jobId,
-      @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions) {
+      @JsonProperty("hostSelectors") final List<HostSelector> hostSelectors) {
     this.name = name;
     this.hostSelectors = hostSelectors;
-    this.jobId = jobId;
-    this.rolloutOptions = rolloutOptions;
   }
 
   public String getName() {
     return name;
   }
 
-  public JobId getJobId() {
-    return jobId;
-  }
-
   public List<HostSelector> getHostSelectors() {
     return hostSelectors;
-  }
-
-  public RolloutOptions getRolloutOptions() {
-    return rolloutOptions;
   }
 
   public static Builder newBuilder() {
@@ -121,18 +95,11 @@ public class DeploymentGroup extends Descriptor {
 
     final DeploymentGroup that = (DeploymentGroup) o;
 
-    if (jobId != null ? !jobId.equals(that.jobId) : that.jobId != null) {
-      return false;
-    }
     if (hostSelectors != null ? !hostSelectors.equals(that.hostSelectors)
                                : that.hostSelectors != null) {
       return false;
     }
     if (name != null ? !name.equals(that.name) : that.name != null) {
-      return false;
-    }
-    if (rolloutOptions != null ? !rolloutOptions.equals(that.rolloutOptions)
-                               : that.rolloutOptions != null) {
       return false;
     }
 
@@ -143,8 +110,6 @@ public class DeploymentGroup extends Descriptor {
   public int hashCode() {
     int result = name != null ? name.hashCode() : 0;
     result = 31 * result + (hostSelectors != null ? hostSelectors.hashCode() : 0);
-    result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
-    result = 31 * result + (rolloutOptions != null ? rolloutOptions.hashCode() : 0);
     return result;
   }
 
@@ -153,8 +118,6 @@ public class DeploymentGroup extends Descriptor {
     return "DeploymentGroup{" +
            "name='" + name + '\'' +
            ", hostSelectors=" + hostSelectors +
-           ", job=" + jobId +
-           ", rolloutOptions=" + rolloutOptions +
            '}';
   }
 
@@ -162,9 +125,7 @@ public class DeploymentGroup extends Descriptor {
     final Builder builder = newBuilder();
 
     return builder.setName(name)
-        .setJobId(jobId)
-        .setHostSelectors(hostSelectors)
-        .setRolloutOptions(rolloutOptions);
+        .setHostSelectors(hostSelectors);
   }
 
   public static class Builder implements Cloneable {
@@ -178,15 +139,11 @@ public class DeploymentGroup extends Descriptor {
     private static class Parameters implements Cloneable {
 
       public String name;
-      public JobId jobId;
       public List<HostSelector> hostSelectors;
-      public RolloutOptions rolloutOptions;
 
       private Parameters() {
         this.name = EMPTY_NAME;
-        this.jobId = EMPTY_JOB_ID;
         this.hostSelectors = emptyList();
-        this.rolloutOptions = null;
       }
     }
 
@@ -199,15 +156,6 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
-    public JobId getJobId() {
-      return p.jobId;
-    }
-
-    public Builder setJobId(final JobId jobId) {
-      p.jobId = jobId;
-      return this;
-    }
-
     public List<HostSelector> getHostSelectors() {
       return p.hostSelectors;
     }
@@ -217,17 +165,8 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
-    public RolloutOptions getRolloutOptions() {
-      return p.rolloutOptions;
-    }
-
-    public Builder setRolloutOptions(final RolloutOptions rolloutOptions) {
-      p.rolloutOptions = rolloutOptions;
-      return this;
-    }
-
     public DeploymentGroup build() {
-      return new DeploymentGroup(p.name, p.hostSelectors, p.jobId, p.rolloutOptions);
+      return new DeploymentGroup(p.name, p.hostSelectors);
     }
   }
 

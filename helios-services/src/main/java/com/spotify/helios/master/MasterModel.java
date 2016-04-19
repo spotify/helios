@@ -24,6 +24,8 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.RollingOperation;
+import com.spotify.helios.common.descriptors.RollingOperationStatus;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 
@@ -113,6 +115,12 @@ public interface MasterModel {
 
   DeploymentGroupStatus getDeploymentGroupStatus(String name)
       throws DeploymentGroupDoesNotExistException;
+
+  RollingOperation getLastRollingOperation(final String groupName)
+      throws DeploymentGroupDoesNotExistException;
+
+  RollingOperationStatus getRollingOperationStatus(final String rollingOpId)
+      throws RollingOperationDoesNotExistException;
 
   void removeDeploymentGroup(String name) throws DeploymentGroupDoesNotExistException;
 

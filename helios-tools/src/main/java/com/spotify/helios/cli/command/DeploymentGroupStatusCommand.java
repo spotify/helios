@@ -89,9 +89,10 @@ public class DeploymentGroupStatusCommand extends ControlCommand {
     if (json) {
       out.println(Json.asPrettyStringUnchecked(status));
     } else {
-      final JobId jobId = status.getDeploymentGroup().getJobId();
+      final JobId jobId = status.getDeploymentGroupResponse().getJobId();
       final String error = status.getError();
-      final List<HostSelector> hostSelectors = status.getDeploymentGroup().getHostSelectors();
+      final List<HostSelector> hostSelectors =
+          status.getDeploymentGroupResponse().getHostSelectors();
 
       out.printf("Name: %s%n", name);
       out.printf("Job Id: %s%n", full ? jobId : (jobId == null ? null : jobId.toShortString()));

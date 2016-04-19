@@ -18,8 +18,8 @@
 package com.spotify.helios.master;
 
 import com.spotify.helios.common.HeliosRuntimeException;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
+import com.spotify.helios.common.descriptors.RollingOperation;
+import com.spotify.helios.common.descriptors.RollingOperationStatus;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -41,6 +41,7 @@ import org.junit.experimental.theories.suppliers.TestedOn;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import static com.spotify.helios.common.descriptors.RollingOperationStatus.State.NEW;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.mockito.Mockito.mock;
@@ -48,9 +49,9 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 @RunWith(Theories.class)
-public class StopDeploymentGroupTest {
+public class StopRollingOperationTest {
 
-  private static final String GROUP_NAME = "my_group";
+  private static final String ROLLING_OP_ID = "uuid";
   private TestingServer zkServer;
   private ZooKeeperClient client;
 
@@ -77,23 +78,23 @@ public class StopDeploymentGroupTest {
 
   // A test that...
   // * Verifies that the state in ZK is correct after running stop
-  // * Verifies that the correct exception is thrown when the DG does not exist or there is a
+  // * Verifies that the correct exception is thrown when the op does not exist or there is a
   //   race condition
   @Theory
-  public void testStopDeploymentGroup(
-      @TestedOn(ints = {0, 1}) final int dgExistsInt,
+  public void testStopRollingOperation(
+      @TestedOn(ints = {0, 1}) final int opExistsInt,
       @TestedOn(ints = {0, 1}) final int tasksExistInt,
       @TestedOn(ints = {0, 1}) final int tasksExistWhenCommittingInt
   ) throws Exception {
-    final boolean dgExists = dgExistsInt != 0;
+    final boolean opExists = opExistsInt != 0;
     final boolean tasksExist = tasksExistInt != 0;
     final boolean tasksExistWhenCommitting = tasksExistWhenCommittingInt != 0;
 
-    // To be able to simulate triggering the race condition in stopDeploymentGroup we need to do
+    // To be able to simulate triggering the race condition in stopRollingOperation we need to do
     // some mocking, relying on that the implementation uses client.exists() to check for the
     // presence of tasks.
     final ZooKeeperClient client = spy(this.client);
-    when(client.exists(Paths.statusDeploymentGroupTasks(GROUP_NAME)))
+    when(client.exists(Paths.statusRollingOpsTasks(ROLLING_OP_ID)))
         .thenReturn(tasksExist ? mock(Stat.class) : null);
 
     final ZooKeeperMasterModel masterModel = new ZooKeeperMasterModel(
@@ -101,25 +102,33 @@ public class StopDeploymentGroupTest {
         getClass().getName(),
         mock(KafkaSender.class));
 
-    if (dgExists) {
-      final DeploymentGroup dg = DeploymentGroup.newBuilder()
-          .setName(GROUP_NAME)
+    if (opExists) {
+      final RollingOperation rolling = RollingOperation.newBuilder()
+          .setId(ROLLING_OP_ID)
           .build();
-      masterModel.addDeploymentGroup(dg);
+
+      final RollingOperationStatus status = RollingOperationStatus.newBuilder()
+          .setState(NEW)
+          .build();
+
+      client.ensurePath(Paths.configRollingOps());
+      client.ensurePath(Paths.statusRollingOps());
+      client.createAndSetData(Paths.configRollingOp(ROLLING_OP_ID), rolling.toJsonBytes());
+      client.createAndSetData(Paths.statusRollingOp(ROLLING_OP_ID), status.toJsonBytes());
     }
 
     if (tasksExistWhenCommitting) {
-      client.ensurePath(Paths.statusDeploymentGroupTasks());
-      client.create(Paths.statusDeploymentGroupTasks(GROUP_NAME));
+      client.ensurePath(Paths.statusRollingOpsTasks());
+      client.create(Paths.statusRollingOpsTasks(ROLLING_OP_ID));
     }
 
-    if (!dgExists) {
-      exception.expect(DeploymentGroupDoesNotExistException.class);
+    if (!opExists) {
+      exception.expect(RollingOperationDoesNotExistException.class);
     } else if (tasksExist != tasksExistWhenCommitting) {
       exception.expect(HeliosRuntimeException.class);
     }
 
-    masterModel.stopDeploymentGroup(GROUP_NAME);
+    masterModel.stopRollingOperation(ROLLING_OP_ID);
 
     // Verify that the state in ZK is correct:
     // * tasks are not present
@@ -127,9 +136,9 @@ public class StopDeploymentGroupTest {
     //
     // When checking for the existence of the tasks make sure we use the client that doesn't have
     // the exists() method mocked out!
-    assertNull(this.client.exists(Paths.statusDeploymentGroupTasks(GROUP_NAME)));
-    final DeploymentGroupStatus status = masterModel.getDeploymentGroupStatus(GROUP_NAME);
-    assertEquals(DeploymentGroupStatus.State.FAILED, status.getState());
+    assertNull(this.client.exists(Paths.statusRollingOpsTasks(ROLLING_OP_ID)));
+    final RollingOperationStatus status = masterModel.getRollingOperationStatus(ROLLING_OP_ID);
+    assertEquals(RollingOperationStatus.State.FAILED, status.getState());
   }
 
 }

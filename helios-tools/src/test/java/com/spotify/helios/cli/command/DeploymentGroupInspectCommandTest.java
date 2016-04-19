@@ -24,9 +24,9 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.protocol.DeploymentGroupResponse;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -57,8 +57,12 @@ public class DeploymentGroupInspectCommandTest {
   private static final List<HostSelector> HOST_SELECTORS = ImmutableList.of(
       HostSelector.parse("foo=bar"),
       HostSelector.parse("baz=qux"));
-  private static final DeploymentGroup DEPLOYMENT_GROUP = DeploymentGroup.newBuilder()
-      .setName(NAME).setHostSelectors(HOST_SELECTORS).setJobId(JOB).build();
+  private static final DeploymentGroupResponse DEPLOYMENT_GROUP =
+      DeploymentGroupResponse.builder()
+          .name(NAME)
+          .hostSelectors(HOST_SELECTORS)
+          .jobId(JOB)
+          .build();
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
@@ -79,7 +83,7 @@ public class DeploymentGroupInspectCommandTest {
     command = new DeploymentGroupInspectCommand(subparser);
 
     when(client.deploymentGroup(NAME)).thenReturn(Futures.immediateFuture(DEPLOYMENT_GROUP));
-    final ListenableFuture<DeploymentGroup> nullFuture = Futures.immediateFuture(null);
+    final ListenableFuture<DeploymentGroupResponse> nullFuture = Futures.immediateFuture(null);
     when(client.deploymentGroup(NON_EXISTENT_NAME)).thenReturn(nullFuture);
   }
 
@@ -103,7 +107,8 @@ public class DeploymentGroupInspectCommandTest {
     final int ret = command.run(options, client, out, true, null);
 
     assertEquals(0, ret);
-    final DeploymentGroup output = Json.read(baos.toString(), DeploymentGroup.class);
+    final DeploymentGroupResponse output = Json.read(
+        baos.toString(), DeploymentGroupResponse.class);
 
     assertEquals(DEPLOYMENT_GROUP, output);
   }

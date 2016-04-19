@@ -51,6 +51,7 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.CreateJobResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupResponse;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
@@ -407,8 +408,8 @@ public class HeliosClient implements Closeable {
     return transform(request(uri("/jobs/statuses"), "POST", jobs), converter);
   }
 
-  public ListenableFuture<DeploymentGroup> deploymentGroup(final String name) {
-    return get(uri("/deployment-group/" + name), new TypeReference<DeploymentGroup>() {
+  public ListenableFuture<DeploymentGroupResponse> deploymentGroup(final String name) {
+    return get(uri("/deployment-group/" + name), new TypeReference<DeploymentGroupResponse>() {
     });
   }
 

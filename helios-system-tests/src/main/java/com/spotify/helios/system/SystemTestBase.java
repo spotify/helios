@@ -58,13 +58,13 @@ import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.Job.Builder;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.RollingOperationStatus;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -987,22 +987,22 @@ public abstract class SystemTestBase {
     });
   }
 
-  protected DeploymentGroupStatus awaitDeploymentGroupStatus(
+  protected RollingOperationStatus awaitRollingOperationStatus(
       final HeliosClient client,
       final String name,
-      final DeploymentGroupStatus.State state)
+      final RollingOperationStatus.State state)
       throws Exception {
-    return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<DeploymentGroupStatus>() {
+    return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<RollingOperationStatus>() {
       @Override
-      public DeploymentGroupStatus call() throws Exception {
+      public RollingOperationStatus call() throws Exception {
         final DeploymentGroupStatusResponse response = getOrNull(
             client.deploymentGroupStatus(name));
 
         if (response != null) {
-          final DeploymentGroupStatus status = response.getDeploymentGroupStatus();
+          final RollingOperationStatus status = response.getLastRollingOpStatus();
           if (status.getState().equals(state)) {
             return status;
-          } else if (status.getState().equals(DeploymentGroupStatus.State.FAILED)) {
+          } else if (status.getState().equals(RollingOperationStatus.State.FAILED)) {
             assertEquals(state, status.getState());
           }
         }

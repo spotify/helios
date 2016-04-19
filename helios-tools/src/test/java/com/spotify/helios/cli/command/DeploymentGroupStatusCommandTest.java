@@ -25,11 +25,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.protocol.DeploymentGroupResponse;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
@@ -62,8 +62,13 @@ public class DeploymentGroupStatusCommandTest {
   private static final List<HostSelector> HOST_SELECTORS = ImmutableList.of(
       HostSelector.parse("a=b"), HostSelector.parse("foo=bar"));
   private static final RolloutOptions ROLLOUT_OPTIONS = RolloutOptions.newBuilder().build();
-  private static final DeploymentGroup DEPLOYMENT_GROUP = new DeploymentGroup(
-      GROUP_NAME, HOST_SELECTORS, JOB_ID, ROLLOUT_OPTIONS);
+  private static final DeploymentGroupResponse DEPLOYMENT_GROUP = DeploymentGroupResponse.builder()
+      .name(GROUP_NAME)
+      .hostSelectors(HOST_SELECTORS)
+      .jobId(JOB_ID)
+      .rolloutOptions(ROLLOUT_OPTIONS)
+      .build();
+
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
@@ -94,9 +99,11 @@ public class DeploymentGroupStatusCommandTest {
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
         "host3", null, null));
 
-    final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
-        DEPLOYMENT_GROUP, DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
-        hostStatuses, null);
+    final DeploymentGroupStatusResponse status = DeploymentGroupStatusResponse.builder()
+        .deploymentGroupResponse(DEPLOYMENT_GROUP)
+        .status(DeploymentGroupStatusResponse.Status.ROLLING_OUT)
+        .hostStatuses(hostStatuses)
+        .build();
 
     when(client.deploymentGroupStatus(GROUP_NAME)).thenReturn(Futures.immediateFuture(status));
     when(options.getString("name")).thenReturn(GROUP_NAME);
@@ -123,8 +130,11 @@ public class DeploymentGroupStatusCommandTest {
 
   @Test
   public void testDeploymentGroupStatusBeforeRollingUpdate() throws Exception {
-    final DeploymentGroup deploymentGroupWithNoJob = new DeploymentGroup(
-        GROUP_NAME, HOST_SELECTORS, null, ROLLOUT_OPTIONS);
+    final DeploymentGroupResponse deploymentGroupWithNoJob = DeploymentGroupResponse.builder()
+        .name(GROUP_NAME)
+        .hostSelectors(HOST_SELECTORS)
+        .rolloutOptions(ROLLOUT_OPTIONS)
+        .build();
 
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
@@ -134,9 +144,11 @@ public class DeploymentGroupStatusCommandTest {
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
         "host3", null, null));
 
-    final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
-        deploymentGroupWithNoJob, DeploymentGroupStatusResponse.Status.IDLE, null,
-        hostStatuses, null);
+    final DeploymentGroupStatusResponse status = DeploymentGroupStatusResponse.builder()
+        .deploymentGroupResponse(deploymentGroupWithNoJob)
+        .status(DeploymentGroupStatusResponse.Status.IDLE)
+        .hostStatuses(hostStatuses)
+        .build();
 
     when(client.deploymentGroupStatus(GROUP_NAME)).thenReturn(Futures.immediateFuture(status));
     when(options.getString("name")).thenReturn(GROUP_NAME);
@@ -171,9 +183,12 @@ public class DeploymentGroupStatusCommandTest {
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
         "host3", null, null));
 
-    final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
-        DEPLOYMENT_GROUP, DeploymentGroupStatusResponse.Status.ROLLING_OUT, "Oops!",
-        hostStatuses, null);
+    final DeploymentGroupStatusResponse status = DeploymentGroupStatusResponse.builder()
+        .deploymentGroupResponse(DEPLOYMENT_GROUP)
+        .status(DeploymentGroupStatusResponse.Status.ROLLING_OUT)
+        .error("Oops!")
+        .hostStatuses(hostStatuses)
+        .build();
 
     when(client.deploymentGroupStatus(GROUP_NAME)).thenReturn(Futures.immediateFuture(status));
     when(options.getString("name")).thenReturn(GROUP_NAME);
@@ -225,9 +240,11 @@ public class DeploymentGroupStatusCommandTest {
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(
         "host3", JOB_ID, TaskStatus.State.PULLING_IMAGE));
 
-    final DeploymentGroupStatusResponse status = new DeploymentGroupStatusResponse(
-        DEPLOYMENT_GROUP, DeploymentGroupStatusResponse.Status.ROLLING_OUT, null,
-        hostStatuses, null);
+    final DeploymentGroupStatusResponse status = DeploymentGroupStatusResponse.builder()
+        .deploymentGroupResponse(DEPLOYMENT_GROUP)
+        .status(DeploymentGroupStatusResponse.Status.ROLLING_OUT)
+        .hostStatuses(hostStatuses)
+        .build();
 
     when(client.deploymentGroupStatus(GROUP_NAME)).thenReturn(Futures.immediateFuture(status));
     when(options.getString("name")).thenReturn(GROUP_NAME);
