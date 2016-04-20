@@ -17,12 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.io.Files;
-import com.google.common.io.Resources;
-
-import com.fasterxml.jackson.databind.JsonNode;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
@@ -31,6 +25,13 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.io.Files;
+import com.google.common.io.Resources;
 
 import org.joda.time.DateTime;
 
@@ -48,14 +49,15 @@ import java.util.regex.Pattern;
 
 import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.io.Resources.asCharSource;
 import static java.lang.Integer.toHexString;
 import static java.util.Arrays.asList;
 import static org.junit.Assert.fail;
 
 public class TemporaryJobBuilder {
+
   private static final Pattern JOB_NAME_FORBIDDEN_CHARS = Pattern.compile("[^0-9a-zA-Z-_.]+");
   private static final int DEFAULT_EXPIRES_MINUTES = 30;
 
@@ -298,31 +300,73 @@ public class TemporaryJobBuilder {
     return job;
   }
 
+  /**
+   * Set the {@link #image(String)} field for the Docker image to use in this job from the output of
+   * docker-maven-plugin (image_info.json on classpath) or dockerfile-maven-plugin
+   * (docker/image-name on classpath)
+   */
   public TemporaryJobBuilder imageFromBuild() {
     final String envPath = env.get("IMAGE_INFO_PATH");
     if (envPath != null) {
       return imageFromInfoFile(envPath);
-    } else {
-      final String name = fromNullable(env.get("IMAGE_INFO_NAME")).or("image_info.json");
-      URL info;
-      try {
-        info = Resources.getResource(name);
-      } catch (IllegalArgumentException e) {
-        info = getFromFileSystem(name);
-        if (info == null) {
-          throw new IllegalArgumentException(
-              e.getMessage() + " Try building the docker image first with `mvn docker:build` "
-              + "which will generate image_info.json.");
-        }
-      }
-
-      try {
-        final String json = Resources.asCharSource(info, UTF_8).read();
-        return imageFromInfoJson(json, info.toString());
-      } catch (IOException e) {
-        throw new AssertionError("Failed to load image info", e);
-      }
     }
+
+    // try image_info.json first, then docker/image_name
+    if (!imageInfoFromJson() && !imageInfoFromImageNameFile()) {
+      throw new IllegalArgumentException(
+          "Could not find image_info.json or docker/image_name. "
+          + "Try building the docker image first with "
+          + "`mvn docker:build` or `mvn dockerfile:build`");
+    }
+    return this;
+  }
+
+  /**
+   * Sets image based on image_info.json
+   *
+   * @return true/false if image_info was loaded
+   */
+  private boolean imageInfoFromJson() {
+    final String name = "image_info.json";
+    final URL info = loadFile(name);
+
+    // image_info.json not found
+    if (info == null) {
+      return false;
+    }
+
+    try {
+      final String json = asCharSource(info, UTF_8).read();
+      imageFromInfoJson(json, info.toString());
+      return true;
+    } catch (IOException e) {
+      throw new AssertionError("Failed to load image info", e);
+    }
+  }
+
+  private boolean imageInfoFromImageNameFile() {
+    final URL resource = loadFile("docker/image_name");
+    if (resource == null) {
+      return false;
+    }
+    try {
+      final String imageName = Resources.asCharSource(resource, UTF_8).read();
+      image(imageName);
+      return true;
+    } catch (IOException e) {
+      throw new AssertionError("Failed to load image info", e);
+    }
+  }
+
+  /** Load file from classpath, falling back to filesystem */
+  private URL loadFile(final String name) {
+    URL info;
+    try {
+      info = Resources.getResource(name);
+    } catch (IllegalArgumentException e) {
+      info = getFromFileSystem(name);
+    }
+    return info;
   }
 
   private URL getFromFileSystem(String name) {
@@ -334,7 +378,7 @@ public class TemporaryJobBuilder {
     try {
       return file.toURI().toURL();
     } catch (MalformedURLException e) {
-      throw new RuntimeException("TEST");
+      throw Throwables.propagate(e);
     }
   }
 
