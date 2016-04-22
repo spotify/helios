@@ -107,6 +107,66 @@ public class HostSelectorTest {
   }
 
   @Test
+  public void testInOperator() {
+    final HostSelector hostSelector = HostSelector.parse("a in (foo, bar)");
+    assertTrue(hostSelector.matches("foo"));
+    assertTrue(hostSelector.matches("bar"));
+    assertFalse(hostSelector.matches("baz"));
+
+    final HostSelector hostSelector2 = HostSelector.parse("a in(foo,bar)");
+    assertTrue(hostSelector2.matches("foo"));
+    assertTrue(hostSelector2.matches("bar"));
+    assertFalse(hostSelector2.matches("baz"));
+
+    final HostSelector hostSelector3 = HostSelector.parse("a in(foo)");
+    assertTrue(hostSelector3.matches("foo"));
+    assertFalse(hostSelector3.matches("baz"));
+  }
+
+  @Test
+  public void testInOperatorEmptySet() {
+    final HostSelector hostSelector = HostSelector.parse("a in ()");
+    assertFalse(hostSelector.matches("foo"));
+    assertFalse(hostSelector.matches("bar"));
+    assertFalse(hostSelector.matches("baz"));
+
+    final HostSelector hostSelector2 = HostSelector.parse("a in()");
+    assertFalse(hostSelector2.matches("foo"));
+    assertFalse(hostSelector2.matches("bar"));
+    assertFalse(hostSelector2.matches("baz"));
+  }
+
+  @Test
+  public void testNotInOperator() {
+    final HostSelector hostSelector = HostSelector.parse("a notin (foo, bar)");
+    assertFalse(hostSelector.matches("foo"));
+    assertFalse(hostSelector.matches("bar"));
+    assertTrue(hostSelector.matches("baz"));
+
+    final HostSelector hostSelector2 = HostSelector.parse("a notin(foo,bar)");
+    assertFalse(hostSelector2.matches("foo"));
+    assertFalse(hostSelector2.matches("bar"));
+    assertTrue(hostSelector2.matches("baz"));
+
+    final HostSelector hostSelector3 = HostSelector.parse("a notin(foo)");
+    assertFalse(hostSelector3.matches("foo"));
+    assertTrue(hostSelector3.matches("baz"));
+  }
+
+  @Test
+  public void testNotInOperatorEmptySet() {
+    final HostSelector hostSelector = HostSelector.parse("a notin ()");
+    assertTrue(hostSelector.matches("foo"));
+    assertTrue(hostSelector.matches("bar"));
+    assertTrue(hostSelector.matches("baz"));
+
+    final HostSelector hostSelector2 = HostSelector.parse("a notin()");
+    assertTrue(hostSelector2.matches("foo"));
+    assertTrue(hostSelector2.matches("bar"));
+    assertTrue(hostSelector2.matches("baz"));
+  }
+
+  @Test
   public void testToPrettyString() {
     assertEquals("A != B", HostSelector.parse("A!=B").toPrettyString());
     assertEquals("A = B", HostSelector.parse("A=B").toPrettyString());

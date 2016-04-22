@@ -49,6 +49,30 @@ public class HostSelector extends Descriptor {
       public boolean test(final String a, final Object b) {
         return !Objects.equals(a, b);
       }
+    }),
+    IN("in", new BiPredicate<String, Object>() {
+      @Override
+      public boolean test(final String a, final Object b) {
+        final String[] parts = ((String) b).replaceAll("(\\(|\\)| )", "").split(",");
+        for (final String part : parts) {
+          if (part.equals(a)) {
+            return true;
+          }
+        }
+        return false;
+      }
+    }),
+    NOT_IN("notin", new BiPredicate<String, Object>() {
+      @Override
+      public boolean test(final String a, final Object b) {
+        final String[] parts = ((String) b).replaceAll("(\\(|\\)| )", "").split(",");
+        for (final String part : parts) {
+          if (part.equals(a)) {
+            return false;
+          }
+        }
+        return true;
+      }
     });
 
     final String operatorName;
@@ -62,9 +86,9 @@ public class HostSelector extends Descriptor {
   }
 
   private static final String LABEL_PATTERN = "[\\p{Alnum}\\._-]+";
-  private static final String OPERAND_PATTERN = "[\\p{Alnum}\\._-]+";
+  private static final String OPERAND_PATTERN = "[\\p{Alnum}\\._-]+|\\([\\p{Alnum}\\.\\s,_-]*\\)";
   private static final Pattern PATTERN = Pattern.compile(
-      format("^(%s)\\s*(!=|=)\\s*(%s)$", LABEL_PATTERN, OPERAND_PATTERN));
+      format("^(%s)\\s*(!=|=|in|notin)\\s*(%s)$", LABEL_PATTERN, OPERAND_PATTERN));
 
   private final String label;
   private final Operator operator;
