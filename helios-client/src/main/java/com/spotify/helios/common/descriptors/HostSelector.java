@@ -17,11 +17,17 @@
 
 package com.spotify.helios.common.descriptors;
 
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import org.jetbrains.annotations.Nullable;
 
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,13 +46,8 @@ public class HostSelector extends Descriptor {
   private static BiPredicate<String, Object> IN_BIPREDICATE = new BiPredicate<String, Object>() {
     @Override
     public boolean test(final String a, final Object b) {
-      final String[] parts = ((String) b).replaceAll("(\\(|\\)| )", "").split(",");
-      for (final String part : parts) {
-        if (part.equals(a)) {
-          return true;
-        }
-      }
-      return false;
+      @SuppressWarnings("unchecked") final Iterable<String> iterable = (Iterable<String>) b;
+      return Iterables.contains(iterable, a);
     }
   };
 
@@ -110,7 +111,13 @@ public class HostSelector extends Descriptor {
         throw new IllegalArgumentException(format("Unknown operator '%s'", opStr));
       }
 
-      return new HostSelector(label, operator, value);
+      if (operator == Operator.IN || operator == Operator.NOT_IN) {
+        final List<String> parts = Lists.newArrayList(Sets.newHashSet(
+          Arrays.asList(value.replaceAll("\\(|\\)| ", "").split(","))));
+        return new HostSelector(label, operator, parts);
+      } else {
+        return new HostSelector(label, operator, value);
+      }
     } else {
       return null;
     }
