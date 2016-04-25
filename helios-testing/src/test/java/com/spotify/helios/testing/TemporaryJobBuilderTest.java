@@ -158,7 +158,7 @@ public class TemporaryJobBuilderTest {
 
   @Test
   public void testImageFromDockerfileMavenPlugin() throws Exception {
-    writeToFile("foobar:from.dockerfile", "target/docker/image-name");
+    writeToFile("foobar:from.dockerfile\n", "target/docker/image-name");
 
     builder.imageFromBuild();
 
