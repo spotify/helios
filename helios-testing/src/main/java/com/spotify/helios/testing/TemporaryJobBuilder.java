@@ -350,7 +350,7 @@ public class TemporaryJobBuilder {
       return false;
     }
     try {
-      final String imageName = Resources.asCharSource(resource, UTF_8).read();
+      final String imageName = Resources.asCharSource(resource, UTF_8).read().trim();
       image(imageName);
       return true;
     } catch (IOException e) {
