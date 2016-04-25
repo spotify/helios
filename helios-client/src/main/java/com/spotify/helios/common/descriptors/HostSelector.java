@@ -37,6 +37,19 @@ public class HostSelector extends Descriptor {
     boolean test(T t, U u);
   }
 
+  private static BiPredicate<String, Object> IN_BIPREDICATE = new BiPredicate<String, Object>() {
+    @Override
+    public boolean test(final String a, final Object b) {
+      final String[] parts = ((String) b).replaceAll("(\\(|\\)| )", "").split(",");
+      for (final String part : parts) {
+        if (part.equals(a)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  };
+
   public enum Operator {
     EQUALS("=", new BiPredicate<String, Object>() {
       @Override
@@ -48,6 +61,13 @@ public class HostSelector extends Descriptor {
       @Override
       public boolean test(final String a, final Object b) {
         return !Objects.equals(a, b);
+      }
+    }),
+    IN("in", IN_BIPREDICATE),
+    NOT_IN("notin", new BiPredicate<String, Object>() {
+      @Override
+      public boolean test(final String a, final Object b) {
+        return !IN_BIPREDICATE.test(a, b);
       }
     });
 
@@ -62,9 +82,9 @@ public class HostSelector extends Descriptor {
   }
 
   private static final String LABEL_PATTERN = "[\\p{Alnum}\\._-]+";
-  private static final String OPERAND_PATTERN = "[\\p{Alnum}\\._-]+";
+  private static final String OPERAND_PATTERN = "[\\p{Alnum}\\._-]+|\\([\\p{Alnum}\\.\\s,_-]*\\)";
   private static final Pattern PATTERN = Pattern.compile(
-      format("^(%s)\\s*(!=|=)\\s*(%s)$", LABEL_PATTERN, OPERAND_PATTERN));
+      format("^(%s)\\s*(!=|=|in|notin)\\s*(%s)$", LABEL_PATTERN, OPERAND_PATTERN));
 
   private final String label;
   private final Operator operator;
