@@ -17,37 +17,46 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.Futures;
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.protocol.CreateJobResponse;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.protocol.CreateJobResponse;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
+import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -57,9 +66,12 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 public class JobCreateCommandTest {
+
+  private static final Logger log = LoggerFactory.getLogger(JobCreateCommandTest.class);
 
   private static final String JOB_NAME = "foo";
   private static final String JOB_ID = JOB_NAME + ":123";
@@ -74,9 +86,6 @@ public class JobCreateCommandTest {
   private final PrintStream out = new PrintStream(baos);
 
   private JobCreateCommand command;
-
-  final CreateJobResponse okResponse =
-      new CreateJobResponse(CreateJobResponse.Status.OK, Collections.<String>emptyList(), "12345");
 
   private Map<String, String> envVars = Maps.newHashMap();
 
@@ -95,8 +104,22 @@ public class JobCreateCommandTest {
 
     command = new JobCreateCommand(subparser, envVarSupplier);
 
-    when(client.createJob(jobWhoseNameIs(JOB_NAME))).thenReturn(
-        Futures.immediateFuture(okResponse));
+    when(client.createJob(jobWhoseNameIs(JOB_NAME))).thenReturn(immediateFuture(
+        new CreateJobResponse(CreateJobResponse.Status.OK,
+                              Collections.<String>emptyList(),
+                              "12345")
+    ));
+  }
+
+  private int runCommand() throws InterruptedException, ExecutionException, IOException {
+    return runCommand(false);
+  }
+
+  private int runCommand(boolean json)
+      throws InterruptedException, ExecutionException, IOException {
+    final int ret = command.run(options, client, out, json, null);
+    log.debug("Output from command: [{}]", baos.toString().replaceAll("\n", "\\\\n"));
+    return ret;
   }
 
   @Test
@@ -109,14 +132,14 @@ public class JobCreateCommandTest {
     when(options.getInt("grace_period")).thenReturn(null);
     // TODO (mbrown): this path is weird when running from IntelliJ, should be changed to not
     // care about CWD
-    doReturn(new File("src/main/resources/job_config.json")).when(options).get("file");
+    doReturn(new File("src/test/resources/job_config.json")).when(options).get("file");
     doReturn(SECURITY_OPT).when(options).getList("security_opt");
     when(options.getString("network_mode")).thenReturn(NETWORK_MODE);
     when(options.getList("metadata")).thenReturn(Lists.<Object>newArrayList("a=1", "b=2"));
     doReturn(ImmutableList.of("cap1", "cap2")).when(options).getList("add_capability");
     doReturn(ImmutableList.of("cap3", "cap4")).when(options).getList("drop_capability");
 
-    final int ret = command.run(options, client, out, false, null);
+    final int ret = runCommand();
 
     assertEquals(0, ret);
     final String output = baos.toString();
@@ -139,7 +162,7 @@ public class JobCreateCommandTest {
   public void testJobCreateCommandFailsWithInvalidJobID() throws Exception {
     when(options.getString("id")).thenReturn(JOB_NAME);
     when(options.getString("image")).thenReturn("busybox:latest");
-    final int ret = command.run(options, client, out, false, null);
+    final int ret = runCommand();
     assertEquals(1, ret);
   }
 
@@ -148,7 +171,7 @@ public class JobCreateCommandTest {
     when(options.getString("id")).thenReturn(JOB_ID);
     when(options.getString("image")).thenReturn("busybox");
     doReturn(ImmutableList.of("dns=53:53/http")).when(options).getList("port");
-    final int ret = command.run(options, client, out, true, null);
+    final int ret = runCommand(true);
 
     assertEquals(1, ret);
     final String output = baos.toString();
@@ -161,7 +184,7 @@ public class JobCreateCommandTest {
     when(options.getString("id")).thenReturn(JOB_ID);
     when(options.getString("image")).thenReturn("busybox:latest");
     doReturn(new File("non/existant/file")).when(options).get("file");
-    command.run(options, client, out, false, null);
+    runCommand();
   }
 
   /**
@@ -177,7 +200,7 @@ public class JobCreateCommandTest {
 
     when(options.getList("metadata")).thenReturn(Lists.<Object>newArrayList("foo=bar"));
 
-    final int ret = command.run(options, client, out, false, null);
+    final int ret = runCommand();
 
     assertEquals(0, ret);
     final String output = baos.toString();
@@ -213,6 +236,41 @@ public class JobCreateCommandTest {
         return false;
       }
     });
+  }
+
+  /**
+   * Ensure that creating a job from a json file which has added and dropped capabilities is not
+   * overwritten by empty arguments in the CLI switches.
+   */
+  @Test
+  public void testAddCapabilitiesFromJsonFile() throws Exception {
+    when(options.getString("id")).thenReturn(JOB_ID);
+    when(options.getString("image")).thenReturn("foobar");
+
+    when(options.get("file"))
+        .thenReturn(new File("src/test/resources/job_config_extra_capabilities.json"));
+
+    when(options.getList("add-capability")).thenReturn(Collections.emptyList());
+    when(options.getList("drop-capability")).thenReturn(Collections.emptyList());
+
+    assertEquals(0, runCommand());
+
+    verify(client).createJob(argThat(hasCapabilities(ImmutableSet.of("cap_one", "cap_two"),
+                                                     ImmutableSet.of("cap_three", "cap_four"))
+    ));
+  }
+
+  private Matcher<Job> hasCapabilities(final Set<String> added, final Set<String> dropped) {
+    final String description =
+        "Job with addCapabilities=" + added + " and droppedCapabilities=" + dropped;
+
+    return new CustomTypeSafeMatcher<Job>(description) {
+      @Override
+      protected boolean matchesSafely(final Job actual) {
+        return Objects.equals(added, actual.getAddCapabilities()) &&
+               Objects.equals(dropped, actual.getDropCapabilities());
+      }
+    };
   }
 
 }

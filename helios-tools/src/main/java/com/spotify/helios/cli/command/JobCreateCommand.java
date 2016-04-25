@@ -17,15 +17,6 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableMap.Builder;
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.JobValidator;
 import com.spotify.helios.common.Json;
@@ -38,6 +29,15 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
 import com.spotify.helios.common.protocol.CreateJobResponse;
+
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMap.Builder;
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -546,8 +546,15 @@ public class JobCreateCommand extends ControlCommand {
       builder.setToken(token);
     }
 
-    builder.setAddCapabilities(options.<String>getList(addCapabilityArg.getDest()));
-    builder.setDropCapabilities(options.<String>getList(dropCapabilityArg.getDest()));
+    final List<String> addCaps = options.<String>getList(addCapabilityArg.getDest());
+    if (addCaps != null && !addCaps.isEmpty()) {
+      builder.setAddCapabilities(addCaps);
+    }
+
+    final List<String> dropCaps = options.<String>getList(dropCapabilityArg.getDest());
+    if (dropCaps != null && !dropCaps.isEmpty()) {
+      builder.setDropCapabilities(dropCaps);
+    }
 
     // We build without a hash here because we want the hash to be calculated server-side.
     // This allows different CLI versions to be cross-compatible with different master versions

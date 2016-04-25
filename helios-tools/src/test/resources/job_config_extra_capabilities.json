@@ -1,0 +1,4 @@
+{
+  "addCapabilities": ["cap_one", "cap_two"],
+  "dropCapabilities": ["cap_three", "cap_four"]
+}

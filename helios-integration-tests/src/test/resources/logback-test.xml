@@ -9,7 +9,6 @@
   </appender>
 
   <logger name="com.spotify.helios.client" level="info"/>
-  <logger name="com.spotify.hermes" level="info"/>
 
   <root level="info">
     <appender-ref ref="STDOUT" />
