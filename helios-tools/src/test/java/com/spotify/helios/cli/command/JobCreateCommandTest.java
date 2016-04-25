@@ -109,7 +109,7 @@ public class JobCreateCommandTest {
     when(options.getInt("grace_period")).thenReturn(null);
     // TODO (mbrown): this path is weird when running from IntelliJ, should be changed to not
     // care about CWD
-    doReturn(new File("src/main/resources/job_config.json")).when(options).get("file");
+    doReturn(new File("src/test/resources/job_config.json")).when(options).get("file");
     doReturn(SECURITY_OPT).when(options).getList("security_opt");
     when(options.getString("network_mode")).thenReturn(NETWORK_MODE);
     when(options.getList("metadata")).thenReturn(Lists.<Object>newArrayList("a=1", "b=2"));
