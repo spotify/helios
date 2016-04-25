@@ -78,12 +78,12 @@ public class TemporaryJobBuilderTest {
     cleanup();
   }
 
-  /** remove the image_info.json and docker/image_name files to start/end with a clean slate */
+  /** remove the image_info.json and docker/image-name files to start/end with a clean slate */
   @After
   public void cleanup() throws Exception {
     final Set<String> pathsToDelete = ImmutableSet.of(
         "image_info.json", "target/image_info.json",
-        "docker/image_name", "target/docker/image_name");
+        "docker/image-name", "target/docker/image-name");
 
     for (final String path : pathsToDelete) {
       deleteFromClasspath(path);
@@ -158,7 +158,7 @@ public class TemporaryJobBuilderTest {
 
   @Test
   public void testImageFromDockerfileMavenPlugin() throws Exception {
-    writeToFile("foobar:from.dockerfile", "target/docker/image_name");
+    writeToFile("foobar:from.dockerfile", "target/docker/image-name");
 
     builder.imageFromBuild();
 

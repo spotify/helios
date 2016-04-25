@@ -311,10 +311,10 @@ public class TemporaryJobBuilder {
       return imageFromInfoFile(envPath);
     }
 
-    // try image_info.json first, then docker/image_name
+    // try image_info.json first, then docker/image-name
     if (!imageInfoFromJson() && !imageInfoFromImageNameFile()) {
       throw new IllegalArgumentException(
-          "Could not find image_info.json or docker/image_name. "
+          "Could not find image_info.json or docker/image-name. "
           + "Try building the docker image first with "
           + "`mvn docker:build` or `mvn dockerfile:build`");
     }
@@ -345,7 +345,7 @@ public class TemporaryJobBuilder {
   }
 
   private boolean imageInfoFromImageNameFile() {
-    final URL resource = loadFile("docker/image_name");
+    final URL resource = loadFile("docker/image-name");
     if (resource == null) {
       return false;
     }
