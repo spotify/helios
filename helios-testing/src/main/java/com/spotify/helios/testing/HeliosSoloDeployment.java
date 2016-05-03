@@ -81,6 +81,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public static final String BOOT2DOCKER_SIGNATURE = "Boot2Docker";
   public static final String PROBE_IMAGE = "onescience/alpine:latest";
   public static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
+  public static final String HELIOS_ID_SUFFIX = "-solo-host";
   public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
   public static final String HELIOS_SOLO_PROFILE = "helios.solo.profile";
   public static final String HELIOS_SOLO_PROFILES = "helios.solo.profiles.";
@@ -307,6 +308,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     final List<String> env = new ArrayList<>();
     env.addAll(this.env);
     env.add("HELIOS_NAME=" + this.namespace + HELIOS_NAME_SUFFIX);
+    env.add("HELIOS_ID=" + this.namespace + HELIOS_ID_SUFFIX);
     env.add("HOST_ADDRESS=" + heliosHost);
 
     final String heliosPort = String.format("%d/tcp", HELIOS_MASTER_PORT);
