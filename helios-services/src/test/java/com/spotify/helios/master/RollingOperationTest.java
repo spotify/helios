@@ -17,9 +17,15 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.collect.ImmutableList;
+
 import com.spotify.helios.common.HeliosRuntimeException;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.HostSelector;
+import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.RollingOperation;
 import com.spotify.helios.common.descriptors.RollingOperationStatus;
+import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -35,21 +41,25 @@ import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
+import org.junit.Test;
 import org.junit.experimental.theories.Theories;
 import org.junit.experimental.theories.Theory;
 import org.junit.experimental.theories.suppliers.TestedOn;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 
+import java.util.List;
+
 import static com.spotify.helios.common.descriptors.RollingOperationStatus.State.NEW;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 @RunWith(Theories.class)
-public class StopRollingOperationTest {
+public class RollingOperationTest {
 
   private static final String ROLLING_OP_ID = "uuid";
   private TestingServer zkServer;
@@ -74,6 +84,47 @@ public class StopRollingOperationTest {
   public void tearDown() throws Exception {
     client.close();
     zkServer.close();
+  }
+
+  // A test that verifies we only keep MAX_ROLLING_OPERATION_HISTORY rolling operations per
+  // deployment group in ZK.
+  @Test
+  public void testRollingOperationHistoryTruncated() throws Exception {
+    final ZooKeeperClient client = spy(this.client);
+    final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
+        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
+        getClass().getName(),
+        mock(KafkaSender.class)));
+
+    final Job job = Job.newBuilder()
+        .setCommand(ImmutableList.of("COMMAND"))
+        .setImage("IMAGE")
+        .setName("JOB_NAME")
+        .setVersion("VERSION")
+        .build();
+
+    final DeploymentGroup dg = new DeploymentGroup(
+        "my_group", ImmutableList.of(HostSelector.parse("role=foo")));
+    final RolloutOptions options = RolloutOptions.newBuilder().build();
+
+    doReturn(job).when(masterModel).getJob(job.getId());
+    doReturn(ImmutableList.of()).when(masterModel).getDeploymentGroupHosts(dg.getName());
+
+    masterModel.addDeploymentGroup(dg);
+
+    for (int i = 0; i < 11; i++) {
+      masterModel.rollingUpdate(dg, job.getId(), options);
+    }
+
+    final List<RollingOperation> ops = masterModel.getRollingOperations(dg.getName());
+    assertEquals(ops.size(), ZooKeeperMasterModel.MAX_ROLLING_OPERATION_HISTORY);
+    assertEquals(ops.get(0), masterModel.getLastRollingOperation(dg.getName()));
+
+    for (final RollingOperation rolling: ops) {
+      final RollingOperationStatus status = masterModel.getRollingOperationStatus(rolling.getId());
+      assertEquals(rolling.getJobId(), job.getId());
+      assertEquals(status.getState(), RollingOperationStatus.State.DONE);
+    }
   }
 
   // A test that...

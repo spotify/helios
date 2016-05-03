@@ -147,7 +147,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       STRING_LIST_TYPE =
       new TypeReference<List<String>>() {};
 
-  private static final int MAX_ROLLING_OPERATION_HISTORY = 10;
+  public static final int MAX_ROLLING_OPERATION_HISTORY = 10;
   private static final String ROLLING_OPERATION_EVENTS_KAFKA_TOPIC = "HeliosDeploymentGroupEvents";
   private static final RollingOperationEventFactory ROLLING_OPERATION_EVENT_FACTORY =
       new RollingOperationEventFactory();
@@ -432,7 +432,21 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  private List<String> getRollingOperations(final ZooKeeperClient client, final String groupName)
+  public List<RollingOperation> getRollingOperations(final String groupName)
+    throws DeploymentGroupDoesNotExistException {
+    final ZooKeeperClient client = provider.get("getRollingOperations");
+    final List<RollingOperation> ops = new ArrayList<RollingOperation>();
+    for (final String id : getRollingOperationIds(client, groupName)) {
+      try {
+        ops.add(getRollingOperation(client, id));
+      } catch (RollingOperationDoesNotExistException e) {
+        // Oh well? Skip it.
+      }
+    }
+    return ImmutableList.copyOf(ops);
+  }
+
+  private List<String> getRollingOperationIds(final ZooKeeperClient client, final String groupName)
       throws DeploymentGroupDoesNotExistException {
     try {
       final Node node = client.getNode(Paths.statusDeploymentGroupRollingOps(groupName));
@@ -491,7 +505,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException {
     // The most recent rolling operations should always be at the head of the list returned by
     // getRollingOperations().
-    for (final String rollingOpId : getRollingOperations(client, groupName)) {
+    for (final String rollingOpId : getRollingOperationIds(client, groupName)) {
       try {
         final RollingOperation rolling = getRollingOperation(client, rollingOpId);
         return rolling;
@@ -1110,7 +1124,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           "stop deployment-group " + deploymentGroupName + " failed", e);
     }
 
-    for (final String rollingOpId : getRollingOperations(client, deploymentGroupName)) {
+    for (final String rollingOpId : getRollingOperationIds(client, deploymentGroupName)) {
       try {
         stopRollingOperation(client, rollingOpId);
       } catch (RollingOperationDoesNotExistException e) {
