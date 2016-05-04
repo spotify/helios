@@ -273,7 +273,7 @@ public class AgentParser extends ServiceParser {
         .help(
             "Grace period in milliseconds for reaping containers " +
             "that are in the same namespace but no longer owned by us.")
-        .setDefault(0);
+        .setDefault(0L);
   }
 
   public AgentConfig getAgentConfig() {
