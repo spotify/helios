@@ -19,11 +19,9 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
-
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.messages.Container;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,11 +64,8 @@ public class Reaper {
     final List<Container> containers = docker.listContainers();
     final long now = System.currentTimeMillis();
     for (final Container container : containers) {
-      final long uptime = now - container.created();
-      if (uptime >= reaperGracePeriod) {
-        if (hasPrefix(container)) {
-          candidates.add(container.id());
-        }
+      if (isOldEnough(container, now) && hasPrefix(container)) {
+        candidates.add(container.id());
       }
     }
 
@@ -83,6 +78,18 @@ public class Reaper {
         reap(candidate);
       }
     }
+  }
+
+  private boolean isOldEnough(Container container, long now) {
+    final Long created = container.created();
+    if (created == null) {
+      // No creation timestamp for some reason? Let's default to old enough so we can allow it to be reaped.
+      // Otherwise it will never be eligable for reaping
+      return true;
+    }
+
+    final long uptime = now - created;
+    return uptime >= reaperGracePeriod;
   }
 
   private boolean hasPrefix(final Container container) {
