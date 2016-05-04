@@ -68,10 +68,8 @@ public class Reaper {
     for (final Container container : containers) {
       final long uptime = now - container.created();
       if (uptime >= reaperGracePeriod) {
-        for (final String name : container.names()) {
-          if (name.startsWith(prefix)) {
-            candidates.add(container.id());
-          }
+        if (hasPrefix(container)) {
+          candidates.add(container.id());
         }
       }
     }
@@ -85,6 +83,15 @@ public class Reaper {
         reap(candidate);
       }
     }
+  }
+
+  private boolean hasPrefix(final Container container) {
+    for (final String name : container.names()) {
+      if (name.startsWith(prefix)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private void reap(final String containerId) throws InterruptedException, DockerException {
