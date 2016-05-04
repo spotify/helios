@@ -68,6 +68,7 @@ public class AgentParser extends ServiceParser {
   private Argument zkRegistrationTtlMinutesArg;
   private Argument zkAclMasterDigest;
   private Argument zkAclAgentPassword;
+  private Argument reaperGracePeriod;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -142,7 +143,8 @@ public class AgentParser extends ServiceParser {
         .setNoHttp(options.getBoolean(noHttpArg.getDest()))
         .setKafkaBrokers(getKafkaBrokers())
         .setLabels(labels)
-        .setFfwdConfig(ffwdConfig(options));
+        .setFfwdConfig(ffwdConfig(options))
+        .setReaperGracePeriod(options.getLong(reaperGracePeriod.getDest()));
 
     final String explicitId = options.getString(agentIdArg.getDest());
     if (explicitId != null) {
@@ -265,6 +267,13 @@ public class AgentParser extends ServiceParser {
         .help("ZooKeeper agent password (for ZooKeeper ACLs). If the "
               + ZK_AGENT_PASSWORD_ENVVAR
               + " environment variable is present this argument is ignored.");
+
+    reaperGracePeriod = parser.addArgument("--reaper-grace-period")
+        .type(Long.class)
+        .help(
+            "Grace period in milliseconds for reaping containers " +
+            "that are in the same namespace but no longer owned by us.")
+        .setDefault(0);
   }
 
   public AgentConfig getAgentConfig() {

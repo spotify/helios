@@ -66,6 +66,7 @@ public class AgentConfig extends Configuration {
   private String zooKeeperAclAgentPassword;
   private FastForwardConfig fastForwardConfig;
   private List<String> extraHosts;
+  private long reaperGracePeriod;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -366,5 +367,14 @@ public class AgentConfig extends Configuration {
   public AgentConfig setExtraHosts(final List<String> extraHosts) {
     this.extraHosts = extraHosts;
     return this;
+  }
+
+  public AgentConfig setReaperGracePeriod(final long reaperGracePeriod) {
+    this.reaperGracePeriod = reaperGracePeriod;
+    return this;
+  }
+
+  public long getReaperGracePeriod() {
+    return reaperGracePeriod;
   }
 }

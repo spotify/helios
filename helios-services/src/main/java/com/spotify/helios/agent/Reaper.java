@@ -41,8 +41,14 @@ public class Reaper {
   private final DockerClient docker;
   private final String prefix;
 
-  public Reaper(final DockerClient docker, final String namespace) {
+  /**
+   * How long in milliseconds must the container have been alive before it's allowed to be reaped.
+   */
+  private final long reaperGracePeriod;
+
+  public Reaper(final DockerClient docker, final String namespace, long reaperGracePeriod) {
     this.docker = docker;
+    this.reaperGracePeriod = reaperGracePeriod;
     this.prefix = "/" + namespace;
   }
 
@@ -58,10 +64,14 @@ public class Reaper {
       throws DockerException, InterruptedException {
     final List<String> candidates = Lists.newArrayList();
     final List<Container> containers = docker.listContainers();
+    final long now = System.currentTimeMillis();
     for (final Container container : containers) {
-      for (final String name : container.names()) {
-        if (name.startsWith(prefix)) {
-          candidates.add(container.id());
+      final long uptime = now - container.created();
+      if (uptime >= reaperGracePeriod) {
+        for (final String name : container.names()) {
+          if (name.startsWith(prefix)) {
+            candidates.add(container.id());
+          }
         }
       }
     }
