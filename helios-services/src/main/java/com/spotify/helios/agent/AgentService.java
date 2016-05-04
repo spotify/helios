@@ -307,7 +307,7 @@ public class AgentService extends AbstractIdleService implements Managed {
       throw Throwables.propagate(e);
     }
 
-    final Reaper reaper = new Reaper(dockerClient, namespace);
+    final Reaper reaper = new Reaper(dockerClient, namespace, config.getReaperGracePeriod());
     this.agent = new Agent(model, supervisorFactory, reactorFactory, executions, portAllocator,
                            reaper);
 

@@ -19,11 +19,9 @@ package com.spotify.helios.agent;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
-
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.messages.Container;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +39,14 @@ public class Reaper {
   private final DockerClient docker;
   private final String prefix;
 
-  public Reaper(final DockerClient docker, final String namespace) {
+  /**
+   * How long in milliseconds must the container have been alive before it's allowed to be reaped.
+   */
+  private final long reaperGracePeriod;
+
+  public Reaper(final DockerClient docker, final String namespace, long reaperGracePeriod) {
     this.docker = docker;
+    this.reaperGracePeriod = reaperGracePeriod;
     this.prefix = "/" + namespace;
   }
 
@@ -58,11 +62,10 @@ public class Reaper {
       throws DockerException, InterruptedException {
     final List<String> candidates = Lists.newArrayList();
     final List<Container> containers = docker.listContainers();
+    final long now = System.currentTimeMillis();
     for (final Container container : containers) {
-      for (final String name : container.names()) {
-        if (name.startsWith(prefix)) {
-          candidates.add(container.id());
-        }
+      if (isOldEnough(container, now) && hasPrefix(container)) {
+        candidates.add(container.id());
       }
     }
 
@@ -75,6 +78,27 @@ public class Reaper {
         reap(candidate);
       }
     }
+  }
+
+  private boolean isOldEnough(Container container, long now) {
+    final Long created = container.created();
+    if (created == null) {
+      // No creation timestamp for some reason? Let's default to old enough so we can allow
+      // it to be reaped. Otherwise it will never be eligable for reaping.
+      return true;
+    }
+
+    final long uptime = now - created;
+    return uptime >= reaperGracePeriod;
+  }
+
+  private boolean hasPrefix(final Container container) {
+    for (final String name : container.names()) {
+      if (name.startsWith(prefix)) {
+        return true;
+      }
+    }
+    return false;
   }
 
   private void reap(final String containerId) throws InterruptedException, DockerException {
