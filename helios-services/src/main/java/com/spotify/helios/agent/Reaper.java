@@ -83,8 +83,8 @@ public class Reaper {
   private boolean isOldEnough(Container container, long now) {
     final Long created = container.created();
     if (created == null) {
-      // No creation timestamp for some reason? Let's default to old enough so we can allow it to be reaped.
-      // Otherwise it will never be eligable for reaping
+      // No creation timestamp for some reason? Let's default to old enough so we can allow
+      // it to be reaped. Otherwise it will never be eligable for reaping.
       return true;
     }
 
