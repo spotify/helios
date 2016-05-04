@@ -84,9 +84,9 @@ public class DefaultHttpConnector implements HttpConnector {
       // UnknownHostException's getMessage method returns just the hostname which is a
       // useless message, so log the exception class name to provide more info.
       log.debug(e.toString());
-      throw new HeliosException("Unable to connect to master", e);
+      throw new HeliosException("Unable to connect to master: " + uri, e);
     } catch (IOException e) {
-      throw new HeliosException(e);
+      throw new HeliosException("Unexpected error connecting to " + uri, e);
     }
   }
 
