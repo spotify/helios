@@ -33,6 +33,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -103,25 +104,23 @@ public class HeliosDeploymentResource extends ExternalResource {
           return null;
         }
 
-        log.info("Ensured that at least one agent has registered with ZooKeeper in this"
-                 + "HeliosDeployment. Now checking if it is UP.");
-
         // Check that at least one host is UP (is maintaining a reasonably reliable
         // connection to ZK) in addition to registering.
-        final ListenableFuture<HostStatus> statusFuture = client.hostStatus(hosts.get(0));
-        final HostStatus hostStatus;
+        final ListenableFuture<Map<String, HostStatus>> statusFuture = client.hostStatuses(hosts);
+        final Map<String, HostStatus> hostStatuses;
         try {
-          hostStatus = statusFuture.get(1, TimeUnit.SECONDS);
+          hostStatuses = statusFuture.get(1, TimeUnit.SECONDS);
         } catch (TimeoutException | InterruptedException e) {
-          log.debug("timed out waiting for hostStatus request on host {} to finish, will retry",
-                    hosts.get(0));
+          log.debug("timed out waiting for hostStatuses to finish, will retry");
           return null;
         }
 
-        if (hostStatus != null && hostStatus.getStatus() == HostStatus.Status.UP) {
-          log.info("Ensured that at least one agent is UP in this HeliosDeployment, "
-                   + "continuing with test!");
-          return true;
+        for (final HostStatus hostStatus : hostStatuses.values()) {
+          if (hostStatus != null && hostStatus.getStatus() == HostStatus.Status.UP) {
+            log.info("Ensured that at least one agent is UP in this HeliosDeployment, "
+                     + "continuing with test!");
+            return true;
+          }
         }
 
         return null;
