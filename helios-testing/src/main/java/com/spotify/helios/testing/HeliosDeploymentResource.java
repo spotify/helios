@@ -21,6 +21,7 @@ import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.HostStatus;
 
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
@@ -32,6 +33,7 @@ import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -78,9 +80,9 @@ public class HeliosDeploymentResource extends ExternalResource {
       }
     });
 
-    // ensure that at least one agent is available in this HeliosDeployment
-    // this doesn't check that the agent is UP but should be sufficient to avoid conditions
-    // like continuing with the test when starting up helios-solo before the agent is registered
+    // Ensure that at least one agent is available and UP in this HeliosDeployment.
+    // This prevents continuing with the test when starting up helios-solo before the agent is
+    // registered.
     final HeliosClient client = client();
     Polling.awaitUnchecked(30, TimeUnit.SECONDS, new Callable<Boolean>() {
       @Override
@@ -97,12 +99,30 @@ public class HeliosDeploymentResource extends ExternalResource {
           return null;
         }
 
-        if (!hosts.isEmpty()) {
-          log.info("Ensured that at least one agent is available in this HeliosDeployment, "
-                   + "continuing with test!");
-          return true;
+        if (hosts.isEmpty()) {
+          log.debug("0 agents in {}, will retry", deployment);
+          return null;
         }
-        log.debug("0 agents in {}, will retry", deployment);
+
+        // Check that at least one host is UP (is maintaining a reasonably reliable
+        // connection to ZK) in addition to registering.
+        final ListenableFuture<Map<String, HostStatus>> statusFuture = client.hostStatuses(hosts);
+        final Map<String, HostStatus> hostStatuses;
+        try {
+          hostStatuses = statusFuture.get(1, TimeUnit.SECONDS);
+        } catch (TimeoutException | InterruptedException e) {
+          log.debug("timed out waiting for hostStatuses to finish, will retry");
+          return null;
+        }
+
+        for (final HostStatus hostStatus : hostStatuses.values()) {
+          if (hostStatus != null && hostStatus.getStatus() == HostStatus.Status.UP) {
+            log.info("Ensured that at least one agent is UP in this HeliosDeployment, "
+                     + "continuing with test!");
+            return true;
+          }
+        }
+
         return null;
       }
     });
