@@ -77,7 +77,7 @@ class RetryingRequestDispatcher implements RequestDispatcher {
         return delegate.request(uri, method, entityBytes, headers);
       }
     };
-    startRetry(future, code, deadline, delayMillis);
+    startRetry(future, code, deadline, delayMillis, uri);
     return future;
   }
 
@@ -89,13 +89,17 @@ class RetryingRequestDispatcher implements RequestDispatcher {
   private void startRetry(final SettableFuture<Response> future,
                           final Supplier<ListenableFuture<Response>> code,
                           final long deadline,
-                          final long delayMillis) {
+                          final long delayMillis,
+                          final URI uri) {
 
     ListenableFuture<Response> codeFuture;
     try {
       codeFuture = code.get();
     } catch (Exception e) {
-      handleFailure(future, code, deadline, delayMillis, e);
+      log.debug("Failed to connect to {}, retrying in {} seconds.",
+                uri.toString(), TimeUnit.MILLISECONDS.toSeconds(delayMillis));
+      log.debug("Specific reason for connection failure follows", e);
+      handleFailure(future, code, deadline, delayMillis, e, uri);
       return;
     }
 
@@ -107,29 +111,30 @@ class RetryingRequestDispatcher implements RequestDispatcher {
 
       @Override
       public void onFailure(@NotNull Throwable t) {
-        log.warn("Failed to connect, retrying in {} seconds.",
-                 TimeUnit.MILLISECONDS.toSeconds(delayMillis));
+        log.warn("Failed to connect to {}, retrying in {} seconds.",
+                 uri.toString(), TimeUnit.MILLISECONDS.toSeconds(delayMillis));
         log.debug("Specific reason for connection failure follows", t);
-        handleFailure(future, code, deadline, delayMillis, t);
+        handleFailure(future, code, deadline, delayMillis, t, uri);
       }
     });
   }
 
   private void handleFailure(final SettableFuture<Response> future,
-                                 final Supplier<ListenableFuture<Response>> code,
-                                 final long deadline,
-                                 final long delayMillis,
-                                 final Throwable t) {
+                             final Supplier<ListenableFuture<Response>> code,
+                             final long deadline,
+                             final long delayMillis,
+                             final Throwable t,
+                             final URI uri) {
     if (clock.now().getMillis() < deadline) {
       if (delayMillis > 0) {
         executorService.schedule(new Runnable() {
           @Override
           public void run() {
-            startRetry(future, code, deadline - 1, delayMillis);
+            startRetry(future, code, deadline - 1, delayMillis, uri);
           }
         }, delayMillis, TimeUnit.MILLISECONDS);
       } else {
-        startRetry(future, code, deadline - 1, delayMillis);
+        startRetry(future, code, deadline - 1, delayMillis, uri);
       }
     } else {
       future.setException(t);
