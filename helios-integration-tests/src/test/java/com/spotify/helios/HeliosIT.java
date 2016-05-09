@@ -53,9 +53,7 @@ public class HeliosIT {
   );
 
   @Rule
-  public TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-      .client(solo.client())
-      .build();
+  public TemporaryJobs temporaryJobs = TemporaryJobs.create();
 
   private static final String TEST_USER = "HeliosIT";
   private static final String TEST_HOST = "test-host";

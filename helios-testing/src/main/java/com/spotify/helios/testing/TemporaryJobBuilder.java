@@ -17,6 +17,12 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.base.Throwables;
+import com.google.common.collect.Sets;
+import com.google.common.io.Files;
+import com.google.common.io.Resources;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
@@ -25,13 +31,6 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.io.Files;
-import com.google.common.io.Resources;
 
 import org.joda.time.DateTime;
 
@@ -50,7 +49,6 @@ import java.util.regex.Pattern;
 import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.io.Resources.asCharSource;
 import static java.lang.Integer.toHexString;
 import static java.util.Arrays.asList;
@@ -61,30 +59,27 @@ public class TemporaryJobBuilder {
   private static final Pattern JOB_NAME_FORBIDDEN_CHARS = Pattern.compile("[^0-9a-zA-Z-_.]+");
   private static final int DEFAULT_EXPIRES_MINUTES = 30;
 
-  private final List<String> hosts = Lists.newArrayList();
+  private final Set<String> hosts;
   private final Job.Builder builder;
   private final Set<String> waitPorts = Sets.newHashSet();
   private final Deployer deployer;
-  private final String jobNamePrefix;
+  private final Path tempJobDir;
   private final Map<String, String> env;
   private final TemporaryJobReports.ReportWriter reportWriter;
 
-  private String hostFilter;
   private Prober prober;
   private TemporaryJob job;
 
-  public TemporaryJobBuilder(final Deployer deployer, final String jobNamePrefix,
-                             final Prober defaultProber, final Map<String, String> env,
-                             final TemporaryJobReports.ReportWriter reportWriter,
-                             final Job.Builder jobBuilder) {
-    checkNotNull(deployer, "deployer");
-    checkNotNull(jobNamePrefix, "jobNamePrefix");
-    checkNotNull(defaultProber, "defaultProber");
-    this.deployer = deployer;
-    this.jobNamePrefix = jobNamePrefix;
-    this.prober = defaultProber;
+  TemporaryJobBuilder(final Set<String> hosts, final Deployer deployer,
+                      final Path tempJobDir,
+                      final Prober defaultProber, final Map<String, String> env,
+                      final TemporaryJobReports.ReportWriter reportWriter,
+                      final Job.Builder jobBuilder) {
+    this.hosts = checkNotNull(hosts, "hosts");
+    this.deployer = checkNotNull(deployer, "deployer");
+    this.tempJobDir = checkNotNull(tempJobDir, "tempJobDir");
+    this.prober = checkNotNull(defaultProber, "defaultProber");
     this.builder = jobBuilder;
-    this.builder.setRegistrationDomain(jobNamePrefix);
     this.env = env;
     this.reportWriter = reportWriter;
 
@@ -192,16 +187,6 @@ public class TemporaryJobBuilder {
     return this;
   }
 
-  public TemporaryJobBuilder host(final String host) {
-    this.hosts.add(host);
-    return this;
-  }
-
-  public TemporaryJobBuilder hostFilter(final String hostFilter) {
-    this.hostFilter = hostFilter;
-    return this;
-  }
-
   /**
    * The Helios master will undeploy and delete the job at the specified date, if it has not
    * already been removed. If not set, jobs will be removed after 30 minutes. This is for the
@@ -241,36 +226,17 @@ public class TemporaryJobBuilder {
   }
 
   /**
-   * Deploys the job to the specified hosts. If no hosts are specified, a host will be chosen at
-   * random from the current Helios cluster. If the HELIOS_HOST_FILTER environment variable is set,
-   * it will be used to filter the list of hosts in the current Helios cluster.
+   * Deploys the job to the single helios-solo host.
    *
-   * @param hosts the list of helios hosts to deploy to. A random host will be chosen if the list is
-   *              empty.
    * @return a TemporaryJob representing the deployed job
    */
-  public TemporaryJob deploy(final String... hosts) {
-    return deploy(asList(hosts));
-  }
-
-  /**
-   * Deploys the job to the specified hosts. If no hosts are specified, a host will be chosen at
-   * random from the current Helios cluster. If the HELIOS_HOST_FILTER environment variable is set,
-   * it will be used to filter the list of hosts in the current Helios cluster.
-   *
-   * @param hosts the list of helios hosts to deploy to. A random host will be chosen if the list is
-   *              empty.
-   * @return a TemporaryJob representing the deployed job
-   */
-  public TemporaryJob deploy(final List<String> hosts) {
-    this.hosts.addAll(hosts);
-
+  public TemporaryJob deploy() {
     // check that the job has not already been deployed (this allows multiple calls to deploy()
     // to be no-ops once deployed)
     if (job == null) {
       if (builder.getName() == null && builder.getVersion() == null) {
         // Both name and version are unset, use image name as job name and generate random version
-        builder.setName(jobName(builder.getImage(), jobNamePrefix));
+        builder.setName(sanitizeJobName(builder.getImage()));
         builder.setVersion(randomVersion());
       }
 
@@ -286,15 +252,7 @@ public class TemporaryJobBuilder {
         waitPorts.clear();
       }
 
-      if (this.hosts.isEmpty()) {
-        if (isNullOrEmpty(hostFilter)) {
-          hostFilter = env.get("HELIOS_HOST_FILTER");
-        }
-
-        job = deployer.deploy(builder.build(), hostFilter, waitPorts, prober, reportWriter);
-      } else {
-        job = deployer.deploy(builder.build(), this.hosts, waitPorts, prober, reportWriter);
-      }
+      job = deployer.deploy(builder.build(), waitPorts, prober, reportWriter);
     }
 
     return job;
@@ -419,8 +377,8 @@ public class TemporaryJobBuilder {
     }
   }
 
-  private String jobName(final String s, final String jobNamePrefix) {
-    return jobNamePrefix + "_" + JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
+  private String sanitizeJobName(final String s) {
+    return JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
   }
 
   private String randomVersion() {

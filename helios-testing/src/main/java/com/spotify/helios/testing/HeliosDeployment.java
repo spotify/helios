@@ -25,7 +25,7 @@ import com.spotify.helios.client.HeliosClient;
  * A HeliosDeployment represents a collection of Helios masters and agents upon which jobs may be
  * run.
  */
-public interface HeliosDeployment extends AutoCloseable {
+interface HeliosDeployment extends AutoCloseable {
   /**
    * @return A helios client connected to the master(s) of this helios deployment.
    */

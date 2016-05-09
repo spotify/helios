@@ -17,8 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
 import com.spotify.helios.common.Json;
 import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
 
@@ -63,12 +61,9 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .hostFilter(".*")
-        .client(client)
         .prober(new TestProber())
         .testReportDirectory(REPORT_DIR.getRoot().getAbsolutePath())
         .prefixDirectory(prefixDirectory.toString())
-        .jobPrefix(Optional.of(testTag).get())
         .build();
 
     @Test
@@ -76,7 +71,7 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
       temporaryJobs.job()
           .image(BUSYBOX)
           .command("false")
-          .deploy(testHost1);
+          .deploy();
       Thread.sleep(Jobs.TIMEOUT_MILLIS);
     }
   }

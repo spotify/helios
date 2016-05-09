@@ -17,8 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
@@ -120,10 +118,8 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
         .prober(new TestProber())
         .prefixDirectory(prefixDirectory.toString())
-        .jobPrefix(Optional.of(testTag).get())
         .build();
 
     private final Date expires = new DateTime().plusHours(1).toDate();
@@ -135,12 +131,12 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
     public void setup() {
       job1 = temporaryJobs.job()
           .command(IDLE_COMMAND)
-          .deploy(testHost1);
+          .deploy();
 
       job2 = temporaryJobs.job()
           .command(IDLE_COMMAND)
           .expires(expires)
-          .deploy(testHost1);
+          .deploy();
     }
 
     @Test
@@ -163,9 +159,6 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
       final Job remoteJob2 = jobs.get(job2.job().getId());
       assertThat(remoteJob2, is(notNullValue()));
       assertThat(remoteJob2.getExpires(), equalTo(expires));
-
-      // Set jobPrefixFile so we can verify it was deleted after test completed
-      jobPrefixFile = temporaryJobs.jobPrefixFile();
     }
   }
 

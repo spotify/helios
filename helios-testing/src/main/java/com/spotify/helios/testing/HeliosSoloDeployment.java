@@ -17,6 +17,17 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificateException;
 import com.spotify.docker.client.DockerClient;
@@ -31,23 +42,9 @@ import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.protocol.JobUndeployResponse;
-
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.FutureFallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 
@@ -78,14 +75,14 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeployment.class);
 
-  public static final String BOOT2DOCKER_SIGNATURE = "Boot2Docker";
-  public static final String PROBE_IMAGE = "onescience/alpine:latest";
-  public static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
-  public static final String HELIOS_ID_SUFFIX = "-solo-host";
-  public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
-  public static final String HELIOS_SOLO_PROFILE = "helios.solo.profile";
-  public static final String HELIOS_SOLO_PROFILES = "helios.solo.profiles.";
-  public static final int HELIOS_MASTER_PORT = 5801;
+  private static final String BOOT2DOCKER_SIGNATURE = "Boot2Docker";
+  static final String PROBE_IMAGE = "onescience/alpine:latest";
+  private static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
+  private static final String HELIOS_ID_SUFFIX = "-solo-host";
+  private static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
+  private static final String HELIOS_SOLO_PROFILE = "helios.solo.profile";
+  private static final String HELIOS_SOLO_PROFILES = "helios.solo.profiles.";
+  private static final int HELIOS_MASTER_PORT = 5801;
   private static final int DEFAULT_WAIT_SECONDS = 30;
 
   private final DockerClient dockerClient;
@@ -421,8 +418,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public void close() {
     log.info("shutting ourselves down");
 
-    undeployLeftoverJobs();
-
     killContainer(heliosContainerId);
     if (removeHeliosSoloContainerOnExit) {
       removeContainer(heliosContainerId);
@@ -434,49 +429,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     this.dockerClient.close();
-  }
-
-  /**
-   * Undeploy jobs left over by {@link TemporaryJobs}. TemporaryJobs should clean these up,
-   * but sometimes a few are left behind for whatever reason.
-   */
-  @VisibleForTesting
-  protected void undeployLeftoverJobs() {
-    try {
-      // See if there are jobs running on any helios agent. If we are using TemporaryJobs,
-      // that class should've undeployed them at this point.
-      // Any jobs still running at this point have only been partially cleaned up.
-      // We look for jobs via hostStatus() because the job may have been deleted from the master,
-      // but the agent may still not have had enough time to undeploy the job from itself.
-      final List<String> hosts = heliosClient.listHosts().get();
-      for (final String host : hosts) {
-        final HostStatus hostStatus = heliosClient.hostStatus(host).get();
-        final Map<JobId, TaskStatus> statuses = hostStatus.getStatuses();
-
-        for (final Map.Entry<JobId, TaskStatus> status : statuses.entrySet()) {
-          final JobId jobId = status.getKey();
-          final Goal goal = status.getValue().getGoal();
-          if (goal != Goal.UNDEPLOY) {
-            log.info("Job {} is still set to {} on host {}. Undeploying it now.",
-                     jobId, goal, host);
-            final JobUndeployResponse undeployResponse = heliosClient.undeploy(jobId, host).get();
-            log.info("Undeploy response for job {} is {}.", jobId, undeployResponse.getStatus());
-
-            if (undeployResponse.getStatus() != JobUndeployResponse.Status.OK) {
-              log.warn("Undeploy response for job {} was not OK. This could mean that something " +
-                       "beat the helios-solo master in telling the helios-solo agent to undeploy.",
-                       jobId);
-            }
-          }
-
-          log.info("Waiting for job {} to actually be undeployed...", jobId);
-          awaitJobUndeployed(heliosClient, host, jobId, jobUndeployWaitSeconds, TimeUnit.SECONDS);
-          log.info("Job {} successfully undeployed.", jobId);
-        }
-      }
-    } catch (Exception e) {
-      log.warn("Exception occurred when trying to clean up leftover jobs.", e);
-    }
   }
 
   private Boolean awaitJobUndeployed(final HeliosClient client, final String host,

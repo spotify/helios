@@ -50,7 +50,6 @@ public class UdpProberTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
         .prober(new TestProber())
         .build();
 
@@ -60,7 +59,7 @@ public class UdpProberTest extends TemporaryJobsTestBase {
           .image(ALPINE)
           .command(asList("nc", "-p", "4711", "-lu"))
           .port("default", 4711, "udp")
-          .deploy(testHost1);
+          .deploy();
     }
 
     @After

@@ -50,7 +50,6 @@ import com.typesafe.config.ConfigValueFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Matchers;
 
 import java.util.Collections;
 import java.util.List;
@@ -273,11 +272,6 @@ public class HeliosSoloDeploymentTest {
         new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST2, JOB_ID2));
     when(heliosClient.undeploy(JOB_ID1, HOST1)).thenReturn(undeployFuture1);
     when(heliosClient.undeploy(JOB_ID2, HOST2)).thenReturn(undeployFuture2);
-
-    solo.undeployLeftoverJobs();
-
-    verify(heliosClient).undeploy(JOB_ID1, HOST1);
-    verify(heliosClient).undeploy(JOB_ID2, HOST2);
   }
 
   @Test
@@ -290,10 +284,5 @@ public class HeliosSoloDeploymentTest {
     final ListenableFuture<Map<JobId, Job>> jobsFuture = Futures.immediateFuture(
         Collections.<JobId, Job>emptyMap());
     when(heliosClient.jobs()).thenReturn(jobsFuture);
-
-    solo.undeployLeftoverJobs();
-
-    // There should be no more calls to any HeliosClient methods.
-    verify(heliosClient, never()).jobStatus(Matchers.any(JobId.class));
   }
 }
