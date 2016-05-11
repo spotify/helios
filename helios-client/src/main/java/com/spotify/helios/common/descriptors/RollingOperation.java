@@ -169,78 +169,62 @@ public class RollingOperation extends Descriptor {
         .setRolloutOptions(rolloutOptions);
   }
 
-  public static class Builder implements Cloneable {
+  public static class Builder {
 
-    private final Parameters p;
-
-    private Builder() {
-      this.p = new Parameters();
-    }
-
-    private static class Parameters implements Cloneable {
-
-      public String id;
-      public String deploymentGroupName;
-      public JobId jobId;
-      public Reason reason;
-      public RolloutOptions rolloutOptions;
-
-      private Parameters() {
-        this.id = UUID.randomUUID().toString();
-        this.deploymentGroupName = EMPTY_DEPLOYMENT_GROUP_NAME;
-        this.jobId = EMPTY_JOB_ID;
-        this.reason = Reason.MANUAL;
-        this.rolloutOptions = null;
-      }
-    }
+    private String id = UUID.randomUUID().toString();
+    private String deploymentGroupName = EMPTY_DEPLOYMENT_GROUP_NAME;
+    private JobId jobId = EMPTY_JOB_ID;
+    private Reason reason = Reason.MANUAL;
+    private RolloutOptions rolloutOptions;
 
     public String getId() {
-      return p.id;
+      return this.id;
     }
 
     public Builder setId(final String id) {
-      p.id = id;
+      this.id = id;
       return this;
     }
 
     public String getDeploymentGroupName() {
-      return p.deploymentGroupName;
+      return this.deploymentGroupName;
     }
 
     public Builder setDeploymentGroupName(final String deploymentGroupName) {
-      p.deploymentGroupName = deploymentGroupName;
+      this.deploymentGroupName = deploymentGroupName;
       return this;
     }
 
     public JobId getJobId() {
-      return p.jobId;
+      return this.jobId;
     }
 
     public Builder setJobId(final JobId jobId) {
-      p.jobId = jobId;
+      this.jobId = jobId;
       return this;
     }
 
     public Reason getReason() {
-      return p.reason;
+      return this.reason;
     }
 
     public Builder setReason(final Reason reason) {
-      p.reason = reason;
+      this.reason = reason;
       return this;
     }
 
     public RolloutOptions getRolloutOptions() {
-      return p.rolloutOptions;
+      return this.rolloutOptions;
     }
 
     public Builder setRolloutOptions(final RolloutOptions rolloutOptions) {
-      p.rolloutOptions = rolloutOptions;
+      this.rolloutOptions = rolloutOptions;
       return this;
     }
 
     public RollingOperation build() {
-      return new RollingOperation(p.id, p.deploymentGroupName, p.reason, p.jobId, p.rolloutOptions);
+      return new RollingOperation(
+          this.id, this.deploymentGroupName, this.reason, this.jobId, this.rolloutOptions);
     }
   }
 

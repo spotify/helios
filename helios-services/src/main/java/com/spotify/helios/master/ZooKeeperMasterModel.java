@@ -133,21 +133,21 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperMasterModel.class);
 
-  public static final Map<JobId, TaskStatus> EMPTY_STATUSES = emptyMap();
-  public static final TypeReference<HostInfo>
+  private static final Map<JobId, TaskStatus> EMPTY_STATUSES = emptyMap();
+  private static final TypeReference<HostInfo>
       HOST_INFO_TYPE =
       new TypeReference<HostInfo>() {};
-  public static final TypeReference<AgentInfo>
+  private static final TypeReference<AgentInfo>
       AGENT_INFO_TYPE =
       new TypeReference<AgentInfo>() {};
-  public static final TypeReference<Map<String, String>>
+  private static final TypeReference<Map<String, String>>
       STRING_MAP_TYPE =
       new TypeReference<Map<String, String>>() {};
-  public static final TypeReference<List<String>>
+  private static final TypeReference<List<String>>
       STRING_LIST_TYPE =
       new TypeReference<List<String>>() {};
 
-  public static final int MAX_ROLLING_OPERATION_HISTORY = 10;
+  static final int MAX_ROLLING_OPERATION_HISTORY = 10;
   private static final String ROLLING_OPERATION_EVENTS_KAFKA_TOPIC = "HeliosDeploymentGroupEvents";
   private static final RollingOperationEventFactory ROLLING_OPERATION_EVENT_FACTORY =
       new RollingOperationEventFactory();
@@ -376,7 +376,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   public DeploymentGroup getDeploymentGroup(final String name)
       throws DeploymentGroupDoesNotExistException {
     log.debug("getting deployment-group: {}", name);
-    final ZooKeeperClient client = provider.get("getDeploymentGroupResponse");
+    final ZooKeeperClient client = provider.get("getDeploymentGroup");
     return getDeploymentGroup(client, name);
   }
 
@@ -419,6 +419,10 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       final List<ZooKeeperOperation> operations = Lists.newArrayList();
 
+      for (final String id : getRollingOperationIds(client, name)) {
+        removeRollingOperation(client, operations, id);
+      }
+
       operations.add(delete(Paths.configDeploymentGroup(name)));
       operations.add(delete(Paths.statusDeploymentGroupHosts(name)));
       operations.add(delete(Paths.statusDeploymentGroupRollingOps(name)));
@@ -432,10 +436,11 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  @Override
   public List<RollingOperation> getRollingOperations(final String groupName)
     throws DeploymentGroupDoesNotExistException {
     final ZooKeeperClient client = provider.get("getRollingOperations");
-    final List<RollingOperation> ops = new ArrayList<RollingOperation>();
+    final List<RollingOperation> ops = new ArrayList<>();
     for (final String id : getRollingOperationIds(client, groupName)) {
       try {
         ops.add(getRollingOperation(client, id));
@@ -457,7 +462,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     } catch (NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(groupName, e);
     } catch (KeeperException | IOException e) {
-      throw new HeliosRuntimeException("getting deployment group rolling-operations failed", e);
+      throw new HeliosRuntimeException(
+          "getting rolling-operations for deployment group " + groupName + " failed", e);
     }
   }
 
@@ -505,14 +511,13 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException {
     // The most recent rolling operations should always be at the head of the list returned by
     // getRollingOperations().
-    for (final String rollingOpId : getRollingOperationIds(client, groupName)) {
+    final List<String> rollingOpIds = getRollingOperationIds(client, groupName);
+    if (!rollingOpIds.isEmpty()) {
       try {
-        final RollingOperation rolling = getRollingOperation(client, rollingOpId);
-        return rolling;
-
+        return getRollingOperation(client, rollingOpIds.get(0));
       } catch (RollingOperationDoesNotExistException e) {
         log.warn("Rolling operation {} associated with deployment group {} does not exist",
-                 rollingOpId, groupName, e);
+                 rollingOpIds.get(0), groupName, e);
       }
     }
     return null;
@@ -593,6 +598,21 @@ public class ZooKeeperMasterModel implements MasterModel {
       client.ensurePath(Paths.configRollingOps());
       client.ensurePath(Paths.statusRollingOps());
 
+      // /status/rolling-operation-tasks/[uuid] might exist (if a rolling-operation is in progress).
+      // To avoid inconsistent state make sure it's deleted if it does exist:
+      //
+      // * If it exists: delete it.
+      // * If it doesn't exist, add and delete it in the same transaction. This is a round-about
+      //   way of ensuring that it wasn't created when we commit the transaction.
+      //
+      // Having /status/rolling-operation-tasks/[uuid] around for removed rolling ops will cause
+      // DGs to become slower and spam logs with errors so we want to avoid it.
+      if (client.exists(Paths.statusRollingOpsTasks(rollingOpId)) != null) {
+        operations.add(delete(Paths.statusRollingOpsTasks(rollingOpId)));
+      } else {
+        operations.add(create(Paths.statusRollingOpsTasks(rollingOpId)));
+        operations.add(delete(Paths.statusRollingOpsTasks(rollingOpId)));
+      }
       operations.add(delete(Paths.configRollingOp(rollingOpId)));
       operations.add(delete(Paths.statusRollingOp(rollingOpId)));
     } catch (final KeeperException e) {
@@ -659,9 +679,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     try {
       // Fail early if the deployment group does not exist.
-      if (client.exists(Paths.configDeploymentGroup(rolling.getDeploymentGroupName())) == null) {
-        throw new DeploymentGroupDoesNotExistException(rolling.getDeploymentGroupName());
-      }
+      getDeploymentGroup(client, rolling.getDeploymentGroupName());
 
       // Create the base paths for rolling operations, if necessary.
       client.ensurePath(Paths.configRollingOps());

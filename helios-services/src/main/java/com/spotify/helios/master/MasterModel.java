@@ -116,6 +116,9 @@ public interface MasterModel {
   DeploymentGroupStatus getDeploymentGroupStatus(String name)
       throws DeploymentGroupDoesNotExistException;
 
+  List<RollingOperation> getRollingOperations(final String groupName)
+      throws DeploymentGroupDoesNotExistException;
+
   RollingOperation getLastRollingOperation(final String groupName)
       throws DeploymentGroupDoesNotExistException;
 

@@ -17,11 +17,7 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.collect.ImmutableList;
-
 import org.junit.Test;
-
-import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 
@@ -33,9 +29,6 @@ public class RollingOperationTest {
 
     // Input to setXXX
     final String setDeploymentGroupName = "foo-group";
-    //noinspection ConstantConditions
-    final List<HostSelector> setHostSelectors =
-        ImmutableList.of(HostSelector.parse("foo=bar"), HostSelector.parse("baz=qux"));
     final JobId setJobId = JobId.fromString("foo:0.1.0");
     final RolloutOptions setRolloutOptions = RolloutOptions.newBuilder()
         .setTimeout(1000)

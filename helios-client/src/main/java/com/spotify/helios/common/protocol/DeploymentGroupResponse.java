@@ -17,6 +17,8 @@
 
 package com.spotify.helios.common.protocol;
 
+import com.google.common.collect.ImmutableList;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostSelector;
@@ -136,7 +138,7 @@ public class DeploymentGroupResponse {
     }
 
     public Builder hostSelectors(final List<HostSelector> hostSelectors) {
-      this.hostSelectors = hostSelectors;
+      this.hostSelectors = ImmutableList.copyOf(hostSelectors);
       return this;
     }
 

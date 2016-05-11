@@ -53,7 +53,7 @@ import static java.util.Collections.emptyList;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DeploymentGroup extends Descriptor {
 
-  public static final String EMPTY_NAME = "";
+  private static final String EMPTY_NAME = "";
 
   private final String name;
   private final List<HostSelector> hostSelectors;

@@ -17,6 +17,8 @@
 
 package com.spotify.helios.common.protocol;
 
+import com.google.common.collect.ImmutableList;
+
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
@@ -237,7 +239,7 @@ public class DeploymentGroupStatusResponse {
     }
 
     public Builder hostStatuses(final List<HostStatus> hostStatuses) {
-      this.hostStatuses = hostStatuses;
+      this.hostStatuses = ImmutableList.copyOf(hostStatuses);
       return this;
     }
 
