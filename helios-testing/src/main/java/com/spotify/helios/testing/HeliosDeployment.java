@@ -18,6 +18,7 @@
 package com.spotify.helios.testing;
 
 import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.Service;
 
 import com.spotify.helios.client.HeliosClient;
 
@@ -25,7 +26,7 @@ import com.spotify.helios.client.HeliosClient;
  * A HeliosDeployment represents a collection of Helios masters and agents upon which jobs may be
  * run.
  */
-interface HeliosDeployment extends AutoCloseable {
+interface HeliosDeployment extends Service {
   /**
    * @return A helios client connected to the master(s) of this helios deployment.
    */
@@ -36,10 +37,5 @@ interface HeliosDeployment extends AutoCloseable {
    */
   // TODO (mbrown): should this be URI to capture scheme info also?
   HostAndPort address();
-
-  /**
-   * Undeploy (shut down) this Helios deployment.
-   */
-  void close();
 }
 

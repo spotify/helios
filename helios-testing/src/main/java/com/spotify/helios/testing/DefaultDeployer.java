@@ -32,7 +32,7 @@ import java.util.Set;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.junit.Assert.fail;
 
-public class DefaultDeployer implements Deployer {
+class DefaultDeployer implements Deployer {
 
   private static final Logger log = LoggerFactory.getLogger(DefaultDeployer.class);
 
@@ -45,13 +45,14 @@ public class DefaultDeployer implements Deployer {
 
   private boolean readyToDeploy;
 
-  public DefaultDeployer(final HeliosClient client, final Set<String> hosts,
-                         final List<TemporaryJob> jobs,
-                         final String jobDeployedMessageFormat, final long deployTimeoutMillis,
-                         final Path tempJobDir) {
+  DefaultDeployer(final HeliosClient client, final Set<String> hosts,
+                  final List<TemporaryJob> jobs,
+                  final String jobDeployedMessageFormat, final long deployTimeoutMillis,
+                  final Path tempJobDir) {
     this.client = checkNotNull(client, "client");
     this.jobs = checkNotNull(jobs, "jobs");
     this.hosts = checkNotNull(hosts, "hosts");
+    System.out.println("BBB HOSTS: " + hosts.toString());
     this.jobDeployedMessageFormat = jobDeployedMessageFormat;
     this.deployTimeoutMillis = deployTimeoutMillis;
     this.tempJobDir = checkNotNull(tempJobDir, "tempJobDir");

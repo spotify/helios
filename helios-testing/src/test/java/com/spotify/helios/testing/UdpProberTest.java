@@ -70,7 +70,7 @@ public class UdpProberTest extends TemporaryJobsTestBase {
 
     @Test
     public void test() throws Exception {
-      final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
+      final Map<JobId, Job> jobs = temporaryJobs.client().jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 1, jobs.size());
       for (final Job job : jobs.values()) {
         assertEquals("wrong job running", ALPINE, job.getImage());

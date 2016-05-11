@@ -81,7 +81,7 @@ public class TemporaryJobs implements TestRule {
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
   private final HeliosClient client;
-  private final HeliosDeploymentResource soloResource;
+  private final HeliosDeployment heliosDeployment;
   private final Set<String> hosts;
   private final Prober prober;
   private final Path tempJobDir;
@@ -102,11 +102,14 @@ public class TemporaryJobs implements TestRule {
       0, SECONDS);
 
   TemporaryJobs(final Builder builder, final Config config) {
-    this.soloResource = new HeliosDeploymentResource(HeliosSoloDeployment.fromEnv().build());
-    this.client = soloResource.client();
+    this.heliosDeployment = HeliosSoloDeployment.fromEnv().build();
+    heliosDeployment.startAsync().awaitRunning();
+
+    this.client = heliosDeployment.client();
     hosts = new HashSet<>();
     try {
       hosts.addAll(client.listHosts().get());
+      System.out.println("CCC HOSTS: " + hosts.toString());
     } catch (InterruptedException | ExecutionException e) {
       // TODO (dxia) better error message
       Throwables.propagate(e);
@@ -228,7 +231,7 @@ public class TemporaryJobs implements TestRule {
     }
     tempJobDir.toFile().delete();
 
-    soloResource.after();
+    heliosDeployment.stopAsync().awaitTerminated();
   }
 
   public TemporaryJobBuilder job() {

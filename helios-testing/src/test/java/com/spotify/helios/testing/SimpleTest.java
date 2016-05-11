@@ -106,7 +106,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
           .command(IDLE_COMMAND)
           .deploy();
 
-      final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
+      final Map<JobId, Job> jobs = temporaryJobs.client().jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 2, jobs.size());
       for (final Job job : jobs.values()) {
         assertEquals("wrong job running", BUSYBOX, job.getImage());
@@ -125,7 +125,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
           .command("sh", "-c", "while :; do sleep 5; done")
           .deploy();
 
-      final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
+      final Map<JobId, Job> jobs = temporaryJobs.client().jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 2, jobs.size());
       for (final Job job : jobs.values()) {
         assertEquals("wrong job running", BUSYBOX, job.getImage());
@@ -140,7 +140,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
           .command(IDLE_COMMAND)
           .deploy();
 
-      final JobStatus status = client.jobStatus(job.job().getId()).get(15, SECONDS);
+      final JobStatus status = temporaryJobs.client().jobStatus(job.job().getId()).get(15, SECONDS);
       final Map<String, Deployment> deployments = status.getDeployments();
       assertThat(deployments.keySet(), contains(testHost2));
     }
@@ -153,7 +153,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
 
       job.undeploy();
 
-      final JobStatus status = client.jobStatus(job.job().getId()).get(15, SECONDS);
+      final JobStatus status = temporaryJobs.client().jobStatus(job.job().getId()).get(15, SECONDS);
       assertNull("job still exists", status);
     }
 

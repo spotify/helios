@@ -19,13 +19,10 @@ package com.spotify.helios;
 
 import com.google.common.net.HostAndPort;
 
-import com.spotify.helios.testing.HeliosDeploymentResource;
-import com.spotify.helios.testing.HeliosSoloDeployment;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
 
 import org.apache.commons.io.IOUtils;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,16 +35,6 @@ import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
 public class HeliosSoloIT {
-
-  @ClassRule
-  public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
-      HeliosSoloDeployment.fromEnv()
-          .heliosSoloImage(Utils.soloImage())
-          .checkForNewImages(false)
-          .removeHeliosSoloOnExit(false)
-          .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.test.${domain}")
-          .build()
-  );
 
   @Rule public final TemporaryPorts ports = TemporaryPorts.create();
 
