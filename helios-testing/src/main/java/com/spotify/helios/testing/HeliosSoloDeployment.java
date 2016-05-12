@@ -31,11 +31,9 @@ import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -48,6 +46,9 @@ import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.SimpleTimeLimiter;
+import com.google.common.util.concurrent.TimeLimiter;
+
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 
@@ -55,6 +56,8 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -63,7 +66,9 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -78,14 +83,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeployment.class);
 
-  public static final String BOOT2DOCKER_SIGNATURE = "Boot2Docker";
-  public static final String PROBE_IMAGE = "onescience/alpine:latest";
-  public static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
-  public static final String HELIOS_ID_SUFFIX = "-solo-host";
-  public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
-  public static final String HELIOS_SOLO_PROFILE = "helios.solo.profile";
-  public static final String HELIOS_SOLO_PROFILES = "helios.solo.profiles.";
-  public static final int HELIOS_MASTER_PORT = 5801;
+  private static final String BOOT2DOCKER_SIGNATURE = "Boot2Docker";
+  static final String PROBE_IMAGE = "onescience/alpine:latest";
+  private static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
+  private static final String HELIOS_ID_SUFFIX = "-solo-host";
+  private static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
+  private static final String HELIOS_SOLO_PROFILE = "helios.solo.profile";
+  private static final String HELIOS_SOLO_PROFILES = "helios.solo.profiles.";
+  static final int HELIOS_MASTER_PORT = 5801;
+  static final int HELIOS_SOLO_WATCHDOG_PORT = 33333;
   private static final int DEFAULT_WAIT_SECONDS = 30;
 
   private final DockerClient dockerClient;
@@ -103,12 +109,20 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private final HeliosClient heliosClient;
   private boolean removeHeliosSoloContainerOnExit;
   private final int jobUndeployWaitSeconds;
+  private final SoloMasterProber soloMasterProber;
+  private final SoloHostProber soloHostProber;
+  private final Socket watchdogSocket;
+  private final long exitTimeoutSeconds;
 
-  HeliosSoloDeployment(final Builder builder) {
+  private HeliosSoloDeployment(final Builder builder) {
     this.heliosSoloImage = builder.heliosSoloImage;
     this.pullBeforeCreate = builder.pullBeforeCreate;
     this.removeHeliosSoloContainerOnExit = builder.removeHeliosSoloContainerOnExit;
     this.jobUndeployWaitSeconds = builder.jobUndeployWaitSeconds;
+    this.soloMasterProber = checkNotNull(builder.soloMasterProber, "soloMasterProber");
+    this.soloHostProber = checkNotNull(builder.soloHostProber, "soloHostProber");
+    checkNotNull(builder.soloWatchdogConnector, "soloWatchdogConnector");
+    this.exitTimeoutSeconds = builder.exitTimeoutSeconds;
 
     final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
 
@@ -122,6 +136,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     final String heliosHost;
     final String heliosPort;
+    final int watchdogPort;
     //TODO(negz): Determine and propagate NetworkManager DNS servers?
     try {
       log.info("checking that docker can be reached from within a container");
@@ -133,7 +148,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       }
       this.heliosContainerId = deploySolo(heliosHost);
       heliosPort = getHostPort(this.heliosContainerId, HELIOS_MASTER_PORT);
+      watchdogPort = Integer.parseInt(getHostPort(
+          this.heliosContainerId, HELIOS_SOLO_WATCHDOG_PORT));
     } catch (HeliosDeploymentException e) {
+      log.error("Unable to deploy helios-solo container: {}", e);
       throw new AssertionError("Unable to deploy helios-solo container.", e);
     }
 
@@ -144,6 +162,70 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .setUser(username)
             .setEndpoints("http://" + deploymentAddress)
             .build());
+
+    watchdogSocket = connectToWatchdogWithTimeout(dockerHost.address(), watchdogPort, 60,
+                                                  TimeUnit.SECONDS, builder.soloWatchdogConnector);
+
+    try {
+      start();
+    } catch (TimeoutException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  /**
+   * Return a new socket that's connected to the watchdog process of {@link HeliosSoloDeployment}.
+   * @param host The hostname of the Docker host.
+   * @param port The watchdog port to connect to.
+   * @param timeout Timeout
+   * @param timeUnit The {@link TimeUnit}
+   * @return {@link Socket}
+   */
+  @VisibleForTesting
+  static Socket connectToWatchdogWithTimeout(final String host, final int port,
+                                             final long timeout, final TimeUnit timeUnit,
+                                             final SoloWatchdogConnector connector) {
+    final Socket socket;
+
+    try {
+      socket = Polling.awaitUnchecked(timeout, timeUnit, new Callable<Socket>() {
+        @Override
+        public Socket call() throws Exception {
+          final Socket socket = new Socket();
+          try {
+            connector.connect(socket, host, port);
+            return socket;
+          } catch (IOException e) {
+            return null;
+          }
+        }
+      });
+    } catch (TimeoutException e) {
+      throw Throwables.propagate(e);
+    }
+
+    log.info("Connecting to helios-solo watchdog at {}:{}", host, port);
+    return socket;
+  }
+
+  private void start() throws TimeoutException {
+    // wait for the helios master to be available
+    Polling.awaitUnchecked(30, TimeUnit.SECONDS, new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        return soloMasterProber.check(deploymentAddress);
+      }
+    });
+
+    // Ensure that at least one agent is available and UP in this HeliosDeployment.
+    // This prevents continuing with the test when starting up helios-solo before the agent is
+    // registered.
+    Polling.awaitUnchecked(30, TimeUnit.SECONDS, new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        return soloHostProber.check(heliosClient);
+      }
+    });
   }
 
   /** Returns the DockerHost that the container should use to refer to the docker daemon. */
@@ -192,6 +274,11 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       env.add("DOCKER_CERT_PATH=/certs");
     }
+
+    // Inform helios-solo  that it's being used for helios-testing and that it should kill itself
+    // when no longer used.
+    env.add("HELIOS_SOLO_SUICIDE=1");
+
     return ImmutableList.copyOf(env);
   }
 
@@ -226,7 +313,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .image(PROBE_IMAGE)
             .cmd(probeCommand(probeName))
             .build();
-
 
     final ContainerCreation creation;
     try {
@@ -312,8 +398,11 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     env.add("HOST_ADDRESS=" + heliosHost);
 
     final String heliosPort = String.format("%d/tcp", HELIOS_MASTER_PORT);
+    final String watchdogPort = String.format("%d/tcp", HELIOS_SOLO_WATCHDOG_PORT);
     final Map<String, List<PortBinding>> portBindings = ImmutableMap.of(
-            heliosPort, singletonList(PortBinding.of("0.0.0.0", "")));
+        heliosPort, singletonList(PortBinding.randomPort("0.0.0.0")),
+        watchdogPort, singletonList(PortBinding.randomPort("0.0.0.0"))
+    );
     final HostConfig hostConfig = HostConfig.builder()
             .portBindings(portBindings)
             .binds(binds)
@@ -421,9 +510,26 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   public void close() {
     log.info("shutting ourselves down");
 
-    undeployLeftoverJobs();
+    try {
+      watchdogSocket.close();
+    } catch (IOException ignored) {
+    }
 
-    killContainer(heliosContainerId);
+    final TimeLimiter timeLimiter = new SimpleTimeLimiter(Executors.newSingleThreadExecutor());
+    try {
+      timeLimiter.callWithTimeout(new Callable<Boolean>() {
+        @Override
+        public Boolean call() throws Exception {
+          dockerClient.waitContainer(heliosContainerId);
+          return true;
+        }
+      }, exitTimeoutSeconds, TimeUnit.SECONDS, false);
+    } catch (Exception e) {
+      log.warn("Timed out waiting for helios-solo container {} to exit. Forcibly killing it",
+               heliosContainerId, e);
+      killContainer(heliosContainerId);
+    }
+
     if (removeHeliosSoloContainerOnExit) {
       removeContainer(heliosContainerId);
       log.info("Stopped and removed HeliosSolo on host={} containerId={}",
@@ -434,49 +540,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     this.dockerClient.close();
-  }
-
-  /**
-   * Undeploy jobs left over by {@link TemporaryJobs}. TemporaryJobs should clean these up,
-   * but sometimes a few are left behind for whatever reason.
-   */
-  @VisibleForTesting
-  protected void undeployLeftoverJobs() {
-    try {
-      // See if there are jobs running on any helios agent. If we are using TemporaryJobs,
-      // that class should've undeployed them at this point.
-      // Any jobs still running at this point have only been partially cleaned up.
-      // We look for jobs via hostStatus() because the job may have been deleted from the master,
-      // but the agent may still not have had enough time to undeploy the job from itself.
-      final List<String> hosts = heliosClient.listHosts().get();
-      for (final String host : hosts) {
-        final HostStatus hostStatus = heliosClient.hostStatus(host).get();
-        final Map<JobId, TaskStatus> statuses = hostStatus.getStatuses();
-
-        for (final Map.Entry<JobId, TaskStatus> status : statuses.entrySet()) {
-          final JobId jobId = status.getKey();
-          final Goal goal = status.getValue().getGoal();
-          if (goal != Goal.UNDEPLOY) {
-            log.info("Job {} is still set to {} on host {}. Undeploying it now.",
-                     jobId, goal, host);
-            final JobUndeployResponse undeployResponse = heliosClient.undeploy(jobId, host).get();
-            log.info("Undeploy response for job {} is {}.", jobId, undeployResponse.getStatus());
-
-            if (undeployResponse.getStatus() != JobUndeployResponse.Status.OK) {
-              log.warn("Undeploy response for job {} was not OK. This could mean that something " +
-                       "beat the helios-solo master in telling the helios-solo agent to undeploy.",
-                       jobId);
-            }
-          }
-
-          log.info("Waiting for job {} to actually be undeployed...", jobId);
-          awaitJobUndeployed(heliosClient, host, jobId, jobUndeployWaitSeconds, TimeUnit.SECONDS);
-          log.info("Job {} successfully undeployed.", jobId);
-        }
-      }
-    } catch (Exception e) {
-      log.warn("Exception occurred when trying to clean up leftover jobs.", e);
-    }
   }
 
   private Boolean awaitJobUndeployed(final HeliosClient client, final String host,
@@ -515,15 +578,20 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
   public static Builder builder() {
-    return builder(null);
+    return builderWithProfile(null);
   }
 
   /**
    * @param profile A configuration profile used to populate builder options.
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
-  public static Builder builder(final String profile) {
-    return new Builder(profile, HeliosConfig.loadConfig("helios-solo"));
+  public static Builder builderWithProfile(final String profile) {
+    return builderWithProfileAndConfig(profile, HeliosConfig.loadConfig("helios-solo"));
+  }
+
+  @VisibleForTesting
+  static Builder builderWithProfileAndConfig(final String profile, final Config config) {
+    return new Builder(profile, config);
   }
 
   /**
@@ -543,7 +611,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    */
   public static Builder fromEnv(final String profile)  {
     try {
-      return builder(profile).dockerClient(DefaultDockerClient.fromEnv().build());
+      return builderWithProfile(profile).dockerClient(DefaultDockerClient.fromEnv().build());
     } catch (DockerCertificateException e) {
       throw new RuntimeException("unable to create Docker client from environment", e);
     }
@@ -552,9 +620,19 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   @Override
   public String toString() {
     return "HeliosSoloDeployment{" +
-           "deploymentAddress=" + deploymentAddress +
+           "dockerClient=" + dockerClient +
            ", dockerHost=" + dockerHost +
-           ", heliosContainerId=" + heliosContainerId +
+           ", containerDockerHost=" + containerDockerHost +
+           ", heliosSoloImage='" + heliosSoloImage + '\'' +
+           ", pullBeforeCreate=" + pullBeforeCreate +
+           ", namespace='" + namespace + '\'' +
+           ", env=" + env +
+           ", binds=" + binds +
+           ", heliosContainerId='" + heliosContainerId + '\'' +
+           ", deploymentAddress=" + deploymentAddress +
+           ", heliosClient=" + heliosClient +
+           ", removeHeliosSoloContainerOnExit=" + removeHeliosSoloContainerOnExit +
+           ", jobUndeployWaitSeconds=" + jobUndeployWaitSeconds +
            '}';
   }
 
@@ -570,6 +648,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private boolean pullBeforeCreate = true;
     private boolean removeHeliosSoloContainerOnExit = true;
     private int jobUndeployWaitSeconds = DEFAULT_WAIT_SECONDS;
+    private SoloMasterProber soloMasterProber = new SoloMasterProber();
+    private SoloHostProber soloHostProber = new SoloHostProber();
+    private SoloWatchdogConnector soloWatchdogConnector = new SoloWatchdogConnector();
+    private long exitTimeoutSeconds = 60;
 
     Builder(String profile, Config rootConfig) {
       this.env = new HashSet<>();
@@ -716,6 +798,53 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     /**
+     * This method exists only for testing. We need to mock the logic that probes the master port.
+     * @param prober A {@link SoloMasterProber}
+     * @return This Builder, with its {@link SoloMasterProber} configured.
+     */
+    @VisibleForTesting
+    Builder soloMasterProber(final SoloMasterProber prober) {
+      this.soloMasterProber = prober;
+      return this;
+    }
+
+    /**
+     * This method exists only for testing. We need to mock the logic checking the solo agent is up.
+     * @param prober A {@link SoloHostProber}
+     * @return This Builder, with its {@link SoloHostProber} configured.
+     */
+    @VisibleForTesting
+    Builder soloHostProber(final SoloHostProber prober) {
+      this.soloHostProber = prober;
+      return this;
+    }
+
+    /**
+     * This method exists only for testing.
+     * We need to mock the logic to connect to the solo watchdog.
+     * @param soloWatchdogConnector A {@link SoloWatchdogConnector}
+     * @return This Builder, with its {@link SoloWatchdogConnector} configured.
+     */
+    @VisibleForTesting
+    Builder soloWatchdogConnector(final SoloWatchdogConnector soloWatchdogConnector) {
+      this.soloWatchdogConnector = soloWatchdogConnector;
+      return this;
+    }
+
+    /**
+     * This method exists only for testing.
+     * For unit tests that check we forcibly kill helios-solo if the timeout period for it to exit
+     * by itself has elapsed, we want to set a shorter timeout.
+     * @param exitTimeoutSeconds Number of seconds to wait until we call docker kill on helios-solo.
+     * @return This Builder, with its exit timeout configured.
+     */
+    @VisibleForTesting
+    Builder soloExitTimeoutSeconds(final long exitTimeoutSeconds) {
+      this.exitTimeoutSeconds = exitTimeoutSeconds;
+      return this;
+    }
+
+    /**
      * Optionally specify an environment variable to be set inside the Helios solo container.
      * @param key Environment variable to set.
      * @param value Environment variable value.
@@ -737,4 +866,5 @@ public class HeliosSoloDeployment implements HeliosDeployment {
       return new HeliosSoloDeployment(this);
     }
   }
+
 }

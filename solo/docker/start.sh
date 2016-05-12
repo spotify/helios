@@ -12,11 +12,11 @@ SKYDNS_PATH=$(echo $HELIOS_NAME|python -c "import sys;h=sys.stdin.read().strip()
 
 # Write skydns configuration and retry for 30 seconds until successful
 for i in {1..30}; do
-	if curl --retry 30 -XPUT http://127.0.0.1:4001/v2/keys/skydns/config \
-		-d value="{\"dns_addr\":\"0.0.0.0:5353\", \"ttl\":3600, \"nameservers\": $NAMESERVERS, \"domain\":\"local.\"}"; then
-		break
-	fi
-	sleep 1
+  if curl --retry 30 -XPUT http://127.0.0.1:4001/v2/keys/skydns/config \
+    -d value="{\"dns_addr\":\"0.0.0.0:5353\", \"ttl\":3600, \"nameservers\": $NAMESERVERS, \"domain\":\"local.\"}"; then
+    break
+  fi
+  sleep 1
 done
 
 # Create A record for the solo host
@@ -53,7 +53,7 @@ $HELIOS_AGENT_OPTS \
 # Start master
 mkdir -p /master
 if [ -n "$LOGSTASH_DESTINATION" ]; then
-	cat > /master/logback-access.xml <<- EOF
+  cat > /master/logback-access.xml <<- EOF
 <configuration>
   <appender name="stash" class="net.logstash.logback.appender.LogstashAccessTcpSocketAppender">
     <destination>${LOGSTASH_DESTINATION}</destination>
@@ -82,6 +82,37 @@ com.spotify.helios.master.MasterMain \
 $HELIOS_MASTER_OPTS \
 &
 
-set +x
-# Sleep or execute command line
-while :; do sleep 1; done
+if [ "$HELIOS_SOLO_SUICIDE" -eq 1 ]; then
+    HELIOS_CLI_CMD="java -cp /*.jar -Xmx128m -Djava.net.preferIPv4Stack=true com.spotify.helios.cli.CliMain -z http://localhost:5801"
+
+    python "/watchdog.py"
+
+    echo "Cleaning up jobs..."
+
+    # Clean up created jobs (make sure containers are stopped)
+    jobs=$($HELIOS_CLI_CMD --json jobs | jq -a -r "keys[]")
+    for job in $jobs; do
+        $HELIOS_CLI_CMD undeploy --yes -a "$job"
+    done
+
+    # Wait for jobs to be undeployed
+    for job in $jobs; do
+        states=$($HELIOS_CLI_CMD status --json -j "$job" | jq -r ".[].taskStatuses | .[] | .state")
+        tot=$(echo "$states" | wc -l)
+        stopped=$(echo "$states" | grep "STOPPED" | wc -l)
+        if [ "$stopped" -eq "$tot" ]; then
+            echo "All instances of $job are stopped"
+            break
+        fi
+    done
+
+    echo -e "Some containers may still be running at this point, but they will eventually be killed.
+             Undeploying Helios jobs makes Helios tell Docker to stop the container by sending
+             SIGTERM and to wait two minutes before sending SIGKILL (same as docker kill)."
+    echo "Clean up done. Exiting"
+else
+    set +x
+
+    # Sleep or execute command line
+    while :; do sleep 1; done
+fi
