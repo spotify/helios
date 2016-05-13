@@ -267,12 +267,12 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private void pullIfAbsent(final String image) throws DockerException, InterruptedException {
     try {
       dockerClient.inspectImage(image);
-      log.info("helios-solo image {} is present. Not pulling it.", image);
+      log.info("image {} is present. Not pulling it.", image);
       return;
     } catch (ImageNotFoundException e) {
-      log.info("helios-solo pulling new image: {}", image);
+      log.info("pulling new image: {}", image);
     }
-    dockerClient.pull(PROBE_IMAGE);
+    dockerClient.pull(image);
   }
 
   private List<String> probeCommand(final String probeName) {
