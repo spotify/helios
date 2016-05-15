@@ -29,6 +29,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -68,7 +69,7 @@ class Jobs {
    * @return the list of errors
    */
   static List<AssertionError> undeploy(final HeliosClient client, final Job job,
-                                       final List<String> hosts,
+                                       final Set<String> hosts,
                                        final List<AssertionError> errors) {
     final JobId id = job.getId();
     for (final String host : hosts) {

@@ -18,7 +18,6 @@
 package com.spotify.helios.testing;
 
 import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
@@ -41,6 +40,10 @@ import org.apache.commons.lang.text.StrSubstitutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -69,31 +72,34 @@ public class TemporaryJob {
   private final Prober prober;
   private final TemporaryJobReports.ReportWriter reportWriter;
   private final Job job;
-  private final List<String> hosts;
+  private final Set<String> hosts;
   private final Map<String, String> hostToIp = newHashMap();
   private final Set<String> waitPorts;
   private final String jobDeployedMessageFormat;
   private final long deployTimeoutMillis;
+  private final Path tempJobdir;
 
   TemporaryJob(final HeliosClient client, final Prober prober,
                final TemporaryJobReports.ReportWriter reportWriter, final Job job,
-               final List<String> hosts, final Set<String> waitPorts,
-               final String jobDeployedMessageFormat, final long deployTimeoutMillis) {
+               final Set<String> hosts, final Set<String> waitPorts,
+               final String jobDeployedMessageFormat, final long deployTimeoutMillis,
+               final Path tempJobDir) {
     this.client = checkNotNull(client, "client");
     this.prober = checkNotNull(prober, "prober");
     this.reportWriter = checkNotNull(reportWriter, "reportWriter");
     this.job = checkNotNull(job, "job");
-    this.hosts = ImmutableList.copyOf(checkNotNull(hosts, "hosts"));
+    this.hosts = ImmutableSet.copyOf(checkNotNull(hosts, "hosts"));
     this.waitPorts = ImmutableSet.copyOf(checkNotNull(waitPorts, "waitPorts"));
     this.jobDeployedMessageFormat = Optional.fromNullable(jobDeployedMessageFormat).or("");
     this.deployTimeoutMillis = deployTimeoutMillis;
+    this.tempJobdir = checkNotNull(tempJobDir);
   }
 
   public Job job() {
     return job;
   }
 
-  public List<String> hosts() {
+  public Set<String> hosts() {
     return hosts;
   }
 
@@ -221,6 +227,19 @@ public class TemporaryJob {
       }
     } catch (TimeoutException e) {
       fail(format("Failed while probing job %s %s - %s", job.getId(), job.toString(), e));
+    }
+
+    // write file with name of container id to temp job dir
+    for (final TaskStatus status : statuses.values()) {
+      final String containerId = status.getContainerId();
+      final File containerIdFile = new File(
+          Paths.get(tempJobdir.toString(), containerId).toString());
+      try {
+        //noinspection ResultOfMethodCallIgnored
+        containerIdFile.createNewFile();
+      } catch (IOException e) {
+        throw new RuntimeException("Failed to create container ID file " + containerIdFile, e);
+      }
     }
   }
 

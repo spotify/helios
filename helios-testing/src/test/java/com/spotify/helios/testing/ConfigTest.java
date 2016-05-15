@@ -34,11 +34,9 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.spotify.helios.testing.TemporaryJobsTestBase.temporaryJobsBuilder;
 import static java.lang.String.format;
@@ -74,14 +72,13 @@ public class ConfigTest {
     // Local is the default profile, so don't specify it explicitly to test default loading
     @Rule
     public final TemporaryJobs temporaryJobs = parameters.builder
-        .client(client)
         .deployer(this)
         .build();
 
     @Before
     public void setup() {
       // This job will get deployed test-host
-      temporaryJobs.job().deploy("test-host");
+      temporaryJobs.job().deploy();
 
       // this job will get deployed using the host filter in the conf file
       temporaryJobs.job().deploy();
@@ -93,20 +90,9 @@ public class ConfigTest {
     }
 
     @Override
-    public TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts, Prober prober,
+    public TemporaryJob deploy(Job job, Set<String> waitPorts, Prober prober,
                                TemporaryJobReports.ReportWriter reportWriter) {
       // This is called when the first job is deployed
-      assertThat(hosts, equalTo((List<String>) newArrayList("test-host")));
-      parameters.validate(job, temporaryJobs.prefix());
-      return null;
-    }
-
-    @Override
-    public TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts, Prober prober,
-                               TemporaryJobReports.ReportWriter reportWriter) {
-      // This is called when the second job is deployed
-      assertThat(hostFilter, equalTo(parameters.hostFilter));
-      parameters.validate(job, temporaryJobs.prefix());
       return null;
     }
 
@@ -133,8 +119,7 @@ public class ConfigTest {
 
     // The local profile is the default, so we don't specify it explicitly so we can test
     // the default loading mechanism.
-    parameters = new TestParameters(temporaryJobsBuilder(),
-                                    ".*", validator);
+    parameters = new TestParameters(temporaryJobsBuilder(), validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }
 
@@ -159,8 +144,8 @@ public class ConfigTest {
     // possibly-unresolvable hosts.
     doReturn(client).when(clientBuilder).build();
     final TemporaryJobs.Builder builder =
-        TemporaryJobs.builder("helios-ci", Collections.<String, String>emptyMap(), clientBuilder);
-    parameters = new TestParameters(builder, ".+\\.helios-ci\\.cloud", validator);
+        TemporaryJobs.builder("helios-ci", Collections.<String, String>emptyMap());
+    parameters = new TestParameters(builder, validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }
 
@@ -170,18 +155,11 @@ public class ConfigTest {
    */
   private static class TestParameters {
     private final TemporaryJobs.Builder builder;
-    private final String hostFilter;
     private final JobValidator jobValidator;
 
-    private TestParameters(TemporaryJobs.Builder builder, String hostFilter,
-                           JobValidator jobValidator) {
+    private TestParameters(final TemporaryJobs.Builder builder, final JobValidator jobValidator) {
       this.builder = builder;
-      this.hostFilter = hostFilter;
       this.jobValidator = jobValidator;
-    }
-
-    private void validate(final Job job, final String prefix) {
-      jobValidator.validate(job, prefix);
     }
 
     private interface JobValidator {

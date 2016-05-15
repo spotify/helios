@@ -17,8 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -40,15 +38,13 @@ public class BadTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
         .prober(new TestProber())
-        .jobPrefix(Optional.of(testTag).get())
         .build();
 
     @SuppressWarnings("unused")
     private TemporaryJob job2 = temporaryJobs.job()
         .image("base")
-        .deploy(testHost1);
+        .deploy();
 
     @Test
     public void testFail() throws Exception {

@@ -17,15 +17,14 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.docker.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.PortMapping;
-
 import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+
+import com.spotify.docker.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,6 +38,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
@@ -53,6 +53,8 @@ import static org.mockito.Mockito.verify;
 public class TemporaryJobBuilderTest {
 
   private static final Logger log = LoggerFactory.getLogger(TemporaryJobBuilderTest.class);
+
+  private static final ImmutableSet<String> HOSTS = ImmutableSet.of("host1");
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
@@ -72,8 +74,8 @@ public class TemporaryJobBuilderTest {
         .setName("foo")
         .addPort("http", PortMapping.of(8080));
 
-    builder =
-        new TemporaryJobBuilder(deployer, "prefix-", prober, env, reportWriter, jobBuilder);
+    builder = new TemporaryJobBuilder(
+        HOSTS, deployer, Paths.get("foo"), prober, env, reportWriter, jobBuilder);
 
     cleanup();
   }
@@ -114,13 +116,10 @@ public class TemporaryJobBuilderTest {
 
   @Test
   public void testBuildFromJob() {
-    final ImmutableList<String> hosts = ImmutableList.of("host1");
-
-    builder.deploy(hosts);
+    builder.deploy();
 
     final ImmutableSet<String> expectedWaitPorts = ImmutableSet.of("http");
-    verify(deployer).deploy(any(Job.class), eq(hosts), eq(expectedWaitPorts),
-                            eq(prober), eq(reportWriter));
+    verify(deployer).deploy(any(Job.class), eq(expectedWaitPorts), eq(prober), eq(reportWriter));
   }
 
   @Test

@@ -17,14 +17,21 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.helios.common.descriptors.Job;
+import org.junit.Rule;
+import org.junit.Test;
 
-import java.util.Set;
+public class FooTest {
 
-interface Deployer {
+  @Rule
+  public TemporaryJobs temporaryJobs = TemporaryJobs.create();
 
-  TemporaryJob deploy(Job job, Set<String> waitPorts, Prober prober,
-                      TemporaryJobReports.ReportWriter reportWriter);
+  @Test
+  public void test() throws Exception {
+    final TemporaryJob memcacheServerJob = temporaryJobs.job()
+        .image("registry.spotify.net/spotify/lasertag-memcached:latest")
+        .port("memcached", 11211)
+        .deploy();
+    System.out.println("hi");
+  }
 
-  void readyToDeploy();
 }

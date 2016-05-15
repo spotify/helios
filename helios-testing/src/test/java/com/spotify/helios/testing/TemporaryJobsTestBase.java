@@ -29,7 +29,6 @@ import java.util.Map;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
 
 public abstract class TemporaryJobsTestBase extends SystemTestBase {
 
@@ -50,7 +49,6 @@ public abstract class TemporaryJobsTestBase extends SystemTestBase {
     @Override
     public boolean probe(final String host, final PortMapping portMapping) {
       // Probe for ports where docker is running instead of on the mock testHost address
-      assertEquals(testHost1, host);
       return super.probe(DOCKER_HOST.address(), portMapping);
     }
   }
