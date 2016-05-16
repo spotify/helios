@@ -50,7 +50,6 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
         .jobPrefix(Optional.of(testTag).get())
         .deployTimeoutMillis(MINUTES.toMillis(3))
         .build();

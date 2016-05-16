@@ -120,7 +120,6 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
         .prober(new TestProber())
         .prefixDirectory(prefixDirectory.toString())
         .jobPrefix(Optional.of(testTag).get())

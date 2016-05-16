@@ -64,7 +64,6 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .hostFilter(".*")
-        .client(client)
         .prober(new TestProber())
         .testReportDirectory(REPORT_DIR.getRoot().getAbsolutePath())
         .prefixDirectory(prefixDirectory.toString())

@@ -46,7 +46,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
@@ -71,7 +70,6 @@ import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.testing.Jobs.undeploy;
 import static java.lang.String.format;
 import static java.lang.System.getProperty;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -321,14 +319,6 @@ public class TemporaryJobs implements TestRule {
     return builder().build();
   }
 
-  public static TemporaryJobs create(final HeliosClient client) {
-    return builder().client(client).build();
-  }
-
-  public static TemporaryJobs create(final String domain) {
-    return builder().domain(domain).build();
-  }
-
   public static TemporaryJobs createFromProfile(final String profile) {
     return builder(profile).build();
   }
@@ -549,12 +539,6 @@ public class TemporaryJobs implements TestRule {
       if (this.config.hasPath("hostFilter")) {
         hostFilter(this.config.getString("hostFilter"));
       }
-      if (this.config.hasPath("endpoints")) {
-        endpointStrings(getListByKey("endpoints", config));
-      }
-      if (this.config.hasPath("domain")) {
-        domain(this.config.getString("domain"));
-      }
       if (this.config.hasPath("hostPickingStrategy")) {
         processHostPickingStrategy();
       }
@@ -598,32 +582,6 @@ public class TemporaryJobs implements TestRule {
       }
     }
 
-    public Builder domain(final String domain) {
-      return client(clientBuilder.setUser(user)
-                        .setDomain(domain)
-                        .build());
-    }
-
-    public Builder endpoints(final String... endpoints) {
-      return endpointStrings(asList(endpoints));
-    }
-
-    public Builder endpointStrings(final List<String> endpoints) {
-      return client(clientBuilder.setUser(user)
-                        .setEndpointStrings(endpoints)
-                        .build());
-    }
-
-    public Builder endpoints(final URI... endpoints) {
-      return endpoints(asList(endpoints));
-    }
-
-    public Builder endpoints(final List<URI> endpoints) {
-      return client(clientBuilder.setUser(user)
-                        .setEndpoints(endpoints)
-                        .build());
-    }
-
     public Builder hostPickingStrategy(final HostPickingStrategy strategy) {
       this.hostPickingStrategy = strategy;
       return this;
@@ -646,11 +604,6 @@ public class TemporaryJobs implements TestRule {
 
     public Builder deployer(final Deployer deployer) {
       this.deployer = deployer;
-      return this;
-    }
-
-    public Builder client(final HeliosClient client) {
-      this.client = client;
       return this;
     }
 
