@@ -11,7 +11,7 @@ case "$1" in
     fi
 
     # have docker bind to localhost
-    docker_opts='DOCKER_OPTS="$DOCKER_OPTS -H tcp://0.0.0.0:2375"'
+    docker_opts='DOCKER_OPTS="$DOCKER_OPTS -H=tcp://0.0.0.0:2375 -H=unix:///var/run/docker.sock"'
     sudo sh -c "echo '$docker_opts' >> /etc/default/docker"
 
     cat /etc/default/docker
@@ -41,6 +41,16 @@ case "$1" in
 
     case $CIRCLE_NODE_INDEX in
       0)
+        sudo apt-get install -y jq
+
+        # build images for integration tests
+        mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true \
+          -B -V -pl helios-services
+
+        # tag the helios-solo image we just built
+        solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
+        docker tag -f $solo_image spotify/helios-solo:latest
+
         # run all tests *except* helios-system-tests
         sed -i'' 's/<module>helios-system-tests<\/module>//' pom.xml
         mvn test -B -Pjacoco

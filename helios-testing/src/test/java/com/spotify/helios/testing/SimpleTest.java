@@ -84,7 +84,6 @@ public class SimpleTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
         .prober(new TestProber())
         .jobDeployedMessageFormat(
             "Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")

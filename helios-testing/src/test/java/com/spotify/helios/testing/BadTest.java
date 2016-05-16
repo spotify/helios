@@ -40,7 +40,6 @@ public class BadTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
         .prober(new TestProber())
         .jobPrefix(Optional.of(testTag).get())
         .build();
