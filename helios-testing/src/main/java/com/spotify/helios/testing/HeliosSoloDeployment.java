@@ -82,7 +82,7 @@ import static java.util.Collections.singletonList;
  * master and one Helios agent deployed in Docker. Helios Solo uses the Docker instance it is
  * deployed on to run its jobs.
  */
-public class HeliosSoloDeployment implements HeliosDeployment {
+class HeliosSoloDeployment implements HeliosDeployment {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeployment.class);
 
