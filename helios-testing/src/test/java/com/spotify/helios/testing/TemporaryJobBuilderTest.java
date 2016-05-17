@@ -17,15 +17,15 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.docker.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.PortMapping;
-
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+
+import com.spotify.docker.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.junit.After;
 import org.junit.Before;
@@ -73,7 +73,7 @@ public class TemporaryJobBuilderTest {
         .addPort("http", PortMapping.of(8080));
 
     builder =
-        new TemporaryJobBuilder(deployer, "prefix-", prober, env, reportWriter, jobBuilder);
+        new TemporaryJobBuilder(deployer, prober, env, reportWriter, jobBuilder);
 
     cleanup();
   }

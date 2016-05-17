@@ -28,7 +28,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
@@ -41,12 +40,10 @@ import java.util.Set;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.spotify.helios.testing.TemporaryJobsTestBase.temporaryJobsBuilder;
-import static java.lang.String.format;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
@@ -56,9 +53,6 @@ public class ConfigTest {
 
   @Mock
   private static HeliosClient client;
-
-  @Mock(answer = Answers.CALLS_REAL_METHODS)
-  private static HeliosClient.Builder clientBuilder;
 
   @Before
   public void setup() {
@@ -74,8 +68,6 @@ public class ConfigTest {
     // Local is the default profile, so don't specify it explicitly to test default loading
     @Rule
     public final TemporaryJobs temporaryJobs = parameters.builder
-        .client(client)
-        .deployer(this)
         .build();
 
     @Before
@@ -97,7 +89,7 @@ public class ConfigTest {
                                TemporaryJobReports.ReportWriter reportWriter) {
       // This is called when the first job is deployed
       assertThat(hosts, equalTo((List<String>) newArrayList("test-host")));
-      parameters.validate(job, temporaryJobs.prefix());
+      parameters.validate(job);
       return null;
     }
 
@@ -106,7 +98,7 @@ public class ConfigTest {
                                TemporaryJobReports.ReportWriter reportWriter) {
       // This is called when the second job is deployed
       assertThat(hostFilter, equalTo(parameters.hostFilter));
-      parameters.validate(job, temporaryJobs.prefix());
+      parameters.validate(job);
       return null;
     }
 
@@ -119,10 +111,9 @@ public class ConfigTest {
   public void testLocalProfile() throws Exception {
     final TestParameters.JobValidator validator = new TestParameters.JobValidator() {
       @Override
-      public void validate(Job job, String prefix) {
-        final String local = prefix + ".local.";
+      public void validate(final Job job) {
+        final String local = ".local.";
         final Map<String, String> map = ImmutableMap.of(
-            "SPOTIFY_TEST_THING", format("See, we used the prefix here -->%s<--", prefix),
             "SPOTIFY_DOMAIN", local,
             "SPOTIFY_POD", local);
 
@@ -142,8 +133,8 @@ public class ConfigTest {
   public void testHeliosCiProfile() throws Exception {
     final TestParameters.JobValidator validator = new TestParameters.JobValidator() {
       @Override
-      public void validate(Job job, String prefix) {
-        final String domain = prefix + ".services.helios-ci.cloud.spotify.net";
+      public void validate(final Job job) {
+        final String domain = ".services.helios-ci.cloud.spotify.net";
         final Map<String, String> map = ImmutableMap.of(
             "SPOTIFY_DOMAIN", domain,
             "SPOTIFY_POD", domain,
@@ -157,9 +148,8 @@ public class ConfigTest {
     // Specify the helios-ci profile explicitly, but make sure that the construction of the
     // HeliosClient used by TemporaryJobs is mocked out to avoid attempting to connect to
     // possibly-unresolvable hosts.
-    doReturn(client).when(clientBuilder).build();
     final TemporaryJobs.Builder builder =
-        TemporaryJobs.builder("helios-ci", Collections.<String, String>emptyMap(), clientBuilder);
+        TemporaryJobs.builder("helios-ci", Collections.<String, String>emptyMap());
     parameters = new TestParameters(builder, ".+\\.helios-ci\\.cloud", validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }
@@ -180,12 +170,12 @@ public class ConfigTest {
       this.jobValidator = jobValidator;
     }
 
-    private void validate(final Job job, final String prefix) {
-      jobValidator.validate(job, prefix);
+    private void validate(final Job job) {
+      jobValidator.validate(job);
     }
 
     private interface JobValidator {
-      void validate(Job job, String prefix);
+      void validate(Job job);
     }
   }
 }

@@ -17,7 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.system.SystemTestBase;
 
@@ -27,20 +26,13 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-
-public abstract class TemporaryJobsTestBase extends SystemTestBase {
+abstract class TemporaryJobsTestBase extends SystemTestBase {
 
   // These static fields exist as a way for nested tests to access non-static fields and methods in
   // SystemTestBase. This is a bit ugly, but we can't pass the values to FakeTest, because we don't
   // instantiate it, JUnit does in the PrintableResult.testResult method. And since JUnit
   // instantiates it, it must be a static class, which means it can't access the non-static fields
   // in SystemTestBase.
-  protected static HeliosClient client;
-  protected static String testHost1;
-  protected static String testHost2;
   protected static String testTag;
 
   protected static Path prefixDirectory;
@@ -50,24 +42,13 @@ public abstract class TemporaryJobsTestBase extends SystemTestBase {
     @Override
     public boolean probe(final String host, final PortMapping portMapping) {
       // Probe for ports where docker is running instead of on the mock testHost address
-      assertEquals(testHost1, host);
       return super.probe(DOCKER_HOST.address(), portMapping);
     }
   }
 
   @Before
   public void temporaryJobsSetup() throws Exception {
-    startDefaultMaster();
-    client = defaultClient();
-    testHost1 = testHost() + "1";
-    testHost2 = testHost() + "2";
     testTag = super.testTag;
-    startDefaultAgent(testHost1);
-    startDefaultAgent(testHost2);
-
-    awaitHostStatus(client, testHost1, UP, LONG_WAIT_SECONDS, SECONDS);
-    awaitHostStatus(client, testHost2, UP, LONG_WAIT_SECONDS, SECONDS);
-
     prefixDirectory = temporaryFolder.newFolder().toPath();
   }
 

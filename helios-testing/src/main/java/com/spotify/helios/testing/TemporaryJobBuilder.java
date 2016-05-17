@@ -65,7 +65,6 @@ public class TemporaryJobBuilder {
   private final Job.Builder builder;
   private final Set<String> waitPorts = Sets.newHashSet();
   private final Deployer deployer;
-  private final String jobNamePrefix;
   private final Map<String, String> env;
   private final TemporaryJobReports.ReportWriter reportWriter;
 
@@ -73,18 +72,16 @@ public class TemporaryJobBuilder {
   private Prober prober;
   private TemporaryJob job;
 
-  public TemporaryJobBuilder(final Deployer deployer, final String jobNamePrefix,
-                             final Prober defaultProber, final Map<String, String> env,
+  public TemporaryJobBuilder(final Deployer deployer,
+                             final Prober defaultProber,
+                             final Map<String, String> env,
                              final TemporaryJobReports.ReportWriter reportWriter,
                              final Job.Builder jobBuilder) {
     checkNotNull(deployer, "deployer");
-    checkNotNull(jobNamePrefix, "jobNamePrefix");
     checkNotNull(defaultProber, "defaultProber");
     this.deployer = deployer;
-    this.jobNamePrefix = jobNamePrefix;
     this.prober = defaultProber;
     this.builder = jobBuilder;
-    this.builder.setRegistrationDomain(jobNamePrefix);
     this.env = env;
     this.reportWriter = reportWriter;
 
@@ -122,11 +119,6 @@ public class TemporaryJobBuilder {
 
   public TemporaryJobBuilder env(final String key, final Object value) {
     this.builder.addEnv(key, value.toString());
-    return this;
-  }
-
-  public TemporaryJobBuilder disablePrivateRegistrationDomain() {
-    this.builder.setRegistrationDomain(Job.EMPTY_REGISTRATION_DOMAIN);
     return this;
   }
 
@@ -194,11 +186,6 @@ public class TemporaryJobBuilder {
 
   public TemporaryJobBuilder host(final String host) {
     this.hosts.add(host);
-    return this;
-  }
-
-  public TemporaryJobBuilder hostFilter(final String hostFilter) {
-    this.hostFilter = hostFilter;
     return this;
   }
 
@@ -270,7 +257,7 @@ public class TemporaryJobBuilder {
     if (job == null) {
       if (builder.getName() == null && builder.getVersion() == null) {
         // Both name and version are unset, use image name as job name and generate random version
-        builder.setName(jobName(builder.getImage(), jobNamePrefix));
+        builder.setName(sanitizeJobName(builder.getImage()));
         builder.setVersion(randomVersion());
       }
 
@@ -419,8 +406,8 @@ public class TemporaryJobBuilder {
     }
   }
 
-  private String jobName(final String s, final String jobNamePrefix) {
-    return jobNamePrefix + "_" + JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
+  private String sanitizeJobName(final String s) {
+    return JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
   }
 
   private String randomVersion() {

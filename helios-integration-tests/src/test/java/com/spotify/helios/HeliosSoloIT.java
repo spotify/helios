@@ -41,7 +41,6 @@ public class HeliosSoloIT {
   @Rule
   public TemporaryJobs jobs = TemporaryJobs.builder()
       .deployTimeoutMillis(MINUTES.toMillis(1))
-      .hostFilter(".+")
       .build();
 
   @Test

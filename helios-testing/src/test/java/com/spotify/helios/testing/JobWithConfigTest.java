@@ -74,8 +74,6 @@ public class JobWithConfigTest {
     // Local is the default profile, so don't specify it explicitly to test default loading
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-        .client(client)
-        .deployer(deployer)
         .build();
 
     @Test

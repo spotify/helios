@@ -50,7 +50,6 @@ public class UdpProberTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
         .prober(new TestProber())
         .build();
 
@@ -60,7 +59,7 @@ public class UdpProberTest extends TemporaryJobsTestBase {
           .image(ALPINE)
           .command(asList("nc", "-p", "4711", "-lu"))
           .port("default", 4711, "udp")
-          .deploy(testHost1);
+          .deploy();
     }
 
     @After
@@ -71,7 +70,7 @@ public class UdpProberTest extends TemporaryJobsTestBase {
 
     @Test
     public void test() throws Exception {
-      final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
+      final Map<JobId, Job> jobs = temporaryJobs.client().jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 1, jobs.size());
       for (final Job job : jobs.values()) {
         assertEquals("wrong job running", ALPINE, job.getImage());
