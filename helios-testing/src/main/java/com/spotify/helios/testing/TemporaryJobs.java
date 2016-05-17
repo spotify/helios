@@ -87,7 +87,7 @@ public class TemporaryJobs implements TestRule {
   private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
-  private static volatile HeliosDeployment soloDeployment;
+  private static volatile HeliosSoloDeployment soloDeployment;
 
   private final HeliosClient client;
   private final Prober prober;
@@ -101,7 +101,7 @@ public class TemporaryJobs implements TestRule {
   private final TemporaryJobReports reports;
   private final ThreadLocal<TemporaryJobReports.ReportWriter> reportWriter;
 
-  private static synchronized HeliosDeployment getOrCreateHeliosSoloDeployment() {
+  private static synchronized HeliosSoloDeployment getOrCreateHeliosSoloDeployment() {
     if (soloDeployment == null) {
       // TODO (dxia) remove checkForNewImages(). Set here to prevent using
       // spotify/helios-solo:latest from docker hub

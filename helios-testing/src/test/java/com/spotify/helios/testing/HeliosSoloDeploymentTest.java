@@ -263,7 +263,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testCloseSoloExitsInTime() throws Exception {
-    final HeliosDeployment solo = HeliosSoloDeployment.builder()
+    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         .soloMasterProber(soloMasterProber)
         .soloHostProber(soloHostProber)
@@ -280,7 +280,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testCloseSoloExitsTooLate() throws Exception {
-    final HeliosDeployment solo = HeliosSoloDeployment.builder()
+    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         .soloMasterProber(soloMasterProber)
         .soloHostProber(soloHostProber)
@@ -306,7 +306,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testCloseSoloDoNotRemoveContainer() throws Exception {
-    final HeliosDeployment solo = HeliosSoloDeployment.builder()
+    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         .soloMasterProber(soloMasterProber)
         .soloHostProber(soloHostProber)
