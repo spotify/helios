@@ -69,7 +69,7 @@ public class TemporaryJobs implements TestRule {
 
   private static final String HELIOS_TESTING_PROFILE = "helios.testing.profile";
   private static final String HELIOS_TESTING_PROFILES = "helios.testing.profiles.";
-  private static final Prober DEFAULT_PROBER = new DefaultProber();
+  private static final Prober DEFAULT_PROBER = new Prober();
   private static final String DEFAULT_TEST_REPORT_DIRECTORY = "target/helios-reports/test";
   private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
@@ -407,11 +407,6 @@ public class TemporaryJobs implements TestRule {
 
     public Builder jobDeployedMessageFormat(final String jobLinkFormat) {
       this.jobDeployedMessageFormat = jobLinkFormat;
-      return this;
-    }
-
-    public Builder prober(final Prober prober) {
-      this.prober = prober;
       return this;
     }
 

@@ -25,8 +25,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Map;
 
+import static com.spotify.helios.system.SystemTestBase.ALPINE;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -37,7 +39,7 @@ import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 /**
  * Tests that a UDP port in a TemporaryJob can be probed.
  */
-public class UdpProberTest extends TemporaryJobsTestBase {
+public class UdpProberTest {
 
   @Test
   public void test() throws Exception {
@@ -49,8 +51,8 @@ public class UdpProberTest extends TemporaryJobsTestBase {
     private TemporaryJob job;
 
     @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .prober(new TestProber())
+    public final TemporaryJobs temporaryJobs = TemporaryJobs
+        .builder(Collections.<String, String>emptyMap())
         .build();
 
     @Before

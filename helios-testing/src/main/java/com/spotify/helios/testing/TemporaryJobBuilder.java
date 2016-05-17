@@ -17,6 +17,13 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
+import com.google.common.io.Files;
+import com.google.common.io.Resources;
+
+import com.fasterxml.jackson.databind.JsonNode;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
@@ -25,13 +32,6 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-import com.google.common.io.Files;
-import com.google.common.io.Resources;
 
 import org.joda.time.DateTime;
 
@@ -50,7 +50,6 @@ import java.util.regex.Pattern;
 import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.io.Resources.asCharSource;
 import static java.lang.Integer.toHexString;
 import static java.util.Arrays.asList;
@@ -68,19 +67,16 @@ public class TemporaryJobBuilder {
   private final Map<String, String> env;
   private final TemporaryJobReports.ReportWriter reportWriter;
 
-  private String hostFilter;
   private Prober prober;
   private TemporaryJob job;
 
   public TemporaryJobBuilder(final Deployer deployer,
-                             final Prober defaultProber,
+                             final Prober prober,
                              final Map<String, String> env,
                              final TemporaryJobReports.ReportWriter reportWriter,
                              final Job.Builder jobBuilder) {
-    checkNotNull(deployer, "deployer");
-    checkNotNull(defaultProber, "defaultProber");
-    this.deployer = deployer;
-    this.prober = defaultProber;
+    this.deployer = checkNotNull(deployer, "deployer");
+    this.prober = checkNotNull(prober, "prober");
     this.builder = jobBuilder;
     this.env = env;
     this.reportWriter = reportWriter;
@@ -202,16 +198,6 @@ public class TemporaryJobBuilder {
     return this;
   }
 
-  /**
-   * This will override the default prober provided by {@link TemporaryJobs} to the constructor.
-   * @param prober the prober to use for this job
-   * @return the TemporaryJobBuilder
-   */
-  public TemporaryJobBuilder prober(final Prober prober) {
-    this.prober = prober;
-    return this;
-  }
-
   public TemporaryJobBuilder healthCheck(final HealthCheck healthCheck) {
     this.builder.setHealthCheck(healthCheck);
     return this;
@@ -274,10 +260,6 @@ public class TemporaryJobBuilder {
       }
 
       if (this.hosts.isEmpty()) {
-        if (isNullOrEmpty(hostFilter)) {
-          hostFilter = env.get("HELIOS_HOST_FILTER");
-        }
-
         job = deployer.deploy(builder.build(), waitPorts, prober, reportWriter);
       } else {
         job = deployer.deploy(builder.build(), this.hosts, waitPorts, prober, reportWriter);

@@ -39,7 +39,6 @@ import java.util.Set;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.util.concurrent.Futures.immediateFuture;
-import static com.spotify.helios.testing.TemporaryJobsTestBase.temporaryJobsBuilder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
@@ -123,7 +122,8 @@ public class ConfigTest {
 
     // The local profile is the default, so we don't specify it explicitly so we can test
     // the default loading mechanism.
-    parameters = new TestParameters(temporaryJobsBuilder(), validator);
+    parameters = new TestParameters(TemporaryJobs.builder(Collections.<String, String>emptyMap()),
+                                    validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }
 

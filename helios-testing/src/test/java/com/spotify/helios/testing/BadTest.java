@@ -20,13 +20,15 @@ package com.spotify.helios.testing;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
+
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.hasFailureContaining;
 
 
-public class BadTest extends TemporaryJobsTestBase {
+public class BadTest {
 
   @Test
   public void verifyJobFailsWhenCalledBeforeTestRun() throws Exception {
@@ -37,8 +39,8 @@ public class BadTest extends TemporaryJobsTestBase {
   public static class BadTestImpl {
 
     @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .prober(new TestProber())
+    public final TemporaryJobs temporaryJobs = TemporaryJobs
+        .builder(Collections.<String, String>emptyMap())
         .build();
 
     @SuppressWarnings("unused")

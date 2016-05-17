@@ -22,11 +22,7 @@ import com.google.common.collect.ImmutableList;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.spotify.helios.cli.CliMain;
-import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.testing.Prober;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -34,9 +30,6 @@ import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
 import static java.util.Arrays.asList;
@@ -100,30 +93,4 @@ public class Utils {
     final JsonNode imageNode = node.get("image");
     return (imageNode == null || imageNode.getNodeType() != STRING) ? null : imageNode.asText();
   }
-
-  public static class AgentStatusProber implements Prober {
-
-    private final HeliosClient client;
-    private final String hostName;
-
-    public AgentStatusProber(final String masterEndpoint, final String user,
-                             final String hostName) {
-      this.hostName = hostName;
-      client = HeliosClient.newBuilder()
-          .setEndpoints(masterEndpoint)
-          .setUser(user)
-          .build();
-    }
-
-    @Override
-    public boolean probe(String host, PortMapping portMapping) {
-      try {
-        final HostStatus hostStatus = client.hostStatus(hostName).get(10, TimeUnit.SECONDS);
-        return hostStatus != null && hostStatus.getStatus() == HostStatus.Status.UP;
-      } catch (InterruptedException | ExecutionException | TimeoutException e) {
-        throw Throwables.propagate(e);
-      }
-    }
-  }
-
 }

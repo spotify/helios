@@ -19,7 +19,6 @@ package com.spotify.helios;
 
 import com.google.common.collect.ImmutableList;
 
-import com.spotify.helios.Utils.AgentStatusProber;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
@@ -42,7 +41,6 @@ public class HeliosIT {
   @Rule
   public TemporaryJobs temporaryJobs = TemporaryJobs.create();
 
-  private static final String TEST_USER = "HeliosIT";
   private static final String TEST_HOST = "test-host";
 
   private String masterEndpoint;
@@ -82,7 +80,6 @@ public class HeliosIT {
     // helios agent
     final TemporaryJobBuilder agent = temporaryJobs.job()
         .image(agentImage())
-        .prober(new AgentStatusProber(masterEndpoint, TEST_USER, TEST_HOST))
         .port("agent", 8080) // need to expose fake port just so prober gets invoked
         .command(args.build());
 

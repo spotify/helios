@@ -26,14 +26,16 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
 import java.nio.file.Files;
+import java.util.Collections;
 
+import static com.spotify.helios.system.SystemTestBase.BUSYBOX;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.hasSingleFailureContaining;
 
-public class TempJobFailureTest extends TemporaryJobsTestBase {
+public class TempJobFailureTest {
 
   @ClassRule
   public static final TemporaryFolder REPORT_DIR = new TemporaryFolder();
@@ -60,8 +62,8 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
   public static class TempJobFailureTestImpl {
 
     @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .prober(new TestProber())
+    public final TemporaryJobs temporaryJobs = TemporaryJobs
+        .builder(Collections.<String, String>emptyMap())
         .testReportDirectory(REPORT_DIR.getRoot().getAbsolutePath())
         .build();
 

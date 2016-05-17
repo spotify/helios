@@ -32,10 +32,14 @@ import org.junit.rules.TemporaryFolder;
 import java.io.File;
 import java.net.Socket;
 import java.nio.file.Files;
+import java.util.Collections;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.spotify.helios.system.SystemTestBase.BUSYBOX;
+import static com.spotify.helios.system.SystemTestBase.DOCKER_HOST;
+import static com.spotify.helios.system.SystemTestBase.IDLE_COMMAND;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertArrayEquals;
@@ -48,7 +52,7 @@ import static org.junit.Assert.fail;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
-public class SimpleTest extends TemporaryJobsTestBase {
+public class SimpleTest {
 
   @ClassRule
   public static final TemporaryFolder REPORT_DIR = new TemporaryFolder();
@@ -77,8 +81,8 @@ public class SimpleTest extends TemporaryJobsTestBase {
   public static class SimpleTestImpl {
 
     @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .prober(new TestProber())
+    public final TemporaryJobs temporaryJobs = TemporaryJobs
+        .builder(Collections.<String, String>emptyMap())
         .jobDeployedMessageFormat(
             "Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")
         .deployTimeoutMillis(MINUTES.toMillis(3))
