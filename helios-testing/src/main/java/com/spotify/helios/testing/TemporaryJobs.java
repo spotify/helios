@@ -110,8 +110,8 @@ public class TemporaryJobs implements TestRule {
 
     checkArgument(builder.deployTimeoutMillis >= 0, "deployTimeoutMillis");
 
-    this.deployer = new DefaultDeployer(client, jobs, builder.hostPickingStrategy,
-            builder.jobDeployedMessageFormat, builder.deployTimeoutMillis);
+    this.deployer = new DefaultDeployer(
+        client, jobs, builder.jobDeployedMessageFormat, builder.deployTimeoutMillis);
 
     final Path testReportDirectory = Paths.get(fromNullable(builder.testReportDirectory)
                                                    .or(DEFAULT_TEST_REPORT_DIRECTORY));
@@ -383,7 +383,6 @@ public class TemporaryJobs implements TestRule {
     private HeliosClient client;
     private String testReportDirectory;
     private String jobDeployedMessageFormat;
-    private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
     private long deployTimeoutMillis = DEFAULT_DEPLOY_TIMEOUT_MILLIS;
 
     Builder(final String profile, final Config rootConfig, final Map<String, String> env) {

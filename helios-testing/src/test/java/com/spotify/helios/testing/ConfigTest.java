@@ -94,10 +94,9 @@ public class ConfigTest {
     }
 
     @Override
-    public TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts, Prober prober,
+    public TemporaryJob deploy(Job job, Set<String> waitPorts, Prober prober,
                                TemporaryJobReports.ReportWriter reportWriter) {
       // This is called when the second job is deployed
-      assertThat(hostFilter, equalTo(parameters.hostFilter));
       parameters.validate(job);
       return null;
     }
@@ -124,8 +123,7 @@ public class ConfigTest {
 
     // The local profile is the default, so we don't specify it explicitly so we can test
     // the default loading mechanism.
-    parameters = new TestParameters(temporaryJobsBuilder(),
-                                    ".*", validator);
+    parameters = new TestParameters(temporaryJobsBuilder(), validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }
 
@@ -150,7 +148,7 @@ public class ConfigTest {
     // possibly-unresolvable hosts.
     final TemporaryJobs.Builder builder =
         TemporaryJobs.builder("helios-ci", Collections.<String, String>emptyMap());
-    parameters = new TestParameters(builder, ".+\\.helios-ci\\.cloud", validator);
+    parameters = new TestParameters(builder, validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }
 
@@ -160,13 +158,11 @@ public class ConfigTest {
    */
   private static class TestParameters {
     private final TemporaryJobs.Builder builder;
-    private final String hostFilter;
     private final JobValidator jobValidator;
 
-    private TestParameters(TemporaryJobs.Builder builder, String hostFilter,
+    private TestParameters(TemporaryJobs.Builder builder,
                            JobValidator jobValidator) {
       this.builder = builder;
-      this.hostFilter = hostFilter;
       this.jobValidator = jobValidator;
     }
 

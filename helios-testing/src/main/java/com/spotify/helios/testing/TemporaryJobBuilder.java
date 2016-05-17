@@ -278,7 +278,7 @@ public class TemporaryJobBuilder {
           hostFilter = env.get("HELIOS_HOST_FILTER");
         }
 
-        job = deployer.deploy(builder.build(), hostFilter, waitPorts, prober, reportWriter);
+        job = deployer.deploy(builder.build(), waitPorts, prober, reportWriter);
       } else {
         job = deployer.deploy(builder.build(), this.hosts, waitPorts, prober, reportWriter);
       }

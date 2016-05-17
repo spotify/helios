@@ -17,15 +17,9 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
-import com.google.common.base.Throwables;
-import com.google.common.collect.FluentIterable;
-import com.google.common.collect.Lists;
 
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.HostStatus.Status;
 import com.spotify.helios.common.descriptors.Job;
 
 import org.slf4j.Logger;
@@ -36,45 +30,37 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
-import static com.google.common.base.Predicates.containsPattern;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.lang.String.format;
 import static org.junit.Assert.fail;
 
-public class DefaultDeployer implements Deployer {
+class DefaultDeployer implements Deployer {
 
   private static final Logger log = LoggerFactory.getLogger(DefaultDeployer.class);
 
   private final HeliosClient client;
   private final List<TemporaryJob> jobs;
-  private final HostPickingStrategy hostPicker;
   private final String jobDeployedMessageFormat;
   private final long deployTimeoutMillis;
 
   private boolean readyToDeploy;
 
-  public DefaultDeployer(final HeliosClient client, final List<TemporaryJob> jobs,
-                         final HostPickingStrategy hostPicker,
-                         final String jobDeployedMessageFormat, final long deployTimeoutMillis) {
+  DefaultDeployer(final HeliosClient client,
+                  final List<TemporaryJob> jobs,
+                  final String jobDeployedMessageFormat,
+                  final long deployTimeoutMillis) {
     this.client = client;
     this.jobs = jobs;
-    this.hostPicker = hostPicker;
     this.jobDeployedMessageFormat = jobDeployedMessageFormat;
     this.deployTimeoutMillis = deployTimeoutMillis;
   }
 
   @Override
-  public TemporaryJob deploy(final Job job, final String hostFilter, final Set<String> waitPorts,
+  public TemporaryJob deploy(final Job job,
+                             final Set<String> waitPorts,
                              final Prober prober,
                              final TemporaryJobReports.ReportWriter reportWriter) {
-    if (isNullOrEmpty(hostFilter)) {
-      fail("a host filter pattern must be passed to hostFilter(), " +
-           "or one must be specified in HELIOS_HOST_FILTER");
-    }
 
     final List<String> hosts;
-    final TemporaryJobReports.Step determineHosts = reportWriter.step("get hosts")
-        .tag("hostFilter", hostFilter);
+    final TemporaryJobReports.Step determineHosts = reportWriter.step("get hosts");
     try {
       log.info("Getting list of hosts");
 
@@ -86,40 +72,14 @@ public class DefaultDeployer implements Deployer {
       determineHosts.finish();
     }
 
-    final List<String> filteredHosts = FluentIterable.from(hosts)
-        .filter(containsPattern(hostFilter))
-        .toList();
-
-    log.info("Got this filtered list of hosts with host filter '{}': {}",
-             hostFilter, filteredHosts);
-
-    if (filteredHosts.isEmpty()) {
-      fail(format("no hosts matched the filter pattern - %s", hostFilter));
+    if (hosts.isEmpty()) {
+      fail("There are no helios-solo hosts");
     }
 
-    final String chosenHost = pickHost(filteredHosts);
+    log.info("Got this list of hosts: {}", hosts);
+
+    final String chosenHost = hosts.get(0);
     return deploy(job, Collections.singletonList(chosenHost), waitPorts, prober, reportWriter);
-  }
-
-  @VisibleForTesting
-  String pickHost(final List<String> filteredHosts) {
-    final List<String> mutatedList = Lists.newArrayList(filteredHosts);
-    
-    while (true) {
-      final String candidateHost = hostPicker.pickHost(mutatedList);
-      try {
-        final HostStatus hostStatus = client.hostStatus(candidateHost).get();
-        if (hostStatus != null && Status.UP == hostStatus.getStatus()) {
-          return candidateHost;
-        } 
-        mutatedList.remove(candidateHost);
-        if (mutatedList.isEmpty()) {
-          fail("all hosts matching filter pattern are DOWN");
-        }
-      } catch (InterruptedException | ExecutionException e) {
-        throw Throwables.propagate(e);
-      }
-    }
   }
 
   @Override
