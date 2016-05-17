@@ -31,9 +31,6 @@ import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
@@ -43,16 +40,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.FutureFallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.TimeLimiter;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -65,7 +58,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.Callable;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -124,12 +116,9 @@ class HeliosSoloDeployment {
     checkNotNull(builder.soloWatchdogConnector, "soloWatchdogConnector");
     this.exitTimeoutSeconds = builder.exitTimeoutSeconds;
 
-    final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
-
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
     this.dockerHost = Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
-    this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
-        .or(containerDockerHost());
+    this.containerDockerHost = containerDockerHost();
     this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
     this.env = containerEnv(builder.env);
     this.binds = containerBinds();
@@ -157,11 +146,10 @@ class HeliosSoloDeployment {
 
     // Running the String host:port through HostAndPort does some validation for us.
     this.deploymentAddress = HostAndPort.fromString(dockerHost.address() + ":" + heliosPort);
-    this.heliosClient = Optional.fromNullable(builder.heliosClient).or(
-        HeliosClient.newBuilder()
-            .setUser(username)
-            .setEndpoints("http://" + deploymentAddress)
-            .build());
+    this.heliosClient = HeliosClient.newBuilder()
+        .setUser("solo-user")
+        .setEndpoints("http://" + deploymentAddress)
+        .build();
 
     watchdogSocket = connectToWatchdogWithTimeout(dockerHost.address(), watchdogPort, 60,
                                                   TimeUnit.SECONDS, builder.soloWatchdogConnector);
@@ -488,13 +476,6 @@ class HeliosSoloDeployment {
   }
 
   /**
-   * @return The container ID of the Helios Solo container.
-   */
-  public String heliosContainerId() {
-    return heliosContainerId;
-  }
-
-  /**
    * Undeploy (shut down) this HeliosSoloDeployment.
    */
   void close() {
@@ -532,38 +513,6 @@ class HeliosSoloDeployment {
     this.dockerClient.close();
   }
 
-  private Boolean awaitJobUndeployed(final HeliosClient client, final String host,
-                                     final JobId jobId, final int timeout,
-                                     final TimeUnit timeunit) throws Exception {
-    return Polling.await(timeout, timeunit, new Callable<Boolean>() {
-      @Override
-      public Boolean call() throws Exception {
-        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
-        if (hostStatus == null) {
-          log.debug("Job {} host status is null. Waiting...", jobId);
-          return null;
-        }
-        final TaskStatus taskStatus = hostStatus.getStatuses().get(jobId);
-        if (taskStatus != null) {
-          log.debug("Job {} task status is {}.", jobId, taskStatus.getState());
-          return null;
-        }
-        log.info("Task status is null which means job {} has been successfully undeployed.", jobId);
-        return true;
-      }
-    });
-  }
-
-  private <T> T getOrNull(final ListenableFuture<T> future)
-      throws ExecutionException, InterruptedException {
-    return Futures.withFallback(future, new FutureFallback<T>() {
-      @Override
-      public ListenableFuture<T> create(@NotNull final Throwable t) throws Exception {
-        return Futures.immediateFuture(null);
-      }
-    }).get();
-  }
-
   /**
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
@@ -575,7 +524,7 @@ class HeliosSoloDeployment {
    * @param profile A configuration profile used to populate builder options.
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
-  public static Builder builderWithProfile(final String profile) {
+  private static Builder builderWithProfile(final String profile) {
     return builderWithProfileAndConfig(profile, HeliosConfig.loadConfig("helios-solo"));
   }
 
@@ -589,7 +538,7 @@ class HeliosSoloDeployment {
    * <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or sensible
    * defaults if they are absent.
    */
-  public static Builder fromEnv() {
+  static Builder fromEnv() {
     return fromEnv(null);
   }
 
@@ -599,7 +548,7 @@ class HeliosSoloDeployment {
    * <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables, or sensible
    * defaults if they are absent.
    */
-  public static Builder fromEnv(final String profile)  {
+  private static Builder fromEnv(final String profile)  {
     try {
       return builderWithProfile(profile).dockerClient(DefaultDockerClient.fromEnv().build());
     } catch (DockerCertificateException e) {
@@ -633,11 +582,8 @@ class HeliosSoloDeployment {
   public static class Builder {
     private DockerClient dockerClient;
     private DockerHost dockerHost;
-    private DockerHost containerDockerHost;
-    private HeliosClient heliosClient;
     private String heliosSoloImage = "spotify/helios-solo:latest";
     private String namespace;
-    private String heliosUsername;
     private Set<String> env;
     private boolean pullBeforeCreate = true;
     private boolean removeHeliosSoloContainerOnExit = true;
@@ -679,7 +625,7 @@ class HeliosSoloDeployment {
      * By default, the {@link #heliosSoloImage} will be checked for updates before creating a
      * container by doing a "docker pull". Call this method with "false" to disable this behavior.
      */
-    public Builder checkForNewImages(boolean enabled) {
+    Builder checkForNewImages(boolean enabled) {
       this.pullBeforeCreate = enabled;
       return this;
     }
@@ -690,18 +636,8 @@ class HeliosSoloDeployment {
      * (which is probably only useful for developing helios-solo or this class itself and
      * inspecting logs).
      */
-    public Builder removeHeliosSoloOnExit(boolean enabled) {
+    Builder removeHeliosSoloOnExit(boolean enabled) {
       this.removeHeliosSoloContainerOnExit = enabled;
-      return this;
-    }
-
-    /**
-     * Set the number of seconds Helios solo will wait for jobs to be undeployed and, as a result,
-     * their associated Docker containers to stop running before shutting itself down.
-     * The default is 30 seconds.
-     */
-    public Builder jobUndeployWaitSeconds(int seconds) {
-      this.jobUndeployWaitSeconds = seconds;
       return this;
     }
 
@@ -712,7 +648,7 @@ class HeliosSoloDeployment {
      * @param dockerClient A client connected to the Docker instance in which to deploy Helios Solo.
      * @return This Builder, with its Docker client configured.
      */
-    public Builder dockerClient(final DockerClient dockerClient) {
+    Builder dockerClient(final DockerClient dockerClient) {
       this.dockerClient = dockerClient;
       return this;
     }
@@ -726,34 +662,8 @@ class HeliosSoloDeployment {
      * @param dockerHost Docker socket and certificate settings for the host OS.
      * @return This Builder, with its Docker host configured.
      */
-    public Builder dockerHost(final DockerHost dockerHost) {
+    Builder dockerHost(final DockerHost dockerHost) {
       this.dockerHost = dockerHost;
-      return this;
-    }
-
-    /**
-     * Optionally specify a DockerHost (i.e. Docker socket and certificate info) to connect to
-     * Docker from inside the Helios container. If unset sensible defaults will be derived from
-     * the <code>DOCKER_HOST</code> and <code>DOCKER_CERT_PATH</code> environment variables and the
-     * Docker daemon's configuration.
-     *
-     * @param containerDockerHost Docker socket and certificate settings as seen from inside
-     *                            the Helios container.
-     * @return This Builder, with its container Docker host configured.
-     */
-    public Builder containerDockerHost(final DockerHost containerDockerHost) {
-      this.containerDockerHost = containerDockerHost;
-      return this;
-    }
-
-    /**
-     * Optionally specify a {@link HeliosClient}. Used for unit tests.
-     *
-     * @param heliosClient HeliosClient
-     * @return This Builder, with its HeliosClient configured.
-     */
-    public Builder heliosClient(final HeliosClient heliosClient) {
-      this.heliosClient = heliosClient;
       return this;
     }
 
@@ -761,7 +671,7 @@ class HeliosSoloDeployment {
      * Customize the image used for helios-solo. If not set defaults to
      * "spotify/helios-solo:latest".
      */
-    public Builder heliosSoloImage(String image) {
+    Builder heliosSoloImage(String image) {
       this.heliosSoloImage = Preconditions.checkNotNull(image);
       return this;
     }
@@ -773,21 +683,8 @@ class HeliosSoloDeployment {
      * @param namespace A unique namespace for the Helios solo agent and Docker container.
      * @return This Builder, with its namespace configured.
      */
-    public Builder namespace(final String namespace) {
+    Builder namespace(final String namespace) {
       this.namespace = namespace;
-      return this;
-    }
-
-    /**
-     * Optionally specify the username to be used by the {@link HeliosClient} connected to the
-     * {@link HeliosSoloDeployment} created with this Builder. If unset a random string will be
-     * used.
-     *
-     * @param username The Helios user to identify as.
-     * @return This Builder, with its Helios username configured.
-     */
-    public Builder heliosUsername(final String username) {
-      this.heliosUsername = username;
       return this;
     }
 
@@ -844,7 +741,7 @@ class HeliosSoloDeployment {
      * @param value Environment variable value.
      * @return This Builder, with the environment variable configured.
      */
-    public Builder env(final String key, final Object value) {
+    Builder env(final String key, final Object value) {
       this.env.add(key + "=" + value.toString());
       return this;
     }
