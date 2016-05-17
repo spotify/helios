@@ -18,7 +18,6 @@
 package com.spotify.helios.testing;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
@@ -60,7 +59,6 @@ public class TemporaryJobBuilder {
   private static final Pattern JOB_NAME_FORBIDDEN_CHARS = Pattern.compile("[^0-9a-zA-Z-_.]+");
   private static final int DEFAULT_EXPIRES_MINUTES = 30;
 
-  private final List<String> hosts = Lists.newArrayList();
   private final Job.Builder builder;
   private final Set<String> waitPorts = Sets.newHashSet();
   private final Deployer deployer;
@@ -180,11 +178,6 @@ public class TemporaryJobBuilder {
     return this;
   }
 
-  public TemporaryJobBuilder host(final String host) {
-    this.hosts.add(host);
-    return this;
-  }
-
   /**
    * The Helios master will undeploy and delete the job at the specified date, if it has not
    * already been removed. If not set, jobs will be removed after 30 minutes. This is for the
@@ -214,30 +207,11 @@ public class TemporaryJobBuilder {
   }
 
   /**
-   * Deploys the job to the specified hosts. If no hosts are specified, a host will be chosen at
-   * random from the current Helios cluster. If the HELIOS_HOST_FILTER environment variable is set,
-   * it will be used to filter the list of hosts in the current Helios cluster.
+   * Deploys the job to one helios-solo host.
    *
-   * @param hosts the list of helios hosts to deploy to. A random host will be chosen if the list is
-   *              empty.
    * @return a TemporaryJob representing the deployed job
    */
-  public TemporaryJob deploy(final String... hosts) {
-    return deploy(asList(hosts));
-  }
-
-  /**
-   * Deploys the job to the specified hosts. If no hosts are specified, a host will be chosen at
-   * random from the current Helios cluster. If the HELIOS_HOST_FILTER environment variable is set,
-   * it will be used to filter the list of hosts in the current Helios cluster.
-   *
-   * @param hosts the list of helios hosts to deploy to. A random host will be chosen if the list is
-   *              empty.
-   * @return a TemporaryJob representing the deployed job
-   */
-  public TemporaryJob deploy(final List<String> hosts) {
-    this.hosts.addAll(hosts);
-
+  public TemporaryJob deploy() {
     // check that the job has not already been deployed (this allows multiple calls to deploy()
     // to be no-ops once deployed)
     if (job == null) {
@@ -259,11 +233,7 @@ public class TemporaryJobBuilder {
         waitPorts.clear();
       }
 
-      if (this.hosts.isEmpty()) {
-        job = deployer.deploy(builder.build(), waitPorts, prober, reportWriter);
-      } else {
-        job = deployer.deploy(builder.build(), this.hosts, waitPorts, prober, reportWriter);
-      }
+      job = deployer.deploy(builder.build(), waitPorts, prober, reportWriter);
     }
 
     return job;

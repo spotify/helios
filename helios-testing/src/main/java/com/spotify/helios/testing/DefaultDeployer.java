@@ -82,10 +82,11 @@ class DefaultDeployer implements Deployer {
     return deploy(job, Collections.singletonList(chosenHost), waitPorts, prober, reportWriter);
   }
 
-  @Override
-  public TemporaryJob deploy(final Job job, final List<String> hosts, final Set<String> waitPorts,
-                             final Prober prober,
-                             final TemporaryJobReports.ReportWriter reportWriter) {
+  private TemporaryJob deploy(final Job job,
+                              final List<String> hosts,
+                              final Set<String> waitPorts,
+                              final Prober prober,
+                              final TemporaryJobReports.ReportWriter reportWriter) {
     if (!readyToDeploy) {
       fail("deploy() must be called in a @Before or in the test method, or perhaps you forgot"
            + " to put @Rule before TemporaryJobs");

@@ -18,49 +18,26 @@
 package com.spotify.helios.testing;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.ListenableFuture;
 
-import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
 
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import static com.google.common.collect.Lists.newArrayList;
-import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
-import static org.mockito.Mockito.when;
 
-@RunWith(MockitoJUnitRunner.class)
+// TODO (dxia) Does this test still make sense in its current form?
 public class ConfigTest {
 
   private static TestParameters parameters;
-
-  @Mock
-  private static HeliosClient client;
-
-  @Before
-  public void setup() {
-    final ListenableFuture<Map<JobId, Job>> future =
-        immediateFuture((Map<JobId, Job>) new HashMap<JobId, Job>());
-
-    // Return an empty job list to skip trying to remove old jobs
-    when(client.jobs()).thenReturn(future);
-  }
 
   public static class ProfileTest implements Deployer {
 
@@ -71,25 +48,12 @@ public class ConfigTest {
 
     @Before
     public void setup() {
-      // This job will get deployed test-host
-      temporaryJobs.job().deploy("test-host");
-
-      // this job will get deployed using the host filter in the conf file
       temporaryJobs.job().deploy();
     }
 
     @Test
     public void test() throws Exception {
       // Dummy test so junit doesn't complain.
-    }
-
-    @Override
-    public TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts, Prober prober,
-                               TemporaryJobReports.ReportWriter reportWriter) {
-      // This is called when the first job is deployed
-      assertThat(hosts, equalTo((List<String>) newArrayList("test-host")));
-      parameters.validate(job);
-      return null;
     }
 
     @Override
@@ -124,31 +88,6 @@ public class ConfigTest {
     // the default loading mechanism.
     parameters = new TestParameters(TemporaryJobs.builder(Collections.<String, String>emptyMap()),
                                     validator);
-    assertThat(testResult(ProfileTest.class), isSuccessful());
-  }
-
-  @Test
-  public void testHeliosCiProfile() throws Exception {
-    final TestParameters.JobValidator validator = new TestParameters.JobValidator() {
-      @Override
-      public void validate(final Job job) {
-        final String domain = ".services.helios-ci.cloud.spotify.net";
-        final Map<String, String> map = ImmutableMap.of(
-            "SPOTIFY_DOMAIN", domain,
-            "SPOTIFY_POD", domain,
-            "SPOTIFY_SYSLOG_HOST", "10.99.0.1");
-        assertThat(job.getEnv(), equalTo(map));
-        assertThat(job.getImage(), equalTo("busybox:latest"));
-
-      }
-    };
-
-    // Specify the helios-ci profile explicitly, but make sure that the construction of the
-    // HeliosClient used by TemporaryJobs is mocked out to avoid attempting to connect to
-    // possibly-unresolvable hosts.
-    final TemporaryJobs.Builder builder =
-        TemporaryJobs.builder("helios-ci", Collections.<String, String>emptyMap());
-    parameters = new TestParameters(builder, validator);
     assertThat(testResult(ProfileTest.class), isSuccessful());
   }
 

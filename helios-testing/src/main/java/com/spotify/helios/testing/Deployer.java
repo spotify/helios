@@ -19,13 +19,9 @@ package com.spotify.helios.testing;
 
 import com.spotify.helios.common.descriptors.Job;
 
-import java.util.List;
 import java.util.Set;
 
 interface Deployer {
-
-  TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts, Prober prober,
-                      TemporaryJobReports.ReportWriter reportWriter);
 
   TemporaryJob deploy(Job job, Set<String> waitPorts, Prober prober,
                       TemporaryJobReports.ReportWriter reportWriter);

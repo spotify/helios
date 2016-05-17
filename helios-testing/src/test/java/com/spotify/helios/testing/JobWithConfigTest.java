@@ -41,7 +41,6 @@ import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyListOf;
 import static org.mockito.Matchers.anySetOf;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -81,10 +80,10 @@ public class JobWithConfigTest {
       final String configFile = Resources.getResource("helios_job_config.json").getPath();
       final TemporaryJobBuilder builder = temporaryJobs.jobWithConfig(configFile)
           .port("https", 443);
-      builder.deploy("test-host");
+      builder.deploy();
 
       final ArgumentCaptor<Job> captor = ArgumentCaptor.forClass(Job.class);
-      verify(deployer).deploy(captor.capture(), anyListOf(String.class), anySetOf(String.class),
+      verify(deployer).deploy(captor.capture(), anySetOf(String.class),
                               any(Prober.class), any(TemporaryJobReports.ReportWriter.class));
 
       assertEquals(80, captor.getValue().getPorts().get("http").getInternalPort());

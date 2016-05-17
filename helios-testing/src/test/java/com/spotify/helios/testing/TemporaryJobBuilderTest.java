@@ -116,11 +116,10 @@ public class TemporaryJobBuilderTest {
   public void testBuildFromJob() {
     final ImmutableList<String> hosts = ImmutableList.of("host1");
 
-    builder.deploy(hosts);
+    builder.deploy();
 
     final ImmutableSet<String> expectedWaitPorts = ImmutableSet.of("http");
-    verify(deployer).deploy(any(Job.class), eq(hosts), eq(expectedWaitPorts),
-                            eq(prober), eq(reportWriter));
+    verify(deployer).deploy(any(Job.class), eq(expectedWaitPorts), eq(prober), eq(reportWriter));
   }
 
   @Test

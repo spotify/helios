@@ -239,9 +239,6 @@ public class TemporaryJobs implements TestRule {
     if (config.hasPath("command")) {
       builder.command(getListByKey("command", config));
     }
-    if (config.hasPath("deploy")) {
-      builder.deploy(getListByKey("deploy", config));
-    }
     if (config.hasPath("imageInfoFile")) {
       builder.imageFromInfoFile(config.getString("imageInfoFile"));
     }
