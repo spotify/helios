@@ -194,7 +194,8 @@ public class TemporaryJobs implements TestRule {
       step.finish();
     }
 
-    soloDeployment.close();
+    // TODO (dxia) When do we know when it's safe to close this?
+    // soloDeployment.close();
   }
 
   public TemporaryJobBuilder job() {
