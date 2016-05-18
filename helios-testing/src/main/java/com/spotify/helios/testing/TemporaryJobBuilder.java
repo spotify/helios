@@ -62,6 +62,7 @@ public class TemporaryJobBuilder {
   private final Job.Builder builder;
   private final Set<String> waitPorts = Sets.newHashSet();
   private final Deployer deployer;
+  private final String jobNamePrefix;
   private final Map<String, String> env;
   private final TemporaryJobReports.ReportWriter reportWriter;
 
@@ -69,13 +70,16 @@ public class TemporaryJobBuilder {
   private TemporaryJob job;
 
   public TemporaryJobBuilder(final Deployer deployer,
+                             final String jobNamePrefix,
                              final Prober prober,
                              final Map<String, String> env,
                              final TemporaryJobReports.ReportWriter reportWriter,
                              final Job.Builder jobBuilder) {
     this.deployer = checkNotNull(deployer, "deployer");
+    this.jobNamePrefix = checkNotNull(jobNamePrefix, "jobNamePrefix");
     this.prober = checkNotNull(prober, "prober");
     this.builder = jobBuilder;
+    this.builder.setRegistrationDomain(jobNamePrefix);
     this.env = env;
     this.reportWriter = reportWriter;
 
@@ -233,7 +237,7 @@ public class TemporaryJobBuilder {
         waitPorts.clear();
       }
 
-      builder.setName(randomString() + "_" + builder.getName());
+      builder.setName(jobNamePrefix + "_" + builder.getName());
       job = deployer.deploy(builder.build(), waitPorts, prober, reportWriter);
     }
 

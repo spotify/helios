@@ -36,7 +36,7 @@ import static java.util.Arrays.asList;
 
 public class Utils {
 
-  public static final String DEFAULT_IMAGE_INFO_PATH = "helios-services/target/test-classes/";
+  public static final String DEFAULT_IMAGE_INFO_PATH = "../helios-services/target/test-classes/";
 
   public static <T> T cli(final Class<T> klass, final String masterEndpoint, final String... args)
       throws Exception {

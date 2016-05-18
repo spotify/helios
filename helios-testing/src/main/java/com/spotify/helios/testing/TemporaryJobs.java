@@ -54,6 +54,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -83,6 +84,7 @@ public class TemporaryJobs implements TestRule {
   private final Map<String, String> env;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
   private final Deployer deployer;
+  private final String jobPrefix = Integer.toHexString(ThreadLocalRandom.current().nextInt());
 
   private final TemporaryJobReports reports;
   private final ThreadLocal<TemporaryJobReports.ReportWriter> reportWriter;
@@ -222,7 +224,7 @@ public class TemporaryJobs implements TestRule {
 
   private TemporaryJobBuilder job(final Job.Builder jobBuilder) {
     final TemporaryJobBuilder builder = new TemporaryJobBuilder(
-        deployer, prober, env, reportWriter.get(), jobBuilder);
+        deployer, jobPrefix, prober, env, reportWriter.get(), jobBuilder);
 
     if (config.hasPath("env")) {
       final Config env = config.getConfig("env");

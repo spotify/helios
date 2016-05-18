@@ -73,7 +73,7 @@ public class TemporaryJobBuilderTest {
         .addPort("http", PortMapping.of(8080));
 
     builder =
-        new TemporaryJobBuilder(deployer, prober, env, reportWriter, jobBuilder);
+        new TemporaryJobBuilder(deployer, "prefix-", prober, env, reportWriter, jobBuilder);
 
     cleanup();
   }
