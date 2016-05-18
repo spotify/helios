@@ -596,7 +596,7 @@ public class TemporaryJobs implements TestRule {
       final String dockerHost = env.get("DOCKER_HOST");
       if (dockerHost == null) {
         endpoints("http://localhost:5801");
-      } else {
+      } else if (!dockerHost.startsWith("unix://")) {
         try {
           final URI uri = new URI(dockerHost);
           endpoints("http://" + uri.getHost() + ":5801");
