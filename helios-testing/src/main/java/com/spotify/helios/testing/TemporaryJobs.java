@@ -17,6 +17,7 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
@@ -110,8 +111,9 @@ public class TemporaryJobs implements TestRule {
 
     checkArgument(builder.deployTimeoutMillis >= 0, "deployTimeoutMillis");
 
-    this.deployer = new DefaultDeployer(
-        client, jobs, builder.jobDeployedMessageFormat, builder.deployTimeoutMillis);
+    this.deployer = fromNullable(builder.deployer).or(
+        new DefaultDeployer(client, jobs, builder.jobDeployedMessageFormat,
+                            builder.deployTimeoutMillis));
 
     final Path testReportDirectory = Paths.get(fromNullable(builder.testReportDirectory)
                                                    .or(DEFAULT_TEST_REPORT_DIRECTORY));
@@ -194,8 +196,7 @@ public class TemporaryJobs implements TestRule {
       step.finish();
     }
 
-    // TODO (dxia) When do we know when it's safe to close this?
-    // soloDeployment.close();
+    // We don't close soloDeployment because other callers may still be using the singleton.
   }
 
   public TemporaryJobBuilder job() {
@@ -378,6 +379,7 @@ public class TemporaryJobs implements TestRule {
     private final Map<String, String> env;
     private final Config config;
     private Prober prober = DEFAULT_PROBER;
+    private Deployer deployer;
     private HeliosClient client;
     private String testReportDirectory;
     private String jobDeployedMessageFormat;
@@ -415,6 +417,30 @@ public class TemporaryJobs implements TestRule {
 
     public Builder deployTimeoutMillis(final long timeout) {
       this.deployTimeoutMillis = timeout;
+      return this;
+    }
+
+    /**
+     * Used to configure a custom prober for testing. When testing, we often don't care if a port
+     * is actually open. So we just use a mock prober that returns true.
+     * @param prober {@link Prober}
+     * @return This Builder, with the prober configured.
+     */
+    @VisibleForTesting
+    Builder prober(final Prober prober) {
+      this.prober = prober;
+      return this;
+    }
+
+    /**
+     * Used to configure a custom deployer for testing. When testing, we often don't care if a job
+     * is actually deployed. So we just use a mock deployer that returns true.
+     * @param deployer {@link Deployer}
+     * @return This Builder, with the deployer configured.
+     */
+    @VisibleForTesting
+    Builder deployer(final Deployer deployer) {
+      this.deployer = deployer;
       return this;
     }
 

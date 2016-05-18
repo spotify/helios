@@ -33,6 +33,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
+import static org.mockito.Mockito.mock;
 
 // TODO (dxia) Does this test still make sense in its current form?
 public class ConfigTest {
@@ -41,13 +42,17 @@ public class ConfigTest {
 
   public static class ProfileTest implements Deployer {
 
+    private Deployer deployer;
+
     // Local is the default profile, so don't specify it explicitly to test default loading
     @Rule
     public final TemporaryJobs temporaryJobs = parameters.builder
+        .deployer(deployer)
         .build();
 
     @Before
     public void setup() {
+      deployer = mock(Deployer.class);
       temporaryJobs.job().deploy();
     }
 

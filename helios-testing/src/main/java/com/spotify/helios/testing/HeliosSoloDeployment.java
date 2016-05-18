@@ -476,7 +476,10 @@ class HeliosSoloDeployment {
   }
 
   /**
-   * Undeploy (shut down) this HeliosSoloDeployment.
+   * Undeploy (shut down) this HeliosSoloDeployment. You don't have to call this if you start
+   * an instance of this class with the env var HELIOS_SOLO_SUICIDE=1. The container will clean
+   * itself up and exit. Calling this method when there are multiple callers using the singleton
+   * will result in failures because the underlying {@link DockerClient} will be closed.
    */
   void close() {
     log.info("shutting ourselves down");

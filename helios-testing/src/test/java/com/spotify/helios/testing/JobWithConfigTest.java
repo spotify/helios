@@ -18,13 +18,11 @@
 package com.spotify.helios.testing;
 
 import com.google.common.io.Resources;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
 
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -32,16 +30,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
-import java.util.HashMap;
-import java.util.Map;
-
-import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static junit.framework.TestCase.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anySetOf;
+import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -54,17 +49,12 @@ public class JobWithConfigTest {
   @Mock
   private static Deployer deployer;
 
-  @Before
-  public void setup() {
-    final ListenableFuture<Map<JobId, Job>> future =
-        immediateFuture((Map<JobId, Job>) new HashMap<JobId, Job>());
-
-    // Return an empty job list to skip trying to remove old jobs
-    when(client.jobs()).thenReturn(future);
-  }
+  @Mock
+  private static Prober prober;
 
   @Test
   public void test() throws Exception {
+    when(prober.probe(anyString(), any(PortMapping.class))).thenReturn(true);
     assertThat(testResult(JobWithConfigTestImpl.class), isSuccessful());
   }
 
@@ -73,6 +63,8 @@ public class JobWithConfigTest {
     // Local is the default profile, so don't specify it explicitly to test default loading
     @Rule
     public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
+        .prober(prober)
+        .deployer(deployer)
         .build();
 
     @Test

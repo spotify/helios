@@ -218,7 +218,7 @@ public class TemporaryJobBuilder {
       if (builder.getName() == null && builder.getVersion() == null) {
         // Both name and version are unset, use image name as job name and generate random version
         builder.setName(sanitizeJobName(builder.getImage()));
-        builder.setVersion(randomVersion());
+        builder.setVersion(randomString());
       }
 
       // Set job to expires value, if it's not already set. This ensures temporary jobs which
@@ -233,6 +233,7 @@ public class TemporaryJobBuilder {
         waitPorts.clear();
       }
 
+      builder.setName(randomString() + "_" + builder.getName());
       job = deployer.deploy(builder.build(), waitPorts, prober, reportWriter);
     }
 
@@ -362,7 +363,7 @@ public class TemporaryJobBuilder {
     return JOB_NAME_FORBIDDEN_CHARS.matcher(s).replaceAll("_");
   }
 
-  private String randomVersion() {
+  private String randomString() {
     return toHexString(ThreadLocalRandom.current().nextInt());
   }
 }

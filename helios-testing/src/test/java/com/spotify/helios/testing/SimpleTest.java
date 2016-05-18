@@ -36,7 +36,6 @@ import java.util.Collections;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.collect.Iterables.getOnlyElement;
 import static com.spotify.helios.system.SystemTestBase.BUSYBOX;
 import static com.spotify.helios.system.SystemTestBase.DOCKER_HOST;
 import static com.spotify.helios.system.SystemTestBase.IDLE_COMMAND;
@@ -115,8 +114,6 @@ public class SimpleTest {
       //verify address and addresses return valid HostAndPort objects
       assertEquals(job1.hosts().size(), 1);
       final String host = job1.hosts().get(0);
-      assertEquals("wrong host", host, job1.address("echo").getHostText());
-      assertEquals("wrong host", host, getOnlyElement(job1.addresses("echo")).getHostText());
 
       ping(DOCKER_HOST.address(), job1.port(host, "echo"));
     }
