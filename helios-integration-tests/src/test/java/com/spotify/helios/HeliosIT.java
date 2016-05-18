@@ -19,19 +19,15 @@ package com.spotify.helios;
 
 import com.google.common.collect.ImmutableList;
 
-import com.spotify.helios.Utils.AgentStatusProber;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
-import com.spotify.helios.testing.HeliosDeploymentResource;
-import com.spotify.helios.testing.HeliosSoloDeployment;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobBuilder;
 import com.spotify.helios.testing.TemporaryJobs;
 
 import org.junit.Before;
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -42,22 +38,9 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class HeliosIT {
 
-  @ClassRule
-  public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
-      HeliosSoloDeployment.fromEnv()
-          .heliosSoloImage(Utils.soloImage())
-          .checkForNewImages(false)
-          .removeHeliosSoloOnExit(false)
-          .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.test.${domain}")
-          .build()
-  );
-
   @Rule
-  public TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-      .client(solo.client())
-      .build();
+  public TemporaryJobs temporaryJobs = TemporaryJobs.create();
 
-  private static final String TEST_USER = "HeliosIT";
   private static final String TEST_HOST = "test-host";
 
   private String masterEndpoint;
@@ -97,7 +80,6 @@ public class HeliosIT {
     // helios agent
     final TemporaryJobBuilder agent = temporaryJobs.job()
         .image(agentImage())
-        .prober(new AgentStatusProber(masterEndpoint, TEST_USER, TEST_HOST))
         .port("agent", 8080) // need to expose fake port just so prober gets invoked
         .command(args.build());
 

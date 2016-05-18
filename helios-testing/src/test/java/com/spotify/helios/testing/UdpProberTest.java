@@ -25,8 +25,10 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Map;
 
+import static com.spotify.helios.system.SystemTestBase.ALPINE;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
@@ -37,7 +39,7 @@ import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 /**
  * Tests that a UDP port in a TemporaryJob can be probed.
  */
-public class UdpProberTest extends TemporaryJobsTestBase {
+public class UdpProberTest {
 
   @Test
   public void test() throws Exception {
@@ -49,9 +51,8 @@ public class UdpProberTest extends TemporaryJobsTestBase {
     private TemporaryJob job;
 
     @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
-        .prober(new TestProber())
+    public final TemporaryJobs temporaryJobs = TemporaryJobs
+        .builder(Collections.<String, String>emptyMap())
         .build();
 
     @Before
@@ -60,7 +61,7 @@ public class UdpProberTest extends TemporaryJobsTestBase {
           .image(ALPINE)
           .command(asList("nc", "-p", "4711", "-lu"))
           .port("default", 4711, "udp")
-          .deploy(testHost1);
+          .deploy();
     }
 
     @After
@@ -71,7 +72,7 @@ public class UdpProberTest extends TemporaryJobsTestBase {
 
     @Test
     public void test() throws Exception {
-      final Map<JobId, Job> jobs = client.jobs().get(15, SECONDS);
+      final Map<JobId, Job> jobs = temporaryJobs.client().jobs().get(15, SECONDS);
       assertEquals("wrong number of jobs running", 1, jobs.size());
       for (final Job job : jobs.values()) {
         assertEquals("wrong job running", ALPINE, job.getImage());

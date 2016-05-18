@@ -17,8 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
@@ -29,14 +27,18 @@ import org.junit.Test;
 import java.net.HttpURLConnection;
 import java.net.Socket;
 import java.net.URL;
+import java.util.Collections;
 
+import static com.spotify.helios.system.SystemTestBase.ALPINE;
+import static com.spotify.helios.system.SystemTestBase.DOCKER_HOST;
+import static com.spotify.helios.system.SystemTestBase.UHTTPD;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
-public class HealthCheckTest extends TemporaryJobsTestBase {
+public class HealthCheckTest {
 
   private static final String HEALTH_CHECK_PORT = "healthCheck";
   private static final String QUERY_PORT = "query";
@@ -49,9 +51,8 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
   public static class TestImpl {
 
     @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
-        .jobPrefix(Optional.of(testTag).get())
+    public final TemporaryJobs temporaryJobs = TemporaryJobs
+        .builder(Collections.<String, String>emptyMap())
         .deployTimeoutMillis(MINUTES.toMillis(3))
         .build();
 
@@ -65,7 +66,7 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
           .port(HEALTH_CHECK_PORT, 4711)
           .port(QUERY_PORT, 4712)
           .tcpHealthCheck(HEALTH_CHECK_PORT)
-          .deploy(testHost1);
+          .deploy();
 
       // verify health check was set correctly in job
       assertThat(job.job().getHealthCheck(),
@@ -87,7 +88,7 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
           .port(HEALTH_CHECK_PORT, 4711)
           .port(QUERY_PORT, 4712)
           .httpHealthCheck(HEALTH_CHECK_PORT, "/")
-          .deploy(testHost1);
+          .deploy();
 
       // verify health check was set correctly in job
       assertThat(job.job().getHealthCheck(),
@@ -111,7 +112,7 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
           .port(HEALTH_CHECK_PORT, 4711)
           .port(QUERY_PORT, 4712)
           .healthCheck(healthCheck)
-          .deploy(testHost1);
+          .deploy();
 
       // verify health check was set correctly in job
       assertThat(job.job().getHealthCheck(), equalTo(healthCheck));

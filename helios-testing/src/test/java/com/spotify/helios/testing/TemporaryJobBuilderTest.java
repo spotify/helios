@@ -17,15 +17,15 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.docker.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.PortMapping;
-
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.io.Files;
 import com.google.common.io.Resources;
+
+import com.spotify.docker.client.shaded.com.fasterxml.jackson.databind.ObjectMapper;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.junit.After;
 import org.junit.Before;
@@ -73,7 +73,7 @@ public class TemporaryJobBuilderTest {
         .addPort("http", PortMapping.of(8080));
 
     builder =
-        new TemporaryJobBuilder(deployer, "prefix-", prober, env, reportWriter, jobBuilder);
+        new TemporaryJobBuilder(deployer, prober, env, reportWriter, jobBuilder);
 
     cleanup();
   }
@@ -116,11 +116,10 @@ public class TemporaryJobBuilderTest {
   public void testBuildFromJob() {
     final ImmutableList<String> hosts = ImmutableList.of("host1");
 
-    builder.deploy(hosts);
+    builder.deploy();
 
     final ImmutableSet<String> expectedWaitPorts = ImmutableSet.of("http");
-    verify(deployer).deploy(any(Job.class), eq(hosts), eq(expectedWaitPorts),
-                            eq(prober), eq(reportWriter));
+    verify(deployer).deploy(any(Job.class), eq(expectedWaitPorts), eq(prober), eq(reportWriter));
   }
 
   @Test
