@@ -178,6 +178,7 @@ public class TemporaryJobs implements TestRule {
       // So containers that don't immediately stop **should** only stay around for at most 120
       // seconds.
       job.undeploy(errors);
+      job.
     }
 
     for (final TemporaryJobReports.Step step : undeploy.asSet()) {

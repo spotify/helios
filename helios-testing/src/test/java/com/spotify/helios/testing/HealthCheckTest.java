@@ -35,94 +35,83 @@ import static com.spotify.helios.system.SystemTestBase.UHTTPD;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.junit.experimental.results.PrintableResult.testResult;
-import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
 public class HealthCheckTest {
 
   private static final String HEALTH_CHECK_PORT = "healthCheck";
   private static final String QUERY_PORT = "query";
 
+  @Rule
+  public final TemporaryJobs temporaryJobs = TemporaryJobs
+      .builder(Collections.<String, String>emptyMap())
+      .deployTimeoutMillis(MINUTES.toMillis(3))
+      .build();
+
   @Test
-  public void test() throws Exception {
-    assertThat(testResult(TestImpl.class), isSuccessful());
-  }
+  public void testTcpCheck() throws Exception {
+    // running netcat twice on different ports lets us verify the health check actually executed
+    // because otherwise we wouldn't be able to connect to the second port.
+    final TemporaryJob job = temporaryJobs.job()
+        .image(ALPINE)
+        .command("sh", "-c", "nc -l -p 4711 && nc -kl -p 4712 -e true")
+        .port(HEALTH_CHECK_PORT, 4711)
+        .port(QUERY_PORT, 4712)
+        .tcpHealthCheck(HEALTH_CHECK_PORT)
+        .deploy();
 
-  public static class TestImpl {
+    // verify health check was set correctly in job
+    assertThat(job.job().getHealthCheck(),
+               equalTo((HealthCheck) TcpHealthCheck.of(HEALTH_CHECK_PORT)));
 
-    @Rule
-    public final TemporaryJobs temporaryJobs = TemporaryJobs
-        .builder(Collections.<String, String>emptyMap())
-        .deployTimeoutMillis(MINUTES.toMillis(3))
-        .build();
-
-    @Test
-    public void testTcpCheck() throws Exception {
-      // running netcat twice on different ports lets us verify the health check actually executed
-      // because otherwise we wouldn't be able to connect to the second port.
-      final TemporaryJob job = temporaryJobs.job()
-          .image(ALPINE)
-          .command("sh", "-c", "nc -l -p 4711 && nc -kl -p 4712 -e true")
-          .port(HEALTH_CHECK_PORT, 4711)
-          .port(QUERY_PORT, 4712)
-          .tcpHealthCheck(HEALTH_CHECK_PORT)
-          .deploy();
-
-      // verify health check was set correctly in job
-      assertThat(job.job().getHealthCheck(),
-                 equalTo((HealthCheck) TcpHealthCheck.of(HEALTH_CHECK_PORT)));
-
-      // verify we can actually connect to the port
-      // noinspection EmptyTryBlock
-      try (final Socket ignored = new Socket(DOCKER_HOST.address(),
-                                             job.address(QUERY_PORT).getPort())) {
-      }
-    }
-
-    @Test
-    public void testHttpCheck() throws Exception {
-      // Start an HTTP server that listens on ports 4711 and 4712.
-      final TemporaryJob job = temporaryJobs.job()
-          .image(UHTTPD)
-          .command("-p", "4711", "-p", "4712")
-          .port(HEALTH_CHECK_PORT, 4711)
-          .port(QUERY_PORT, 4712)
-          .httpHealthCheck(HEALTH_CHECK_PORT, "/")
-          .deploy();
-
-      // verify health check was set correctly in job
-      assertThat(job.job().getHealthCheck(),
-                 equalTo((HealthCheck) HttpHealthCheck.of(HEALTH_CHECK_PORT, "/")));
-
-      // verify we can actually make http requests
-      final URL url = new URL("http", DOCKER_HOST.address(),
-                              job.address(QUERY_PORT).getPort(), "/");
-      final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-      assertThat(connection.getResponseCode(), equalTo(200));
-    }
-
-    @Test
-    public void testHealthCheck() throws Exception {
-      // same as the tcp test above, but uses a HealthCheck
-      // object instead of the tcpHealthCheck convenience method
-      final HealthCheck healthCheck = TcpHealthCheck.of(HEALTH_CHECK_PORT);
-      final TemporaryJob job = temporaryJobs.job()
-          .image(ALPINE)
-          .command("sh", "-c", "nc -l -p 4711 && nc -kl -p 4712 -e true")
-          .port(HEALTH_CHECK_PORT, 4711)
-          .port(QUERY_PORT, 4712)
-          .healthCheck(healthCheck)
-          .deploy();
-
-      // verify health check was set correctly in job
-      assertThat(job.job().getHealthCheck(), equalTo(healthCheck));
-
-      // verify we can actually connect to the port
-      // noinspection EmptyTryBlock
-      try (final Socket ignored = new Socket(DOCKER_HOST.address(),
-                                             job.address(QUERY_PORT).getPort())) {
-      }
+    // verify we can actually connect to the port
+    // noinspection EmptyTryBlock
+    try (final Socket ignored = new Socket(DOCKER_HOST.address(),
+                                           job.address(QUERY_PORT).getPort())) {
     }
   }
 
+  @Test
+  public void testHttpCheck() throws Exception {
+    // Start an HTTP server that listens on ports 4711 and 4712.
+    final TemporaryJob job = temporaryJobs.job()
+        .image(UHTTPD)
+        .command("-p", "4711", "-p", "4712")
+        .port(HEALTH_CHECK_PORT, 4711)
+        .port(QUERY_PORT, 4712)
+        .httpHealthCheck(HEALTH_CHECK_PORT, "/")
+        .deploy();
+
+    // verify health check was set correctly in job
+    assertThat(job.job().getHealthCheck(),
+               equalTo((HealthCheck) HttpHealthCheck.of(HEALTH_CHECK_PORT, "/")));
+
+    // verify we can actually make http requests
+    final URL url = new URL("http", DOCKER_HOST.address(),
+                            job.address(QUERY_PORT).getPort(), "/");
+    final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+    assertThat(connection.getResponseCode(), equalTo(200));
+  }
+
+  @Test
+  public void testHealthCheck() throws Exception {
+    // same as the tcp test above, but uses a HealthCheck
+    // object instead of the tcpHealthCheck convenience method
+    final HealthCheck healthCheck = TcpHealthCheck.of(HEALTH_CHECK_PORT);
+    final TemporaryJob job = temporaryJobs.job()
+        .image(ALPINE)
+        .command("sh", "-c", "nc -l -p 4711 && nc -kl -p 4712 -e true")
+        .port(HEALTH_CHECK_PORT, 4711)
+        .port(QUERY_PORT, 4712)
+        .healthCheck(healthCheck)
+        .deploy();
+
+    // verify health check was set correctly in job
+    assertThat(job.job().getHealthCheck(), equalTo(healthCheck));
+
+    // verify we can actually connect to the port
+    // noinspection EmptyTryBlock
+    try (final Socket ignored = new Socket(DOCKER_HOST.address(),
+                                           job.address(QUERY_PORT).getPort())) {
+    }
+  }
 }
