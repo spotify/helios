@@ -130,6 +130,10 @@ public class DeploymentGroupTest extends SystemTestBase {
     // trigger a rolling update
     cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
 
+    // trigger another one immediately afterwards.
+    // This duplicate rolling update should be discarded.
+    cli("rolling-update", "--async", testJobNameAndVersion, TEST_GROUP);
+
     // ensure the job is running on all agents and the deployment group reaches DONE
     for (final String host : hosts) {
       awaitTaskState(jobId, host, TaskStatus.State.RUNNING);

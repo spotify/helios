@@ -17,6 +17,7 @@
 
 package com.spotify.helios.master;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.MoreObjects;
@@ -151,6 +152,8 @@ public class ZooKeeperMasterModel implements MasterModel {
   private static final String ROLLING_OPERATION_EVENTS_KAFKA_TOPIC = "HeliosDeploymentGroupEvents";
   private static final RollingOperationEventFactory ROLLING_OPERATION_EVENT_FACTORY =
       new RollingOperationEventFactory();
+
+  static final String DEFAULT_STOPPED_ERROR = "Stopped by user";
 
   private final ZooKeeperClientProvider provider;
   private final String name;
@@ -486,8 +489,9 @@ public class ZooKeeperMasterModel implements MasterModel {
     return getRollingOperationStatus(client, rollingOpId);
   }
 
-  private RollingOperationStatus getRollingOperationStatus(final ZooKeeperClient client,
-                                                           final String rollingOpId)
+  @VisibleForTesting
+  RollingOperationStatus getRollingOperationStatus(final ZooKeeperClient client,
+                                                   final String rollingOpId)
       throws RollingOperationDoesNotExistException {
     try {
       final byte[] data = client.getData(Paths.statusRollingOp(rollingOpId));
@@ -506,8 +510,8 @@ public class ZooKeeperMasterModel implements MasterModel {
     return getLastRollingOperation(client, groupName);
   }
 
-  private RollingOperation getLastRollingOperation(final ZooKeeperClient client,
-                                                       final String groupName)
+  @VisibleForTesting
+  RollingOperation getLastRollingOperation(final ZooKeeperClient client, final String groupName)
       throws DeploymentGroupDoesNotExistException {
     // The most recent rolling operations should always be at the head of the list returned by
     // getRollingOperations().
@@ -719,6 +723,30 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  private boolean rollingOpInProgress(final ZooKeeperClient client, final RollingOperation rolling)
+    throws DeploymentGroupDoesNotExistException {
+    if (rolling == null) {
+      return false;
+    }
+
+    try {
+      final RollingOperationStatus status = getRollingOperationStatus(client, rolling.getId());
+      switch (status.getState()) {
+        case DONE:
+          return false;
+        case FAILED:
+          return false;
+        default:
+          return true;
+      }
+
+    } catch (final RollingOperationDoesNotExistException e) {
+      log.warn("rolling operation {} on group {} has no status. Will assume it's not in progress.",
+               rolling.getId(), rolling.getDeploymentGroupName(), e);
+      return false;
+    }
+  }
+
   @Override
   public void rollingUpdate(final DeploymentGroup deploymentGroup,
                             final JobId jobId,
@@ -735,6 +763,27 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final ZooKeeperClient client = provider.get("rollingUpdate");
 
+    final RollingOperation lastOp = getLastRollingOperation(client, deploymentGroup.getName());
+    if (rollingOpInProgress(client, lastOp)) {
+      if (lastOp.getJobId().equals(jobId)) {
+        log.info("duplicate rolling-operation requested for deployment group {}. "
+                 + "{} is already being deployed by rolling-operation {}",
+                 deploymentGroup.getName(), jobId, lastOp.getId());
+        return;
+      }
+
+      try {
+        log.info("rolling-operation requested to deploy {} to deployment group {} "
+                 + "aborting running rolling-operation {} of {}",
+                 jobId, deploymentGroup.getName(), lastOp.getId(), lastOp.getJobId());
+        stopRollingOperation(client, lastOp.getId(), "Aborted by subsequent rolling update.");
+      } catch (final RollingOperationDoesNotExistException e) {
+        log.debug("tried to stop rolling-operation {} due to a subsequent rolling-operation "
+                  + "on deployment group {}, but it was removed.",
+                  lastOp.getId(), deploymentGroup.getName(), e);
+      }
+    }
+
     final RollingOperation rolling = RollingOperation.newBuilder()
         .setDeploymentGroupName(deploymentGroup.getName())
         .setJobId(jobId)
@@ -744,7 +793,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final RollingUpdateOp ops = generateOps(client, rolling);
     try {
-      log.info("starting zookeeper transation for rolling-operation {} on deployment-group: "
+      log.info("starting zookeeper transaction for rolling-operation {} on deployment-group: "
                + "name={}, jobId={}", rolling.getId(), deploymentGroup.getName(), jobId);
       client.transaction(ops.operations());
       emitEvents(ROLLING_OPERATION_EVENTS_KAFKA_TOPIC, ops.events());
@@ -1058,17 +1107,19 @@ public class ZooKeeperMasterModel implements MasterModel {
   void stopRollingOperation(final String rollingOpId)
       throws RollingOperationDoesNotExistException {
     final ZooKeeperClient client = provider.get("stopRollingOperation");
-    stopRollingOperation(client, rollingOpId);
+    stopRollingOperation(client, rollingOpId, DEFAULT_STOPPED_ERROR);
   }
 
-  private void stopRollingOperation(final ZooKeeperClient client,
-                                    final String rollingOpId)
+  @VisibleForTesting
+  void stopRollingOperation(final ZooKeeperClient client,
+                            final String rollingOpId,
+                            final String error)
       throws RollingOperationDoesNotExistException {
     log.info("stop rolling-operation: id={}", rollingOpId);
 
     final RollingOperationStatus status = RollingOperationStatus.newBuilder()
         .setState(FAILED)  // TODO(negz): State STOPPED?
-        .setError("Stopped by user")
+        .setError(error)
         .build();
 
     final String statusPath = Paths.statusRollingOp(rollingOpId);
@@ -1128,7 +1179,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final DeploymentGroupStatus status = DeploymentGroupStatus.newBuilder()
         .setState(UNSTABLE)
-        .setError("Stopped by user")
+        .setError(DEFAULT_STOPPED_ERROR)
         .build();
 
     try {
@@ -1144,7 +1195,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     for (final String rollingOpId : getRollingOperationIds(client, deploymentGroupName)) {
       try {
-        stopRollingOperation(client, rollingOpId);
+        stopRollingOperation(client, rollingOpId, DEFAULT_STOPPED_ERROR);
       } catch (RollingOperationDoesNotExistException e) {
         log.warn("Rolling operation {} associated with deployment group {} does not exist.",
                  rollingOpId, deploymentGroupName, e);

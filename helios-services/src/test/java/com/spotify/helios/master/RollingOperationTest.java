@@ -51,11 +51,17 @@ import org.junit.runner.RunWith;
 import java.util.List;
 
 import static com.spotify.helios.common.descriptors.RollingOperationStatus.State.NEW;
+import static com.spotify.helios.common.descriptors.RollingOperationStatus.State.ROLLING_OUT;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @RunWith(Theories.class)
@@ -90,9 +96,8 @@ public class RollingOperationTest {
   // deployment group in ZK.
   @Test
   public void testRollingOperationHistoryTruncated() throws Exception {
-    final ZooKeeperClient client = spy(this.client);
     final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
-        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
+        new ZooKeeperClientProvider(this.client, ZooKeeperModelReporter.noop()),
         getClass().getName(),
         mock(KafkaSender.class)));
 
@@ -125,6 +130,114 @@ public class RollingOperationTest {
       assertEquals(rolling.getJobId(), job.getId());
       assertEquals(status.getState(), RollingOperationStatus.State.DONE);
     }
+  }
+
+  // A test that verifies we don't create a new rolling operation when asked to perform the same
+  // rolling update that is currently performed by the most recent rolling operation.
+  @Test
+  public void testDuplicateRollingOperation() throws Exception {
+    final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
+        new ZooKeeperClientProvider(this.client, ZooKeeperModelReporter.noop()),
+        getClass().getName(),
+        mock(KafkaSender.class)));
+
+    final Job job = Job.newBuilder()
+        .setCommand(ImmutableList.of("COMMAND"))
+        .setImage("IMAGE")
+        .setName("JOB_NAME")
+        .setVersion("VERSION")
+        .build();
+
+    final DeploymentGroup dg = new DeploymentGroup(
+        "my_group", ImmutableList.of(HostSelector.parse("role=foo")));
+    final RolloutOptions options = RolloutOptions.newBuilder().build();
+
+    final RollingOperation lastOp = RollingOperation.newBuilder()
+        .setDeploymentGroupName(dg.getName())
+        .setJobId(job.getId())
+        .setId(ROLLING_OP_ID)
+        .setRolloutOptions(options)
+        .build();
+
+    final RollingOperationStatus lastOpStatus = RollingOperationStatus.newBuilder()
+        .setState(ROLLING_OUT)
+        .build();
+
+    doReturn(job).when(masterModel).getJob(job.getId());
+    doReturn(ImmutableList.of()).when(masterModel).getDeploymentGroupHosts(dg.getName());
+    doReturn(lastOp).when(masterModel)
+        .getLastRollingOperation(any(ZooKeeperClient.class), eq(dg.getName()));
+    doReturn(lastOpStatus).when(masterModel)
+        .getRollingOperationStatus(any(ZooKeeperClient.class), eq(lastOp.getId()));
+
+    masterModel.addDeploymentGroup(dg);
+    masterModel.rollingUpdate(dg, job.getId(), options);
+
+    // There should be no rolling ops because we mocked out the model such that it looked like an
+    // exact duplicate was already in progress, and thus did not create a new one.
+    assertEquals(masterModel.getRollingOperations(dg.getName()).size(), 0);
+  }
+
+  // A test that verifies we stop an in-progress update if a new rolling update with a different
+  // job id is requested.
+  @Test
+  public void testSupercededRollingOperation() throws Exception {
+    final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
+        new ZooKeeperClientProvider(this.client, ZooKeeperModelReporter.noop()),
+        getClass().getName(),
+        mock(KafkaSender.class)));
+
+    final Job job1 = Job.newBuilder()
+        .setCommand(ImmutableList.of("COMMAND"))
+        .setImage("IMAGE")
+        .setName("JOB_NAME")
+        .setVersion("VERSION")
+        .build();
+
+    final Job job2 = Job.newBuilder()
+        .setCommand(ImmutableList.of("COMMAND"))
+        .setImage("IMAGE")
+        .setName("JOB_NAME")
+        .setVersion("VERSION_2")
+        .build();
+
+    final DeploymentGroup dg = new DeploymentGroup(
+        "my_group", ImmutableList.of(HostSelector.parse("role=foo")));
+    final RolloutOptions options = RolloutOptions.newBuilder().build();
+
+    final RollingOperation lastOp = RollingOperation.newBuilder()
+        .setDeploymentGroupName(dg.getName())
+        .setJobId(job1.getId())
+        .setId(ROLLING_OP_ID)
+        .setRolloutOptions(options)
+        .build();
+
+    final RollingOperationStatus lastOpStatus = RollingOperationStatus.newBuilder()
+        .setState(ROLLING_OUT)
+        .build();
+
+    doReturn(job1).when(masterModel).getJob(job1.getId());
+    doReturn(job2).when(masterModel).getJob(job2.getId());
+    doReturn(ImmutableList.of()).when(masterModel).getDeploymentGroupHosts(dg.getName());
+    doReturn(lastOp).when(masterModel).getLastRollingOperation(
+        any(ZooKeeperClient.class),
+        eq(dg.getName()));
+    doReturn(lastOpStatus).when(masterModel).getRollingOperationStatus(
+        any(ZooKeeperClient.class),
+        eq(lastOp.getId()));
+
+    masterModel.addDeploymentGroup(dg);
+    masterModel.rollingUpdate(dg, job2.getId(), options);
+
+    verify(masterModel, times(1)).stopRollingOperation(
+        any(ZooKeeperClient.class),
+        eq(ROLLING_OP_ID),
+        eq("Aborted by subsequent rolling update."));
+
+    // Can't use getLastRollingOperation because we mocked it out.
+    final RollingOperation newLastOp = masterModel.getRollingOperations(dg.getName()).get(0);
+    assertNotEquals(newLastOp.getId(), lastOp.getId());
+    assertEquals(newLastOp.getJobId(), job2.getId());
   }
 
   // A test that...
