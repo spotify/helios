@@ -20,6 +20,7 @@ package com.spotify.helios.testing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.net.HostAndPort;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
@@ -50,7 +51,6 @@ import com.typesafe.config.ConfigValueFactory;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Matchers;
 
 import java.util.Collections;
 import java.util.List;
@@ -59,6 +59,7 @@ import java.util.Map;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -98,11 +99,18 @@ public class HeliosSoloDeploymentTest {
   private DockerClient dockerClient;
   private HeliosClient heliosClient;
   private ArgumentCaptor<ContainerConfig> containerConfig;
+  private SoloMasterProber soloMasterProber;
+  private SoloAgentProber soloAgentProber;
 
   @Before
   public void setup() throws Exception {
-    this.dockerClient = mock(DockerClient.class);
-    this.heliosClient = mock(HeliosClient.class);
+    dockerClient = mock(DockerClient.class);
+    heliosClient = mock(HeliosClient.class);
+    soloMasterProber = mock(SoloMasterProber.class);
+    soloAgentProber = mock(SoloAgentProber.class);
+
+    when(soloMasterProber.check(any(HostAndPort.class))).thenReturn(true);
+    when(soloAgentProber.check(any(HeliosClient.class))).thenReturn(true);
 
     // the anonymous classes to override a method are to workaround the docker-client "messages"
     // having no mutators, fun
@@ -160,6 +168,8 @@ public class HeliosSoloDeploymentTest {
         .dockerClient(dockerClient)
         // a custom dockerhost to trigger the localhost logic
         .dockerHost(DockerHost.from("tcp://localhost:2375", ""))
+        .soloMasterProber(soloMasterProber)
+        .soloHostProber(soloAgentProber)
         .build();
 
     boolean foundSolo = false;
@@ -185,8 +195,11 @@ public class HeliosSoloDeploymentTest {
         .withValue("helios.solo.profiles.test.namespace", ConfigValueFactory.fromAnyRef(ns))
         .withValue("helios.solo.profiles.test.env.TEST", ConfigValueFactory.fromAnyRef(env));
 
-    final HeliosSoloDeployment.Builder builder = new HeliosSoloDeployment.Builder(null, config);
-    builder.dockerClient(dockerClient).build();
+    HeliosSoloDeployment.builderWithProfileAndConfig(null, config)
+        .dockerClient(dockerClient)
+        .soloMasterProber(soloMasterProber)
+        .soloHostProber(soloAgentProber)
+        .build();
 
     boolean foundSolo = false;
     for (final ContainerConfig cc : containerConfig.getAllValues()) {
@@ -207,6 +220,8 @@ public class HeliosSoloDeploymentTest {
 
     HeliosSoloDeployment.builder()
         .dockerClient(this.dockerClient)
+        .soloMasterProber(soloMasterProber)
+        .soloHostProber(soloAgentProber)
         .build();
 
     verify(this.dockerClient, never()).pull(HeliosSoloDeployment.PROBE_IMAGE);
@@ -219,6 +234,8 @@ public class HeliosSoloDeploymentTest {
 
     HeliosSoloDeployment.builder()
         .dockerClient(this.dockerClient)
+        .soloMasterProber(soloMasterProber)
+        .soloHostProber(soloAgentProber)
         .build();
 
     verify(this.dockerClient).pull(HeliosSoloDeployment.PROBE_IMAGE);
@@ -229,6 +246,8 @@ public class HeliosSoloDeploymentTest {
     final HeliosSoloDeployment solo = (HeliosSoloDeployment) HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         .heliosClient(heliosClient)
+        .soloMasterProber(soloMasterProber)
+        .soloHostProber(soloAgentProber)
         .build();
 
     final ListenableFuture<List<String>> hostsFuture = Futures.<List<String>>immediateFuture(
@@ -285,6 +304,8 @@ public class HeliosSoloDeploymentTest {
     final HeliosSoloDeployment solo = (HeliosSoloDeployment) HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         .heliosClient(heliosClient)
+        .soloMasterProber(soloMasterProber)
+        .soloHostProber(soloAgentProber)
         .build();
 
     final ListenableFuture<Map<JobId, Job>> jobsFuture = Futures.immediateFuture(
@@ -294,6 +315,6 @@ public class HeliosSoloDeploymentTest {
     solo.undeployLeftoverJobs();
 
     // There should be no more calls to any HeliosClient methods.
-    verify(heliosClient, never()).jobStatus(Matchers.any(JobId.class));
+    verify(heliosClient, never()).jobStatus(any(JobId.class));
   }
 }
