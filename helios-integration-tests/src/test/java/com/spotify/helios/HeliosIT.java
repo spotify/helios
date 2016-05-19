@@ -24,15 +24,12 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
-import com.spotify.helios.testing.HeliosDeploymentResource;
-import com.spotify.helios.testing.HeliosSoloDeployment;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobBuilder;
 import com.spotify.helios.testing.TemporaryJobs;
 
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 import static com.spotify.helios.Utils.agentImage;
@@ -43,19 +40,7 @@ import static org.hamcrest.Matchers.equalTo;
 public class HeliosIT {
 
   @ClassRule
-  public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
-      HeliosSoloDeployment.fromEnv()
-          .heliosSoloImage(Utils.soloImage())
-          .checkForNewImages(false)
-          .removeHeliosSoloOnExit(false)
-          .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.test.${domain}")
-          .build()
-  );
-
-  @Rule
-  public TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-      .client(solo.client())
-      .build();
+  public static final TemporaryJobs temporaryJobs = TemporaryJobs.create();
 
   private static final String TEST_USER = "HeliosIT";
   private static final String TEST_HOST = "test-host";
