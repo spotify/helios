@@ -87,7 +87,7 @@ public class JobWithConfigTest {
 
       final ArgumentCaptor<Job> captor = ArgumentCaptor.forClass(Job.class);
       verify(deployer).deploy(captor.capture(), anyListOf(String.class), anySetOf(String.class),
-                              any(Prober.class), any(TemporaryJobReports.ReportWriter.class));
+                              any(Prober.class));
 
       assertEquals(80, captor.getValue().getPorts().get("http").getInternalPort());
       assertEquals(443, captor.getValue().getPorts().get("https").getInternalPort());
