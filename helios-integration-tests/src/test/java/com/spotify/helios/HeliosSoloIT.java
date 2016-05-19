@@ -19,14 +19,11 @@ package com.spotify.helios;
 
 import com.google.common.net.HostAndPort;
 
-import com.spotify.helios.testing.HeliosDeploymentResource;
-import com.spotify.helios.testing.HeliosSoloDeployment;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.Socket;
@@ -40,24 +37,13 @@ import static org.junit.Assert.assertThat;
 public class HeliosSoloIT {
 
   @ClassRule
-  public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
-      HeliosSoloDeployment.fromEnv()
-          .heliosSoloImage(Utils.soloImage())
-          .checkForNewImages(false)
-          .removeHeliosSoloOnExit(false)
-          .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.test.${domain}")
-          .build()
-  );
+  public static final TemporaryPorts ports = TemporaryPorts.create();
 
-  @Rule public final TemporaryPorts ports = TemporaryPorts.create();
-
-  @Rule
-  public TemporaryJobs jobs = TemporaryJobs.builder()
-      .client(solo.client())
+  @ClassRule
+  public static final TemporaryJobs jobs = TemporaryJobs.builder()
       .deployTimeoutMillis(MINUTES.toMillis(1))
       .hostFilter(".+")
       .build();
-
 
   @Test
   public void testHttpHealthcheck() {
@@ -92,7 +78,10 @@ public class HeliosSoloIT {
         .port("nc", 4711, ports.localPort("nc"))
         .command("sh", "-c",
                  "apk-install bind-tools " +
-                 "&& export SRV=$(dig -t SRV +short _nginx._http.test.$SPOTIFY_DOMAIN) " +
+                 // TODO (dxia) Should we let users set env vars for HeliosSoloDeployment
+                 // like REGISTRAR_HOST_FORMAT that controls service discovery? If so, how?
+                 // By passing in a Config to a TemporaryJobs static factory method?
+                 "&& export SRV=$(dig -t SRV +short _nginx._http.services.$SPOTIFY_DOMAIN) " +
                  "&& export HOST=$(echo $SRV | cut -d' ' -f4) " +
                  "&& export PORT=$(echo $SRV | cut -d' ' -f3) " +
                  "&& nc -lk -p 4711 -e curl http://$HOST:$PORT"

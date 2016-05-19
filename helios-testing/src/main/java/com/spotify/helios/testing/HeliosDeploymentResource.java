@@ -39,19 +39,19 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * A HeliosDeploymentResource makes the supplied {@link HeliosDeployment} available to a JUnit
+ * A HeliosDeploymentResource makes the supplied {@link HeliosSoloDeployment} available to a JUnit
  * test, and guarantees to tear it down afterward.
  */
 public class HeliosDeploymentResource extends ExternalResource {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosDeploymentResource.class);
 
-  private final HeliosDeployment deployment;
+  private final HeliosSoloDeployment deployment;
 
   /**
    * @param deployment The Helios deployment to expose to your JUnit tests.
    */
-  public HeliosDeploymentResource(final HeliosDeployment deployment) {
+  public HeliosDeploymentResource(final HeliosSoloDeployment deployment) {
     this.deployment = deployment;
   }
 

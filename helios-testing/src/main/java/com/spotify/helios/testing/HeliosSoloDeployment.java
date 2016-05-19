@@ -75,7 +75,7 @@ import static java.util.Collections.singletonList;
  * master and one Helios agent deployed in Docker. Helios Solo uses the Docker instance it is
  * deployed on to run its jobs.
  */
-public class HeliosSoloDeployment implements HeliosDeployment {
+class HeliosSoloDeployment implements AutoCloseable {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeployment.class);
 
@@ -230,7 +230,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     return dockerHost;
   }
 
-  @Override
   public HostAndPort address() {
       return deploymentAddress;
   }
@@ -827,7 +826,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      * Configures, deploys, and returns a {@link HeliosSoloDeployment} using the as specified by
      * this Builder.
      *
-     * @return A Helios Solo deployment configured by this Builder.
+     * @return A HeliosSoloDeployment configured by this Builder.
      */
     public HeliosSoloDeployment build() {
       this.env = ImmutableSet.copyOf(this.env);
