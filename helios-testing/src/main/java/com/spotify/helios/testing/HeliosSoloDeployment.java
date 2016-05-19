@@ -64,6 +64,7 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -78,14 +79,14 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeployment.class);
 
-  public static final String BOOT2DOCKER_SIGNATURE = "Boot2Docker";
-  public static final String PROBE_IMAGE = "onescience/alpine:latest";
-  public static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
-  public static final String HELIOS_ID_SUFFIX = "-solo-host";
-  public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
-  public static final String HELIOS_SOLO_PROFILE = "helios.solo.profile";
-  public static final String HELIOS_SOLO_PROFILES = "helios.solo.profiles.";
-  public static final int HELIOS_MASTER_PORT = 5801;
+  private static final String BOOT2DOCKER_SIGNATURE = "Boot2Docker";
+  static final String PROBE_IMAGE = "onescience/alpine:latest";
+  private static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
+  private static final String HELIOS_ID_SUFFIX = "-solo-host";
+  private static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
+  private static final String HELIOS_SOLO_PROFILE = "helios.solo.profile";
+  private static final String HELIOS_SOLO_PROFILES = "helios.solo.profiles.";
+  private static final int HELIOS_MASTER_PORT = 5801;
   private static final int DEFAULT_WAIT_SECONDS = 30;
 
   private final DockerClient dockerClient;
@@ -103,12 +104,18 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private final HeliosClient heliosClient;
   private boolean removeHeliosSoloContainerOnExit;
   private final int jobUndeployWaitSeconds;
+  private final SoloMasterProber soloMasterProber;
+  private final SoloAgentProber soloAgentProber;
 
-  HeliosSoloDeployment(final Builder builder) {
+  private HeliosSoloDeployment(final Builder builder) {
+    // TODO (dxia) Clean up the logic between the constructor and the builder.
+    // Put as many defaults as we can in the builder and just have ctor check for nulls.
     this.heliosSoloImage = builder.heliosSoloImage;
     this.pullBeforeCreate = builder.pullBeforeCreate;
     this.removeHeliosSoloContainerOnExit = builder.removeHeliosSoloContainerOnExit;
     this.jobUndeployWaitSeconds = builder.jobUndeployWaitSeconds;
+    this.soloMasterProber = checkNotNull(builder.soloMasterProber, "soloMasterProber");
+    this.soloAgentProber = checkNotNull(builder.soloAgentProber, "soloAgentProber");
 
     final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
 
@@ -145,6 +152,35 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .setUser(username)
             .setEndpoints("http://" + deploymentAddress)
             .build());
+
+    try {
+      // TODO (dxia) Should we have the constructor start up the container?
+      // Or should do something like extending an abstract class of
+      // com.google.common.util.concurrent.Service?
+      start();
+    } catch (TimeoutException e) {
+      throw Throwables.propagate(e);
+    }
+  }
+
+  private void start() throws TimeoutException {
+    // wait for the helios master to be available
+    Polling.awaitUnchecked(60, TimeUnit.SECONDS, new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        return soloMasterProber.check(deploymentAddress);
+      }
+    });
+
+    // Ensure that at least one agent is available and UP in this HeliosDeployment.
+    // This prevents continuing with the test when starting up helios-solo before the agent is
+    // registered.
+    Polling.awaitUnchecked(60, TimeUnit.SECONDS, new Callable<Boolean>() {
+      @Override
+      public Boolean call() throws Exception {
+        return soloAgentProber.check(heliosClient);
+      }
+    });
   }
 
   /**
@@ -247,7 +283,6 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .image(PROBE_IMAGE)
             .cmd(probeCommand(probeName))
             .build();
-
 
     final ContainerCreation creation;
     try {
@@ -536,15 +571,20 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
   public static Builder builder() {
-    return builder(null);
+    return builderWithProfile(null);
   }
 
   /**
    * @param profile A configuration profile used to populate builder options.
    * @return A Builder that can be used to instantiate a HeliosSoloDeployment.
    */
-  public static Builder builder(final String profile) {
+  public static Builder builderWithProfile(final String profile) {
     return new Builder(profile, HeliosConfig.loadConfig("helios-solo"));
+  }
+
+  @VisibleForTesting
+  static Builder builderWithProfileAndConfig(final String profile, final Config config) {
+    return new Builder(profile, config);
   }
 
   /**
@@ -564,7 +604,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    */
   public static Builder fromEnv(final String profile)  {
     try {
-      return builder(profile).dockerClient(DefaultDockerClient.fromEnv().build());
+      return builderWithProfile(profile).dockerClient(DefaultDockerClient.fromEnv().build());
     } catch (DockerCertificateException e) {
       throw new RuntimeException("unable to create Docker client from environment", e);
     }
@@ -573,9 +613,21 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   @Override
   public String toString() {
     return "HeliosSoloDeployment{" +
-           "deploymentAddress=" + deploymentAddress +
+           "dockerClient=" + dockerClient +
            ", dockerHost=" + dockerHost +
-           ", heliosContainerId=" + heliosContainerId +
+           ", containerDockerHost=" + containerDockerHost +
+           ", heliosSoloImage='" + heliosSoloImage + '\'' +
+           ", pullBeforeCreate=" + pullBeforeCreate +
+           ", namespace='" + namespace + '\'' +
+           ", env=" + env +
+           ", binds=" + binds +
+           ", heliosContainerId='" + heliosContainerId + '\'' +
+           ", deploymentAddress=" + deploymentAddress +
+           ", heliosClient=" + heliosClient +
+           ", removeHeliosSoloContainerOnExit=" + removeHeliosSoloContainerOnExit +
+           ", jobUndeployWaitSeconds=" + jobUndeployWaitSeconds +
+           ", soloMasterProber=" + soloMasterProber +
+           ", soloAgentProber=" + soloAgentProber +
            '}';
   }
 
@@ -591,6 +643,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private boolean pullBeforeCreate = true;
     private boolean removeHeliosSoloContainerOnExit = false;
     private int jobUndeployWaitSeconds = DEFAULT_WAIT_SECONDS;
+    private SoloMasterProber soloMasterProber = new SoloMasterProber();
+    private SoloAgentProber soloAgentProber = new SoloAgentProber();
 
     Builder(String profile, Config rootConfig) {
       this.env = new HashSet<>();
@@ -744,6 +798,28 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      */
     public Builder env(final String key, final Object value) {
       this.env.add(key + "=" + value.toString());
+      return this;
+    }
+
+    /**
+     * This method exists only for testing. We need to mock the logic that probes the master port.
+     * @param soloMasterProber A {@link SoloMasterProber}
+     * @return This Builder, with its {@link SoloMasterProber} configured.
+     */
+    @VisibleForTesting
+    Builder soloMasterProber(final SoloMasterProber soloMasterProber) {
+      this.soloMasterProber = soloMasterProber;
+      return this;
+    }
+
+    /**
+     * This method exists only for testing. We need to mock the logic checking the solo agent is up.
+     * @param soloAgentProber A {@link SoloAgentProber}
+     * @return This Builder, with its {@link SoloAgentProber} configured.
+     */
+    @VisibleForTesting
+    Builder soloHostProber(final SoloAgentProber soloAgentProber) {
+      this.soloAgentProber = soloAgentProber;
       return this;
     }
 
