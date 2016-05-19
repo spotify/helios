@@ -17,8 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
@@ -83,7 +81,6 @@ public class TemporaryJobs implements TestRule {
   private static final String DEFAULT_USER = getProperty("user.name");
   private static final Prober DEFAULT_PROBER = new DefaultProber();
   private static final String DEFAULT_PREFIX_DIRECTORY = "/tmp/helios-temp-jobs";
-  private static final String DEFAULT_TEST_REPORT_DIRECTORY = "target/helios-reports/test";
   private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
@@ -96,9 +93,6 @@ public class TemporaryJobs implements TestRule {
   private final Map<String, String> env;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
   private final Deployer deployer;
-
-  private final TemporaryJobReports reports;
-  private final ThreadLocal<TemporaryJobReports.ReportWriter> reportWriter;
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
@@ -134,17 +128,6 @@ public class TemporaryJobs implements TestRule {
       throw Throwables.propagate(e);
     }
 
-    final Path testReportDirectory = Paths.get(fromNullable(builder.testReportDirectory)
-                                                   .or(DEFAULT_TEST_REPORT_DIRECTORY));
-    this.reports = new TemporaryJobReports(testReportDirectory);
-    this.reportWriter = new ThreadLocal<TemporaryJobReports.ReportWriter>() {
-      @Override
-      protected TemporaryJobReports.ReportWriter initialValue() {
-        log.warn("unable to determine test context, writing event log to stdout");
-        return TemporaryJobs.this.reports.getWriterForStream(System.out);
-      }
-    };
-
     // Load in the prefix so it can be used in the config
     final Config configWithPrefix = ConfigFactory.empty()
         .withValue("prefix", ConfigValueFactory.fromAnyRef(prefix()));
@@ -167,17 +150,6 @@ public class TemporaryJobs implements TestRule {
    * If @Rule cannot be used, call this method after running tests.
    */
   public void after() {
-    after(Optional.<TemporaryJobReports.ReportWriter>absent());
-  }
-
-  void after(final Optional<TemporaryJobReports.ReportWriter> writer) {
-    final Optional<TemporaryJobReports.Step> undeploy = writer
-        .transform(new Function<TemporaryJobReports.ReportWriter, TemporaryJobReports.Step>() {
-          @Override
-          public TemporaryJobReports.Step apply(final TemporaryJobReports.ReportWriter writer) {
-            return writer.step("undeploy");
-          }
-        });
     final List<JobId> jobIds = Lists.newArrayListWithCapacity(jobs.size());
 
     // Stop the test runner thread
@@ -201,10 +173,6 @@ public class TemporaryJobs implements TestRule {
       job.undeploy(errors);
     }
 
-    for (final TemporaryJobReports.Step step : undeploy.asSet()) {
-      step.tag("jobs", jobIds);
-    }
-
     for (final AssertionError error : errors) {
       log.error(error.getMessage());
     }
@@ -213,13 +181,6 @@ public class TemporaryJobs implements TestRule {
     // try to undeploy them the next time TemporaryJobs is run.
     if (errors.isEmpty()) {
       jobPrefixFile.delete();
-      for (final TemporaryJobReports.Step step : undeploy.asSet()) {
-        step.markSuccess();
-      }
-    }
-
-    for (final TemporaryJobReports.Step step : undeploy.asSet()) {
-      step.finish();
     }
 
     heliosSoloDeployment.close();
@@ -248,7 +209,7 @@ public class TemporaryJobs implements TestRule {
 
   private TemporaryJobBuilder job(final Job.Builder jobBuilder) {
     final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix(),
-                                                                prober, env, reportWriter.get(),
+                                                                prober, env,
                                                                 jobBuilder);
 
     if (config.hasPath("env")) {
@@ -329,33 +290,22 @@ public class TemporaryJobs implements TestRule {
     return new Statement() {
       @Override
       public void evaluate() throws Throwable {
-        final TemporaryJobReports.ReportWriter writer = reports.getWriterForTest(description);
-        reportWriter.set(writer);
-
-        final TemporaryJobReports.Step test = writer.step("test");
         before();
         try {
-          perform(base, writer);
-          test.markSuccess();
+          perform(base);
         } finally {
-          after(Optional.of(writer));
-
-          test.finish();
-          writer.close();
-          reportWriter.set(null);
+          after();
         }
       }
     };
   }
 
-  private void perform(final Statement base, final TemporaryJobReports.ReportWriter writer)
+  private void perform(final Statement base)
           throws InterruptedException {
     // Run the actual test on a thread
     final Future<Object> future = executor.submit(new Callable<Object>() {
       @Override
       public Object call() throws Exception {
-        reportWriter.set(writer);
-
         try {
           base.evaluate();
         } catch (MultipleFailureException e) {
@@ -513,7 +463,6 @@ public class TemporaryJobs implements TestRule {
     private HeliosClient.Builder clientBuilder;
     private HeliosClient client;
     private String prefixDirectory;
-    private String testReportDirectory;
     private String jobPrefix;
     private String jobDeployedMessageFormat;
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
@@ -656,11 +605,6 @@ public class TemporaryJobs implements TestRule {
 
     public Builder prefixDirectory(final String prefixDirectory) {
       this.prefixDirectory = prefixDirectory;
-      return this;
-    }
-
-    public Builder testReportDirectory(final String testReportDirectory) {
-      this.testReportDirectory = testReportDirectory;
       return this;
     }
 
