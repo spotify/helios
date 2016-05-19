@@ -67,7 +67,6 @@ public class TemporaryJobBuilder {
   private final Deployer deployer;
   private final String jobNamePrefix;
   private final Map<String, String> env;
-  private final TemporaryJobReports.ReportWriter reportWriter;
 
   private String hostFilter;
   private Prober prober;
@@ -75,7 +74,6 @@ public class TemporaryJobBuilder {
 
   public TemporaryJobBuilder(final Deployer deployer, final String jobNamePrefix,
                              final Prober defaultProber, final Map<String, String> env,
-                             final TemporaryJobReports.ReportWriter reportWriter,
                              final Job.Builder jobBuilder) {
     checkNotNull(deployer, "deployer");
     checkNotNull(jobNamePrefix, "jobNamePrefix");
@@ -86,7 +84,6 @@ public class TemporaryJobBuilder {
     this.builder = jobBuilder;
     this.builder.setRegistrationDomain(jobNamePrefix);
     this.env = env;
-    this.reportWriter = reportWriter;
 
     // make sure waitPorts is up-to-date with ports from the Job.Builder
     for (final Map.Entry<String, PortMapping> entry : jobBuilder.getPorts().entrySet()) {
@@ -291,9 +288,9 @@ public class TemporaryJobBuilder {
           hostFilter = env.get("HELIOS_HOST_FILTER");
         }
 
-        job = deployer.deploy(builder.build(), hostFilter, waitPorts, prober, reportWriter);
+        job = deployer.deploy(builder.build(), hostFilter, waitPorts, prober);
       } else {
-        job = deployer.deploy(builder.build(), this.hosts, waitPorts, prober, reportWriter);
+        job = deployer.deploy(builder.build(), this.hosts, waitPorts, prober);
       }
     }
 
