@@ -87,7 +87,7 @@ public class TemporaryJobs implements TestRule {
   private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
-  private final HeliosDeployment heliosSoloDeployment;
+  private final HeliosSoloDeployment heliosSoloDeployment;
   private final HeliosClient client;
   private final Prober prober;
   private final String defaultHostFilter;
@@ -518,7 +518,7 @@ public class TemporaryJobs implements TestRule {
     private String jobDeployedMessageFormat;
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
     private long deployTimeoutMillis = DEFAULT_DEPLOY_TIMEOUT_MILLIS;
-    private final HeliosDeployment heliosSoloDeployment;
+    private final HeliosSoloDeployment heliosSoloDeployment;
 
     Builder(String profile, Config rootConfig, Map<String, String> env,
             HeliosClient.Builder clientBuilder) {
