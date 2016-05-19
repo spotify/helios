@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.equalTo;
 public class HeliosIT {
 
   @ClassRule
-  public static final TemporaryJobs temporaryJobs = TemporaryJobs.create();
+  public static final TemporaryJobs TEMPORARY_JOBS = TemporaryJobs.create();
 
   private static final String TEST_USER = "HeliosIT";
   private static final String TEST_HOST = "test-host";
@@ -50,7 +50,7 @@ public class HeliosIT {
   @Before
   public void setup() throws Exception {
     // zookeeper
-    final TemporaryJob zk = temporaryJobs.job()
+    final TemporaryJob zk = TEMPORARY_JOBS.job()
         .image("jplock/zookeeper:3.4.5")
         .port("zk", 2181)
         .deploy();
@@ -58,7 +58,7 @@ public class HeliosIT {
     final String zkEndpoint = zk.address("zk").toString();
 
     // helios master
-    final TemporaryJob master = temporaryJobs.job()
+    final TemporaryJob master = TEMPORARY_JOBS.job()
         .image(masterImage())
         .port("helios", 5801)
         .command("--zk", zkEndpoint)
@@ -80,7 +80,7 @@ public class HeliosIT {
     }
 
     // helios agent
-    final TemporaryJobBuilder agent = temporaryJobs.job()
+    final TemporaryJobBuilder agent = TEMPORARY_JOBS.job()
         .image(agentImage())
         .prober(new AgentStatusProber(masterEndpoint, TEST_USER, TEST_HOST))
         .port("agent", 8080) // need to expose fake port just so prober gets invoked

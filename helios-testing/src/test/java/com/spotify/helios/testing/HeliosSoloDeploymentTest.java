@@ -21,8 +21,6 @@ package com.spotify.helios.testing;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
@@ -36,31 +34,35 @@ import com.spotify.docker.client.messages.Info;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.Goal;
-import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.HostStatus.Status;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
 
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 import org.mockito.ArgumentCaptor;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
-import java.util.Collections;
+import java.io.IOException;
+import java.net.Socket;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import static com.spotify.helios.testing.HeliosSoloDeployment.HELIOS_MASTER_PORT;
+import static com.spotify.helios.testing.HeliosSoloDeployment.HELIOS_SOLO_WATCHDOG_PORT;
+import static org.hamcrest.CoreMatchers.isA;
 import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -68,46 +70,24 @@ import static org.mockito.Mockito.when;
 
 public class HeliosSoloDeploymentTest {
 
-  private static final String CONTAINER_ID = "abc123";
-  private static final String HOST1 = "host1";
-  private static final String HOST2 = "host2";
-  private static final Job JOB1 = Job.newBuilder()
-      .setCommand(ImmutableList.of("BOGUS1"))
-      .setImage("IMAGE")
-      .setName("NAME")
-      .setVersion("VERSION")
-      .build();
-  private static final Job JOB2 = Job.newBuilder()
-      .setCommand(ImmutableList.of("BOGUS2"))
-      .setImage("IMAGE")
-      .setName("NAME")
-      .setVersion("VERSION")
-      .build();
-  private static final JobId JOB_ID1 = JOB1.getId();
-  private static final JobId JOB_ID2 = JOB2.getId();
-  private static final TaskStatus TASK_STATUS1 = TaskStatus.newBuilder()
-      .setJob(JOB1)
-      .setGoal(Goal.START)
-      .setState(TaskStatus.State.RUNNING)
-      .build();
-  private static final TaskStatus TASK_STATUS2 = TaskStatus.newBuilder()
-      .setJob(JOB2)
-      .setGoal(Goal.START)
-      .setState(TaskStatus.State.RUNNING)
-      .build();
+  private static final String PROBE_CONTAINER_ID = "probe123";
+  private static final String SOLO_CONTAINER_ID = "solo123";
 
   private DockerClient dockerClient;
-  private HeliosClient heliosClient;
   private ArgumentCaptor<ContainerConfig> containerConfig;
   private SoloMasterProber soloMasterProber;
   private SoloAgentProber soloAgentProber;
+  private SoloWatchdogConnector soloWatchdogConnector;
+
+  @Rule
+  public ExpectedException thrown = ExpectedException.none();
 
   @Before
   public void setup() throws Exception {
     dockerClient = mock(DockerClient.class);
-    heliosClient = mock(HeliosClient.class);
     soloMasterProber = mock(SoloMasterProber.class);
     soloAgentProber = mock(SoloAgentProber.class);
+    soloWatchdogConnector = mock(SoloWatchdogConnector.class);
 
     when(soloMasterProber.check(any(HostAndPort.class))).thenReturn(true);
     when(soloAgentProber.check(any(HeliosClient.class))).thenReturn(true);
@@ -124,11 +104,13 @@ public class HeliosSoloDeploymentTest {
     // mock the call to dockerClient.createContainer so we can test the arguments passed to it
     this.containerConfig = ArgumentCaptor.forClass(ContainerConfig.class);
 
-    final ContainerCreation creation = mock(ContainerCreation.class);
-    when(creation.id()).thenReturn(CONTAINER_ID);
+    final ContainerCreation probeCreation = mock(ContainerCreation.class);
+    when(probeCreation.id()).thenReturn(PROBE_CONTAINER_ID);
+    final ContainerCreation soloCreation = mock(ContainerCreation.class);
+    when(soloCreation.id()).thenReturn(SOLO_CONTAINER_ID);
 
     when(this.dockerClient.createContainer(
-        this.containerConfig.capture(), anyString())).thenReturn(creation);
+        this.containerConfig.capture(), anyString())).thenReturn(probeCreation, soloCreation);
 
     // we have to mock out several other calls to get the HeliosSoloDeployment ctor
     // to return non-exceptionally. the anonymous classes to override a method are to workaround
@@ -140,12 +122,25 @@ public class HeliosSoloDeploymentTest {
       }
     });
 
-    when(this.dockerClient.inspectContainer(CONTAINER_ID)).thenReturn(new ContainerInfo() {
+    when(this.dockerClient.inspectContainer(PROBE_CONTAINER_ID)).thenReturn(new ContainerInfo() {
       @Override
       public NetworkSettings networkSettings() {
-        final PortBinding binding = PortBinding.of("192.168.1.1", 5801);
-        final Map<String, List<PortBinding>> ports =
-            ImmutableMap.<String, List<PortBinding>>of("5801/tcp", ImmutableList.of(binding));
+        return NetworkSettings.builder()
+            .gateway("a-gate-way")
+            .build();
+      }
+    });
+
+    when(this.dockerClient.inspectContainer(SOLO_CONTAINER_ID)).thenReturn(new ContainerInfo() {
+      @Override
+      public NetworkSettings networkSettings() {
+        final PortBinding masterPortBinding = PortBinding.of("192.168.1.1", 5801);
+        final PortBinding watchdogPortBinding =
+            PortBinding.of("192.168.1.1", HELIOS_SOLO_WATCHDOG_PORT);
+        final Map<String, List<PortBinding>> ports = ImmutableMap.<String, List<PortBinding>>of(
+            HELIOS_MASTER_PORT + "/tcp", ImmutableList.of(masterPortBinding),
+            HELIOS_SOLO_WATCHDOG_PORT + "/tcp", ImmutableList.of(watchdogPortBinding)
+        );
 
         return NetworkSettings.builder()
             .gateway("a-gate-way")
@@ -154,7 +149,7 @@ public class HeliosSoloDeploymentTest {
       }
     });
 
-    when(this.dockerClient.waitContainer(CONTAINER_ID)).thenReturn(new ContainerExit() {
+    when(this.dockerClient.waitContainer(PROBE_CONTAINER_ID)).thenReturn(new ContainerExit() {
       @Override
       public Integer statusCode() {
         return 0;
@@ -169,7 +164,8 @@ public class HeliosSoloDeploymentTest {
         // a custom dockerhost to trigger the localhost logic
         .dockerHost(DockerHost.from("tcp://localhost:2375", ""))
         .soloMasterProber(soloMasterProber)
-        .soloHostProber(soloAgentProber)
+        .soloAgentProber(soloAgentProber)
+        .soloWatchdogConnector(soloWatchdogConnector)
         .build();
 
     boolean foundSolo = false;
@@ -198,7 +194,8 @@ public class HeliosSoloDeploymentTest {
     HeliosSoloDeployment.builderWithProfileAndConfig(null, config)
         .dockerClient(dockerClient)
         .soloMasterProber(soloMasterProber)
-        .soloHostProber(soloAgentProber)
+        .soloAgentProber(soloAgentProber)
+        .soloWatchdogConnector(soloWatchdogConnector)
         .build();
 
     boolean foundSolo = false;
@@ -221,7 +218,8 @@ public class HeliosSoloDeploymentTest {
     HeliosSoloDeployment.builder()
         .dockerClient(this.dockerClient)
         .soloMasterProber(soloMasterProber)
-        .soloHostProber(soloAgentProber)
+        .soloAgentProber(soloAgentProber)
+        .soloWatchdogConnector(soloWatchdogConnector)
         .build();
 
     verify(this.dockerClient, never()).pull(HeliosSoloDeployment.PROBE_IMAGE);
@@ -235,86 +233,89 @@ public class HeliosSoloDeploymentTest {
     HeliosSoloDeployment.builder()
         .dockerClient(this.dockerClient)
         .soloMasterProber(soloMasterProber)
-        .soloHostProber(soloAgentProber)
+        .soloAgentProber(soloAgentProber)
+        .soloWatchdogConnector(soloWatchdogConnector)
         .build();
 
     verify(this.dockerClient).pull(HeliosSoloDeployment.PROBE_IMAGE);
   }
 
   @Test
-  public void testUndeployLeftoverJobs() throws Exception {
-    final HeliosSoloDeployment solo = (HeliosSoloDeployment) HeliosSoloDeployment.builder()
-        .dockerClient(dockerClient)
-        .heliosClient(heliosClient)
-        .soloMasterProber(soloMasterProber)
-        .soloHostProber(soloAgentProber)
-        .build();
+  public void testConnectToWatchdogWithTimeoutSuccess() throws Exception {
+    final SoloWatchdogConnector connector = mock(SoloWatchdogConnector.class);
+    HeliosSoloDeployment.connectToWatchdogWithTimeout("host", 123, 10, TimeUnit.SECONDS, connector);
 
-    final ListenableFuture<List<String>> hostsFuture = Futures.<List<String>>immediateFuture(
-        ImmutableList.of(HOST1, HOST2));
-    when(heliosClient.listHosts()).thenReturn(hostsFuture);
-
-    // These futures represent HostStatuses when the job is still deployed
-    final ListenableFuture<HostStatus> statusFuture11 = Futures.immediateFuture(
-        HostStatus.newBuilder()
-            .setStatus(Status.UP)
-            .setStatuses(ImmutableMap.of(JOB_ID1, TASK_STATUS1))
-            .setJobs(ImmutableMap.of(JOB_ID1, Deployment.of(JOB_ID1, Goal.START)))
-            .build());
-    final ListenableFuture<HostStatus> statusFuture21 = Futures.immediateFuture(
-        HostStatus.newBuilder()
-            .setStatus(Status.UP)
-            .setStatuses(ImmutableMap.of(JOB_ID2, TASK_STATUS2))
-            .setJobs(ImmutableMap.of(JOB_ID2, Deployment.of(JOB_ID2, Goal.START)))
-            .build());
-
-    // These futures represent HostStatuses when the job is undeployed
-    final ListenableFuture<HostStatus> statusFuture12 = Futures.immediateFuture(
-        HostStatus.newBuilder()
-            .setStatus(Status.UP)
-            .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
-            .setJobs(ImmutableMap.of(JOB_ID1, Deployment.of(JOB_ID1, Goal.START)))
-            .build());
-    final ListenableFuture<HostStatus> statusFuture22 = Futures.immediateFuture(
-        HostStatus.newBuilder()
-            .setStatus(Status.UP)
-            .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
-            .setJobs(ImmutableMap.of(JOB_ID2, Deployment.of(JOB_ID2, Goal.START)))
-            .build());
-    //noinspection unchecked
-    when(heliosClient.hostStatus(HOST1)).thenReturn(statusFuture11, statusFuture12);
-    //noinspection unchecked
-    when(heliosClient.hostStatus(HOST2)).thenReturn(statusFuture21, statusFuture22);
-
-    final ListenableFuture<JobUndeployResponse> undeployFuture1 = Futures.immediateFuture(
-        new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST1, JOB_ID1));
-    final ListenableFuture<JobUndeployResponse> undeployFuture2 = Futures.immediateFuture(
-        new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST2, JOB_ID2));
-    when(heliosClient.undeploy(JOB_ID1, HOST1)).thenReturn(undeployFuture1);
-    when(heliosClient.undeploy(JOB_ID2, HOST2)).thenReturn(undeployFuture2);
-
-    solo.undeployLeftoverJobs();
-
-    verify(heliosClient).undeploy(JOB_ID1, HOST1);
-    verify(heliosClient).undeploy(JOB_ID2, HOST2);
+    // Test a successful socket connection within the time limit doesn't result in RuntimeException
+    doThrow(new IOException()).doNothing().when(connector).connect(
+        any(Socket.class), anyString(), anyInt());
+    HeliosSoloDeployment.connectToWatchdogWithTimeout("host", 123, 2, TimeUnit.SECONDS, connector);
   }
 
   @Test
-  public void testUndeployLeftoverJobs_noLeftoverJobs() throws Exception {
-    final HeliosSoloDeployment solo = (HeliosSoloDeployment) HeliosSoloDeployment.builder()
+  public void testConnectToWatchdogWithTimeoutFailure() throws Exception {
+    thrown.expect(RuntimeException.class);
+    thrown.expectCause(isA(TimeoutException.class));
+
+    final SoloWatchdogConnector connector = mock(SoloWatchdogConnector.class);
+    doThrow(new IOException()).when(connector).connect(any(Socket.class), anyString(), anyInt());
+    HeliosSoloDeployment.connectToWatchdogWithTimeout("host", 123, 2, TimeUnit.SECONDS, connector);
+  }
+
+  @Test
+  public void testCloseSoloExitsInTime() throws Exception {
+    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
-        .heliosClient(heliosClient)
         .soloMasterProber(soloMasterProber)
-        .soloHostProber(soloAgentProber)
+        .soloAgentProber(soloAgentProber)
+        .soloWatchdogConnector(soloWatchdogConnector)
         .build();
 
-    final ListenableFuture<Map<JobId, Job>> jobsFuture = Futures.immediateFuture(
-        Collections.<JobId, Job>emptyMap());
-    when(heliosClient.jobs()).thenReturn(jobsFuture);
+    solo.close();
 
-    solo.undeployLeftoverJobs();
+    verify(dockerClient).waitContainer(SOLO_CONTAINER_ID);
+    verify(dockerClient, never()).killContainer(SOLO_CONTAINER_ID);
+    verify(dockerClient).removeContainer(SOLO_CONTAINER_ID);
+    verify(dockerClient).close();
+  }
 
-    // There should be no more calls to any HeliosClient methods.
-    verify(heliosClient, never()).jobStatus(any(JobId.class));
+  @Test
+  public void testCloseSoloExitsTooLate() throws Exception {
+    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
+        .dockerClient(dockerClient)
+        .soloMasterProber(soloMasterProber)
+        .soloAgentProber(soloAgentProber)
+        .soloWatchdogConnector(soloWatchdogConnector)
+        .soloExitTimeoutSeconds(1)
+        .build();
+
+    when(dockerClient.waitContainer(anyString())).thenAnswer(new Answer<Void>() {
+      @Override
+      public Void answer(InvocationOnMock invocation) throws Throwable {
+        Thread.sleep(1500);
+        return null;
+      }
+    });
+
+    solo.close();
+
+    verify(dockerClient).waitContainer(SOLO_CONTAINER_ID);
+    verify(dockerClient).killContainer(SOLO_CONTAINER_ID);
+    verify(dockerClient).removeContainer(SOLO_CONTAINER_ID);
+    verify(dockerClient).close();
+  }
+
+  @Test
+  public void testCloseSoloDoNotRemoveContainer() throws Exception {
+    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
+        .dockerClient(dockerClient)
+        .soloMasterProber(soloMasterProber)
+        .soloAgentProber(soloAgentProber)
+        .soloWatchdogConnector(soloWatchdogConnector)
+        .removeHeliosSoloOnExit(false)
+        .build();
+
+    solo.close();
+
+    verify(dockerClient, never()).removeContainer(SOLO_CONTAINER_ID);
   }
 }

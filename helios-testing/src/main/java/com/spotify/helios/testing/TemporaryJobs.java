@@ -503,9 +503,14 @@ public class TemporaryJobs implements TestRule {
         deployTimeoutMillis(this.config.getLong("deployTimeoutMillis"));
       }
 
-      // TODO (dxia) remove checkForNewImages(). Set here to prevent using
-      // spotify/helios-solo:latest from docker hub
-      heliosSoloDeployment = HeliosSoloDeployment.fromEnv().checkForNewImages(false).build();
+      heliosSoloDeployment = HeliosSoloDeployment.fromEnv()
+          // TODO (dxia) remove checkForNewImages(). Set here to prevent using
+          // spotify/helios-solo:latest from docker hub
+          .checkForNewImages(false)
+          // Inform helios-solo that it's being used for helios-testing and that it should kill
+          // itself when no longer used.
+          .env("HELIOS_SOLO_SUICIDE", 1)
+          .build();
       client = heliosSoloDeployment.client();
     }
 

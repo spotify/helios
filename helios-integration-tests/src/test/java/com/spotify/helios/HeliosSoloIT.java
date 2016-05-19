@@ -37,17 +37,17 @@ import static org.junit.Assert.assertThat;
 public class HeliosSoloIT {
 
   @ClassRule
-  public static final TemporaryPorts ports = TemporaryPorts.create();
+  public static final TemporaryPorts PORTS = TemporaryPorts.create();
 
   @ClassRule
-  public static final TemporaryJobs jobs = TemporaryJobs.builder()
+  public static final TemporaryJobs JOBS = TemporaryJobs.builder()
       .deployTimeoutMillis(MINUTES.toMillis(1))
       .hostFilter(".+")
       .build();
 
   @Test
   public void testHttpHealthcheck() {
-    jobs.job()
+    JOBS.job()
         .image("nginx:1.9.9")
         .port("http", 80)
         .httpHealthCheck("http", "/")
@@ -56,7 +56,7 @@ public class HeliosSoloIT {
 
   @Test
   public void testTcpHealthcheck() {
-    jobs.job()
+    JOBS.job()
         .image("nginx:1.9.9")
         .port("http", 80)
         .tcpHealthCheck("http")
@@ -66,16 +66,16 @@ public class HeliosSoloIT {
   @Test
   public void testServiceDiscovery() throws Exception {
     // start a container that runs nginx and registers with SkyDNS
-    jobs.job()
+    JOBS.job()
         .image(NGINX)
-        .port("http", 80, ports.localPort("http"))
+        .port("http", 80, PORTS.localPort("http"))
         .registration("nginx", "http", "http")
         .deploy();
 
     // run a container that does SRV lookup to find the nginx service and then curl's it
-    final TemporaryJob alpine = jobs.job()
+    final TemporaryJob alpine = JOBS.job()
         .image(ALPINE)
-        .port("nc", 4711, ports.localPort("nc"))
+        .port("nc", 4711, PORTS.localPort("nc"))
         .command("sh", "-c",
                  "apk-install bind-tools " +
                  // TODO (dxia) Should we let users set env vars for HeliosSoloDeployment
