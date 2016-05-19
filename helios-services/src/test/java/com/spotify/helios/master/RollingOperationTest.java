@@ -68,6 +68,7 @@ import static org.mockito.Mockito.when;
 public class RollingOperationTest {
 
   private static final String ROLLING_OP_ID = "uuid";
+  private static final String DEPLOYMENT_GROUP_NAME = "my_group";
   private TestingServer zkServer;
   private ZooKeeperClient client;
 
@@ -109,7 +110,7 @@ public class RollingOperationTest {
         .build();
 
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableList.of(HostSelector.parse("role=foo")));
+        DEPLOYMENT_GROUP_NAME, ImmutableList.of(HostSelector.parse("role=foo")));
     final RolloutOptions options = RolloutOptions.newBuilder().build();
 
     doReturn(job).when(masterModel).getJob(job.getId());
@@ -149,7 +150,7 @@ public class RollingOperationTest {
         .build();
 
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableList.of(HostSelector.parse("role=foo")));
+        DEPLOYMENT_GROUP_NAME, ImmutableList.of(HostSelector.parse("role=foo")));
     final RolloutOptions options = RolloutOptions.newBuilder().build();
 
     final RollingOperation lastOp = RollingOperation.newBuilder()
@@ -202,7 +203,7 @@ public class RollingOperationTest {
         .build();
 
     final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableList.of(HostSelector.parse("role=foo")));
+        DEPLOYMENT_GROUP_NAME, ImmutableList.of(HostSelector.parse("role=foo")));
     final RolloutOptions options = RolloutOptions.newBuilder().build();
 
     final RollingOperation lastOp = RollingOperation.newBuilder()
@@ -303,6 +304,36 @@ public class RollingOperationTest {
     assertNull(this.client.exists(Paths.statusRollingOpsTasks(ROLLING_OP_ID)));
     final RollingOperationStatus status = masterModel.getRollingOperationStatus(ROLLING_OP_ID);
     assertEquals(RollingOperationStatus.State.FAILED, status.getState());
+  }
+
+  // A test that ensures we can deserialise pre-rolling-operation style deployment groups with
+  // JobIds and RolloutOptions from Zookeeper.
+  @Test
+  public void testGetDeploymentGroupWithJobAndRolloutOptions() throws Exception {
+    // TODO(negz): Store this JSON in a less shitty fashion?
+    final String oldDeploymentGroup = "{\"hostSelectors\":[{\"label\":\"role\",\"operand\":\""
+      + "my_group\",\"operator\":\"EQUALS\"}],\"name\":\"" + DEPLOYMENT_GROUP_NAME + "\","
+      + "\"rolloutOptions\":{\"migrate\":false,\"overlap\":false,\"parallelism\":1,"
+      + "\"timeout\":300,\"token\":\"\"},\"jobId\":\""
+      + "my_group:20160504T193131-abafdba:488e1a0489c308cd06b36e37b97e61338b546dd9\"}";
+
+    this.client.ensurePath(Paths.configDeploymentGroups());
+    this.client.createAndSetData(
+        Paths.configDeploymentGroup(DEPLOYMENT_GROUP_NAME),
+        oldDeploymentGroup.getBytes());
+
+    final ZooKeeperMasterModel masterModel = new ZooKeeperMasterModel(
+        new ZooKeeperClientProvider(this.client, ZooKeeperModelReporter.noop()),
+        getClass().getName(),
+        mock(KafkaSender.class));
+
+    final DeploymentGroup dg = masterModel.getDeploymentGroup(DEPLOYMENT_GROUP_NAME);
+    final HostSelector selector = dg.getHostSelectors().get(0);
+
+    assertEquals(dg.getName(), DEPLOYMENT_GROUP_NAME);
+    assertEquals(selector.getLabel(), "role");
+    assertEquals(selector.getOperand(), "my_group");
+    assertEquals(selector.getOperator(), HostSelector.Operator.EQUALS);
   }
 
 }
