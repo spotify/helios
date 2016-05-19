@@ -65,25 +65,18 @@ public class DefaultDeployer implements Deployer {
 
   @Override
   public TemporaryJob deploy(final Job job, final String hostFilter, final Set<String> waitPorts,
-                             final Prober prober,
-                             final TemporaryJobReports.ReportWriter reportWriter) {
+                             final Prober prober) {
     if (isNullOrEmpty(hostFilter)) {
       fail("a host filter pattern must be passed to hostFilter(), " +
            "or one must be specified in HELIOS_HOST_FILTER");
     }
 
     final List<String> hosts;
-    final TemporaryJobReports.Step determineHosts = reportWriter.step("get hosts")
-        .tag("hostFilter", hostFilter);
     try {
       log.info("Getting list of hosts");
-
       hosts = client.listHosts().get();
-      determineHosts.markSuccess();
     } catch (InterruptedException | ExecutionException e) {
       throw new AssertionError("Failed to get list of Helios hosts", e);
-    } finally {
-      determineHosts.finish();
     }
 
     final List<String> filteredHosts = FluentIterable.from(hosts)
@@ -98,7 +91,7 @@ public class DefaultDeployer implements Deployer {
     }
 
     final String chosenHost = pickHost(filteredHosts);
-    return deploy(job, Collections.singletonList(chosenHost), waitPorts, prober, reportWriter);
+    return deploy(job, Collections.singletonList(chosenHost), waitPorts, prober);
   }
 
   @VisibleForTesting
@@ -124,8 +117,7 @@ public class DefaultDeployer implements Deployer {
 
   @Override
   public TemporaryJob deploy(final Job job, final List<String> hosts, final Set<String> waitPorts,
-                             final Prober prober,
-                             final TemporaryJobReports.ReportWriter reportWriter) {
+                             final Prober prober) {
     if (!readyToDeploy) {
       fail("deploy() must be called in a @Before or in the test method, or perhaps you forgot"
            + " to put @Rule before TemporaryJobs");
@@ -137,7 +129,7 @@ public class DefaultDeployer implements Deployer {
     }
 
     log.info("Deploying {} to {}", job.getImage(), Joiner.on(", ").skipNulls().join(hosts));
-    final TemporaryJob temporaryJob = new TemporaryJob(client, prober, reportWriter, job, hosts,
+    final TemporaryJob temporaryJob = new TemporaryJob(client, prober, job, hosts,
                                                        waitPorts, jobDeployedMessageFormat,
                                                        deployTimeoutMillis);
     jobs.add(temporaryJob);

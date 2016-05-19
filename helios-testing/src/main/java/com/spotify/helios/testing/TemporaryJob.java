@@ -67,7 +67,6 @@ public class TemporaryJob {
   private final Map<String, TaskStatus> statuses = newHashMap();
   private final HeliosClient client;
   private final Prober prober;
-  private final TemporaryJobReports.ReportWriter reportWriter;
   private final Job job;
   private final List<String> hosts;
   private final Map<String, String> hostToIp = newHashMap();
@@ -76,12 +75,11 @@ public class TemporaryJob {
   private final long deployTimeoutMillis;
 
   TemporaryJob(final HeliosClient client, final Prober prober,
-               final TemporaryJobReports.ReportWriter reportWriter, final Job job,
+               final Job job,
                final List<String> hosts, final Set<String> waitPorts,
                final String jobDeployedMessageFormat, final long deployTimeoutMillis) {
     this.client = checkNotNull(client, "client");
     this.prober = checkNotNull(prober, "prober");
-    this.reportWriter = checkNotNull(reportWriter, "reportWriter");
     this.job = checkNotNull(job, "job");
     this.hosts = ImmutableList.copyOf(checkNotNull(hosts, "hosts"));
     this.waitPorts = ImmutableSet.copyOf(checkNotNull(waitPorts, "waitPorts"));
@@ -165,8 +163,6 @@ public class TemporaryJob {
   }
 
   void deploy() {
-    final TemporaryJobReports.Step createJob = reportWriter.step("create job")
-        .tag("jobId", job.getId());
     try {
       // Create job
       log.info("Creating job {}", job.getId().toShortString());
@@ -175,16 +171,10 @@ public class TemporaryJob {
         fail(format("Failed to create job %s - %s", job.getId(),
                     createResponse.toString()));
       }
-
-      createJob.markSuccess();
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       fail(format("Failed to create job %s %s - %s", job.getId(), job.toString(), e));
-    } finally {
-      createJob.finish();;
     }
 
-    final TemporaryJobReports.Step deployJob = reportWriter.step("deploy job")
-        .tag("jobId", job.getId());
     try {
       // Deploy job
       final Deployment deployment = Deployment.of(job.getId(), Goal.START);
@@ -206,12 +196,8 @@ public class TemporaryJob {
                       job.getId(), job.toString(), deployResponse));
         }
       }
-
-      deployJob.markSuccess();
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       fail(format("Failed to deploy job %s %s - %s", job.getId(), job.toString(), e));
-    } finally {
-      deployJob.finish();
     }
 
     try {
@@ -244,66 +230,47 @@ public class TemporaryJob {
   }
   
   private void awaitUp(final String host) throws TimeoutException {
-    final TemporaryJobReports.Step startContainer = reportWriter.step("start container")
-        .tag("jobId", job.getId())
-        .tag("host", host)
-        .tag("image", job.getImage());
-    try {
-      final AtomicBoolean messagePrinted = new AtomicBoolean(false);
-      final TaskStatus status = Polling.awaitUnchecked(
-          deployTimeoutMillis, MILLISECONDS, new Callable<TaskStatus>() {
-            @Override
-            public TaskStatus call() throws Exception {
-              final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
-              if (status == null) {
-                log.debug("Job status not available");
-                return null;
-              }
-              final TaskStatus taskStatus = status.getTaskStatuses().get(host);
-              if (taskStatus == null) {
-                log.debug("Task status not available on {}", host);
-                return null;
-              }
-
-              if (!messagePrinted.get() &&
-                  !isNullOrEmpty(jobDeployedMessageFormat) &&
-                  !isNullOrEmpty(taskStatus.getContainerId())) {
-                outputDeployedMessage(host, taskStatus.getContainerId());
-                messagePrinted.set(true);
-              }
-
-              verifyHealthy(host, taskStatus);
-
-              final TaskStatus.State state = taskStatus.getState();
-              log.info("Job state of {}: {}", job.getImage(), state);
-
-              if (state == TaskStatus.State.RUNNING) {
-                return taskStatus;
-              }
-
-              return null;
-            }
+    final AtomicBoolean messagePrinted = new AtomicBoolean(false);
+    final TaskStatus status = Polling.awaitUnchecked(
+      deployTimeoutMillis, MILLISECONDS, new Callable<TaskStatus>() {
+        @Override
+        public TaskStatus call() throws Exception {
+          final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
+          if (status == null) {
+            log.debug("Job status not available");
+            return null;
           }
-      );
+          final TaskStatus taskStatus = status.getTaskStatuses().get(host);
+          if (taskStatus == null) {
+            log.debug("Task status not available on {}", host);
+            return null;
+          }
 
-      statuses.put(host, status);
+          if (!messagePrinted.get() &&
+              !isNullOrEmpty(jobDeployedMessageFormat) &&
+              !isNullOrEmpty(taskStatus.getContainerId())) {
+            outputDeployedMessage(host, taskStatus.getContainerId());
+            messagePrinted.set(true);
+          }
 
-      startContainer.markSuccess();
-    } finally {
-      startContainer.finish();
-    }
+          verifyHealthy(host, taskStatus);
 
-    final TemporaryJobReports.Step probe = reportWriter.step("probe")
-        .tag("jobId", job.getId())
-        .tag("host", host);
-    try {
-      for (final String port : waitPorts) {
-        awaitPort(port, host);
+          final TaskStatus.State state = taskStatus.getState();
+          log.info("Job state of {}: {}", job.getImage(), state);
+
+          if (state == TaskStatus.State.RUNNING) {
+            return taskStatus;
+          }
+
+          return null;
+        }
       }
+    );
 
-      probe.markSuccess();
-    } finally {
-      probe.finish();
+    statuses.put(host, status);
+
+    for (final String port : waitPorts) {
+      awaitPort(port, host);
     }
   }
 

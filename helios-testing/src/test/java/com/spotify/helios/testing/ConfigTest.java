@@ -93,8 +93,7 @@ public class ConfigTest {
     }
 
     @Override
-    public TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts, Prober prober,
-                               TemporaryJobReports.ReportWriter reportWriter) {
+    public TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts, Prober prober) {
       // This is called when the first job is deployed
       assertThat(hosts, equalTo((List<String>) newArrayList("test-host")));
       parameters.validate(job, temporaryJobs.prefix());
@@ -102,8 +101,7 @@ public class ConfigTest {
     }
 
     @Override
-    public TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts, Prober prober,
-                               TemporaryJobReports.ReportWriter reportWriter) {
+    public TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts, Prober prober) {
       // This is called when the second job is deployed
       assertThat(hostFilter, equalTo(parameters.hostFilter));
       parameters.validate(job, temporaryJobs.prefix());

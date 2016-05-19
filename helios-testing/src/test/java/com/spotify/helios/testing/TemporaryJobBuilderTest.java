@@ -60,8 +60,6 @@ public class TemporaryJobBuilderTest {
   private final Deployer deployer = mock(Deployer.class);
   private final Prober prober = mock(Prober.class);
   private final Map<String, String> env = Collections.emptyMap();
-  private final TemporaryJobReports.ReportWriter reportWriter =
-      mock(TemporaryJobReports.ReportWriter.class);
 
   private TemporaryJobBuilder builder;
   private Job.Builder jobBuilder;
@@ -73,7 +71,7 @@ public class TemporaryJobBuilderTest {
         .addPort("http", PortMapping.of(8080));
 
     builder =
-        new TemporaryJobBuilder(deployer, "prefix-", prober, env, reportWriter, jobBuilder);
+        new TemporaryJobBuilder(deployer, "prefix-", prober, env, jobBuilder);
 
     cleanup();
   }
@@ -120,7 +118,7 @@ public class TemporaryJobBuilderTest {
 
     final ImmutableSet<String> expectedWaitPorts = ImmutableSet.of("http");
     verify(deployer).deploy(any(Job.class), eq(hosts), eq(expectedWaitPorts),
-                            eq(prober), eq(reportWriter));
+                            eq(prober));
   }
 
   @Test
