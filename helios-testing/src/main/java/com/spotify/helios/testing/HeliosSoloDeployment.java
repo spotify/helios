@@ -34,7 +34,6 @@ import com.spotify.helios.client.HeliosClient;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -79,12 +78,12 @@ class HeliosSoloDeployment implements AutoCloseable {
   static final String PROBE_IMAGE = "onescience/alpine:latest";
   private static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
   private static final String HELIOS_ID_SUFFIX = "-solo-host";
-  private static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
+  static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
+  static final String HELIOS_PROBE_PREFIX = "helios-probe-";
   private static final String HELIOS_SOLO_PROFILE = "helios.solo.profile";
   private static final String HELIOS_SOLO_PROFILES = "helios.solo.profiles.";
   static final int HELIOS_MASTER_PORT = 5801;
   static final int HELIOS_SOLO_WATCHDOG_PORT = 33333;
-  private static final int DEFAULT_WAIT_SECONDS = 30;
 
   private final DockerClient dockerClient;
   /** The DockerHost we use to communicate with docker */
@@ -100,7 +99,6 @@ class HeliosSoloDeployment implements AutoCloseable {
   private final HostAndPort deploymentAddress;
   private final HeliosClient heliosClient;
   private boolean removeHeliosSoloContainerOnExit;
-  private final int jobUndeployWaitSeconds;
   private final SoloMasterProber soloMasterProber;
   private final SoloAgentProber soloAgentProber;
   private final Socket watchdogSocket;
@@ -112,19 +110,16 @@ class HeliosSoloDeployment implements AutoCloseable {
     this.heliosSoloImage = builder.heliosSoloImage;
     this.pullBeforeCreate = builder.pullBeforeCreate;
     this.removeHeliosSoloContainerOnExit = builder.removeHeliosSoloContainerOnExit;
-    this.jobUndeployWaitSeconds = builder.jobUndeployWaitSeconds;
     this.soloMasterProber = checkNotNull(builder.soloMasterProber, "soloMasterProber");
     this.soloAgentProber = checkNotNull(builder.soloAgentProber, "soloAgentProber");
     checkNotNull(builder.soloWatchdogConnector, "soloWatchdogConnector");
     this.exitTimeoutSeconds = builder.exitTimeoutSeconds;
 
-    final String username = Optional.fromNullable(builder.heliosUsername).or(randomString());
-
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
     this.dockerHost = Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
     this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
         .or(containerDockerHost());
-    this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
+    this.namespace = randomString();
     this.env = containerEnv(builder.env);
     this.binds = containerBinds();
 
@@ -135,9 +130,8 @@ class HeliosSoloDeployment implements AutoCloseable {
     //TODO(negz): Determine and propagate NetworkManager DNS servers?
     try {
       log.info("checking that docker can be reached from within a container");
-      final String probeContainerGateway = checkDockerAndGetGateway();
       if (dockerHost.address().equals("localhost") || dockerHost.address().equals("127.0.0.1")) {
-        heliosHost = probeContainerGateway;
+        heliosHost = checkDockerAndGetGateway();
       } else {
         heliosHost = dockerHost.address();
       }
@@ -153,7 +147,7 @@ class HeliosSoloDeployment implements AutoCloseable {
     this.deploymentAddress = HostAndPort.fromString(dockerHost.address() + ":" + heliosPort);
     this.heliosClient = Optional.fromNullable(builder.heliosClient).or(
         HeliosClient.newBuilder()
-            .setUser(username)
+            .setUser(randomString())
             .setEndpoints("http://" + deploymentAddress)
             .build());
 
@@ -263,7 +257,7 @@ class HeliosSoloDeployment implements AutoCloseable {
     }
   }
 
-  private List<String> containerEnv(final Set builderEnv) {
+  private List<String> containerEnv(final Set<String> builderEnv) {
     final HashSet<String> env = new HashSet<>();
     env.addAll(builderEnv);
     env.add("DOCKER_HOST=" + containerDockerHost.bindURI().toString());
@@ -295,7 +289,7 @@ class HeliosSoloDeployment implements AutoCloseable {
    * Docker daemon's API from inside the container.
    */
   private String checkDockerAndGetGateway() throws HeliosDeploymentException {
-    final String probeName = randomString();
+    final String probeName = HELIOS_PROBE_PREFIX + this.namespace;
     final HostConfig hostConfig = HostConfig.builder()
         .binds(binds)
         .build();
@@ -599,30 +593,26 @@ class HeliosSoloDeployment implements AutoCloseable {
            ", deploymentAddress=" + deploymentAddress +
            ", heliosClient=" + heliosClient +
            ", removeHeliosSoloContainerOnExit=" + removeHeliosSoloContainerOnExit +
-           ", jobUndeployWaitSeconds=" + jobUndeployWaitSeconds +
            ", soloMasterProber=" + soloMasterProber +
            ", soloAgentProber=" + soloAgentProber +
            '}';
   }
 
-  public static class Builder {
+  static class Builder {
     private DockerClient dockerClient;
     private DockerHost dockerHost;
     private DockerHost containerDockerHost;
     private HeliosClient heliosClient;
     private String heliosSoloImage = "spotify/helios-solo:latest";
-    private String namespace;
-    private String heliosUsername;
     private Set<String> env;
     private boolean pullBeforeCreate = true;
     private boolean removeHeliosSoloContainerOnExit = true;
-    private int jobUndeployWaitSeconds = DEFAULT_WAIT_SECONDS;
     private SoloMasterProber soloMasterProber = new SoloMasterProber();
     private SoloAgentProber soloAgentProber = new SoloAgentProber();
     private SoloWatchdogConnector soloWatchdogConnector = new SoloWatchdogConnector();
     private long exitTimeoutSeconds = 60;
 
-    Builder(final String profile, final Config rootConfig) {
+    private Builder(final String profile, final Config rootConfig) {
       this.env = new HashSet<>();
 
       final Config config;
@@ -636,18 +626,11 @@ class HeliosSoloDeployment implements AutoCloseable {
       if (config.hasPath("image")) {
         heliosSoloImage(config.getString("image"));
       }
-      if (config.hasPath("namespace")) {
-        namespace(config.getString("namespace"));
-      }
-      if (config.hasPath("username")) {
-        namespace(config.getString("username"));
-      }
       if (config.hasPath("env")) {
         for (final Map.Entry<String, ConfigValue> entry : config.getConfig("env").entrySet()) {
           env(entry.getKey(), entry.getValue().unwrapped());
         }
       }
-
     }
 
     /**
@@ -667,16 +650,6 @@ class HeliosSoloDeployment implements AutoCloseable {
      */
     public Builder removeHeliosSoloOnExit(boolean enabled) {
       this.removeHeliosSoloContainerOnExit = enabled;
-      return this;
-    }
-
-    /**
-     * Set the number of seconds Helios solo will wait for jobs to be undeployed and, as a result,
-     * their associated Docker containers to stop running before shutting itself down.
-     * The default is 30 seconds.
-     */
-    public Builder jobUndeployWaitSeconds(int seconds) {
-      this.jobUndeployWaitSeconds = seconds;
       return this;
     }
 
@@ -736,33 +709,8 @@ class HeliosSoloDeployment implements AutoCloseable {
      * Customize the image used for helios-solo. If not set defaults to
      * "spotify/helios-solo:latest".
      */
-    public Builder heliosSoloImage(String image) {
-      this.heliosSoloImage = Preconditions.checkNotNull(image);
-      return this;
-    }
-
-    /**
-     * Optionally specify a unique namespace for the Helios solo agent and Docker container names.
-     * If unset a random string will be used.
-     *
-     * @param namespace A unique namespace for the Helios solo agent and Docker container.
-     * @return This Builder, with its namespace configured.
-     */
-    public Builder namespace(final String namespace) {
-      this.namespace = namespace;
-      return this;
-    }
-
-    /**
-     * Optionally specify the username to be used by the {@link HeliosClient} connected to the
-     * {@link HeliosSoloDeployment} created with this Builder. If unset a random string will be
-     * used.
-     *
-     * @param username The Helios user to identify as.
-     * @return This Builder, with its Helios username configured.
-     */
-    public Builder heliosUsername(final String username) {
-      this.heliosUsername = username;
+    public Builder heliosSoloImage(final String image) {
+      this.heliosSoloImage = checkNotNull(image);
       return this;
     }
 

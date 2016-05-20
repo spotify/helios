@@ -150,8 +150,6 @@ public class TemporaryJobs implements TestRule {
    * If @Rule cannot be used, call this method after running tests.
    */
   public void after() {
-    final List<JobId> jobIds = Lists.newArrayListWithCapacity(jobs.size());
-
     // Stop the test runner thread
     executor.shutdownNow();
     try {
@@ -165,11 +163,15 @@ public class TemporaryJobs implements TestRule {
     final List<AssertionError> errors = newArrayList();
 
     for (final TemporaryJob job : jobs) {
-      jobIds.add(job.job().getId());
-      // TODO (dxia) Undeploying a job doesn't guaruntee the container will be stopped immediately.
+      // Undeploying a job doesn't guaruntee the container will be stopped immediately.
       // Luckily TaskRunner tells docker to wait 120 seconds after stopping to kill the container.
       // So containers that don't immediately stop **should** only stay around for at most 120
       // seconds.
+      // TODO (dxia) `TemporaryJobs` doesn't need to clean up jobs in the helios-solo container
+      // because the container's `start.sh` already has this logic. But SimpleTest creates an
+      // in-memory Helios cluster and assumes jobs are undeployed when this method is called.
+      // So we should update those tests that use TemporaryJobs and start helios-solo and then
+      // simply ignore it. Once that happens, we can delete this line.
       job.undeploy(errors);
     }
 
