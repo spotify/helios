@@ -17,8 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -44,9 +42,9 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .hostFilter(".*")
-        .client(client)
+        .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(new TestProber())
-        .jobPrefix(Optional.of(testTag).get())
+        .jobPrefix(testTag)
         .build();
 
     @Test

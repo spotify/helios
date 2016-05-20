@@ -38,7 +38,7 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import com.google.common.net.HostAndPort;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.TimeLimiter;
 
@@ -50,6 +50,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -63,6 +64,7 @@ import java.util.concurrent.TimeoutException;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.util.Collections.singleton;
 import static java.util.Collections.singletonList;
 
 /**
@@ -70,7 +72,7 @@ import static java.util.Collections.singletonList;
  * master and one Helios agent deployed in Docker. Helios Solo uses the Docker instance it is
  * deployed on to run its jobs.
  */
-class HeliosSoloDeployment implements AutoCloseable {
+class HeliosSoloDeployment implements HeliosDeployment {
 
   private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeployment.class);
 
@@ -96,7 +98,7 @@ class HeliosSoloDeployment implements AutoCloseable {
   private final List<String> env;
   private final List<String> binds;
   private final String heliosContainerId;
-  private final HostAndPort deploymentAddress;
+  private final Set<URI> deploymentAddresses;
   private final HeliosClient heliosClient;
   private boolean removeHeliosSoloContainerOnExit;
   private final SoloMasterProber soloMasterProber;
@@ -144,11 +146,12 @@ class HeliosSoloDeployment implements AutoCloseable {
     }
 
     // Running the String host:port through HostAndPort does some validation for us.
-    this.deploymentAddress = HostAndPort.fromString(dockerHost.address() + ":" + heliosPort);
+    final URI uri = URI.create("http://" + dockerHost.address() + ":" + heliosPort);
+    this.deploymentAddresses = singleton(uri);
     this.heliosClient = Optional.fromNullable(builder.heliosClient).or(
         HeliosClient.newBuilder()
             .setUser(randomString())
-            .setEndpoints("http://" + deploymentAddress)
+            .setEndpoints(uri)
             .build());
 
     watchdogSocket = connectToWatchdogWithTimeout(dockerHost.address(), watchdogPort, 60,
@@ -204,7 +207,7 @@ class HeliosSoloDeployment implements AutoCloseable {
     Polling.awaitUnchecked(60, TimeUnit.SECONDS, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
-        return soloMasterProber.check(deploymentAddress);
+        return soloMasterProber.check(Iterables.getOnlyElement(deploymentAddresses));
       }
     });
 
@@ -240,8 +243,9 @@ class HeliosSoloDeployment implements AutoCloseable {
     return dockerHost;
   }
 
-  public HostAndPort address() {
-    return deploymentAddress;
+  @Override
+  public Set<URI> uris() {
+    return deploymentAddresses;
   }
 
   private boolean isBoot2Docker(final Info dockerInfo) {
@@ -475,6 +479,7 @@ class HeliosSoloDeployment implements AutoCloseable {
   /**
    * @return A helios client connected to the master of this HeliosSoloDeployment.
    */
+  @Override
   public HeliosClient client() {
     return this.heliosClient;
   }
@@ -486,9 +491,15 @@ class HeliosSoloDeployment implements AutoCloseable {
     return heliosContainerId;
   }
 
+  // TODO (dxia) Ideally we don't need this. Only used by ExistingHeliosDeployment
+  @Override
+  public void cleanup() {
+  }
+
   /**
    * Undeploy (shut down) this HeliosSoloDeployment.
    */
+  @Override
   public void close() {
     log.info("shutting ourselves down");
 
@@ -591,7 +602,7 @@ class HeliosSoloDeployment implements AutoCloseable {
            ", env=" + env +
            ", binds=" + binds +
            ", heliosContainerId='" + heliosContainerId + '\'' +
-           ", deploymentAddress=" + deploymentAddress +
+           ", deploymentAddresses=" + deploymentAddresses +
            ", heliosClient=" + heliosClient +
            ", removeHeliosSoloContainerOnExit=" + removeHeliosSoloContainerOnExit +
            ", soloMasterProber=" + soloMasterProber +
@@ -780,7 +791,7 @@ class HeliosSoloDeployment implements AutoCloseable {
      *
      * @return A HeliosSoloDeployment configured by this Builder.
      */
-    public HeliosSoloDeployment build() {
+    public HeliosDeployment build() {
       this.env = ImmutableSet.copyOf(this.env);
       return new HeliosSoloDeployment(this);
     }

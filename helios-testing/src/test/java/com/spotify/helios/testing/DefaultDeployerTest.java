@@ -69,8 +69,9 @@ public class DefaultDeployerTest {
 
   private final HeliosClient client = mock(HeliosClient.class);
 
-  private final DefaultDeployer deployer =
-      new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "", TIMEOUT);
+  private final Undeployer undeployer = mock(Undeployer.class);
+  private final DefaultDeployer deployer = new DefaultDeployer(
+      client, EMPTY_JOBS_LIST, PICK_FIRST, "", TIMEOUT, undeployer);
 
   @Test
   public void testTryAgainOnHostDown() throws Exception {
@@ -83,8 +84,8 @@ public class DefaultDeployerTest {
 
   @Test
   public void testFailsOnAllDown() throws Exception {
-    final DefaultDeployer sut = new DefaultDeployer(client, EMPTY_JOBS_LIST, PICK_FIRST, "",
-                                                    TIMEOUT);
+    final DefaultDeployer sut = new DefaultDeployer(
+        client, EMPTY_JOBS_LIST, PICK_FIRST, "", TIMEOUT, undeployer);
     
     // hosta is down, hostb is down too. 
     when(client.hostStatus(HOSTA)).thenReturn(DOWN_STATUS);

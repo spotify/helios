@@ -27,10 +27,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.Socket;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.spotify.helios.testing.Jobs.getJobDescription;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
@@ -39,6 +42,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
@@ -55,7 +59,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
+        .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(new TestProber())
         .jobDeployedMessageFormat(
             "Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")
@@ -127,7 +131,11 @@ public class SimpleTest extends TemporaryJobsTestBase {
           .command(IDLE_COMMAND)
           .deploy();
 
-      job.undeploy();
+      final List<AssertionError> errors =
+          temporaryJobs.undeploy(job.job(), job.hosts());
+      if (errors.size() > 0) {
+        fail(format("Failed to undeploy job %s - %s", getJobDescription(job.job()), errors.get(0)));
+      }
 
       final JobStatus status = client.jobStatus(job.job().getId()).get(15, SECONDS);
       assertNull("job still exists", status);
