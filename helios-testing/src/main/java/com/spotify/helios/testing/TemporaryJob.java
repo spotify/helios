@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.net.HostAndPort;
 
-import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -39,21 +38,21 @@ import static org.junit.Assert.fail;
 public class TemporaryJob {
 
   private final Map<String, TaskStatus> statuses;
-  private final HeliosClient client;
   private final Job job;
   private final List<String> hosts;
   private final Map<String, String> hostToIp;
+  private final Undeployer undeployer;
 
-  TemporaryJob(final HeliosClient client,
-               final Job job,
+  TemporaryJob(final Job job,
                final List<String> hosts,
                final Map<String, String> hostToIp,
-               final Map<String, TaskStatus> statuses) {
-    this.client = checkNotNull(client, "client");
+               final Map<String, TaskStatus> statuses,
+               final Undeployer undeployer) {
     this.job = checkNotNull(job, "job");
     this.hosts = ImmutableList.copyOf(checkNotNull(hosts, "hosts"));
     this.hostToIp = ImmutableMap.copyOf(checkNotNull(hostToIp, "hostToIp"));
     this.statuses = ImmutableMap.copyOf(checkNotNull(statuses, "statuses"));
+    this.undeployer = checkNotNull(undeployer, "undeployer");
   }
 
   public Job job() {
@@ -131,25 +130,6 @@ public class TemporaryJob {
     return addresses;
   }
 
-  void undeploy(final List<AssertionError> errors) {
-    Jobs.undeploy(client, job, hosts, errors);
-  }
-
-  /**
-   * Undeploys and removes this TemporaryJob from the Helios cluster. This is normally done
-   * automatically by TemporaryJobs at the end of the test run. Use this method if you need to
-   * manually undeploy a job prior to the end of the test run.
-   */
-  public void undeploy() {
-    final List<AssertionError> errors = Lists.newArrayList();
-    undeploy(errors);
-
-    if (errors.size() > 0) {
-      fail(format("Failed to undeploy job %s - %s",
-                  getJobDescription(job), errors.get(0)));
-    }
-  }
-
   /**
    * Returns the ip address mapped to the given hostname. If no mapping exists, the hostname is
    * returned.
@@ -159,5 +139,13 @@ public class TemporaryJob {
   private String endpointFromHost(String host) {
     final String ip = hostToIp.get(host);
     return ip == null ? host : ip;
+  }
+
+  public void undeploy() {
+    final List<AssertionError> errors = undeployer.undeploy(job, hosts);
+
+    if (errors.size() > 0) {
+      fail(format("Failed to undeploy job %s - %s", getJobDescription(job), errors.get(0)));
+    }
   }
 }

@@ -50,7 +50,7 @@ public class UdpProberTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
+        .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(new TestProber())
         .build();
 
@@ -66,7 +66,7 @@ public class UdpProberTest extends TemporaryJobsTestBase {
     @After
     public void tearDown() {
       // The TemporaryJobs Rule above doesn't undeploy the job for some reason...
-      job.undeploy();
+//      temporaryJobs.deployer().undeploy(job.job(), job.hosts());
     }
 
     @Test

@@ -23,6 +23,7 @@ import com.spotify.helios.system.SystemTestBase;
 
 import org.junit.Before;
 
+import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 
@@ -41,6 +42,8 @@ public abstract class TemporaryJobsTestBase extends SystemTestBase {
   protected static String testHost1;
   protected static String testHost2;
   protected static String testTag;
+
+  protected static Path prefixDirectory;
 
   protected static final class TestProber extends DefaultProber {
 
@@ -64,6 +67,8 @@ public abstract class TemporaryJobsTestBase extends SystemTestBase {
 
     awaitHostStatus(client, testHost1, UP, LONG_WAIT_SECONDS, SECONDS);
     awaitHostStatus(client, testHost2, UP, LONG_WAIT_SECONDS, SECONDS);
+
+    prefixDirectory = temporaryFolder.newFolder().toPath();
   }
 
   public static Map<String, String> emptyEnv() {

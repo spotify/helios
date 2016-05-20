@@ -17,7 +17,7 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.net.HostAndPort;
+import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
@@ -32,6 +32,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -64,8 +65,8 @@ public class HeliosDeploymentResource extends ExternalResource {
     Polling.awaitUnchecked(30, TimeUnit.SECONDS, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
-        final HostAndPort hap = deployment.address();
-        final SocketAddress address = new InetSocketAddress(hap.getHostText(), hap.getPort());
+        final URI uri = Iterables.getOnlyElement(deployment.uris());
+        final SocketAddress address = new InetSocketAddress(uri.getHost(), uri.getPort());
         log.debug("attempting to connect to {}", address);
 
         try {

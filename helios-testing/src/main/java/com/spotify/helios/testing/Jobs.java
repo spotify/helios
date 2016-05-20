@@ -41,6 +41,7 @@ import java.util.concurrent.TimeoutException;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+// TODO (dxia) Does this class make sense? It's just a collection of static methods.
 class Jobs {
 
   private static final Logger log = LoggerFactory.getLogger(Jobs.class);
@@ -134,11 +135,11 @@ class Jobs {
         stateString += format("(%s)", status.getThrottled());
       }
       throw new AssertionError(format(
-        "Unexpected job state %s for job %s with image %s on host %s. Check helios agent "
-        + "logs for details. If you're using HeliosSoloDeployment, set "
-        + "`HeliosSoloDeployment.fromEnv().removeHeliosSoloOnExit(false)` and check the"
-        + "logs of the helios-solo container with `docker logs <container ID>`.",
-        stateString, job.getId().toShortString(), job.getImage(), host));
+          "Unexpected job state %s for job %s with image %s on host %s. Check helios agent "
+          + "logs for details. If you're using HeliosSoloDeployment, set "
+          + "`HeliosSoloDeployment.fromEnv().removeHeliosSoloOnExit(false)` and check the"
+          + "logs of the helios-solo container with `docker logs <container ID>`.",
+          stateString, job.getId().toShortString(), job.getImage(), host));
     }
   }
 }

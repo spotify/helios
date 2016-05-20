@@ -33,7 +33,6 @@ import com.spotify.helios.client.HeliosClient;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.net.HostAndPort;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
@@ -48,6 +47,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +93,7 @@ public class HeliosSoloDeploymentTest {
     soloAgentProber = mock(SoloAgentProber.class);
     soloWatchdogConnector = mock(SoloWatchdogConnector.class);
 
-    when(soloMasterProber.check(any(HostAndPort.class))).thenReturn(true);
+    when(soloMasterProber.check(any(URI.class))).thenReturn(true);
     when(soloAgentProber.check(any(HeliosClient.class))).thenReturn(true);
 
     // the anonymous classes to override a method are to workaround the docker-client "messages"
@@ -165,19 +165,19 @@ public class HeliosSoloDeploymentTest {
     });
   }
 
-  private HeliosSoloDeployment buildHeliosSoloDeployment() {
+  private HeliosDeployment buildHeliosSoloDeployment() {
     return buildHeliosSoloDeployment(DockerHost.from("tcp://localhost:2375", ""));
   }
 
-  private HeliosSoloDeployment buildHeliosSoloDeployment(HeliosSoloDeployment.Builder builder) {
+  private HeliosDeployment buildHeliosSoloDeployment(HeliosSoloDeployment.Builder builder) {
     return buildHeliosSoloDeployment(builder, DockerHost.from("tcp://localhost:2375", ""));
   }
 
-  private HeliosSoloDeployment buildHeliosSoloDeployment(DockerHost dockerHost) {
+  private HeliosDeployment buildHeliosSoloDeployment(DockerHost dockerHost) {
     return buildHeliosSoloDeployment(HeliosSoloDeployment.builder(), dockerHost);
   }
 
-  private HeliosSoloDeployment buildHeliosSoloDeployment(final HeliosSoloDeployment.Builder builder,
+  private HeliosDeployment buildHeliosSoloDeployment(final HeliosSoloDeployment.Builder builder,
                                                          final DockerHost dockerHost) {
     return builder.dockerClient(dockerClient)
         .dockerHost(dockerHost)
@@ -273,7 +273,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testCloseSoloExitsInTime() throws Exception {
-    final HeliosSoloDeployment solo = buildHeliosSoloDeployment();
+    final HeliosDeployment solo = buildHeliosSoloDeployment();
 
     solo.close();
 
@@ -285,7 +285,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testCloseSoloExitsTooLate() throws Exception {
-    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
+    final HeliosDeployment solo = HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         .soloMasterProber(soloMasterProber)
         .soloAgentProber(soloAgentProber)
@@ -311,7 +311,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testCloseSoloRemoveContainer() throws Exception {
-    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
+    final HeliosDeployment solo = HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         .soloMasterProber(soloMasterProber)
         .soloAgentProber(soloAgentProber)
