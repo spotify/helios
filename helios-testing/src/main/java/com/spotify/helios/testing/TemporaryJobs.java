@@ -210,9 +210,8 @@ public class TemporaryJobs implements TestRule {
   }
 
   private TemporaryJobBuilder job(final Job.Builder jobBuilder) {
-    final TemporaryJobBuilder builder = new TemporaryJobBuilder(deployer, jobPrefixFile.prefix(),
-                                                                prober, env,
-                                                                jobBuilder);
+    final TemporaryJobBuilder builder = new TemporaryJobBuilder(
+        deployer, jobPrefixFile.prefix(), prober, env, jobBuilder);
 
     if (config.hasPath("env")) {
       final Config env = config.getConfig("env");

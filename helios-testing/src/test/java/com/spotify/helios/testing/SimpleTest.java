@@ -22,8 +22,6 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 
-import com.google.common.base.Optional;
-
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,7 +59,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
         .prober(new TestProber())
         .jobDeployedMessageFormat(
             "Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")
-        .jobPrefix(Optional.of(testTag).get())
+        .jobPrefix(testTag)
         .deployTimeoutMillis(MINUTES.toMillis(3))
         .build();
 
