@@ -18,7 +18,6 @@
 package com.spotify.helios.testing;
 
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -26,8 +25,6 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.JobStatus;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigList;
@@ -46,10 +43,8 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -58,6 +53,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.google.common.base.Charsets.UTF_8;
@@ -66,7 +62,6 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
-import static com.spotify.helios.testing.Jobs.undeploy;
 import static java.lang.String.format;
 import static java.lang.System.getProperty;
 import static java.util.Arrays.asList;
@@ -80,7 +75,6 @@ public class TemporaryJobs implements TestRule {
   private static final String HELIOS_TESTING_PROFILES = "helios.testing.profiles.";
   private static final String DEFAULT_USER = getProperty("user.name");
   private static final Prober DEFAULT_PROBER = new DefaultProber();
-  private static final String DEFAULT_PREFIX_DIRECTORY = "/tmp/helios-temp-jobs";
   private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
@@ -88,11 +82,11 @@ public class TemporaryJobs implements TestRule {
   private final HeliosClient client;
   private final Prober prober;
   private final String defaultHostFilter;
-  private final JobPrefixFile jobPrefixFile;
   private final Config config;
   private final Map<String, String> env;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
   private final Deployer deployer;
+  private final String jobPrefix;
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
@@ -117,17 +111,10 @@ public class TemporaryJobs implements TestRule {
         new DefaultDeployer(client, jobs, builder.hostPickingStrategy,
             builder.jobDeployedMessageFormat, builder.deployTimeoutMillis));
 
-    final Path prefixDirectory = Paths.get(fromNullable(builder.prefixDirectory)
-                                               .or(DEFAULT_PREFIX_DIRECTORY));
-    try {
-      //removeOldJobs(prefixDirectory);
-      if (isNullOrEmpty(builder.jobPrefix)) {
-        this.jobPrefixFile = JobPrefixFile.create(prefixDirectory);
-      } else {
-        this.jobPrefixFile = JobPrefixFile.create(builder.jobPrefix, prefixDirectory);
-      }
-    } catch (IOException e) {
-      throw Throwables.propagate(e);
+    if (isNullOrEmpty(builder.jobPrefix)) {
+      this.jobPrefix = Integer.toHexString(ThreadLocalRandom.current().nextInt());
+    } else {
+      this.jobPrefix = builder.jobPrefix;
     }
 
     // Load in the prefix so it can be used in the config
@@ -193,12 +180,6 @@ public class TemporaryJobs implements TestRule {
       log.error(error.getMessage());
     }
 
-    // Don't delete the prefix file if any errors occurred during undeployment, so that we'll
-    // try to undeploy them the next time TemporaryJobs is run.
-    if (errors.isEmpty()) {
-      jobPrefixFile.delete();
-    }
-
     //heliosSoloDeployment.close();
   }
 
@@ -225,7 +206,7 @@ public class TemporaryJobs implements TestRule {
 
   private TemporaryJobBuilder job(final Job.Builder jobBuilder) {
     final TemporaryJobBuilder builder = new TemporaryJobBuilder(
-        deployer, jobPrefixFile.prefix(), prober, env, jobBuilder);
+        deployer, jobPrefix, prober, env, jobBuilder);
 
     if (config.hasPath("env")) {
       final Config env = config.getConfig("env");
@@ -361,85 +342,8 @@ public class TemporaryJobs implements TestRule {
     }
   }
 
-  /**
-   * Undeploys and deletes jobs leftover from previous runs of TemporaryJobs. This would happen if
-   * the test was terminated before the cleanup code was called. This method will iterate over each
-   * file in the specified directory. Each filename is the prefix that was used for job names
-   * during previous runs. The method will undeploy and delete any jobs that have a matching
-   * prefix, and the delete the file. If the file is locked, it is currently in use, and will be
-   * skipped.
-   * @throws ExecutionException
-   * @throws InterruptedException
-   * @throws IOException
-   */
-  private void removeOldJobs(final Path prefixDirectory)
-      throws ExecutionException, InterruptedException, IOException {
-    final File[] files = prefixDirectory.toFile().listFiles();
-    if (files == null || files.length == 0) {
-      return;
-    }
-
-    log.info("Removing old temporary jobs");
-
-    final Map<JobId, Job> jobs = client.jobs().get();
-
-    // Iterate over all files in the directory
-    for (final File file : files) {
-      // Skip .tmp files which are generated when JobPrefixFiles are created. Also skip
-      // directories. We don't expect any, but skip them just in case.
-      if (file.getName().endsWith(".tmp") || file.isDirectory()) {
-        continue;
-      }
-      // If we can't obtain a lock for the file, it either has already been deleted, or is being
-      // used by another process. In either case, skip over it.
-      try (
-        JobPrefixFile prefixFile = JobPrefixFile.tryFromExistingFile(file.toPath())
-      ) {
-        if (prefixFile == null) {
-          log.debug("Unable to create JobPrefixFile for {}", file.getPath());
-          continue;
-        }
-
-        boolean jobRemovalFailed = false;
-        // Iterate over jobs, looking for ones with a matching prefix.
-        for (final Map.Entry<JobId, Job> entry : jobs.entrySet()) {
-          final JobId jobId = entry.getKey();
-          // Skip over job if the id doesn't start with current filename.
-          if (!jobId.getName().startsWith(prefixFile.prefix())) {
-            continue;
-          }
-          // Get list of all hosts where this job is deployed, and undeploy
-          final JobStatus status = client.jobStatus(entry.getKey()).get();
-          final List<String> hosts = ImmutableList.copyOf(status.getDeployments().keySet());
-          final List<AssertionError> errors =
-              undeploy(client, entry.getValue(), hosts, new ArrayList<AssertionError>());
-
-          // Set flag indicating if any errors occur
-          if (!errors.isEmpty()) {
-            jobRemovalFailed = true;
-          }
-        }
-
-        // If all jobs were removed successfully, then delete the prefix file. Otherwise,
-        // leave it there so we can try again next time.
-        if (!jobRemovalFailed) {
-          prefixFile.delete();
-        }
-      } catch (NoSuchFileException e) {
-        log.debug("File {} already processed by somebody else.", file.getPath());
-      } catch (Exception e) {
-        // log exception and continue on to next file
-        log.warn("Exception processing file {}", file.getPath(), e);
-      }
-    }
-  }
-
-  public JobPrefixFile jobPrefixFile() {
-    return jobPrefixFile;
-  }
-
   public String prefix() {
-    return jobPrefixFile.prefix();
+    return jobPrefix;
   }
 
   public HeliosClient client() {
@@ -477,7 +381,6 @@ public class TemporaryJobs implements TestRule {
     private String hostFilter;
     private HeliosClient.Builder clientBuilder;
     private HeliosClient client;
-    private String prefixDirectory;
     private String jobPrefix;
     private String jobDeployedMessageFormat;
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
@@ -557,8 +460,8 @@ public class TemporaryJobs implements TestRule {
 
     public Builder domain(final String domain) {
       return client(clientBuilder.setUser(user)
-                        .setDomain(domain)
-                        .build());
+                      .setDomain(domain)
+                      .build());
     }
 
     public Builder endpoints(final String... endpoints) {
@@ -567,8 +470,8 @@ public class TemporaryJobs implements TestRule {
 
     public Builder endpointStrings(final List<String> endpoints) {
       return client(clientBuilder.setUser(user)
-                        .setEndpointStrings(endpoints)
-                        .build());
+                      .setEndpointStrings(endpoints)
+                      .build());
     }
 
     public Builder endpoints(final URI... endpoints) {
@@ -613,11 +516,6 @@ public class TemporaryJobs implements TestRule {
 
     public Builder hostFilter(final String hostFilter) {
       this.hostFilter = hostFilter;
-      return this;
-    }
-
-    public Builder prefixDirectory(final String prefixDirectory) {
-      this.prefixDirectory = prefixDirectory;
       return this;
     }
 
