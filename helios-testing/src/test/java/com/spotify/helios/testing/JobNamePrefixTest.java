@@ -17,8 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
@@ -123,7 +121,7 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
         .client(client)
         .prober(new TestProber())
         .prefixDirectory(prefixDirectory.toString())
-        .jobPrefix(Optional.of(testTag).get())
+        .jobPrefix(testTag)
         .build();
 
     private final Date expires = new DateTime().plusHours(1).toDate();
