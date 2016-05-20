@@ -17,8 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
@@ -51,7 +49,7 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .client(client)
-        .jobPrefix(Optional.of(testTag).get())
+        .jobPrefix(testTag)
         .deployTimeoutMillis(MINUTES.toMillis(3))
         .build();
 
