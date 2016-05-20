@@ -102,6 +102,8 @@ public class TemporaryJobs implements TestRule {
               .build()),
       0, SECONDS);
 
+  private static volatile HeliosSoloDeployment soloDeployment;
+
   TemporaryJobs(final Builder builder, final Config config) {
     this.heliosSoloDeployment = checkNotNull(builder.heliosSoloDeployment, "heliosSoloDeployment");
     this.client = checkNotNull(builder.client, "client");
@@ -118,13 +120,13 @@ public class TemporaryJobs implements TestRule {
     final Path prefixDirectory = Paths.get(fromNullable(builder.prefixDirectory)
                                                .or(DEFAULT_PREFIX_DIRECTORY));
     try {
-      removeOldJobs(prefixDirectory);
+      //removeOldJobs(prefixDirectory);
       if (isNullOrEmpty(builder.jobPrefix)) {
         this.jobPrefixFile = JobPrefixFile.create(prefixDirectory);
       } else {
         this.jobPrefixFile = JobPrefixFile.create(builder.jobPrefix, prefixDirectory);
       }
-    } catch (IOException | ExecutionException | InterruptedException e) {
+    } catch (IOException e) {
       throw Throwables.propagate(e);
     }
 
@@ -133,6 +135,18 @@ public class TemporaryJobs implements TestRule {
         .withValue("prefix", ConfigValueFactory.fromAnyRef(prefix()));
 
     this.config = config.withFallback(configWithPrefix).resolve();
+  }
+
+  private static synchronized HeliosSoloDeployment getOrCreateHeliosSoloDeployment() {
+    if (soloDeployment == null) {
+      // TODO (dxia) remove checkForNewImages(). Set here to prevent using
+      // spotify/helios-solo:latest from docker hub
+      soloDeployment = HeliosSoloDeployment.fromEnv()
+        .checkForNewImages(false)
+        .build();
+    }
+
+    return soloDeployment;
   }
 
   /**
@@ -185,7 +199,7 @@ public class TemporaryJobs implements TestRule {
       jobPrefixFile.delete();
     }
 
-    heliosSoloDeployment.close();
+    //heliosSoloDeployment.close();
   }
 
   public TemporaryJobBuilder job() {
@@ -504,14 +518,7 @@ public class TemporaryJobs implements TestRule {
         deployTimeoutMillis(this.config.getLong("deployTimeoutMillis"));
       }
 
-      heliosSoloDeployment = HeliosSoloDeployment.fromEnv()
-          // TODO (dxia) remove checkForNewImages(). Set here to prevent using
-          // spotify/helios-solo:latest from docker hub
-          .checkForNewImages(false)
-          // Inform helios-solo that it's being used for helios-testing and that it should kill
-          // itself when no longer used.
-          .env("HELIOS_SOLO_SUICIDE", 1)
-          .build();
+      heliosSoloDeployment = getOrCreateHeliosSoloDeployment();
       client = heliosSoloDeployment.client();
     }
 

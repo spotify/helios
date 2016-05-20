@@ -284,6 +284,7 @@ class HeliosSoloDeployment implements AutoCloseable {
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       env.add("DOCKER_CERT_PATH=/certs");
     }
+    env.add("HELIOS_SOLO_SUICIDE=1");
 
     return ImmutableList.copyOf(env);
   }
