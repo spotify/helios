@@ -39,7 +39,8 @@ public class Paths {
   private static final String LABELS = "labels";
   private static final String ID = "id";
   private static final String DEPLOYMENT_GROUPS = "deployment-groups";
-  private static final String DEPLOYMENT_GROUP_TASKS = "deployment-group-tasks";
+  private static final String ROLLING_OPS = "rolling-operations";
+  private static final String ROLLING_OPS_TASKS = "rolling-operation-tasks";
 
   private static final PathFactory CONFIG_ID = new PathFactory("/", CONFIG, ID);
   private static final PathFactory CONFIG_JOBS = new PathFactory("/", CONFIG, JOBS);
@@ -47,13 +48,15 @@ public class Paths {
   private static final PathFactory CONFIG_HOSTS = new PathFactory("/", CONFIG, HOSTS);
   private static final PathFactory CONFIG_DEPLOYMENT_GROUPS = new PathFactory(
       "/", CONFIG, DEPLOYMENT_GROUPS);
+  private static final PathFactory CONFIG_ROLLING_OPS = new PathFactory("/", CONFIG, ROLLING_OPS);
 
   private static final PathFactory STATUS_HOSTS = new PathFactory("/", STATUS, HOSTS);
   private static final PathFactory STATUS_MASTERS = new PathFactory("/", STATUS, MASTERS);
   private static final PathFactory STATUS_DEPLOYMENT_GROUPS = new PathFactory(
       "/", STATUS, DEPLOYMENT_GROUPS);
-  private static final PathFactory STATUS_DEPLOYMENT_GROUP_TASKS = new PathFactory(
-      "/", STATUS, DEPLOYMENT_GROUP_TASKS);
+  private static final PathFactory STATUS_ROLLING_OPS = new PathFactory("/", STATUS, ROLLING_OPS);
+  private static final PathFactory STATUS_ROLLING_OP_TASKS = new PathFactory(
+      "/", STATUS, ROLLING_OPS_TASKS);
 
   private static final PathFactory HISTORY_JOBS = new PathFactory("/", HISTORY, JOBS);
   private static final String CREATION_PREFIX = "creation-";
@@ -80,6 +83,14 @@ public class Paths {
 
   public static String configDeploymentGroup(final String name) {
     return CONFIG_DEPLOYMENT_GROUPS.path(name);
+  }
+
+  public static String configRollingOps() {
+    return CONFIG_ROLLING_OPS.path();
+  }
+
+  public static String configRollingOp(final String rollingOpId) {
+    return CONFIG_ROLLING_OPS.path(rollingOpId);
   }
 
   public static boolean isConfigJobCreation(final String child) {
@@ -208,12 +219,24 @@ public class Paths {
     return STATUS_DEPLOYMENT_GROUPS.path(name, HOSTS);
   }
 
-  public static String statusDeploymentGroupTasks() {
-    return STATUS_DEPLOYMENT_GROUP_TASKS.path();
+  public static String statusDeploymentGroupRollingOps(final String name) {
+    return STATUS_DEPLOYMENT_GROUPS.path(name, ROLLING_OPS);
   }
 
-  public static String statusDeploymentGroupTasks(final String deploymentGroupName) {
-    return STATUS_DEPLOYMENT_GROUP_TASKS.path(deploymentGroupName);
+  public static String statusRollingOps() {
+    return STATUS_ROLLING_OPS.path();
+  }
+
+  public static String statusRollingOp(final String rollingOpId) {
+    return STATUS_ROLLING_OPS.path(rollingOpId);
+  }
+
+  public static String statusRollingOpsTasks() {
+    return STATUS_ROLLING_OP_TASKS.path();
+  }
+
+  public static String statusRollingOpsTasks(final String rollingOpId) {
+    return STATUS_ROLLING_OP_TASKS.path(rollingOpId);
   }
 
   public static String historyJobHostEventsTimestamp(final JobId jobId,

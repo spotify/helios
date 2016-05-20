@@ -26,32 +26,32 @@ import java.util.List;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DeploymentGroupTasks extends Descriptor {
+public class RollingOperationTasks extends Descriptor {
 
   private final List<RolloutTask> rolloutTasks;
   private final int taskIndex;
-  private final DeploymentGroup deploymentGroup;
+  private final RollingOperation rollingOperation;
 
-  private DeploymentGroupTasks(
+  private RollingOperationTasks(
       @JsonProperty("rolloutTasks") final List<RolloutTask> rolloutTasks,
       @JsonProperty("taskIndex") final int taskIndex,
-      @JsonProperty("deploymentGroup") final DeploymentGroup deploymentGroup) {
+      @JsonProperty("rollingOperation") final RollingOperation rollingOperation) {
     this.rolloutTasks = checkNotNull(rolloutTasks, "rolloutTasks");
     this.taskIndex = taskIndex;
-    this.deploymentGroup = deploymentGroup;
+    this.rollingOperation = rollingOperation;
   }
 
   public Builder toBuilder() {
     return newBuilder()
         .setRolloutTasks(rolloutTasks)
         .setTaskIndex(taskIndex)
-        .setDeploymentGroup(deploymentGroup);
+        .setRollingOperation(rollingOperation);
   }
 
-  private DeploymentGroupTasks(final Builder builder) {
+  private RollingOperationTasks(final Builder builder) {
     this.rolloutTasks = checkNotNull(builder.rolloutTasks, "rolloutTasks");
     this.taskIndex = builder.taskIndex;
-    this.deploymentGroup = checkNotNull(builder.deploymentGroup, "deploymentGroup");
+    this.rollingOperation = checkNotNull(builder.rollingOperation, "rollingOperation");
   }
 
   public List<RolloutTask> getRolloutTasks() {
@@ -62,8 +62,8 @@ public class DeploymentGroupTasks extends Descriptor {
     return taskIndex;
   }
 
-  public DeploymentGroup getDeploymentGroup() {
-    return deploymentGroup;
+  public RollingOperation getRollingOperation() {
+    return rollingOperation;
   }
 
   public static Builder newBuilder() {
@@ -79,13 +79,13 @@ public class DeploymentGroupTasks extends Descriptor {
       return false;
     }
 
-    final DeploymentGroupTasks that = (DeploymentGroupTasks) o;
+    final RollingOperationTasks that = (RollingOperationTasks) o;
 
     if (taskIndex != that.taskIndex) {
       return false;
     }
-    if (deploymentGroup != null ? !deploymentGroup.equals(that.deploymentGroup)
-                                : that.deploymentGroup != null) {
+    if (rollingOperation != null ? !rollingOperation.equals(that.rollingOperation)
+                                : that.rollingOperation != null) {
       return false;
     }
     if (rolloutTasks != null ? !rolloutTasks.equals(that.rolloutTasks)
@@ -100,23 +100,23 @@ public class DeploymentGroupTasks extends Descriptor {
   public int hashCode() {
     int result = rolloutTasks != null ? rolloutTasks.hashCode() : 0;
     result = 31 * result + taskIndex;
-    result = 31 * result + (deploymentGroup != null ? deploymentGroup.hashCode() : 0);
+    result = 31 * result + (rollingOperation != null ? rollingOperation.hashCode() : 0);
     return result;
   }
 
   @Override
   public String toString() {
-    return "DeploymentGroupTasks{" +
+    return "RollingOperationTasks{" +
            "rolloutTasks=" + rolloutTasks +
            ", taskIndex=" + taskIndex +
-           ", deploymentGroup=" + deploymentGroup +
+           ", rollingOperation=" + rollingOperation +
            "} " + super.toString();
   }
 
   public static class Builder {
     private List<RolloutTask> rolloutTasks = Collections.emptyList();
     private int taskIndex;
-    private DeploymentGroup deploymentGroup;
+    private RollingOperation rollingOperation;
 
     public Builder setRolloutTasks(List<RolloutTask> rolloutTasks) {
       this.rolloutTasks = rolloutTasks;
@@ -128,13 +128,13 @@ public class DeploymentGroupTasks extends Descriptor {
       return this;
     }
 
-    public Builder setDeploymentGroup(final DeploymentGroup deploymentGroup) {
-      this.deploymentGroup = deploymentGroup;
+    public Builder setRollingOperation(final RollingOperation rollingOperation) {
+      this.rollingOperation = rollingOperation;
       return this;
     }
 
-    public DeploymentGroupTasks build() {
-      return new DeploymentGroupTasks(this);
+    public RollingOperationTasks build() {
+      return new RollingOperationTasks(this);
     }
   }
 }

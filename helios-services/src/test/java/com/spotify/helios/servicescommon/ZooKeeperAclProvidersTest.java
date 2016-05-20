@@ -106,7 +106,11 @@ public class ZooKeeperAclProvidersTest {
     assertEquals(agentPerms(aclProvider.getAclForPath("/random/path")), READ);
     assertEquals(agentPerms(aclProvider.getAclForPath("/config")), READ);
     assertEquals(agentPerms(aclProvider.getAclForPath("/status")), READ);
-    assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusDeploymentGroupTasks())), READ);
+    assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusRollingOps())), READ);
+    assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusRollingOpsTasks())), READ);
+    assertEquals(agentPerms(aclProvider.getAclForPath(Paths.statusRollingOpsTasks("id"))), READ);
+    assertEquals(agentPerms(aclProvider.getAclForPath(Paths.configRollingOps())), READ);
+    assertEquals(agentPerms(aclProvider.getAclForPath(Paths.configRollingOp("id"))), READ);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.configDeploymentGroups())), READ);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.configDeploymentGroup("group"))), READ);
     assertEquals(agentPerms(aclProvider.getAclForPath(Paths.configHostJobs("host"))), READ);

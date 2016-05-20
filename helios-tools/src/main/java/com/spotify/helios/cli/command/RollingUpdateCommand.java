@@ -206,7 +206,7 @@ public class RollingUpdateCommand extends WildcardJobCommand {
         break;
       }
 
-      if (!jobId.equals(status.getDeploymentGroup().getJobId())) {
+      if (!jobId.equals(status.getDeploymentGroupResponse().getJobId())) {
         // Another rolling-update was started, overriding this one -- exit
         failed = true;
         error = "Deployment-group job id changed during rolling-update";

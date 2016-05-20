@@ -182,9 +182,17 @@ public class RolloutOptions {
     }
 
 
+    public long getTimeout() {
+      return this.timeout;
+    }
+
     public Builder setTimeout(final long timeout) {
       this.timeout = timeout;
       return this;
+    }
+
+    public int getParallelism() {
+      return this.parallelism;
     }
 
     public Builder setParallelism(final int parallelism) {
@@ -192,14 +200,26 @@ public class RolloutOptions {
       return this;
     }
 
+    public boolean getMigrate() {
+      return this.migrate;
+    }
+
     public Builder setMigrate(final boolean migrate) {
       this.migrate = migrate;
       return this;
     }
 
+    public boolean getOverlap() {
+      return this.overlap;
+    }
+
     public Builder setOverlap(final boolean overlap) {
       this.overlap = overlap;
       return this;
+    }
+
+    public String getToken() {
+      return this.token;
     }
 
     public Builder setToken(final String token) {

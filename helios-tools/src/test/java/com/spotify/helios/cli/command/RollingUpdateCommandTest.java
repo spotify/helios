@@ -24,11 +24,11 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.protocol.DeploymentGroupResponse;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 
@@ -102,10 +102,18 @@ public class RollingUpdateCommandTest {
   private static DeploymentGroupStatusResponse statusResponse(
       final DeploymentGroupStatusResponse.Status status, final JobId jobId, final String error,
       DeploymentGroupStatusResponse.HostStatus... args) {
-    return new DeploymentGroupStatusResponse(
-        new DeploymentGroup(GROUP_NAME, Collections.<HostSelector>emptyList(), jobId,
-                            RolloutOptions.newBuilder().build()),
-        status, error, Arrays.asList(args), null);
+    final DeploymentGroupResponse dgr = DeploymentGroupResponse.builder()
+        .name(GROUP_NAME)
+        .hostSelectors(Collections.<HostSelector>emptyList())
+        .jobId(jobId)
+        .rolloutOptions(RolloutOptions.newBuilder().build())
+        .build();
+    return DeploymentGroupStatusResponse.builder()
+        .deploymentGroupResponse(dgr)
+        .status(status)
+        .error(error)
+        .hostStatuses(Arrays.asList(args))
+        .build();
   }
 
   @Test

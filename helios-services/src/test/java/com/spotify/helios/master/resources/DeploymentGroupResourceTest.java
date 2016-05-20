@@ -24,6 +24,7 @@ import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateRequest;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
@@ -76,13 +77,19 @@ public class DeploymentGroupResourceTest {
   @Test
   public void testGetDeploymentGroup() throws Exception {
     final DeploymentGroup dg = new DeploymentGroup(
-        "foo", Lists.newArrayList(ROLE_SELECTOR, FOO_SELECTOR),
-        new JobId("my_job", "0.2", "1234"), null);
+        "foo",
+        Lists.newArrayList(ROLE_SELECTOR, FOO_SELECTOR));
     when(model.getDeploymentGroup("foo")).thenReturn(dg);
+
+    final DeploymentGroupResponse dgr = new DeploymentGroupResponse(
+        "foo",
+        Lists.newArrayList(ROLE_SELECTOR, FOO_SELECTOR),
+        null,
+        null);
 
     final Response response = resource.getDeploymentGroup("foo");
     assertEquals(Response.Status.OK.getStatusCode(), response.getStatus());
-    assertEquals(dg, response.getEntity());
+    assertEquals(dgr, response.getEntity());
   }
 
   @Test

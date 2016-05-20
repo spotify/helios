@@ -26,8 +26,11 @@ import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.RollingOperation;
+import com.spotify.helios.common.descriptors.RollingOperationStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateDeploymentGroupResponse;
+import com.spotify.helios.common.protocol.DeploymentGroupResponse;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
 import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateRequest;
@@ -36,6 +39,7 @@ import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
 import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.MasterModel;
+import com.spotify.helios.master.RollingOperationDoesNotExistException;
 
 import java.util.Collections;
 import java.util.List;
@@ -103,7 +107,19 @@ public class DeploymentGroupResource {
   @ExceptionMetered
   public Response getDeploymentGroup(@PathParam("name") final String name) {
     try {
-      return Response.ok(model.getDeploymentGroup(name)).build();
+      final DeploymentGroup deploymentGroup = model.getDeploymentGroup(name);
+      final RollingOperation lastOp = model.getLastRollingOperation(name);
+
+      final DeploymentGroupResponse.Builder response = DeploymentGroupResponse.builder()
+          .name(deploymentGroup.getName())
+          .hostSelectors(deploymentGroup.getHostSelectors());
+
+      if (lastOp != null) {
+        response.jobId(lastOp.getJobId());
+        response.rolloutOptions(lastOp.getRolloutOptions());
+      }
+
+      return Response.ok(response.build()).build();
     } catch (final DeploymentGroupDoesNotExistException e) {
       return Response.status(Response.Status.NOT_FOUND).build();
     }
@@ -169,56 +185,92 @@ public class DeploymentGroupResource {
     }
   }
 
+  private List<DeploymentGroupStatusResponse.HostStatus> hostStatuses(final String name)
+    throws DeploymentGroupDoesNotExistException {
+    final List<String> hosts = model.getDeploymentGroupHosts(name);
+
+    final List<DeploymentGroupStatusResponse.HostStatus> result = Lists.newArrayList();
+
+    for (final String host : hosts) {
+      final HostStatus hostStatus = model.getHostStatus(host);
+      JobId deployedJobId = null;
+      TaskStatus.State state = null;
+
+      if (hostStatus != null && hostStatus.getStatus().equals(HostStatus.Status.UP)) {
+        for (final Map.Entry<JobId, Deployment> entry : hostStatus.getJobs().entrySet()) {
+          if (name.equals(entry.getValue().getDeploymentGroupName())) {
+            deployedJobId = entry.getKey();
+            final TaskStatus taskStatus = hostStatus.getStatuses().get(deployedJobId);
+            if (taskStatus != null) {
+              state = taskStatus.getState();
+            }
+            break;
+          }
+        }
+
+        result.add(new DeploymentGroupStatusResponse.HostStatus(host, deployedJobId, state));
+      }
+    }
+    return result;
+  }
+
   @GET
   @Path("/{name}/status")
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
   public Response getDeploymentGroupStatus(@PathParam("name") @Valid final String name) {
+    // Respond with a 'deployment group status' inferred from the last rolling operation (if any)
+    // in order to maintain API compatibility with older versions of Helios in which deployment
+    // groups (as opposed to rolling operations) could be in states such as 'failed', or 'rolling
+    // out'.
     try {
-      final DeploymentGroup deploymentGroup = model.getDeploymentGroup(name);
-      final DeploymentGroupStatus deploymentGroupStatus = model.getDeploymentGroupStatus(name);
+      final DeploymentGroupResponse.Builder dgResponse =
+          DeploymentGroupResponse.builder()
+              .name(name)
+              .hostSelectors(model.getDeploymentGroup(name).getHostSelectors());
 
-      final List<String> hosts = model.getDeploymentGroupHosts(name);
+      final DeploymentGroupStatus status = model.getDeploymentGroupStatus(name);
+      final DeploymentGroupStatusResponse.Builder response = DeploymentGroupStatusResponse.builder()
+          .error("")
+          .hostStatuses(hostStatuses(name))
+          .deploymentGroupStatus(status);
 
-      final List<DeploymentGroupStatusResponse.HostStatus> result = Lists.newArrayList();
+      final RollingOperation lastOp = model.getLastRollingOperation(name);
 
-      for (final String host : hosts) {
-        final HostStatus hostStatus = model.getHostStatus(host);
-        JobId deployedJobId = null;
-        TaskStatus.State state = null;
-
-        if (hostStatus != null && hostStatus.getStatus().equals(HostStatus.Status.UP)) {
-          for (final Map.Entry<JobId, Deployment> entry : hostStatus.getJobs().entrySet()) {
-            if (name.equals(entry.getValue().getDeploymentGroupName())) {
-              deployedJobId = entry.getKey();
-              final TaskStatus taskStatus = hostStatus.getStatuses().get(deployedJobId);
-              if (taskStatus != null) {
-                state = taskStatus.getState();
-              }
-              break;
-            }
-          }
-
-          result.add(new DeploymentGroupStatusResponse.HostStatus(host, deployedJobId, state));
-        }
+      if (lastOp == null) {
+        // No rolling operations have been recorded yet, so we're idle.
+        response.status(DeploymentGroupStatusResponse.Status.IDLE);
+        // Get the error from the deployment group, in case we set an error when it was stopped.
+        response.error(status.getError());
+        response.deploymentGroupResponse(dgResponse.build());
+        return Response.ok(response.build()).build();
       }
 
-      final DeploymentGroupStatusResponse.Status status;
-      if (deploymentGroupStatus == null) {
-        status = DeploymentGroupStatusResponse.Status.IDLE;
-      } else if (deploymentGroupStatus.getState() == DeploymentGroupStatus.State.FAILED) {
-        status = DeploymentGroupStatusResponse.Status.FAILED;
-      } else if (deploymentGroupStatus.getState() == DeploymentGroupStatus.State.ROLLING_OUT) {
-        status = DeploymentGroupStatusResponse.Status.ROLLING_OUT;
-      } else {
-        status = DeploymentGroupStatusResponse.Status.ACTIVE;
+      dgResponse.jobId(lastOp.getJobId());
+      dgResponse.rolloutOptions(lastOp.getRolloutOptions());
+      response.deploymentGroupResponse(dgResponse.build());
+
+      final RollingOperationStatus lastOpStatus = model.getRollingOperationStatus(lastOp.getId());
+      response.lastRollingOpStatus(lastOpStatus);
+      switch (lastOpStatus.getState()) {
+        case NEW:
+          response.status(DeploymentGroupStatusResponse.Status.IDLE);
+          break;
+        case FAILED:
+          response.status(DeploymentGroupStatusResponse.Status.FAILED);
+          response.error(lastOpStatus.getError());
+          break;
+        case ROLLING_OUT:
+          response.status(DeploymentGroupStatusResponse.Status.ROLLING_OUT);
+          break;
+        default:
+          response.status(DeploymentGroupStatusResponse.Status.ACTIVE);
+          break;
       }
 
-      final String error = deploymentGroupStatus == null ? "" : deploymentGroupStatus.getError();
-      return Response.ok(new DeploymentGroupStatusResponse(
-          deploymentGroup, status, error, result, deploymentGroupStatus)).build();
-    } catch (final DeploymentGroupDoesNotExistException e) {
+      return Response.ok(response.build()).build();
+    } catch (final DeploymentGroupDoesNotExistException | RollingOperationDoesNotExistException e) {
       return Response.status(Response.Status.NOT_FOUND).build();
     }
   }

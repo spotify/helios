@@ -17,7 +17,7 @@
 
 package com.spotify.helios.rollingupdate;
 
-public enum RollingUpdateError {
+public enum RollingOperationError {
   PORT_CONFLICT,
   JOB_UNEXPECTEDLY_UNDEPLOYED,
   JOB_ALREADY_DEPLOYED,

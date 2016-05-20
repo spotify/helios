@@ -36,29 +36,17 @@ public class DeploymentGroupTest {
     //noinspection ConstantConditions
     final List<HostSelector> setHostSelectors =
         ImmutableList.of(HostSelector.parse("foo=bar"), HostSelector.parse("baz=qux"));
-    final JobId setJobId = JobId.fromString("foo:0.1.0");
-    final RolloutOptions setRolloutOptions = RolloutOptions.newBuilder()
-        .setTimeout(1000)
-        .setParallelism(2)
-        .setMigrate(false)
-        .build();
 
     // Check setXXX methods
     builder.setName(setName);
     builder.setHostSelectors(setHostSelectors);
-    builder.setJobId(setJobId);
-    builder.setRolloutOptions(setRolloutOptions);
 
     assertEquals("name", setName, builder.getName());
     assertEquals("hostSelectors", setHostSelectors, builder.getHostSelectors());
-    assertEquals("jobId", setJobId, builder.getJobId());
-    assertEquals("rolloutOptions", setRolloutOptions, builder.getRolloutOptions());
 
     // Check final output
     final DeploymentGroup deploymentGroup = builder.build();
     assertEquals("name", setName, deploymentGroup.getName());
     assertEquals("hostSelectors", setHostSelectors, deploymentGroup.getHostSelectors());
-    assertEquals("jobId", setJobId, deploymentGroup.getJobId());
-    assertEquals("rolloutOptions", setRolloutOptions, deploymentGroup.getRolloutOptions());
   }
 }

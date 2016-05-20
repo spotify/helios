@@ -20,7 +20,7 @@ package com.spotify.helios.rollingupdate;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
-import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.RollingOperation;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
@@ -31,14 +31,14 @@ import static com.google.common.base.Preconditions.checkNotNull;
 
 public class DefaultRolloutPlanner implements RolloutPlanner {
 
-  private final DeploymentGroup deploymentGroup;
+  private final RollingOperation rollingOp;
 
-  private DefaultRolloutPlanner(final DeploymentGroup deploymentGroup) {
-    this.deploymentGroup = checkNotNull(deploymentGroup, "deploymentGroup");
+  private DefaultRolloutPlanner(final RollingOperation rollingOp) {
+    this.rollingOp = checkNotNull(rollingOp, "rollingOp");
   }
 
-  public static DefaultRolloutPlanner of(final DeploymentGroup deploymentGroup) {
-    return new DefaultRolloutPlanner(deploymentGroup);
+  public static DefaultRolloutPlanner of(final RollingOperation rollingOp) {
+    return new DefaultRolloutPlanner(rollingOp);
   }
 
   @Override
@@ -53,10 +53,10 @@ public class DefaultRolloutPlanner implements RolloutPlanner {
 
     // generate the rollout tasks
     final List<RolloutTask> rolloutTasks = Lists.newArrayList();
-    final int parallelism = deploymentGroup.getRolloutOptions() != null ?
-                            deploymentGroup.getRolloutOptions().getParallelism() : 1;
-    final boolean overlap = deploymentGroup.getRolloutOptions() != null &&
-                            deploymentGroup.getRolloutOptions().getOverlap();
+    final int parallelism = rollingOp.getRolloutOptions() != null ?
+                            rollingOp.getRolloutOptions().getParallelism() : 1;
+    final boolean overlap = rollingOp.getRolloutOptions() != null &&
+                            rollingOp.getRolloutOptions().getOverlap();
 
     for (final List<String> partition : Lists.partition(hosts, parallelism)) {
       rolloutTasks.addAll(overlap ? rolloutTasksWithOverlap(partition) : rolloutTasks(partition));

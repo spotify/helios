@@ -21,8 +21,8 @@ import com.google.common.collect.Maps;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
+import com.spotify.helios.common.protocol.DeploymentGroupResponse;
 
 import net.sourceforge.argparse4j.inf.Argument;
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -54,7 +54,7 @@ public class DeploymentGroupInspectCommand extends ControlCommand {
       throws ExecutionException, InterruptedException, IOException {
     final String name = options.getString(nameArg.getDest());
 
-    final DeploymentGroup deploymentGroup = client.deploymentGroup(name).get();
+    final DeploymentGroupResponse deploymentGroup = client.deploymentGroup(name).get();
 
     if (deploymentGroup == null) {
       if (json) {

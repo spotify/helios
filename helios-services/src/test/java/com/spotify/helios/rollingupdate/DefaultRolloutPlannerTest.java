@@ -21,8 +21,8 @@ package com.spotify.helios.rollingupdate;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 
-import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.RollingOperation;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
@@ -39,7 +39,7 @@ public class DefaultRolloutPlannerTest {
 
   @Test
   public void testSerialRollout() {
-    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+    final RollingOperation rolling = RollingOperation.newBuilder()
         .setRolloutOptions(RolloutOptions.newBuilder()
                                .setParallelism(1)
                                .build())
@@ -53,7 +53,7 @@ public class DefaultRolloutPlannerTest {
         "agent4", statusUp
     );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(rolling);
 
     final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
@@ -76,7 +76,7 @@ public class DefaultRolloutPlannerTest {
 
   @Test
   public void testParallelRollout() {
-    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+    final RollingOperation rolling = RollingOperation.newBuilder()
         .setRolloutOptions(RolloutOptions.newBuilder()
                                .setParallelism(2)
                                .build())
@@ -90,7 +90,7 @@ public class DefaultRolloutPlannerTest {
         "agent4", statusUp
     );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(rolling);
 
     final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
@@ -113,7 +113,7 @@ public class DefaultRolloutPlannerTest {
 
   @Test
   public void testParallelRolloutWithRemainder() {
-    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+    final RollingOperation rolling = RollingOperation.newBuilder()
         .setRolloutOptions(RolloutOptions.newBuilder()
                                .setParallelism(3)
                                .build())
@@ -127,7 +127,7 @@ public class DefaultRolloutPlannerTest {
         "agent4", statusUp
     );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(rolling);
 
     final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
@@ -150,7 +150,7 @@ public class DefaultRolloutPlannerTest {
 
   @Test
   public void testOverlapRollout() {
-    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+    final RollingOperation rolling = RollingOperation.newBuilder()
         .setRolloutOptions(RolloutOptions.newBuilder().setOverlap(true).build())
         .build();
     final HostStatus statusUp = mock(HostStatus.class);
@@ -162,7 +162,7 @@ public class DefaultRolloutPlannerTest {
         "agent4", statusUp
     );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(rolling);
     final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
     final List<RolloutTask> expected = Lists.newArrayList(
@@ -184,7 +184,7 @@ public class DefaultRolloutPlannerTest {
 
   @Test
   public void testOverlapParallelRollout() {
-    final DeploymentGroup deploymentGroup = DeploymentGroup.newBuilder()
+    final RollingOperation rolling = RollingOperation.newBuilder()
         .setRolloutOptions(RolloutOptions.newBuilder()
                                .setOverlap(true)
                                .setParallelism(2)
@@ -199,7 +199,7 @@ public class DefaultRolloutPlannerTest {
         "agent4", statusUp
     );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(rolling);
     final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
     final List<RolloutTask> expected = Lists.newArrayList(

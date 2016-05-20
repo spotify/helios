@@ -23,20 +23,30 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
- * The state of a deployment group.
+ * The state of a rolling operation.
+ *
+ * An sample expression of it in JSON might be:
+ * <pre>
+ * {
+ *   "state":"FAILED",
+ *   "error":"Stopped by user"
+ * }
+ * </pre>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class DeploymentGroupStatus extends Descriptor {
+public class RollingOperationStatus extends Descriptor {
 
   public enum State {
-    STABLE,
-    UNSTABLE,
+    NEW,
+    ROLLING_OUT,
+    FAILED,
+    DONE,
   }
 
   private final State state;
   private final String error;
 
-  private DeploymentGroupStatus(
+  private RollingOperationStatus(
       @JsonProperty("state") final State state,
       @JsonProperty("error") final String error) {
     this.state = checkNotNull(state, "state");
@@ -49,7 +59,7 @@ public class DeploymentGroupStatus extends Descriptor {
         .setError(error);
   }
 
-  private DeploymentGroupStatus(final Builder builder) {
+  private RollingOperationStatus(final Builder builder) {
     this.state = checkNotNull(builder.state, "state");
     this.error = builder.error;
   }
@@ -75,7 +85,7 @@ public class DeploymentGroupStatus extends Descriptor {
       return false;
     }
 
-    final DeploymentGroupStatus that = (DeploymentGroupStatus) o;
+    final RollingOperationStatus that = (RollingOperationStatus) o;
 
     if (error != null ? !error.equals(that.error) : that.error != null) {
       return false;
@@ -96,17 +106,17 @@ public class DeploymentGroupStatus extends Descriptor {
 
   @Override
   public String toString() {
-    return "DeploymentGroupStatus{" +
+    return "RollingOperationStatus{" +
            "state=" + state +
            ", error='" + error + '\'' +
            "} " + super.toString();
   }
 
   public static class Builder {
-    private DeploymentGroupStatus.State state;
+    private RollingOperationStatus.State state;
     private String error;
 
-    public Builder setState(DeploymentGroupStatus.State state) {
+    public Builder setState(RollingOperationStatus.State state) {
       this.state = state;
       return this;
     }
@@ -116,8 +126,8 @@ public class DeploymentGroupStatus extends Descriptor {
       return this;
     }
 
-    public DeploymentGroupStatus build() {
-      return new DeploymentGroupStatus(this);
+    public RollingOperationStatus build() {
+      return new RollingOperationStatus(this);
     }
   }
 }
