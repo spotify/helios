@@ -17,8 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
 import com.spotify.helios.common.descriptors.PortMapping;
 
 import org.junit.Before;
@@ -59,7 +57,7 @@ public class ProberTest extends TemporaryJobsTestBase {
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .client(client)
         .prober(defaultProber)
-        .jobPrefix(Optional.of(testTag).get())
+        .jobPrefix(testTag)
         .build();
 
     @Before
