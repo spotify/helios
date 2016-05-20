@@ -338,7 +338,7 @@ public class TemporaryJobs implements TestRule {
 
   private void verifyJobsHealthy() throws AssertionError {
     for (final TemporaryJob job : jobs) {
-      job.verifyHealthy();
+      Jobs.verifyHealthy(job.job(), client);
     }
   }
 
