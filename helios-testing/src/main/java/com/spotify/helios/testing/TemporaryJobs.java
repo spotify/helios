@@ -17,6 +17,7 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -41,10 +42,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -57,28 +60,26 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.ThreadPoolExecutor;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.collect.Lists.newArrayList;
+import static java.lang.Integer.toHexString;
 import static java.lang.String.format;
-import static java.lang.System.getProperty;
-import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class TemporaryJobs implements TestRule {
+
   private static final Logger log = LoggerFactory.getLogger(TemporaryJobs.class);
 
   private static final String HELIOS_TESTING_PROFILE = "helios.testing.profile";
   private static final String HELIOS_TESTING_PROFILES = "helios.testing.profiles.";
-  private static final String DEFAULT_USER = getProperty("user.name");
   private static final Prober DEFAULT_PROBER = new DefaultProber();
   private static final long JOB_HEALTH_CHECK_INTERVAL_MILLIS = SECONDS.toMillis(5);
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
-  private final HeliosSoloDeployment heliosSoloDeployment;
+  private final HeliosDeployment heliosDeployment;
   private final HeliosClient client;
   private final Prober prober;
   private final String defaultHostFilter;
@@ -86,6 +87,7 @@ public class TemporaryJobs implements TestRule {
   private final Map<String, String> env;
   private final List<TemporaryJob> jobs = Lists.newCopyOnWriteArrayList();
   private final Deployer deployer;
+  private final Undeployer undeployer;
   private final String jobPrefix;
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
@@ -96,35 +98,32 @@ public class TemporaryJobs implements TestRule {
               .build()),
       0, SECONDS);
 
-  private static volatile HeliosSoloDeployment soloDeployment;
+  private static volatile HeliosDeployment soloDeployment;
 
   TemporaryJobs(final Builder builder, final Config config) {
-    this.heliosSoloDeployment = checkNotNull(builder.heliosSoloDeployment, "heliosSoloDeployment");
-    this.client = checkNotNull(builder.client, "client");
+    this.heliosDeployment = firstNonNull(builder.heliosDeployment,
+                                         getOrCreateHeliosSoloDeployment());
+    client = checkNotNull(heliosDeployment.client(), "client");
     this.prober = checkNotNull(builder.prober, "prober");
     this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
     this.env = checkNotNull(builder.env, "env");
+    this.jobPrefix = checkNotNull(builder.jobPrefix, "jobPrefix");
 
     checkArgument(builder.deployTimeoutMillis >= 0, "deployTimeoutMillis");
 
+    this.undeployer = new DefaultUndeployer(client);
     this.deployer = fromNullable(builder.deployer).or(
         new DefaultDeployer(client, jobs, builder.hostPickingStrategy,
-            builder.jobDeployedMessageFormat, builder.deployTimeoutMillis));
-
-    if (isNullOrEmpty(builder.jobPrefix)) {
-      this.jobPrefix = Integer.toHexString(ThreadLocalRandom.current().nextInt());
-    } else {
-      this.jobPrefix = builder.jobPrefix;
-    }
+            builder.jobDeployedMessageFormat, builder.deployTimeoutMillis, undeployer));
 
     // Load in the prefix so it can be used in the config
     final Config configWithPrefix = ConfigFactory.empty()
-        .withValue("prefix", ConfigValueFactory.fromAnyRef(prefix()));
+        .withValue("prefix", ConfigValueFactory.fromAnyRef(jobPrefix));
 
     this.config = config.withFallback(configWithPrefix).resolve();
   }
 
-  private static synchronized HeliosSoloDeployment getOrCreateHeliosSoloDeployment() {
+  private static synchronized HeliosDeployment getOrCreateHeliosSoloDeployment() {
     if (soloDeployment == null) {
       // TODO (dxia) remove checkForNewImages(). Set here to prevent using
       // spotify/helios-solo:latest from docker hub
@@ -161,7 +160,7 @@ public class TemporaryJobs implements TestRule {
     } catch (InterruptedException ignore) {
     }
 
-    final List<AssertionError> errors = newArrayList();
+    final List<AssertionError> errors = new ArrayList<>();
 
     for (final TemporaryJob job : jobs) {
       // Undeploying a job doesn't guaruntee the container will be stopped immediately.
@@ -172,15 +171,24 @@ public class TemporaryJobs implements TestRule {
       // because the container's `start.sh` already has this logic. But SimpleTest creates an
       // in-memory Helios cluster and assumes jobs are undeployed when this method is called.
       // So we should update those tests that use TemporaryJobs and start helios-solo and then
-      // simply ignore it. Once that happens, we can delete this line.
-      job.undeploy(errors);
+      // simply ignore it. Once that happens, we can delete this line and remove all Undeployer
+      // references in this class.
+      errors.addAll(undeployer.undeploy(job.job(), job.hosts()));
     }
 
     for (final AssertionError error : errors) {
       log.error(error.getMessage());
     }
 
-    //heliosSoloDeployment.close();
+    // Don't delete the prefix file if any errors occurred during undeployment, so that we'll
+    // try to undeploy them the next time TemporaryJobs is run.
+    if (errors.isEmpty()) {
+      heliosDeployment.cleanup();
+    }
+
+    // TODO (dxia) We don't want to close when it's HSD, but we do when it's
+    // ExistingHeliosDeployment
+    // heliosDeployment.close();
   }
 
   public TemporaryJobBuilder job() {
@@ -270,11 +278,15 @@ public class TemporaryJobs implements TestRule {
   }
 
   public static TemporaryJobs create(final HeliosClient client) {
-    return builder().client(client).build();
+    return builder().heliosDeployment(
+        ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
+        .build();
   }
 
   public static TemporaryJobs create(final String domain) {
-    return builder().domain(domain).build();
+    return builder().heliosDeployment(
+        ExistingHeliosDeployment.newBuilder().domain(domain).build())
+        .build();
   }
 
   public static TemporaryJobs createFromProfile(final String profile) {
@@ -296,8 +308,7 @@ public class TemporaryJobs implements TestRule {
     };
   }
 
-  private void perform(final Statement base)
-          throws InterruptedException {
+  private void perform(final Statement base) throws InterruptedException {
     // Run the actual test on a thread
     final Future<Object> future = executor.submit(new Callable<Object>() {
       @Override
@@ -342,12 +353,16 @@ public class TemporaryJobs implements TestRule {
     }
   }
 
-  public String prefix() {
+  String jobPrefix() {
     return jobPrefix;
   }
 
   public HeliosClient client() {
     return client;
+  }
+
+  public List<AssertionError> undeploy(final Job job, final List<String> hosts) {
+    return undeployer.undeploy(job, hosts);
   }
 
   public static Builder builder() {
@@ -363,34 +378,28 @@ public class TemporaryJobs implements TestRule {
   }
 
   static Builder builder(final String profile, final Map<String, String> env) {
-    return builder(profile, env, HeliosClient.newBuilder());
-  }
-
-  static Builder builder(final String profile, final Map<String, String> env,
-                         final HeliosClient.Builder clientBuilder) {
-    return new Builder(profile, HeliosConfig.loadConfig("helios-testing"), env, clientBuilder);
+    return new Builder(profile, HeliosConfig.loadConfig("helios-testing"), env);
   }
 
   public static class Builder {
 
     private final Map<String, String> env;
     private final Config config;
-    private String user = DEFAULT_USER;
     private Prober prober = DEFAULT_PROBER;
     private Deployer deployer;
+    private Undeployer undeployer;
     private String hostFilter;
-    private HeliosClient.Builder clientBuilder;
-    private HeliosClient client;
-    private String jobPrefix;
+    private HeliosDeployment heliosDeployment;
+    // TODO (dxia) This random string logic is duplicated in JobPrefixFile
+    private String jobPrefix = String.format(
+        "tmp-%s-%s", new SimpleDateFormat("yyyyMMdd").format(new Date()),
+        toHexString(ThreadLocalRandom.current().nextInt()));
     private String jobDeployedMessageFormat;
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
     private long deployTimeoutMillis = DEFAULT_DEPLOY_TIMEOUT_MILLIS;
-    private final HeliosSoloDeployment heliosSoloDeployment;
 
-    Builder(String profile, Config rootConfig, Map<String, String> env,
-            HeliosClient.Builder clientBuilder) {
+    Builder(final String profile, final Config rootConfig, final Map<String, String> env) {
       this.env = env;
-      this.clientBuilder = clientBuilder;
 
       if (profile == null) {
         this.config = HeliosConfig.getDefaultProfile(
@@ -399,21 +408,25 @@ public class TemporaryJobs implements TestRule {
         this.config = HeliosConfig.getProfile(HELIOS_TESTING_PROFILES, profile, rootConfig);
       }
 
+      ExistingHeliosDeployment existingHeliosDeployment = null;
+
       if (this.config.hasPath("jobDeployedMessageFormat")) {
         jobDeployedMessageFormat(this.config.getString("jobDeployedMessageFormat"));
-      }
-      if (this.config.hasPath("user")) {
-        user(this.config.getString("user"));
       }
       if (this.config.hasPath("hostFilter")) {
         hostFilter(this.config.getString("hostFilter"));
       }
-      if (this.config.hasPath("endpoints")) {
-        endpointStrings(getListByKey("endpoints", config));
-      }
+
       if (this.config.hasPath("domain")) {
-        domain(this.config.getString("domain"));
+        existingHeliosDeployment = ExistingHeliosDeployment.newBuilder()
+            .domain(this.config.getString("domain"))
+            .build();
+      } else if (this.config.hasPath("endpoints")) {
+        existingHeliosDeployment = ExistingHeliosDeployment.newBuilder()
+            .endpointStrings(getListByKey("endpoints", config))
+            .build();
       }
+
       if (this.config.hasPath("hostPickingStrategy")) {
         processHostPickingStrategy();
       }
@@ -421,8 +434,7 @@ public class TemporaryJobs implements TestRule {
         deployTimeoutMillis(this.config.getLong("deployTimeoutMillis"));
       }
 
-      heliosSoloDeployment = getOrCreateHeliosSoloDeployment();
-      client = heliosSoloDeployment.client();
+      heliosDeployment = existingHeliosDeployment;
     }
 
     private void processHostPickingStrategy() {
@@ -458,39 +470,13 @@ public class TemporaryJobs implements TestRule {
       }
     }
 
-    public Builder domain(final String domain) {
-      return client(clientBuilder.setUser(user)
-                      .setDomain(domain)
-                      .build());
-    }
-
-    public Builder endpoints(final String... endpoints) {
-      return endpointStrings(asList(endpoints));
-    }
-
-    public Builder endpointStrings(final List<String> endpoints) {
-      return client(clientBuilder.setUser(user)
-                      .setEndpointStrings(endpoints)
-                      .build());
-    }
-
-    public Builder endpoints(final URI... endpoints) {
-      return endpoints(asList(endpoints));
-    }
-
-    public Builder endpoints(final List<URI> endpoints) {
-      return client(clientBuilder.setUser(user)
-                        .setEndpoints(endpoints)
-                        .build());
+    public Builder heliosDeployment(final HeliosDeployment heliosDeployment) {
+      this.heliosDeployment = heliosDeployment;
+      return this;
     }
 
     public Builder hostPickingStrategy(final HostPickingStrategy strategy) {
       this.hostPickingStrategy = strategy;
-      return this;
-    }
-
-    public Builder user(final String user) {
-      this.user = user;
       return this;
     }
 
@@ -504,13 +490,14 @@ public class TemporaryJobs implements TestRule {
       return this;
     }
 
-    public Builder deployer(final Deployer deployer) {
+    Builder deployer(final Deployer deployer) {
       this.deployer = deployer;
       return this;
     }
 
-    public Builder client(final HeliosClient client) {
-      this.client = client;
+    @VisibleForTesting
+    Builder undeployer(final Undeployer undeployer) {
+      this.undeployer = undeployer;
       return this;
     }
 

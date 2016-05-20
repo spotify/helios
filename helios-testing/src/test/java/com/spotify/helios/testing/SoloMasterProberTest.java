@@ -17,8 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.net.HostAndPort;
-
 import org.junit.Test;
 import org.mockito.ArgumentMatcher;
 
@@ -26,6 +24,7 @@ import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
+import java.net.URI;
 
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
@@ -39,14 +38,14 @@ import static org.mockito.Mockito.verify;
 
 public class SoloMasterProberTest {
 
-  private static final String HOST = "host";
+  private static final String HOST = "192.168.0.1";
   private static final int PORT = 123;
+  private static final URI MASTER_URI = URI.create("http://" + HOST + ":" + PORT);
 
   @Test
   public void testSuccess() throws Exception {
     final Socket socket = mock(Socket.class);
-    final HostAndPort hostAndPort = HostAndPort.fromParts(HOST, PORT);
-    final Boolean check = new SoloMasterProber().check(hostAndPort, socket);
+    final Boolean check = new SoloMasterProber().check(MASTER_URI, socket);
     verify(socket).connect(socketWithHostAndPort(HOST, PORT), anyInt());
     assertTrue(check);
   }
@@ -56,8 +55,7 @@ public class SoloMasterProberTest {
     final Socket socket = mock(Socket.class);
     doThrow(new SocketTimeoutException()).when(socket).connect(
         any(InetSocketAddress.class), anyInt());
-    final HostAndPort hostAndPort = HostAndPort.fromParts(HOST, PORT);
-    final Boolean check = new SoloMasterProber().check(hostAndPort, socket);
+    final Boolean check = new SoloMasterProber().check(MASTER_URI, socket);
     verify(socket).connect(socketWithHostAndPort(HOST, PORT), anyInt());
     assertThat(check, equalTo(null));
   }
@@ -67,8 +65,7 @@ public class SoloMasterProberTest {
     final Socket socket = mock(Socket.class);
     doThrow(new ConnectException()).when(socket).connect(
         any(InetSocketAddress.class), anyInt());
-    final HostAndPort hostAndPort = HostAndPort.fromParts(HOST, PORT);
-    final Boolean check = new SoloMasterProber().check(hostAndPort, socket);
+    final Boolean check = new SoloMasterProber().check(MASTER_URI, socket);
     verify(socket).connect(socketWithHostAndPort(HOST, PORT), anyInt());
     assertThat(check, equalTo(null));
   }

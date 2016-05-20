@@ -55,7 +55,7 @@ public class ProberTest extends TemporaryJobsTestBase {
 
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
+        .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(defaultProber)
         .jobPrefix(testTag)
         .build();

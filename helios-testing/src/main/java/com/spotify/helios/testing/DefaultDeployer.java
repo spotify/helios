@@ -51,6 +51,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Predicates.containsPattern;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.spotify.helios.testing.Jobs.TIMEOUT_MILLIS;
@@ -60,7 +61,7 @@ import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.Assert.fail;
 
-public class DefaultDeployer implements Deployer {
+class DefaultDeployer implements Deployer {
 
   private static final Logger log = LoggerFactory.getLogger(DefaultDeployer.class);
 
@@ -69,17 +70,22 @@ public class DefaultDeployer implements Deployer {
   private final HostPickingStrategy hostPicker;
   private final String jobDeployedMessageFormat;
   private final long deployTimeoutMillis;
+  private final Undeployer undeployer;
 
   private boolean readyToDeploy;
 
-  public DefaultDeployer(final HeliosClient client, final List<TemporaryJob> jobs,
-                         final HostPickingStrategy hostPicker,
-                         final String jobDeployedMessageFormat, final long deployTimeoutMillis) {
-    this.client = client;
-    this.jobs = jobs;
-    this.hostPicker = hostPicker;
+  DefaultDeployer(final HeliosClient client,
+                  final List<TemporaryJob> jobs,
+                  final HostPickingStrategy hostPicker,
+                  final String jobDeployedMessageFormat,
+                  final long deployTimeoutMillis,
+                  final Undeployer undeployer) {
+    this.client = checkNotNull(client, "client");
+    this.jobs = checkNotNull(jobs, "jobs");
+    this.hostPicker = checkNotNull(hostPicker, "hostPicker");
     this.jobDeployedMessageFormat = jobDeployedMessageFormat;
     this.deployTimeoutMillis = deployTimeoutMillis;
+    this.undeployer = checkNotNull(undeployer, "undeployer");
   }
 
   @Override
@@ -209,7 +215,7 @@ public class DefaultDeployer implements Deployer {
       fail(format("Failed while probing job %s %s - %s", job.getId(), job.toString(), e));
     }
 
-    return new TemporaryJob(client, job, hosts, hostToIp, statuses);
+    return new TemporaryJob(job, hosts, hostToIp, statuses, undeployer);
   }
 
   private void awaitUp(final Job job, final String host,
@@ -304,4 +310,5 @@ public class DefaultDeployer implements Deployer {
     final String ip = hostToIp.get(host);
     return ip == null ? host : ip;
   }
+
 }

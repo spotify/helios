@@ -20,7 +20,6 @@ package com.spotify.helios.testing;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.net.HostAndPort;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
@@ -48,6 +47,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
 import java.net.Socket;
+import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +93,7 @@ public class HeliosSoloDeploymentTest {
     soloAgentProber = mock(SoloAgentProber.class);
     soloWatchdogConnector = mock(SoloWatchdogConnector.class);
 
-    when(soloMasterProber.check(any(HostAndPort.class))).thenReturn(true);
+    when(soloMasterProber.check(any(URI.class))).thenReturn(true);
     when(soloAgentProber.check(any(HeliosClient.class))).thenReturn(true);
 
     // the anonymous classes to override a method are to workaround the docker-client "messages"
@@ -271,7 +271,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testCloseSoloExitsInTime() throws Exception {
-    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
+    final HeliosDeployment solo = HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         .soloMasterProber(soloMasterProber)
         .soloAgentProber(soloAgentProber)
@@ -288,7 +288,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testCloseSoloExitsTooLate() throws Exception {
-    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
+    final HeliosDeployment solo = HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         .soloMasterProber(soloMasterProber)
         .soloAgentProber(soloAgentProber)
@@ -314,7 +314,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testCloseSoloDoNotRemoveContainer() throws Exception {
-    final HeliosSoloDeployment solo = HeliosSoloDeployment.builder()
+    final HeliosDeployment solo = HeliosSoloDeployment.builder()
         .dockerClient(dockerClient)
         .soloMasterProber(soloMasterProber)
         .soloAgentProber(soloAgentProber)
