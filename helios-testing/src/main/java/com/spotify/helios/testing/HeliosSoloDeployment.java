@@ -41,7 +41,6 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.SimpleTimeLimiter;
 import com.google.common.util.concurrent.TimeLimiter;
-
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
 
@@ -62,6 +61,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import static com.google.common.base.MoreObjects.firstNonNull;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.singleton;
@@ -107,18 +107,14 @@ class HeliosSoloDeployment implements HeliosDeployment {
   private final long exitTimeoutSeconds;
 
   private HeliosSoloDeployment(final Builder builder) {
-    // TODO (dxia) Clean up the logic between the constructor and the builder.
-    // Put as many defaults as we can in the builder and just have ctor check for nulls.
-    this.heliosSoloImage = builder.heliosSoloImage;
+    this.heliosSoloImage = checkNotNull(builder.heliosSoloImage);
     this.pullBeforeCreate = builder.pullBeforeCreate;
     this.removeHeliosSoloContainerOnExit = builder.removeHeliosSoloContainerOnExit;
     this.soloMasterProber = checkNotNull(builder.soloMasterProber, "soloMasterProber");
     this.soloAgentProber = checkNotNull(builder.soloAgentProber, "soloAgentProber");
     checkNotNull(builder.soloWatchdogConnector, "soloWatchdogConnector");
     this.exitTimeoutSeconds = builder.exitTimeoutSeconds;
-
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
-    this.dockerHost = Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
 
     final Info dockerInfo;
     try {
@@ -127,8 +123,10 @@ class HeliosSoloDeployment implements HeliosDeployment {
       // There's not a lot we can do if Docker is unreachable.
       throw Throwables.propagate(e1);
     }
-    this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
-        .or(containerDockerHost(dockerInfo));
+
+    this.dockerHost = checkNotNull(builder.dockerHost, "dockerHost");
+    this.containerDockerHost = firstNonNull(
+        builder.containerDockerHost, containerDockerHost(dockerInfo));
     this.namespace = randomString();
     this.env = containerEnv(builder.env);
     this.binds = containerBinds();
@@ -401,7 +399,6 @@ class HeliosSoloDeployment implements HeliosDeployment {
    * @throws HeliosDeploymentException if Helios Solo could not be deployed.
    */
   private String deploySolo(final String heliosHost) throws HeliosDeploymentException {
-    //TODO(negz): Don't make this.env immutable so early?
     final List<String> env = new ArrayList<>();
     env.addAll(this.env);
     env.add("HELIOS_NAME=" + this.namespace + HELIOS_NAME_SUFFIX);
@@ -632,7 +629,7 @@ class HeliosSoloDeployment implements HeliosDeployment {
 
   static class Builder {
     private DockerClient dockerClient;
-    private DockerHost dockerHost;
+    private DockerHost dockerHost = DockerHost.fromEnv();
     private DockerHost containerDockerHost;
     private HeliosClient heliosClient;
     private String heliosSoloImage = "spotify/helios-solo:latest";
@@ -741,8 +738,8 @@ class HeliosSoloDeployment implements HeliosDeployment {
      * Customize the image used for helios-solo. If not set defaults to
      * "spotify/helios-solo:latest".
      */
-    public Builder heliosSoloImage(final String image) {
-      this.heliosSoloImage = checkNotNull(image);
+    public Builder heliosSoloImage(final String heliosSoloImage) {
+      this.heliosSoloImage = heliosSoloImage;
       return this;
     }
 
