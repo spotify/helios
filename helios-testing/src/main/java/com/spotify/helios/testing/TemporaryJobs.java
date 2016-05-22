@@ -17,7 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Throwables;
 import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.MoreExecutors;
@@ -387,7 +386,6 @@ public class TemporaryJobs implements TestRule {
     private final Config config;
     private Prober prober = DEFAULT_PROBER;
     private Deployer deployer;
-    private Undeployer undeployer;
     private String hostFilter;
     private HeliosDeployment heliosDeployment;
     // TODO (dxia) This random string logic is duplicated in JobPrefixFile
@@ -492,12 +490,6 @@ public class TemporaryJobs implements TestRule {
 
     Builder deployer(final Deployer deployer) {
       this.deployer = deployer;
-      return this;
-    }
-
-    @VisibleForTesting
-    Builder undeployer(final Undeployer undeployer) {
-      this.undeployer = undeployer;
       return this;
     }
 
