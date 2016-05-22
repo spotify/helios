@@ -34,6 +34,7 @@ import org.mockito.ArgumentMatcher;
 
 import java.util.List;
 
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyString;
@@ -91,7 +92,7 @@ public class DefaultUndeployerTest {
 
     final List<AssertionError> errors = new DefaultUndeployer(client).undeploy(JOB, HOSTS);
 
-    assertThat(errors.size(), equalTo(2));
+    assertThat(errors, hasSize(2));
   }
 
   @Test

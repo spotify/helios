@@ -21,7 +21,7 @@ import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
 import com.spotify.helios.common.descriptors.TcpHealthCheck;
 
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.net.HttpURLConnection;
@@ -46,8 +46,8 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
 
   public static class TestImpl {
 
-    @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+    @ClassRule
+    public static final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .jobPrefix(testTag)
         .deployTimeoutMillis(MINUTES.toMillis(3))
