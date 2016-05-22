@@ -58,11 +58,13 @@ public class ExistingHeliosDeployment implements HeliosDeployment {
   private static final String DEFAULT_PREFIX_DIRECTORY = "/tmp/helios-temp-jobs";
 
   private final HeliosClient heliosClient;
+  private final boolean existingHeliosClient;
   private final JobPrefixFile jobPrefixFile;
   private final Undeployer undeployer;
 
   private ExistingHeliosDeployment(final Builder builder) {
     this.heliosClient = checkNotNull(builder.heliosClient, "heliosClient");
+    this.existingHeliosClient = builder.existingHeliosClient;
     final Path prefixDirectory = Paths.get(firstNonNull(builder.prefixDirectory,
                                                         DEFAULT_PREFIX_DIRECTORY));
 
@@ -95,12 +97,18 @@ public class ExistingHeliosDeployment implements HeliosDeployment {
     jobPrefixFile.delete();
   }
 
+  /**
+   * This method will close the associated {@link HeliosClient} if it's a new instance created by
+   * this class. Do not call this method if you passed in a HeliosClient and still need to use it.
+   */
   @Override
   public void close() {
-    try {
-      heliosClient.close();
-    } catch (IOException e) {
-      log.warn("HeliosClient did not close cleanly: {}", e);
+    if (!existingHeliosClient) {
+      try {
+        heliosClient.close();
+      } catch (IOException e) {
+        log.warn("HeliosClient did not close cleanly: {}", e.toString());
+      }
     }
   }
 
@@ -183,32 +191,37 @@ public class ExistingHeliosDeployment implements HeliosDeployment {
   public static class Builder {
     private String user = DEFAULT_USER;
     private HeliosClient heliosClient;
+    private boolean existingHeliosClient = false;
     private String prefixDirectory;
     private String jobPrefix;
     private Undeployer undeployer;
 
     public Builder domain(final String domain) {
-      return heliosClient(HeliosClient.newBuilder()
-                              .setUser(user)
-                              .setDomain(domain)
-                              .build());
+      this.heliosClient = HeliosClient.newBuilder()
+          .setUser(user)
+          .setDomain(domain)
+          .build();
+      return this;
     }
 
     public Builder endpointStrings(final List<String> endpoints) {
-      return heliosClient(HeliosClient.newBuilder()
-                              .setUser(user)
-                              .setEndpointStrings(endpoints)
-                              .build());
+      this.heliosClient = HeliosClient.newBuilder()
+          .setUser(user)
+          .setEndpointStrings(endpoints)
+          .build();
+      return this;
     }
 
     public Builder endpoints(final List<URI> endpoints) {
-      return heliosClient(HeliosClient.newBuilder()
-                              .setUser(user)
-                              .setEndpoints(endpoints)
-                              .build());
+      this.heliosClient = HeliosClient.newBuilder()
+          .setUser(user)
+          .setEndpoints(endpoints)
+          .build();
+      return this;
     }
 
     public Builder heliosClient(final HeliosClient heliosClient) {
+      this.existingHeliosClient = true;
       this.heliosClient = heliosClient;
       return this;
     }
