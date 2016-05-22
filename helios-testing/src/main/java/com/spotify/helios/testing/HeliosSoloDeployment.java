@@ -143,7 +143,6 @@ class HeliosSoloDeployment implements HeliosDeployment {
       throw new AssertionError("Unable to deploy helios-solo container.", e);
     }
 
-    // Running the String host:port through HostAndPort does some validation for us.
     final URI uri = URI.create("http://" + dockerHost.address() + ":" + heliosPort);
     this.deploymentAddresses = singleton(uri);
     this.heliosClient = Optional.fromNullable(builder.heliosClient).or(
@@ -494,7 +493,12 @@ class HeliosSoloDeployment implements HeliosDeployment {
   }
 
   /**
-   * Undeploy (shut down) this HeliosSoloDeployment.
+   * Undeploy (shut down) this HeliosSoloDeployment. This will wait for the helios-solo container
+   * to undeploy all its jobs and exit (or forcibly be killed by Docker if it exceeds the timeout).
+   * This method will also remove the helios-solo container, if so configured, and close the
+   * associated {@link DockerClient}.
+   *
+   * Do not call this method if you still need to use the helios-solo container.
    */
   @Override
   public void close() {

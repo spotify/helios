@@ -17,14 +17,18 @@
 
 package com.spotify.helios.testing;
 
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.net.Socket;
 import java.util.List;
@@ -45,8 +49,12 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 public class SimpleTest extends TemporaryJobsTestBase {
+
+  private static HeliosClient spyClient;
 
   @Test
   public void simpleTest() throws Exception {
@@ -57,9 +65,22 @@ public class SimpleTest extends TemporaryJobsTestBase {
 
   public static class SimpleTestImpl {
 
+    // We mock the HeliosClient.close() method so we don't close the client before other tests
+    // in this class have finished.
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+      spyClient = spy(client);
+      doAnswer(new Answer<Void>() {
+        @Override
+        public Void answer(InvocationOnMock invocation) throws Throwable {
+          return null;
+        }
+      }).when(spyClient).close();
+    }
+
     @Rule
     public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
+        .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(spyClient).build())
         .prober(new TestProber())
         .jobDeployedMessageFormat(
             "Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")

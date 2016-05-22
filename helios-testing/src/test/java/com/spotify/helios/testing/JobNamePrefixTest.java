@@ -23,7 +23,7 @@ import com.spotify.helios.common.descriptors.JobStatus;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.File;
@@ -100,8 +100,8 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
 
   public static class JobNamePrefixTestImpl {
 
-    @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+    @ClassRule
+    public static final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(new TestProber())
         .jobPrefix(testTag)
