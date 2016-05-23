@@ -203,9 +203,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     return "moby".equals(dockerInfo.name());
   }
 
-  private List<String> containerEnv(final Set builderEnv) {
-    final HashSet<String> env = new HashSet<>();
-    env.addAll(builderEnv);
+  private List<String> containerEnv(final Set<String> builderEnv) {
+    final HashSet<String> env = new HashSet<>(builderEnv);
     env.add("DOCKER_HOST=" + containerDockerHost.bindURI().toString());
     if (!isNullOrEmpty(containerDockerHost.dockerCertPath())) {
       env.add("DOCKER_CERT_PATH=/certs");
