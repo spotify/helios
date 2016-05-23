@@ -114,23 +114,24 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
     this.dockerClient = checkNotNull(builder.dockerClient, "dockerClient");
     this.dockerHost = Optional.fromNullable(builder.dockerHost).or(DockerHost.fromEnv());
+
+    final Info dockerInfo;
+    try {
+      dockerInfo = this.dockerClient.info();
+    } catch (DockerException | InterruptedException e1) {
+      // There's not a lot we can do if Docker is unreachable.
+      throw Throwables.propagate(e1);
+    }
     this.containerDockerHost = Optional.fromNullable(builder.containerDockerHost)
-        .or(containerDockerHost());
+        .or(containerDockerHost(dockerInfo));
+
     this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
     this.env = containerEnv(builder.env);
     this.binds = containerBinds();
 
-    final String heliosHost;
     final String heliosPort;
-    //TODO(negz): Determine and propagate NetworkManager DNS servers?
     try {
-      log.info("checking that docker can be reached from within a container");
-      final String probeContainerGateway = checkDockerAndGetGateway();
-      if (dockerHost.address().equals("localhost") || dockerHost.address().equals("127.0.0.1")) {
-        heliosHost = probeContainerGateway;
-      } else {
-        heliosHost = dockerHost.address();
-      }
+      final String heliosHost = determineHeliosHost(dockerInfo);
       this.heliosContainerId = deploySolo(heliosHost);
       heliosPort = getHostPort(this.heliosContainerId, HELIOS_MASTER_PORT);
     } catch (HeliosDeploymentException e) {
@@ -146,17 +147,39 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .build());
   }
 
+  /**
+   * Determine what address to use when attempting to communicate with containers deployed via the
+   * helios-solo container. This will be passed into the helios-solo container as the HOST_ADDRESS
+   * environment variable and is later used by TemporaryJob to figure out how to reach ports mapped
+   * by the container on the host.
+   * <p>
+   * The returned value is the address of the {@code dockerHost} unless the address is determined to
+   * be localhost or 127.0.0.1.</p>
+   */
+  private String determineHeliosHost(final Info dockerInfo) throws HeliosDeploymentException {
+    // conditions where the gateway IP address given to a container should be used
+    if (dockerHostAddressIsLocalhost() && !isDockerForMac(dockerInfo)) {
+      log.info("checking that docker can be reached from within a container");
+      return checkDockerAndGetGateway();
+    }
+    // otherwise return the address of the docker host
+    return dockerHost.address();
+  }
+
+  private boolean dockerHostAddressIsLocalhost() {
+    return dockerHost.address().equals("localhost") || dockerHost.address().equals("127.0.0.1");
+  }
+
   /** Returns the DockerHost that the container should use to refer to the docker daemon. */
-  private DockerHost containerDockerHost() {
-    if (isBoot2Docker(dockerInfo())) {
+  private DockerHost containerDockerHost(final Info dockerInfo) {
+    if (isBoot2Docker(dockerInfo)) {
       return DockerHost.from(DockerHost.defaultUnixEndpoint(), null);
     }
 
     // otherwise use the normal DockerHost, *unless* DOCKER_HOST is set to
     // localhost or 127.0.0.1 - which will never work inside a container. For those cases, we
     // override the settings and use the unix socket instead.
-    if (this.dockerHost.address().equals("localhost") ||
-        this.dockerHost.address().equals("127.0.0.1")) {
+    if (dockerHostAddressIsLocalhost()) {
       final String endpoint = DockerHost.defaultUnixEndpoint();
       log.warn("DOCKER_HOST points to localhost or 127.0.0.1. Replacing this with {} "
                + "as localhost/127.0.0.1 will not work inside a container to talk to the docker "
@@ -176,13 +199,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     return dockerInfo.operatingSystem().contains(BOOT2DOCKER_SIGNATURE);
   }
 
-  private Info dockerInfo() {
-    try {
-      return this.dockerClient.info();
-    } catch (DockerException | InterruptedException e) {
-      // There's not a lot we can do if Docker is unreachable.
-      throw Throwables.propagate(e);
-    }
+  private boolean isDockerForMac(final Info dockerInfo) {
+    return "moby".equals(dockerInfo.name());
   }
 
   private List<String> containerEnv(final Set builderEnv) {
