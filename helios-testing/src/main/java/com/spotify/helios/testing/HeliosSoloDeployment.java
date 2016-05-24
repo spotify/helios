@@ -749,7 +749,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      *
      * @return A Helios Solo deployment configured by this Builder.
      */
-    public HeliosDeployment build() {
+    public HeliosSoloDeployment build() {
       this.env = ImmutableSet.copyOf(this.env);
       return new HeliosSoloDeployment(this);
     }

@@ -18,11 +18,6 @@
 package com.spotify.helios.testing;
 
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
 import com.spotify.docker.client.exceptions.ImageNotFoundException;
@@ -43,10 +38,17 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
 
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -60,6 +62,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -154,13 +157,29 @@ public class HeliosSoloDeploymentTest {
     });
   }
 
+  private HeliosSoloDeployment buildHeliosSoloDeployment() {
+    return buildHeliosSoloDeployment(DockerHost.from("tcp://localhost:2375", ""));
+  }
+
+  private HeliosSoloDeployment buildHeliosSoloDeployment(HeliosSoloDeployment.Builder builder) {
+    return buildHeliosSoloDeployment(builder, DockerHost.from("tcp://localhost:2375", ""));
+  }
+
+  private HeliosSoloDeployment buildHeliosSoloDeployment(DockerHost dockerHost) {
+    return buildHeliosSoloDeployment(HeliosSoloDeployment.builder(), dockerHost);
+  }
+
+  private HeliosSoloDeployment buildHeliosSoloDeployment(final HeliosSoloDeployment.Builder builder,
+                                                         final DockerHost dockerHost) {
+    return builder.dockerClient(dockerClient)
+        .dockerHost(dockerHost)
+        .heliosClient(heliosClient)
+        .build();
+  }
+
   @Test
   public void testDockerHostContainsLocalhost() throws Exception {
-    HeliosSoloDeployment.builder()
-        .dockerClient(dockerClient)
-        // a custom dockerhost to trigger the localhost logic
-        .dockerHost(DockerHost.from("tcp://localhost:2375", ""))
-        .build();
+    buildHeliosSoloDeployment();
 
     boolean foundSolo = false;
     for (final ContainerConfig cc : containerConfig.getAllValues()) {
@@ -185,8 +204,7 @@ public class HeliosSoloDeploymentTest {
         .withValue("helios.solo.profiles.test.namespace", ConfigValueFactory.fromAnyRef(ns))
         .withValue("helios.solo.profiles.test.env.TEST", ConfigValueFactory.fromAnyRef(env));
 
-    final HeliosSoloDeployment.Builder builder = new HeliosSoloDeployment.Builder(null, config);
-    builder.dockerClient(dockerClient).build();
+    buildHeliosSoloDeployment(new HeliosSoloDeployment.Builder(null, config));
 
     boolean foundSolo = false;
     for (final ContainerConfig cc : containerConfig.getAllValues()) {
@@ -197,7 +215,6 @@ public class HeliosSoloDeploymentTest {
       }
     }
     assertTrue("Could not find helios-solo container creation", foundSolo);
-
   }
 
   @Test
@@ -205,11 +222,35 @@ public class HeliosSoloDeploymentTest {
     when(this.dockerClient.inspectImage(HeliosSoloDeployment.PROBE_IMAGE))
         .thenReturn(mock(ImageInfo.class));
 
-    HeliosSoloDeployment.builder()
-        .dockerClient(this.dockerClient)
-        .build();
+    buildHeliosSoloDeployment();
 
     verify(this.dockerClient, never()).pull(HeliosSoloDeployment.PROBE_IMAGE);
+  }
+
+  /**
+   * Test that the probe container is not pulled or otherwise used when DOCKER_HOST is not
+   * localhost.
+   */
+  @Test
+  public void testDoesNotPullProbeImageForNonLocalhostDockerHost() throws Exception {
+    when(this.dockerClient.inspectImage(HeliosSoloDeployment.PROBE_IMAGE))
+        .thenThrow(new ImageNotFoundException("not found"));
+
+    buildHeliosSoloDeployment(DockerHost.from("tcp://10.99.0.1:2375", ""));
+
+    // the probe should not be pulled or created (or started)
+    verify(this.dockerClient, never()).pull(HeliosSoloDeployment.PROBE_IMAGE);
+    verify(dockerClient, never()).createContainer(
+        argThat(forImage(HeliosSoloDeployment.PROBE_IMAGE)), anyString());
+  }
+
+  private Matcher<ContainerConfig> forImage(final String image) {
+    return new CustomTypeSafeMatcher<ContainerConfig>("ContainerConfig for image=" + image) {
+      @Override
+      protected boolean matchesSafely(final ContainerConfig item) {
+        return image.equals(item.image());
+      }
+    };
   }
 
   @Test
@@ -217,19 +258,14 @@ public class HeliosSoloDeploymentTest {
     when(this.dockerClient.inspectImage(HeliosSoloDeployment.PROBE_IMAGE))
         .thenThrow(new ImageNotFoundException(HeliosSoloDeployment.PROBE_IMAGE));
 
-    HeliosSoloDeployment.builder()
-        .dockerClient(this.dockerClient)
-        .build();
+    buildHeliosSoloDeployment();
 
     verify(this.dockerClient).pull(HeliosSoloDeployment.PROBE_IMAGE);
   }
 
   @Test
   public void testUndeployLeftoverJobs() throws Exception {
-    final HeliosSoloDeployment solo = (HeliosSoloDeployment) HeliosSoloDeployment.builder()
-        .dockerClient(dockerClient)
-        .heliosClient(heliosClient)
-        .build();
+    final HeliosSoloDeployment solo = buildHeliosSoloDeployment();
 
     final ListenableFuture<List<String>> hostsFuture = Futures.<List<String>>immediateFuture(
         ImmutableList.of(HOST1, HOST2));
@@ -282,10 +318,7 @@ public class HeliosSoloDeploymentTest {
 
   @Test
   public void testUndeployLeftoverJobs_noLeftoverJobs() throws Exception {
-    final HeliosSoloDeployment solo = (HeliosSoloDeployment) HeliosSoloDeployment.builder()
-        .dockerClient(dockerClient)
-        .heliosClient(heliosClient)
-        .build();
+    final HeliosSoloDeployment solo = buildHeliosSoloDeployment();
 
     final ListenableFuture<Map<JobId, Job>> jobsFuture = Futures.immediateFuture(
         Collections.<JobId, Job>emptyMap());
