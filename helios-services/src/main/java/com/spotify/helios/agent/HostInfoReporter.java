@@ -20,8 +20,8 @@ package com.spotify.helios.agent;
 import com.google.common.io.CharStreams;
 
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.DockerHost;
+import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.helios.common.descriptors.DockerVersion;
 import com.spotify.helios.common.descriptors.HostInfo;
 import com.spotify.helios.servicescommon.coordination.NodeUpdaterFactory;

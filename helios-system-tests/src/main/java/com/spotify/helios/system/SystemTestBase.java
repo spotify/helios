@@ -32,16 +32,16 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 
 import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.docker.client.ContainerNotFoundException;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.DockerHost;
-import com.spotify.docker.client.DockerRequestException;
-import com.spotify.docker.client.ImageNotFoundException;
 import com.spotify.docker.client.LogMessage;
 import com.spotify.docker.client.LogReader;
+import com.spotify.docker.client.exceptions.ContainerNotFoundException;
+import com.spotify.docker.client.exceptions.DockerException;
+import com.spotify.docker.client.exceptions.DockerRequestException;
+import com.spotify.docker.client.exceptions.ImageNotFoundException;
 import com.spotify.docker.client.messages.Container;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
@@ -586,7 +586,7 @@ public abstract class SystemTestBase {
         "--no-log-setup",
         "--no-http",
         "--name", host,
-        "--docker=" + DOCKER_HOST,
+        "--docker=" + DOCKER_HOST.host(),
         "--zk", zk.connectString(),
         "--zk-session-timeout", "100",
         "--zk-connection-timeout", "100",

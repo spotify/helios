@@ -17,7 +17,7 @@
 
 package com.spotify.helios.agent;
 
-import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.exceptions.DockerException;
 
 public interface HealthChecker {
   public boolean check(String containerId)

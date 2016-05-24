@@ -19,8 +19,8 @@ package com.spotify.helios.agent;
 
 import com.google.common.util.concurrent.MoreExecutors;
 
-import com.spotify.docker.client.ImageNotFoundException;
-import com.spotify.docker.client.ImagePullFailedException;
+import com.spotify.docker.client.exceptions.ImageNotFoundException;
+import com.spotify.docker.client.exceptions.ImagePullFailedException;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;

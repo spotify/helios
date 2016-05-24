@@ -18,11 +18,11 @@
 package com.spotify.helios.testing;
 
 import com.spotify.docker.client.DefaultDockerClient;
-import com.spotify.docker.client.DockerCertificateException;
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.DockerHost;
-import com.spotify.docker.client.ImageNotFoundException;
+import com.spotify.docker.client.exceptions.DockerCertificateException;
+import com.spotify.docker.client.exceptions.DockerException;
+import com.spotify.docker.client.exceptions.ImageNotFoundException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
@@ -149,7 +149,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   /** Returns the DockerHost that the container should use to refer to the docker daemon. */
   private DockerHost containerDockerHost() {
     if (isBoot2Docker(dockerInfo())) {
-      return DockerHost.from(DefaultDockerClient.DEFAULT_UNIX_ENDPOINT, null);
+      return DockerHost.from(DockerHost.defaultUnixEndpoint(), null);
     }
 
     // otherwise use the normal DockerHost, *unless* DOCKER_HOST is set to
@@ -157,7 +157,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     // override the settings and use the unix socket instead.
     if (this.dockerHost.address().equals("localhost") ||
         this.dockerHost.address().equals("127.0.0.1")) {
-      final String endpoint = DockerHost.DEFAULT_UNIX_ENDPOINT;
+      final String endpoint = DockerHost.defaultUnixEndpoint();
       log.warn("DOCKER_HOST points to localhost or 127.0.0.1. Replacing this with {} "
                + "as localhost/127.0.0.1 will not work inside a container to talk to the docker "
                + "daemon on the host itself.", endpoint);

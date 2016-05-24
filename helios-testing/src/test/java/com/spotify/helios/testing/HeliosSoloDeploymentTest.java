@@ -25,7 +25,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
-import com.spotify.docker.client.ImageNotFoundException;
+import com.spotify.docker.client.exceptions.ImageNotFoundException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
