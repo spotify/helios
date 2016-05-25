@@ -35,10 +35,8 @@ import java.net.URI;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
@@ -85,11 +83,6 @@ public class ExistingHeliosDeployment implements HeliosDeployment {
   @Override
   public HeliosClient client() {
     return heliosClient;
-  }
-
-  @Override
-  public Set<URI> uris() {
-    return Collections.emptySet();
   }
 
   /**
