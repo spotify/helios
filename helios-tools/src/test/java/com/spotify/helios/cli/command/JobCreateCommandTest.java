@@ -40,7 +40,6 @@ import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatcher;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -104,7 +103,7 @@ public class JobCreateCommandTest {
 
     command = new JobCreateCommand(subparser, envVarSupplier);
 
-    when(client.createJob(jobWhoseNameIs(JOB_NAME))).thenReturn(immediateFuture(
+    when(client.createJob(argThat(matchesName(JOB_NAME)))).thenReturn(immediateFuture(
         new CreateJobResponse(CreateJobResponse.Status.OK,
                               Collections.<String>emptyList(),
                               "12345")
@@ -223,19 +222,13 @@ public class JobCreateCommandTest {
     assertThat(metadataNode.get("GIT_COMMIT").asText(), equalTo("abcdef1234"));
   }
 
-  private static Job jobWhoseNameIs(final String name) {
-    return argThat(new ArgumentMatcher<Job>() {
+  private CustomTypeSafeMatcher<Job> matchesName(final String name) {
+    return new CustomTypeSafeMatcher<Job>("A Job with name " + name) {
       @Override
-      public boolean matches(Object argument) {
-        if (argument instanceof Job) {
-          final Job job = (Job) argument;
-          if (job.getId().getName().equals(name)) {
-            return true;
-          }
-        }
-        return false;
+      protected boolean matchesSafely(final Job item) {
+        return item.getId().getName().equals(name);
       }
-    });
+    };
   }
 
   /**
