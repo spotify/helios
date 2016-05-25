@@ -20,8 +20,6 @@ package com.spotify.helios.testing;
 import com.spotify.helios.client.HeliosClient;
 
 import java.io.Closeable;
-import java.net.URI;
-import java.util.Set;
 
 /**
  * This class represents a Helios cluster, i.e. master, ZooKeeper, and agent nodes.
@@ -31,11 +29,6 @@ public interface HeliosDeployment extends Closeable {
    * @return A helios client connected to the master(s) of this helios deployment.
    */
   HeliosClient client();
-
-  /**
-   * Returns the host and port information that the deployment is available at.
-   */
-  Set<URI> uris();
 
   /**
    * Undeploy (shut down) this Helios deployment.

@@ -17,7 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.collect.Iterables;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
@@ -27,12 +26,6 @@ import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.net.Socket;
-import java.net.SocketAddress;
-import java.net.SocketTimeoutException;
-import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -61,20 +54,17 @@ public class HeliosDeploymentResource extends ExternalResource {
   public void before() throws Throwable {
     super.before();
 
+    final HeliosClient client = client();
+
     // wait for the helios master to be available
     Polling.awaitUnchecked(30, TimeUnit.SECONDS, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
-        final URI uri = Iterables.getOnlyElement(deployment.uris());
-        final SocketAddress address = new InetSocketAddress(uri.getHost(), uri.getPort());
-        log.debug("attempting to connect to {}", address);
-
         try {
-          final Socket s = new Socket();
-          s.connect(address, 100);
-          log.info("successfully connected to address {} for {}", address, deployment);
+          client.listMasters().get();
+          log.info("successfully connected to helios master");
           return true;
-        } catch (SocketTimeoutException | ConnectException e) {
+        } catch (final Exception e) {
           log.debug("could not yet connect to HeliosDeployment: {}", e.toString());
           return null;
         }
@@ -84,7 +74,6 @@ public class HeliosDeploymentResource extends ExternalResource {
     // Ensure that at least one agent is available and UP in this HeliosDeployment.
     // This prevents continuing with the test when starting up helios-solo before the agent is
     // registered.
-    final HeliosClient client = client();
     Polling.awaitUnchecked(30, TimeUnit.SECONDS, new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {

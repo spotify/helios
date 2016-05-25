@@ -240,11 +240,6 @@ class HeliosSoloDeployment implements HeliosDeployment {
     return dockerHost;
   }
 
-  @Override
-  public Set<URI> uris() {
-    return deploymentAddresses;
-  }
-
   private boolean isBoot2Docker(final Info dockerInfo) {
     return dockerInfo.operatingSystem().contains(BOOT2DOCKER_SIGNATURE);
   }
