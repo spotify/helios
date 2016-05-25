@@ -174,12 +174,6 @@ public class TemporaryJobs implements TestRule {
     for (final AssertionError error : errors) {
       log.error(error.getMessage());
     }
-
-    // Don't delete the prefix file if any errors occurred during undeployment, so that we'll
-    // try to undeploy them the next time TemporaryJobs is run.
-    if (errors.isEmpty()) {
-      heliosDeployment.cleanup();
-    }
   }
 
   public TemporaryJobBuilder job() {

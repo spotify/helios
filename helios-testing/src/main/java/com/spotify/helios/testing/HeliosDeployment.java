@@ -38,12 +38,6 @@ public interface HeliosDeployment extends Closeable {
   Set<URI> uris();
 
   /**
-   * Cleanup
-   */
-  // TODO (dxia) Ideally we don't want this. This is only used by ExistingHeliosDeployment.
-  void cleanup();
-
-  /**
    * Undeploy (shut down) this Helios deployment.
    */
   void close();

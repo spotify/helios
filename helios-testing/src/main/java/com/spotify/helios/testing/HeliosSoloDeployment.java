@@ -507,11 +507,6 @@ class HeliosSoloDeployment implements HeliosDeployment {
     return heliosContainerId;
   }
 
-  // TODO (dxia) Ideally we don't need this. Only used by ExistingHeliosDeployment
-  @Override
-  public void cleanup() {
-  }
-
   /**
    * Undeploy (shut down) this HeliosSoloDeployment. This will wait for the helios-solo container
    * to undeploy all its jobs and exit (or forcibly be killed by Docker if it exceeds the timeout).
