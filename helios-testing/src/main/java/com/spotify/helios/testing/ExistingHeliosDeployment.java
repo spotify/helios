@@ -92,11 +92,6 @@ public class ExistingHeliosDeployment implements HeliosDeployment {
     return Collections.emptySet();
   }
 
-  @Override
-  public void cleanup() {
-    jobPrefixFile.delete();
-  }
-
   /**
    * This method will close the associated {@link HeliosClient} if it's a new instance created by
    * this class. Do not call this method if you passed in a HeliosClient and still need to use it.
@@ -110,6 +105,8 @@ public class ExistingHeliosDeployment implements HeliosDeployment {
         log.warn("HeliosClient did not close cleanly: {}", e.toString());
       }
     }
+
+    jobPrefixFile.delete();
   }
 
   public static Builder newBuilder() {
