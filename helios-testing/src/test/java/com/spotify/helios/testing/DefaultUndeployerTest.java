@@ -27,13 +27,14 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
+import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matchers;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatcher;
 
 import java.util.List;
 
+import static java.lang.String.format;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
@@ -65,11 +66,11 @@ public class DefaultUndeployerTest {
         .immediateFuture(new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST2, JOB_ID));
 
     //noinspection unchecked
-    when(client.undeploy(jobIdWithNameAndVersion(JOB_ID), anyString())).thenReturn(
+    when(client.undeploy(argThat(matchesNameAndVersion(JOB_ID)), anyString())).thenReturn(
         undeployFuture1, undeployFuture2);
 
-    when(client.deleteJob(jobIdWithNameAndVersion(JOB_ID))).thenReturn(Futures.immediateFuture(
-        new JobDeleteResponse(JobDeleteResponse.Status.OK)));
+    when(client.deleteJob(argThat(matchesNameAndVersion(JOB_ID)))).thenReturn(
+        Futures.immediateFuture(new JobDeleteResponse(JobDeleteResponse.Status.OK)));
 
     final List<AssertionError> errors = new DefaultUndeployer(client).undeploy(JOB, HOSTS);
 
@@ -84,11 +85,11 @@ public class DefaultUndeployerTest {
         new JobUndeployResponse(JobUndeployResponse.Status.HOST_NOT_FOUND, HOST2, JOB_ID));
 
     //noinspection unchecked
-    when(client.undeploy(jobIdWithNameAndVersion(JOB_ID), anyString())).thenReturn(
+    when(client.undeploy(argThat(matchesNameAndVersion(JOB_ID)), anyString())).thenReturn(
         undeployFuture1, undeployFuture2);
 
-    when(client.deleteJob(jobIdWithNameAndVersion(JOB_ID))).thenReturn(Futures.immediateFuture(
-        new JobDeleteResponse(JobDeleteResponse.Status.OK)));
+    when(client.deleteJob(argThat(matchesNameAndVersion(JOB_ID)))).thenReturn(
+        Futures.immediateFuture(new JobDeleteResponse(JobDeleteResponse.Status.OK)));
 
     final List<AssertionError> errors = new DefaultUndeployer(client).undeploy(JOB, HOSTS);
 
@@ -103,30 +104,25 @@ public class DefaultUndeployerTest {
         new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST2, JOB_ID));
 
     //noinspection unchecked
-    when(client.undeploy(jobIdWithNameAndVersion(JOB_ID), anyString())).thenReturn(
+    when(client.undeploy(argThat(matchesNameAndVersion(JOB_ID)), anyString())).thenReturn(
         undeployFuture1, undeployFuture2);
 
-    when(client.deleteJob(jobIdWithNameAndVersion(JOB_ID))).thenReturn(Futures.immediateFuture(
-        new JobDeleteResponse(JobDeleteResponse.Status.STILL_IN_USE)));
+    when(client.deleteJob(argThat(matchesNameAndVersion(JOB_ID)))).thenReturn(
+        Futures.immediateFuture(new JobDeleteResponse(JobDeleteResponse.Status.STILL_IN_USE)));
 
     final List<AssertionError> errors = new DefaultUndeployer(client).undeploy(JOB, HOSTS);
 
     assertThat(errors.size(), equalTo(1));
   }
 
-  private static JobId jobIdWithNameAndVersion(final JobId jobId) {
-    return argThat(new ArgumentMatcher<JobId>() {
+  private CustomTypeSafeMatcher<JobId> matchesNameAndVersion(final JobId jobId) {
+    return new CustomTypeSafeMatcher<JobId>(
+        format("A JobId with name %s and version %s", jobId.getName(), jobId.getVersion())) {
       @Override
-      public boolean matches(Object argument) {
-        if (argument instanceof JobId) {
-          final JobId arg = (JobId) argument;
-          if (arg.getName().equals(jobId.getName()) &&
-              arg.getVersion().equals(jobId.getVersion())) {
-            return true;
-          }
-        }
-        return false;
+      protected boolean matchesSafely(final JobId item) {
+        return item.getName().equals(jobId.getName()) &&
+               item.getVersion().equals(jobId.getVersion());
       }
-    });
+    };
   }
 }
