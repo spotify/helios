@@ -113,10 +113,8 @@ public final class HealthCheckerFactory {
     }
 
     private static boolean compatibleDockerVersion(final DockerClient docker) {
-      final String executionDriver;
       final String apiVersion;
       try {
-        executionDriver = docker.info().executionDriver();
         apiVersion = docker.version().apiVersion();
       } catch (DockerException e) {
         return false;
@@ -125,9 +123,6 @@ public final class HealthCheckerFactory {
         return false;
       }
 
-      if (Strings.isNullOrEmpty(executionDriver) || !executionDriver.startsWith("native")) {
-        return false;
-      }
       if (Strings.isNullOrEmpty(apiVersion)) {
         return false;
       }

@@ -101,15 +101,4 @@ public class ExecHealthCheckerTest {
     exception.expect(UnsupportedOperationException.class);
     checker.check(CONTAINER_ID);
   }
-
-  @Test
-  public void testNotNativeDriver() throws Exception {
-    final Info info = mock(Info.class);
-    when(info.executionDriver()).thenReturn("lxc");
-    when(docker.info()).thenReturn(info);
-
-    exception.expect(UnsupportedOperationException.class);
-    checker.check(CONTAINER_ID);
-  }
-
 }

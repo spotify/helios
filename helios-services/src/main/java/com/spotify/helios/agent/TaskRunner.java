@@ -189,6 +189,11 @@ class TaskRunner extends InterruptingExecutionThreadService {
                    retryMillis, config, containerId);
           Thread.sleep(retryMillis);
         }
+
+        log.info("healthchecking complete of containerId={} taskConfig={}", containerId, config);
+      } else {
+        log.info("no healthchecks configured for containerId={} taskConfig={}",
+                 containerId, config);
       }
     }
 
