@@ -568,7 +568,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private String heliosUsername;
     private Set<String> env;
     private boolean pullBeforeCreate = true;
-    private boolean removeHeliosSoloContainerOnExit = true;
+    private boolean removeHeliosSoloContainerOnExit = false;
     private int jobUndeployWaitSeconds = DEFAULT_WAIT_SECONDS;
 
     Builder(String profile, Config rootConfig) {
