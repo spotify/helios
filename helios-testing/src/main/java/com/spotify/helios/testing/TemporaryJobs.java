@@ -87,7 +87,6 @@ public class TemporaryJobs implements TestRule {
   private final Deployer deployer;
   private final Undeployer undeployer;
   private final String jobPrefix;
-  private final boolean existingHeliosDeployment;
 
   private final ExecutorService executor = MoreExecutors.getExitingExecutorService(
       (ThreadPoolExecutor) Executors.newFixedThreadPool(
@@ -102,10 +101,8 @@ public class TemporaryJobs implements TestRule {
   TemporaryJobs(final Builder builder, final Config config) {
     if (builder.heliosDeployment != null) {
       this.heliosDeployment = builder.heliosDeployment;
-      this.existingHeliosDeployment = true;
     } else {
       this.heliosDeployment = getOrCreateHeliosSoloDeployment();
-      this.existingHeliosDeployment = false;
     }
     client = checkNotNull(heliosDeployment.client(), "client");
     this.prober = checkNotNull(builder.prober, "prober");
@@ -166,32 +163,22 @@ public class TemporaryJobs implements TestRule {
 
     final List<AssertionError> errors = new ArrayList<>();
 
-    if (existingHeliosDeployment) {
-      for (final TemporaryJob job : jobs) {
-        // Undeploying a job doesn't guarantee the container will be stopped immediately.
-        // Luckily TaskRunner tells docker to wait 120 seconds after stopping to kill the container.
-        // So containers that don't immediately stop **should** only stay around for at most 120
-        // seconds.
-        // TODO (dxia) `TemporaryJobs` doesn't need to clean up jobs in the helios-solo container
-        // because the container's `start.sh` already has this logic. But SimpleTest creates an
-        // in-memory Helios cluster and assumes jobs are undeployed when this method is called.
-        // So we should update those tests that use TemporaryJobs and start helios-solo and then
-        // simply ignore it. Once that happens, we can delete this line and remove all Undeployer
-        // references in this class.
-        errors.addAll(undeploy(job.job(), job.hosts()));
-      }
+    for (final TemporaryJob job : jobs) {
+      // Undeploying a job doesn't guarantee the container will be stopped immediately.
+      // Luckily TaskRunner tells docker to wait 120 seconds after stopping to kill the container.
+      // So containers that don't immediately stop **should** only stay around for at most 120
+      // seconds.
+      errors.addAll(undeploy(job.job(), job.hosts()));
+    }
 
-      for (final AssertionError error : errors) {
-        log.error(error.getMessage());
-      }
+    for (final AssertionError error : errors) {
+      log.error(error.getMessage());
+    }
 
-      // Don't delete the prefix file if any errors occurred during undeployment, so that we'll
-      // try to undeploy them the next time TemporaryJobs is run.
-      if (errors.isEmpty()) {
-        heliosDeployment.cleanup();
-      }
-
-      heliosDeployment.close();
+    // Don't delete the prefix file if any errors occurred during undeployment, so that we'll
+    // try to undeploy them the next time TemporaryJobs is run.
+    if (errors.isEmpty()) {
+      heliosDeployment.cleanup();
     }
   }
 
