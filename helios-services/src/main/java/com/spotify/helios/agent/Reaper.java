@@ -21,7 +21,7 @@ import com.google.common.base.Supplier;
 import com.google.common.collect.Lists;
 
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
+import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.Container;
 
 import org.slf4j.Logger;

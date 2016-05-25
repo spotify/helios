@@ -20,9 +20,9 @@ package com.spotify.helios.agent;
 import com.google.common.collect.ImmutableList;
 
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerTimeoutException;
-import com.spotify.docker.client.ImageNotFoundException;
-import com.spotify.docker.client.ImagePullFailedException;
+import com.spotify.docker.client.exceptions.DockerTimeoutException;
+import com.spotify.docker.client.exceptions.ImageNotFoundException;
+import com.spotify.docker.client.exceptions.ImagePullFailedException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerInfo;

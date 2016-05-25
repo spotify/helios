@@ -23,8 +23,8 @@ import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
 
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.LogStream;
+import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerInfo;

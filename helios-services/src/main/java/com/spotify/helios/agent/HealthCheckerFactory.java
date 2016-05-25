@@ -23,9 +23,9 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 
 import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.DockerException;
 import com.spotify.docker.client.DockerHost;
 import com.spotify.docker.client.LogStream;
+import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.helios.common.descriptors.ExecHealthCheck;
 import com.spotify.helios.common.descriptors.HealthCheck;
 import com.spotify.helios.common.descriptors.HttpHealthCheck;
