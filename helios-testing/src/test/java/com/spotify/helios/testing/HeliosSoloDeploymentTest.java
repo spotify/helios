@@ -47,8 +47,6 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
 
-import org.hamcrest.CustomTypeSafeMatcher;
-import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
@@ -62,7 +60,6 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
-import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -225,32 +222,6 @@ public class HeliosSoloDeploymentTest {
     buildHeliosSoloDeployment();
 
     verify(this.dockerClient, never()).pull(HeliosSoloDeployment.PROBE_IMAGE);
-  }
-
-  /**
-   * Test that the probe container is not pulled or otherwise used when DOCKER_HOST is not
-   * localhost.
-   */
-  @Test
-  public void testDoesNotPullProbeImageForNonLocalhostDockerHost() throws Exception {
-    when(this.dockerClient.inspectImage(HeliosSoloDeployment.PROBE_IMAGE))
-        .thenThrow(new ImageNotFoundException("not found"));
-
-    buildHeliosSoloDeployment(DockerHost.from("tcp://10.99.0.1:2375", ""));
-
-    // the probe should not be pulled or created (or started)
-    verify(this.dockerClient, never()).pull(HeliosSoloDeployment.PROBE_IMAGE);
-    verify(dockerClient, never()).createContainer(
-        argThat(forImage(HeliosSoloDeployment.PROBE_IMAGE)), anyString());
-  }
-
-  private Matcher<ContainerConfig> forImage(final String image) {
-    return new CustomTypeSafeMatcher<ContainerConfig>("ContainerConfig for image=" + image) {
-      @Override
-      protected boolean matchesSafely(final ContainerConfig item) {
-        return image.equals(item.image());
-      }
-    };
   }
 
   @Test

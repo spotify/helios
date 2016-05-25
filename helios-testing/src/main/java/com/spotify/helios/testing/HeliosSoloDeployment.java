@@ -157,10 +157,14 @@ public class HeliosSoloDeployment implements HeliosDeployment {
    * be localhost or 127.0.0.1.</p>
    */
   private String determineHeliosHost(final Info dockerInfo) throws HeliosDeploymentException {
+    // note that checkDockerAndGetGateway is intentionally always called even if the return value
+    // is discarded, as it does important checks about the local docker installation
+    final String probeContainerGateway = checkDockerAndGetGateway();
+
     // conditions where the gateway IP address given to a container should be used
     if (dockerHostAddressIsLocalhost() && !isDockerForMac(dockerInfo)) {
       log.info("checking that docker can be reached from within a container");
-      return checkDockerAndGetGateway();
+      return probeContainerGateway;
     }
     // otherwise return the address of the docker host
     return dockerHost.address();
