@@ -176,12 +176,18 @@ class TaskRunner extends InterruptingExecutionThreadService {
             .build().newScheduler();
 
         while (!healthChecker.get().check(containerId)) {
-          // TODO(negz): Why aren't we using getContainerInfo() here?
-          final ContainerState state = docker.inspectContainer(containerId).state();
+          final ContainerState state = getContainerState(containerId);
+          if (state == null) {
+            final String err = "container " + containerId + " was not found during health "
+                + "checking, or has no State object";
+            log.warn(err);
+            throw new RuntimeException(err);
+          }
           if (!state.running()) {
-            log.warn("container exited during health checking: {}: {}: {}",
-                     config, containerId, state.exitCode());
-            throw new RuntimeException("container exited during health checking");
+            final String err = "container " + containerId + " exited during health checking. "
+                + "Exit code: " + state.exitCode() + ", Config: " + config;
+            log.warn(err);
+            throw new RuntimeException(err);
           }
 
           final long retryMillis = retryScheduler.nextMillis();
@@ -266,6 +272,15 @@ class TaskRunner extends InterruptingExecutionThreadService {
     } catch (ContainerNotFoundException e) {
       return null;
     }
+  }
+
+  private ContainerState getContainerState(final String existingContainerId)
+    throws DockerException, InterruptedException {
+    final ContainerInfo info = getContainerInfo(existingContainerId);
+    if (info == null) {
+      return null;
+    }
+    return info.state();
   }
 
   private void pullImage(final String image) throws DockerException, InterruptedException {
