@@ -180,7 +180,7 @@ public class TemporaryJob {
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       fail(format("Failed to create job %s %s - %s", job.getId(), job.toString(), e));
     } finally {
-      createJob.finish();;
+      createJob.finish();
     }
 
     final TemporaryJobReports.Step deployJob = reportWriter.step("deploy job")
@@ -242,7 +242,7 @@ public class TemporaryJob {
                   getJobDescription(job), errors.get(0)));
     }
   }
-  
+
   private void awaitUp(final String host) throws TimeoutException {
     final TemporaryJobReports.Step startContainer = reportWriter.step("start container")
         .tag("jobId", job.getId())
