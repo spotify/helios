@@ -27,11 +27,6 @@ import java.util.Map;
 
 public class DeploymentGroupEventFactory {
 
-  public enum RollingUpdateReason {
-    MANUAL,
-    HOSTS_CHANGED
-  }
-
   private Map<String, Object> createEvent(final String eventType,
                                           final DeploymentGroup deploymentGroup) {
     final Map<String, Object> ev = Maps.newHashMap();
@@ -76,10 +71,9 @@ public class DeploymentGroupEventFactory {
     return addTaskFields(ev, task);
   }
 
-  public Map<String, Object> rollingUpdateStarted(final DeploymentGroup deploymentGroup,
-                                                  final RollingUpdateReason reason) {
+  public Map<String, Object> rollingUpdateStarted(final DeploymentGroup deploymentGroup) {
     final Map<String, Object> ev = createEvent("rollingUpdateStarted", deploymentGroup);
-    ev.put("reason", reason);
+    ev.put("reason", deploymentGroup.getRollingUpdateReason());
     return ev;
   }
 

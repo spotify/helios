@@ -49,6 +49,7 @@ import java.util.List;
 import java.util.Map;
 
 import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
@@ -103,8 +104,13 @@ public class RollingUpdateCommandTest {
       final DeploymentGroupStatusResponse.Status status, final JobId jobId, final String error,
       DeploymentGroupStatusResponse.HostStatus... args) {
     return new DeploymentGroupStatusResponse(
-        new DeploymentGroup(GROUP_NAME, Collections.<HostSelector>emptyList(), jobId,
-                            RolloutOptions.newBuilder().build()),
+        DeploymentGroup.newBuilder()
+            .setName(GROUP_NAME)
+            .setHostSelectors(Collections.<HostSelector>emptyList())
+            .setJobId(jobId)
+            .setRolloutOptions(RolloutOptions.newBuilder().build())
+            .setRollingUpdateReason(MANUAL)
+            .build(),
         status, error, Arrays.asList(args), null);
   }
 

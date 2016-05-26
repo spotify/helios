@@ -24,7 +24,6 @@ import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
 import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
 import com.spotify.helios.common.descriptors.RolloutTask;
-import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
@@ -58,7 +57,6 @@ public class RollingUpdateOpFactory {
   }
 
   public RollingUpdateOp start(final DeploymentGroup deploymentGroup,
-                               final RollingUpdateReason reason,
                                final ZooKeeperClient client) throws KeeperException {
     client.ensurePath(Paths.statusDeploymentGroupTasks());
 
@@ -66,7 +64,7 @@ public class RollingUpdateOpFactory {
     final List<Map<String, Object>> events = Lists.newArrayList();
 
     final List<RolloutTask> rolloutTasks = tasks.getRolloutTasks();
-    events.add(eventFactory.rollingUpdateStarted(deploymentGroup, reason));
+    events.add(eventFactory.rollingUpdateStarted(deploymentGroup));
 
     final Stat tasksStat = client.exists(
         Paths.statusDeploymentGroupTasks(deploymentGroup.getName()));

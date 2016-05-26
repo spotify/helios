@@ -54,7 +54,6 @@ import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.rollingupdate.DefaultRolloutPlanner;
 import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory;
-import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason;
 import com.spotify.helios.rollingupdate.RollingUpdateError;
 import com.spotify.helios.rollingupdate.RollingUpdateOp;
 import com.spotify.helios.rollingupdate.RollingUpdateOpFactory;
@@ -92,12 +91,12 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.google.common.collect.Lists.reverse;
+import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.HOSTS_CHANGED;
+import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason.HOSTS_CHANGED;
-import static com.spotify.helios.rollingupdate.DeploymentGroupEventFactory.RollingUpdateReason.MANUAL;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.check;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.create;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.delete;
@@ -433,6 +432,28 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  private boolean updateOnHostChange(final DeploymentGroup group)
+      throws DeploymentGroupDoesNotExistException {
+    final DeploymentGroupStatus status = getDeploymentGroupStatus(group.getName());
+    if (status == null) {
+      // We're in an unknown state. Go hog wild.
+      return true;
+    }
+
+    if (group.getRollingUpdateReason() == null) {
+      // The last rolling update didn't fail, so there's no reason to expect this one will.
+      return status.getState() != FAILED;
+    }
+
+    if (group.getRollingUpdateReason() == HOSTS_CHANGED && status.getState() == FAILED) {
+      // The last rolling update failed, but it was triggered by hosts changing. Try again.
+      return true;
+    }
+
+    // The last rolling update didn't fail, so there's no reason to expect this one will.
+    return status.getState() != FAILED;
+  }
+
   @Override
   public void updateDeploymentGroupHosts(final String groupName, final List<String> hosts)
       throws DeploymentGroupDoesNotExistException {
@@ -459,14 +480,21 @@ public class ZooKeeperMasterModel implements MasterModel {
         final List<ZooKeeperOperation> ops = Lists.newArrayList();
         ops.add(set(Paths.statusDeploymentGroupHosts(groupName), Json.asBytes(hosts)));
 
-        final DeploymentGroup deploymentGroup = getDeploymentGroup(groupName);
+        DeploymentGroup deploymentGroup = getDeploymentGroup(groupName);
         ImmutableList<Map<String, Object>> events = ImmutableList.of();
 
         if (deploymentGroup.getJobId() != null) {
-          final DeploymentGroupStatus deploymentGroupStatus = getDeploymentGroupStatus(groupName);
-          if (deploymentGroupStatus == null || deploymentGroupStatus.getState() != FAILED) {
-            final RollingUpdateOp op =
-                getInitRollingUpdateOps(deploymentGroup, hosts, HOSTS_CHANGED, client);
+          if (updateOnHostChange(deploymentGroup)) {
+            deploymentGroup = deploymentGroup.toBuilder()
+                .setRollingUpdateReason(HOSTS_CHANGED)
+                .build();
+            // NOTE: If the DG was removed this set() cause the transaction to fail, because
+            // removing the DG removes this node. It's *important* that there's an operation that
+            // causes the transaction to fail if the DG was removed or we'll end up with
+            // inconsistent state.
+            ops.add(set(Paths.configDeploymentGroup(groupName), deploymentGroup));
+
+            final RollingUpdateOp op = getInitRollingUpdateOps(deploymentGroup, hosts, client);
             ops.addAll(op.operations());
             events = op.events();
           }
@@ -499,6 +527,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     final DeploymentGroup updated = deploymentGroup.toBuilder()
         .setJobId(jobId)
         .setRolloutOptions(options)
+        .setRollingUpdateReason(MANUAL)
         .build();
 
     if (getJob(jobId) == null) {
@@ -511,7 +540,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     operations.add(set(Paths.configDeploymentGroup(updated.getName()), updated));
 
     try {
-      final RollingUpdateOp op = getInitRollingUpdateOps(updated, MANUAL, client);
+      final RollingUpdateOp op = getInitRollingUpdateOps(updated, client);
       operations.addAll(op.operations());
 
       log.info("starting zookeeper transaction for rolling-update on "
@@ -532,16 +561,14 @@ public class ZooKeeperMasterModel implements MasterModel {
   }
 
   private RollingUpdateOp getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
-                                                  final RollingUpdateReason reason,
                                                   final ZooKeeperClient zooKeeperClient)
       throws DeploymentGroupDoesNotExistException, KeeperException {
     final List<String> hosts = getDeploymentGroupHosts(deploymentGroup.getName());
-    return getInitRollingUpdateOps(deploymentGroup, hosts, reason, zooKeeperClient);
+    return getInitRollingUpdateOps(deploymentGroup, hosts, zooKeeperClient);
   }
 
   private RollingUpdateOp getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
                                                   final List<String> hosts,
-                                                  final RollingUpdateReason reason,
                                                   final ZooKeeperClient zooKeeperClient)
       throws KeeperException {
     final Map<String, HostStatus> hostsAndStatuses = Maps.newLinkedHashMap();
@@ -559,7 +586,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
         tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
-    return opFactory.start(deploymentGroup, reason, zooKeeperClient);
+    return opFactory.start(deploymentGroup, zooKeeperClient);
   }
 
   private Map<String, VersionedValue<DeploymentGroupTasks>> getDeploymentGroupTasks(
