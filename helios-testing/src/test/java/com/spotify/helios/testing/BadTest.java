@@ -36,12 +36,14 @@ public class BadTest extends TemporaryJobsTestBase {
 
   public static class BadTestImpl {
 
-    @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+    private final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(new TestProber())
         .jobPrefix(testTag)
         .build();
+
+    @Rule
+    public final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
 
     @SuppressWarnings("unused")
     private TemporaryJob job2 = temporaryJobs.job()

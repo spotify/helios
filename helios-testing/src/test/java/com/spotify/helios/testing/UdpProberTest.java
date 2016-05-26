@@ -46,17 +46,17 @@ public class UdpProberTest extends TemporaryJobsTestBase {
 
   public static class UdpProberTestImpl {
 
-    private TemporaryJob job;
-
-    @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+    private final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(new TestProber())
         .build();
 
+    @Rule
+    public final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
+
     @Before
     public void setup() {
-      job = temporaryJobs.job()
+      temporaryJobs.job()
           .image(ALPINE)
           .command(asList("nc", "-p", "4711", "-lu"))
           .port("default", 4711, "udp")
@@ -66,7 +66,7 @@ public class UdpProberTest extends TemporaryJobsTestBase {
     @After
     public void tearDown() {
       // The TemporaryJobs Rule above doesn't undeploy the job for some reason...
-//      temporaryJobs.deployer().undeploy(job.job(), job.hosts());
+      // temporaryJobs.deployer().undeploy(job.job(), job.hosts());
     }
 
     @Test

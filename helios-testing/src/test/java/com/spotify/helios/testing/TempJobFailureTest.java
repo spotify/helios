@@ -39,13 +39,15 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
 
   public static class TempJobFailureTestImpl {
 
-    @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+    private final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .hostFilter(".*")
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(new TestProber())
         .jobPrefix(testTag)
         .build();
+
+    @Rule
+    public final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
 
     @Test
     public void testThatThisFailsQuickly() throws InterruptedException {

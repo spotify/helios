@@ -72,11 +72,13 @@ public class JobWithConfigTest {
   public static class JobWithConfigTestImpl {
 
     // Local is the default profile, so don't specify it explicitly to test default loading
-    @Rule
-    public final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
+    private final TemporaryJobs temporaryJobs = TemporaryJobs.builder()
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .deployer(deployer)
         .build();
+
+    @Rule
+    public final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
 
     @Test
     public void testJobWithConfig() throws Exception {

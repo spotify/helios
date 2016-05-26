@@ -27,6 +27,7 @@ import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobBuilder;
 import com.spotify.helios.testing.TemporaryJobs;
+import com.spotify.helios.testing.TemporaryJobsResource;
 
 import org.junit.Before;
 import org.junit.ClassRule;
@@ -39,8 +40,10 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class HeliosIT {
 
+  private static final TemporaryJobs TEMPORARY_JOBS = TemporaryJobs.create();
+
   @ClassRule
-  public static final TemporaryJobs TEMPORARY_JOBS = TemporaryJobs.create();
+  public static final TemporaryJobsResource RESOURCE = new TemporaryJobsResource(TEMPORARY_JOBS);
 
   private static final String TEST_USER = "HeliosIT";
   private static final String TEST_HOST = "test-host";

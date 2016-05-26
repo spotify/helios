@@ -78,8 +78,7 @@ public class SimpleTest extends TemporaryJobsTestBase {
       }).when(spyClient).close();
     }
 
-    @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+    private final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(spyClient).build())
         .prober(new TestProber())
         .jobDeployedMessageFormat(
@@ -87,6 +86,9 @@ public class SimpleTest extends TemporaryJobsTestBase {
         .jobPrefix(testTag)
         .deployTimeoutMillis(MINUTES.toMillis(3))
         .build();
+
+    @Rule
+    public final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
 
     private TemporaryJob job1;
 

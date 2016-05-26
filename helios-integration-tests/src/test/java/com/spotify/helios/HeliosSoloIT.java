@@ -21,6 +21,7 @@ import com.google.common.net.HostAndPort;
 
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
+import com.spotify.helios.testing.TemporaryJobsResource;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.ClassRule;
@@ -39,11 +40,13 @@ public class HeliosSoloIT {
   @ClassRule
   public static final TemporaryPorts PORTS = TemporaryPorts.create();
 
-  @ClassRule
-  public static final TemporaryJobs JOBS = TemporaryJobs.builder()
+  private static final TemporaryJobs JOBS = TemporaryJobs.builder()
       .deployTimeoutMillis(MINUTES.toMillis(1))
       .hostFilter(".+")
       .build();
+
+  @ClassRule
+  public static final TemporaryJobsResource RESOURCE = new TemporaryJobsResource(JOBS);
 
   @Test
   public void testHttpHealthcheck() {

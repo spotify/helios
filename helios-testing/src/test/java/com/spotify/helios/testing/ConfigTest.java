@@ -73,11 +73,13 @@ public class ConfigTest {
   public static class ProfileTest implements Deployer {
 
     // Local is the default profile, so don't specify it explicitly to test default loading
-    @Rule
-    public final TemporaryJobs temporaryJobs = parameters.builder
+    private final TemporaryJobs temporaryJobs = parameters.builder
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .deployer(this)
         .build();
+
+    @Rule
+    public final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
 
     @Before
     public void setup() {

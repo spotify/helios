@@ -100,12 +100,14 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
 
   public static class JobNamePrefixTestImpl {
 
-    @ClassRule
-    public static final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+    private static final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(new TestProber())
         .jobPrefix(testTag)
         .build();
+
+    @ClassRule
+    public static final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
 
     private final Date expires = new DateTime().plusHours(1).toDate();
 

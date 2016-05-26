@@ -43,7 +43,7 @@ public class ProberTest extends TemporaryJobsTestBase {
       return probed = true;
     }
 
-    public boolean probed() {
+    boolean probed() {
       return probed;
     }
   }
@@ -53,12 +53,14 @@ public class ProberTest extends TemporaryJobsTestBase {
     private MockProber defaultProber = new MockProber();
     private MockProber overrideProber = new MockProber();
 
-    @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+    private final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(defaultProber)
         .jobPrefix(testTag)
         .build();
+
+    @Rule
+    public final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
 
     @Before
     public void setup() {

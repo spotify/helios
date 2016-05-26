@@ -46,12 +46,14 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
 
   public static class TestImpl {
 
-    @ClassRule
-    public static final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+    private static final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .jobPrefix(testTag)
         .deployTimeoutMillis(MINUTES.toMillis(3))
         .build();
+
+    @ClassRule
+    public static final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
 
     @Test
     public void testTcpCheck() throws Exception {
