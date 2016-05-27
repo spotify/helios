@@ -178,7 +178,7 @@ public class HeliosSoloDeploymentTest {
   }
 
   private HeliosDeployment buildHeliosSoloDeployment(final HeliosSoloDeployment.Builder builder,
-                                                         final DockerHost dockerHost) {
+                                                     final DockerHost dockerHost) {
     return builder.dockerClient(dockerClient)
         .dockerHost(dockerHost)
         .soloMasterProber(soloMasterProber)

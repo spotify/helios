@@ -47,25 +47,19 @@ class SoloWatchdogConnector {
    */
   @VisibleForTesting
   void connect(final Socket s, final String host, final int port) throws IOException {
-    try {
-      s.connect(new InetSocketAddress(host, port));
+    s.connect(new InetSocketAddress(host, port));
 
-      // For whatever reason it seems like connections get "connected" even though there's
-      // really nothing on the other end -- to detect this send and recv some data.
-      final DataOutputStream writer = new DataOutputStream(s.getOutputStream());
-      final BufferedReader reader = new BufferedReader(new InputStreamReader(s.getInputStream()));
-      writer.writeBytes("HELO\n");
-      writer.flush();
-      final String line = reader.readLine();
-      if (line.startsWith("HELO")) {
-        log.info("Connected to helios-solo watchdog");
-      } else {
-        throw new IOException("We didn't get back the HELO we sent to the watchdog process.");
-      }
-    } catch (IOException e) {
-      log.debug("Failed to connect to helios-solo watchdog");
-      throw e;
+    // For whatever reason it seems like connections get "connected" even though there's
+    // really nothing on the other end -- to detect this send and recv some data.
+    final DataOutputStream writer = new DataOutputStream(s.getOutputStream());
+    final BufferedReader reader = new BufferedReader(new InputStreamReader(s.getInputStream()));
+    writer.writeBytes("HELO\n");
+    writer.flush();
+    final String line = reader.readLine();
+    if (line.startsWith("HELO")) {
+      log.info("Connected to helios-solo watchdog");
+    } else {
+      throw new IOException("We didn't get back the HELO we sent to the watchdog process.");
     }
-
   }
 }

@@ -40,8 +40,8 @@ class Polling {
     throw new TimeoutException();
   }
 
-  public static <T> T awaitUnchecked(final long timeout, final TimeUnit timeUnit,
-                                     final Callable<T> callable) throws TimeoutException {
+  static <T> T awaitUnchecked(final long timeout, final TimeUnit timeUnit,
+                              final Callable<T> callable) throws TimeoutException {
     try {
       return await(timeout, timeUnit, callable);
     } catch (Throwable e) {

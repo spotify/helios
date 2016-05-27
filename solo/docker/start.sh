@@ -82,7 +82,7 @@ com.spotify.helios.master.MasterMain \
 $HELIOS_MASTER_OPTS \
 &
 
-if [ "$HELIOS_SOLO_SUICIDE" -eq 1 ]; then
+if [[ "$HELIOS_SOLO_SUICIDE" -eq "1" ]]; then
     HELIOS_CLI_CMD="java -cp /*.jar -Xmx128m -Djava.net.preferIPv4Stack=true com.spotify.helios.cli.CliMain -z http://localhost:5801"
 
     python "/watchdog.py"

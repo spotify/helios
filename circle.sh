@@ -1,5 +1,15 @@
 #!/bin/bash -ex
 
+function build_tag_solo() {
+  sudo apt-get install -y jq
+  mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true \
+    -B -V -pl helios-services
+
+  # tag the helios-solo image we just built
+  solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
+  docker tag -f $solo_image spotify/helios-solo:latest
+}
+
 case "$1" in
   pre_machine)
     # ensure correct level of parallelism
@@ -43,13 +53,7 @@ case "$1" in
       0)
         # We need to build the helios-solo image because we use TemporaryJobs in helios-testing
         # tests, and TemporaryJobs uses the helios-solo container.
-        sudo apt-get install -y jq
-        mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true \
-          -B -V -pl helios-services
-
-        # tag the helios-solo image we just built
-        solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
-        docker tag -f $solo_image spotify/helios-solo:latest
+        build_tag_solo
 
         # run all tests *except* helios-system-tests
         sed -i'' 's/<module>helios-system-tests<\/module>//' pom.xml
@@ -86,15 +90,7 @@ case "$1" in
         ;;
 
       5)
-        sudo apt-get install -y jq
-
-        # build images for integration tests
-        mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true \
-          -B -V -pl helios-services
-
-        # tag the helios-solo image we just built
-        solo_image=$(cat helios-services/target/test-classes/solo-image.json | jq -r '.image')
-        docker tag -f $solo_image spotify/helios-solo:latest
+        build_tag_solo
 
         mvn verify -B -pl helios-integration-tests
         ;;

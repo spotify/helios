@@ -20,7 +20,6 @@ package com.spotify.helios.testing;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,12 +60,6 @@ public class UdpProberTest extends TemporaryJobsTestBase {
           .command(asList("nc", "-p", "4711", "-lu"))
           .port("default", 4711, "udp")
           .deploy(testHost1);
-    }
-
-    @After
-    public void tearDown() {
-      // The TemporaryJobs Rule above doesn't undeploy the job for some reason...
-      // temporaryJobs.deployer().undeploy(job.job(), job.hosts());
     }
 
     @Test

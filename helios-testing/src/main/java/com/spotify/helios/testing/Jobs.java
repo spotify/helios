@@ -137,7 +137,7 @@ class Jobs {
       throw new AssertionError(format(
           "Unexpected job state %s for job %s with image %s on host %s. Check helios agent "
           + "logs for details. If you're using HeliosSoloDeployment, set "
-          + "`HeliosSoloDeployment.fromEnv().removeHeliosSoloOnExit(false)` and check the"
+          + "`HeliosSoloDeployment.fromEnv().removeHeliosSoloOnExit(false)` and check the "
           + "logs of the helios-solo container with `docker logs <container ID>`.",
           stateString, job.getId().toShortString(), job.getImage(), host));
     }

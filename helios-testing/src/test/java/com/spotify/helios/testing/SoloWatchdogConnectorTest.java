@@ -25,7 +25,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 
+import static com.spotify.helios.testing.TestMatchers.matchesHostAndPort;
 import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -44,7 +46,7 @@ public class SoloWatchdogConnectorTest {
     when(socket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
 
     new SoloWatchdogConnector().connect(socket, HOST, PORT);
-    verify(socket).connect(Utils.socketWithHostAndPort(HOST, PORT));
+    verify(socket).connect(argThat(matchesHostAndPort(HOST, PORT)));
   }
 
   @Test(expected = IOException.class)
@@ -53,7 +55,7 @@ public class SoloWatchdogConnectorTest {
     doThrow(new IOException()).when(socket).connect(any(InetSocketAddress.class));
 
     new SoloWatchdogConnector().connect(socket, HOST, PORT);
-    verify(socket).connect(Utils.socketWithHostAndPort(HOST, PORT));
+    verify(socket).connect(argThat(matchesHostAndPort(HOST, PORT)));
   }
 
   @Test(expected = IOException.class)
@@ -64,6 +66,6 @@ public class SoloWatchdogConnectorTest {
     when(socket.getOutputStream()).thenReturn(new ByteArrayOutputStream());
 
     new SoloWatchdogConnector().connect(socket, HOST, PORT);
-    verify(socket).connect(Utils.socketWithHostAndPort(HOST, PORT));
+    verify(socket).connect(argThat(matchesHostAndPort(HOST, PORT)));
   }
 }

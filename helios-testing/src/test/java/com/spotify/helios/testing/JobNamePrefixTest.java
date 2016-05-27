@@ -107,7 +107,7 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
         .build();
 
     @ClassRule
-    public static final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
+    public static final TemporaryJobsResource RESOURCE = new TemporaryJobsResource(temporaryJobs);
 
     private final Date expires = new DateTime().plusHours(1).toDate();
 

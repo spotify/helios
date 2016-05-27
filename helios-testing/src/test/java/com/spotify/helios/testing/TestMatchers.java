@@ -18,27 +18,23 @@
 package com.spotify.helios.testing;
 
 
-import org.mockito.ArgumentMatcher;
+import org.hamcrest.CustomTypeSafeMatcher;
 
 import java.net.InetSocketAddress;
 
-import static org.mockito.Matchers.argThat;
+import static java.lang.String.format;
 
 
-class Utils {
+class TestMatchers {
 
-  static InetSocketAddress socketWithHostAndPort(final String host, final int port) {
-    return argThat(new ArgumentMatcher<InetSocketAddress>() {
+  static CustomTypeSafeMatcher<InetSocketAddress> matchesHostAndPort(final String host,
+                                                                      final int port) {
+    return new CustomTypeSafeMatcher<InetSocketAddress>(
+        format("An InetSocketAddress with host %s and port %d", host, port)) {
       @Override
-      public boolean matches(Object argument) {
-        if (argument instanceof InetSocketAddress) {
-          final InetSocketAddress inetAddr = (InetSocketAddress) argument;
-          if (inetAddr.getHostString().equals(host) && inetAddr.getPort() == port) {
-            return true;
-          }
-        }
-        return false;
+      protected boolean matchesSafely(final InetSocketAddress inetAddr) {
+        return inetAddr.getHostString().equals(host) && inetAddr.getPort() == port;
       }
-    });
+    };
   }
 }

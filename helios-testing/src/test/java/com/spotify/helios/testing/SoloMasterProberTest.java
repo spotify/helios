@@ -17,7 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.Test;
 
 import java.net.ConnectException;
@@ -26,7 +25,7 @@ import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.net.URI;
 
-import static java.lang.String.format;
+import static com.spotify.helios.testing.TestMatchers.matchesHostAndPort;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -69,16 +68,5 @@ public class SoloMasterProberTest {
     final Boolean check = new SoloMasterProber().check(MASTER_URI, socket);
     verify(socket).connect(argThat(matchesHostAndPort(HOST, PORT)), anyInt());
     assertThat(check, equalTo(null));
-  }
-
-  private CustomTypeSafeMatcher<InetSocketAddress> matchesHostAndPort(final String host,
-                                                                      final int port) {
-    return new CustomTypeSafeMatcher<InetSocketAddress>(
-        format("An InetSocketAddress with host %s and port %d", host, port)) {
-      @Override
-      protected boolean matchesSafely(final InetSocketAddress inetAddr) {
-        return inetAddr.getHostString().equals(host) && inetAddr.getPort() == port;
-      }
-    };
   }
 }

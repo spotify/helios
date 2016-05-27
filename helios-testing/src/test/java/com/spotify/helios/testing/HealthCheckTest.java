@@ -53,7 +53,7 @@ public class HealthCheckTest extends TemporaryJobsTestBase {
         .build();
 
     @ClassRule
-    public static final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
+    public static final TemporaryJobsResource RESOURCE = new TemporaryJobsResource(temporaryJobs);
 
     @Test
     public void testTcpCheck() throws Exception {

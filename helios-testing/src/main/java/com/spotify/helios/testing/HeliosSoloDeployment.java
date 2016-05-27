@@ -87,7 +87,7 @@ class HeliosSoloDeployment implements HeliosDeployment {
   static final int HELIOS_MASTER_PORT = 5801;
   static final int HELIOS_SOLO_WATCHDOG_PORT = 33333;
 
-  private static volatile HeliosDeployment singletonSoloDeployment;
+  private static volatile HeliosSoloDeployment singletonSoloDeployment;
 
   private final DockerClient dockerClient;
   /** The DockerHost we use to communicate with docker */
@@ -180,6 +180,7 @@ class HeliosSoloDeployment implements HeliosDeployment {
                                              final SoloWatchdogConnector connector) {
     final Socket socket;
 
+    log.info("Connecting to helios-solo watchdog at {}:{}", host, port);
     try {
       socket = Polling.awaitUnchecked(timeout, timeUnit, new Callable<Socket>() {
         @Override
@@ -189,6 +190,7 @@ class HeliosSoloDeployment implements HeliosDeployment {
             connector.connect(socket, host, port);
             return socket;
           } catch (IOException e) {
+            log.debug("Failed to connect to helios-solo watchdog");
             return null;
           }
         }
@@ -197,7 +199,6 @@ class HeliosSoloDeployment implements HeliosDeployment {
       throw Throwables.propagate(e);
     }
 
-    log.info("Connecting to helios-solo watchdog at {}:{}", host, port);
     return socket;
   }
 
@@ -628,7 +629,7 @@ class HeliosSoloDeployment implements HeliosDeployment {
    *
    * The returned helios-solo deployment is shared by all invokes in the same process.
    */
-  static synchronized HeliosDeployment singletonHeliosSoloDeployment() {
+  static synchronized HeliosSoloDeployment singletonHeliosSoloDeployment() {
     if (singletonSoloDeployment == null) {
       // TODO (dxia) remove checkForNewImages(). Set here to prevent using
       // spotify/helios-solo:latest from docker hub
@@ -821,7 +822,7 @@ class HeliosSoloDeployment implements HeliosDeployment {
      *
      * @return A HeliosSoloDeployment configured by this Builder.
      */
-    public HeliosDeployment build() {
+    public HeliosSoloDeployment build() {
       this.env = ImmutableSet.copyOf(this.env);
       return new HeliosSoloDeployment(this);
     }

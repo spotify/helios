@@ -50,6 +50,7 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import static com.spotify.helios.testing.HeliosSoloDeployment.singletonHeliosSoloDeployment;
 import static java.lang.Integer.toHexString;
 import static java.util.concurrent.TimeUnit.MINUTES;
 
@@ -62,7 +63,6 @@ public class TemporaryJobs implements Closeable {
   private static final Prober DEFAULT_PROBER = new DefaultProber();
   private static final long DEFAULT_DEPLOY_TIMEOUT_MILLIS = MINUTES.toMillis(10);
 
-  private final HeliosDeployment heliosDeployment;
   private final HeliosClient client;
   private final Prober prober;
   private final String defaultHostFilter;
@@ -73,12 +73,10 @@ public class TemporaryJobs implements Closeable {
   private final Undeployer undeployer;
   private final String jobPrefix;
 
-  TemporaryJobs(final Builder builder, final Config config) {
-    if (builder.heliosDeployment != null) {
-      this.heliosDeployment = builder.heliosDeployment;
-    } else {
-      this.heliosDeployment = HeliosSoloDeployment.singletonHeliosSoloDeployment();
-    }
+  private TemporaryJobs(final Builder builder, final Config config) {
+    final HeliosDeployment heliosDeployment = builder.heliosDeployment == null ?
+                                              singletonHeliosSoloDeployment() :
+                                              builder.heliosDeployment;
     client = checkNotNull(heliosDeployment.client(), "client");
     this.prober = checkNotNull(builder.prober, "prober");
     this.defaultHostFilter = checkNotNull(builder.hostFilter, "hostFilter");
