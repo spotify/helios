@@ -73,13 +73,11 @@ public class TemporaryJobs implements Closeable {
   private final Undeployer undeployer;
   private final String jobPrefix;
 
-  private static volatile HeliosDeployment soloDeployment;
-
   TemporaryJobs(final Builder builder, final Config config) {
     if (builder.heliosDeployment != null) {
       this.heliosDeployment = builder.heliosDeployment;
     } else {
-      this.heliosDeployment = getOrCreateHeliosSoloDeployment();
+      this.heliosDeployment = HeliosSoloDeployment.singletonHeliosSoloDeployment();
     }
     client = checkNotNull(heliosDeployment.client(), "client");
     this.prober = checkNotNull(builder.prober, "prober");
@@ -99,18 +97,6 @@ public class TemporaryJobs implements Closeable {
         .withValue("prefix", ConfigValueFactory.fromAnyRef(jobPrefix));
 
     this.config = config.withFallback(configWithPrefix).resolve();
-  }
-
-  private static synchronized HeliosDeployment getOrCreateHeliosSoloDeployment() {
-    if (soloDeployment == null) {
-      // TODO (dxia) remove checkForNewImages(). Set here to prevent using
-      // spotify/helios-solo:latest from docker hub
-      soloDeployment = HeliosSoloDeployment.fromEnv()
-        .checkForNewImages(false)
-        .build();
-    }
-
-    return soloDeployment;
   }
 
   public TemporaryJobBuilder job() {

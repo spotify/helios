@@ -87,6 +87,8 @@ class HeliosSoloDeployment implements HeliosDeployment {
   static final int HELIOS_MASTER_PORT = 5801;
   static final int HELIOS_SOLO_WATCHDOG_PORT = 33333;
 
+  private static volatile HeliosDeployment singletonSoloDeployment;
+
   private final DockerClient dockerClient;
   /** The DockerHost we use to communicate with docker */
   private final DockerHost dockerHost;
@@ -619,6 +621,23 @@ class HeliosSoloDeployment implements HeliosDeployment {
            ", soloMasterProber=" + soloMasterProber +
            ", soloAgentProber=" + soloAgentProber +
            '}';
+  }
+
+  /**
+   * Get (or create, if it hasn't already been created) a shared helios-solo deployment.
+   *
+   * The returned helios-solo deployment is shared by all invokes in the same process.
+   */
+  static synchronized HeliosDeployment singletonHeliosSoloDeployment() {
+    if (singletonSoloDeployment == null) {
+      // TODO (dxia) remove checkForNewImages(). Set here to prevent using
+      // spotify/helios-solo:latest from docker hub
+      singletonSoloDeployment = HeliosSoloDeployment.fromEnv()
+        .checkForNewImages(false)
+        .build();
+    }
+
+    return singletonSoloDeployment;
   }
 
   static class Builder {
