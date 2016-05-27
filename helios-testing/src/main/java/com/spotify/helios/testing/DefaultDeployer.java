@@ -72,8 +72,6 @@ class DefaultDeployer implements Deployer {
   private final long deployTimeoutMillis;
   private final Undeployer undeployer;
 
-  private boolean readyToDeploy;
-
   DefaultDeployer(final HeliosClient client,
                   final List<TemporaryJob> jobs,
                   final HostPickingStrategy hostPicker,
@@ -143,11 +141,6 @@ class DefaultDeployer implements Deployer {
   @Override
   public TemporaryJob deploy(final Job job, final List<String> hosts, final Set<String> waitPorts,
                              final Prober prober) {
-    if (!readyToDeploy) {
-      fail("deploy() must be called in a @Before or in the test method, or perhaps you forgot"
-           + " to put @Rule before TemporaryJobs");
-    }
-
     if (hosts.isEmpty()) {
       fail("at least one host must be explicitly specified, or deploy() must be called with " +
            "no arguments to automatically select a host");
@@ -157,11 +150,6 @@ class DefaultDeployer implements Deployer {
     final TemporaryJob temporaryJob = doDeploy(job, hosts, waitPorts, prober);
     jobs.add(temporaryJob);
     return temporaryJob;
-  }
-
-  @Override
-  public void readyToDeploy() {
-    readyToDeploy = true;
   }
 
   private TemporaryJob doDeploy(final Job job, final List<String> hosts,

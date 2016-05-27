@@ -68,16 +68,6 @@ public class TemporaryJobsResource implements TestRule {
   }
 
   /**
-   * Perform setup. This is normally called by JUnit when TemporaryJobs is used with @Rule.
-   * If @Rule cannot be used, call this method before calling {@link TemporaryJobs#job()}.
-   *
-   * Note: When not being used as a @Rule, jobs will not be monitored during test runs.
-   */
-  public void before() {
-    temporaryJobs.deployer().readyToDeploy();
-  }
-
-  /**
    * Perform teardown. This is normally called by JUnit when TemporaryJobs is used with @Rule.
    * If @Rule cannot be used, call this method after running tests.
    */
@@ -100,7 +90,6 @@ public class TemporaryJobsResource implements TestRule {
     return new Statement() {
       @Override
       public void evaluate() throws Throwable {
-        before();
         try {
           perform(base);
         } finally {

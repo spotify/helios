@@ -110,10 +110,6 @@ public class ConfigTest {
       parameters.validate(job, temporaryJobs.jobPrefix());
       return null;
     }
-
-    @Override
-    public void readyToDeploy() {
-    }
   }
 
   @Test
