@@ -63,6 +63,8 @@ else
 	echo
 
 	set +e
+	echo 'Fetching list of available versions...'
+	echo
 	versions=$(curl -sSL https://index.docker.io/v1/repositories/$REPO/tags \
 		| jq  --raw-output '.[].name')
 	versions_ok=$?
