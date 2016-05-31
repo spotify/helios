@@ -1,7 +1,7 @@
 #!/bin/bash
 if ! docker inspect helios-solo-container &> /dev/null; then
-	echo 'helios-solo not running'
-	exit 1
+  echo 'helios-solo not running'
+  exit 1
 fi
 
 docker kill helios-solo-container > /dev/null
