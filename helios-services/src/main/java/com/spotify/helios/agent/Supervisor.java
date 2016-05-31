@@ -346,12 +346,13 @@ public class Supervisor {
         return;
       }
 
+      statusUpdater.setState(STOPPING);
+      statusUpdater.update();
+
       final Integer gracePeriod = job.getGracePeriod();
       if (gracePeriod != null && gracePeriod > 0) {
         log.info("Unregistering from service discovery for {} seconds before stopping",
                  gracePeriod);
-        statusUpdater.setState(STOPPING);
-        statusUpdater.update();
 
         if (runner.unregister()) {
           log.info("Unregistered. Now sleeping for {} seconds.", gracePeriod);

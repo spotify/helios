@@ -101,7 +101,10 @@ public class JobHistoryTest extends SystemTestBase {
     assertEquals(State.RUNNING, event3.getStatus().getState());
 
     final TaskStatusEvent event4 = eventsList.get(n + 3);
-    final State finalState = event4.getStatus().getState();
+    assertEquals(State.STOPPING, event4.getStatus().getState());
+
+    final TaskStatusEvent event5 = eventsList.get(n + 4);
+    final State finalState = event5.getStatus().getState();
     assertTrue(finalState == State.EXITED || finalState == State.STOPPED);
   }
 }
