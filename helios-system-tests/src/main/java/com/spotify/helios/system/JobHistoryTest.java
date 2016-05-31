@@ -25,17 +25,19 @@ import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.common.protocol.TaskStatusEvents;
 
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
 import org.junit.Test;
 
-import java.util.List;
+import java.util.Arrays;
+import java.util.ListIterator;
 import java.util.concurrent.Callable;
 
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 
 public class JobHistoryTest extends SystemTestBase {
   @Test
@@ -78,33 +80,54 @@ public class JobHistoryTest extends SystemTestBase {
         return events;
       }
     });
-    final List<TaskStatusEvent> eventsList = events.getEvents();
-    int n = 0;
+    final ListIterator<TaskStatusEvent> it = events.getEvents().listIterator();
 
     while (true) {
-      final TaskStatusEvent event = eventsList.get(n);
+      final TaskStatusEvent event = it.next();
       if (event.getStatus().getState() != State.PULLING_IMAGE) {
+        //rewind so that this event is the one returned by the next call to it.next() below
+        it.previous();
         break;
       }
-      assertNull(event.getStatus().getContainerId());
-      n++;
+      assertThat(event, not(hasContainerId()));
     }
-    final TaskStatusEvent event1 = eventsList.get(n);
-    assertEquals(State.CREATING, event1.getStatus().getState());
-    assertNull(event1.getStatus().getContainerId());
 
-    final TaskStatusEvent event2 = eventsList.get(n + 1);
-    assertEquals(State.STARTING, event2.getStatus().getState());
-    assertNotNull(event2.getStatus().getContainerId());
+    assertThat(it.next(), allOf(hasState(State.CREATING), not(hasContainerId())));
 
-    final TaskStatusEvent event3 = eventsList.get(n + 2);
-    assertEquals(State.RUNNING, event3.getStatus().getState());
+    assertThat(it.next(), allOf(hasState(State.STARTING), hasContainerId()));
 
-    final TaskStatusEvent event4 = eventsList.get(n + 3);
-    assertEquals(State.STOPPING, event4.getStatus().getState());
+    assertThat(it.next(), hasState(State.RUNNING));
 
-    final TaskStatusEvent event5 = eventsList.get(n + 4);
-    final State finalState = event5.getStatus().getState();
-    assertTrue(finalState == State.EXITED || finalState == State.STOPPED);
+    assertThat(it.next(), hasState(State.STOPPING));
+
+    assertThat(it.next(), hasState(State.EXITED, State.STOPPED));
   }
+
+  private static Matcher<TaskStatusEvent> hasState(final State... possibleStates) {
+    final String description =
+        "TaskStatusEvent with status.state in " + Arrays.toString(possibleStates);
+
+    return new CustomTypeSafeMatcher<TaskStatusEvent>(description) {
+      @Override
+      protected boolean matchesSafely(final TaskStatusEvent event) {
+        final State actual = event.getStatus().getState();
+        for (final State state : possibleStates) {
+          if (state == actual) {
+            return true;
+          }
+        }
+        return false;
+      }
+    };
+  }
+
+  private static Matcher<TaskStatusEvent> hasContainerId() {
+    return new CustomTypeSafeMatcher<TaskStatusEvent>("a non-null status.containerId") {
+      @Override
+      protected boolean matchesSafely(final TaskStatusEvent item) {
+        return item.getStatus().getContainerId() != null;
+      }
+    };
+  }
+
 }
