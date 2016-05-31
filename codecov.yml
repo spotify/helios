@@ -2,14 +2,14 @@ comment:
   layout: header, changes, diff
 
 coverage: 
-status:
-  # set a github PR status for overall project coverage with an automatically
-  # calculated coverage target
-  project:
-    default:
-      target: auto
-        #
-  # patch coverage doesn't seem very helpfu
-  patch:
-    default:
-      enabled: false
+  status:
+    # set a github PR status for overall project coverage with an automatically
+    # calculated coverage target
+    project:
+      default:
+        target: auto
+          #
+    # patch coverage doesn't seem very helpfu
+    patch:
+      default:
+        enabled: false
