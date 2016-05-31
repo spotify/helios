@@ -1,7 +1,11 @@
 #!/bin/bash
 
 if [ "x$DOCKER_HOST" == "x" ]; then
-	if [ "$(uname -s)" == "Linux" ]; then
+	# On Linux, assume DOCKER_HOST is the unix socket. On other platforms, if an
+	# arbitrary `docker` CLI command can be run, then we can also assume that the
+	# daemon is listening on the unix socket (or else the docker CLI would not
+	# work)
+	if [ "$(uname -s)" == "Linux" ] || docker info >/dev/null 2>&1; then
 		DOCKER_HOST=unix:///var/run/docker.sock
 		echo export DOCKER_HOST=$DOCKER_HOST
 	else
