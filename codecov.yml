@@ -8,8 +8,8 @@ coverage:
     project:
       default:
         target: auto
-          #
-    # patch coverage doesn't seem very helpfu
+
+    # patch coverage doesn't seem very helpful
     patch:
       default:
         enabled: false
