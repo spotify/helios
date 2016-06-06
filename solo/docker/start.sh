@@ -12,11 +12,11 @@ SKYDNS_PATH=$(echo $HELIOS_NAME|python -c "import sys;h=sys.stdin.read().strip()
 
 # Write skydns configuration and retry for 30 seconds until successful
 for i in {1..30}; do
-	if curl --retry 30 -XPUT http://127.0.0.1:4001/v2/keys/skydns/config \
-		-d value="{\"dns_addr\":\"0.0.0.0:5353\", \"ttl\":3600, \"nameservers\": $NAMESERVERS, \"domain\":\"local.\"}"; then
-		break
-	fi
-	sleep 1
+  if curl --retry 30 -XPUT http://127.0.0.1:4001/v2/keys/skydns/config \
+    -d value="{\"dns_addr\":\"0.0.0.0:5353\", \"ttl\":3600, \"nameservers\": $NAMESERVERS, \"domain\":\"local.\"}"; then
+    break
+  fi
+  sleep 1
 done
 
 # Create A record for the solo host
@@ -53,7 +53,7 @@ $HELIOS_AGENT_OPTS \
 # Start master
 mkdir -p /master
 if [ -n "$LOGSTASH_DESTINATION" ]; then
-	cat > /master/logback-access.xml <<- EOF
+  cat > /master/logback-access.xml <<- EOF
 <configuration>
   <appender name="stash" class="net.logstash.logback.appender.LogstashAccessTcpSocketAppender">
     <destination>${LOGSTASH_DESTINATION}</destination>
