@@ -378,6 +378,7 @@ public class TemporaryJob {
         .put("version", job.getId().getVersion())
         .put("hash", job.getId().getHash())
         .put("job", job.toString())
+        .put("image", job.getImage())
         .put("containerId", containerId)
         .build()
         );

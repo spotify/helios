@@ -1,10 +1,14 @@
-Reviewed by [rculbertson](https://github.com/rculbertson) on 2014-08-19
+# Helios Testing Framework
 
-***
+The Helios testing framework lets you deploy multiple services as docker
+containers, and run automated tests against them. The tests can be run locally
+or as part of an automated build. You can use the containers available in the
+Docker Registry, as well as containers built on your local machine.
 
-The Helios testing framework lets you deploy multiple services as docker containers, and run automated tests against them. The tests can be run locally or as part of an automated build. You can use the containers available in the Docker Registry, as well as containers built on your local machine.
-
-The framework integrates with standard JUnit tests, and provides a JUnit rule called `TemporaryJobs`. This rule is the starting point for using the framework, and is used to define helios jobs, deploy them, and automatically undeploy them when the tests have completed.
+The framework integrates with standard JUnit tests, and provides a JUnit rule
+called `TemporaryJobs`. This rule is the starting point for using the
+framework, and is used to define helios jobs, deploy them, and automatically
+undeploy them when the tests have completed.
 
 * [Instructions](#instructions)
 * [Environment Configuration](#environment-configuration)
@@ -14,10 +18,17 @@ The framework integrates with standard JUnit tests, and provides a JUnit rule ca
 
 # Instructions
 
-1. Make sure running `mvn package` builds your service into a docker container. You can do this with the [docker-maven-plugin](https://github.com/spotify/docker-maven-plugin), by binding the build goal to the package lifecycle phase. When we run `mvn verify` we'll want to build the image first, and binding to the package phase lets us do that.  
+1. Make sure running `mvn package` builds your service into a docker container.
+   You can do this with the
+   [docker-maven-plugin](https://github.com/spotify/docker-maven-plugin), by
+   binding the build goal to the package lifecycle phase. When we run `mvn
+   verify` we'll want to build the image first, and binding to the package
+   phase lets us do that.  
 
-2. Add helios-testing to your pom.xml in the <dependencies> element. Use the latest version if a newer one is available.
-    ```
+2. Add helios-testing to your pom.xml in the <dependencies> element. Use the
+   latest version if a newer one is available.
+
+    ```xml
     <dependency>
         <groupId>com.spotify</groupId>
         <artifactId>helios-testing</artifactId>
@@ -25,8 +36,10 @@ The framework integrates with standard JUnit tests, and provides a JUnit rule ca
         <scope>test</scope>
     </dependency>
     ```
+
 3. Add the failsafe plugin to your pom.xml within the <build><plugins> element.
-    ```
+
+    ```xml
     <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
@@ -42,11 +55,14 @@ The framework integrates with standard JUnit tests, and provides a JUnit rule ca
     </plugin>
     ```
 
-4. Create an integration test for your service following the examples below. The filename must end in “IT.java” so that maven's failsafe plugin will recognize it as an integration test.
+4. Create an integration test for your service following the examples below.
+   The filename must end in “IT.java” so that maven's failsafe plugin will
+   recognize it as an integration test.
 
 5. Run `mvn verify`
 
 This basic example shows how to deploy a single service called Wiggum.
+
 ```java
 package com.spotify.wiggum;
 
@@ -99,9 +115,10 @@ public class ServiceIT {
   }
 ```
 
-This example deploys cassandra, memcached, and a service called foobar. Helios will register 
-cassandra and memcached with a service discovery mechanism using the service registration plugin.
-Foobar will then lookup each service via that mechanism, just as it would in production. 
+This example deploys cassandra, memcached, and a service called foobar. Helios
+will register cassandra and memcached with a service discovery mechanism using
+the service registration plugin.  Foobar will then lookup each service via that
+mechanism, just as it would in production. 
 
 ```java
 package com.spotify.foobar;
@@ -160,29 +177,38 @@ public class SystemIT {
 }
 ```
 
-Note that cassandra and memcached register themselves using Helios's [service registration mechanism](service_registration.md).
-Foobar can then discover how to reach them at runtime. Another option would be to pass Foobar their
-endpoints via environment variables like this.
+Note that cassandra and memcached register themselves using Helios's [service
+registration mechanism](service_registration.md).  Foobar can then discover how
+to reach them at runtime. Another option would be to pass Foobar their
+endpoints via environment variables like this:
 
-    final TemporaryJob foobar = temporaryJobs.job()
-        .imageFromBuild()
-        .env("MEMCACHED_ADDRESS", memcached.address("memcached")
-        .env("CASSANDRA_ADDRESS", cassandra.addresses("cassandra")
-        .env("CASSANDRA_MAX_CONNS_PER_HOST", String.valueOf(1))
-        .env("CASSANDRA_MAX_CONNS_PER_HOST", String.valueOf(1))
-        .port("foobar", 9600)
-        .deploy();
+```java
+final TemporaryJob foobar = temporaryJobs.job()
+    .imageFromBuild()
+    .env("MEMCACHED_ADDRESS", memcached.address("memcached")
+    .env("CASSANDRA_ADDRESS", cassandra.addresses("cassandra")
+    .env("CASSANDRA_MAX_CONNS_PER_HOST", String.valueOf(1))
+    .env("CASSANDRA_MAX_CONNS_PER_HOST", String.valueOf(1))
+    .port("foobar", 9600)
+    .deploy();
+```
 
 # Environment Configuration
 
-There are 3 environment variables you can use to configure the test to run in different environments.
+There are 3 environment variables you can use to configure the test to run in
+different environments.
  
-  * `HELIOS_DOMAIN` - the domain where the helios master can be reached.
-  * `HELIOS_ENDPOINTS` - the specific endpoint(s) to connect to. When set, this overrides HELIOS_DOMAIN.
-  * `HELIOS_HOST_FILTER` - regular expression or FQDN of the helios host you want to deploy to. If more
-    than one host matches the regex, one will be selected randomly.
+* `HELIOS_DOMAIN` - the domain where the helios master can be reached.
+* `HELIOS_ENDPOINTS` - the specific endpoint(s) to connect to. When set, this
+  overrides HELIOS_DOMAIN.
+* `HELIOS_HOST_FILTER` - regular expression or FQDN of the helios host you want
+  to deploy to. If more than one host matches the regex, one will be selected
+  randomly.
    
-   If neither `HELIOS_DOMAIN` nor `HELIOS_ENDPOINTS` is set, TemporaryJobs will connect to `tcp://localhost:5801` and set `HELIOS_HOST_FILTER` to `.+`. `HELIOS_HOST_FILTER` must be set if either `HELIOS_DOMAIN` or `HELIOS_ENDPOINTS` is set. 
+If neither `HELIOS_DOMAIN` nor `HELIOS_ENDPOINTS` is set, TemporaryJobs will
+connect to `tcp://localhost:5801` and set `HELIOS_HOST_FILTER` to `.+`.
+`HELIOS_HOST_FILTER` must be set if either `HELIOS_DOMAIN` or
+`HELIOS_ENDPOINTS` is set. 
 
 # Configuration By File
 
@@ -208,7 +234,11 @@ accomplish this. Within a profile, the following keys having meaning:
 * `hostFilter`  - string -- same as the `TemporaryJobsbuilder.hostFilter()` method.
 * `domain`  - string -- same as the `TemporaryJobsbuilder.domain()` method.
 * `endpoints`  - list of string -- same as the `TemporaryJobsbuilder.endpoints()` method.
-* `jobDeployedMessageFormat` - string -- a string format for [Apache StrSubstitutor](https://commons.apache.org/proper/commons-lang/javadocs/api-2.6/org/apache/commons/lang/text/StrSubstitutor.html) to log a custom message when the job has started -- available substitutions are [`host`, `name`, `version`, `hash`, `containerId`, `job`] - useful to log a link where container logs might be found.
+* `jobDeployedMessageFormat` - string -- a string format for [Apache
+  StrSubstitutor](https://commons.apache.org/proper/commons-lang/javadocs/api-2.6/org/apache/commons/lang/text/StrSubstitutor.html)
+  to log a custom message when the job has started -- available substitutions
+  are [`host`, `name`, `version`, `hash`, `containerId`, `image`, `job`] -
+  useful to log a link where container logs might be found.
 * `hostPickingStrategy` - string -- one of
     * `random` (the default) - randomly pick a host for each temporary job.
     * `onerandom` - randomly pick a host and deploy all temporary jobs there
@@ -252,36 +282,34 @@ helios.testing.profiles {
 ```
 
 You can also consult the [`helios-base.conf`](../helios-testing/src/test/resources/helios-base.conf)
-and [`helios.conf`](../helios-testing/src/test/resources/helios.conf) files
-for an example.
+and [`helios.conf`](../helios-testing/src/test/resources/helios.conf) files for
+an example.
 
-**N.B.** If you specify the profile in code via the call to
-`TemporaryJobs.builder(profile)`, it will override the setting in the
-file.  Should this be the case?  How else to do something like what I
-want for this?!
+Also, any settings on the builders in code will override what's in the file.
 
-Also, any settings on the builders in code will override what's in the
-file.
-
-If the profile specified either to the builder directly, or by the
-`profile` setting does not exist, you'll get a failure.  If there is
-no profile set, this is still ok.  Since we're using the Typesafe
-Library, you can then make the default profile settable by java
-property or environment variable, which can then be configured via
-Maven (if you're using it) profiles.
+If the profile specified either to the builder directly, or by the `profile`
+setting does not exist, you'll get a failure.  If there is no profile set, this
+is still ok.  Since we're using the Typesafe Library, you can then make the
+default profile settable by java property or environment variable, which can
+then be configured via Maven (if you're using it) profiles.
 
 You can specify the profile via `mvn` when running tests by:
+
 ```
 mvn -Dhelios.testing.profile=myprofile other maven arguments here....
 ```
 
 # Job Cleanup
 
-When a test completes, the TemporaryJobs rule will undeploy and delete all jobs it created during the test. If the test process is killed before the test completes, the jobs will be left running. Helios handles this in two ways.
+When a test completes, the TemporaryJobs rule will undeploy and delete all jobs
+it created during the test. If the test process is killed before the test
+completes, the jobs will be left running. Helios handles this in two ways.
 
-1. Each time TemporaryJobs is created, it will attempt to remove any jobs leftover from previous runs.
+1. Each time TemporaryJobs is created, it will attempt to remove any jobs
+   leftover from previous runs.
 
-2. TemporaryJobs sets a time-to-live on each job it creates. This defaults to 30 minutes, but can be overridden if needed.
+2. TemporaryJobs sets a time-to-live on each job it creates. This defaults to
+   30 minutes, but can be overridden if needed.
 
 # Debugging
 
