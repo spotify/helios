@@ -94,6 +94,7 @@ import static com.google.common.collect.Lists.reverse;
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.HOSTS_CHANGED;
 import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
+import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.ROLLING_OUT;
 import static com.spotify.helios.common.descriptors.Descriptor.parse;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
@@ -432,9 +433,44 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  private boolean updateOnHostChange(final DeploymentGroup group)
-      throws DeploymentGroupDoesNotExistException {
-    final DeploymentGroupStatus status = getDeploymentGroupStatus(group.getName());
+  /**
+   * Determines whether we should allow deployment group hosts to be updated.
+   *
+   * We don't want deployment groups that are ROLLING_OUT to change hosts in order to avoid the
+   * following race:
+   *
+   * - Manual rolling update A of a bad, broken job is triggered.
+   * - The hosts change before rolling update A completes, triggering rolling update B.
+   * - Rolling update B fails, because it inherited the bad, broken job from update A.
+   * - The hosts change again, and we trigger unwanted rolling update C because the the previous
+   *   rolling update (B) had reason=HOSTS_CHANGED.
+   *
+   * It's safe to simply abort the hosts changed operation as updateOnHostsChange will be called
+   * again by a reactor.
+   *
+   * @param status The status of the deployment group attempting to change hosts.
+   * @return True if it's safe to update the hosts.
+   */
+  private boolean allowHostChange(final DeploymentGroupStatus status) {
+    if (status == null) {
+      // We're in an unknown state. Go hog wild.
+      return true;
+    }
+    return status.getState() != ROLLING_OUT;
+  }
+
+  /**
+   * Determines whether we should trigger a rolling update when deployment group hosts change.
+   *
+   * We want to avoid triggering an automatic rolling update if the most recent rolling update was
+   * triggered manually, and failed.
+   *
+   * @param group The deployment group that is changing hosts.
+   * @param status The status of the aforementioned deployment group.
+   * @return True if we should perform a rolling update.
+   */
+  private boolean updateOnHostChange(final DeploymentGroup group,
+                                     final DeploymentGroupStatus status) {
     if (status == null) {
       // We're in an unknown state. Go hog wild.
       return true;
@@ -459,6 +495,10 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException {
     log.debug("updating deployment-group hosts: name={}", groupName);
     final ZooKeeperClient client = provider.get("updateDeploymentGroupHosts");
+    final DeploymentGroupStatus status = getDeploymentGroupStatus(groupName);
+    if (!allowHostChange(status)) {
+      return;
+    }
     try {
       Optional<Integer> version = Optional.absent();
       List<String> curHosts;
@@ -484,7 +524,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         ImmutableList<Map<String, Object>> events = ImmutableList.of();
 
         if (deploymentGroup.getJobId() != null) {
-          if (updateOnHostChange(deploymentGroup)) {
+          if (updateOnHostChange(deploymentGroup, status)) {
             deploymentGroup = deploymentGroup.toBuilder()
                 .setRollingUpdateReason(HOSTS_CHANGED)
                 .build();
