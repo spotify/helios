@@ -495,32 +495,32 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException {
     log.debug("updating deployment-group hosts: name={}", groupName);
     final ZooKeeperClient client = provider.get("updateDeploymentGroupHosts");
-    final DeploymentGroupStatus status = getDeploymentGroupStatus(groupName);
-    if (!allowHostChange(status)) {
-      return;
-    }
     try {
-      Optional<Integer> version = Optional.absent();
+      Optional<Integer> curHostsVersion = Optional.absent();
       List<String> curHosts;
       try {
         // addDeploymentGroup creates Paths.statusDeploymentGroupHosts(name) so it should always
         // exist. If it doesn't, then the DG was (likely) deleted.
-        final Node node = client.getNode(Paths.statusDeploymentGroupHosts(groupName));
-        version = Optional.of(node.getStat().getVersion());
-        curHosts = Json.read(node.getBytes(), new TypeReference<List<String>>() {});
+        final Node chn = client.getNode(Paths.statusDeploymentGroupHosts(groupName));
+        curHostsVersion = Optional.of(chn.getStat().getVersion());
+        curHosts = Json.read(chn.getBytes(), new TypeReference<List<String>>() {});
       } catch (JsonMappingException e) {
         curHosts = Collections.emptyList();
-      } catch (NoNodeException e) {
-        // DG was deleted -- abort.
-        return;
       }
 
-      if (!version.isPresent() || !hosts.equals(curHosts)) {
+      final DeploymentGroupStatus status = getDeploymentGroupStatus(groupName);
+      if (!allowHostChange(status)) {
+        return;
+      }
+      if (!curHostsVersion.isPresent() || !hosts.equals(curHosts)) {
         // Node not present or hosts have changed
         final List<ZooKeeperOperation> ops = Lists.newArrayList();
         ops.add(set(Paths.statusDeploymentGroupHosts(groupName), Json.asBytes(hosts)));
 
-        DeploymentGroup deploymentGroup = getDeploymentGroup(groupName);
+        final Node dgn = client.getNode(Paths.configDeploymentGroup(groupName));
+        final Integer deploymentGroupVersion = dgn.getStat().getVersion();
+        DeploymentGroup deploymentGroup = Json.read(dgn.getBytes(), DeploymentGroup.class);
+
         ImmutableList<Map<String, Object>> events = ImmutableList.of();
 
         if (deploymentGroup.getJobId() != null) {
@@ -528,6 +528,9 @@ public class ZooKeeperMasterModel implements MasterModel {
             deploymentGroup = deploymentGroup.toBuilder()
                 .setRollingUpdateReason(HOSTS_CHANGED)
                 .build();
+            // Fail transaction if the deployment group has been updated elsewhere.
+            ops.add(check(Paths.configDeploymentGroup(groupName), deploymentGroupVersion));
+
             // NOTE: If the DG was removed this set() cause the transaction to fail, because
             // removing the DG removes this node. It's *important* that there's an operation that
             // causes the transaction to fail if the DG was removed or we'll end up with
