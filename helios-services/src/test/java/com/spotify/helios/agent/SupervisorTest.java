@@ -69,6 +69,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMA
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.startsWith;
@@ -302,7 +303,17 @@ public class SupervisorTest {
     );
 
 
-    // Verify that the stopped state is signalled
+    // Verify that the STOPPING and STOPPED states are signalled
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(STOP)
+                                                       .setState(STOPPING)
+                                                       .setContainerId(containerId)
+                                                       .setEnv(ENV)
+                                                       .build())
+    );
+
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
                                                 eq(TaskStatus.newBuilder()
                                                        .setJob(JOB)
