@@ -120,9 +120,9 @@ class JobPrefixFile implements AutoCloseable {
   private JobPrefixFile(final String prefix, final Path directory) throws IOException {
     Preconditions.checkNotNull(directory);
     this.prefix = prefix == null
-                     ? "tmp-" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + "-"
-                       + toHexString(ThreadLocalRandom.current().nextInt())
-                     : prefix;
+                  ? "tmp-" + new SimpleDateFormat("yyyyMMdd").format(new Date()) + "-"
+                    + toHexString(ThreadLocalRandom.current().nextInt())
+                  : prefix;
 
     // Make sure directory exists, then create prefix file
     Files.createDirectories(directory);

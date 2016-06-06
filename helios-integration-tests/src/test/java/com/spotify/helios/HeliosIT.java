@@ -24,15 +24,13 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
-import com.spotify.helios.testing.HeliosDeploymentResource;
-import com.spotify.helios.testing.HeliosSoloDeployment;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobBuilder;
 import com.spotify.helios.testing.TemporaryJobs;
+import com.spotify.helios.testing.TemporaryJobsResource;
 
 import org.junit.Before;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 import static com.spotify.helios.Utils.agentImage;
@@ -42,20 +40,10 @@ import static org.hamcrest.Matchers.equalTo;
 
 public class HeliosIT {
 
-  @ClassRule
-  public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
-      HeliosSoloDeployment.fromEnv()
-          .heliosSoloImage(Utils.soloImage())
-          .checkForNewImages(false)
-          .removeHeliosSoloOnExit(false)
-          .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.test.${domain}")
-          .build()
-  );
+  private static final TemporaryJobs TEMPORARY_JOBS = TemporaryJobs.create();
 
-  @Rule
-  public TemporaryJobs temporaryJobs = TemporaryJobs.builder()
-      .client(solo.client())
-      .build();
+  @ClassRule
+  public static final TemporaryJobsResource RESOURCE = new TemporaryJobsResource(TEMPORARY_JOBS);
 
   private static final String TEST_USER = "HeliosIT";
   private static final String TEST_HOST = "test-host";
@@ -65,7 +53,7 @@ public class HeliosIT {
   @Before
   public void setup() throws Exception {
     // zookeeper
-    final TemporaryJob zk = temporaryJobs.job()
+    final TemporaryJob zk = TEMPORARY_JOBS.job()
         .image("jplock/zookeeper:3.4.5")
         .port("zk", 2181)
         .deploy();
@@ -73,7 +61,7 @@ public class HeliosIT {
     final String zkEndpoint = zk.address("zk").toString();
 
     // helios master
-    final TemporaryJob master = temporaryJobs.job()
+    final TemporaryJob master = TEMPORARY_JOBS.job()
         .image(masterImage())
         .port("helios", 5801)
         .command("--zk", zkEndpoint)
@@ -95,7 +83,7 @@ public class HeliosIT {
     }
 
     // helios agent
-    final TemporaryJobBuilder agent = temporaryJobs.job()
+    final TemporaryJobBuilder agent = TEMPORARY_JOBS.job()
         .image(agentImage())
         .prober(new AgentStatusProber(masterEndpoint, TEST_USER, TEST_HOST))
         .port("agent", 8080) // need to expose fake port just so prober gets invoked

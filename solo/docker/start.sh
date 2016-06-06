@@ -82,6 +82,37 @@ com.spotify.helios.master.MasterMain \
 $HELIOS_MASTER_OPTS \
 &
 
-set +x
-# Sleep or execute command line
-while :; do sleep 1; done
+if [[ "$HELIOS_SOLO_SUICIDE" -eq "1" ]]; then
+    HELIOS_CLI_CMD="java -cp /*.jar -Xmx128m -Djava.net.preferIPv4Stack=true com.spotify.helios.cli.CliMain -z http://localhost:5801"
+
+    python "/watchdog.py"
+
+    echo "Cleaning up jobs..."
+
+    # Clean up created jobs (make sure containers are stopped)
+    jobs=$($HELIOS_CLI_CMD --json jobs | jq -a -r "keys[]")
+    for job in $jobs; do
+        $HELIOS_CLI_CMD undeploy --yes -a "$job"
+    done
+
+    # Wait for jobs to be undeployed
+    for job in $jobs; do
+        states=$($HELIOS_CLI_CMD status --json -j "$job" | jq -r ".[].taskStatuses | .[] | .state")
+        tot=$(echo "$states" | wc -l)
+        stopped=$(echo "$states" | grep "STOPPED" | wc -l)
+        if [ "$stopped" -eq "$tot" ]; then
+            echo "All instances of $job are stopped"
+            break
+        fi
+    done
+
+    echo -e "Some containers may still be running at this point, but they will eventually be killed.
+             Undeploying Helios jobs makes Helios tell Docker to stop the container by sending
+             SIGTERM and to wait two minutes before sending SIGKILL (same as docker kill)."
+    echo "Clean up done. Exiting"
+else
+    set +x
+
+    # Sleep or execute command line
+    while :; do sleep 1; done
+fi

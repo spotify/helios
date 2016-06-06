@@ -17,14 +17,24 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.helios.common.descriptors.Job;
 
-import java.util.List;
-import java.util.Set;
+import org.hamcrest.CustomTypeSafeMatcher;
 
-public interface Deployer {
+import java.net.InetSocketAddress;
 
-  TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts, Prober prober);
+import static java.lang.String.format;
 
-  TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts, Prober prober);
+
+class TestMatchers {
+
+  static CustomTypeSafeMatcher<InetSocketAddress> matchesHostAndPort(final String host,
+                                                                      final int port) {
+    return new CustomTypeSafeMatcher<InetSocketAddress>(
+        format("An InetSocketAddress with host %s and port %d", host, port)) {
+      @Override
+      protected boolean matchesSafely(final InetSocketAddress inetAddr) {
+        return inetAddr.getHostString().equals(host) && inetAddr.getPort() == port;
+      }
+    };
+  }
 }

@@ -17,29 +17,21 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.net.HostAndPort;
-
 import com.spotify.helios.client.HeliosClient;
 
+import java.io.Closeable;
+
 /**
- * A HeliosDeployment represents a collection of Helios masters and agents upon which jobs may be
- * run.
+ * This class represents a Helios cluster, i.e. master, ZooKeeper, and agent nodes.
  */
-public interface HeliosDeployment extends AutoCloseable {
+public interface HeliosDeployment extends Closeable {
   /**
    * @return A helios client connected to the master(s) of this helios deployment.
    */
   HeliosClient client();
 
   /**
-   * Returns the host and port information  that the deployment is available at.
-   */
-  // TODO (mbrown): should this be URI to capture scheme info also?
-  HostAndPort address();
-
-  /**
    * Undeploy (shut down) this Helios deployment.
    */
   void close();
 }
-

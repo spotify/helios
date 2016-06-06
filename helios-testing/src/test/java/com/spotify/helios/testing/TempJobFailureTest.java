@@ -17,28 +17,15 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
-import com.spotify.helios.common.Json;
-import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
-
-import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 
-import java.nio.file.Files;
-
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.hasSingleFailureContaining;
 
 public class TempJobFailureTest extends TemporaryJobsTestBase {
-
-  @ClassRule
-  public static final TemporaryFolder REPORT_DIR = new TemporaryFolder();
 
   @Test
   public void testDeploymentFailure() throws Exception {
@@ -48,28 +35,19 @@ public class TempJobFailureTest extends TemporaryJobsTestBase {
                hasSingleFailureContaining("AssertionError: Unexpected job state"));
     final long end = System.currentTimeMillis();
     assertTrue("Test should not time out", (end - start) < Jobs.TIMEOUT_MILLIS);
-
-    final byte[] testReport = Files.readAllBytes(REPORT_DIR.getRoot().listFiles()[0].toPath());
-    final TemporaryJobEvent[] events = Json.read(testReport, TemporaryJobEvent[].class);
-
-    for (final TemporaryJobEvent event : events) {
-      if (event.getStep().equals("test")) {
-        assertFalse("test should be reported as failed", event.isSuccess());
-      }
-    }
   }
 
   public static class TempJobFailureTestImpl {
 
-    @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+    private final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
         .hostFilter(".*")
-        .client(client)
+        .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(new TestProber())
-        .testReportDirectory(REPORT_DIR.getRoot().getAbsolutePath())
-        .prefixDirectory(prefixDirectory.toString())
-        .jobPrefix(Optional.of(testTag).get())
+        .jobPrefix(testTag)
         .build();
+
+    @Rule
+    public final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
 
     @Test
     public void testThatThisFailsQuickly() throws InterruptedException {

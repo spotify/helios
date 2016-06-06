@@ -19,14 +19,12 @@ package com.spotify.helios;
 
 import com.google.common.net.HostAndPort;
 
-import com.spotify.helios.testing.HeliosDeploymentResource;
-import com.spotify.helios.testing.HeliosSoloDeployment;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
+import com.spotify.helios.testing.TemporaryJobsResource;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.ClassRule;
-import org.junit.Rule;
 import org.junit.Test;
 
 import java.net.Socket;
@@ -40,28 +38,19 @@ import static org.junit.Assert.assertThat;
 public class HeliosSoloIT {
 
   @ClassRule
-  public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
-      HeliosSoloDeployment.fromEnv()
-          .heliosSoloImage(Utils.soloImage())
-          .checkForNewImages(false)
-          .removeHeliosSoloOnExit(false)
-          .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.test.${domain}")
-          .build()
-  );
+  public static final TemporaryPorts PORTS = TemporaryPorts.create();
 
-  @Rule public final TemporaryPorts ports = TemporaryPorts.create();
-
-  @Rule
-  public TemporaryJobs jobs = TemporaryJobs.builder()
-      .client(solo.client())
+  private static final TemporaryJobs JOBS = TemporaryJobs.builder()
       .deployTimeoutMillis(MINUTES.toMillis(1))
       .hostFilter(".+")
       .build();
 
+  @ClassRule
+  public static final TemporaryJobsResource RESOURCE = new TemporaryJobsResource(JOBS);
 
   @Test
   public void testHttpHealthcheck() {
-    jobs.job()
+    JOBS.job()
         .image("nginx:1.9.9")
         .port("http", 80)
         .httpHealthCheck("http", "/")
@@ -70,7 +59,7 @@ public class HeliosSoloIT {
 
   @Test
   public void testTcpHealthcheck() {
-    jobs.job()
+    JOBS.job()
         .image("nginx:1.9.9")
         .port("http", 80)
         .tcpHealthCheck("http")
@@ -80,19 +69,22 @@ public class HeliosSoloIT {
   @Test
   public void testServiceDiscovery() throws Exception {
     // start a container that runs nginx and registers with SkyDNS
-    jobs.job()
+    JOBS.job()
         .image(NGINX)
-        .port("http", 80, ports.localPort("http"))
+        .port("http", 80, PORTS.localPort("http"))
         .registration("nginx", "http", "http")
         .deploy();
 
     // run a container that does SRV lookup to find the nginx service and then curl's it
-    final TemporaryJob alpine = jobs.job()
+    final TemporaryJob alpine = JOBS.job()
         .image(ALPINE)
-        .port("nc", 4711, ports.localPort("nc"))
+        .port("nc", 4711, PORTS.localPort("nc"))
         .command("sh", "-c",
                  "apk-install bind-tools " +
-                 "&& export SRV=$(dig -t SRV +short _nginx._http.test.$SPOTIFY_DOMAIN) " +
+                 // TODO (dxia) Should we let users set env vars for HeliosSoloDeployment
+                 // like REGISTRAR_HOST_FORMAT that controls service discovery? If so, how?
+                 // By passing in a Config to a TemporaryJobs static factory method?
+                 "&& export SRV=$(dig -t SRV +short _nginx._http.services.$SPOTIFY_DOMAIN) " +
                  "&& export HOST=$(echo $SRV | cut -d' ' -f4) " +
                  "&& export PORT=$(echo $SRV | cut -d' ' -f3) " +
                  "&& nc -lk -p 4711 -e curl http://$HOST:$PORT"

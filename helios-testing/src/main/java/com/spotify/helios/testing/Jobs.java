@@ -17,11 +17,15 @@
 
 package com.spotify.helios.testing;
 
+import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.JobDeleteResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
@@ -29,6 +33,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -36,6 +41,7 @@ import java.util.concurrent.TimeoutException;
 import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
+// TODO (dxia) Does this class make sense? It's just a collection of static methods.
 class Jobs {
 
   private static final Logger log = LoggerFactory.getLogger(Jobs.class);
@@ -101,4 +107,39 @@ class Jobs {
     return errors;
   }
 
+  // TODO(staffan): This is probably not the right place for these methods. And they likely need
+  // some refactoring.
+  public static void verifyHealthy(final Job job, final HeliosClient client) throws AssertionError {
+    log.debug("Checking health of {}", job.getImage());
+    final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
+    if (status == null) {
+      return;
+    }
+    for (final Map.Entry<String, TaskStatus> entry : status.getTaskStatuses().entrySet()) {
+      verifyHealthy(job, client, entry.getKey(), entry.getValue());
+    }
+  }
+
+  // TODO(staffan): This is probably not the right place for these methods. And they likely need
+  // some refactoring.
+  public static void verifyHealthy(final Job job, final HeliosClient client,
+                                   final String host, final TaskStatus status) {
+    log.debug("Checking health of {} on {}", job.getImage(), host);
+    final TaskStatus.State state = status.getState();
+    if (state == TaskStatus.State.FAILED ||
+        state == TaskStatus.State.EXITED ||
+        state == TaskStatus.State.STOPPED) {
+      // Throw exception which should stop the test dead in it's tracks
+      String stateString = state.toString();
+      if (status.getThrottled() != ThrottleState.NO) {
+        stateString += format("(%s)", status.getThrottled());
+      }
+      throw new AssertionError(format(
+          "Unexpected job state %s for job %s with image %s on host %s. Check helios agent "
+          + "logs for details. If you're using HeliosSoloDeployment, set "
+          + "`HeliosSoloDeployment.fromEnv().removeHeliosSoloOnExit(false)` and check the "
+          + "logs of the helios-solo container with `docker logs <container ID>`.",
+          stateString, job.getId().toShortString(), job.getImage(), host));
+    }
+  }
 }

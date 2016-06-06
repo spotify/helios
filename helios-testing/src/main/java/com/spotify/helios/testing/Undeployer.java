@@ -20,11 +20,21 @@ package com.spotify.helios.testing;
 import com.spotify.helios.common.descriptors.Job;
 
 import java.util.List;
-import java.util.Set;
 
-public interface Deployer {
+/**
+ * An interface that defines how a {@link TemporaryJob} is undeployed.
+ * This interface exists solely for unit testing purposes.
+ */
+interface Undeployer {
 
-  TemporaryJob deploy(Job job, List<String> hosts, Set<String> waitPorts, Prober prober);
+  /**
+   * Undeploy the job from all specified hosts, and delete the job. Any failures will be ignored,
+   * and we will keep trying each host. A list of errors encountered along the way will be returned
+   * to the caller.
+   * @param job the {@link TemporaryJob} to undeploy and delete
+   * @param hosts the hosts to undeploy from
+   * @return A list of {@link AssertionError}, if any, that occurred.
+   */
+  List<AssertionError> undeploy(Job job, List<String> hosts);
 
-  TemporaryJob deploy(Job job, String hostFilter, Set<String> waitPorts, Prober prober);
 }

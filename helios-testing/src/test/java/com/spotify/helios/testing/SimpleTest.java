@@ -17,81 +17,78 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.helios.common.Json;
+import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
-import com.spotify.helios.testing.descriptors.TemporaryJobEvent;
-
-import com.google.common.base.Optional;
 
 import org.junit.Before;
-import org.junit.ClassRule;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
-import java.io.File;
 import java.net.Socket;
-import java.nio.file.Files;
+import java.util.List;
 import java.util.Map;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static com.google.common.collect.Iterables.getOnlyElement;
+import static com.spotify.helios.testing.Jobs.getJobDescription;
+import static java.lang.String.format;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.spy;
 
 public class SimpleTest extends TemporaryJobsTestBase {
 
-  @ClassRule
-  public static final TemporaryFolder REPORT_DIR = new TemporaryFolder();
+  private static HeliosClient spyClient;
 
   @Test
   public void simpleTest() throws Exception {
     assertThat(testResult(SimpleTestImpl.class), isSuccessful());
     assertTrue("jobs are running that should not be",
                client.jobs().get(15, SECONDS).isEmpty());
-
-    // Ensure test reports were written and everything was successful
-    final File[] reportFiles = REPORT_DIR.getRoot().listFiles();
-    if (reportFiles == null) {
-      fail();
-    }
-    assertNotEquals(reportFiles.length, 0);
-
-    for (final File reportFile : reportFiles) {
-      final byte[] testReport = Files.readAllBytes(reportFile.toPath());
-      final TemporaryJobEvent[] events = Json.read(testReport, TemporaryJobEvent[].class);
-
-      for (final TemporaryJobEvent event : events) {
-        assertTrue(event.isSuccess());
-      }
-    }
   }
 
   public static class SimpleTestImpl {
 
-    @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
+    // We mock the HeliosClient.close() method so we don't close the client before other tests
+    // in this class have finished.
+    @BeforeClass
+    public static void beforeClass() throws Exception {
+      spyClient = spy(client);
+      doAnswer(new Answer<Void>() {
+        @Override
+        public Void answer(InvocationOnMock invocation) throws Throwable {
+          return null;
+        }
+      }).when(spyClient).close();
+    }
+
+    private final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+        .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(spyClient).build())
         .prober(new TestProber())
         .jobDeployedMessageFormat(
             "Logs Link: http://${host}:8150/${name}%3A${version}%3A${hash}?cid=${containerId}")
-        .jobPrefix(Optional.of(testTag).get())
+        .jobPrefix(testTag)
         .deployTimeoutMillis(MINUTES.toMillis(3))
-        .testReportDirectory(REPORT_DIR.getRoot().getAbsolutePath())
         .build();
+
+    @Rule
+    public final TemporaryJobsResource resource = new TemporaryJobsResource(temporaryJobs);
 
     private TemporaryJob job1;
 
@@ -157,7 +154,11 @@ public class SimpleTest extends TemporaryJobsTestBase {
           .command(IDLE_COMMAND)
           .deploy();
 
-      job.undeploy();
+      final List<AssertionError> errors =
+          temporaryJobs.undeploy(job.job(), job.hosts());
+      if (errors.size() > 0) {
+        fail(format("Failed to undeploy job %s - %s", getJobDescription(job.job()), errors.get(0)));
+      }
 
       final JobStatus status = client.jobStatus(job.job().getId()).get(15, SECONDS);
       assertNull("job still exists", status);

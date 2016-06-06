@@ -17,15 +17,13 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 
 import org.joda.time.DateTime;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import java.io.File;
@@ -36,17 +34,13 @@ import java.util.Map;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasKey;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.experimental.results.PrintableResult.testResult;
 import static org.junit.experimental.results.ResultMatchers.isSuccessful;
 
 public class JobNamePrefixTest extends TemporaryJobsTestBase {
-
-  private static JobPrefixFile jobPrefixFile;
 
   @Test
   public void testJobNamePrefix() throws Exception {
@@ -97,18 +91,6 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
       final JobStatus status2 = client.jobStatus(jobId2).get();
       assertThat(status2.getDeployments().size(), is(0));
       assertTrue(fileExists(prefixDirectory, jobId2.getName()));
-
-      // Verify that job3 has been deleted (which means it has also been undeployed), and
-      // the prefix file has been deleted.
-      assertThat(jobs, not(hasKey(jobId3)));
-      assertFalse(fileExists(prefixDirectory, jobId3.getName()));
-
-      // Verify that job4 and its prefix file have been deleted.
-      assertThat(jobs, not(hasKey(jobId4)));
-      assertFalse(fileExists(prefixDirectory, jobId4.getName()));
-
-      // Verify the prefix file created during the run of JobNamePrefixTest was deleted
-      assertFalse(fileExists(prefixDirectory, jobPrefixFile.prefix()));
     }
   }
 
@@ -118,13 +100,14 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
 
   public static class JobNamePrefixTestImpl {
 
-    @Rule
-    public final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
-        .client(client)
+    private static final TemporaryJobs temporaryJobs = temporaryJobsBuilder()
+        .heliosDeployment(ExistingHeliosDeployment.newBuilder().heliosClient(client).build())
         .prober(new TestProber())
-        .prefixDirectory(prefixDirectory.toString())
-        .jobPrefix(Optional.of(testTag).get())
+        .jobPrefix(testTag)
         .build();
+
+    @ClassRule
+    public static final TemporaryJobsResource RESOURCE = new TemporaryJobsResource(temporaryJobs);
 
     private final Date expires = new DateTime().plusHours(1).toDate();
 
@@ -163,9 +146,6 @@ public class JobNamePrefixTest extends TemporaryJobsTestBase {
       final Job remoteJob2 = jobs.get(job2.job().getId());
       assertThat(remoteJob2, is(notNullValue()));
       assertThat(remoteJob2.getExpires(), equalTo(expires));
-
-      // Set jobPrefixFile so we can verify it was deleted after test completed
-      jobPrefixFile = temporaryJobs.jobPrefixFile();
     }
   }
 
