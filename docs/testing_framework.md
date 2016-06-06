@@ -208,7 +208,7 @@ accomplish this. Within a profile, the following keys having meaning:
 * `hostFilter`  - string -- same as the `TemporaryJobsbuilder.hostFilter()` method.
 * `domain`  - string -- same as the `TemporaryJobsbuilder.domain()` method.
 * `endpoints`  - list of string -- same as the `TemporaryJobsbuilder.endpoints()` method.
-* `jobDeployedMessageFormat` - string -- a string format for [Apache StrSubstitutor](https://commons.apache.org/proper/commons-lang/javadocs/api-2.6/org/apache/commons/lang/text/StrSubstitutor.html) to log a custom message when the job has started -- available substitutions are [`host`, `name`, `version`, `hash`, `containerId`, `job`] - useful to log a link where container logs might be found.
+* `jobDeployedMessageFormat` - string -- a string format for [Apache StrSubstitutor](https://commons.apache.org/proper/commons-lang/javadocs/api-2.6/org/apache/commons/lang/text/StrSubstitutor.html) to log a custom message when the job has started -- available substitutions are [`host`, `name`, `version`, `hash`, `containerId`, `image`, `job`] - useful to log a link where container logs might be found.
 * `hostPickingStrategy` - string -- one of
     * `random` (the default) - randomly pick a host for each temporary job.
     * `onerandom` - randomly pick a host and deploy all temporary jobs there
