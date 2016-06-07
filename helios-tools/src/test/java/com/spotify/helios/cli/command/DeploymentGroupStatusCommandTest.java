@@ -47,6 +47,7 @@ import java.io.PrintStream;
 import java.util.List;
 import java.util.Map;
 
+import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
 import static java.lang.String.format;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -62,8 +63,13 @@ public class DeploymentGroupStatusCommandTest {
   private static final List<HostSelector> HOST_SELECTORS = ImmutableList.of(
       HostSelector.parse("a=b"), HostSelector.parse("foo=bar"));
   private static final RolloutOptions ROLLOUT_OPTIONS = RolloutOptions.newBuilder().build();
-  private static final DeploymentGroup DEPLOYMENT_GROUP = new DeploymentGroup(
-      GROUP_NAME, HOST_SELECTORS, JOB_ID, ROLLOUT_OPTIONS);
+  private static final DeploymentGroup DEPLOYMENT_GROUP = DeploymentGroup.newBuilder()
+      .setName(GROUP_NAME)
+      .setHostSelectors(HOST_SELECTORS)
+      .setJobId(JOB_ID)
+      .setRolloutOptions(ROLLOUT_OPTIONS)
+      .setRollingUpdateReason(MANUAL)
+      .build();
 
   private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
@@ -123,8 +129,11 @@ public class DeploymentGroupStatusCommandTest {
 
   @Test
   public void testDeploymentGroupStatusBeforeRollingUpdate() throws Exception {
-    final DeploymentGroup deploymentGroupWithNoJob = new DeploymentGroup(
-        GROUP_NAME, HOST_SELECTORS, null, ROLLOUT_OPTIONS);
+    final DeploymentGroup deploymentGroupWithNoJob = DeploymentGroup.newBuilder()
+        .setName(GROUP_NAME)
+        .setHostSelectors(HOST_SELECTORS)
+        .setRolloutOptions(ROLLOUT_OPTIONS)
+        .build();
 
     final List<DeploymentGroupStatusResponse.HostStatus> hostStatuses = Lists.newArrayList();
     hostStatuses.add(new DeploymentGroupStatusResponse.HostStatus(

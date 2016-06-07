@@ -36,7 +36,7 @@ import static java.util.Collections.emptyList;
  * <pre>
  * {
  *   "name":"foo-group",
- *   "job":"foo:0.1.0",
+ *   "jobId":"foo:0.1.0",
  *   "hostSelectors":[
  *     {
  *       "label":"foo",
@@ -55,13 +55,19 @@ import static java.util.Collections.emptyList;
  *     "timeout":1000,
  *     "overlap":true,
  *     "token": "insecure-access-token"
- *   }
+ *   },
+ *   "rollingUpdateReason": "MANUAL"
  * }
  * </pre>
  */
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public class DeploymentGroup extends Descriptor {
+
+  public enum RollingUpdateReason {
+    MANUAL,
+    HOSTS_CHANGED
+  }
 
   public static final String EMPTY_NAME = "";
   public static final JobId EMPTY_JOB_ID = null;
@@ -70,24 +76,32 @@ public class DeploymentGroup extends Descriptor {
   private final List<HostSelector> hostSelectors;
   private final JobId jobId;
   private final RolloutOptions rolloutOptions;
+  private final RollingUpdateReason reason;
 
   /**
    * Create a Job.
+   *
+   * Note that despite annotating jobId as @JsonProperty("job") in practice it's serialised as
+   * "jobId" because we neglected to annotate the getter to match. The annotation has been left here
+   * to ensure backwards compatibility.
    *
    * @param name The docker name to use.
    * @param jobId The job ID for the deployment group.
    * @param hostSelectors The selectors that determine which agents are part of the deployment
    *                       group.
+   * @param reason The reason the most recent rolling update (if any) occurred.
    */
   public DeploymentGroup(
       @JsonProperty("name") final String name,
       @JsonProperty("hostSelectors") final List<HostSelector> hostSelectors,
       @JsonProperty("job") @Nullable final JobId jobId,
-      @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions) {
+      @JsonProperty("rolloutOptions") @Nullable final RolloutOptions rolloutOptions,
+      @JsonProperty("rollingUpdateReason") @Nullable final RollingUpdateReason reason) {
     this.name = name;
     this.hostSelectors = hostSelectors;
     this.jobId = jobId;
     this.rolloutOptions = rolloutOptions;
+    this.reason = reason;
   }
 
   public String getName() {
@@ -104,6 +118,10 @@ public class DeploymentGroup extends Descriptor {
 
   public RolloutOptions getRolloutOptions() {
     return rolloutOptions;
+  }
+
+  public RollingUpdateReason getRollingUpdateReason() {
+    return reason;
   }
 
   public static Builder newBuilder() {
@@ -136,6 +154,10 @@ public class DeploymentGroup extends Descriptor {
       return false;
     }
 
+    if (reason != null ? !reason.equals(that.reason) : that.reason != null) {
+      return false;
+    }
+
     return true;
   }
 
@@ -145,6 +167,7 @@ public class DeploymentGroup extends Descriptor {
     result = 31 * result + (hostSelectors != null ? hostSelectors.hashCode() : 0);
     result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     result = 31 * result + (rolloutOptions != null ? rolloutOptions.hashCode() : 0);
+    result = 31 * result + (reason != null ? reason.hashCode() : 0);
     return result;
   }
 
@@ -155,6 +178,7 @@ public class DeploymentGroup extends Descriptor {
            ", hostSelectors=" + hostSelectors +
            ", job=" + jobId +
            ", rolloutOptions=" + rolloutOptions +
+           ", reason=" + reason +
            '}';
   }
 
@@ -164,7 +188,8 @@ public class DeploymentGroup extends Descriptor {
     return builder.setName(name)
         .setJobId(jobId)
         .setHostSelectors(hostSelectors)
-        .setRolloutOptions(rolloutOptions);
+        .setRolloutOptions(rolloutOptions)
+        .setRollingUpdateReason(reason);
   }
 
   public static class Builder implements Cloneable {
@@ -181,12 +206,14 @@ public class DeploymentGroup extends Descriptor {
       public JobId jobId;
       public List<HostSelector> hostSelectors;
       public RolloutOptions rolloutOptions;
+      public RollingUpdateReason reason;
 
       private Parameters() {
         this.name = EMPTY_NAME;
         this.jobId = EMPTY_JOB_ID;
         this.hostSelectors = emptyList();
         this.rolloutOptions = null;
+        this.reason = null;
       }
     }
 
@@ -226,8 +253,17 @@ public class DeploymentGroup extends Descriptor {
       return this;
     }
 
+    public RollingUpdateReason getRollingUpdateReason() {
+      return p.reason;
+    }
+
+    public Builder setRollingUpdateReason(final RollingUpdateReason reason) {
+      p.reason = reason;
+      return this;
+    }
+
     public DeploymentGroup build() {
-      return new DeploymentGroup(p.name, p.hostSelectors, p.jobId, p.rolloutOptions);
+      return new DeploymentGroup(p.name, p.hostSelectors, p.jobId, p.rolloutOptions, p.reason);
     }
   }
 

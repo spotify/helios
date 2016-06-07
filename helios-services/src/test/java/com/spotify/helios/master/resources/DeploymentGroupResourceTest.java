@@ -17,6 +17,7 @@
 
 package com.spotify.helios.master.resources;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
@@ -75,9 +76,16 @@ public class DeploymentGroupResourceTest {
 
   @Test
   public void testGetDeploymentGroup() throws Exception {
-    final DeploymentGroup dg = new DeploymentGroup(
-        "foo", Lists.newArrayList(ROLE_SELECTOR, FOO_SELECTOR),
-        new JobId("my_job", "0.2", "1234"), null);
+    final JobId jobId = JobId.newBuilder()
+        .setName("my_job")
+        .setVersion("0.2")
+        .setHash("1234")
+        .build();
+    final DeploymentGroup dg = DeploymentGroup.newBuilder()
+        .setName("foo")
+        .setHostSelectors(ImmutableList.of(ROLE_SELECTOR, FOO_SELECTOR))
+        .setJobId(jobId)
+        .build();
     when(model.getDeploymentGroup("foo")).thenReturn(dg);
 
     final Response response = resource.getDeploymentGroup("foo");

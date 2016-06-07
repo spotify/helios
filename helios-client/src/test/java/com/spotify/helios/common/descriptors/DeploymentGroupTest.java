@@ -23,6 +23,7 @@ import org.junit.Test;
 
 import java.util.List;
 
+import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
 import static org.junit.Assert.assertEquals;
 
 public class DeploymentGroupTest {
@@ -42,17 +43,20 @@ public class DeploymentGroupTest {
         .setParallelism(2)
         .setMigrate(false)
         .build();
+    final DeploymentGroup.RollingUpdateReason setReason = MANUAL;
 
     // Check setXXX methods
     builder.setName(setName);
     builder.setHostSelectors(setHostSelectors);
     builder.setJobId(setJobId);
     builder.setRolloutOptions(setRolloutOptions);
+    builder.setRollingUpdateReason(setReason);
 
     assertEquals("name", setName, builder.getName());
     assertEquals("hostSelectors", setHostSelectors, builder.getHostSelectors());
     assertEquals("jobId", setJobId, builder.getJobId());
     assertEquals("rolloutOptions", setRolloutOptions, builder.getRolloutOptions());
+    assertEquals("reason", setReason, builder.getRollingUpdateReason());
 
     // Check final output
     final DeploymentGroup deploymentGroup = builder.build();
@@ -60,5 +64,6 @@ public class DeploymentGroupTest {
     assertEquals("hostSelectors", setHostSelectors, deploymentGroup.getHostSelectors());
     assertEquals("jobId", setJobId, deploymentGroup.getJobId());
     assertEquals("rolloutOptions", setRolloutOptions, deploymentGroup.getRolloutOptions());
+    assertEquals("reason", setReason, deploymentGroup.getRollingUpdateReason());
   }
 }

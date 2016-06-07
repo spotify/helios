@@ -79,6 +79,11 @@ public class ZooKeeperMasterModelIntegrationTest {
       .setVersion("VERSION")
       .build();
   private static final JobId JOB_ID = JOB.getId();
+  private static final String DEPLOYMENT_GROUP_NAME = "my_group";
+  private static final DeploymentGroup DEPLOYMENT_GROUP = DeploymentGroup.newBuilder()
+      .setName(DEPLOYMENT_GROUP_NAME)
+      .setHostSelectors(ImmutableList.of(HostSelector.parse("role=foo")))
+      .build();
 
   private ZooKeeperClient client;
   private ZooKeeperMasterModel model;
@@ -277,34 +282,28 @@ public class ZooKeeperMasterModelIntegrationTest {
 
   @Test
   public void testAddDeploymentGroup() throws Exception {
-    final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableList.of(HostSelector.parse("role=foo")), null, null);
-    model.addDeploymentGroup(dg);
-    assertEquals(dg, model.getDeploymentGroup("my_group"));
+    model.addDeploymentGroup(DEPLOYMENT_GROUP);
+    assertEquals(DEPLOYMENT_GROUP, model.getDeploymentGroup(DEPLOYMENT_GROUP_NAME));
   }
 
   @Test
   public void testAddExistingDeploymentGroup() throws Exception {
-    final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableList.of(HostSelector.parse("role=foo")), null, null);
-    model.addDeploymentGroup(dg);
+    model.addDeploymentGroup(DEPLOYMENT_GROUP);
     exception.expect(DeploymentGroupExistsException.class);
-    model.addDeploymentGroup(dg);
+    model.addDeploymentGroup(DEPLOYMENT_GROUP);
   }
 
   @Test
   public void testRemoveDeploymentGroup() throws Exception {
-    final DeploymentGroup dg = new DeploymentGroup(
-        "my_group", ImmutableList.of(HostSelector.parse("role=foo")), null, null);
-    model.addDeploymentGroup(dg);
-    model.removeDeploymentGroup("my_group");
+    model.addDeploymentGroup(DEPLOYMENT_GROUP);
+    model.removeDeploymentGroup(DEPLOYMENT_GROUP_NAME);
     exception.expect(DeploymentGroupDoesNotExistException.class);
-    model.getDeploymentGroup("my_group");
+    model.getDeploymentGroup(DEPLOYMENT_GROUP_NAME);
   }
 
   @Test
   public void testRemoveNonExistingDeploymentGroup() throws Exception {
     exception.expect(DeploymentGroupDoesNotExistException.class);
-    model.removeDeploymentGroup("my_group");
+    model.removeDeploymentGroup(DEPLOYMENT_GROUP_NAME);
   }
 }
