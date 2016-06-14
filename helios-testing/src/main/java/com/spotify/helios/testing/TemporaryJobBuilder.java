@@ -40,6 +40,7 @@ import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -237,6 +238,11 @@ public class TemporaryJobBuilder {
 
   public TemporaryJobBuilder tcpHealthCheck(final String port) {
     this.builder.setHealthCheck(TcpHealthCheck.of(port));
+    return this;
+  }
+
+  public TemporaryJobBuilder addCapabilities(final Collection<String> capabilities) {
+    this.builder.setAddCapabilities(capabilities);
     return this;
   }
 
