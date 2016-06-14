@@ -94,6 +94,7 @@ else
       -e DOCKER_HOST=$CONTAINER_DOCKER_HOST \
       -e HELIOS_NAME=solo.local. \
       -e HOST_ADDRESS=$HELIOS_HOST_ADDRESS \
+      -e "WHITELISTED_CAPS=$WHITELISTED_CAPS" \
       -p 5801:5801 \
       --name helios-solo-container \
       $DOCKER_OPTS \
