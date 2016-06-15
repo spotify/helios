@@ -28,16 +28,21 @@ import org.apache.commons.io.IOUtils;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.net.Socket;
 
 import static com.spotify.helios.system.SystemTestBase.ALPINE;
 import static com.spotify.helios.system.SystemTestBase.NGINX;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MINUTES;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
 
 public class HeliosSoloIT {
+
+  @Rule
+  public final ExpectedException expected = ExpectedException.none();
 
   @ClassRule
   public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
@@ -46,6 +51,7 @@ public class HeliosSoloIT {
           .checkForNewImages(false)
           .removeHeliosSoloOnExit(false)
           .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.test.${domain}")
+          .env("WHITELISTED_CAPS", "IPC_LOCK,SYSLOG")
           .build()
   );
 
@@ -107,5 +113,20 @@ public class HeliosSoloIT {
       final String result = IOUtils.toString(s.getInputStream()).trim();
       assertThat(result, containsString("Welcome to nginx!"));
     }
+  }
+
+  @Test
+  public void testWhitelistCaps() throws Exception {
+    jobs.job()
+      .image("nginx:1.9.9")
+      .addCapabilities(asList("IPC_LOCK", "SYSLOG"))
+      .deploy();
+
+    // NET_RAW is not whitelisted so creating this job should fail
+    expected.expect(AssertionError.class);
+    jobs.job()
+      .image("nginx:1.9.9")
+      .addCapabilities(asList("NET_RAW"))
+      .deploy();
   }
 }

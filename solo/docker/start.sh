@@ -72,6 +72,10 @@ if [ -n "$LOGSTASH_DESTINATION" ]; then
 EOF
 fi
 
+# Capabilities to be whitelisted are specified as a comma separate env var. E.g.
+# WHITELISTED_CAPS=IPC_LOCK,SYSLOG
+WHITELISTED_CAPS=(${WHITELISTED_CAPS//,/ })
+
 cd /master
 java -cp '/*' \
 -Xmx128m \
@@ -79,6 +83,7 @@ java -cp '/*' \
 com.spotify.helios.master.MasterMain \
 --service-registrar-plugin /usr/share/helios/lib/plugins/helios-skydns-0.1.jar \
 --domain '' \
+"${WHITELISTED_CAPS[@]/#/--whitelisted-capability=}" \
 $HELIOS_MASTER_OPTS \
 &
 
