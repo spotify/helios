@@ -1077,7 +1077,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   /**
    * Returns the job configuration for the job specified by {@code id} as a
-   * {@link Job} object.
+   * {@link Job} object. A return value of null indicates the job doesn't exist.
    */
   @Override
   public Job getJob(final JobId id) {
@@ -1085,7 +1085,6 @@ public class ZooKeeperMasterModel implements MasterModel {
     final ZooKeeperClient client = provider.get("getJobId");
     return getJob(client, id);
   }
-
 
   private Job getJob(final ZooKeeperClient client, final JobId id) {
     final String path = Paths.configJob(id);
@@ -1238,7 +1237,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     } catch (NoNodeException ignored) {
       // There's no history for this job
     } catch (KeeperException e) {
-      log.warn("error removing job history for job {}: {}", id, e);
+      log.warn("error removing job history for job {}", id, e);
     }
 
     return job;

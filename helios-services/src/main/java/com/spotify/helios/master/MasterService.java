@@ -122,6 +122,7 @@ public class MasterService extends AbstractIdleService {
   private final Map<String, String> environmentVariables;
   private final Optional<DeadAgentReaper> agentReaper;
   private final Optional<OldJobReaper> oldJobReaper;
+  private final Optional<JobHistoryReaper> jobHistoryReaper;
 
   private ZooKeeperRegistrarService zkRegistrar;
 
@@ -244,6 +245,15 @@ public class MasterService extends AbstractIdleService {
       this.oldJobReaper = Optional.empty();
     }
 
+    // Set up job history reaper (removes histories whose corresponding job doesn't exist)
+    if (config.isJobHistoryReapingEnabled()) {
+      this.jobHistoryReaper = Optional.of(
+          new JobHistoryReaper(model, zkClientProvider.get("jobHistoryReaper")));
+    } else {
+      log.info("Reaping of orphaned jobs disabled");
+      this.jobHistoryReaper = Optional.empty();
+    }
+
     // Set up http server
     environment.servlets()
         .addFilter("VersionResponseFilter", new VersionResponseFilter(metrics.getMasterMetrics()))
@@ -325,6 +335,7 @@ public class MasterService extends AbstractIdleService {
 
     agentReaper.ifPresent(reaper -> reaper.startAsync().awaitRunning());
     oldJobReaper.ifPresent(reaper -> reaper.startAsync().awaitRunning());
+    jobHistoryReaper.ifPresent(reaper -> reaper.startAsync().awaitRunning());
 
     try {
       server.start();
@@ -348,6 +359,7 @@ public class MasterService extends AbstractIdleService {
 
     agentReaper.ifPresent(reaper -> reaper.stopAsync().awaitTerminated());
     oldJobReaper.ifPresent(reaper -> reaper.stopAsync().awaitTerminated());
+    jobHistoryReaper.ifPresent(reaper -> reaper.stopAsync().awaitTerminated());
 
     rollingUpdateService.stopAsync().awaitTerminated();
     expiredJobReaper.stopAsync().awaitTerminated();

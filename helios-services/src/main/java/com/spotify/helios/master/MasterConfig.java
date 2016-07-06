@@ -61,6 +61,7 @@ public class MasterConfig extends Configuration {
   private long jobRetention;
   private FastForwardConfig fastForwardConfig;
   private Set<String> whitelistedCapabilities;
+  private boolean jobHistoryReapingEnabled;
 
   public String getDomain() {
     return domain;
@@ -293,6 +294,15 @@ public class MasterConfig extends Configuration {
 
   public MasterConfig setWhitelistedCapabilities(final Set<String> whitelistedCapabilities) {
     this.whitelistedCapabilities = ImmutableSet.copyOf(whitelistedCapabilities);
+    return this;
+  }
+
+  public boolean isJobHistoryReapingEnabled() {
+    return jobHistoryReapingEnabled;
+  }
+
+  public MasterConfig setJobHistoryReapingEnabled(final boolean jobHistoryReapingEnabled) {
+    this.jobHistoryReapingEnabled = jobHistoryReapingEnabled;
     return this;
   }
 }
