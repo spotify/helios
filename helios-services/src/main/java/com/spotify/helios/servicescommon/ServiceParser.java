@@ -78,6 +78,7 @@ public class ServiceParser {
   private final Argument noLogSetupArg;
   private final Argument kafkaArg;
   private final Argument stateDirArg;
+  private final Argument jobHistoryReapingEnabled;
 
   // ffwd arguments:
   private final Argument ffwdEnabled;
@@ -209,6 +210,11 @@ public class ServiceParser {
         .help("Value to use for `key` in metric data sent to FastForward. "
               + "Defaults to '" + programName + "'");
 
+    jobHistoryReapingEnabled = parser.addArgument("--reap-history")
+        .action(storeTrue())
+        .setDefault(false)
+        .help("Enable periodic reaping of orphaned job histories.");
+
     addArgs(parser);
 
     try {
@@ -305,6 +311,10 @@ public class ServiceParser {
 
   public Path getStateDirectory() {
     return Paths.get(options.getString(stateDirArg.getDest()));
+  }
+
+  public boolean getJobHistoryReapingEnabled() {
+    return options.getBoolean(jobHistoryReapingEnabled.getDest());
   }
 
   private static String getHostName() {

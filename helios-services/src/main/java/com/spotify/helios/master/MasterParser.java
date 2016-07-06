@@ -89,7 +89,8 @@ public class MasterParser extends ServiceParser {
         .setJobRetention(options.getLong(jobRetention.getDest()))
         .setFfwdConfig(ffwdConfig(options))
         .setWhitelistedCapabilities(ImmutableSet.copyOf(
-            options.getList(whitelistedCapabilities.getDest())));
+            options.getList(whitelistedCapabilities.getDest())))
+        .setJobHistoryReapingEnabled(getJobHistoryReapingEnabled());
 
     this.masterConfig = config;
   }
