@@ -81,10 +81,11 @@ class JobHistoryReaper extends InterruptingScheduledService {
       if (job == null) {
         try {
           client.deleteRecursive(Paths.historyJob(id));
+          log.info("Reaped job history for job {}", jobId);
         } catch (NoNodeException ignored) {
           // Something deleted the history right before we got to it. Ignore and keep going.
         } catch (KeeperException e) {
-          log.warn("error removing job history for job {}", jobId, e);
+          log.warn("error reaping job history for job {}", jobId, e);
         }
       }
     }

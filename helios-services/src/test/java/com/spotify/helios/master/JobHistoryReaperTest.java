@@ -17,7 +17,6 @@
 
 package com.spotify.helios.master;
 
-import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -27,12 +26,10 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
 import org.hamcrest.CustomTypeSafeMatcher;
-import org.joda.time.Instant;
 import org.junit.Test;
 
 import java.util.List;
 
-import static java.util.concurrent.TimeUnit.HOURS;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -72,8 +69,6 @@ public class JobHistoryReaperTest {
   @Test
   public void testJobHistoryReaper() throws Exception {
     final MasterModel masterModel = mock(MasterModel.class);
-    final Clock clock = mock(Clock.class);
-    when(clock.now()).thenReturn(new Instant(HOURS.toMillis(48)));
 
     final List<Datapoint> datapoints = Lists.newArrayList(
         // A job history with a corresponding job should NOT BE reaped.
