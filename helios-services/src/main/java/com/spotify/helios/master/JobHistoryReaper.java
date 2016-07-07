@@ -64,7 +64,7 @@ class JobHistoryReaper extends InterruptingScheduledService {
 
   @Override
   protected void runOneIteration() {
-    log.debug("Reaping orphaned job histories.");
+    log.info("Reaping orphaned job histories.");
 
     final String path = Paths.historyJobs();
     List<String> jobIds = Collections.emptyList();
