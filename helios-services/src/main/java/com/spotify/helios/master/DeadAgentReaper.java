@@ -66,7 +66,7 @@ public class DeadAgentReaper extends InterruptingScheduledService {
 
   @Override
   protected void runOneIteration() {
-    log.debug("Reaping agents");
+    log.info("Reaping dead agents");
     final List<String> agents = masterModel.listHosts();
     for (final String agent : agents) {
       try {
