@@ -55,6 +55,8 @@ import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetAddress;
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -159,13 +161,21 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private String determineHeliosHost(final Info dockerInfo) throws HeliosDeploymentException {
     // note that checkDockerAndGetGateway is intentionally always called even if the return value
     // is discarded, as it does important checks about the local docker installation
+    log.info("checking that docker can be reached from within a container");
     final String probeContainerGateway = checkDockerAndGetGateway();
 
-    // conditions where the gateway IP address given to a container should be used
-    if (dockerHostAddressIsLocalhost() && !isDockerForMac(dockerInfo)) {
-      log.info("checking that docker can be reached from within a container");
+    if (dockerHostAddressIsLocalhost()) {
+      if (isDockerForMac(dockerInfo)) {
+        try {
+          return InetAddress.getLocalHost().getHostAddress();
+        } catch (UnknownHostException e) {
+          throw new HeliosDeploymentException("Cannot resolve local hostname", e);
+        }
+      }
+
       return probeContainerGateway;
     }
+
     // otherwise return the address of the docker host
     return dockerHost.address();
   }
