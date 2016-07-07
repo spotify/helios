@@ -154,25 +154,4 @@
       </build>
     </profile>
   </profiles>
-
-  <reporting>
-    <plugins>
-      <plugin>
-        <groupId>com.spotify.docgenerator</groupId>
-        <artifactId>docgenerator-maven-plugin</artifactId>
-        <version>0.0.1</version>
-        <configuration>
-          <jsonClassesFiles>
-            <jsonClassesFile>${project.basedir}/../helios-client/target/classes/JSONClasses</jsonClassesFile>
-          </jsonClassesFiles>
-          <restEndpointsFiles>
-            <restEndpointsFile>${project.basedir}/../helios-services/target/classes/RESTEndpoints</restEndpointsFile>
-          </restEndpointsFiles>
-          <jarFiles>
-            <jarFile>${project.basedir}/../helios-client/target/helios-client-${project.version}.jar</jarFile>
-          </jarFiles>
-        </configuration>
-      </plugin>
-    </plugins>
-  </reporting>
 </project>

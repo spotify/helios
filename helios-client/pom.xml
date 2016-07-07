@@ -16,11 +16,11 @@
   </properties>
 
   <dependencies>
-    <dependency>
-      <groupId>com.spotify.docgenerator</groupId>
-      <artifactId>scanner</artifactId>
-    </dependency>
     <!--compile deps-->
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>jsr311-api</artifactId>
+    </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-annotations</artifactId>

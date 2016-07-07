@@ -145,15 +145,15 @@
   </profiles>
 
   <dependencies>
-    <dependency>
-      <groupId>com.spotify.docgenerator</groupId>
-      <artifactId>scanner</artifactId>
-    </dependency>
     <!--compile deps -->
     <dependency>
       <groupId>io.dropwizard</groupId>
       <artifactId>dropwizard-core</artifactId>
       <version>0.7.1</version>
+    </dependency>
+    <dependency>
+      <groupId>javax.ws.rs</groupId>
+      <artifactId>jsr311-api</artifactId>
     </dependency>
     <dependency>
       <groupId>com.fasterxml.jackson.jaxrs</groupId>
