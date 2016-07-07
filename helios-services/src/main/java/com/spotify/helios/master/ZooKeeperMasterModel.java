@@ -616,7 +616,10 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws KeeperException {
     final Map<String, HostStatus> hostsAndStatuses = Maps.newLinkedHashMap();
     for (final String host : hosts) {
-      hostsAndStatuses.put(host, getHostStatus(host));
+      final HostStatus status = getHostStatus(host);
+      if (status != null) {
+        hostsAndStatuses.put(host, status);
+      }
     }
 
     final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
@@ -1500,6 +1503,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
 
     if (stat == null) {
+      log.warn("Missing configuration for host {}", host);
       return null;
     }
 
@@ -1622,7 +1626,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       try {
         jobIds = client.getChildren(folder);
       } catch (KeeperException.NoNodeException e) {
-        return null;
+        log.warn("Unable to get deployment config for {}", host, e);
+        return ImmutableMap.of();
       }
 
       for (final String jobIdString : jobIds) {
