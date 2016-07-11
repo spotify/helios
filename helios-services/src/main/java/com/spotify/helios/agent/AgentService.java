@@ -234,8 +234,11 @@ public class AgentService extends AbstractIdleService implements Managed {
         new ZooKeeperNodeUpdaterFactory(zooKeeperClient);
 
     final DockerClient dockerClient;
+    final DefaultDockerclient.Builder dockerBuilder = new DefaultDockerclient.Builder()
+            .dockerAuth(config.getDockerAuth().uri(config.getDockerHost().uri()));
+
     if (isNullOrEmpty(config.getDockerHost().dockerCertPath())) {
-      dockerClient = new PollingDockerClient(config.getDockerHost().uri());
+      dockerClient = new PollingDockerClient(dockerBuilder.build());
     } else {
       final Path dockerCertPath = java.nio.file.Paths.get(config.getDockerHost().dockerCertPath());
       final DockerCertificates dockerCertificates;
@@ -245,7 +248,8 @@ public class AgentService extends AbstractIdleService implements Managed {
         throw Throwables.propagate(e);
       }
 
-      dockerClient = new PollingDockerClient(config.getDockerHost().uri(), dockerCertificates);
+      dockerClient = new PollingDockerClient(dockerBuilder
+              .dockerCertificates(dockerCertificates).build());
     }
 
     final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,

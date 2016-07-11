@@ -46,6 +46,10 @@ public class PollingDockerClient extends DefaultDockerClient {
     super(uri, dockerCertificates);
   }
 
+  public PollingDockerClient(final DefaultDockerClient.Builder builder) {
+    super(builder);
+  }
+
   @Override
   public ContainerExit waitContainer(final String containerId)
       throws DockerException, InterruptedException {
