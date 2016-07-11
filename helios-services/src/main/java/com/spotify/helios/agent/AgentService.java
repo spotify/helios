@@ -236,7 +236,7 @@ public class AgentService extends AbstractIdleService implements Managed {
 
     final DockerClient dockerClient;
     final DefaultDockerClient.Builder dockerBuilder = new DefaultDockerClient.Builder()
-            .dockerAuth(config.getDockerAuth().uri(config.getDockerHost().uri()));
+            .dockerAuth(config.getDockerAuth()).uri(config.getDockerHost().uri());
 
     if (isNullOrEmpty(config.getDockerHost().dockerCertPath())) {
       dockerClient = new PollingDockerClient(dockerBuilder);
