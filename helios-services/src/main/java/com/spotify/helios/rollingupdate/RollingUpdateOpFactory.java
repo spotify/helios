@@ -188,6 +188,14 @@ public class RollingUpdateOpFactory {
 
   public RollingUpdateOp error(final Exception e, final String host,
                                final RollingUpdateError errorCode) {
-    return error(e.getMessage(), host, errorCode);
+    final String message;
+    if (errorCode == RollingUpdateError.PORT_CONFLICT) {
+      message = e.getMessage() +
+                " (the conflicting job was deployed manually or by a different deployment group)";
+    } else {
+      message = e.getMessage();
+    }
+
+    return error(message, host, errorCode);
   }
 }
