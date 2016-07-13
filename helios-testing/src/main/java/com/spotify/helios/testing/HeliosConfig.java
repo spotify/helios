@@ -43,16 +43,11 @@ public class HeliosConfig {
 
     final Config baseConfig = ConfigFactory.load(
         BASE_CONFIG_FILE, ConfigParseOptions.defaults(), resolveOptions);
-    log.debug(component + " base config: " + baseConfig);
 
     final Config appConfig = ConfigFactory.load(
         APP_CONFIG_FILE, ConfigParseOptions.defaults(), resolveOptions);
-    log.debug(component + " app config: " + appConfig);
 
-    final Config returnConfig = appConfig.withFallback(baseConfig);
-    log.debug(component + "result config: " + returnConfig);
-
-    return returnConfig;
+    return appConfig.withFallback(baseConfig);
   }
 
   /**
