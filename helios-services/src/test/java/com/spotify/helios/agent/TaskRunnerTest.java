@@ -20,6 +20,7 @@ package com.spotify.helios.agent;
 import com.google.common.collect.ImmutableList;
 
 import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.exceptions.DockerTimeoutException;
 import com.spotify.docker.client.exceptions.ImageNotFoundException;
 import com.spotify.docker.client.exceptions.ImagePullFailedException;
@@ -28,6 +29,7 @@ import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.ContainerState;
 import com.spotify.docker.client.messages.ImageInfo;
+import com.spotify.docker.client.messages.Version;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.descriptors.Job;
@@ -35,17 +37,27 @@ import com.spotify.helios.common.descriptors.Job;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
+import org.mockito.stubbing.Answer;
 
 import java.net.URI;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Arrays.asList;
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -91,6 +103,88 @@ public class TaskRunnerTest {
       assertTrue(t instanceof ExecutionException);
       assertEquals(HeliosRuntimeException.class, t.getCause().getClass());
     }
+  }
+
+  @Test
+  public void testPullsAreSerializedWithOldDocker() throws Throwable {
+    assertFalse("concurrent calls to docker.pull with a version where it causes issues",
+                arePullsConcurrent("1.6.2"));
+  }
+
+  @Test
+  public void testPullsAreConcurrentWithNewerDocker() throws Throwable {
+    assertTrue("calls to docker.pull were unnecessarily serialized",
+               arePullsConcurrent("1.9.0-rc1"));
+  }
+
+  private boolean arePullsConcurrent(final String dockerVersion)
+      throws DockerException, InterruptedException, ExecutionException {
+    final Version version = mock(Version.class);
+    doReturn(dockerVersion).when(version).version();
+
+    doReturn(version).when(mockDocker).version();
+
+    final AtomicInteger pullers = new AtomicInteger();
+    final AtomicBoolean concurrentPullsIssued = new AtomicBoolean(false);
+    doAnswer(new Answer() {
+      @Override
+      public Object answer(final InvocationOnMock invocation) throws Throwable {
+        try {
+          if (pullers.incrementAndGet() > 1) {
+            concurrentPullsIssued.set(true);
+          }
+
+          Thread.sleep(5000);
+        } finally {
+          pullers.decrementAndGet();
+        }
+
+        return null;
+      }
+    }).when(mockDocker).pull(any());
+
+    final TaskRunner tr = TaskRunner.builder()
+        .delayMillis(0)
+        .config(TaskConfig.builder()
+                    .namespace("test")
+                    .host(HOST)
+                    .job(JOB)
+                    .containerDecorators(ImmutableList.of(containerDecorator))
+                    .build())
+        .docker(mockDocker)
+        .listener(new TaskRunner.NopListener())
+        .build();
+
+    final TaskRunner tr2 = TaskRunner.builder()
+        .delayMillis(0)
+        .config(TaskConfig.builder()
+                    .namespace("test")
+                    .host(HOST)
+                    .job(JOB)
+                    .containerDecorators(ImmutableList.of(containerDecorator))
+                    .build())
+        .docker(mockDocker)
+        .listener(new TaskRunner.NopListener())
+        .build();
+
+    final ExecutorService executor = Executors.newFixedThreadPool(2);
+    final Future<?> future = executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        tr.run();
+      }
+    });
+    final Future<?> future2 = executor.submit(new Runnable() {
+      @Override
+      public void run() {
+        tr2.run();
+      }
+    });
+
+    future.get();
+    future2.get();
+
+    return concurrentPullsIssued.get();
   }
 
   @Test

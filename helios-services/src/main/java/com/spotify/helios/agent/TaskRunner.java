@@ -225,8 +225,24 @@ class TaskRunner extends InterruptingExecutionThreadService {
       throws DockerException, InterruptedException {
 
     // Ensure we have the image
+    boolean serializePulls = false;
+    final Optional<String> dockerVersion = tryGetDockerVersion();
+    if (dockerVersion.isPresent()) {
+      final String version = dockerVersion.get();
+      if (version.startsWith("1.6.") || version.startsWith("1.7.") || version.startsWith("1.8.")) {
+        // Docker versions 1.6 through 1.8 have issues with concurrent pulls
+        serializePulls = true;
+      }
+    }
+
     final String image = config.containerImage();
-    pullImage(image);
+    if (serializePulls) {
+      synchronized (docker) {
+        pullImage(image);
+      }
+    } else {
+      pullImage(image);
+    }
 
     return startContainer(image);
   }
@@ -283,8 +299,18 @@ class TaskRunner extends InterruptingExecutionThreadService {
     return info.state();
   }
 
+  private Optional<String> tryGetDockerVersion() {
+    try {
+      return Optional.fromNullable(docker.version().version());
+    } catch (Exception e) {
+      log.error("couldn't fetch Docker version: {}", e);
+      return Optional.absent();
+    }
+  }
+
   private void pullImage(final String image) throws DockerException, InterruptedException {
     listener.pulling();
+
     DockerTimeoutException wasTimeout = null;
     final Stopwatch pullTime = Stopwatch.createStarted();
 
