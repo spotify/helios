@@ -11,15 +11,23 @@ motivation.
 
 ### Create
 
-Create a deployment group by specifying the [host labels][1] to filter on. The command below will
-create a deployment group whose hosts match all the specified labels.
+A host selector is an expression of the form [label] [operator] [operand].
+Host selectors are used by deployment groups to choose which hosts to act on. The command below will
+create a deployment group whose hosts match all the specified host selectors.
 
     $ helios create-deployment-group foo-group foo=bar baz=qux
 
     Creating deployment group: {"labels":{"baz":"qux","foo":"bar"},"name":"foo-group"}
     {"status":"CREATED"}
 
-Creating a deployment with the same name and labels as an existing one will succeed with a
+Here's a list of the available types of host selectors:
+
+  * [label] = foo
+  * [label] != foo
+  * [label] in (foo, bar, qux, ...)
+  * [label] notin (foo, bar, qux, ...)
+
+Creating a deployment group with the same name and labels as an existing one will succeed with a
 "not modified" response. Creating a deployment group with the same name but different labels as an
 existing one will return an error stating that the deployment group already exists.
 
