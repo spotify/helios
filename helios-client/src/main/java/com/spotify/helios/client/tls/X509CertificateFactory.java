@@ -143,7 +143,7 @@ public class X509CertificateFactory {
     }
 
     if (useCached) {
-      log.info("using existing certificate for {} from {}", username, cacheCertPath);
+      log.debug("using existing certificate for {} from {}", username, cacheCertPath);
       return cached;
     } else {
       final CertificateAndPrivateKey generated = generate(agentProxy, identity, username);
