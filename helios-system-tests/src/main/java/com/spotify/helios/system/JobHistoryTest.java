@@ -65,7 +65,7 @@ public class JobHistoryTest extends SystemTestBase {
         int requiredEventCount = -1;
         for (int i = 0; i < size; i++) {
           if (events.getEvents().get(i).getStatus().getState() != State.PULLING_IMAGE) {
-            requiredEventCount = i + 4;
+            requiredEventCount = i + 5;
             break;
           }
         }
