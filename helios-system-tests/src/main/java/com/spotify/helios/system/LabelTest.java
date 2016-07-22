@@ -24,83 +24,108 @@ import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostStatus;
 
+import com.google.common.collect.ImmutableSet;
+
 import org.junit.Test;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.Callable;
 
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.CoreMatchers.allOf;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 public class LabelTest extends SystemTestBase {
 
+  /**
+   * @param hosts Hostnames for which to get labels.
+   * @return a map whose keys are hostnames and values are maps of label key-vals.
+   */
+  private Callable<Map<String, Map<String, String>>> hostLabels(final Set<String> hosts) {
+    return () -> {
+      final ImmutableMap.Builder<String, Map<String, String>> hostLabels = ImmutableMap.builder();
+
+      for (final String host : hosts) {
+        final Map<String, HostStatus> status = Json.read(
+            cli("hosts", host, "--json"),
+            new TypeReference<Map<String, HostStatus>>() {
+            });
+
+        final HostStatus hostStatus = status.get(host);
+        if (hostStatus == null) {
+          return null;
+        }
+
+        final Map<String, String> labels = hostStatus.getLabels();
+        if (labels != null && !labels.isEmpty()) {
+          hostLabels.put(host, labels);
+        } else {
+          return null;
+        }
+
+      }
+      return hostLabels.build();
+    };
+  }
+
   @Test
-  public void testHostStatus() throws Exception {
+  public void testHostLabels() throws Exception {
     startDefaultMaster();
     startDefaultAgent(testHost(), "--labels", "role=foo", "xyz=123");
-    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
 
     // Wait for the agent to report labels
-    final Map<String, String> labels = Polling.await(LONG_WAIT_SECONDS, SECONDS,
-       new Callable<Map<String, String>>() {
-         @Override
-         public Map<String, String> call()
-             throws Exception {
-           final Map<String, HostStatus> status = Json.read(
-               cli("hosts", testHost(), "--json"),
-               new TypeReference<Map<String, HostStatus>>() {
-               });
-           final Map<String, String>
-               labels =
-               status.get(testHost()).getLabels();
-           if (labels != null && !labels.isEmpty()) {
-             return labels;
-           } else {
-             return null;
-           }
-         }
-       });
+    final Map<String, Map<String, String>> labels = Polling.await(
+        LONG_WAIT_SECONDS, SECONDS, hostLabels(ImmutableSet.of(testHost())));
 
-    assertEquals(ImmutableMap.of("role", "foo", "xyz", "123"), labels);
+    final ImmutableMap<String, ImmutableMap<String, String>> expectedLabels =
+        ImmutableMap.of(testHost(), ImmutableMap.of("role", "foo", "xyz", "123"));
+    assertThat(labels, equalTo(expectedLabels));
   }
 
   @Test
   public void testCliHosts() throws Exception {
+    final String testHost1 = testHost() + "1";
+    final String testHost2 = testHost() + "2";
+
     startDefaultMaster();
-    startDefaultAgent(testHost(), "--labels", "role=foo", "xyz=123");
-    awaitHostStatus(testHost(), UP, LONG_WAIT_SECONDS, SECONDS);
+    startDefaultAgent(testHost1, "--labels", "role=foo", "xyz=123");
+    startDefaultAgent(testHost2, "--labels", "role=bar", "xyz=123");
 
-    // Wait for the agent to report labels
-    Polling.await(LONG_WAIT_SECONDS, SECONDS,
-       new Callable<Map<String, String>>() {
-         @Override
-         public Map<String, String> call()
-             throws Exception {
-           final Map<String, HostStatus> status = Json.read(
-               cli("hosts", testHost(), "--json"),
-               new TypeReference<Map<String, HostStatus>>() {
-               });
-           final Map<String, String>
-               labels =
-               status.get(testHost()).getLabels();
-           if (labels != null && !labels.isEmpty()) {
-             return labels;
-           } else {
-             return null;
-           }
-         }
-       });
+    // Wait for the agents to report labels
+    Polling.await(LONG_WAIT_SECONDS, SECONDS, hostLabels(ImmutableSet.of(testHost1, testHost2)));
 
-    assertThat(cli("hosts", "--labels", "role=foo"), containsString(testHost()));
-    assertThat(cli("hosts", "--labels", "xyz=123"), containsString(testHost()));
-    assertThat(cli("hosts", "--labels", "role=foo", "xyz=123"), containsString(testHost()));
+    // Test all these host selectors in one test method to reduce testing time.
+    // We can't start masters and agents in @BeforeClass because startDefaultMaster() isn't static
+    final String fooHosts = cli("hosts", "--labels", "role=foo");
+    assertThat(fooHosts, containsString(testHost1));
+    assertThat(fooHosts, not(containsString(testHost2)));
 
-    assertThat(cli("hosts", "--labels", "role=doesnt_exist"), not(containsString(testHost())));
-    assertThat(cli("hosts", "--labels", "role=doesnt_exist", "xyz=123"),
-               not(containsString(testHost())));
+    final String xyzHosts = cli("hosts", "--labels", "xyz=123");
+    assertThat(xyzHosts, allOf(containsString(testHost1), containsString(testHost2)));
+
+    final String fooAndXyzHosts = cli("hosts", "--labels", "role=foo", "xyz=123");
+    assertThat(fooAndXyzHosts, containsString(testHost1));
+    assertThat(fooAndXyzHosts, not(containsString(testHost2)));
+
+    final String notFooHosts = cli("hosts", "--labels", "role!=foo");
+    assertThat(notFooHosts, not(containsString(testHost1)));
+    assertThat(notFooHosts, containsString(testHost2));
+
+    final String inFooBarHosts = cli("hosts", "--labels", "role in (foo, bar)");
+    assertThat(inFooBarHosts, allOf(containsString(testHost1), containsString(testHost2)));
+
+    final String notInFooBarHosts = cli("hosts", "--labels", "role notin (foo, bar)");
+    assertThat(notInFooBarHosts, not(anyOf(containsString(testHost1), containsString(testHost2))));
+
+    final String nonHosts = cli("hosts", "--labels", "role=doesnt_exist");
+    assertThat(nonHosts, not(anyOf(containsString(testHost1), containsString(testHost2))));
+
+    final String nonHosts2 = cli("hosts", "--labels", "role=doesnt_exist", "xyz=123");
+    assertThat(nonHosts2, not(anyOf(containsString(testHost1), containsString(testHost2))));
   }
 }

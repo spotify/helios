@@ -44,13 +44,16 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.equalToIgnoringWhiteSpace;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -68,7 +71,7 @@ public class HostListCommandTest {
 
   private HostListCommand command;
 
-  private static final List<String> HOSTS = ImmutableList.of("host2.", "host1.", "host3.");
+  private static final List<String> HOSTS = ImmutableList.of("host1.", "host2.", "host3.");
 
   private static final String JOB_NAME = "job";
   private static final String JOB_VERSION1 = "1-aaa";
@@ -101,7 +104,12 @@ public class HostListCommandTest {
           .setState(TaskStatus.State.RUNNING).build()
   );
 
-  private static final Map<String, String> LABELS = ImmutableMap.of("foo", "bar", "baz", "qux");
+  private static final Map<String, String> LABELS1 = ImmutableMap.of(
+      "label1", "value1", "label2", "value2a");
+  private static final Map<String, String> LABELS2 = ImmutableMap.of(
+      "label1", "value1", "label2", "value2b");
+  private static final Map<String, String> LABELS3 = ImmutableMap.of(
+      "label3", "value3", "label2", "value2c");
 
   private static final List<String> EXPECTED_ORDER = ImmutableList.of("host1.", "host2.", "host3.");
 
@@ -135,14 +143,15 @@ public class HostListCommandTest {
         .setStartTime(startTime)
         .build();
 
-    final HostStatus status = HostStatus.newBuilder()
+    final HostStatus.Builder statusBuilder = HostStatus.newBuilder()
         .setJobs(JOBS)
         .setStatuses(JOB_STATUSES)
         .setStatus(UP)
         .setHostInfo(hostInfo)
-        .setAgentInfo(agentInfo)
-        .setLabels(LABELS)
-        .build();
+        .setAgentInfo(agentInfo);
+
+    final HostStatus status = statusBuilder.setLabels(LABELS1).build();
+    final HostStatus status2 = statusBuilder.setLabels(LABELS2).build();
 
     final HostStatus downStatus = HostStatus.newBuilder()
         .setJobs(JOBS)
@@ -150,12 +159,12 @@ public class HostListCommandTest {
         .setStatus(DOWN)
         .setHostInfo(hostInfo)
         .setAgentInfo(agentInfo)
-        .setLabels(LABELS)
+        .setLabels(LABELS3)
         .build();
 
     final Map<String, HostStatus> statuses = ImmutableMap.of(
         HOSTS.get(0), status,
-        HOSTS.get(1), status,
+        HOSTS.get(1), status2,
         HOSTS.get(2), downStatus
     );
 
@@ -174,13 +183,13 @@ public class HostListCommandTest {
         + "OS              HELIOS     DOCKER          LABELS"));
     assertThat(output, containsString(
         "host1.    Up 2 days     3           3          4       1 gb    0.10        0.53         "
-        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    foo=bar, baz=qux"));
+        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    label1=value1, label2=value2a"));
     assertThat(output, containsString(
         "host2.    Up 2 days     3           3          4       1 gb    0.10        0.53         "
-        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    foo=bar, baz=qux"));
+        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    label1=value1, label2=value2b"));
     assertThat(output, containsString(
         "host3.    Down 1 day    3           3          4       1 gb    0.10        0.53         "
-        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    foo=bar, baz=qux"));
+        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    label3=value3, label2=value2c"));
   }
 
   @Test
@@ -209,5 +218,51 @@ public class HostListCommandTest {
 
     assertEquals(1, ret);
     assertThat(output, equalToIgnoringWhiteSpace("Invalid status. Valid statuses are: UP, DOWN"));
+  }
+
+  @Test
+  public void testHostSelectorEquals() throws Exception {
+    checkSelectors(ImmutableList.of("label1=value1"), ImmutableList.of("host1.", "host2."));
+  }
+
+  @Test
+  public void testHostSelectorNotEquals() throws Exception {
+    checkSelectors(ImmutableList.of("label2!=value2a"), ImmutableList.of("host2.", "host3."));
+  }
+
+  @Test
+  public void testHostSelectorIn() throws Exception {
+    checkSelectors(ImmutableList.of("label2 in (value2a, value2b)"),
+                   ImmutableList.of("host1.", "host2."));
+  }
+
+  @Test
+  public void testHostSelectorNotIn() throws Exception {
+    checkSelectors(ImmutableList.of("label2 notin (value2a, value2b)"), singletonList("host3."));
+  }
+
+  @Test
+  public void testMultipleHostSelectors() throws Exception {
+    checkSelectors(ImmutableList.of("label1=value1", "label2=value2a"), singletonList("host1."));
+    checkSelectors(ImmutableList.of("label1=value1", "label2=value2b"), singletonList("host2."));
+    checkSelectors(ImmutableList.of("label2 notin (value2a, value2b)", "label1=value1"),
+                   Collections.<String>emptyList());
+  }
+
+  /**
+   * Checks that running `helios hosts` with the specified host selectors returns expected hosts.
+   * @param hostSelectors A list of host selector strings to pass to the --labels switch.
+   * @param expectedHosts A list of expected hosts in that order.
+   * @throws Exception If some exception occurs.
+   */
+  private void checkSelectors(final List<String> hostSelectors,
+                              final List<String> expectedHosts) throws Exception {
+    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    final PrintStream out = new PrintStream(baos);
+
+    when(options.getList("labels")).thenReturn(ImmutableList.of((Object) hostSelectors));
+    final int ret = command.run(options, client, out, false, null);
+    assertEquals(0, ret);
+    assertThat(TestUtils.readFirstColumnFromOutput(baos.toString(), true), equalTo(expectedHosts));
   }
 }
