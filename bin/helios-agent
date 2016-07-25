@@ -11,8 +11,6 @@ done
 if [ -z "$as_service" ]
 then
   : ${JMXPORT=9203}
-  : ${JDWPPORT=5006}
-  AGENTLIB=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$JDWPPORT
 fi
 
 args=()
@@ -21,6 +19,8 @@ dir="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 if [[ -e "$dir/../helios-services" ]]; then
     jar="$(ls -t $dir/../helios-services/target/helios*-shaded.jar | grep -v sources | grep -v javadoc | head -n 1)"
     CLASSPATH="$(cd $(dirname $jar) && pwd -P)/$(basename $jar)"
+    : ${JDWPPORT=5006}
+    AGENTLIB=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=$JDWPPORT
     echo "running in helios project, using $CLASSPATH" 1>&2
 else
     CLASSPATH="/usr/share/helios/lib/services/*"
