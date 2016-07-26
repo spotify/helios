@@ -28,10 +28,12 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import com.spotify.helios.cli.Table;
+import com.spotify.helios.cli.Utils;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DockerVersion;
 import com.spotify.helios.common.descriptors.HostInfo;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
@@ -58,7 +60,6 @@ import static com.spotify.helios.cli.Output.formatHostname;
 import static com.spotify.helios.cli.Output.humanDuration;
 import static com.spotify.helios.cli.Output.table;
 import static com.spotify.helios.cli.Utils.allAsMap;
-import static com.spotify.helios.cli.Utils.argToStringMap;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
@@ -71,7 +72,7 @@ public class HostListCommand extends ControlCommand {
   private final Argument patternArg;
   private final Argument fullArg;
   private final Argument statusArg;
-  private final Argument labelsArg;
+  private final Argument hostSelectorsArg;
 
   private final String statusChoicesString;
 
@@ -108,12 +109,14 @@ public class HostListCommand extends ControlCommand {
         .choices(statusChoices.toArray(new String[statusChoices.size()]))
         .help("Filter hosts by its status. Valid statuses are: " + statusChoicesString);
 
-    labelsArg = parser.addArgument("-l", "--labels")
+    hostSelectorsArg = parser.addArgument("-l", "--labels")
         .action(append())
         .setDefault(new ArrayList<String>())
         .nargs("+")
-        .help("Only include hosts that match all of these labels. Labels need to be in the format "
-              + "key=value.");
+        .help("Host selector expression. Hosts matching this expression will be part of the " +
+              "deployment-group. Multiple conditions can be specified, separated by spaces (as " +
+              "separate arguments). If multiple conditions are given, all must be fulfilled. " +
+              "Operators supported are =, !=, in and notin. Example: foo=bar baz!=qux");
   }
 
   @Override
@@ -152,17 +155,11 @@ public class HostListCommand extends ControlCommand {
 
     final List<String> sortedHosts = natural().sortedCopy(hosts);
 
-    final Map<String, String> selectedLabels;
-    try {
-      selectedLabels = argToStringMap(options, labelsArg);
-    } catch (IllegalArgumentException e) {
-      throw new IllegalArgumentException(e.getMessage() +
-                                         "\nLabels need to be in the format key=value.");
-    }
+    final List<HostSelector> hostSelectors = Utils.parseHostSelectors(options, hostSelectorsArg);
 
-    if (selectedLabels != null && !selectedLabels.isEmpty() && json) {
-      System.err.println("Warning: filtering by label is not supported for JSON output. Not doing"
-                         + " any filtering by label.");
+    if (hostSelectors != null && !hostSelectors.isEmpty() && json) {
+      System.err.println("Warning: host selectors are not supported for JSON output. Not applying"
+                         + " any host selectors.");
     }
 
     if (quiet) {
@@ -206,20 +203,11 @@ public class HostListCommand extends ControlCommand {
           }
 
           boolean skipHost = false;
-          if (selectedLabels != null && !selectedLabels.isEmpty()) {
+          if (hostSelectors != null && !hostSelectors.isEmpty()) {
             final Map<String, String> hostLabels = s.getLabels();
-            for (final Entry<String, String> label : selectedLabels.entrySet()) {
-              final String key = label.getKey();
-              final String value = label.getValue();
-
-              if (!hostLabels.containsKey(key)) {
-                skipHost = true;
-                break;
-              }
-
-              final String hostValue = hostLabels.get(key);
-
-              if (isNullOrEmpty(value) ? !isNullOrEmpty(hostValue) : !value.equals(hostValue)) {
+            for (final HostSelector selector : hostSelectors) {
+              if (!hostLabels.containsKey(selector.getLabel()) ||
+                  !selector.matches(hostLabels.get(selector.getLabel()))) {
                 skipHost = true;
                 break;
               }

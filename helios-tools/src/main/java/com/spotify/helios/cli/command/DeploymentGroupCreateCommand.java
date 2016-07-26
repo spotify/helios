@@ -60,7 +60,7 @@ public class DeploymentGroupCreateCommand extends ControlCommand {
         .help("Host selector expression. Hosts matching this expression will be part of the " +
               "deployment-group. Multiple conditions can be specified, separated by spaces (as " +
               "separate arguments). If multiple conditions are given, all must be fulfilled. " +
-              "Operators supported are '=' and '!='. Example: foo=bar baz!=qux");
+              "Operators supported are =, !=, in and notin. Example: foo=bar baz!=qux");
 
     quietArg = parser.addArgument("-q")
         .action(storeTrue())
