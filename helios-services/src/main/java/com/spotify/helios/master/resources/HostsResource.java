@@ -94,7 +94,7 @@ public class HostsResource {
   @Timed
   @ExceptionMetered
   public List<String> list(@QueryParam("namePattern") final String namePattern,
-                           @QueryParam("labels") final List<String> labels) {
+                           @QueryParam("selector") final List<String> hostSelectors) {
 
     List<String> hosts = model.listHosts();
 
@@ -105,7 +105,7 @@ public class HostsResource {
           .collect(Collectors.toList());
     }
 
-    if (!labels.isEmpty()) {
+    if (!hostSelectors.isEmpty()) {
 
       final Map<String, Map<String, String>> hostsAndLabels = hosts.stream()
           .collect(Collectors.toMap(Function.identity(),
@@ -113,7 +113,7 @@ public class HostsResource {
                    )
           );
 
-      final List<HostSelector> selectors = labels.stream()
+      final List<HostSelector> selectors = hostSelectors.stream()
           .map(HostSelector::parse)
           .collect(Collectors.toList());
 

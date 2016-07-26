@@ -17,21 +17,6 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableMap;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.spotify.helios.Polling;
-import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.HostStatus;
-
-import com.google.common.collect.ImmutableSet;
-
-import org.junit.Test;
-
-import java.util.Map;
-import java.util.Set;
-import java.util.concurrent.Callable;
-
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.CoreMatchers.allOf;
 import static org.hamcrest.CoreMatchers.anyOf;
@@ -39,6 +24,19 @@ import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.not;
 import static org.junit.Assert.assertThat;
+
+import com.spotify.helios.Polling;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.HostStatus;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import org.junit.Test;
+
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.Callable;
 
 public class LabelTest extends SystemTestBase {
 
@@ -101,31 +99,31 @@ public class LabelTest extends SystemTestBase {
 
     // Test all these host selectors in one test method to reduce testing time.
     // We can't start masters and agents in @BeforeClass because startDefaultMaster() isn't static
-    final String fooHosts = cli("hosts", "--labels", "role=foo");
+    final String fooHosts = cli("hosts", "--selector", "role=foo");
     assertThat(fooHosts, containsString(testHost1));
     assertThat(fooHosts, not(containsString(testHost2)));
 
-    final String xyzHosts = cli("hosts", "--labels", "xyz=123");
+    final String xyzHosts = cli("hosts", "--selector", "xyz=123");
     assertThat(xyzHosts, allOf(containsString(testHost1), containsString(testHost2)));
 
-    final String fooAndXyzHosts = cli("hosts", "--labels", "role=foo", "xyz=123");
+    final String fooAndXyzHosts = cli("hosts", "--selector", "role=foo", "xyz=123");
     assertThat(fooAndXyzHosts, containsString(testHost1));
     assertThat(fooAndXyzHosts, not(containsString(testHost2)));
 
-    final String notFooHosts = cli("hosts", "--labels", "role!=foo");
+    final String notFooHosts = cli("hosts", "--selector", "role!=foo");
     assertThat(notFooHosts, not(containsString(testHost1)));
     assertThat(notFooHosts, containsString(testHost2));
 
-    final String inFooBarHosts = cli("hosts", "--labels", "role in (foo, bar)");
+    final String inFooBarHosts = cli("hosts", "--selector", "role in (foo, bar)");
     assertThat(inFooBarHosts, allOf(containsString(testHost1), containsString(testHost2)));
 
-    final String notInFooBarHosts = cli("hosts", "--labels", "role notin (foo, bar)");
+    final String notInFooBarHosts = cli("hosts", "--selector", "role notin (foo, bar)");
     assertThat(notInFooBarHosts, not(anyOf(containsString(testHost1), containsString(testHost2))));
 
-    final String nonHosts = cli("hosts", "--labels", "role=doesnt_exist");
+    final String nonHosts = cli("hosts", "--selector", "role=doesnt_exist");
     assertThat(nonHosts, not(anyOf(containsString(testHost1), containsString(testHost2))));
 
-    final String nonHosts2 = cli("hosts", "--labels", "role=doesnt_exist", "xyz=123");
+    final String nonHosts2 = cli("hosts", "--selector", "role=doesnt_exist", "xyz=123");
     assertThat(nonHosts2, not(anyOf(containsString(testHost1), containsString(testHost2))));
   }
 }

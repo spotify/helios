@@ -38,7 +38,7 @@ import java.util.Map;
 
 public class HostsResourceTest {
 
-  private static final List<String> NO_LABELS_ARG = Collections.emptyList();
+  private static final List<String> NO_SELECTOR_ARG = Collections.emptyList();
 
   private final MasterModel model = mock(MasterModel.class);
   private final HostsResource resource = new HostsResource(model);
@@ -75,18 +75,18 @@ public class HostsResourceTest {
 
   @Test
   public void listHosts() {
-    assertThat(resource.list(null, NO_LABELS_ARG), equalTo(hosts));
+    assertThat(resource.list(null, NO_SELECTOR_ARG), equalTo(hosts));
   }
 
   @Test
   public void listHostsNameFilter() {
-    assertThat(resource.list("foo.example", NO_LABELS_ARG), equalTo(hosts));
-    assertThat(resource.list("host1", NO_LABELS_ARG), contains("host1.foo.example.com"));
-    assertThat(resource.list("host5", NO_LABELS_ARG), empty());
+    assertThat(resource.list("foo.example", NO_SELECTOR_ARG), equalTo(hosts));
+    assertThat(resource.list("host1", NO_SELECTOR_ARG), contains("host1.foo.example.com"));
+    assertThat(resource.list("host5", NO_SELECTOR_ARG), empty());
   }
 
   @Test
-  public void listHostsLabelFilter() {
+  public void listHostsSelectorFilter() {
     assertThat(resource.list(null, ImmutableList.of("site=foo")), equalTo(hosts));
 
     assertThat(resource.list(null, ImmutableList.of("site=bar")), empty());
@@ -99,9 +99,9 @@ public class HostsResourceTest {
                contains("host1.foo.example.com", "host2.foo.example.com"));
   }
 
-  /** Test behavior when both a name pattern and labels list is specified */
+  /** Test behavior when both a name pattern and selector list is specified */
   @Test
-  public void listHostsNameAndLabelFilter() {
+  public void listHostsNameAndSelectorFilter() {
     assertThat(resource.list("foo.example.com", ImmutableList.of("site=foo")), equalTo(hosts));
 
     assertThat(resource.list("host3", ImmutableList.of("index =2")), empty());

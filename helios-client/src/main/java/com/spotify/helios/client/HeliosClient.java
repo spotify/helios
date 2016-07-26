@@ -341,27 +341,48 @@ public class HeliosClient implements Closeable {
                                                   ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
   }
 
+  /**
+   * Returns a list of all hosts registered in the Helios cluster.
+   */
   public ListenableFuture<List<String>> listHosts() {
     return listHosts(ImmutableMultimap.<String, String>of());
   }
 
+  /**
+   * Returns a list of all hosts registered in the Helios cluster whose name matches the given
+   * pattern.
+   */
   public ListenableFuture<List<String>> listHosts(final String namePattern) {
     return listHosts(ImmutableMultimap.of("namePattern", namePattern));
   }
 
-  public ListenableFuture<List<String>> listHosts(final List<String> labels) {
+  /**
+   * Returns a list of all hosts registered in the Helios cluster which match the given list of
+   * host
+   * selectors.
+   * <p>
+   * For example, {@code listHosts(Arrays.asList("site=foo"))} will return all agents in the
+   * cluster whose labels match the expression {@code site=foo}.</p>
+   */
+  public ListenableFuture<List<String>> listHosts(final Set<String> unparsedHostSelectors) {
     final Multimap<String, String> query = HashMultimap.create();
-    query.putAll("labels", labels);
+    query.putAll("selector", unparsedHostSelectors);
 
     return listHosts(query);
   }
 
+  /**
+   * Returns a list of all hosts registered in the Helios cluster that match both the given hostname
+   * pattern and set of host selectors.
+   *
+   * @see #listHosts(Set)
+   */
   public ListenableFuture<List<String>> listHosts(final String namePattern,
-                                                  final List<String> labels) {
+                                                  final Set<String> unparsedHostSelectors) {
 
     final Multimap<String, String> query = HashMultimap.create();
     query.put("namePattern", namePattern);
-    query.putAll("labels", labels);
+    query.putAll("selector", unparsedHostSelectors);
 
     return listHosts(query);
   }

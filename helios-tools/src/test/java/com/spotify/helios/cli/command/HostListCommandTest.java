@@ -43,6 +43,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -237,15 +238,13 @@ public class HostListCommandTest {
   }
 
   @Test
-  public void testLabelsFilter() throws Exception {
-    final List<Object> labelsArg = ImmutableList.<Object>of("foo=bar");
-    when(options.getList("labels")).thenReturn(labelsArg);
-
-    final List<String> labels = ImmutableList.of("foo=bar");
+  public void testSelectorFilter() throws Exception {
+    final List<Object> selectorArg = ImmutableList.<Object>of("foo=bar");
+    when(options.getList("selector")).thenReturn(selectorArg);
 
     final String hostname = "foo1.example.com";
     final List<String> hosts = ImmutableList.of(hostname);
-    when(client.listHosts(labels)).thenReturn(Futures.immediateFuture(hosts));
+    when(client.listHosts(ImmutableSet.of("foo=bar"))).thenReturn(Futures.immediateFuture(hosts));
 
     final Map<String, HostStatus> statusResponse = ImmutableMap.of(hostname, upStatus);
 

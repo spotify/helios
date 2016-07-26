@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import com.spotify.helios.common.Json;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
@@ -38,6 +39,7 @@ import org.junit.Test;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 public class HeliosClientTest {
 
@@ -111,17 +113,17 @@ public class HeliosClientTest {
   }
 
   @Test
-  public void listHostsFilterByLabels() throws Exception {
+  public void listHostsFilterBySelectors() throws Exception {
     final List<String> hosts = ImmutableList.of("foo1", "foo2", "foo3");
 
     mockResponse("GET",
                  allOf(hasPath("/hosts/"),
-                       containsQuery("labels=foo%3Dbar"),
-                       containsQuery("labels=site%3Dabc")
+                       containsQuery("selector=foo%3Dbar"),
+                       containsQuery("selector=site%3Dabc")
                  ),
                  response("GET", 200, hosts));
 
-    final List<String> labels = ImmutableList.of("foo=bar", "site=abc");
-    assertThat(client.listHosts(labels).get(), equalTo(hosts));
+    final Set<String> selectors = ImmutableSet.of("foo=bar", "site=abc");
+    assertThat(client.listHosts(selectors).get(), equalTo(hosts));
   }
 }

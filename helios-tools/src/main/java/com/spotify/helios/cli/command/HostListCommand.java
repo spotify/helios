@@ -41,6 +41,7 @@ import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Optional;
 import com.google.common.collect.Collections2;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
@@ -103,13 +104,14 @@ public class HostListCommand extends ControlCommand {
         .choices(statusChoices.toArray(new String[statusChoices.size()]))
         .help("Filter hosts by its status. Valid statuses are: " + statusChoicesString);
 
-    hostSelectorsArg = parser.addArgument("-l", "--labels")
+    hostSelectorsArg = parser.addArgument("-s", "--selector")
         .setDefault(new ArrayList<String>())
         .nargs("+")
-        .help("Host selector expression. Hosts matching this expression will be part of the " +
-              "deployment-group. Multiple conditions can be specified, separated by spaces (as " +
-              "separate arguments). If multiple conditions are given, all must be fulfilled. " +
-              "Operators supported are =, !=, in and notin. Example: foo=bar baz!=qux");
+        .help("Host selector expression. The list of hosts will be filtered to match only those "
+              + "whose labels match all of the supplied expressions. "
+              + "Multiple expressions can be specified, separated by spaces "
+              + "(e.g. `-s site=foo bar!=yes`). " +
+              "Supported operators are '=', '!=', 'in' and 'notin'.");
   }
 
   @Override
@@ -118,18 +120,19 @@ public class HostListCommand extends ControlCommand {
       throws ExecutionException, InterruptedException {
 
     final String pattern = options.getString(patternArg.getDest());
-    final List<String> labels = options.getList(hostSelectorsArg.getDest());
+    final List<String> selectorArgValue = options.getList(hostSelectorsArg.getDest());
+    final Set<String> selectors = ImmutableSet.copyOf(selectorArgValue);
 
     final List<String> hosts;
 
-    if (pattern.isEmpty() && labels.isEmpty()) {
+    if (pattern.isEmpty() && selectors.isEmpty()) {
       hosts = client.listHosts().get();
-    } else if (!pattern.isEmpty() && labels.isEmpty()) {
+    } else if (!pattern.isEmpty() && selectors.isEmpty()) {
       hosts = client.listHosts(pattern).get();
-    } else if (pattern.isEmpty() && !labels.isEmpty()) {
-      hosts = client.listHosts(labels).get();
+    } else if (pattern.isEmpty() && !selectors.isEmpty()) {
+      hosts = client.listHosts(selectors).get();
     } else {
-      hosts = client.listHosts(pattern, labels).get();
+      hosts = client.listHosts(pattern, selectors).get();
     }
 
     final Map<String, String> queryParams = Maps.newHashMap();
