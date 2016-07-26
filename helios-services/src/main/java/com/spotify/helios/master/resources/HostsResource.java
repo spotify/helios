@@ -17,12 +17,20 @@
 
 package com.spotify.helios.master.resources;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.Maps;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
+import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.FORBIDDEN;
+import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST_NOT_FOUND;
+import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.INVALID_ID;
+import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.JOB_NOT_FOUND;
+import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.OK;
+import static com.spotify.helios.master.http.Responses.badRequest;
+import static com.spotify.helios.master.http.Responses.forbidden;
+import static com.spotify.helios.master.http.Responses.notFound;
+import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
-import com.codahale.metrics.annotation.ExceptionMetered;
-import com.codahale.metrics.annotation.Timed;
 import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.protocol.HostDeregisterResponse;
@@ -39,12 +47,21 @@ import com.spotify.helios.master.JobPortAllocationConflictException;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.master.TokenVerificationException;
 import com.spotify.helios.master.http.PATCH;
+import com.spotify.helios.master.HostMatcher;
 
+import com.codahale.metrics.annotation.ExceptionMetered;
+import com.codahale.metrics.annotation.Timed;
+import com.google.common.base.Optional;
+import com.google.common.collect.Maps;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 import javax.ws.rs.DELETE;
@@ -57,18 +74,6 @@ import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.Response;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_TOKEN;
-import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.FORBIDDEN;
-import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.HOST_NOT_FOUND;
-import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.INVALID_ID;
-import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.JOB_NOT_FOUND;
-import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.OK;
-import static com.spotify.helios.master.http.Responses.badRequest;
-import static com.spotify.helios.master.http.Responses.forbidden;
-import static com.spotify.helios.master.http.Responses.notFound;
-import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 @Path("/hosts")
 public class HostsResource {
@@ -88,8 +93,35 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public List<String> list() {
-    return model.listHosts();
+  public List<String> list(@QueryParam("namePatternFilter") final String namePattern,
+                           @QueryParam("labelPatternFilter") final List<String> labels) {
+
+    List<String> hosts = model.listHosts();
+
+    if (namePattern != null) {
+      final Predicate<String> matchesPattern = Pattern.compile(namePattern).asPredicate();
+      hosts = hosts.stream()
+          .filter(matchesPattern)
+          .collect(Collectors.toList());
+    }
+
+    if (!labels.isEmpty()) {
+
+      final Map<String, Map<String, String>> hostsAndLabels = hosts.stream()
+          .collect(Collectors.toMap(Function.identity(),
+                                    host -> model.getHostStatus(host).getLabels()
+                   )
+          );
+
+      final List<HostSelector> selectors = labels.stream()
+          .map(HostSelector::parse)
+          .collect(Collectors.toList());
+
+      final HostMatcher matcher = new HostMatcher(hostsAndLabels);
+      hosts = matcher.getMatchingHosts(selectors);
+    }
+
+    return hosts;
   }
 
   /**

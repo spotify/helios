@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2015 Spotify AB.
+ * Copyright (c) 2016 Spotify AB.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,22 +15,21 @@
  * under the License.
  */
 
-package com.spotify.helios.rollingupdate;
+package com.spotify.helios.master;
 
-import com.google.common.collect.ImmutableMap;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
+import static org.junit.Assert.assertThat;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostSelector;
 
+import com.google.common.collect.ImmutableMap;
 import org.junit.Test;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.empty;
-import static org.junit.Assert.assertThat;
 
 public class HostMatcherTest {
 
@@ -42,8 +41,7 @@ public class HostMatcherTest {
       "bar-c1", ImmutableMap.of("role", "bar", "pool", "c")
   );
 
-  private final RollingUpdateService.HostMatcher matcher = new
-      RollingUpdateService.HostMatcher(hosts);
+  private final HostMatcher matcher = new HostMatcher(hosts);
 
   private static DeploymentGroup group(String... selectorStrings) {
     final List<HostSelector> selectors = new ArrayList<>();
