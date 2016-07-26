@@ -73,6 +73,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.core.Response;
 
 @Path("/hosts")
@@ -106,16 +107,26 @@ public class HostsResource {
     }
 
     if (!hostSelectors.isEmpty()) {
+      // check that all supplied selectors are parseable/valid
+      final List<HostSelector> selectors = hostSelectors.stream()
+          .map(selectorStr -> {
+            final HostSelector parsed = HostSelector.parse(selectorStr);
+            if (parsed == null) {
+              throw new WebApplicationException(
+                  Response.status(Response.Status.BAD_REQUEST)
+                      .entity("Invalid host selector: " + selectorStr)
+                      .build()
+              );
+            }
+            return parsed;
+          })
+          .collect(Collectors.toList());
 
       final Map<String, Map<String, String>> hostsAndLabels = hosts.stream()
           .collect(Collectors.toMap(Function.identity(),
                                     host -> model.getHostStatus(host).getLabels()
                    )
           );
-
-      final List<HostSelector> selectors = hostSelectors.stream()
-          .map(HostSelector::parse)
-          .collect(Collectors.toList());
 
       final HostMatcher matcher = new HostMatcher(hostsAndLabels);
       hosts = matcher.getMatchingHosts(selectors);

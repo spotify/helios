@@ -28,17 +28,27 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.master.MasterModel;
 
 import com.google.common.collect.ImmutableList;
+import org.hamcrest.CustomTypeSafeMatcher;
+import org.hamcrest.Matcher;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import javax.ws.rs.WebApplicationException;
+import javax.ws.rs.core.Response;
+
 public class HostsResourceTest {
 
   private static final List<String> NO_SELECTOR_ARG = Collections.emptyList();
+
+  @Rule
+  public final ExpectedException exception = ExpectedException.none();
 
   private final MasterModel model = mock(MasterModel.class);
   private final HostsResource resource = new HostsResource(model);
@@ -108,5 +118,24 @@ public class HostsResourceTest {
 
     assertThat(resource.list("host3", ImmutableList.of("index!=2")),
                contains("host3.foo.example.com"));
+  }
+
+  @Test
+  public void listHostsInvalidHostSelectorSyntax() {
+    exception.expect(WebApplicationException.class);
+    exception.expect(hasStatus(Response.Status.BAD_REQUEST));
+
+    resource.list(null, ImmutableList.of("foo <@> bar"));
+  }
+
+  private static Matcher<WebApplicationException> hasStatus(final Response.Status status) {
+    final int statusCode = status.getStatusCode();
+    final String msg = "WebApplicationException with response.statusCode=" + statusCode;
+    return new CustomTypeSafeMatcher<WebApplicationException>(msg) {
+      @Override
+      protected boolean matchesSafely(final WebApplicationException item) {
+        return item.getResponse() != null && item.getResponse().getStatus() == statusCode;
+      }
+    };
   }
 }
