@@ -93,8 +93,8 @@ public class HostsResource {
   @Produces(APPLICATION_JSON)
   @Timed
   @ExceptionMetered
-  public List<String> list(@QueryParam("namePatternFilter") final String namePattern,
-                           @QueryParam("labelPatternFilter") final List<String> labels) {
+  public List<String> list(@QueryParam("namePattern") final String namePattern,
+                           @QueryParam("labels") final List<String> labels) {
 
     List<String> hosts = model.listHosts();
 
