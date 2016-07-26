@@ -26,7 +26,6 @@ import static com.spotify.helios.cli.Utils.allAsMap;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
-import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 import com.spotify.helios.cli.Table;
@@ -105,7 +104,6 @@ public class HostListCommand extends ControlCommand {
         .help("Filter hosts by its status. Valid statuses are: " + statusChoicesString);
 
     hostSelectorsArg = parser.addArgument("-l", "--labels")
-        .action(append())
         .setDefault(new ArrayList<String>())
         .nargs("+")
         .help("Host selector expression. Hosts matching this expression will be part of the " +
