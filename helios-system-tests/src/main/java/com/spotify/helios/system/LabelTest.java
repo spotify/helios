@@ -99,31 +99,31 @@ public class LabelTest extends SystemTestBase {
 
     // Test all these host selectors in one test method to reduce testing time.
     // We can't start masters and agents in @BeforeClass because startDefaultMaster() isn't static
-    final String fooHosts = cli("hosts", "--selector", "role=foo");
+    final String fooHosts = cli("hosts", "-s", "role=foo");
     assertThat(fooHosts, containsString(testHost1));
     assertThat(fooHosts, not(containsString(testHost2)));
 
-    final String xyzHosts = cli("hosts", "--selector", "xyz=123");
+    final String xyzHosts = cli("hosts", "-s", "xyz=123");
     assertThat(xyzHosts, allOf(containsString(testHost1), containsString(testHost2)));
 
-    final String fooAndXyzHosts = cli("hosts", "--selector", "role=foo", "xyz=123");
+    final String fooAndXyzHosts = cli("hosts", "-s", "role=foo", "-s", "xyz=123");
     assertThat(fooAndXyzHosts, containsString(testHost1));
     assertThat(fooAndXyzHosts, not(containsString(testHost2)));
 
-    final String notFooHosts = cli("hosts", "--selector", "role!=foo");
+    final String notFooHosts = cli("hosts", "-s", "role!=foo");
     assertThat(notFooHosts, not(containsString(testHost1)));
     assertThat(notFooHosts, containsString(testHost2));
 
-    final String inFooBarHosts = cli("hosts", "--selector", "role in (foo, bar)");
+    final String inFooBarHosts = cli("hosts", "-s", "role in (foo, bar)");
     assertThat(inFooBarHosts, allOf(containsString(testHost1), containsString(testHost2)));
 
-    final String notInFooBarHosts = cli("hosts", "--selector", "role notin (foo, bar)");
+    final String notInFooBarHosts = cli("hosts", "-s", "role notin (foo, bar)");
     assertThat(notInFooBarHosts, not(anyOf(containsString(testHost1), containsString(testHost2))));
 
-    final String nonHosts = cli("hosts", "--selector", "role=doesnt_exist");
+    final String nonHosts = cli("hosts", "-s", "role=doesnt_exist");
     assertThat(nonHosts, not(anyOf(containsString(testHost1), containsString(testHost2))));
 
-    final String nonHosts2 = cli("hosts", "--selector", "role=doesnt_exist", "xyz=123");
+    final String nonHosts2 = cli("hosts", "-s", "role=doesnt_exist", "-s", "xyz=123");
     assertThat(nonHosts2, not(anyOf(containsString(testHost1), containsString(testHost2))));
   }
 }

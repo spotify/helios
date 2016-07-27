@@ -26,6 +26,7 @@ import static com.spotify.helios.cli.Utils.allAsMap;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.lang.String.format;
 import static java.lang.System.currentTimeMillis;
+import static net.sourceforge.argparse4j.impl.Arguments.append;
 import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 import com.spotify.helios.cli.Table;
@@ -105,13 +106,13 @@ public class HostListCommand extends ControlCommand {
         .help("Filter hosts by its status. Valid statuses are: " + statusChoicesString);
 
     hostSelectorsArg = parser.addArgument("-s", "--selector")
+        .action(append())
         .setDefault(new ArrayList<String>())
-        .nargs("+")
         .help("Host selector expression. The list of hosts will be filtered to match only those "
               + "whose labels match all of the supplied expressions. "
-              + "Multiple expressions can be specified, separated by spaces "
-              + "(e.g. `-s site=foo bar!=yes`). " +
-              "Supported operators are '=', '!=', 'in' and 'notin'.");
+              + "Multiple selector expressions can be specified with multiple `-s` arguments "
+              + "(e.g. `-s site=foo -s bar!=yes`). "
+              + "Supported operators are '=', '!=', 'in' and 'notin'.");
   }
 
   @Override
