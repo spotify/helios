@@ -21,7 +21,7 @@ import static com.google.common.util.concurrent.Futures.immediateFuture;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalToIgnoringWhiteSpace;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Matchers.anyMapOf;
@@ -47,6 +47,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.util.concurrent.Futures;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
+import net.sourceforge.argparse4j.inf.ArgumentParserException;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
 import org.junit.Before;
@@ -55,6 +56,7 @@ import org.junit.Test;
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.text.ParseException;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -62,12 +64,9 @@ import java.util.concurrent.TimeUnit;
 
 public class HostListCommandTest {
 
-  private final Namespace options = mock(Namespace.class);
   private final HeliosClient client = mock(HeliosClient.class);
   private final ByteArrayOutputStream baos = new ByteArrayOutputStream();
   private final PrintStream out = new PrintStream(baos);
-
-  private HostListCommand command;
 
   private static final List<String> HOSTS = ImmutableList.of("host1.", "host2.", "host3.");
 
@@ -110,12 +109,6 @@ public class HostListCommandTest {
 
   @Before
   public void setUp() throws ParseException {
-    // use a real, dummy Subparser impl to avoid having to mock out every single call
-    final ArgumentParser parser = ArgumentParsers.newArgumentParser("test");
-    final Subparser subparser = parser.addSubparsers().addParser("hosts");
-    command = new HostListCommand(subparser);
-
-    when(options.getString("pattern")).thenReturn("");
     when(client.listHosts()).thenReturn(immediateFuture(HOSTS));
 
     final HostInfo hostInfo = HostInfo.newBuilder()
@@ -185,14 +178,25 @@ public class HostListCommandTest {
         + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    foo=bar, baz=qux"));
   }
 
-  private int runCommand() throws ExecutionException, InterruptedException {
+  private int runCommand(String... commandArgs)
+      throws ExecutionException, InterruptedException, ArgumentParserException {
+
+    final String[] args = new String[1 + commandArgs.length];
+    args[0] = "hosts";
+    System.arraycopy(commandArgs, 0, args, 1, commandArgs.length);
+
+    // use a real, dummy Subparser impl to avoid having to mock out every single call
+    final ArgumentParser parser = ArgumentParsers.newArgumentParser("test");
+    final Subparser subparser = parser.addSubparsers().addParser("hosts");
+    final HostListCommand command = new HostListCommand(subparser);
+
+    final Namespace options = parser.parseArgs(args);
     return command.run(options, client, out, false, null);
   }
 
   @Test
   public void testQuietOutputIsSorted() throws Exception {
-    when(options.getBoolean("q")).thenReturn(true);
-    final int ret = runCommand();
+    final int ret = runCommand("-q");
 
     assertEquals(0, ret);
     assertEquals(EXPECTED_ORDER, TestUtils.readFirstColumnFromOutput(baos.toString(), false));
@@ -200,27 +204,19 @@ public class HostListCommandTest {
 
   @Test
   public void testNonQuietOutputIsSorted() throws Exception {
-    when(options.getBoolean("q")).thenReturn(false);
     final int ret = runCommand();
 
     assertEquals(0, ret);
     assertEquals(EXPECTED_ORDER, TestUtils.readFirstColumnFromOutput(baos.toString(), true));
   }
 
-  @Test(expected = IllegalArgumentException.class)
+  @Test(expected = ArgumentParserException.class)
   public void testInvalidStatusThrowsError() throws Exception {
-    when(options.getString("status")).thenReturn("DWN");
-    final int ret = runCommand();
-    final String output = baos.toString();
-
-    assertEquals(1, ret);
-    assertThat(output, equalToIgnoringWhiteSpace("Invalid status. Valid statuses are: UP, DOWN"));
+    runCommand("--status", "DWN");
   }
 
   @Test
   public void testPatternFilter() throws Exception {
-    when(options.getString("pattern")).thenReturn("host1");
-
     final String hostname = "host1.example.com";
     final List<String> hosts = ImmutableList.of(hostname);
     when(client.listHosts("host1")).thenReturn(Futures.immediateFuture(hosts));
@@ -230,7 +226,7 @@ public class HostListCommandTest {
     when(client.hostStatuses(eq(hosts), anyMapOf(String.class, String.class)))
         .thenReturn(Futures.immediateFuture(statusResponse));
 
-    final int ret = runCommand();
+    final int ret = runCommand("host1");
     assertEquals(0, ret);
 
     assertEquals(ImmutableList.of("HOST", hostname + "."),
@@ -239,9 +235,6 @@ public class HostListCommandTest {
 
   @Test
   public void testSelectorFilter() throws Exception {
-    final List<Object> selectorArg = ImmutableList.<Object>of("foo=bar");
-    when(options.getList("selector")).thenReturn(selectorArg);
-
     final String hostname = "foo1.example.com";
     final List<String> hosts = ImmutableList.of(hostname);
     when(client.listHosts(ImmutableSet.of("foo=bar"))).thenReturn(Futures.immediateFuture(hosts));
@@ -251,11 +244,36 @@ public class HostListCommandTest {
     when(client.hostStatuses(eq(hosts), anyMapOf(String.class, String.class)))
         .thenReturn(Futures.immediateFuture(statusResponse));
 
-    final int ret = runCommand();
+    final int ret = runCommand("--selector", "foo=bar");
     assertEquals(0, ret);
 
     assertEquals(ImmutableList.of("HOST", hostname + "."),
                  TestUtils.readFirstColumnFromOutput(baos.toString(), false));
+  }
 
+  /**
+   * Verify that the configuration of the '--selector' argument does not cause positional arguments
+   * specified after the optional argument to be greedily parsed. This verifies a fix for a bug
+   * where `nargs("+")` was used where it was not necessary, which causes a command like `--selector
+   * foo=bar pattern` to be interpreted as two selectors of `foo=bar` and `pattern`.
+   */
+  @Test
+  public void testSelectorSlurping() throws Exception {
+    final List<String> hosts = ImmutableList.of("host-1");
+
+    when(client.hostStatuses(eq(hosts), anyMapOf(String.class, String.class)))
+        .thenReturn(Futures.immediateFuture(Collections.<String, HostStatus>emptyMap()));
+
+    when(client.listHosts("blah", ImmutableSet.of("foo=bar")))
+        .thenReturn(Futures.immediateFuture(hosts));
+
+    assertThat(runCommand("-s", "foo=bar", "blah"), equalTo(0));
+    assertThat(runCommand("blah", "-s", "foo=bar"), equalTo(0));
+
+    when(client.listHosts("blarp", ImmutableSet.of("a=b", "z=1")))
+        .thenReturn(Futures.immediateFuture(hosts));
+
+    assertThat(runCommand("-s", "a=b", "-s", "z=1", "blarp"), equalTo(0));
+    assertThat(runCommand("blarp", "--selector", "a=b", "--selector", "z=1"), equalTo(0));
   }
 }
