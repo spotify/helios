@@ -17,26 +17,25 @@
 
 package com.spotify.helios.client;
 
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.base.Supplier;
-import com.google.common.base.Suppliers;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.escape.Escaper;
-import com.google.common.net.UrlEscapers;
-import com.google.common.util.concurrent.AsyncFunction;
-import com.google.common.util.concurrent.FutureFallback;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.ListeningScheduledExecutorService;
-import com.google.common.util.concurrent.MoreExecutors;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static com.google.common.util.concurrent.Futures.transform;
+import static com.google.common.util.concurrent.Futures.withFallback;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
+import static java.lang.String.format;
+import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
+import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
+import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
+import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
+import static java.net.HttpURLConnection.HTTP_OK;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static java.util.concurrent.Executors.newScheduledThreadPool;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JavaType;
-import com.fasterxml.jackson.databind.type.TypeFactory;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
@@ -65,6 +64,29 @@ import com.spotify.helios.common.protocol.VersionResponse;
 import com.spotify.sshagentproxy.AgentProxies;
 import com.spotify.sshagentproxy.AgentProxy;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import com.google.common.base.Function;
+import com.google.common.base.Optional;
+import com.google.common.base.Supplier;
+import com.google.common.base.Suppliers;
+import com.google.common.base.Throwables;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableMultimap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Multimap;
+import com.google.common.collect.Multimaps;
+import com.google.common.escape.Escaper;
+import com.google.common.net.UrlEscapers;
+import com.google.common.util.concurrent.AsyncFunction;
+import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.ListeningScheduledExecutorService;
+import com.google.common.util.concurrent.MoreExecutors;
 import org.apache.http.client.utils.URIBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -84,25 +106,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.util.concurrent.Futures.immediateFuture;
-import static com.google.common.util.concurrent.Futures.transform;
-import static com.google.common.util.concurrent.Futures.withFallback;
-import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
-import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
-import static java.lang.String.format;
-import static java.net.HttpURLConnection.HTTP_BAD_METHOD;
-import static java.net.HttpURLConnection.HTTP_BAD_REQUEST;
-import static java.net.HttpURLConnection.HTTP_FORBIDDEN;
-import static java.net.HttpURLConnection.HTTP_NOT_FOUND;
-import static java.net.HttpURLConnection.HTTP_OK;
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static java.util.concurrent.Executors.newScheduledThreadPool;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 public class HeliosClient implements Closeable {
 
@@ -127,14 +130,17 @@ public class HeliosClient implements Closeable {
   }
 
   private URI uri(final String path, final Map<String, String> query) {
+    return uri(path, Multimaps.forMap(query));
+  }
+
+  private URI uri(final String path, final Multimap<String, String> query) {
     checkArgument(path.startsWith("/"));
 
     final URIBuilder builder = new URIBuilder()
         .setScheme("http")
         .setHost("helios")
         .setPath(path);
-
-    for (final Map.Entry<String, String> q : query.entrySet()) {
+    for (final Map.Entry<String, String> q : query.entries()) {
       builder.addParameter(q.getKey(), q.getValue());
     }
     builder.addParameter("user", user);
@@ -335,8 +341,54 @@ public class HeliosClient implements Closeable {
                                                   ImmutableSet.of(HTTP_OK, HTTP_NOT_FOUND)));
   }
 
+  /**
+   * Returns a list of all hosts registered in the Helios cluster.
+   */
   public ListenableFuture<List<String>> listHosts() {
-    return get(uri("/hosts/"), new TypeReference<List<String>>() {
+    return listHosts(ImmutableMultimap.<String, String>of());
+  }
+
+  /**
+   * Returns a list of all hosts registered in the Helios cluster whose name matches the given
+   * pattern.
+   */
+  public ListenableFuture<List<String>> listHosts(final String namePattern) {
+    return listHosts(ImmutableMultimap.of("namePattern", namePattern));
+  }
+
+  /**
+   * Returns a list of all hosts registered in the Helios cluster which match the given list of
+   * host
+   * selectors.
+   * <p>
+   * For example, {@code listHosts(Arrays.asList("site=foo"))} will return all agents in the
+   * cluster whose labels match the expression {@code site=foo}.</p>
+   */
+  public ListenableFuture<List<String>> listHosts(final Set<String> unparsedHostSelectors) {
+    final Multimap<String, String> query = HashMultimap.create();
+    query.putAll("selector", unparsedHostSelectors);
+
+    return listHosts(query);
+  }
+
+  /**
+   * Returns a list of all hosts registered in the Helios cluster that match both the given hostname
+   * pattern and set of host selectors.
+   *
+   * @see #listHosts(Set)
+   */
+  public ListenableFuture<List<String>> listHosts(final String namePattern,
+                                                  final Set<String> unparsedHostSelectors) {
+
+    final Multimap<String, String> query = HashMultimap.create();
+    query.put("namePattern", namePattern);
+    query.putAll("selector", unparsedHostSelectors);
+
+    return listHosts(query);
+  }
+
+  private ListenableFuture<List<String>> listHosts(final Multimap<String, String> query) {
+    return get(uri("/hosts/", query), new TypeReference<List<String>>() {
     });
   }
 

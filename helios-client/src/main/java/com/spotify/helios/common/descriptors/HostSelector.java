@@ -17,13 +17,14 @@
 
 package com.spotify.helios.common.descriptors;
 
-import com.google.common.collect.Iterables;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static java.lang.String.format;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
+import com.google.common.collect.Iterables;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -31,9 +32,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static java.lang.String.format;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class HostSelector extends Descriptor {
@@ -43,13 +41,14 @@ public class HostSelector extends Descriptor {
     boolean test(T t, U u);
   }
 
-  private static BiPredicate<String, Object> IN_BIPREDICATE = new BiPredicate<String, Object>() {
-    @Override
-    public boolean test(final String a, final Object b) {
-      @SuppressWarnings("unchecked") final Iterable<String> iterable = (Iterable<String>) b;
-      return Iterables.contains(iterable, a);
-    }
-  };
+  private static final BiPredicate<String, Object> IN_BIPREDICATE =
+      new BiPredicate<String, Object>() {
+        @Override
+        public boolean test(final String a, final Object b) {
+          @SuppressWarnings("unchecked") final Iterable<String> iterable = (Iterable<String>) b;
+          return Iterables.contains(iterable, a);
+        }
+      };
 
   public enum Operator {
     EQUALS("=", new BiPredicate<String, Object>() {

@@ -17,9 +17,17 @@
 
 package com.spotify.helios.cli.command;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.util.concurrent.Futures;
+import static com.google.common.util.concurrent.Futures.immediateFuture;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalToIgnoringWhiteSpace;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyMapOf;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.spotify.helios.cli.TestUtils;
 import com.spotify.helios.client.HeliosClient;
@@ -33,34 +41,24 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.Futures;
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 import net.sourceforge.argparse4j.inf.Subparser;
-
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.text.ParseException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.Collections.singletonList;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.equalToIgnoringWhiteSpace;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyListOf;
-import static org.mockito.Matchers.anyMapOf;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class HostListCommandTest {
 
@@ -104,15 +102,11 @@ public class HostListCommandTest {
           .setState(TaskStatus.State.RUNNING).build()
   );
 
-  private static final Map<String, String> LABELS1 = ImmutableMap.of(
-      "label1", "value1", "label2", "value2a");
-  private static final Map<String, String> LABELS2 = ImmutableMap.of(
-      "label1", "value1", "label2", "value2b");
-  private static final Map<String, String> LABELS3 = ImmutableMap.of(
-      "label3", "value3", "label2", "value2c");
+  private static final Map<String, String> LABELS = ImmutableMap.of("foo", "bar", "baz", "qux");
 
   private static final List<String> EXPECTED_ORDER = ImmutableList.of("host1.", "host2.", "host3.");
-
+  private HostStatus upStatus;
+  private HostStatus downStatus;
 
   @Before
   public void setUp() throws ParseException {
@@ -122,7 +116,7 @@ public class HostListCommandTest {
     command = new HostListCommand(subparser);
 
     when(options.getString("pattern")).thenReturn("");
-    when(client.listHosts()).thenReturn(Futures.immediateFuture(HOSTS));
+    when(client.listHosts()).thenReturn(immediateFuture(HOSTS));
 
     final HostInfo hostInfo = HostInfo.newBuilder()
         .setCpus(4)
@@ -143,38 +137,37 @@ public class HostListCommandTest {
         .setStartTime(startTime)
         .build();
 
-    final HostStatus.Builder statusBuilder = HostStatus.newBuilder()
+    upStatus = HostStatus.newBuilder()
         .setJobs(JOBS)
         .setStatuses(JOB_STATUSES)
         .setStatus(UP)
         .setHostInfo(hostInfo)
-        .setAgentInfo(agentInfo);
+        .setAgentInfo(agentInfo)
+        .setLabels(LABELS)
+        .build();
 
-    final HostStatus status = statusBuilder.setLabels(LABELS1).build();
-    final HostStatus status2 = statusBuilder.setLabels(LABELS2).build();
-
-    final HostStatus downStatus = HostStatus.newBuilder()
+    downStatus = HostStatus.newBuilder()
         .setJobs(JOBS)
         .setStatuses(JOB_STATUSES)
         .setStatus(DOWN)
         .setHostInfo(hostInfo)
         .setAgentInfo(agentInfo)
-        .setLabels(LABELS3)
+        .setLabels(LABELS)
         .build();
 
     final Map<String, HostStatus> statuses = ImmutableMap.of(
-        HOSTS.get(0), status,
-        HOSTS.get(1), status2,
+        HOSTS.get(0), upStatus,
+        HOSTS.get(1), upStatus,
         HOSTS.get(2), downStatus
     );
 
-    when(client.hostStatuses(anyListOf(String.class), anyMapOf(String.class, String.class)))
-        .thenReturn(Futures.immediateFuture(statuses));
+    when(client.hostStatuses(eq(HOSTS), anyMapOf(String.class, String.class)))
+        .thenReturn(immediateFuture(statuses));
   }
 
   @Test
   public void testCommand() throws Exception {
-    final int ret = command.run(options, client, out, false, null);
+    final int ret = runCommand();
     final String output = baos.toString();
 
     assertEquals(0, ret);
@@ -183,19 +176,23 @@ public class HostListCommandTest {
         + "OS              HELIOS     DOCKER          LABELS"));
     assertThat(output, containsString(
         "host1.    Up 2 days     3           3          4       1 gb    0.10        0.53         "
-        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    label1=value1, label2=value2a"));
+        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    foo=bar, baz=qux"));
     assertThat(output, containsString(
         "host2.    Up 2 days     3           3          4       1 gb    0.10        0.53         "
-        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    label1=value1, label2=value2b"));
+        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    foo=bar, baz=qux"));
     assertThat(output, containsString(
         "host3.    Down 1 day    3           3          4       1 gb    0.10        0.53         "
-        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    label3=value3, label2=value2c"));
+        + "OS foo 0.1.0    0.8.420    1.7.0 (1.18)    foo=bar, baz=qux"));
+  }
+
+  private int runCommand() throws ExecutionException, InterruptedException {
+    return command.run(options, client, out, false, null);
   }
 
   @Test
   public void testQuietOutputIsSorted() throws Exception {
     when(options.getBoolean("q")).thenReturn(true);
-    final int ret = command.run(options, client, out, false, null);
+    final int ret = runCommand();
 
     assertEquals(0, ret);
     assertEquals(EXPECTED_ORDER, TestUtils.readFirstColumnFromOutput(baos.toString(), false));
@@ -204,7 +201,7 @@ public class HostListCommandTest {
   @Test
   public void testNonQuietOutputIsSorted() throws Exception {
     when(options.getBoolean("q")).thenReturn(false);
-    final int ret = command.run(options, client, out, false, null);
+    final int ret = runCommand();
 
     assertEquals(0, ret);
     assertEquals(EXPECTED_ORDER, TestUtils.readFirstColumnFromOutput(baos.toString(), true));
@@ -213,7 +210,7 @@ public class HostListCommandTest {
   @Test(expected = IllegalArgumentException.class)
   public void testInvalidStatusThrowsError() throws Exception {
     when(options.getString("status")).thenReturn("DWN");
-    final int ret = command.run(options, client, out, false, null);
+    final int ret = runCommand();
     final String output = baos.toString();
 
     assertEquals(1, ret);
@@ -221,48 +218,44 @@ public class HostListCommandTest {
   }
 
   @Test
-  public void testHostSelectorEquals() throws Exception {
-    checkSelectors(ImmutableList.of("label1=value1"), ImmutableList.of("host1.", "host2."));
-  }
+  public void testPatternFilter() throws Exception {
+    when(options.getString("pattern")).thenReturn("host1");
 
-  @Test
-  public void testHostSelectorNotEquals() throws Exception {
-    checkSelectors(ImmutableList.of("label2!=value2a"), ImmutableList.of("host2.", "host3."));
-  }
+    final String hostname = "host1.example.com";
+    final List<String> hosts = ImmutableList.of(hostname);
+    when(client.listHosts("host1")).thenReturn(Futures.immediateFuture(hosts));
 
-  @Test
-  public void testHostSelectorIn() throws Exception {
-    checkSelectors(ImmutableList.of("label2 in (value2a, value2b)"),
-                   ImmutableList.of("host1.", "host2."));
-  }
+    final Map<String, HostStatus> statusResponse = ImmutableMap.of(hostname, upStatus);
 
-  @Test
-  public void testHostSelectorNotIn() throws Exception {
-    checkSelectors(ImmutableList.of("label2 notin (value2a, value2b)"), singletonList("host3."));
-  }
+    when(client.hostStatuses(eq(hosts), anyMapOf(String.class, String.class)))
+        .thenReturn(Futures.immediateFuture(statusResponse));
 
-  @Test
-  public void testMultipleHostSelectors() throws Exception {
-    checkSelectors(ImmutableList.of("label1=value1", "label2=value2a"), singletonList("host1."));
-    checkSelectors(ImmutableList.of("label1=value1", "label2=value2b"), singletonList("host2."));
-    checkSelectors(ImmutableList.of("label2 notin (value2a, value2b)", "label1=value1"),
-                   Collections.<String>emptyList());
-  }
-
-  /**
-   * Checks that running `helios hosts` with the specified host selectors returns expected hosts.
-   * @param hostSelectors A list of host selector strings to pass to the --labels switch.
-   * @param expectedHosts A list of expected hosts in that order.
-   * @throws Exception If some exception occurs.
-   */
-  private void checkSelectors(final List<String> hostSelectors,
-                              final List<String> expectedHosts) throws Exception {
-    final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    final PrintStream out = new PrintStream(baos);
-
-    when(options.getList("labels")).thenReturn(ImmutableList.of((Object) hostSelectors));
-    final int ret = command.run(options, client, out, false, null);
+    final int ret = runCommand();
     assertEquals(0, ret);
-    assertThat(TestUtils.readFirstColumnFromOutput(baos.toString(), true), equalTo(expectedHosts));
+
+    assertEquals(ImmutableList.of("HOST", hostname + "."),
+                 TestUtils.readFirstColumnFromOutput(baos.toString(), false));
+  }
+
+  @Test
+  public void testSelectorFilter() throws Exception {
+    final List<Object> selectorArg = ImmutableList.<Object>of("foo=bar");
+    when(options.getList("selector")).thenReturn(selectorArg);
+
+    final String hostname = "foo1.example.com";
+    final List<String> hosts = ImmutableList.of(hostname);
+    when(client.listHosts(ImmutableSet.of("foo=bar"))).thenReturn(Futures.immediateFuture(hosts));
+
+    final Map<String, HostStatus> statusResponse = ImmutableMap.of(hostname, upStatus);
+
+    when(client.hostStatuses(eq(hosts), anyMapOf(String.class, String.class)))
+        .thenReturn(Futures.immediateFuture(statusResponse));
+
+    final int ret = runCommand();
+    assertEquals(0, ret);
+
+    assertEquals(ImmutableList.of("HOST", hostname + "."),
+                 TestUtils.readFirstColumnFromOutput(baos.toString(), false));
+
   }
 }

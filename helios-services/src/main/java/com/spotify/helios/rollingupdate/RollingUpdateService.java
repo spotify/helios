@@ -17,30 +17,24 @@
 
 package com.spotify.helios.rollingupdate;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.AbstractIdleService;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.spotify.helios.servicescommon.Reactor.Callback;
+import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.master.HostMatcher;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.ReactorFactory;
 
+import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.AbstractIdleService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.spotify.helios.servicescommon.Reactor.Callback;
-import static java.util.Collections.emptyList;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Deploys and undeploys jobs to implement the desired deployment group state.
@@ -136,40 +130,4 @@ public class RollingUpdateService extends AbstractIdleService {
     }
   }
 
-  public static class HostMatcher {
-    private final Map<String, Map<String, String>> hostsAndLabels;
-
-    public HostMatcher(final Map<String, Map<String, String>> hostsAndLabels) {
-      this.hostsAndLabels = ImmutableMap.copyOf(checkNotNull(hostsAndLabels, "hostsAndLabels"));
-    }
-
-    public List<String> getMatchingHosts(final DeploymentGroup deploymentGroup) {
-      final List<String> matchingHosts = Lists.newArrayList();
-
-      if ((deploymentGroup.getHostSelectors() == null) ||
-          deploymentGroup.getHostSelectors().isEmpty()) {
-        log.error("skipping deployment group with no host selectors: " + deploymentGroup.getName());
-        return emptyList();
-      }
-
-      // determine the hosts that match the current deployment group
-      for (final Map.Entry<String, Map<String, String>> entry : hostsAndLabels.entrySet()) {
-        final String host = entry.getKey();
-        final Map<String, String> hostLabels = entry.getValue();
-
-        // every hostSelector in the group has to have a match in this host.
-        // a match meaning the host has a label for that key and the value matches
-        final boolean match = deploymentGroup.getHostSelectors().stream()
-            .allMatch(selector -> hostLabels.containsKey(selector.getLabel())
-                                  && selector.matches(hostLabels.get(selector.getLabel())));
-
-        if (match) {
-          matchingHosts.add(host);
-        }
-      }
-
-      Collections.sort(matchingHosts, new AlphaNumericComparator(Locale.ENGLISH));
-      return ImmutableList.copyOf(matchingHosts);
-    }
-  }
 }
