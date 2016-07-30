@@ -145,10 +145,6 @@
   </profiles>
 
   <dependencies>
-    <dependency>
-      <groupId>com.spotify.docgenerator</groupId>
-      <artifactId>scanner</artifactId>
-    </dependency>
     <!--compile deps -->
     <dependency>
       <groupId>io.dropwizard</groupId>
