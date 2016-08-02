@@ -131,6 +131,11 @@ public class TemporaryJobBuilder {
     return this;
   }
 
+  public TemporaryJobBuilder gracePeriod(final Integer seconds) {
+    this.builder.setGracePeriod(seconds);
+    return this;
+  }
+
   public TemporaryJobBuilder port(final String name, final int internalPort) {
     return port(name, internalPort, true);
   }
