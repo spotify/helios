@@ -71,8 +71,12 @@ Register and unregister with `helios [un]register <hostname> <unqiue ID>`.
 ### List Agents
 
 List agents with `helios hosts [optional hostname pattern]`. If your agents have labels like
-`key=value` (see below on how to label agents), you can filter on labels with 
-`helios hosts -l key1=value1 -b key2=value2`.
+`key=value` (see below on how to label agents), you can use host selector expressions like
+`helios hosts -s key1=value1 -s key2!=value2 -s "key3 in (value3a, value3b)"`.
+Hosts matching these expressions will be returned. Multiple conditions can be
+specified, separated by spaces (as separate  arguments). If multiple conditions are given,
+all must be fulfilled. Operators supported are =, !=, in and notin. See `helios hosts -h` for more
+info.
 
 ### Label Agents
 
