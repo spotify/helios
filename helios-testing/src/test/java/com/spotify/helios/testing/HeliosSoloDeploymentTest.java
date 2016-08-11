@@ -57,6 +57,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Matchers.anyString;
@@ -201,7 +202,9 @@ public class HeliosSoloDeploymentTest {
         .withValue("helios.solo.profiles.test.namespace", ConfigValueFactory.fromAnyRef(ns))
         .withValue("helios.solo.profiles.test.env.TEST", ConfigValueFactory.fromAnyRef(env));
 
-    buildHeliosSoloDeployment(new HeliosSoloDeployment.Builder(null, config));
+    final HeliosSoloDeployment deployment = buildHeliosSoloDeployment(
+        new HeliosSoloDeployment.Builder(null, config));
+    assertEquals(ns + ".solo.local", deployment.agentName());
 
     boolean foundSolo = false;
     for (final ContainerConfig cc : containerConfig.getAllValues()) {
