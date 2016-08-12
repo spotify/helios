@@ -98,6 +98,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private final String heliosSoloImage;
   private final boolean pullBeforeCreate;
   private final String namespace;
+  private final String agentName;
   private final List<String> env;
   private final List<String> binds;
   private final String heliosContainerId;
@@ -128,6 +129,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
         .or(containerDockerHost(dockerInfo));
 
     this.namespace = Optional.fromNullable(builder.namespace).or(randomString());
+    this.agentName = this.namespace + HELIOS_NAME_SUFFIX;
     this.env = containerEnv(builder.env);
     this.binds = containerBinds();
 
@@ -207,6 +209,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   @Override
   public HostAndPort address() {
       return deploymentAddress;
+  }
+
+  public String agentName() {
+    return agentName;
   }
 
   private boolean isBoot2Docker(final Info dockerInfo) {
@@ -338,7 +344,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     //TODO(negz): Don't make this.env immutable so early?
     final List<String> env = new ArrayList<>();
     env.addAll(this.env);
-    env.add("HELIOS_NAME=" + this.namespace + HELIOS_NAME_SUFFIX);
+    env.add("HELIOS_NAME=" + agentName);
     env.add("HELIOS_ID=" + this.namespace + HELIOS_ID_SUFFIX);
     env.add("HOST_ADDRESS=" + heliosHost);
 
