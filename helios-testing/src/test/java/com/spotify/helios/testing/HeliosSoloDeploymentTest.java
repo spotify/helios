@@ -17,9 +17,24 @@
 
 package com.spotify.helios.testing;
 
+import static org.hamcrest.Matchers.hasItem;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
+import com.spotify.docker.client.LogStream;
 import com.spotify.docker.client.exceptions.ImageNotFoundException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
@@ -46,25 +61,15 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 
+import java.io.OutputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-
-import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 public class HeliosSoloDeploymentTest {
 
@@ -89,6 +94,7 @@ public class HeliosSoloDeploymentTest {
       .setJob(JOB1)
       .setGoal(Goal.START)
       .setState(TaskStatus.State.RUNNING)
+      .setContainerId(CONTAINER_ID)
       .build();
   private static final TaskStatus TASK_STATUS2 = TaskStatus.newBuilder()
       .setJob(JOB2)
@@ -302,5 +308,45 @@ public class HeliosSoloDeploymentTest {
 
     // There should be no more calls to any HeliosClient methods.
     verify(heliosClient, never()).jobStatus(Matchers.any(JobId.class));
+  }
+
+  @Test
+  public void testLogService() throws Exception {
+    final InMemoryLogStreamProvider logStreamProvider = spy(new InMemoryLogStreamProvider());
+    final HeliosSoloLogService logService = new HeliosSoloLogService(heliosClient,
+                                                                     dockerClient,
+                                                                     logStreamProvider);
+
+    final ListenableFuture<List<String>> hostsFuture = Futures.<List<String>>immediateFuture(
+        ImmutableList.of(HOST1));
+    when(heliosClient.listHosts()).thenReturn(hostsFuture);
+
+    final ListenableFuture<HostStatus> statusFuture = Futures.immediateFuture(
+        HostStatus.newBuilder()
+            .setStatus(Status.UP)
+            .setStatuses(ImmutableMap.of(JOB_ID1, TASK_STATUS1))
+            .setJobs(ImmutableMap.of(JOB_ID1, Deployment.of(JOB_ID1, Goal.START)))
+            .build());
+    when(heliosClient.hostStatus(HOST1)).thenReturn(statusFuture);
+
+    final LogStream logStream = mock(LogStream.class);
+    when(dockerClient.logs(anyString(), Matchers.<DockerClient.LogsParam>anyVararg()))
+        .thenReturn(logStream);
+
+    logService.runOneIteration();
+
+    verify(dockerClient, timeout(5000)).logs(eq(CONTAINER_ID),
+                                             Matchers.<DockerClient.LogsParam>anyVararg());
+
+    verify(logStreamProvider, timeout(5000)).getStdoutStream(JOB_ID1, CONTAINER_ID);
+    verify(logStreamProvider, timeout(5000)).getStderrStream(JOB_ID1, CONTAINER_ID);
+    verifyNoMoreInteractions(logStreamProvider);
+
+    final ArgumentCaptor<OutputStream> stdoutCaptor = ArgumentCaptor.forClass(OutputStream.class);
+    final ArgumentCaptor<OutputStream> stderrCaptor = ArgumentCaptor.forClass(OutputStream.class);
+    verify(logStream, timeout(5000)).attach(stdoutCaptor.capture(), stderrCaptor.capture());
+
+    assertSame(logStreamProvider.getStdoutStream(JOB_ID1, CONTAINER_ID), stdoutCaptor.getValue());
+    assertSame(logStreamProvider.getStderrStream(JOB_ID1, CONTAINER_ID), stderrCaptor.getValue());
   }
 }

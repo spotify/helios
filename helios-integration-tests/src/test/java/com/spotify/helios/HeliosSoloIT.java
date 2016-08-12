@@ -23,6 +23,7 @@ import com.spotify.helios.testing.HeliosDeploymentResource;
 import com.spotify.helios.testing.HeliosSoloDeployment;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
+import com.spotify.helios.testing.InMemoryLogStreamProvider;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.ClassRule;
@@ -44,12 +45,16 @@ public class HeliosSoloIT {
   @Rule
   public final ExpectedException expected = ExpectedException.none();
 
+  private static final InMemoryLogStreamProvider logStreamProvider =
+      new InMemoryLogStreamProvider();
+
   @ClassRule
   public static HeliosDeploymentResource solo = new HeliosDeploymentResource(
       HeliosSoloDeployment.fromEnv()
           .heliosSoloImage(Utils.soloImage())
           .checkForNewImages(false)
           .removeHeliosSoloOnExit(false)
+          .logStreamProvider(logStreamProvider)
           .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.test.${domain}")
           .env("WHITELISTED_CAPS", "IPC_LOCK,SYSLOG")
           .build()
@@ -86,7 +91,7 @@ public class HeliosSoloIT {
   @Test
   public void testServiceDiscovery() throws Exception {
     // start a container that runs nginx and registers with SkyDNS
-    jobs.job()
+    final TemporaryJob nginx = jobs.job()
         .image(NGINX)
         .port("http", 80, ports.localPort("http"))
         .registration("nginx", "http", "http")
@@ -113,6 +118,10 @@ public class HeliosSoloIT {
       final String result = IOUtils.toString(s.getInputStream()).trim();
       assertThat(result, containsString("Welcome to nginx!"));
     }
+
+    // also throw in a check to make sure log streaming is working
+    assertThat(new String(logStreamProvider.getStderr(nginx.job().getId())),
+               containsString("nginx"));
   }
 
   @Test
