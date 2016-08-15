@@ -107,6 +107,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private boolean removeHeliosSoloContainerOnExit;
   private final int jobUndeployWaitSeconds;
 
+  private HeliosSoloLogService logService;
+
   HeliosSoloDeployment(final Builder builder) {
     this.heliosSoloImage = builder.heliosSoloImage;
     this.pullBeforeCreate = builder.pullBeforeCreate;
@@ -149,6 +151,11 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .setUser(username)
             .setEndpoints("http://" + deploymentAddress)
             .build());
+
+    if (builder.logStreamProvider != null) {
+      logService = new HeliosSoloLogService(heliosClient, dockerClient, builder.logStreamProvider);
+      logService.startAsync().awaitRunning();
+    }
   }
 
   /**
@@ -470,6 +477,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
                containerDockerHost, heliosContainerId);
     }
 
+    if (logService != null) {
+      logService.stopAsync();
+    }
+
     this.dockerClient.close();
   }
 
@@ -607,6 +618,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private boolean pullBeforeCreate = true;
     private boolean removeHeliosSoloContainerOnExit = false;
     private int jobUndeployWaitSeconds = DEFAULT_WAIT_SECONDS;
+    private LogStreamProvider logStreamProvider = new DefaultLogStreamProvider();
 
     Builder(String profile, Config rootConfig) {
       this.env = new HashSet<>();
@@ -749,6 +761,19 @@ public class HeliosSoloDeployment implements HeliosDeployment {
      */
     public Builder heliosUsername(final String username) {
       this.heliosUsername = username;
+      return this;
+    }
+
+    /**
+     * Optionally provide a custom {@link LogStreamProvider} that provides streams for writing
+     * container stdout/stderr logs. If set to null, logging of container stdout/stderr will be
+     * disabled.
+     *
+     * @param logStreamProvider The provider to use.
+     * @return This Builder, with its log stream provider configured.
+     */
+    public Builder logStreamProvider(final LogStreamProvider logStreamProvider) {
+      this.logStreamProvider = logStreamProvider;
       return this;
     }
 

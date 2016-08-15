@@ -48,6 +48,7 @@ public class HeliosIT {
           .heliosSoloImage(Utils.soloImage())
           .checkForNewImages(false)
           .removeHeliosSoloOnExit(false)
+          .logStreamProvider(null)
           .env("REGISTRAR_HOST_FORMAT", "_${service}._${protocol}.test.${domain}")
           .build()
   );
