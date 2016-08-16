@@ -65,6 +65,8 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import java.io.OutputStream;
 import java.util.Collections;
@@ -279,16 +281,35 @@ public class HeliosSoloDeploymentTest {
             .setJobs(ImmutableMap.of(JOB_ID2, Deployment.of(JOB_ID2, Goal.START)))
             .build());
     //noinspection unchecked
-    when(heliosClient.hostStatus(HOST1)).thenReturn(statusFuture11, statusFuture12);
+    when(heliosClient.hostStatus(HOST1)).thenReturn(statusFuture11);
     //noinspection unchecked
-    when(heliosClient.hostStatus(HOST2)).thenReturn(statusFuture21, statusFuture22);
+    when(heliosClient.hostStatus(HOST2)).thenReturn(statusFuture21);
 
     final ListenableFuture<JobUndeployResponse> undeployFuture1 = Futures.immediateFuture(
         new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST1, JOB_ID1));
     final ListenableFuture<JobUndeployResponse> undeployFuture2 = Futures.immediateFuture(
         new JobUndeployResponse(JobUndeployResponse.Status.OK, HOST2, JOB_ID2));
-    when(heliosClient.undeploy(JOB_ID1, HOST1)).thenReturn(undeployFuture1);
-    when(heliosClient.undeploy(JOB_ID2, HOST2)).thenReturn(undeployFuture2);
+
+    // when undeploy is called, respond correctly & patch the mock to return
+    // the undeployed HostStatus
+    when(heliosClient.undeploy(JOB_ID1, HOST1)).thenAnswer(
+        new Answer<ListenableFuture<JobUndeployResponse>>() {
+          @Override
+          public ListenableFuture<JobUndeployResponse> answer(final InvocationOnMock invocation)
+              throws Throwable {
+            when(heliosClient.hostStatus(HOST1)).thenReturn(statusFuture12);
+            return undeployFuture1;
+          }
+        });
+    when(heliosClient.undeploy(JOB_ID2, HOST2)).thenAnswer(
+        new Answer<ListenableFuture<JobUndeployResponse>>() {
+          @Override
+          public ListenableFuture<JobUndeployResponse> answer(final InvocationOnMock invocation)
+              throws Throwable {
+            when(heliosClient.hostStatus(HOST1)).thenReturn(statusFuture22);
+            return undeployFuture2;
+          }
+        });
 
     solo.undeployLeftoverJobs();
 
