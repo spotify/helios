@@ -5,6 +5,7 @@ This guide gives an overview of Helios, and what you need to know to deploy and 
 Note that this guide assumes that you are familiar with [Docker](http://docker.io) and concepts like images and containers. If you aren't familiar with Docker, see the [getting started page](https://www.docker.io/gettingstarted/).
 
 
+* [Source Code Setup](#environment-setup)
 * [Basic Concepts in Helios](#basic-concepts-in-helios)
 * [Install the Helios CLI](#install-the-helios-cli)
 * [Using the Helios CLI](#using-the-helios-cli)
@@ -22,6 +23,17 @@ Note that this guide assumes that you are familiar with [Docker](http://docker.i
   * [Undeploying](#undeploying)
   * [Using Deployment Groups](#using-deployment-groups)
 * [Once Inside The Container](#once-inside-the-container)
+
+
+
+Source Code Setup
+---
+(For Helios Developers and Contributors)
+1) Under the parent level helios source directory run "mvn clean install." This will run the integration tests, which may take some time. To avoid running the tests, add the "-DskipTests" option. 
+2) Note that the above build command will produce a generate directory under "helios-client/target/generated-sources/templated" which may need to be added as a source direcory to your IDE manually.
+3) In order to run the Helios integration tests, first run: mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true -B -V -pl helios-services
+4) Note that in order to submit pull requests to Github, your account must be properly setup.  See: https://confluence.spotify.net/pages/viewpage.action?pageId=10683655.
+
 
 Basic Concepts in Helios
 ---
