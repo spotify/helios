@@ -28,7 +28,7 @@ Note that this guide assumes that you are familiar with [Docker](http://docker.i
 
 Source Code Setup
 ---
-(For Helios Developers)
+(For Helios Developers and Contributors)
 1) Under the parent level helios source directory run "mvn clean install." This will run the integration tests, which may take some time. To avoid running the tests, add the "-DskipTests" option. 
 2) Note that the above build command will produce a generate directory under "helios-client/target/generated-sources/templated" which may need to be added as a source direcory to your IDE manually.
 3) In order to run the Helios integration tests, first run: mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true -B -V -pl helios-services
