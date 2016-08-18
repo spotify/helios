@@ -17,17 +17,20 @@
 
 package com.spotify.helios.client;
 
+import com.spotify.helios.common.Clock;
+import com.spotify.helios.common.SystemClock;
+
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
+import com.google.common.base.Throwables;
+import com.google.common.collect.Lists;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.SettableFuture;
-
-import com.spotify.helios.common.Clock;
-import com.spotify.helios.common.SystemClock;
-
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -111,12 +114,24 @@ class RetryingRequestDispatcher implements RequestDispatcher {
 
       @Override
       public void onFailure(@NotNull Throwable t) {
-        log.warn("Failed to connect to {}, retrying in {} seconds.",
-                 uri.toString(), TimeUnit.MILLISECONDS.toSeconds(delayMillis));
+        log.warn("Failed to connect to {}, retrying in {} seconds. Exception chain was: {} ",
+                 uri.toString(), TimeUnit.MILLISECONDS.toSeconds(delayMillis),
+                 getChainAsString(t));
         log.debug("Specific reason for connection failure follows", t);
         handleFailure(future, code, deadline, delayMillis, t, uri);
       }
     });
+  }
+
+  private static String getChainAsString(final Throwable t) {
+    final List<Throwable> causalChain = Throwables.getCausalChain(t);
+    final List<String> messages = Lists.transform(causalChain, new Function<Throwable, String>() {
+      @Override
+      public String apply(final Throwable input) {
+        return input.toString();
+      }
+    });
+    return Joiner.on(", ").join(messages);
   }
 
   private void handleFailure(final SettableFuture<Response> future,
