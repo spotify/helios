@@ -1,8 +1,8 @@
 # Building Helios and Running Tests
 
-1) Under the parent level helios source directory run "mvn clean install." This will run the integration tests. To avoid running the tests, add the `-DskipTests` option. 
-2) Note that the above build command will produce a generate directory under "helios-client/target/generated-sources/templated" which may need to be added as a source directory to your IDE manually.
-3) In order to run the Helios integration tests, first run: mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true -B -V -pl helios-services.
+1. Under the parent level helios source directory run `mvn clean install`. This will run the integration tests. To avoid running the tests, add the `-DskipTests` option. 
+2. Note that the above build command will produce a generate directory under `helios-client/target/generated-sources/templated` which may need to be added as a source directory to your IDE manually.
+3. In order to run the Helios integration tests, first run: `mvn -P build-images -P build-solo package -DskipTests=true -Dmaven.javadoc.skip=true -B -V -pl helios-services`.
 
 Use `bin/helios` and `bin/helios-master` to start the Helios CLI and server
 (respectively) from the locally-built project.
