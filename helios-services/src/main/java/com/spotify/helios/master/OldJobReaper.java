@@ -41,6 +41,26 @@ import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * Removes old jobs that haven't been deployed for a while.
+ * The logic for whether a job should be reaped depends on whether it's deployed, its last history
+ * event, its creation date, and the specified number of retention days.
+ *
+ * 1. A job that's deployed should NOT BE reaped regardless of its history or creation date.
+ * 2. A job not deployed, with history, and an event before the number of retention days should
+ *    BE reaped.
+ * 3. A job not deployed, with history, and an event after the number of retention days should NOT
+ *    BE reaped. An example is a job created a long time ago but deployed recently.
+ * 4. A job not deployed, without history, and without a creation date should BE reaped. Only really
+ *    old versions of Helios create jobs without dates.
+ * 5. A job not deployed, without history, and with a creation date before the number of retention
+ *    days should BE reaped.
+ * 6. A job not deployed, without history, and with a creation date after the number of retention
+ *    days should NOT BE reaped.
+ *
+ * Note that the --disable-job-history flag in {@link com.spotify.helios.agent.AgentParser} controls
+ * whether the Helios agent should write job history to the data store. If this is disabled,
+ * scenarios two and three above will never match. In this case, a job created a long time ago but
+ * deployed recently may be reaped once it's undeployed even if the user needs it again in the
+ * future.
  */
 public class OldJobReaper extends InterruptingScheduledService {
 
