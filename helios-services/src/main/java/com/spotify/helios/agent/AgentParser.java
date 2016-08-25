@@ -68,6 +68,7 @@ public class AgentParser extends ServiceParser {
   private Argument zkRegistrationTtlMinutesArg;
   private Argument zkAclMasterDigest;
   private Argument zkAclAgentPassword;
+  private Argument disableJobHistory;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -142,7 +143,8 @@ public class AgentParser extends ServiceParser {
         .setNoHttp(options.getBoolean(noHttpArg.getDest()))
         .setKafkaBrokers(getKafkaBrokers())
         .setLabels(labels)
-        .setFfwdConfig(ffwdConfig(options));
+        .setFfwdConfig(ffwdConfig(options))
+        .setJobHistoryDisabled(options.getBoolean(disableJobHistory.getDest()));
 
     final String explicitId = options.getString(agentIdArg.getDest());
     if (explicitId != null) {
@@ -265,6 +267,11 @@ public class AgentParser extends ServiceParser {
         .help("ZooKeeper agent password (for ZooKeeper ACLs). If the "
               + ZK_AGENT_PASSWORD_ENVVAR
               + " environment variable is present this argument is ignored.");
+
+    disableJobHistory = parser.addArgument("--disable-job-history")
+        .action(storeTrue())
+        .setDefault(false)
+        .help("If specified, the agent won't write job histories to ZooKeeper.");
   }
 
   public AgentConfig getAgentConfig() {

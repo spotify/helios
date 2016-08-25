@@ -73,7 +73,7 @@ public class OldJobReaper extends InterruptingScheduledService {
 
   @Override
   protected void runOneIteration() {
-    log.debug("Reaping old jobs.");
+    log.info("Reaping old jobs.");
 
     final Map<JobId, Job> jobs = masterModel.getJobs();
     for (final Map.Entry<JobId, Job> jobEntry : jobs.entrySet()) {
