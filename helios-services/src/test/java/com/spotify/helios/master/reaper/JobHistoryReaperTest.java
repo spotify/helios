@@ -86,7 +86,7 @@ public class JobHistoryReaperTest {
     final List<String> jobHistories = ImmutableList.of("job1", "job2");
     when(client.getChildren(Paths.historyJobs())).thenReturn(jobHistories);
 
-    final JobHistoryReaper reaper = new JobHistoryReaper(masterModel, client);
+    final JobHistoryReaper reaper = new JobHistoryReaper(masterModel, client, 100, 0);
     reaper.startAsync().awaitRunning();
 
     for (final Datapoint datapoint : datapoints) {

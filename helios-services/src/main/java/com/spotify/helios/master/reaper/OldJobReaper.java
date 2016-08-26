@@ -17,7 +17,6 @@
 
 package com.spotify.helios.master.reaper;
 
-import com.spotify.helios.agent.InterruptingScheduledService;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -27,6 +26,7 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.MasterModel;
 
+import com.google.common.annotations.VisibleForTesting;
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;
 import org.slf4j.Logger;
@@ -34,8 +34,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -63,11 +62,12 @@ import static com.google.common.base.Preconditions.checkArgument;
  * deployed recently may be reaped once it's undeployed even if the user needs it again in the
  * future.
  */
-public class OldJobReaper extends InterruptingScheduledService {
+public class OldJobReaper extends RateLimitedService<Job> {
 
+  private static final double PERMITS_PER_SECOND = 0.2; // one permit every 5 seconds
   private static final Clock SYSTEM_CLOCK = new SystemClock();
-  private static final long INTERVAL = 1;
-  private static final TimeUnit INTERVAL_TIME_UNIT = TimeUnit.DAYS;
+  private static final int DELAY = 60 * 24; // 1 day in minutes
+  private static final TimeUnit TIME_UNIT = TimeUnit.MINUTES;
   private static final DateTimeFormatter DATE_FORMATTER =
       DateTimeFormat.forPattern("YYYY-MM-dd HH:mm:ss");
 
@@ -79,12 +79,17 @@ public class OldJobReaper extends InterruptingScheduledService {
   private final Clock clock;
 
   public OldJobReaper(final MasterModel masterModel, final long retentionDays) {
-    this(masterModel, retentionDays, SYSTEM_CLOCK);
+    this(masterModel, retentionDays, SYSTEM_CLOCK, PERMITS_PER_SECOND,
+         new Random().nextInt(DELAY));
   }
 
+  @VisibleForTesting
   OldJobReaper(final MasterModel masterModel,
                final long retentionDays,
-               final Clock clock) {
+               final Clock clock,
+               final double permitsPerSecond,
+               final int initialDelay) {
+    super(permitsPerSecond, initialDelay, DELAY, TIME_UNIT);
     this.masterModel = masterModel;
     checkArgument(retentionDays > 0);
     this.retentionDays = retentionDays;
@@ -93,81 +98,76 @@ public class OldJobReaper extends InterruptingScheduledService {
   }
 
   @Override
-  protected void runOneIteration() {
-    log.info("Reaping old jobs.");
-
-    final Map<JobId, Job> jobs = masterModel.getJobs();
-    for (final Map.Entry<JobId, Job> jobEntry : jobs.entrySet()) {
-      final JobId jobId = jobEntry.getKey();
-
-      try {
-        final JobStatus jobStatus = masterModel.getJobStatus(jobId);
-        final Map<String, Deployment> deployments = jobStatus.getDeployments();
-        final List<TaskStatusEvent> events = masterModel.getJobHistory(jobId);
-
-        boolean reap;
-
-        if (deployments.isEmpty()) {
-          if (events.isEmpty()) {
-            final Long created = jobEntry.getValue().getCreated();
-            if (created == null) {
-              log.info("Marked job '{}' for reaping (not deployed, no history, no creation date)",
-                       jobId);
-              reap = true;
-            } else if ((clock.now().getMillis() - created) > retentionMillis) {
-              log.info("Marked job '{}' for reaping (not deployed, no history, creation date "
-                       + "of {} before retention time of {} days)",
-                       jobId, DATE_FORMATTER.print(created), retentionDays);
-              reap = true;
-            } else {
-              log.info("NOT reaping job '{}' (not deployed, no history, creation date of {} after "
-                       + "retention time of {} days)",
-                       jobId, DATE_FORMATTER.print(created), retentionDays);
-              reap = false;
-            }
-          } else {
-            // Get the last event which is the most recent
-            final TaskStatusEvent event = events.get(events.size() - 1);
-            final String eventDate = DATE_FORMATTER.print(event.getTimestamp());
-            // Calculate the amount of time in milliseconds that has elapsed since the last event
-            final long unusedDurationMillis = clock.now().getMillis() - event.getTimestamp();
-
-            // A job not deployed, with history, and last used too long ago should BE reaped
-            // A job not deployed, with history, and last used recently should NOT BE reaped
-            if (unusedDurationMillis > retentionMillis) {
-              log.info("Marked job '{}' for reaping (not deployed, has history whose last event "
-                       + "on {} was before the retention time of {} days)",
-                       jobId, eventDate, retentionDays);
-              reap = true;
-            } else {
-              log.info("NOT reaping job '{}' (not deployed, has history whose last event "
-                       + "on {} was after the retention time of {} days)",
-                       jobId, eventDate, retentionDays);
-              reap = false;
-            }
-          }
-        } else {
-          // A job that's deployed should NOT BE reaped regardless of its history or creation date
-          log.info("NOT reaping job '{}' (it is deployed)", jobId);
-          reap = false;
-        }
-
-        if (reap) {
-          try {
-            masterModel.removeJob(jobId, jobEntry.getValue().getToken());
-          } catch (Exception e) {
-            log.warn("Failed to reap old job '{}'", jobId, e);
-          }
-        }
-      } catch (Exception e) {
-        log.warn("Failed to determine if job '{}' should be reaped", jobId, e);
-      }
-    }
+  Iterable<Job> collectItems() {
+    return masterModel.getJobs().values();
   }
 
   @Override
-  protected ScheduledFuture<?> schedule(final Runnable runnable,
-                                        final ScheduledExecutorService executorService) {
-    return executorService.scheduleWithFixedDelay(runnable, 0, INTERVAL, INTERVAL_TIME_UNIT);
+  void processItem(final Job job) {
+    log.info("Deciding whether to reap job.");
+    final JobId jobId = job.getId();
+
+    try {
+      final JobStatus jobStatus = masterModel.getJobStatus(jobId);
+      final Map<String, Deployment> deployments = jobStatus.getDeployments();
+      final List<TaskStatusEvent> events = masterModel.getJobHistory(jobId);
+
+      boolean reap;
+
+      if (deployments.isEmpty()) {
+        if (events.isEmpty()) {
+          final Long created = job.getCreated();
+          if (created == null) {
+            log.info("Marked job '{}' for reaping (not deployed, no history, no creation date)",
+                     jobId);
+            reap = true;
+          } else if ((clock.now().getMillis() - created) > retentionMillis) {
+            log.info("Marked job '{}' for reaping (not deployed, no history, creation date "
+                     + "of {} before retention time of {} days)",
+                     jobId, DATE_FORMATTER.print(created), retentionDays);
+            reap = true;
+          } else {
+            log.info("NOT reaping job '{}' (not deployed, no history, creation date of {} after "
+                     + "retention time of {} days)",
+                     jobId, DATE_FORMATTER.print(created), retentionDays);
+            reap = false;
+          }
+        } else {
+          // Get the last event which is the most recent
+          final TaskStatusEvent event = events.get(events.size() - 1);
+          final String eventDate = DATE_FORMATTER.print(event.getTimestamp());
+          // Calculate the amount of time in milliseconds that has elapsed since the last event
+          final long unusedDurationMillis = clock.now().getMillis() - event.getTimestamp();
+
+          // A job not deployed, with history, and last used too long ago should BE reaped
+          // A job not deployed, with history, and last used recently should NOT BE reaped
+          if (unusedDurationMillis > retentionMillis) {
+            log.info("Marked job '{}' for reaping (not deployed, has history whose last event "
+                     + "on {} was before the retention time of {} days)",
+                     jobId, eventDate, retentionDays);
+            reap = true;
+          } else {
+            log.info("NOT reaping job '{}' (not deployed, has history whose last event "
+                     + "on {} was after the retention time of {} days)",
+                     jobId, eventDate, retentionDays);
+            reap = false;
+          }
+        }
+      } else {
+        // A job that's deployed should NOT BE reaped regardless of its history or creation date
+        log.info("NOT reaping job '{}' (it is deployed)", jobId);
+        reap = false;
+      }
+
+      if (reap) {
+        try {
+          masterModel.removeJob(jobId, job.getToken());
+        } catch (Exception e) {
+          log.warn("Failed to reap old job '{}'", jobId, e);
+        }
+      }
+    } catch (Exception e) {
+      log.warn("Failed to determine if job '{}' should be reaped", jobId, e);
+    }
   }
 }

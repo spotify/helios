@@ -59,7 +59,7 @@ abstract class RateLimitedService<T> extends InterruptingScheduledService {
   abstract Iterable<T> collectItems();
 
   /**
-   * Process the tiem.
+   * Process the item.
    * @param item An instance of T.
    */
   abstract void processItem(final T item);

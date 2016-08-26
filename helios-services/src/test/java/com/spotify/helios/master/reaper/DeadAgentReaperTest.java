@@ -97,7 +97,7 @@ public class DeadAgentReaperTest {
               .build());
     }
 
-    final DeadAgentReaper reaper = new DeadAgentReaper(masterModel, TIMEOUT_HOURS, clock);
+    final DeadAgentReaper reaper = new DeadAgentReaper(masterModel, TIMEOUT_HOURS, clock, 100, 0);
     reaper.startAsync().awaitRunning();
 
     for (final Datapoint datapoint : datapoints) {

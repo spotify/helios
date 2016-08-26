@@ -163,7 +163,7 @@ public class OldJobReaperTest {
       when(masterModel.getJobStatus(datapoint.getJobId())).thenReturn(datapoint.getJobStatus());
     }
 
-    final OldJobReaper reaper = new OldJobReaper(masterModel, RETENTION_DAYS, clock);
+    final OldJobReaper reaper = new OldJobReaper(masterModel, RETENTION_DAYS, clock, 100, 0);
     reaper.startAsync().awaitRunning();
 
     // Wait one second to give the reaper enough time to process all the jobs before verifying :(
