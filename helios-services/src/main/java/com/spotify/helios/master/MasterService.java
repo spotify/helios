@@ -32,6 +32,7 @@ import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
 import com.spotify.helios.master.reaper.DeadAgentReaper;
+import com.spotify.helios.master.reaper.ExpiredJobReaper;
 import com.spotify.helios.master.reaper.JobHistoryReaper;
 import com.spotify.helios.master.reaper.OldJobReaper;
 import com.spotify.helios.master.resources.DeploymentGroupResource;
