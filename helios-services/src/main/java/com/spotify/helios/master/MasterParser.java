@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
 import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 /**
  * Parses command-line arguments to produce the {@link MasterConfig}.
@@ -48,6 +49,7 @@ public class MasterParser extends ServiceParser {
   private Argument agentReapingTimeout;
   private Argument jobRetention;
   private Argument whitelistedCapabilities;
+  private Argument jobHistoryReapingEnabled;
 
   public MasterParser(final String... args) throws ArgumentParserException {
     super("helios-master", "Spotify Helios Master", args);
@@ -90,7 +92,7 @@ public class MasterParser extends ServiceParser {
         .setFfwdConfig(ffwdConfig(options))
         .setWhitelistedCapabilities(ImmutableSet.copyOf(
             options.getList(whitelistedCapabilities.getDest())))
-        .setJobHistoryReapingEnabled(getJobHistoryReapingEnabled());
+        .setJobHistoryReapingEnabled(options.getBoolean(jobHistoryReapingEnabled.getDest()));
 
     this.masterConfig = config;
   }
@@ -132,6 +134,11 @@ public class MasterParser extends ServiceParser {
         .setDefault(new ArrayList<>())
         .help("The Linux capabilities Helios jobs are allowed to add to their Docker containers. "
               + "Defaults to allowing nothing.");
+
+    jobHistoryReapingEnabled = parser.addArgument("--reap-history")
+        .action(storeTrue())
+        .setDefault(false)
+        .help("Enable periodic reaping of orphaned job histories.");
   }
 
   public MasterConfig getMasterConfig() {

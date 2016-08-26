@@ -100,6 +100,7 @@ public class AgentService extends AbstractIdleService implements Managed {
 
   private static final Logger log = LoggerFactory.getLogger(AgentService.class);
 
+  private static final String TASK_HISTORY_FILENAME = "task-history.json";
   private static final TypeReference<Map<JobId, Execution>> JOBID_EXECUTIONS_MAP =
       new TypeReference<Map<JobId, Execution>>() {
       };
@@ -218,9 +219,18 @@ public class AgentService extends AbstractIdleService implements Managed {
         zooKeeperClient, modelReporter);
     final KafkaClientProvider kafkaClientProvider = new KafkaClientProvider(
         config.getKafkaBrokers());
+
+    final TaskHistoryWriter historyWriter;
+    if (config.isJobHistoryDisabled()) {
+      historyWriter = null;
+    } else {
+      historyWriter = new TaskHistoryWriter(
+          config.getName(), zooKeeperClient, stateDirectory.resolve(TASK_HISTORY_FILENAME));
+    }
+
     try {
       this.model = new ZooKeeperAgentModel(zkClientProvider, kafkaClientProvider,
-        config.getName(), stateDirectory);
+                                           config.getName(), stateDirectory, historyWriter);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }

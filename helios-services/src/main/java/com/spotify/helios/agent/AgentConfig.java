@@ -66,6 +66,7 @@ public class AgentConfig extends Configuration {
   private String zooKeeperAclAgentPassword;
   private FastForwardConfig fastForwardConfig;
   private List<String> extraHosts;
+  private boolean jobHistoryDisabled;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -356,6 +357,15 @@ public class AgentConfig extends Configuration {
 
   public AgentConfig setFfwdConfig(FastForwardConfig config) {
     this.fastForwardConfig = config;
+    return this;
+  }
+
+  public boolean isJobHistoryDisabled() {
+    return jobHistoryDisabled;
+  }
+
+  public AgentConfig setJobHistoryDisabled(final boolean jobHistoryDisabled) {
+    this.jobHistoryDisabled = jobHistoryDisabled;
     return this;
   }
 

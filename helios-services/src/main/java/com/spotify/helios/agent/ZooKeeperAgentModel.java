@@ -58,7 +58,6 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperAgentModel.class);
 
   private static final String TASK_CONFIG_FILENAME = "task-config.json";
-  private static final String TASK_HISTORY_FILENAME = "task-history.json";
   private static final String TASK_STATUS_FILENAME = "task-status.json";
 
   private final PersistentPathChildrenCache<Task> tasks;
@@ -70,8 +69,11 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   private final CopyOnWriteArrayList<AgentModel.Listener> listeners = new CopyOnWriteArrayList<>();
 
   public ZooKeeperAgentModel(final ZooKeeperClientProvider provider,
-                             final KafkaClientProvider kafkaProvider, final String host,
-                             final Path stateDirectory) throws IOException, InterruptedException {
+                             final KafkaClientProvider kafkaProvider,
+                             final String host,
+                             final Path stateDirectory,
+                             final TaskHistoryWriter historyWriter)
+      throws IOException, InterruptedException {
     // TODO(drewc): we're constructing too many heavyweight things in the ctor, these kinds of
     // things should be passed in/provider'd/etc.
     final ZooKeeperClient client = provider.get("ZooKeeperAgentModel_ctor");
@@ -87,8 +89,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
                                                                     provider,
                                                                     taskStatusFile,
                                                                     Paths.statusHostJobs(host));
-    this.historyWriter = new TaskHistoryWriter(
-        host, client, stateDirectory.resolve(TASK_HISTORY_FILENAME));
+    this.historyWriter = historyWriter;
 
     this.kafkaSender = new KafkaSender(kafkaProvider.getDefaultProducer());
   }
@@ -97,14 +98,18 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
   protected void startUp() throws Exception {
     tasks.startAsync().awaitRunning();
     taskStatuses.startAsync().awaitRunning();
-    historyWriter.startAsync().awaitRunning();
+    if (historyWriter != null) {
+      historyWriter.startAsync().awaitRunning();
+    }
   }
 
   @Override
   protected void shutDown() throws Exception {
     tasks.stopAsync().awaitTerminated();
     taskStatuses.stopAsync().awaitTerminated();
-    historyWriter.stopAsync().awaitTerminated();
+    if (historyWriter != null) {
+      historyWriter.stopAsync().awaitTerminated();
+    }
   }
 
   private JobId jobIdFromTaskPath(final String path) {
@@ -151,13 +156,15 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
       throws InterruptedException {
     log.debug("setting task status: {}", status);
     taskStatuses.put(jobId.toString(), status.toJsonBytes());
-    try {
-      historyWriter.saveHistoryItem(status);
-    } catch (Exception e) {
-      // Log error here and keep going as saving task history is not critical.
-      // This is to prevent bad data in the queue from screwing up the actually important Helios
-      // agent operations.
-      log.error("Error saving task status {} to ZooKeeper: {}", status, e);
+    if (historyWriter != null) {
+      try {
+        historyWriter.saveHistoryItem(status);
+      } catch (Exception e) {
+        // Log error here and keep going as saving task history is not critical.
+        // This is to prevent bad data in the queue from screwing up the actually important Helios
+        // agent operations.
+        log.error("Error saving task status {} to ZooKeeper: {}", status, e);
+      }
     }
     final TaskStatusEvent event = new TaskStatusEvent(status, System.currentTimeMillis(), agent);
     kafkaSender.send(KafkaRecord.of(TaskStatusEvent.KAFKA_TOPIC, event.toJsonBytes()));
