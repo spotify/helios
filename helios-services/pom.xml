@@ -344,6 +344,10 @@
       <artifactId>riemann-java-client</artifactId>
       <version>0.2.10</version>
     </dependency>
+    <dependency>
+      <groupId>org.awaitility</groupId>
+      <artifactId>awaitility</artifactId>
+    </dependency>
   </dependencies>
 
   <build>
