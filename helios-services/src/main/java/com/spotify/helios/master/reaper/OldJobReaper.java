@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.spotify.helios.master;
+package com.spotify.helios.master.reaper;
 
 import com.spotify.helios.agent.InterruptingScheduledService;
 import com.spotify.helios.common.Clock;
@@ -25,6 +25,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.master.MasterModel;
 
 import org.joda.time.format.DateTimeFormat;
 import org.joda.time.format.DateTimeFormatter;

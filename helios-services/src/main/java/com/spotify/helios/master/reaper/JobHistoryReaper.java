@@ -15,11 +15,13 @@
  * under the License.
  */
 
-package com.spotify.helios.master;
+package com.spotify.helios.master.reaper;
 
 import com.spotify.helios.agent.InterruptingScheduledService;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.master.MasterModel;
+import com.spotify.helios.master.ZooKeeperMasterModel;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
@@ -49,7 +51,7 @@ import java.util.concurrent.TimeUnit;
  * Solve both of these cases by scheduling an instance of this class. It runs once a day once
  * scheduled.
  */
-class JobHistoryReaper extends InterruptingScheduledService {
+public class JobHistoryReaper extends InterruptingScheduledService {
 
   private static final Logger log = LoggerFactory.getLogger(JobHistoryReaper.class);
 

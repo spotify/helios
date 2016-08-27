@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.spotify.helios.master;
+package com.spotify.helios.master.reaper;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -30,6 +30,7 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.master.MasterModel;
 
 import org.joda.time.Instant;
 import org.junit.Test;

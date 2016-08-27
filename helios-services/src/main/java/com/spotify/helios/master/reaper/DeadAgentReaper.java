@@ -15,13 +15,14 @@
  * under the License.
  */
 
-package com.spotify.helios.master;
+package com.spotify.helios.master.reaper;
 
 import com.spotify.helios.agent.InterruptingScheduledService;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.master.MasterModel;
 
 import org.apache.commons.lang.time.DurationFormatUtils;
 import org.slf4j.Logger;
