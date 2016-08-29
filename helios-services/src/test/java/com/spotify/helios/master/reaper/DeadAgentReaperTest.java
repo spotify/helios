@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.spotify.helios.master;
+package com.spotify.helios.master.reaper;
 
 import com.google.common.collect.Lists;
 
@@ -25,6 +25,7 @@ import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.master.MasterModel;
 
 import org.joda.time.Instant;
 import org.junit.Test;
@@ -96,7 +97,7 @@ public class DeadAgentReaperTest {
               .build());
     }
 
-    final DeadAgentReaper reaper = new DeadAgentReaper(masterModel, TIMEOUT_HOURS, clock);
+    final DeadAgentReaper reaper = new DeadAgentReaper(masterModel, TIMEOUT_HOURS, clock, 100, 0);
     reaper.startAsync().awaitRunning();
 
     for (final Datapoint datapoint : datapoints) {

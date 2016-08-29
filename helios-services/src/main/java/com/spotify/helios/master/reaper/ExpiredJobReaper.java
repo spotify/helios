@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.spotify.helios.master;
+package com.spotify.helios.master.reaper;
 
 import com.google.common.collect.ImmutableList;
 
@@ -25,6 +25,12 @@ import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.master.HostNotFoundException;
+import com.spotify.helios.master.JobDoesNotExistException;
+import com.spotify.helios.master.JobNotDeployedException;
+import com.spotify.helios.master.JobStillDeployedException;
+import com.spotify.helios.master.MasterModel;
+import com.spotify.helios.master.TokenVerificationException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,8 +53,8 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
 
   private static final Logger log = LoggerFactory.getLogger(ExpiredJobReaper.class);
 
-  public static final int DEFAULT_INTERVAL = 30;
-  public static final TimeUnit DEFAUL_TIMEUNIT = SECONDS;
+  private static final int DEFAULT_INTERVAL = 30;
+  private static final TimeUnit DEFAUL_TIMEUNIT = SECONDS;
 
   private final MasterModel masterModel;
   private final int interval;
@@ -63,7 +69,7 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
   }
 
   @Override
-  protected void runOneIteration() {
+  public void runOneIteration() {
     for (final Entry<JobId, Job> entry : masterModel.getJobs().entrySet()) {
       final JobId jobId = entry.getKey();
       final Job job = entry.getValue();

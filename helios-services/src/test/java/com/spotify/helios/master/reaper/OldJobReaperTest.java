@@ -15,7 +15,7 @@
  * under the License.
  */
 
-package com.spotify.helios.master;
+package com.spotify.helios.master.reaper;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -30,6 +30,7 @@ import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.master.MasterModel;
 
 import org.joda.time.Instant;
 import org.junit.Test;
@@ -162,7 +163,7 @@ public class OldJobReaperTest {
       when(masterModel.getJobStatus(datapoint.getJobId())).thenReturn(datapoint.getJobStatus());
     }
 
-    final OldJobReaper reaper = new OldJobReaper(masterModel, RETENTION_DAYS, clock);
+    final OldJobReaper reaper = new OldJobReaper(masterModel, RETENTION_DAYS, clock, 100, 0);
     reaper.startAsync().awaitRunning();
 
     // Wait one second to give the reaper enough time to process all the jobs before verifying :(

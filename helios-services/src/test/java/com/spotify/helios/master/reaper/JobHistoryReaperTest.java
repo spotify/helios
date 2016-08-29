@@ -15,10 +15,11 @@
  * under the License.
  */
 
-package com.spotify.helios.master;
+package com.spotify.helios.master.reaper;
 
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 
@@ -85,7 +86,7 @@ public class JobHistoryReaperTest {
     final List<String> jobHistories = ImmutableList.of("job1", "job2");
     when(client.getChildren(Paths.historyJobs())).thenReturn(jobHistories);
 
-    final JobHistoryReaper reaper = new JobHistoryReaper(masterModel, client);
+    final JobHistoryReaper reaper = new JobHistoryReaper(masterModel, client, 100, 0);
     reaper.startAsync().awaitRunning();
 
     for (final Datapoint datapoint : datapoints) {
