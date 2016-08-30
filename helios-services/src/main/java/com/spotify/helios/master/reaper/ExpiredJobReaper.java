@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Map.Entry;
+import java.util.Random;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -110,7 +111,8 @@ public class ExpiredJobReaper extends InterruptingScheduledService {
   @Override
   protected ScheduledFuture<?> schedule(final Runnable runnable,
                                         final ScheduledExecutorService executorService) {
-    return executorService.scheduleWithFixedDelay(runnable, 0, interval, timeUnit);
+    return executorService.scheduleWithFixedDelay(runnable, new Random().nextInt(interval),
+                                                  interval, timeUnit);
   }
 
   public static Builder newBuilder() {

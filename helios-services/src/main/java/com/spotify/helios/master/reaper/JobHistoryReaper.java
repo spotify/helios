@@ -32,8 +32,6 @@ import org.slf4j.LoggerFactory;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -65,8 +63,7 @@ public class JobHistoryReaper extends RateLimitedService<String> {
 
   public JobHistoryReaper(final MasterModel masterModel,
                           final ZooKeeperClient client) {
-    this(masterModel, client, PERMITS_PER_SECOND,
-         new Random().nextInt(DELAY));
+    this(masterModel, client, PERMITS_PER_SECOND, new Random().nextInt(DELAY));
   }
 
   @VisibleForTesting
@@ -108,11 +105,5 @@ public class JobHistoryReaper extends RateLimitedService<String> {
         log.warn("error reaping job history for job {}", jobId, e);
       }
     }
-  }
-
-  @Override
-  protected ScheduledFuture<?> schedule(final Runnable runnable,
-                                        final ScheduledExecutorService executorService) {
-    return executorService.scheduleWithFixedDelay(runnable, 0, 1, TimeUnit.DAYS);
   }
 }

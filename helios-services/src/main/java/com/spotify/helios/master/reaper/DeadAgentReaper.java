@@ -29,8 +29,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Random;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -54,8 +52,7 @@ public class DeadAgentReaper extends RateLimitedService<String> {
 
   public DeadAgentReaper(final MasterModel masterModel,
                          final long timeoutHours) {
-    this(masterModel, timeoutHours, SYSTEM_CLOCK, PERMITS_PER_SECOND,
-         new Random().nextInt(DELAY));
+    this(masterModel, timeoutHours, SYSTEM_CLOCK, PERMITS_PER_SECOND, new Random().nextInt(DELAY));
   }
 
   @VisibleForTesting
@@ -106,11 +103,5 @@ public class DeadAgentReaper extends RateLimitedService<String> {
     } catch (Exception e) {
       log.warn("Failed to determine if agent '{}' should be reaped", agent, e);
     }
-  }
-
-  @Override
-  protected ScheduledFuture<?> schedule(final Runnable runnable,
-                                        final ScheduledExecutorService executorService) {
-    return executorService.scheduleWithFixedDelay(runnable, 0, DELAY, TIME_UNIT);
   }
 }
