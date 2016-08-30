@@ -59,6 +59,7 @@ public class MasterConfig extends Configuration {
   private String zooKeeperAclMasterPassword;
   private long agentReapingTimeout;
   private long jobRetention;
+  private int numJobsRetained;
   private FastForwardConfig fastForwardConfig;
   private Set<String> whitelistedCapabilities;
   private boolean jobHistoryReapingEnabled;
@@ -277,6 +278,15 @@ public class MasterConfig extends Configuration {
 
   public long getJobRetention() {
     return jobRetention;
+  }
+
+  public MasterConfig setNumJobsRetained(final int jobsRetained) {
+    this.numJobsRetained = jobsRetained;
+    return this;
+  }
+
+  public int getNumJobsRetained() {
+    return numJobsRetained;
   }
 
   public FastForwardConfig getFfwdConfig() {
