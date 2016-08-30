@@ -49,4 +49,9 @@ public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
   public void updateTimer(final String name, final long duration, final TimeUnit timeUnit) {
     registry.timer(prefix + name).update(duration, timeUnit);
   }
+
+  @Override
+  public void updateMeter(final String name) {
+    registry.meter(prefix + name).mark();
+  }
 }
