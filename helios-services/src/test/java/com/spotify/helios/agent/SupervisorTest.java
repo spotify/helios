@@ -17,10 +17,30 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Maps;
-import com.google.common.util.concurrent.SettableFuture;
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.Goal.STOP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerException;
@@ -32,6 +52,7 @@ import com.spotify.docker.client.messages.ContainerState;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.NetworkSettings;
 import com.spotify.docker.client.messages.PortBinding;
+import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.PortMapping;
@@ -40,6 +61,12 @@ import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.statistics.NoopSupervisorMetrics;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Maps;
+import com.google.common.util.concurrent.SettableFuture;
+import org.hamcrest.FeatureMatcher;
+import org.hamcrest.Matcher;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -60,27 +87,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.Goal.STOP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SupervisorTest {
@@ -134,6 +140,7 @@ public class SupervisorTest {
   @Mock public DockerClient docker;
   @Mock public RestartPolicy retryPolicy;
   @Mock public ServiceRegistrar registrar;
+  @Mock public Sleeper sleeper;
 
   @Captor public ArgumentCaptor<ContainerConfig> containerConfigCaptor;
   @Captor public ArgumentCaptor<String> containerNameCaptor;
@@ -145,38 +152,7 @@ public class SupervisorTest {
   public void setup() throws Exception {
     when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
 
-    final TaskConfig config = TaskConfig.builder()
-        .namespace(NAMESPACE)
-        .host("AGENT_NAME")
-        .job(JOB)
-        .envVars(ENV)
-        .build();
-
-    final TaskStatus.Builder taskStatus = TaskStatus.newBuilder()
-        .setJob(JOB)
-        .setEnv(ENV)
-        .setPorts(PORTS);
-
-    final StatusUpdater statusUpdater = new DefaultStatusUpdater(model, taskStatus);
-    final TaskMonitor monitor = new TaskMonitor(
-        JOB.getId(), FlapController.create(), statusUpdater);
-
-    final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
-        .registrar(registrar)
-        .config(config)
-        .dockerClient(docker)
-        .listener(monitor)
-        .build();
-
-    sut = Supervisor.newBuilder()
-        .setJob(JOB)
-        .setStatusUpdater(statusUpdater)
-        .setDockerClient(docker)
-        .setRestartPolicy(retryPolicy)
-        .setRunnerFactory(runnerFactory)
-        .setMetrics(new NoopSupervisorMetrics())
-        .setMonitor(monitor)
-        .build();
+    sut = createSupervisor(JOB);
 
     final ConcurrentMap<JobId, TaskStatus> statusMap = Maps.newConcurrentMap();
     doAnswer(new Answer<Object>() {
@@ -403,5 +379,76 @@ public class SupervisorTest {
       }
     };
   }
+
+  /**
+   * Verifies a fix for a NPE that is thrown when the Supervisor receives a goal of UNDEPLOY for a
+   * job with gracePeriod that has never been STARTed.
+   */
+  @Test
+  public void verifySupervisorHandlesUndeployingOfNotRunningContainerWithGracePeriod()
+      throws Exception {
+
+    final int gracePeriod = 5;
+    final Job job = JOB.toBuilder()
+        .setGracePeriod(gracePeriod)
+        .build();
+
+    final Supervisor sut = createSupervisor(job);
+
+    sut.setGoal(Goal.UNDEPLOY);
+
+    // when the NPE was thrown, the model was never updated
+    verify(model, timeout(30000)).setTaskStatus(eq(job.getId()),
+        argThat(is(taskStatusWithState(TaskStatus.State.STOPPING))));
+    verify(model, timeout(30000)).setTaskStatus(eq(job.getId()),
+        argThat(is(taskStatusWithState(TaskStatus.State.STOPPED))));
+
+    verify(sleeper, never()).sleep(gracePeriod * 1000);
+  }
+
+  private Supervisor createSupervisor(final Job job) {
+    final TaskConfig config = TaskConfig.builder()
+        .namespace(NAMESPACE)
+        .host("AGENT_NAME")
+        .job(job)
+        .envVars(ENV)
+        .build();
+
+    final TaskStatus.Builder taskStatus = TaskStatus.newBuilder()
+        .setJob(job)
+        .setEnv(ENV)
+        .setPorts(PORTS);
+
+    final StatusUpdater statusUpdater = new DefaultStatusUpdater(model, taskStatus);
+    final TaskMonitor monitor = new TaskMonitor(
+        job.getId(), FlapController.create(), statusUpdater);
+
+    final TaskRunnerFactory runnerFactory = TaskRunnerFactory.builder()
+        .registrar(registrar)
+        .config(config)
+        .dockerClient(docker)
+        .listener(monitor)
+        .build();
+
+    return Supervisor.newBuilder()
+        .setJob(job)
+        .setStatusUpdater(statusUpdater)
+        .setDockerClient(docker)
+        .setRestartPolicy(retryPolicy)
+        .setRunnerFactory(runnerFactory)
+        .setMetrics(new NoopSupervisorMetrics())
+        .setMonitor(monitor)
+        .build();
+  }
+
+  private static Matcher<TaskStatus> taskStatusWithState(final TaskStatus.State state) {
+    return new FeatureMatcher<TaskStatus, TaskStatus.State>(equalTo(state), "state", "state") {
+      @Override
+      protected TaskStatus.State featureValueOf(final TaskStatus actual) {
+        return actual.getState();
+      }
+    };
+  }
+
 
 }

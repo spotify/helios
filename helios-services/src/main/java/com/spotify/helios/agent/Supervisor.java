@@ -349,14 +349,16 @@ public class Supervisor {
       statusUpdater.setState(STOPPING);
       statusUpdater.update();
 
-      final Integer gracePeriod = job.getGracePeriod();
-      if (gracePeriod != null && gracePeriod > 0) {
-        log.info("Unregistering from service discovery for {} seconds before stopping",
-                 gracePeriod);
+      if (runner != null) {
+        final Integer gracePeriod = job.getGracePeriod();
+        if (gracePeriod != null && gracePeriod > 0) {
+          log.info("Unregistering from service discovery for {} seconds before stopping",
+              gracePeriod);
 
-        if (runner.unregister()) {
-          log.info("Unregistered. Now sleeping for {} seconds.", gracePeriod);
-          sleeper.sleep(TimeUnit.MILLISECONDS.convert(gracePeriod, TimeUnit.SECONDS));
+          if (runner.unregister()) {
+            log.info("Unregistered. Now sleeping for {} seconds.", gracePeriod);
+            sleeper.sleep(TimeUnit.MILLISECONDS.convert(gracePeriod, TimeUnit.SECONDS));
+          }
         }
       }
 
@@ -376,7 +378,7 @@ public class Supervisor {
       // Kill the container after stopping the runner
       while (!containerNotRunning()) {
         killContainer();
-        Thread.sleep(retryScheduler.nextMillis());
+        sleeper.sleep(retryScheduler.nextMillis());
       }
 
       statusUpdater.setState(STOPPED);
