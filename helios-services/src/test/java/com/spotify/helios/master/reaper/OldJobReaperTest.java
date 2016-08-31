@@ -38,11 +38,15 @@ import org.junit.Test;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.spotify.helios.master.reaper.OldJobReaper.olderThanNumJobsToRetain;
 import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.concurrent.TimeUnit.HOURS;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.timeout;
@@ -163,7 +167,7 @@ public class OldJobReaperTest {
       when(masterModel.getJobStatus(datapoint.getJobId())).thenReturn(datapoint.getJobStatus());
     }
 
-    final OldJobReaper reaper = new OldJobReaper(masterModel, RETENTION_DAYS, clock, 100, 0);
+    final OldJobReaper reaper = new OldJobReaper(masterModel, RETENTION_DAYS, -1, clock, 100, 0);
     reaper.startAsync().awaitRunning();
 
     // Wait one second to give the reaper enough time to process all the jobs before verifying :(
@@ -176,5 +180,71 @@ public class OldJobReaperTest {
         verify(masterModel, never()).removeJob(datapoint.getJobId(), Job.EMPTY_TOKEN);
       }
     }
+  }
+
+  @Test
+  public void testOlderThanNumJobsToRetainNegative() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final String jobName = "job";
+    final List<Job> jobs = Lists.newArrayList(
+        // A job without a creation date
+        Job.newBuilder().setName(jobName).setVersion("1").build(),
+        // Jobs with creation dates
+        Job.newBuilder().setName(jobName).setVersion("2").setCreated(HOURS.toMillis(2)).build(),
+        Job.newBuilder().setName(jobName).setVersion("4").setCreated(HOURS.toMillis(4)).build()
+    );
+
+    when(masterModel.getJobs()).thenReturn(
+        jobs.stream().collect(Collectors.toMap(Job::getId, Function.identity())));
+
+    final Job job = Job.newBuilder()
+        .setCreated(HOURS.toMillis(3))
+        .setName(jobName)
+        .build();
+    assertThat(olderThanNumJobsToRetain(job, -1, masterModel), equalTo(false));
+  }
+
+  @Test
+  public void testOlderThanNumJobsToRetainTrue() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final String jobName = "job";
+    final List<Job> jobs = Lists.newArrayList(
+        // A job without a creation date
+        Job.newBuilder().setName(jobName).setVersion("1").build(),
+        // Jobs with creation dates
+        Job.newBuilder().setName(jobName).setVersion("2").setCreated(HOURS.toMillis(2)).build(),
+        Job.newBuilder().setName(jobName).setVersion("4").setCreated(HOURS.toMillis(4)).build()
+    );
+
+    when(masterModel.getJobs()).thenReturn(
+        jobs.stream().collect(Collectors.toMap(Job::getId, Function.identity())));
+
+    final Job job = Job.newBuilder()
+        .setCreated(HOURS.toMillis(3))
+        .setName(jobName)
+        .build();
+    assertThat(olderThanNumJobsToRetain(job, 1, masterModel), equalTo(true));
+  }
+
+  @Test
+  public void testOlderThanNumJobsToRetainFalse() throws Exception {
+    final MasterModel masterModel = mock(MasterModel.class);
+    final String jobName = "job";
+    final List<Job> jobs = Lists.newArrayList(
+        // A job without a creation date
+        Job.newBuilder().setName(jobName).setVersion("1").build(),
+        // Jobs with creation dates
+        Job.newBuilder().setName(jobName).setVersion("2").setCreated(HOURS.toMillis(2)).build(),
+        Job.newBuilder().setName(jobName).setVersion("4").setCreated(HOURS.toMillis(4)).build()
+    );
+
+    when(masterModel.getJobs()).thenReturn(
+        jobs.stream().collect(Collectors.toMap(Job::getId, Function.identity())));
+
+    final Job job = Job.newBuilder()
+        .setCreated(HOURS.toMillis(3))
+        .setName(jobName)
+        .build();
+    assertThat(olderThanNumJobsToRetain(job, 2, masterModel), equalTo(false));
   }
 }

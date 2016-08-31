@@ -48,6 +48,7 @@ public class MasterParser extends ServiceParser {
   private Argument zkAclMasterPassword;
   private Argument agentReapingTimeout;
   private Argument jobRetention;
+  private Argument numJobsRetained;
   private Argument whitelistedCapabilities;
   private Argument jobHistoryReapingEnabled;
 
@@ -89,6 +90,7 @@ public class MasterParser extends ServiceParser {
         .setStateDirectory(getStateDirectory())
         .setAgentReapingTimeout(options.getLong(agentReapingTimeout.getDest()))
         .setJobRetention(options.getLong(jobRetention.getDest()))
+        .setNumJobsRetained(options.getInt(numJobsRetained.getDest()))
         .setFfwdConfig(ffwdConfig(options))
         .setWhitelistedCapabilities(ImmutableSet.copyOf(
             options.getList(whitelistedCapabilities.getDest())))
@@ -127,6 +129,15 @@ public class MasterParser extends ServiceParser {
         .setDefault(-1L)
         .help("In days. Jobs not deployed anywhere and with a job history showing they were last " +
               "used before the specified retention time will be removed. " +
+              "This is disabled by default by setting it to a sentinel value of -1.");
+
+    numJobsRetained = parser.addArgument("--num-jobs-retained")
+        .type(Integer.class)
+        .setDefault(-1L)
+        .help("The number of jobs of the same name that should be retained. " +
+              "When used together with --job-retention, jobs that are older than the number of " +
+              "retention days OR that are older than the N most recent jobs, where N is the " +
+              "passed to this switch, will be removed." +
               "This is disabled by default by setting it to a sentinel value of -1.");
 
     whitelistedCapabilities = parser.addArgument("--whitelisted-capability")

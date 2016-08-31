@@ -37,8 +37,6 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 
-import static com.google.common.base.Preconditions.checkArgument;
-
 /**
  * Removes old jobs that haven't been deployed for a while.
  * The logic for whether a job should be reaped depends on whether it's deployed, its last history
@@ -49,12 +47,15 @@ import static com.google.common.base.Preconditions.checkArgument;
  *    BE reaped.
  * 3. A job not deployed, with history, and an event after the number of retention days should NOT
  *    BE reaped. An example is a job created a long time ago but deployed recently.
+ *    Unless there are more than N jobs of the same name and it's not in the most recent N.
+ *    Then reap it.
  * 4. A job not deployed, without history, and without a creation date should BE reaped. Only really
  *    old versions of Helios create jobs without dates.
  * 5. A job not deployed, without history, and with a creation date before the number of retention
  *    days should BE reaped.
  * 6. A job not deployed, without history, and with a creation date after the number of retention
- *    days should NOT BE reaped.
+ *    days should NOT BE reaped. Unless there are more than N jobs of the same name and it is not
+ *    in the most recent N. Then reap it.
  *
  * Note that the --disable-job-history flag in {@link com.spotify.helios.agent.AgentParser} controls
  * whether the Helios agent should write job history to the data store. If this is disabled,
@@ -76,24 +77,28 @@ public class OldJobReaper extends RateLimitedService<Job> {
   private final MasterModel masterModel;
   private final long retentionDays;
   private final long retentionMillis;
+  private final int numJobsToRetain;
   private final Clock clock;
 
-  public OldJobReaper(final MasterModel masterModel, final long retentionDays) {
-    this(masterModel, retentionDays, SYSTEM_CLOCK, PERMITS_PER_SECOND,
+  public OldJobReaper(final MasterModel masterModel,
+                      final long retentionDays,
+                      final int numJobsToRetain) {
+    this(masterModel, retentionDays, numJobsToRetain, SYSTEM_CLOCK, PERMITS_PER_SECOND,
          new Random().nextInt(DELAY));
   }
 
   @VisibleForTesting
   OldJobReaper(final MasterModel masterModel,
                final long retentionDays,
+               final int numJobsToRetain,
                final Clock clock,
                final double permitsPerSecond,
                final int initialDelay) {
     super(permitsPerSecond, initialDelay, DELAY, TIME_UNIT);
     this.masterModel = masterModel;
-    checkArgument(retentionDays > 0);
     this.retentionDays = retentionDays;
     this.retentionMillis = TimeUnit.DAYS.toMillis(retentionDays);
+    this.numJobsToRetain = numJobsToRetain;
     this.clock = clock;
   }
 
@@ -114,6 +119,11 @@ public class OldJobReaper extends RateLimitedService<Job> {
 
       boolean reap;
 
+      // If the number of jobs of the same name to be retained is specified,
+      // check if this job is older than the most recent N jobs.
+      final boolean olderThanNumJobsToRetain = olderThanNumJobsToRetain(
+          job, numJobsToRetain, masterModel);
+
       if (deployments.isEmpty()) {
         if (events.isEmpty()) {
           final Long created = job.getCreated();
@@ -127,10 +137,18 @@ public class OldJobReaper extends RateLimitedService<Job> {
                      jobId, DATE_FORMATTER.print(created), retentionDays);
             reap = true;
           } else {
-            log.info("NOT reaping job '{}' (not deployed, no history, creation date of {} after "
-                     + "retention time of {} days)",
-                     jobId, DATE_FORMATTER.print(created), retentionDays);
-            reap = false;
+            if (olderThanNumJobsToRetain) {
+              log.info("Marked job '{}' for reaping (not deployed, no history, creation date of {} "
+                       + "after retention time of {} days, older than specified number of jobs {} "
+                       + "of the same name to retain)",
+                       jobId, DATE_FORMATTER.print(created), retentionDays, numJobsToRetain);
+              reap = true;
+            } else {
+              log.info("NOT reaping job '{}' (not deployed, no history, creation date of {} after "
+                       + "retention time of {} days)",
+                       jobId, DATE_FORMATTER.print(created), retentionDays);
+              reap = false;
+            }
           }
         } else {
           // Get the last event which is the most recent
@@ -147,10 +165,18 @@ public class OldJobReaper extends RateLimitedService<Job> {
                      jobId, eventDate, retentionDays);
             reap = true;
           } else {
-            log.info("NOT reaping job '{}' (not deployed, has history whose last event "
-                     + "on {} was after the retention time of {} days)",
-                     jobId, eventDate, retentionDays);
-            reap = false;
+            if (olderThanNumJobsToRetain) {
+              log.info("NOT reaping job '{}' (not deployed, has history whose last event "
+                       + "on {} was after the retention time of {} days, older than specified "
+                       + "number of jobs {} of the same name to retain)",
+                       jobId, eventDate, retentionDays, numJobsToRetain);
+              reap = true;
+            } else {
+              log.info("NOT reaping job '{}' (not deployed, has history whose last event "
+                       + "on {} was after the retention time of {} days)",
+                       jobId, eventDate, retentionDays);
+              reap = false;
+            }
           }
         }
       } else {
@@ -169,5 +195,29 @@ public class OldJobReaper extends RateLimitedService<Job> {
     } catch (Exception e) {
       log.warn("Failed to determine if job '{}' should be reaped", jobId, e);
     }
+  }
+
+  @VisibleForTesting
+  static boolean olderThanNumJobsToRetain(final Job job,
+                                          final int numJobsToRetain,
+                                          final MasterModel masterModel) {
+    if (numJobsToRetain < 1) {
+      return false;
+    }
+
+    final Map<JobId, Job> allJobs = masterModel.getJobs();
+
+    // Filter jobs
+    int numYounger = 0; // The number of jobs of the same name that are more recent
+    for (final Map.Entry<JobId, Job> entry : allJobs.entrySet()) {
+      if (entry.getKey().getName().equals(job.getId().getName())) {
+        if (entry.getValue().getCreated() != null
+            && job.getCreated() < entry.getValue().getCreated()) {
+          numYounger++;
+        }
+      }
+    }
+
+    return numJobsToRetain <= numYounger;
   }
 }

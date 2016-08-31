@@ -242,10 +242,12 @@ public class MasterService extends AbstractIdleService {
     }
 
     // Set up old job reaper (removes jobs not deployed anywhere and created more than X days ago)
-    if (config.getJobRetention() > 0) {
-      this.oldJobReaper = Optional.of(new OldJobReaper(model, config.getJobRetention()));
+    if (config.getJobRetention() > 0 || config.getNumJobsRetained() > 0) {
+      this.oldJobReaper = Optional.of(new OldJobReaper(model, config.getJobRetention(),
+                                                       config.getNumJobsRetained()));
     } else {
-      log.info("Reaping of old jobs disabled");
+      log.info("Both --job-retention and --jobs-retained not set to positive values. " +
+               "Reaping of old jobs disabled");
       this.oldJobReaper = Optional.empty();
     }
 
