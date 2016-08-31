@@ -51,7 +51,6 @@ import com.spotify.docker.client.messages.ContainerInfo;
 import com.spotify.docker.client.messages.ContainerState;
 import com.spotify.docker.client.messages.ImageInfo;
 import com.spotify.docker.client.messages.NetworkSettings;
-import com.spotify.docker.client.messages.PortBinding;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
@@ -75,7 +74,6 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.Mockito;
-import org.mockito.invocation.InvocationOnMock;
 import org.mockito.runners.MockitoJUnitRunner;
 import org.mockito.stubbing.Answer;
 
@@ -91,27 +89,27 @@ import java.util.concurrent.Executors;
 @RunWith(MockitoJUnitRunner.class)
 public class SupervisorTest {
 
-  final ExecutorService executor = Executors.newCachedThreadPool();
+  private final ExecutorService executor = Executors.newCachedThreadPool();
 
-  static final String NAMESPACE = "helios-deadbeef";
-  static final String REPOSITORY = "spotify";
-  static final String TAG = "17";
-  static final String IMAGE = REPOSITORY + ":" + TAG;
-  static final String NAME = "foobar";
-  static final List<String> COMMAND = asList("foo", "bar");
-  static final String VERSION = "4711";
-  static final Job JOB = Job.newBuilder()
+  private static final String NAMESPACE = "helios-deadbeef";
+  private static final String REPOSITORY = "spotify";
+  private static final String TAG = "17";
+  private static final String IMAGE = REPOSITORY + ":" + TAG;
+  private static final String NAME = "foobar";
+  private static final List<String> COMMAND = asList("foo", "bar");
+  private static final String VERSION = "4711";
+  private static final Job JOB = Job.newBuilder()
       .setName(NAME)
       .setCommand(COMMAND)
       .setImage(IMAGE)
       .setVersion(VERSION)
       .build();
-  static final Map<String, PortMapping> PORTS = Collections.emptyMap();
-  static final Map<String, String> ENV = ImmutableMap.of("foo", "17",
+  private static final Map<String, PortMapping> PORTS = Collections.emptyMap();
+  private static final Map<String, String> ENV = ImmutableMap.of("foo", "17",
                                                          "bar", "4711");
-  static final Set<String> EXPECTED_CONTAINER_ENV = ImmutableSet.of("foo=17", "bar=4711");
+  private static final Set<String> EXPECTED_CONTAINER_ENV = ImmutableSet.of("foo=17", "bar=4711");
 
-  public static final ContainerInfo RUNNING_RESPONSE = new ContainerInfo() {
+  private static final ContainerInfo RUNNING_RESPONSE = new ContainerInfo() {
     @Override
     public ContainerState state() {
       final ContainerState state = Mockito.mock(ContainerState.class);
@@ -122,12 +120,12 @@ public class SupervisorTest {
     @Override
     public NetworkSettings networkSettings() {
       return NetworkSettings.builder()
-          .ports(Collections.<String, List<PortBinding>>emptyMap())
+          .ports(Collections.emptyMap())
           .build();
     }
   };
 
-  public static final ContainerInfo STOPPED_RESPONSE = new ContainerInfo() {
+  private static final ContainerInfo STOPPED_RESPONSE = new ContainerInfo() {
     @Override
     public ContainerState state() {
       final ContainerState state = Mockito.mock(ContainerState.class);
@@ -146,7 +144,7 @@ public class SupervisorTest {
   @Captor public ArgumentCaptor<String> containerNameCaptor;
   @Captor public ArgumentCaptor<TaskStatus> taskStatusCaptor;
 
-  Supervisor sut;
+  private Supervisor sut;
 
   @Before
   public void setup() throws Exception {
@@ -155,22 +153,17 @@ public class SupervisorTest {
     sut = createSupervisor(JOB);
 
     final ConcurrentMap<JobId, TaskStatus> statusMap = Maps.newConcurrentMap();
-    doAnswer(new Answer<Object>() {
-      @Override
-      public Object answer(final InvocationOnMock invocationOnMock) {
-        final Object[] arguments = invocationOnMock.getArguments();
-        final JobId jobId = (JobId) arguments[0];
-        final TaskStatus status = (TaskStatus) arguments[1];
-        statusMap.put(jobId, status);
-        return null;
-      }
+    doAnswer(invocationOnMock -> {
+      final Object[] arguments = invocationOnMock.getArguments();
+      final JobId jobId = (JobId) arguments[0];
+      final TaskStatus status = (TaskStatus) arguments[1];
+      statusMap.put(jobId, status);
+      return null;
     }).when(model).setTaskStatus(eq(JOB.getId()), taskStatusCaptor.capture());
-    when(model.getTaskStatus(eq(JOB.getId()))).thenAnswer(new Answer<Object>() {
-      @Override
-      public Object answer(final InvocationOnMock invocationOnMock) throws Throwable {
-        final JobId jobId = (JobId) invocationOnMock.getArguments()[0];
-        return statusMap.get(jobId);
-      }
+
+    when(model.getTaskStatus(eq(JOB.getId()))).thenAnswer(invocationOnMock -> {
+      final JobId jobId = (JobId) invocationOnMock.getArguments()[0];
+      return statusMap.get(jobId);
     });
   }
 
@@ -372,12 +365,7 @@ public class SupervisorTest {
   }
 
   private Answer<?> futureAnswer(final SettableFuture<?> future) {
-    return new Answer<Object>() {
-      @Override
-      public Object answer(final InvocationOnMock invocation) throws Throwable {
-        return future.get();
-      }
-    };
+    return (Answer<Object>) invocation -> future.get();
   }
 
   /**
