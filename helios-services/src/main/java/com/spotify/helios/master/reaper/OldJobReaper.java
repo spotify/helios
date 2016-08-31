@@ -79,8 +79,7 @@ public class OldJobReaper extends RateLimitedService<Job> {
   private final Clock clock;
 
   public OldJobReaper(final MasterModel masterModel, final long retentionDays) {
-    this(masterModel, retentionDays, SYSTEM_CLOCK, PERMITS_PER_SECOND,
-         new Random().nextInt(DELAY));
+    this(masterModel, retentionDays, SYSTEM_CLOCK, PERMITS_PER_SECOND, new Random().nextInt(DELAY));
   }
 
   @VisibleForTesting
