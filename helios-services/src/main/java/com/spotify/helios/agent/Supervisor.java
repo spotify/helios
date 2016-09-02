@@ -17,6 +17,12 @@
 
 package com.spotify.helios.agent;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.ContainerNotFoundException;
 import com.spotify.docker.client.exceptions.DockerException;
@@ -33,12 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.InterruptedIOException;
 import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
-import static java.util.concurrent.TimeUnit.SECONDS;
 
 /**
  * Supervises docker containers for a single job.
@@ -376,7 +376,7 @@ public class Supervisor {
           .build().newScheduler();
 
       // Kill the container after stopping the runner
-      while (!containerNotRunning()) {
+      while (containerRunning()) {
         killContainer();
         sleeper.sleep(retryScheduler.nextMillis());
       }
@@ -397,21 +397,22 @@ public class Supervisor {
       }
     }
 
-    private boolean containerNotRunning()
+    private boolean containerRunning()
         throws InterruptedException {
       if (containerId == null) {
-        return true;
+        return false;
       }
       final ContainerInfo containerInfo;
       try {
         containerInfo = docker.inspectContainer(containerId);
       } catch (ContainerNotFoundException e) {
-        return true;
+        return false;
       } catch (DockerException e) {
         log.error("failed to query container {}", containerId, e);
-        return false;
+        // Assume the container is running as we don't know for sure either way.
+        return true;
       }
-      return !containerInfo.state().running();
+      return containerInfo.state().running();
     }
 
     private String containerError() throws InterruptedException {
