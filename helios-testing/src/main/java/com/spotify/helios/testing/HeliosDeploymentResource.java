@@ -17,12 +17,11 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.ListenableFuture;
-
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus;
 
+import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.ListenableFuture;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -61,7 +60,9 @@ public class HeliosDeploymentResource extends ExternalResource {
     super.before();
 
     // wait for the helios master to be available
-    Polling.awaitUnchecked(30, TimeUnit.SECONDS, new Callable<Boolean>() {
+    Polling.awaitUnchecked(30, TimeUnit.SECONDS,
+        "Could not connect to HeliosDeployment at " + deployment.address() + " after %d %s",
+        new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
         final HostAndPort hap = deployment.address();
@@ -84,7 +85,9 @@ public class HeliosDeploymentResource extends ExternalResource {
     // This prevents continuing with the test when starting up helios-solo before the agent is
     // registered.
     final HeliosClient client = client();
-    Polling.awaitUnchecked(30, TimeUnit.SECONDS, new Callable<Boolean>() {
+    Polling.awaitUnchecked(30, TimeUnit.SECONDS,
+        "No agents were available at HeliosDeployment at " + deployment.address() + " after %d %s",
+        new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
         final ListenableFuture<List<String>> future = client.listHosts();
