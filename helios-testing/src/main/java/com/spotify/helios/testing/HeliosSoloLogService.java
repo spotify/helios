@@ -31,13 +31,19 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractScheduledService;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 class HeliosSoloLogService extends AbstractScheduledService {
 
@@ -58,12 +64,26 @@ class HeliosSoloLogService extends AbstractScheduledService {
     this.logStreamProvider = logStreamProvider;
   }
 
+  private static <T> T get(Future<T> future)
+      throws InterruptedException, ExecutionException, TimeoutException {
+    return future.get(1, TimeUnit.SECONDS);
+  }
+
+  @Override
+  protected ScheduledExecutorService executor() {
+    final ThreadFactory threadFactory = new ThreadFactoryBuilder()
+        .setNameFormat(serviceName())
+        .setDaemon(true)
+        .build();
+    return Executors.newSingleThreadScheduledExecutor(threadFactory);
+  }
+
   @Override
   protected void runOneIteration() throws Exception {
     try {
       // fetch all the jobs running on the solo deployment
-      for (final String host : heliosClient.listHosts().get()) {
-        final HostStatus hostStatus = heliosClient.hostStatus(host).get();
+      for (final String host : get(heliosClient.listHosts())) {
+        final HostStatus hostStatus = get(heliosClient.hostStatus(host));
         final Map<JobId, TaskStatus> statuses = hostStatus.getStatuses();
 
         for (final TaskStatus status : statuses.values()) {
@@ -99,7 +119,7 @@ class HeliosSoloLogService extends AbstractScheduledService {
         }
       }
     } catch (Exception e) {
-      // do nothing, we'll retry in a bit
+      log.warn("Caught exception, will ignore", e);
     }
   }
 
