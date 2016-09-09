@@ -17,6 +17,10 @@
 
 package com.spotify.helios.testing;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static java.util.Collections.singletonList;
+
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.DockerHost;
@@ -50,7 +54,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigValue;
-
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,10 +69,6 @@ import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static java.util.Collections.singletonList;
 
 /**
  * A HeliosSoloDeployment represents a deployment of Helios Solo, which is to say one Helios
@@ -530,7 +529,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private Boolean awaitJobUndeployed(final HeliosClient client, final String host,
                                      final JobId jobId, final int timeout,
                                      final TimeUnit timeunit) throws Exception {
-    return Polling.await(timeout, timeunit, new Callable<Boolean>() {
+    return Polling.await(timeout, timeunit, "Job " + jobId + " did not undeploy after %d %s",
+        new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
         final HostStatus hostStatus = getOrNull(client.hostStatus(host));

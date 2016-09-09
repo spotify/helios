@@ -17,13 +17,16 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.Futures;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.collect.Maps.newHashMap;
+import static com.spotify.helios.testing.Jobs.TIMEOUT_MILLIS;
+import static com.spotify.helios.testing.Jobs.get;
+import static com.spotify.helios.testing.Jobs.getJobDescription;
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.Assert.fail;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -37,6 +40,13 @@ import com.spotify.helios.common.descriptors.ThrottleState;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 
+import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.Futures;
 import org.apache.commons.lang.text.StrSubstitutor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,17 +58,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.collect.Maps.newHashMap;
-import static com.spotify.helios.testing.Jobs.TIMEOUT_MILLIS;
-import static com.spotify.helios.testing.Jobs.get;
-import static com.spotify.helios.testing.Jobs.getJobDescription;
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.fail;
 
 public class TemporaryJob {
 
@@ -251,7 +250,8 @@ public class TemporaryJob {
     try {
       final AtomicBoolean messagePrinted = new AtomicBoolean(false);
       final TaskStatus status = Polling.awaitUnchecked(
-          deployTimeoutMillis, MILLISECONDS, new Callable<TaskStatus>() {
+          deployTimeoutMillis, MILLISECONDS, job.getId() + " was not up within %d %s",
+          new Callable<TaskStatus>() {
             @Override
             public TaskStatus call() throws Exception {
               final JobStatus status = Futures.getUnchecked(client.jobStatus(job.getId()));
@@ -345,7 +345,9 @@ public class TemporaryJob {
     final PortMapping portMapping = taskStatus.getPorts().get(port);
     final Integer externalPort = portMapping.getExternalPort();
     assert externalPort != null;
-    Polling.awaitUnchecked(TIMEOUT_MILLIS, MILLISECONDS, new Callable<Boolean>() {
+    Polling.awaitUnchecked(TIMEOUT_MILLIS, MILLISECONDS,
+        "Unable to connect to port " + port + " on host " + host + " within %d %s",
+        new Callable<Boolean>() {
       @Override
       public Boolean call() throws Exception {
         log.info("Probing: {} @ {}:{}", port, endpoint, portMapping);
