@@ -50,7 +50,8 @@ public class TaskRunnerFactory {
 
   public TaskRunner create(final long delay,
                            final String containerId,
-                           final TaskRunner.Listener listener) {
+                           final TaskRunner.Listener listener,
+                           final int secondsToWaitBeforeKill) {
     return TaskRunner.builder()
         .delayMillis(delay)
         .config(taskConfig)
@@ -59,6 +60,7 @@ public class TaskRunnerFactory {
         .existingContainerId(containerId)
         .listener(new BroadcastingListener(concat(this.listeners, singletonList(listener))))
         .registrar(registrar)
+        .secondsToWaitBeforeKill(secondsToWaitBeforeKill)
         .build();
   }
 

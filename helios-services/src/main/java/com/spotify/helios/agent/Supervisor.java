@@ -38,6 +38,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InterruptedIOException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -51,6 +52,8 @@ public class Supervisor {
   }
 
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
+
+  private static final int DEFAULT_SECONDS_TO_WAIT_BEFORE_KILL = 120;
 
   private final DockerClient docker;
   private final Job job;
@@ -328,7 +331,9 @@ public class Supervisor {
 
     private void startAfter(final long delay) {
       log.debug("starting job (delay={}): {}", delay, job);
-      runner = runnerFactory.create(delay, containerId, new TaskListener());
+      final int waitBeforeKill = Optional.ofNullable(job.getSecondsToWaitBeforeKill())
+          .orElse(DEFAULT_SECONDS_TO_WAIT_BEFORE_KILL);
+      runner = runnerFactory.create(delay, containerId, new TaskListener(), waitBeforeKill);
       runner.startAsync();
       runner.resultFuture().addListener(reactor.signalRunnable(), directExecutor());
     }
