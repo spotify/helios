@@ -17,6 +17,19 @@
 
 package com.spotify.helios.common.descriptors;
 
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.MoreObjects.firstNonNull;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.base.Throwables.propagate;
+import static com.spotify.helios.common.Hash.sha1digest;
+import static java.util.Collections.emptyList;
+import static java.util.Collections.emptyMap;
+import static java.util.Collections.emptySet;
+
+import com.spotify.helios.common.Json;
+
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
@@ -24,10 +37,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
-
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import com.spotify.helios.common.Json;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -39,15 +48,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
-
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.MoreObjects.firstNonNull;
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.base.Throwables.propagate;
-import static com.spotify.helios.common.Hash.sha1digest;
-import static java.util.Collections.emptyList;
-import static java.util.Collections.emptyMap;
-import static java.util.Collections.emptySet;
 
 /**
  * Represents a Helios job.
@@ -132,6 +132,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final String EMPTY_HOSTNAME = null;
   public static final Map<String, String> EMPTY_METADATA = emptyMap();
   public static final Set<String> EMPTY_CAPS = emptySet();
+  public static final Integer EMPTY_SECONDS_TO_WAIT = null;
 
   private final JobId id;
   private final String image;
@@ -154,6 +155,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Map<String, String> metadata;
   private final Set<String> addCapabilities;
   private final Set<String> dropCapabilities;
+  private final Integer secondsToWaitBeforeKill;
 
   /**
    * Create a Job.
@@ -188,6 +190,8 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @param addCapabilities Linux capabilities to add for the container. Optional.
    * @param dropCapabilities Linux capabilities to drop for the container. Optional.
    * @see <a href="https://docs.docker.com/reference/run/#network-settings">Docker run reference</a>
+   * @param secondsToWaitBeforeKill The time to ask Docker to wait after sending a SIGTERM to the
+   *    container's main process before sending it a SIGKILL. Optional.
    */
   public Job(
       @JsonProperty("id") final JobId id,
@@ -210,7 +214,8 @@ public class Job extends Descriptor implements Comparable<Job> {
       @JsonProperty("networkMode") @Nullable final String networkMode,
       @JsonProperty("metadata") @Nullable final Map<String, String> metadata,
       @JsonProperty("addCapabilities") @Nullable final Set<String> addCapabilities,
-      @JsonProperty("dropCapabilities") @Nullable final Set<String> dropCapabilities) {
+      @JsonProperty("dropCapabilities") @Nullable final Set<String> dropCapabilities,
+      @JsonProperty("secondsToWaitBeforeKill") @Nullable final Integer secondsToWaitBeforeKill) {
     this.id = id;
     this.image = image;
 
@@ -235,6 +240,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.metadata = Optional.fromNullable(metadata).or(EMPTY_METADATA);
     this.addCapabilities = firstNonNull(addCapabilities, EMPTY_CAPS);
     this.dropCapabilities = firstNonNull(dropCapabilities, EMPTY_CAPS);
+    this.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -261,6 +267,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.metadata = ImmutableMap.copyOf(p.metadata);
     this.addCapabilities = ImmutableSet.copyOf(p.addCapabilities);
     this.dropCapabilities = ImmutableSet.copyOf(p.dropCapabilities);
+    this.secondsToWaitBeforeKill = p.secondsToWaitBeforeKill;
   }
 
   public JobId getId() {
@@ -347,6 +354,10 @@ public class Job extends Descriptor implements Comparable<Job> {
     return dropCapabilities;
   }
 
+  public Integer getSecondsToWaitBeforeKill() {
+    return secondsToWaitBeforeKill;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -387,7 +398,8 @@ public class Job extends Descriptor implements Comparable<Job> {
            Objects.equals(this.networkMode, that.networkMode) &&
            Objects.equals(this.metadata, that.metadata) &&
            Objects.equals(this.addCapabilities, that.addCapabilities) &&
-           Objects.equals(this.dropCapabilities, that.dropCapabilities);
+           Objects.equals(this.dropCapabilities, that.dropCapabilities) &&
+           Objects.equals(this.secondsToWaitBeforeKill, that.secondsToWaitBeforeKill);
   }
 
   @Override
@@ -396,7 +408,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         id, image, hostname, expires, created, command, env, resources,
         ports, registration, registrationDomain, gracePeriod, volumes, creatingUser,
         token, healthCheck, securityOpt, networkMode, metadata, addCapabilities,
-        dropCapabilities);
+        dropCapabilities, secondsToWaitBeforeKill);
   }
 
   @Override
@@ -423,6 +435,7 @@ public class Job extends Descriptor implements Comparable<Job> {
            ", metadata=" + metadata +
            ", addCapabilities=" + addCapabilities +
            ", dropCapabilities=" + dropCapabilities +
+           ", secondsToWaitBeforeKill=" + secondsToWaitBeforeKill +
            "} " + super.toString();
   }
 
@@ -453,7 +466,8 @@ public class Job extends Descriptor implements Comparable<Job> {
         .setNetworkMode(networkMode)
         .setMetadata(metadata)
         .setAddCapabilities(addCapabilities)
-        .setDropCapabilities(dropCapabilities);
+        .setDropCapabilities(dropCapabilities)
+        .setSecondsToWaitBeforeKill(secondsToWaitBeforeKill);
   }
 
   public static class Builder implements Cloneable {
@@ -494,6 +508,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Map<String, String> metadata;
       public Set<String> addCapabilities;
       public Set<String> dropCapabilities;
+      public Integer secondsToWaitBeforeKill;
 
       private Parameters() {
         this.created = EMPTY_CREATED;
@@ -537,6 +552,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.metadata = p.metadata;
         this.addCapabilities = p.addCapabilities;
         this.dropCapabilities = p.dropCapabilities;
+        this.secondsToWaitBeforeKill = p.secondsToWaitBeforeKill;
       }
 
       private Parameters withoutMetaParameters() {
@@ -693,6 +709,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setSecondsToWaitBeforeKill(final Integer secondsToWaitBeforeKill) {
+      p.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
+      return this;
+    }
+
     public String getName() {
       return p.name;
     }
@@ -771,6 +792,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Set<String> getDropCapabilities() {
       return p.dropCapabilities;
+    }
+
+    public Integer secondsToWaitBeforeKill() {
+      return p.secondsToWaitBeforeKill;
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})

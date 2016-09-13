@@ -34,10 +34,13 @@ import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.statistics.MetricsContext;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
+import com.google.common.annotations.VisibleForTesting;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InterruptedIOException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -51,6 +54,9 @@ public class Supervisor {
   }
 
   private static final Logger log = LoggerFactory.getLogger(Supervisor.class);
+
+  @VisibleForTesting
+  static final int DEFAULT_SECONDS_TO_WAIT_BEFORE_KILL = 120;
 
   private final DockerClient docker;
   private final Job job;
@@ -328,7 +334,9 @@ public class Supervisor {
 
     private void startAfter(final long delay) {
       log.debug("starting job (delay={}): {}", delay, job);
-      runner = runnerFactory.create(delay, containerId, new TaskListener());
+      final int waitBeforeKill = Optional.ofNullable(job.getSecondsToWaitBeforeKill())
+          .orElse(DEFAULT_SECONDS_TO_WAIT_BEFORE_KILL);
+      runner = runnerFactory.create(delay, containerId, new TaskListener(), waitBeforeKill);
       runner.startAsync();
       runner.resultFuture().addListener(reactor.signalRunnable(), directExecutor());
     }
@@ -364,7 +372,9 @@ public class Supervisor {
 
       log.info("stopping job: {}", job);
 
-      // Stop the runner
+      // Stop the runner. Doing so sends a SIGTERM to the main process in the container.
+      // This call will block up to job.getSecondsToWaitBeforeKill() on the container shutting down,
+      // after which it will send SIGKILL to the main process.
       if (runner != null) {
         runner.stop();
         runner = null;
@@ -375,7 +385,13 @@ public class Supervisor {
           .setMaxIntervalMillis(SECONDS.toMillis(30))
           .build().newScheduler();
 
-      // Kill the container after stopping the runner
+
+      // TODO(negz): Use Docker stop instead of kill?
+      // I assume this loop is intended to handle the case where the above runner.stop() fails to
+      // communicate with the Docker API, because runner.stop() already sends a SIGKILL if
+      // necessary. What good could sending more SIGKILLs do if the first signal was sent
+      // successfully? If we *are* working around Docker API failures why not send more SIGTERMs
+      // to give the container the chance to shutdown gracefully?
       while (containerRunning()) {
         killContainer();
         sleeper.sleep(retryScheduler.nextMillis());

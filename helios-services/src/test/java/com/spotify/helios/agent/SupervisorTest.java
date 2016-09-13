@@ -64,6 +64,7 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.SettableFuture;
+
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -81,7 +82,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -151,20 +151,7 @@ public class SupervisorTest {
     when(retryPolicy.delay(any(ThrottleState.class))).thenReturn(10L);
 
     sut = createSupervisor(JOB);
-
-    final ConcurrentMap<JobId, TaskStatus> statusMap = Maps.newConcurrentMap();
-    doAnswer(invocationOnMock -> {
-      final Object[] arguments = invocationOnMock.getArguments();
-      final JobId jobId = (JobId) arguments[0];
-      final TaskStatus status = (TaskStatus) arguments[1];
-      statusMap.put(jobId, status);
-      return null;
-    }).when(model).setTaskStatus(eq(JOB.getId()), taskStatusCaptor.capture());
-
-    when(model.getTaskStatus(eq(JOB.getId()))).thenAnswer(invocationOnMock -> {
-      final JobId jobId = (JobId) invocationOnMock.getArguments()[0];
-      return statusMap.get(jobId);
-    });
+    mockTaskStatus(JOB.getId());
   }
 
   @After
@@ -175,23 +162,29 @@ public class SupervisorTest {
     }
   }
 
+  private void mockTaskStatus(final JobId jobId) throws Exception {
+    final ConcurrentMap<JobId, TaskStatus> statusMap = Maps.newConcurrentMap();
+    doAnswer(invocationOnMock -> {
+      final TaskStatus status = (TaskStatus) invocationOnMock.getArguments()[1];
+      statusMap.put(jobId, status);
+      return null;
+    }).when(model).setTaskStatus(eq(jobId), taskStatusCaptor.capture());
+
+    when(model.getTaskStatus(eq(jobId))).thenReturn(statusMap.get(jobId));
+  }
+
+
   @Test
   public void verifySupervisorStartsAndStopsDockerContainer() throws Exception {
     final String containerId = "deadbeef";
 
-    final ContainerCreation createResponse = new ContainerCreation(containerId);
-
-    final SettableFuture<ContainerCreation> createFuture = SettableFuture.create();
-    when(docker.createContainer(any(ContainerConfig.class),
-                                any(String.class))).thenAnswer(futureAnswer(createFuture));
-
-    final SettableFuture<Void> startFuture = SettableFuture.create();
-    doAnswer(futureAnswer(startFuture))
-        .when(docker).startContainer(eq(containerId));
+    when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
+        .thenReturn(new ContainerCreation(containerId));
 
     final ImageInfo imageInfo = new ImageInfo();
     when(docker.inspectImage(IMAGE)).thenReturn(imageInfo);
 
+    // Have waitContainer wait forever.
     final SettableFuture<ContainerExit> waitFuture = SettableFuture.create();
     when(docker.waitContainer(containerId)).thenAnswer(futureAnswer(waitFuture));
 
@@ -210,7 +203,6 @@ public class SupervisorTest {
                                                        .setEnv(ENV)
                                                        .build())
     );
-    createFuture.set(createResponse);
     final ContainerConfig containerConfig = containerConfigCaptor.getValue();
     assertEquals(IMAGE, containerConfig.image());
     assertEquals(EXPECTED_CONTAINER_ENV, ImmutableSet.copyOf(containerConfig.env()));
@@ -230,7 +222,6 @@ public class SupervisorTest {
                                                        .build())
     );
     when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
-    startFuture.set(null);
 
     verify(docker, timeout(30000)).waitContainer(containerId);
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
@@ -244,21 +235,12 @@ public class SupervisorTest {
     );
 
     // Stop the job
-    final SettableFuture<Void> killFuture = SettableFuture.create();
-    doAnswer(futureAnswer(killFuture)).when(docker).killContainer(eq(containerId));
-    executor.submit(new Callable<Void>() {
-      @Override
-      public Void call() throws Exception {
-        // TODO (dano): Make Supervisor.stop() asynchronous
-        sut.setGoal(STOP);
-        return null;
-      }
-    });
-    verify(docker, timeout(30000)).killContainer(eq(containerId));
+    sut.setGoal(STOP);
+    verify(docker, timeout(30000)).stopContainer(
+        eq(containerId), eq(Supervisor.DEFAULT_SECONDS_TO_WAIT_BEFORE_KILL));
 
-    // Change docker container state to stopped when it's killed
+    // Change docker container state to stopped now that it was killed
     when(docker.inspectContainer(eq(containerId))).thenReturn(STOPPED_RESPONSE);
-    killFuture.set(null);
 
     // Verify that the pulling state is signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
@@ -292,6 +274,50 @@ public class SupervisorTest {
                                                        .setEnv(ENV)
                                                        .build())
     );
+  }
+
+  @Test
+  public void verifySupervisorStopsDockerContainerWithConfiguredKillTime() throws Exception {
+    final String containerId = "deadbeef";
+
+    final Job longKillTimeJob = Job.newBuilder()
+        .setName(NAME)
+        .setCommand(COMMAND)
+        .setImage(IMAGE)
+        .setVersion(VERSION)
+        .setSecondsToWaitBeforeKill(30)
+        .build();
+
+    mockTaskStatus(longKillTimeJob.getId());
+
+    final Supervisor longKillTimeSupervisor = createSupervisor(longKillTimeJob);
+
+
+    when(docker.createContainer(any(ContainerConfig.class), any(String.class)))
+        .thenReturn(new ContainerCreation(containerId));
+
+    final ImageInfo imageInfo = new ImageInfo();
+    when(docker.inspectImage(IMAGE)).thenReturn(imageInfo);
+
+    // Have waitContainer wait forever.
+    final SettableFuture<ContainerExit> waitFuture = SettableFuture.create();
+    when(docker.waitContainer(containerId)).thenAnswer(futureAnswer(waitFuture));
+
+    // Start the job (so that a runner exists)
+    longKillTimeSupervisor.setGoal(START);
+    when(docker.inspectContainer(eq(containerId))).thenReturn(RUNNING_RESPONSE);
+
+    // This is already verified above, but it works as a hack to wait for the model/docker state
+    // to converge in such a way that a setGoal(STOP) will work. :|
+    verify(docker, timeout(30000)).waitContainer(containerId);
+
+    // Stop the job
+    longKillTimeSupervisor.setGoal(STOP);
+    verify(docker, timeout(30000)).stopContainer(
+        eq(containerId), eq(longKillTimeJob.getSecondsToWaitBeforeKill()));
+
+    // Change docker container state to stopped now that it was killed
+    when(docker.inspectContainer(eq(containerId))).thenReturn(STOPPED_RESPONSE);
   }
 
   private String shortJobIdFromContainerName(final String containerName) {
