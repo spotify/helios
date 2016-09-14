@@ -185,6 +185,7 @@ example that uses all the available configuration keys with an explanation of ea
     "cpuset" : "0",
     "cpuShares" : 512
   },
+  "secondsToWaitBeforeKill": 120,
   "securityOpt" : [ "label:user:USER", "apparmor:PROFILE" ],
   "token": "insecure-access-token",
   "volumes" : {
@@ -311,10 +312,22 @@ These settings correspond to the ones in the [Docker docs][2].
 
 What is allowed here will vary based upon the discovery service plugin used.
 
+#### secondsToWaitBeforeKill
+Optional. When a job is being stopped or undeployed, the helios-agent will ask
+Docker to stop the container (which sends SIGTERM) and pass along a value for
+how many seconds to wait for the container to shutdown before resorting to
+killing the container (with SIGKILL). If not specified, defaults to 120
+seconds.
+
+If the container requires a long time to shut itself down gracefully, this
+value should be specified to prevent Docker from killing your container/process
+before that period of time has passed. In most cases this option likely does
+not need to be specified.
+
 #### securityOpt
 Optional. A list of strings denoting security options for running Docker
-containers, e.g. `docker run --security-opt <value...>`. 
-   
+containers, e.g. `docker run --security-opt <value...>`.
+
 For more details, see the [Docker
 docs](https://docs.docker.com/reference/run/#security-configuration).
 
@@ -325,7 +338,6 @@ undeploys). Optional.
 If specified, the token value must be used in all interactions with the Helios
 CLI when managing instances of the job, for example when undeploying a running
 container.
-
 
 #### volumes
 Container volumes. Optional. 
