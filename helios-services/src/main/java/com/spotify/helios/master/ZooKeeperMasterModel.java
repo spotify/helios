@@ -58,11 +58,11 @@ import com.spotify.helios.common.descriptors.Task;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.common.descriptors.ThrottleState;
-import com.spotify.helios.rollingupdate.DefaultRolloutPlanner;
 import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory;
 import com.spotify.helios.rollingupdate.RollingUpdateError;
 import com.spotify.helios.rollingupdate.RollingUpdateOp;
 import com.spotify.helios.rollingupdate.RollingUpdateOpFactory;
+import com.spotify.helios.rollingupdate.RollingUpdatePlanner;
 import com.spotify.helios.rollingupdate.RolloutPlanner;
 import com.spotify.helios.servicescommon.KafkaRecord;
 import com.spotify.helios.servicescommon.KafkaSender;
@@ -622,7 +622,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       }
     }
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = RollingUpdatePlanner.of(deploymentGroup);
     final List<RolloutTask> rolloutTasks = rolloutPlanner.plan(hostsAndStatuses);
     final DeploymentGroupTasks tasks = DeploymentGroupTasks.newBuilder()
         .setRolloutTasks(rolloutTasks)

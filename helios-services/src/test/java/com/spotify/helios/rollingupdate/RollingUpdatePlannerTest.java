@@ -35,7 +35,7 @@ import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class DefaultRolloutPlannerTest {
+public class RollingUpdatePlannerTest {
 
   @Test
   public void testSerialRollout() {
@@ -53,7 +53,7 @@ public class DefaultRolloutPlannerTest {
         "agent4", statusUp
     );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = RollingUpdatePlanner.of(deploymentGroup);
 
     final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
@@ -90,7 +90,7 @@ public class DefaultRolloutPlannerTest {
         "agent4", statusUp
     );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = RollingUpdatePlanner.of(deploymentGroup);
 
     final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
@@ -127,7 +127,7 @@ public class DefaultRolloutPlannerTest {
         "agent4", statusUp
     );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = RollingUpdatePlanner.of(deploymentGroup);
 
     final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
@@ -162,7 +162,7 @@ public class DefaultRolloutPlannerTest {
         "agent4", statusUp
     );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = RollingUpdatePlanner.of(deploymentGroup);
     final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
     final List<RolloutTask> expected = Lists.newArrayList(
@@ -199,7 +199,7 @@ public class DefaultRolloutPlannerTest {
         "agent4", statusUp
     );
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
+    final RolloutPlanner rolloutPlanner = RollingUpdatePlanner.of(deploymentGroup);
     final List<RolloutTask> tasks = rolloutPlanner.plan(hostsAndStatuses);
 
     final List<RolloutTask> expected = Lists.newArrayList(

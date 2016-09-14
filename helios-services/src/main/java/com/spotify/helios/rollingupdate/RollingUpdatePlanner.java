@@ -29,16 +29,16 @@ import com.google.common.collect.Lists;
 import java.util.List;
 import java.util.Map;
 
-public class DefaultRolloutPlanner implements RolloutPlanner {
+public class RollingUpdatePlanner implements RolloutPlanner {
 
   private final DeploymentGroup deploymentGroup;
 
-  private DefaultRolloutPlanner(final DeploymentGroup deploymentGroup) {
+  private RollingUpdatePlanner(final DeploymentGroup deploymentGroup) {
     this.deploymentGroup = checkNotNull(deploymentGroup, "deploymentGroup");
   }
 
-  public static DefaultRolloutPlanner of(final DeploymentGroup deploymentGroup) {
-    return new DefaultRolloutPlanner(deploymentGroup);
+  public static RollingUpdatePlanner of(final DeploymentGroup deploymentGroup) {
+    return new RollingUpdatePlanner(deploymentGroup);
   }
 
   @Override
