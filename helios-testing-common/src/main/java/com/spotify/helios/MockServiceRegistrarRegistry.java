@@ -17,9 +17,9 @@
 
 package com.spotify.helios;
 
-import com.google.common.collect.Maps;
-
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
+
+import com.google.common.collect.Maps;
 
 import java.util.Map;
 

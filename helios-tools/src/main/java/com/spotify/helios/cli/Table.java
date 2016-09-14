@@ -17,14 +17,14 @@
 
 package com.spotify.helios.cli;
 
+import static java.lang.Math.max;
+
 import com.google.common.base.Strings;
 import com.google.common.collect.Lists;
 import com.google.common.primitives.Ints;
 
 import java.io.PrintStream;
 import java.util.List;
-
-import static java.lang.Math.max;
 
 /**
  * Produces tabulated output, adding padding to cells as necessary to align them into columns.

@@ -17,11 +17,11 @@
 
 package com.spotify.helios.cli;
 
+import com.spotify.helios.common.Resolver;
+
 import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.ImmutableList;
-
-import com.spotify.helios.common.Resolver;
 
 import java.net.URI;
 import java.util.List;
