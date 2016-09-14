@@ -17,6 +17,8 @@
 
 package com.spotify.helios.cli;
 
+import static java.lang.String.format;
+
 import org.joda.time.Duration;
 import org.joda.time.Period;
 import org.xbill.DNS.Name;
@@ -24,8 +26,6 @@ import org.xbill.DNS.ResolverConfig;
 import org.xbill.DNS.TextParseException;
 
 import java.io.PrintStream;
-
-import static java.lang.String.format;
 
 public class Output {
 

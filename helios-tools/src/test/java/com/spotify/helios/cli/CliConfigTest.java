@@ -17,10 +17,12 @@
 
 package com.spotify.helios.cli;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.google.common.base.Charsets;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-
 import com.typesafe.config.ConfigException;
 
 import org.hamcrest.Matchers;
@@ -34,9 +36,6 @@ import java.io.FileOutputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class CliConfigTest {
 
