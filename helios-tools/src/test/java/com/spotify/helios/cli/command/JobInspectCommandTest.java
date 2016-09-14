@@ -57,6 +57,7 @@ public class JobInspectCommandTest {
       .setVersion(JOB_VERSION)
       .setCreated((long) 0)
       .setExpires(new Date(0))
+      .setSecondsToWaitBeforeKill(10)
       .setAddCapabilities(ImmutableSet.of("cap1", "cap2"))
       .setDropCapabilities(ImmutableSet.of("cap3", "cap4"))
       .build();
@@ -91,6 +92,7 @@ public class JobInspectCommandTest {
     final String output = baos.toString();
     assertThat(output, containsString("Created: Thu, 1 Jan 1970 00:00:00 +0000"));
     assertThat(output, containsString("Expires: Thu, 1 Jan 1970 00:00:00 +0000"));
+    assertThat(output, containsString("Time to wait before kill (seconds): 10"));
     assertThat(output, containsString("Add capabilities: cap1, cap2"));
     assertThat(output, containsString("Drop capabilities: cap3, cap4"));
   }
