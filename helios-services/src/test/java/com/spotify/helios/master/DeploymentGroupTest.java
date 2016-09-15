@@ -17,16 +17,36 @@
 
 package com.spotify.helios.master;
 
-import com.google.common.collect.ImmutableList;
+import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.HOSTS_CHANGED;
+import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
+import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
+import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
+import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
+import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.RolloutOptions;
+import com.spotify.helios.common.descriptors.RolloutTask;
+import com.spotify.helios.rollingupdate.RollingUndeployPlanner;
+import com.spotify.helios.rollingupdate.RollingUpdatePlanner;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
@@ -34,6 +54,9 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
+
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -54,23 +77,7 @@ import org.mockito.Captor;
 import org.mockito.MockitoAnnotations;
 
 import java.util.List;
-
-import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.HOSTS_CHANGED;
-import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdateReason.MANUAL;
-import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
-import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
-import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import java.util.Map;
 
 @RunWith(Theories.class)
 public class DeploymentGroupTest {
@@ -104,6 +111,13 @@ public class DeploymentGroupTest {
     zkServer.close();
   }
 
+  private Map<String, HostStatus> mockHostStatus(final MasterModel model, final String host) {
+    final HostStatus statusUp = mock(HostStatus.class);
+    doReturn(HostStatus.Status.UP).when(statusUp).getStatus();
+    doReturn(statusUp).when(model).getHostStatus(host);
+    return ImmutableMap.of(host, statusUp);
+  }
+
   // A test that ensures healthy deployment groups will perform a rolling update when their hosts
   // change.
   @Test
@@ -133,10 +147,17 @@ public class DeploymentGroupTest {
         .build();
     masterModel.addDeploymentGroup(dg);
 
+    // Setup some hosts
+    final String oldHost = "host1";
+    final String newHost = "host2";
+    final String unchangedHost = "host3";
+    final Map<String, HostStatus> oldHostStatus = mockHostStatus(masterModel, oldHost);
+    final Map<String, HostStatus> newHostStatus = mockHostStatus(masterModel, newHost);
+
     // Give the deployment group a host.
     client.setData(
         Paths.statusDeploymentGroupHosts(dg.getName()),
-        Json.asBytes(ImmutableList.of("host1")));
+        Json.asBytes(ImmutableList.of(oldHost, unchangedHost)));
 
     // And a status...
     client.setData(
@@ -144,22 +165,40 @@ public class DeploymentGroupTest {
         DeploymentGroupStatus.newBuilder().setState(DONE).build().toJsonBytes()
     );
 
-    // Pretend our new host is UP.
-    final HostStatus statusUp = mock(HostStatus.class);
-    doReturn(HostStatus.Status.UP).when(statusUp).getStatus();
-    doReturn(statusUp).when(masterModel).getHostStatus("host2");
-
     // Switch out our host!
-    masterModel.updateDeploymentGroupHosts(dg.getName(), ImmutableList.of("host2"));
+    masterModel.updateDeploymentGroupHosts(dg.getName(), ImmutableList.of(newHost));
+
+    verify(client, times(2)).transaction(opCaptor.capture());
+
+    final DeploymentGroup changed = dg.toBuilder()
+        .setRollingUpdateReason(HOSTS_CHANGED)
+        .build();
 
     // Ensure we set the DG status to HOSTS_CHANGED.
     // This means we triggered a rolling update.
     final ZooKeeperOperation setDeploymentGroupHostChanged = set(
         Paths.configDeploymentGroup(dg.getName()),
-        dg.toBuilder().setRollingUpdateReason(HOSTS_CHANGED).build()
+        changed);
+
+    // Ensure ZK tasks are written to:
+    // - Perform a rolling update for the added (new) host
+    // - Perform a rolling undeploy for the removed (old) host
+    // - Does nothing with the remaining (unchanged) host
+    final List<RolloutTask> tasks = ImmutableList.<RolloutTask>builder()
+        .addAll(RollingUpdatePlanner.of(changed).plan(newHostStatus))
+        .addAll(RollingUndeployPlanner.of(changed).plan(oldHostStatus))
+        .build();
+
+    final ZooKeeperOperation setDeploymentGroupTasks = set(
+      Paths.statusDeploymentGroupTasks(dg.getName()),
+      DeploymentGroupTasks.newBuilder()
+          .setRolloutTasks(tasks)
+          .setTaskIndex(0)
+          .setDeploymentGroup(changed)
+          .build()
     );
-    verify(client, times(2)).transaction(opCaptor.capture());
-    assertThat(opCaptor.getValue(), hasItem(setDeploymentGroupHostChanged));
+    assertThat(opCaptor.getValue(),
+               hasItems(setDeploymentGroupHostChanged, setDeploymentGroupTasks));
   }
 
   // A test that ensures deployment groups that failed during a rolling update triggered by
