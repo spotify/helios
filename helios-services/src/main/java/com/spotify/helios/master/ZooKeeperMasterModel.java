@@ -17,75 +17,6 @@
 
 package com.spotify.helios.master;
 
-import com.google.common.base.Function;
-import com.google.common.base.Joiner;
-import com.google.common.base.MoreObjects;
-import com.google.common.base.Optional;
-import com.google.common.base.Preconditions;
-import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Ordering;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.spotify.helios.common.HeliosRuntimeException;
-import com.spotify.helios.common.Json;
-import com.spotify.helios.common.descriptors.AgentInfo;
-import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
-import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
-import com.spotify.helios.common.descriptors.Goal;
-import com.spotify.helios.common.descriptors.HostInfo;
-import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.JobStatus;
-import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.common.descriptors.RolloutOptions;
-import com.spotify.helios.common.descriptors.RolloutTask;
-import com.spotify.helios.common.descriptors.Task;
-import com.spotify.helios.common.descriptors.TaskStatus;
-import com.spotify.helios.common.descriptors.TaskStatusEvent;
-import com.spotify.helios.common.descriptors.ThrottleState;
-import com.spotify.helios.rollingupdate.DefaultRolloutPlanner;
-import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory;
-import com.spotify.helios.rollingupdate.RollingUpdateError;
-import com.spotify.helios.rollingupdate.RollingUpdateOp;
-import com.spotify.helios.rollingupdate.RollingUpdateOpFactory;
-import com.spotify.helios.rollingupdate.RolloutPlanner;
-import com.spotify.helios.servicescommon.KafkaRecord;
-import com.spotify.helios.servicescommon.KafkaSender;
-import com.spotify.helios.servicescommon.VersionedValue;
-import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
-import com.spotify.helios.servicescommon.coordination.Node;
-import com.spotify.helios.servicescommon.coordination.Paths;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
-import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
-
-import org.apache.zookeeper.KeeperException;
-import org.apache.zookeeper.KeeperException.NoNodeException;
-import org.apache.zookeeper.KeeperException.NodeExistsException;
-import org.apache.zookeeper.KeeperException.NotEmptyException;
-import org.apache.zookeeper.OpResult;
-import org.apache.zookeeper.data.Stat;
-import org.jetbrains.annotations.Nullable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.IOException;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.UUID;
-
 import static com.google.common.base.Optional.fromNullable;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
@@ -106,6 +37,76 @@ import static java.util.Collections.emptyList;
 import static java.util.Collections.emptyMap;
 import static java.util.Collections.singletonList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+
+import com.spotify.helios.common.HeliosRuntimeException;
+import com.spotify.helios.common.Json;
+import com.spotify.helios.common.descriptors.AgentInfo;
+import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.DeploymentGroup;
+import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
+import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
+import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.HostInfo;
+import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.JobStatus;
+import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.RolloutOptions;
+import com.spotify.helios.common.descriptors.RolloutTask;
+import com.spotify.helios.common.descriptors.Task;
+import com.spotify.helios.common.descriptors.TaskStatus;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
+import com.spotify.helios.common.descriptors.ThrottleState;
+import com.spotify.helios.rollingupdate.DeploymentGroupEventFactory;
+import com.spotify.helios.rollingupdate.RollingUndeployPlanner;
+import com.spotify.helios.rollingupdate.RollingUpdateError;
+import com.spotify.helios.rollingupdate.RollingUpdateOp;
+import com.spotify.helios.rollingupdate.RollingUpdateOpFactory;
+import com.spotify.helios.rollingupdate.RollingUpdatePlanner;
+import com.spotify.helios.servicescommon.KafkaRecord;
+import com.spotify.helios.servicescommon.KafkaSender;
+import com.spotify.helios.servicescommon.VersionedValue;
+import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
+import com.spotify.helios.servicescommon.coordination.Node;
+import com.spotify.helios.servicescommon.coordination.Paths;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
+import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.google.common.base.Function;
+import com.google.common.base.Joiner;
+import com.google.common.base.MoreObjects;
+import com.google.common.base.Optional;
+import com.google.common.base.Preconditions;
+import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Ordering;
+
+import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.KeeperException.NodeExistsException;
+import org.apache.zookeeper.KeeperException.NotEmptyException;
+import org.apache.zookeeper.OpResult;
+import org.apache.zookeeper.data.Stat;
+import org.jetbrains.annotations.Nullable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.UUID;
 
 /**
  * The Helios Master's view into ZooKeeper.
@@ -512,44 +513,45 @@ public class ZooKeeperMasterModel implements MasterModel {
       if (!allowHostChange(status)) {
         return;
       }
-      if (!curHostsVersion.isPresent() || !hosts.equals(curHosts)) {
-        // Node not present or hosts have changed
-        final List<ZooKeeperOperation> ops = Lists.newArrayList();
-        ops.add(set(Paths.statusDeploymentGroupHosts(groupName), Json.asBytes(hosts)));
-
-        final Node dgn = client.getNode(Paths.configDeploymentGroup(groupName));
-        final Integer deploymentGroupVersion = dgn.getStat().getVersion();
-        DeploymentGroup deploymentGroup = Json.read(dgn.getBytes(), DeploymentGroup.class);
-
-        ImmutableList<Map<String, Object>> events = ImmutableList.of();
-
-        if (deploymentGroup.getJobId() != null) {
-          if (updateOnHostChange(deploymentGroup, status)) {
-            deploymentGroup = deploymentGroup.toBuilder()
-                .setRollingUpdateReason(HOSTS_CHANGED)
-                .build();
-            // Fail transaction if the deployment group has been updated elsewhere.
-            ops.add(check(Paths.configDeploymentGroup(groupName), deploymentGroupVersion));
-
-            // NOTE: If the DG was removed this set() cause the transaction to fail, because
-            // removing the DG removes this node. It's *important* that there's an operation that
-            // causes the transaction to fail if the DG was removed or we'll end up with
-            // inconsistent state.
-            ops.add(set(Paths.configDeploymentGroup(groupName), deploymentGroup));
-
-            final RollingUpdateOp op = getInitRollingUpdateOps(deploymentGroup, hosts, client);
-            ops.addAll(op.operations());
-            events = op.events();
-          }
-        }
-
-        log.info("starting zookeeper transaction for updateDeploymentGroupHosts on "
-                 + "deployment-group name {} jobId={}. List of operations: {}",
-            groupName, deploymentGroup.getJobId(), ops);
-
-        client.transaction(ops);
-        emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, events);
+      if (curHostsVersion.isPresent() && hosts.equals(curHosts)) {
+        return;
       }
+      final HostChanges changes = new HostChanges(ImmutableSet.copyOf(hosts),
+                                                  ImmutableSet.copyOf(curHosts));
+      final List<ZooKeeperOperation> ops = Lists.newArrayList();
+      ops.add(set(Paths.statusDeploymentGroupHosts(groupName), Json.asBytes(hosts)));
+
+      final Node dgn = client.getNode(Paths.configDeploymentGroup(groupName));
+      final Integer deploymentGroupVersion = dgn.getStat().getVersion();
+      DeploymentGroup deploymentGroup = Json.read(dgn.getBytes(), DeploymentGroup.class);
+
+      List<Map<String, Object>> events = ImmutableList.of();
+
+      if (deploymentGroup.getJobId() != null && updateOnHostChange(deploymentGroup, status)) {
+        deploymentGroup = deploymentGroup.toBuilder()
+            .setRollingUpdateReason(HOSTS_CHANGED)
+            .build();
+
+        // Fail transaction if the deployment group has been updated elsewhere.
+        ops.add(check(Paths.configDeploymentGroup(groupName), deploymentGroupVersion));
+
+        // NOTE: If the DG was removed this set() cause the transaction to fail, because
+        // removing the DG removes this node. It's *important* that there's an operation that
+        // causes the transaction to fail if the DG was removed or we'll end up with
+        // inconsistent state.
+        ops.add(set(Paths.configDeploymentGroup(deploymentGroup.getName()), deploymentGroup));
+
+        final RollingUpdateOp op = getInitRollingUpdateOps(deploymentGroup, changes, client);
+        ops.addAll(op.operations());
+        events = op.events();
+      }
+
+      log.info("starting zookeeper transaction for updateDeploymentGroupHosts on "
+               + "deployment-group name {} jobId={}. List of operations: {}",
+          groupName, deploymentGroup.getJobId(), ops);
+
+      client.transaction(ops);
+      emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, events);
     } catch (NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(groupName, e);
     } catch (KeeperException | IOException e) {
@@ -607,32 +609,47 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                   final ZooKeeperClient zooKeeperClient)
       throws DeploymentGroupDoesNotExistException, KeeperException {
     final List<String> hosts = getDeploymentGroupHosts(deploymentGroup.getName());
-    return getInitRollingUpdateOps(deploymentGroup, hosts, zooKeeperClient);
+    return getInitRollingUpdateOps(deploymentGroup, hosts, ImmutableList.of(), zooKeeperClient);
   }
 
   private RollingUpdateOp getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
-                                                  final List<String> hosts,
+                                                  final HostChanges changes,
                                                   final ZooKeeperClient zooKeeperClient)
       throws KeeperException {
-    final Map<String, HostStatus> hostsAndStatuses = Maps.newLinkedHashMap();
-    for (final String host : hosts) {
-      final HostStatus status = getHostStatus(host);
-      if (status != null) {
-        hostsAndStatuses.put(host, status);
-      }
-    }
+    return getInitRollingUpdateOps(
+        deploymentGroup, changes.added(), changes.removed(), zooKeeperClient);
+  }
 
-    final RolloutPlanner rolloutPlanner = DefaultRolloutPlanner.of(deploymentGroup);
-    final List<RolloutTask> rolloutTasks = rolloutPlanner.plan(hostsAndStatuses);
+  private RollingUpdateOp getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
+                                                  final List<String> updateHosts,
+                                                  final List<String> undeployHosts,
+                                                  final ZooKeeperClient zooKeeperClient)
+      throws KeeperException {
+    final ImmutableList.Builder<RolloutTask> rolloutTasks = ImmutableList.builder();
+    rolloutTasks.addAll(RollingUpdatePlanner.of(deploymentGroup)
+                            .plan(getHostStatuses(updateHosts)));
+    rolloutTasks.addAll(RollingUndeployPlanner.of(deploymentGroup)
+                            .plan(getHostStatuses(undeployHosts)));
+
     final DeploymentGroupTasks tasks = DeploymentGroupTasks.newBuilder()
-        .setRolloutTasks(rolloutTasks)
+        .setRolloutTasks(rolloutTasks.build())
         .setTaskIndex(0)
         .setDeploymentGroup(deploymentGroup)
         .build();
 
-    final RollingUpdateOpFactory opFactory = new RollingUpdateOpFactory(
-        tasks, DEPLOYMENT_GROUP_EVENT_FACTORY);
-    return opFactory.start(deploymentGroup, zooKeeperClient);
+    return new RollingUpdateOpFactory(tasks, DEPLOYMENT_GROUP_EVENT_FACTORY)
+        .start(deploymentGroup, zooKeeperClient);
+  }
+
+  private Map<String, HostStatus> getHostStatuses(final List<String> hosts) {
+    final ImmutableMap.Builder<String, HostStatus> hostsAndStatuses = ImmutableMap.builder();
+    hosts.forEach(host -> {
+      final HostStatus status = getHostStatus(host);
+      if (status != null) {
+        hostsAndStatuses.put(host, status);
+      }
+    });
+    return hostsAndStatuses.build();
   }
 
   private Map<String, VersionedValue<DeploymentGroupTasks>> getDeploymentGroupTasks(
