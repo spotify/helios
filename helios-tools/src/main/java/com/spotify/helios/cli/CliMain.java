@@ -17,13 +17,8 @@
 
 package com.spotify.helios.cli;
 
-import static ch.qos.logback.classic.Level.ALL;
-import static ch.qos.logback.classic.Level.DEBUG;
-import static ch.qos.logback.classic.Level.INFO;
-import static ch.qos.logback.classic.Level.WARN;
-import static com.google.common.collect.Iterables.get;
-import static java.util.Arrays.asList;
-import static org.slf4j.Logger.ROOT_LOGGER_NAME;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.Logger;
 
 import com.spotify.helios.common.LoggingConfig;
 
@@ -35,8 +30,13 @@ import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.io.PrintStream;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
+import static ch.qos.logback.classic.Level.ALL;
+import static ch.qos.logback.classic.Level.DEBUG;
+import static ch.qos.logback.classic.Level.INFO;
+import static ch.qos.logback.classic.Level.WARN;
+import static com.google.common.collect.Iterables.get;
+import static java.util.Arrays.asList;
+import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
 /**
  * Instantiates and runs helios CLI.

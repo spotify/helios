@@ -17,16 +17,9 @@
 
 package com.spotify.helios.cli;
 
-import static com.google.common.base.Objects.equal;
-import static com.google.common.base.Predicates.equalTo;
-import static com.google.common.base.Predicates.not;
-import static com.google.common.collect.Iterables.addAll;
-import static com.google.common.collect.Iterables.filter;
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
-import static net.sourceforge.argparse4j.impl.Arguments.append;
-import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Sets;
 
 import com.spotify.helios.cli.command.CliCommand;
 import com.spotify.helios.cli.command.DeploymentGroupCreateCommand;
@@ -56,10 +49,6 @@ import com.spotify.helios.cli.command.VersionCommand;
 import com.spotify.helios.common.LoggingConfig;
 import com.spotify.helios.common.Version;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
-
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.Argument;
@@ -77,6 +66,17 @@ import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+
+import static com.google.common.base.Objects.equal;
+import static com.google.common.base.Predicates.equalTo;
+import static com.google.common.base.Predicates.not;
+import static com.google.common.collect.Iterables.addAll;
+import static com.google.common.collect.Iterables.filter;
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static net.sourceforge.argparse4j.impl.Arguments.SUPPRESS;
+import static net.sourceforge.argparse4j.impl.Arguments.append;
+import static net.sourceforge.argparse4j.impl.Arguments.storeTrue;
 
 public class CliParser {
 

@@ -17,8 +17,6 @@
 
 package com.spotify.helios.client;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-
 import com.google.common.base.Joiner;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
@@ -32,6 +30,8 @@ import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.List;
+
+import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * A class that provides static factory methods for {@link Endpoint}.
