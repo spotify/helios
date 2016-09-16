@@ -22,12 +22,18 @@ import static java.lang.String.format;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.regex.Matcher;
@@ -120,6 +126,75 @@ public class HostSelector extends Descriptor {
     } else {
       return null;
     }
+  }
+
+  /**
+   * Tests if two collections of HostSelectors are logically equal. This method can only offer an
+   * attempt at answering the question and might return false negatives.
+   *
+   * <p>It first sorts the two collections to put the lists into an order, and then tests if each
+   * item on the first list {@link #isLogicallyEqual(HostSelector, HostSelector) isLogicallyEqual}
+   * to the one in the second list.
+   */
+  public static boolean isLogicallyEqual(Collection<HostSelector> a, Collection<HostSelector> b) {
+    if (a.size() != b.size()) {
+      return false;
+    }
+
+    final ArrayList<HostSelector> first = Lists.newArrayList(a);
+    Collections.sort(first, ORDERING_COMPARATOR);
+
+    final ArrayList<HostSelector> second = Lists.newArrayList(b);
+    Collections.sort(second, ORDERING_COMPARATOR);
+
+    for (Iterator<HostSelector> it1 = first.iterator(), it2 = second.iterator();
+         it1.hasNext() && it2.hasNext();) {
+
+      if (!isLogicallyEqual(it1.next(), it2.next())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  private static final Comparator<HostSelector> ORDERING_COMPARATOR =
+      new Comparator<HostSelector>() {
+
+        @Override
+        public int compare(final HostSelector a, final HostSelector b) {
+          return ComparisonChain.start()
+              .compare(a.label, b.label)
+              .compare(a.operator, b.operator)
+              .result();
+        }
+      };
+
+  /**
+   * Test if two HostSelectors are logical equals. HostSelectors are logically equal if either the
+   * {@link #equals(Object)} test passes or if they match the same set of values but expressed
+   * differently.
+   *
+   * <p>An example of two logically equal HostSelectors that are expressed differently would be "foo
+   * = a" and "foo in (a)".</p>
+   */
+  public static boolean isLogicallyEqual(HostSelector a, HostSelector b) {
+    if (a.equals(b)) {
+      return true;
+    }
+
+    if (!a.label.equals(b.label)) {
+      return false;
+    }
+
+    return isInAndEqualsWithSameValue(a, b) || isInAndEqualsWithSameValue(b, a);
+  }
+
+  private static boolean isInAndEqualsWithSameValue(HostSelector a, HostSelector b) {
+    return a.operator == Operator.IN &&
+           b.operator == Operator.EQUALS &&
+           a.operand instanceof List &&
+           ((List) a.operand).size() == 1 &&
+           ((List) a.operand).get(0).equals(b.operand);
   }
 
   public HostSelector(
