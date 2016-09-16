@@ -17,10 +17,7 @@
 
 package com.spotify.helios;
 
-import static com.spotify.helios.Utils.agentImage;
-import static com.spotify.helios.Utils.masterImage;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
+import com.google.common.collect.ImmutableList;
 
 import com.spotify.helios.Utils.AgentStatusProber;
 import com.spotify.helios.common.protocol.CreateJobResponse;
@@ -33,12 +30,15 @@ import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobBuilder;
 import com.spotify.helios.testing.TemporaryJobs;
 
-import com.google.common.collect.ImmutableList;
-
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static com.spotify.helios.Utils.agentImage;
+import static com.spotify.helios.Utils.masterImage;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 
 public class HeliosIT {
 

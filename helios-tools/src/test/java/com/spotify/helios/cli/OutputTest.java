@@ -17,6 +17,8 @@
 
 package com.spotify.helios.cli;
 
+import org.junit.Test;
+
 import static com.spotify.helios.cli.Output.humanDuration;
 import static org.hamcrest.Matchers.is;
 import static org.joda.time.Duration.standardDays;
@@ -24,8 +26,6 @@ import static org.joda.time.Duration.standardHours;
 import static org.joda.time.Duration.standardMinutes;
 import static org.joda.time.Duration.standardSeconds;
 import static org.junit.Assert.assertThat;
-
-import org.junit.Test;
 
 public class OutputTest {
 
