@@ -18,7 +18,6 @@
 package com.spotify.helios.master;
 
 import com.spotify.helios.master.resources.RequestUser;
-
 import com.sun.jersey.api.core.HttpContext;
 import com.sun.jersey.core.spi.component.ComponentContext;
 import com.sun.jersey.core.spi.component.ComponentScope;
