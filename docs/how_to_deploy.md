@@ -19,7 +19,13 @@
 
 Add the Helios apt repository to get Debian packages:
 
-    $ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
+Debian packages for Helios are hosted at
+[Bintray](https://bintray.com/spotify/deb/helios). To add the repository to
+your apt sources:
+
+```sh
+$ echo "deb https://dl.bintray.com/spotify/deb trusty main" | sudo tee -a /etc/apt/sources.list.d/helios.pref
+```
 
 You can then `apt-get install helios`, `helios-agent`, and `helios-master`.
 Note that the Helios master and agent services both try to connect to ZooKeeper at `localhost:2181`
