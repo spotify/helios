@@ -17,6 +17,9 @@
 
 package com.spotify.helios;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.apache.commons.io.FileUtils.deleteQuietly;
+
 import com.google.common.base.Throwables;
 import com.google.common.io.Files;
 
@@ -40,9 +43,6 @@ import java.security.NoSuchAlgorithmException;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.apache.commons.io.FileUtils.deleteQuietly;
 
 /**
  * A ZooKeeperTestManager that uses the {@link org.apache.curator.test.TestingServer}
