@@ -17,6 +17,12 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus.Status;
@@ -32,12 +38,6 @@ import org.junit.Test;
 import java.util.Arrays;
 import java.util.ListIterator;
 import java.util.concurrent.Callable;
-
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertThat;
 
 public class JobHistoryTest extends SystemTestBase {
 

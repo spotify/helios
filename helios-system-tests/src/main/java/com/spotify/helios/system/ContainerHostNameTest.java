@@ -17,6 +17,15 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
+import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.Job;
@@ -26,15 +35,6 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import org.junit.Test;
 
 import java.util.List;
-
-import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
-import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
 
 public class ContainerHostNameTest extends SystemTestBase {
 

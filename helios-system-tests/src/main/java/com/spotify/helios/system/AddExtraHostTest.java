@@ -17,17 +17,6 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableList;
-
-import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.LogStream;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
-
-import org.junit.Test;
-
-import java.util.List;
-
 import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
 import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
@@ -35,6 +24,17 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertThat;
+
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.LogStream;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
+
+import com.google.common.collect.ImmutableList;
+
+import org.junit.Test;
+
+import java.util.List;
 
 /** Test of --add-host in the agent. */
 public class AddExtraHostTest extends SystemTestBase {

@@ -17,7 +17,10 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableMap;
+import static com.spotify.helios.common.descriptors.Goal.STOP;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -26,12 +29,9 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 
-import org.junit.Test;
+import com.google.common.collect.ImmutableMap;
 
-import static com.spotify.helios.common.descriptors.Goal.STOP;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 public class PortCollisionJobTest extends SystemTestBase {
 

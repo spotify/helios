@@ -17,11 +17,18 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.Maps;
+import static com.spotify.helios.common.Version.POM_VERSION;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_HEADER;
+import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.PomVersion;
 import com.spotify.helios.common.Version;
+
+import com.google.common.collect.Maps;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -33,13 +40,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
-import static com.spotify.helios.common.Version.POM_VERSION;
-import static com.spotify.helios.common.VersionCompatibility.HELIOS_SERVER_VERSION_HEADER;
-import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_HEADER;
-import static com.spotify.helios.common.VersionCompatibility.HELIOS_VERSION_STATUS_HEADER;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
 
 public class VersionResponseFilterTest extends SystemTestBase {
 
