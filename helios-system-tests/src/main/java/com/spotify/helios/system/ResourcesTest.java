@@ -17,8 +17,14 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.Iterables;
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.lang.System.getenv;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.text.IsEmptyString.isEmptyOrNullString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeThat;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.HostConfig;
@@ -32,17 +38,11 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Iterables;
+
 import org.junit.Before;
 import org.junit.Test;
-
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.lang.System.getenv;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.text.IsEmptyString.isEmptyOrNullString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeThat;
 
 public class ResourcesTest extends SystemTestBase {
 

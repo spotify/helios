@@ -17,10 +17,13 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.Sets;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
+import static org.junit.Assert.assertEquals;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.servicescommon.coordination.Paths;
+
+import com.google.common.collect.Sets;
 
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
@@ -30,9 +33,6 @@ import org.junit.Test;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
-
-import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
-import static org.junit.Assert.assertEquals;
 
 public class ZooKeeperAclTest extends SystemTestBase {
 

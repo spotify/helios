@@ -17,25 +17,6 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Range;
-
-import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.LogStream;
-import com.spotify.helios.Polling;
-import com.spotify.helios.agent.AgentMain;
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.PortMapping;
-import com.spotify.helios.common.descriptors.TaskStatus;
-
-import org.junit.Test;
-
-import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.Callable;
-
 import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
 import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
@@ -48,6 +29,25 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.LogStream;
+import com.spotify.helios.Polling;
+import com.spotify.helios.agent.AgentMain;
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.HostStatus;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.PortMapping;
+import com.spotify.helios.common.descriptors.TaskStatus;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Range;
+
+import org.junit.Test;
+
+import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Callable;
 
 public class MultiplePortJobTest extends SystemTestBase {
 
