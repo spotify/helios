@@ -628,6 +628,10 @@ public abstract class SystemTestBase {
     return main;
   }
 
+  protected void stopAgent(final AgentMain main) throws Exception {
+    main.stopAsync().awaitTerminated();
+  }
+
   protected JobId createJob(final String name,
                             final String version,
                             final String image,

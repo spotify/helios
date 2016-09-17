@@ -179,6 +179,47 @@ public class DeploymentGroupTest extends SystemTestBase {
   }
 
   @Test
+  public void testRemovingAgentTagUndeploysJob() throws Exception {
+    final String oldHost = testHost();
+    final String unchangedHost = testHost() + "2";
+    final String newHost = testHost() + "3";
+
+    final AgentMain oldAgent = startDefaultAgent(oldHost, "--labels", "foo=bar");
+    startDefaultAgent(unchangedHost, "--labels", "foo=bar");
+
+    cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar");
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    cli("rolling-update", "--async",  testJobNameAndVersion, TEST_GROUP);
+
+    awaitTaskState(jobId, oldHost, TaskStatus.State.RUNNING);
+    awaitTaskState(jobId, unchangedHost, TaskStatus.State.RUNNING);
+
+    // Rollout should be complete and on its second iteration at this point.
+    // Start another agent and wait for it to have the job deployed to it.
+    startDefaultAgent(newHost, "--labels", "foo=bar");
+    awaitTaskState(jobId, newHost, TaskStatus.State.RUNNING);
+
+    // Restart the old agent with labels that still match the deployment group
+    // The job should not be undeployed.
+    stopAgent(oldAgent);
+    startDefaultAgent(oldHost, "--labels", "foo=bar another=label");
+    awaitTaskState(jobId, oldHost, TaskStatus.State.RUNNING);
+
+    // Restart the old agent with labels that do not match the deployment group.
+    // The job should be undeployed.
+    stopAgent(oldAgent);
+    startDefaultAgent(oldHost, "--labels", "foo=notbar");
+    awaitTaskState(jobId, oldHost, TaskStatus.State.STOPPED);
+
+    // Restart the old agent with labels that match the deployment group (again)
+    // The job should be deployed.
+    stopAgent(oldAgent);
+    startDefaultAgent(oldHost, "--labels", "foo=bar");
+    awaitTaskState(jobId, oldHost, TaskStatus.State.RUNNING);
+  }
+
+  @Test
   public void testRollingUpdateGroupNotFound() throws Exception {
     cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar", "baz=qux");
     cli("create", "my_job:2", "my_image");
