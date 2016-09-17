@@ -17,21 +17,31 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Range;
-import com.google.common.io.Files;
-import com.google.common.util.concurrent.FutureFallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
-import com.google.common.util.concurrent.Service;
+import static com.google.common.base.CharMatcher.WHITESPACE;
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Preconditions.checkArgument;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.collect.Iterables.concat;
+import static com.google.common.collect.Lists.newArrayList;
+import static com.spotify.helios.cli.command.JobCreateCommand.DEFAULT_METADATA_ENVVARS;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
+import static java.lang.Integer.toHexString;
+import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.docker.client.DefaultDockerClient;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
@@ -74,6 +84,21 @@ import com.spotify.helios.master.MasterMain;
 import com.spotify.helios.servicescommon.ZooKeeperAclProviders;
 import com.spotify.helios.servicescommon.coordination.CuratorClientFactory;
 import com.spotify.helios.servicescommon.coordination.Paths;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Charsets;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Range;
+import com.google.common.io.Files;
+import com.google.common.util.concurrent.FutureFallback;
+import com.google.common.util.concurrent.Futures;
+import com.google.common.util.concurrent.ListenableFuture;
+import com.google.common.util.concurrent.Service;
 import com.sun.jersey.api.client.ClientResponse;
 
 import org.apache.curator.framework.CuratorFramework;
@@ -113,31 +138,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static com.google.common.base.CharMatcher.WHITESPACE;
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.collect.Iterables.concat;
-import static com.google.common.collect.Lists.newArrayList;
-import static com.spotify.helios.cli.command.JobCreateCommand.DEFAULT_METADATA_ENVVARS;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_HOSTNAME;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_REGISTRATION;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_VOLUMES;
-import static java.lang.Integer.toHexString;
-import static java.util.Arrays.asList;
-import static java.util.Collections.singletonList;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public abstract class SystemTestBase {
 

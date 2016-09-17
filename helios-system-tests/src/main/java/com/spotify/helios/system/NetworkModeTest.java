@@ -17,6 +17,12 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.helios.client.HeliosClient;
@@ -29,12 +35,6 @@ import com.spotify.helios.common.protocol.JobDeployResponse;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
 
 public class NetworkModeTest extends SystemTestBase {
 

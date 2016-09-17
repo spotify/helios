@@ -17,19 +17,19 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.Lists;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
+
+import com.google.common.collect.Lists;
 
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.concurrent.Callable;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
 
 public class CliMasterListTest extends SystemTestBase {
 

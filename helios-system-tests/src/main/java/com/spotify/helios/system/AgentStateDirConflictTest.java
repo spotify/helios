@@ -17,11 +17,11 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.util.concurrent.Service;
-
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.agent.AgentMain;
+
+import com.google.common.util.concurrent.Service;
 
 import net.sourceforge.argparse4j.inf.ArgumentParserException;
 

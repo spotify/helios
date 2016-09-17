@@ -17,9 +17,16 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.apache.zookeeper.KeeperException.NodeExistsException;
+import static org.junit.Assert.assertEquals;
+
 import com.spotify.helios.Polling;
-import com.spotify.helios.ZooKeeperTestingClusterManager;
 import com.spotify.helios.ZooKeeperTestManager;
+import com.spotify.helios.ZooKeeperTestingClusterManager;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.Job;
@@ -33,13 +40,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.Callable;
-
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.apache.zookeeper.KeeperException.NodeExistsException;
-import static org.junit.Assert.assertEquals;
 
 public class ZooKeeperHeliosFailoverTest extends SystemTestBase {
 

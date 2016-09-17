@@ -17,6 +17,13 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static java.lang.Integer.toHexString;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.isIn;
+import static org.junit.Assert.assertThat;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.docker.client.messages.ContainerConfig;
@@ -30,13 +37,6 @@ import org.junit.Test;
 import java.security.SecureRandom;
 import java.util.Collections;
 import java.util.List;
-
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.lang.Integer.toHexString;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.isIn;
-import static org.junit.Assert.assertThat;
 
 public class ReapingTest extends SystemTestBase {
 

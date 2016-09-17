@@ -17,6 +17,14 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasItems;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Container;
 import com.spotify.helios.client.HeliosClient;
@@ -34,14 +42,6 @@ import org.junit.Test;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasItems;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 
 public class ZooKeeperClusterIdTest extends SystemTestBase {
 

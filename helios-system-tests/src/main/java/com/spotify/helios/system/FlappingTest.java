@@ -17,6 +17,16 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
+import static com.spotify.helios.common.descriptors.ThrottleState.NO;
+import static java.lang.System.getenv;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.junit.Assume.assumeThat;
+
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
@@ -30,16 +40,6 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.Socket;
 import java.util.concurrent.Callable;
-
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
-import static com.spotify.helios.common.descriptors.ThrottleState.NO;
-import static java.lang.System.getenv;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.isEmptyOrNullString;
-import static org.junit.Assume.assumeThat;
 
 public class FlappingTest extends SystemTestBase {
 
