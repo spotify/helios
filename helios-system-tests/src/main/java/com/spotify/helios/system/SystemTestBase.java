@@ -24,6 +24,7 @@ import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.collect.Iterables.concat;
 import static com.google.common.collect.Lists.newArrayList;
 import static com.spotify.helios.cli.command.JobCreateCommand.DEFAULT_METADATA_ENVVARS;
+import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_EXPIRES;
 import static com.spotify.helios.common.descriptors.Job.EMPTY_GRACE_PERIOD;
@@ -628,6 +629,11 @@ public abstract class SystemTestBase {
     return main;
   }
 
+  protected void stopAgent(final AgentMain main) throws Exception {
+    main.stopAsync().awaitTerminated();
+    services.remove(main);
+  }
+
   protected JobId createJob(final String name,
                             final String version,
                             final String image,
@@ -914,6 +920,13 @@ public abstract class SystemTestBase {
     });
   }
 
+  protected HostStatus awaitHostStatusWithLabels(final HeliosClient client,
+                                                 final String host,
+                                                 final HostStatus.Status status)
+      throws Exception {
+    return awaitHostStatusWithLabels(client, host, status, LONG_WAIT_SECONDS, SECONDS);
+  }
+
   protected HostStatus awaitHostStatusWithLabels(final HeliosClient client, final String host,
                                                  final HostStatus.Status status,
                                                  final int timeout,
@@ -990,7 +1003,7 @@ public abstract class SystemTestBase {
   protected DeploymentGroupStatus awaitDeploymentGroupStatus(
       final HeliosClient client,
       final String name,
-      final DeploymentGroupStatus.State state)
+      final DeploymentGroupStatus.State expected)
       throws Exception {
     return Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<DeploymentGroupStatus>() {
       @Override
@@ -1000,10 +1013,15 @@ public abstract class SystemTestBase {
 
         if (response != null) {
           final DeploymentGroupStatus status = response.getDeploymentGroupStatus();
-          if (status.getState().equals(state)) {
+          final DeploymentGroupStatus.State actual = status.getState();
+          // The deployment group failed when we did not expect it to.
+          if (actual == FAILED && actual != expected) {
+            throw new AssertionError("Deployment group " + name + " failed unexpectedly: "
+                                     + status.getError());
+          }
+          // The deployment group reached our desired status.
+          if (actual == expected) {
             return status;
-          } else if (status.getState().equals(DeploymentGroupStatus.State.FAILED)) {
-            assertEquals(state, status.getState());
           }
         }
 
