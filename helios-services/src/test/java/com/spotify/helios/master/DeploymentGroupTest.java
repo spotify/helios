@@ -150,14 +150,13 @@ public class DeploymentGroupTest {
     // Setup some hosts
     final String oldHost = "host1";
     final String newHost = "host2";
-    final String unchangedHost = "host3";
-    final Map<String, HostStatus> oldHostStatus = mockHostStatus(masterModel, oldHost);
-    final Map<String, HostStatus> newHostStatus = mockHostStatus(masterModel, newHost);
+    final Map<String, HostStatus> undeployHostStatuses = mockHostStatus(masterModel, oldHost);
+    final Map<String, HostStatus> updateHostStatuses = mockHostStatus(masterModel, newHost);
 
     // Give the deployment group a host.
     client.setData(
         Paths.statusDeploymentGroupHosts(dg.getName()),
-        Json.asBytes(ImmutableList.of(oldHost, unchangedHost)));
+        Json.asBytes(ImmutableList.of(oldHost)));
 
     // And a status...
     client.setData(
@@ -166,6 +165,7 @@ public class DeploymentGroupTest {
     );
 
     // Switch out our host!
+    // TODO(negz): Use an unchanged host, make sure ordering remains the same.
     masterModel.updateDeploymentGroupHosts(dg.getName(), ImmutableList.of(newHost));
 
     verify(client, times(2)).transaction(opCaptor.capture());
@@ -181,12 +181,11 @@ public class DeploymentGroupTest {
         changed);
 
     // Ensure ZK tasks are written to:
-    // - Perform a rolling update for the added (new) host
+    // - Perform a rolling update for the added (new) host and the unchanged host
     // - Perform a rolling undeploy for the removed (old) host
-    // - Does nothing with the remaining (unchanged) host
     final List<RolloutTask> tasks = ImmutableList.<RolloutTask>builder()
-        .addAll(RollingUpdatePlanner.of(changed).plan(newHostStatus))
-        .addAll(RollingUndeployPlanner.of(changed).plan(oldHostStatus))
+        .addAll(RollingUpdatePlanner.of(changed).plan(updateHostStatuses))
+        .addAll(RollingUndeployPlanner.of(changed).plan(undeployHostStatuses))
         .build();
 
     final ZooKeeperOperation setDeploymentGroupTasks = set(
@@ -197,6 +196,7 @@ public class DeploymentGroupTest {
           .setDeploymentGroup(changed)
           .build()
     );
+    assertThat(opCaptor.getValue(), hasItem(setDeploymentGroupTasks));
     assertThat(opCaptor.getValue(),
                hasItems(setDeploymentGroupHostChanged, setDeploymentGroupTasks));
   }

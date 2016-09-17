@@ -89,6 +89,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
+import com.google.common.collect.Sets;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -491,6 +492,15 @@ public class ZooKeeperMasterModel implements MasterModel {
     return status.getState() != FAILED;
   }
 
+  private List<String> removedHosts(final List<String> currentHosts, final List<String> newHosts) {
+    return ImmutableList.copyOf(
+        Sets.difference(
+            ImmutableSet.copyOf(currentHosts),
+            ImmutableSet.copyOf(newHosts)
+        )
+    );
+  }
+
   @Override
   public void updateDeploymentGroupHosts(final String groupName, final List<String> hosts)
       throws DeploymentGroupDoesNotExistException {
@@ -516,8 +526,8 @@ public class ZooKeeperMasterModel implements MasterModel {
       if (curHostsVersion.isPresent() && hosts.equals(curHosts)) {
         return;
       }
-      final HostChanges changes = new HostChanges(ImmutableSet.copyOf(hosts),
-                                                  ImmutableSet.copyOf(curHosts));
+      final List<String> removedHosts = removedHosts(curHosts, hosts);
+
       final List<ZooKeeperOperation> ops = Lists.newArrayList();
       ops.add(set(Paths.statusDeploymentGroupHosts(groupName), Json.asBytes(hosts)));
 
@@ -541,7 +551,8 @@ public class ZooKeeperMasterModel implements MasterModel {
         // inconsistent state.
         ops.add(set(Paths.configDeploymentGroup(deploymentGroup.getName()), deploymentGroup));
 
-        final RollingUpdateOp op = getInitRollingUpdateOps(deploymentGroup, changes, client);
+        final RollingUpdateOp op = getInitRollingUpdateOps(
+            deploymentGroup, hosts, removedHosts, client);
         ops.addAll(op.operations());
         events = op.events();
       }
@@ -610,14 +621,6 @@ public class ZooKeeperMasterModel implements MasterModel {
       throws DeploymentGroupDoesNotExistException, KeeperException {
     final List<String> hosts = getDeploymentGroupHosts(deploymentGroup.getName());
     return getInitRollingUpdateOps(deploymentGroup, hosts, ImmutableList.of(), zooKeeperClient);
-  }
-
-  private RollingUpdateOp getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
-                                                  final HostChanges changes,
-                                                  final ZooKeeperClient zooKeeperClient)
-      throws KeeperException {
-    return getInitRollingUpdateOps(
-        deploymentGroup, changes.added(), changes.removed(), zooKeeperClient);
   }
 
   private RollingUpdateOp getInitRollingUpdateOps(final DeploymentGroup deploymentGroup,
