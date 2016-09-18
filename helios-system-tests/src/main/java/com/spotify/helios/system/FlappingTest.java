@@ -17,6 +17,8 @@
 
 package com.spotify.helios.system;
 
+import com.google.common.collect.ImmutableMap;
+
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Job;
@@ -27,8 +29,6 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.junit.Test;
 
-import java.io.IOException;
-import java.net.Socket;
 import java.util.concurrent.Callable;
 
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
@@ -43,6 +43,8 @@ import static org.junit.Assume.assumeThat;
 
 public class FlappingTest extends SystemTestBase {
 
+  private final int externalPort = temporaryPorts.localPort("external");
+
   @Test
   public void test() throws Exception {
     // CircleCI boxes are too slow -- the job doesn't stop or restart fast enough to ever flap
@@ -56,43 +58,51 @@ public class FlappingTest extends SystemTestBase {
 
     awaitHostStatus(client, host, UP, LONG_WAIT_SECONDS, SECONDS);
 
-    final Job flapper = Job.newBuilder()
-        .setName(testJobName)
+    // This job will kill the next container if it's running
+    final Job killer = Job.newBuilder()
+        .setName(testJobName + "killer")
         .setVersion(testJobVersion)
         .setImage(BUSYBOX)
-        .setCommand(asList("nc", "-p", "4711", "-l"))
-        .addPort("poke", PortMapping.of(4711))
+        .setCommand(asList("sh", "-c", "trap 'exit 0' SIGINT SIGTERM; "
+                                       + "while :; do nc -p 4711 -l; done"))
+        .setPorts(ImmutableMap.of("listen", PortMapping.of(4711, externalPort)))
         .build();
 
-    final JobId jobId = createJob(flapper);
-    deployJob(jobId, host);
-    awaitTaskState(jobId, host, RUNNING);
+    // This job will die if it can connect to the killer container above
+    final Job flapper = Job.newBuilder()
+        .setName(testJobName + "flapper")
+        .setVersion(testJobVersion)
+        .setImage(ALPINE)
+        .setCommand(asList("sh", "-c", String.format(
+            "while ! nc -vz %s %d; do sleep 1; done",
+            DOCKER_HOST.address(), externalPort)))
+        .build();
 
-    // Poke the container to make it exit until it's classified as flapping
+    // Start the kill container
+    final JobId killerJobId = createJob(killer);
+    deployJob(killerJobId, host);
+    awaitTaskState(killerJobId, host, RUNNING);
+
+    // Start the container we want to flap
+    final JobId flapperJobId = createJob(flapper);
+    deployJob(flapperJobId, host);
+    awaitTaskState(flapperJobId, host, RUNNING);
+
+    // Wait for the flapper container to restart enough times to be classified as flapping
     Polling.await(LONG_WAIT_SECONDS, SECONDS, new Callable<Object>() {
       @Override
       public Object call() throws Exception {
-        final JobStatus jobStatus = getOrNull(client.jobStatus(jobId));
+        final JobStatus jobStatus = getOrNull(client.jobStatus(flapperJobId));
         final TaskStatus taskStatus = jobStatus.getTaskStatuses().get(host);
         if (taskStatus.getThrottled() == FLAPPING) {
           return true;
         }
-        final PortMapping port = taskStatus.getPorts().get("poke");
-        assert port.getExternalPort() != null;
-        poke(port.getExternalPort());
         return null;
       }
     });
 
-    // Verify that the job recovers after we stop poking
-    awaitJobThrottle(client, host, jobId, NO, LONG_WAIT_SECONDS, SECONDS);
-  }
-
-  private boolean poke(final int port) {
-    try (Socket ignored = new Socket(DOCKER_HOST.address(), port)) {
-      return true;
-    } catch (IOException e) {
-      return false;
-    }
+    // Verify that the job recovers after we undeploy the killer container
+    stopJob(killerJobId, host);
+    awaitJobThrottle(client, host, flapperJobId, NO, LONG_WAIT_SECONDS, SECONDS);
   }
 }
