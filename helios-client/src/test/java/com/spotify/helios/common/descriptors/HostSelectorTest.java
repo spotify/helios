@@ -25,6 +25,7 @@ import static org.junit.Assert.assertTrue;
 import com.spotify.helios.common.Json;
 
 import com.google.common.base.Function;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Lists;
 import org.junit.Test;
 
@@ -233,6 +234,7 @@ public class HostSelectorTest {
     final HostSelector fooInX = HostSelector.parse("foo in (x)");
     final HostSelector fooEqX = HostSelector.parse("foo = x");
     final HostSelector fooNotEqX = HostSelector.parse("foo != x");
+    final HostSelector fooNotInX = HostSelector.parse("foo notin (x)");
 
     final HostSelector fooInXorY = HostSelector.parse("foo in (x, y)");
     final HostSelector fooInY = HostSelector.parse("foo in (y)");
@@ -250,9 +252,13 @@ public class HostSelectorTest {
     assertTrue(HostSelector.isLogicallyEqual(fooInX, fooEqX));
     assertTrue(HostSelector.isLogicallyEqual(fooEqX, fooInX));
 
-    // same arguments
+    // same arguments on both sides
     assertTrue(HostSelector.isLogicallyEqual(fooInX, fooInX));
     assertTrue(HostSelector.isLogicallyEqual(fooEqX, fooEqX));
+
+    // foo notin x, foo != x
+    assertTrue(HostSelector.isLogicallyEqual(fooNotInX, fooNotEqX));
+    assertTrue(HostSelector.isLogicallyEqual(fooNotEqX, fooNotInX));
 
     final HostSelector[] lhs = {fooInX, fooEqX};
     final HostSelector[] rhs = {fooInXorY, fooNotEqX, fooInY, fooEqY,
@@ -295,6 +301,12 @@ public class HostSelectorTest {
         parseList("pool = a", "foo in (bar)")
     ));
 
+    // not in and !=
+    assertTrue(HostSelector.isLogicallyEqual(
+        parseList("foo != bar", "something=else"),
+        parseList("foo notin (bar)", "something=else")
+    ));
+
     // unequal lists
     assertFalse(HostSelector.isLogicallyEqual(
         parseList("foo = bar", "pool = a", "c = x"),
@@ -312,7 +324,8 @@ public class HostSelectorTest {
     return Lists.transform(Lists.newArrayList(strings), new Function<String, HostSelector>() {
       @Override
       public HostSelector apply(final String input) {
-        return HostSelector.parse(input);
+        return Preconditions.checkNotNull(HostSelector.parse(input),
+            "Could not parse expression: " + input);
       }
     });
   }

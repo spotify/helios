@@ -186,12 +186,12 @@ public class HostSelector extends Descriptor {
       return false;
     }
 
-    return isInAndEqualsWithSameValue(a, b) || isInAndEqualsWithSameValue(b, a);
+    return isEquivalentOperatorWithSameValue(a, b) || isEquivalentOperatorWithSameValue(b, a);
   }
 
-  private static boolean isInAndEqualsWithSameValue(HostSelector a, HostSelector b) {
-    return a.operator == Operator.IN &&
-           b.operator == Operator.EQUALS &&
+  private static boolean isEquivalentOperatorWithSameValue(HostSelector a, HostSelector b) {
+    return (a.operator == Operator.IN && b.operator == Operator.EQUALS ||
+            a.operator == Operator.NOT_IN && b.operator == Operator.NOT_EQUALS) &&
            a.operand instanceof List &&
            ((List) a.operand).size() == 1 &&
            ((List) a.operand).get(0).equals(b.operand);
