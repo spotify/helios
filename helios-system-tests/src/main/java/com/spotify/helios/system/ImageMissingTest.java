@@ -17,19 +17,19 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableList;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.ThrottleState.IMAGE_MISSING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
 
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.TaskStatus;
 
-import org.junit.Test;
+import com.google.common.collect.ImmutableList;
 
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.ThrottleState.IMAGE_MISSING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
+import org.junit.Test;
 
 public class ImageMissingTest extends SystemTestBase {
 

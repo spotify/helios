@@ -17,6 +17,8 @@
 
 package com.spotify.helios.system;
 
+import static org.slf4j.Logger.ROOT_LOGGER_NAME;
+
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 
@@ -38,8 +40,6 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.FileAppender;
-
-import static org.slf4j.Logger.ROOT_LOGGER_NAME;
 
 /**
  * Custom logback configuration for system tests.

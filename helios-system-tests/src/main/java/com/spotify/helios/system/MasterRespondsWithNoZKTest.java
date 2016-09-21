@@ -17,6 +17,12 @@
 
 package com.spotify.helios.system;
 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyString;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.HeliosException;
@@ -39,12 +45,6 @@ import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 @RunWith(MockitoJUnitRunner.class)
 public class MasterRespondsWithNoZKTest extends SystemTestBase {

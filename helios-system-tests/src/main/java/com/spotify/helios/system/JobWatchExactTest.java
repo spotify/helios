@@ -17,12 +17,16 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.base.Charsets;
-import com.google.common.base.Joiner;
-import com.google.common.collect.Lists;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertTrue;
 
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.common.descriptors.JobId;
+
+import com.google.common.base.Charsets;
+import com.google.common.base.Joiner;
+import com.google.common.collect.Lists;
 
 import org.junit.Test;
 
@@ -33,10 +37,6 @@ import java.io.PrintStream;
 import java.nio.ByteBuffer;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertTrue;
 
 public class JobWatchExactTest extends SystemTestBase {
 

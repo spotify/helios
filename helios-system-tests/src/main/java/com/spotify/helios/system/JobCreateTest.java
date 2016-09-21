@@ -17,14 +17,14 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertThat;
+
 import com.spotify.helios.common.descriptors.Job;
 
 import org.hamcrest.Matchers;
 import org.junit.Test;
-
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertThat;
 
 public class JobCreateTest extends SystemTestBase {
 

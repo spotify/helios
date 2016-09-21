@@ -17,6 +17,13 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.messages.Container;
 import com.spotify.helios.client.HeliosClient;
@@ -30,13 +37,6 @@ import org.junit.Test;
 
 import java.security.SecureRandom;
 import java.util.List;
-
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 
 public class NamespaceTest extends SystemTestBase {
 

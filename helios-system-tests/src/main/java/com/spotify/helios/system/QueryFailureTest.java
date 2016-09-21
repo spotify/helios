@@ -17,17 +17,17 @@
 
 package com.spotify.helios.system;
 
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.Job;
-import com.spotify.helios.common.protocol.CreateJobResponse;
-
-import org.junit.Test;
-
 import static com.spotify.helios.common.descriptors.Job.EMPTY_PORTS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.Job;
+import com.spotify.helios.common.protocol.CreateJobResponse;
+
+import org.junit.Test;
 
 /**
  * Tests that commands which do search matching tell you that you didn't match anything if you
