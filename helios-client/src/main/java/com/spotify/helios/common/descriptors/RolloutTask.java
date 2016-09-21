@@ -17,10 +17,10 @@
 
 package com.spotify.helios.common.descriptors;
 
+import static com.google.common.base.Preconditions.checkNotNull;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class RolloutTask extends Descriptor {
@@ -29,6 +29,8 @@ public class RolloutTask extends Descriptor {
     UNDEPLOY_OLD_JOBS,
     DEPLOY_NEW_JOB,
     AWAIT_RUNNING,
+    AWAIT_STOPPED,
+    MARK_UNDEPLOYED,
   }
 
   public enum Status {
