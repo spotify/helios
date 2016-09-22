@@ -31,7 +31,7 @@ import com.spotify.helios.common.descriptors.Job;
  */
 public interface ContainerDecorator {
 
-  void decorateHostConfig(Optional<String> dockerVersion, HostConfig.Builder hostConfig);
+  void decorateHostConfig(Job job, Optional<String> dockerVersion, HostConfig.Builder hostConfig);
 
   void decorateContainerConfig(Job job, ImageInfo imageInfo, Optional<String> dockerVersion,
                                ContainerConfig.Builder containerConfig);

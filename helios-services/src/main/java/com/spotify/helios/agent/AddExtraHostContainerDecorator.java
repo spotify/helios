@@ -38,7 +38,7 @@ public class AddExtraHostContainerDecorator implements ContainerDecorator {
   }
 
   @Override
-  public void decorateHostConfig(final Optional<String> dockerVersion,
+  public void decorateHostConfig(final Job job, final Optional<String> dockerVersion,
                                  final HostConfig.Builder hostConfig) {
     hostConfig.extraHosts(this.extraHosts);
   }

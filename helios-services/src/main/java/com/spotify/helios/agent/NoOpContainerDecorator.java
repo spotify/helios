@@ -29,7 +29,8 @@ import com.spotify.helios.common.descriptors.Job;
 public class NoOpContainerDecorator implements ContainerDecorator {
 
   @Override
-  public void decorateHostConfig(Optional<String> dockerVersion, HostConfig.Builder hostConfig) {
+  public void decorateHostConfig(Job job, Optional<String> dockerVersion,
+                                 HostConfig.Builder hostConfig) {
     //noop
   }
 

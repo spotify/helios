@@ -298,7 +298,7 @@ public class TaskConfig {
     builder.capDrop(ImmutableList.copyOf(job.getDropCapabilities()));
 
     for (final ContainerDecorator decorator : containerDecorators) {
-      decorator.decorateHostConfig(dockerVersion, builder);
+      decorator.decorateHostConfig(job, dockerVersion, builder);
     }
 
     return builder.build();

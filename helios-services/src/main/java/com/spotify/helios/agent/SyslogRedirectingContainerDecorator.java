@@ -42,7 +42,7 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
   }
 
   @Override
-  public void decorateHostConfig(Optional<String> dockerVersion, HostConfig.Builder hostConfig) {
+  public void decorateHostConfig(Job job, Optional<String> dockerVersion,
     final List<String> binds = Lists.newArrayList();
     if (hostConfig.binds() != null) {
       binds.addAll(hostConfig.binds());
