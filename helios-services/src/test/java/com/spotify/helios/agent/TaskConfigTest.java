@@ -17,6 +17,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSet;
 
 import com.spotify.docker.client.messages.HostConfig;
@@ -116,7 +117,7 @@ public class TaskConfigTest {
         .job(JOB)
         .build();
 
-    final HostConfig hostConfig = taskConfig.hostConfig();
+    final HostConfig hostConfig = taskConfig.hostConfig(Optional.absent());
     assertThat(ImmutableSet.copyOf(hostConfig.capAdd()), equalTo(CAP_ADDS));
     assertThat(ImmutableSet.copyOf(hostConfig.capDrop()), equalTo(CAP_DROPS));
   }

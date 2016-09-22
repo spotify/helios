@@ -42,7 +42,7 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
   }
 
   @Override
-  public void decorateHostConfig(HostConfig.Builder hostConfig) {
+  public void decorateHostConfig(Optional<String> dockerVersion, HostConfig.Builder hostConfig) {
     final List<String> binds = Lists.newArrayList();
     if (hostConfig.binds() != null) {
       binds.addAll(hostConfig.binds());
@@ -52,7 +52,7 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
   }
 
   @Override
-  public void decorateContainerConfig(Job job, ImageInfo imageInfo,
+  public void decorateContainerConfig(Job job, ImageInfo imageInfo, Optional<String> dockerVersion,
                                       ContainerConfig.Builder containerConfig) {
     final ContainerConfig imageConfig = imageInfo.config();
 
