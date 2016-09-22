@@ -103,7 +103,7 @@ public class OldJobReaper extends RateLimitedService<Job> {
 
   @Override
   void processItem(final Job job) {
-    log.info("Deciding whether to reap job.");
+    log.info("Deciding whether to reap job {}", job.getId());
     final JobId jobId = job.getId();
 
     try {

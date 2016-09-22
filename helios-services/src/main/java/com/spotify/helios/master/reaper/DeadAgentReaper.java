@@ -75,7 +75,7 @@ public class DeadAgentReaper extends RateLimitedService<String> {
 
   @Override
   void processItem(final String agent) {
-    log.info("Deciding whether to reap dead agent.");
+    log.info("Deciding whether to reap dead agent {}", agent);
     try {
       final HostStatus hostStatus = masterModel.getHostStatus(agent);
       if (hostStatus == null || hostStatus.getStatus() != HostStatus.Status.DOWN) {
