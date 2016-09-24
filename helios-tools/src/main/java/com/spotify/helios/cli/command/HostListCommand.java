@@ -78,8 +78,8 @@ public class HostListCommand extends ControlCommand {
 	public HostListCommand(final Subparser parser) {
 		super(parser);
 
-		Collection<String> statusChoices = Collections2.transform(
-				Arrays.asList(HostStatus.Status.values()), new Function<HostStatus.Status, String>() {
+		Collection<String> statusChoices = Collections2.transform(Arrays.asList(HostStatus.Status.values()),
+				new Function<HostStatus.Status, String>() {
 					@Override
 					public String apply(final HostStatus.Status input) {
 						return input.toString();
@@ -90,40 +90,26 @@ public class HostListCommand extends ControlCommand {
 
 		parser.help("list hosts");
 
-		patternArg = parser.addArgument("pattern")
-				.nargs("?")
-				.setDefault("")
-				.help("Pattern to filter hosts with");
+		patternArg = parser.addArgument("pattern").nargs("?").setDefault("").help("Pattern to filter hosts with");
 
-		quietArg = parser.addArgument("-q")
-				.action(storeTrue())
-				.help("only print host names");
+		quietArg = parser.addArgument("-q").action(storeTrue()).help("only print host names");
 
-		fullArg = parser.addArgument("-f")
-				.action(storeTrue())
-				.help("Print full host names.");
+		fullArg = parser.addArgument("-f").action(storeTrue()).help("Print full host names.");
 
-		statusArg = parser.addArgument("--status")
-				.nargs("?")
+		statusArg = parser.addArgument("--status").nargs("?")
 				.choices(statusChoices.toArray(new String[statusChoices.size()]))
 				.help("Filter hosts by its status. Valid statuses are: " + statusChoicesString);
 
-		labelsArg = parser.addArgument("-l", "--labels")
-				.action(append())
-				.setDefault(new ArrayList<String>())
-				.nargs("+")
+		labelsArg = parser.addArgument("-l", "--labels").action(append()).setDefault(new ArrayList<String>()).nargs("+")
 				.help("Only include hosts that match all of these labels. Labels need to be in the format "
 						+ "key=value.");
 	}
 
 	@Override
-	int run(final Namespace options, final HeliosClient client, final PrintStream out,
-			final boolean json, final BufferedReader stdin)
-					throws ExecutionException, InterruptedException {
+	int run(final Namespace options, final HeliosClient client, final PrintStream out, final boolean json,
+			final BufferedReader stdin) throws ExecutionException, InterruptedException {
 		final String pattern = options.getString(patternArg.getDest());
-		final List<String> hosts = FluentIterable
-				.from(client.listHosts().get())
-				.filter(containsPattern(pattern))
+		final List<String> hosts = FluentIterable.from(client.listHosts().get()).filter(containsPattern(pattern))
 				.toList();
 
 		final Map<String, String> queryParams = Maps.newHashMap();
@@ -133,8 +119,7 @@ public class HostListCommand extends ControlCommand {
 				HostStatus.Status.valueOf(statusFilter);
 				queryParams.put("status", statusFilter);
 			} catch (IllegalArgumentException ignored) {
-				throw new IllegalArgumentException(
-						"Invalid status. Valid statuses are: " + statusChoicesString);
+				throw new IllegalArgumentException("Invalid status. Valid statuses are: " + statusChoicesString);
 			}
 		}
 
@@ -156,8 +141,7 @@ public class HostListCommand extends ControlCommand {
 		try {
 			selectedLabels = argToStringMap(options, labelsArg);
 		} catch (IllegalArgumentException e) {
-			throw new IllegalArgumentException(e.getMessage() +
-					"\nLabels need to be in the format key=value.");
+			throw new IllegalArgumentException(e.getMessage() + "\nLabels need to be in the format key=value.");
 		}
 
 		if (selectedLabels != null && !selectedLabels.isEmpty() && json) {
@@ -193,8 +177,8 @@ public class HostListCommand extends ControlCommand {
 				out.println(Json.asPrettyStringUnchecked(sorted));
 			} else {
 				final Table table = table(out);
-				table.row("HOST", "STATUS", "DEPLOYED", "RUNNING", "CPUS", "MEM", "LOAD AVG", "MEM USAGE",
-						"OS", "HELIOS", "DOCKER", "LABELS");
+				table.row("HOST", "STATUS", "DEPLOYED", "RUNNING", "CPUS", "MEM", "LOAD AVG", "MEM USAGE", "OS",
+						"HELIOS", "DOCKER", "LABELS");
 
 				for (final Map.Entry<String, ListenableFuture<HostStatus>> e : statuses.entrySet()) {
 
@@ -252,9 +236,8 @@ public class HostListCommand extends ControlCommand {
 					String status = getStatus(s);
 					final String labels = Joiner.on(", ").withKeyValueSeparator("=").join(s.getLabels());
 
-					table.row(formatHostname(full, host), status, s.getJobs().size(),
-							runningDeployedJobs.size(), cpus, mem, loadAvg, memUsage, os, version, docker,
-							labels);
+					table.row(formatHostname(full, host), status, s.getJobs().size(), runningDeployedJobs.size(), cpus,
+							mem, loadAvg, memUsage, os, version, docker, labels);
 				}
 
 				table.print();
@@ -264,7 +247,7 @@ public class HostListCommand extends ControlCommand {
 	}
 
 	private String getStatus(HostStatus s) {
-		String status = s.getStatus	() == UP ? "Up" : "Down";
+		String status = s.getStatus() == UP ? "Up" : "Down";
 		if (s.getAgentInfo() != null) {
 			final long startTime = s.getAgentInfo().getStartTime();
 			final long upTime = s.getAgentInfo().getUptime();
