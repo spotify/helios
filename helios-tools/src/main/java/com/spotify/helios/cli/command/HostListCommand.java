@@ -126,7 +126,7 @@ public class HostListCommand extends ControlCommand {
 		final boolean full = options.getBoolean(fullArg.getDest());
 		final boolean quiet = options.getBoolean(quietArg.getDest());
 
-		if (!isNullOrEmpty(pattern) && hosts.isEmpty()) {
+		if (!isNullOrEmpty(pattern) && hosts.isEmpty()){
 			if (json) {
 				out.println(Json.asPrettyStringUnchecked(hosts));
 			} else if (!quiet) {
