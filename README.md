@@ -224,7 +224,6 @@ Other Software You Might Want To Consider
 Here are a few other things you probably want to consider using alongside
 Helios:
 * [docker-gc](https://github.com/spotify/docker-gc) Garbage collects dead containers and removes unused images.
-* [syslog-redirector](https://github.com/spotify/syslog-redirector) Can be used by Helios agents to redirect the standard out/err of containers to syslog.
 * [helios-skydns](https://github.com/spotify/helios-skydns) Makes it so you can auto register services in SkyDNS.  If you use leading underscores in your SRV record names, let us know, we have a patch for etcd which disables the "hidden" node feature which makes this use case break.
 * [skygc](https://github.com/spotify/skygc)  When using SkyDNS, especially if you're using the Helios Testing Framework, can leave garbage in the skydns tree within etcd.  This will clean out dead stuff.
 * [docker-maven-plugin](https://github.com/spotify/docker-maven-plugin)  Simplifies the building of Docker containers if you're using Maven (and most likely Java).
