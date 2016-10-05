@@ -17,6 +17,12 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+
 import com.spotify.helios.ZooKeeperTestManager;
 import com.spotify.helios.ZooKeeperTestingServerManager;
 import com.spotify.helios.agent.AgentMain;
@@ -34,12 +40,6 @@ import org.junit.Test;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
 
 public class ZooKeeperRestoreTest extends SystemTestBase {
 

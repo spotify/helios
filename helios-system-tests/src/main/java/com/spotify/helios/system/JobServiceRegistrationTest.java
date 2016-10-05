@@ -17,8 +17,15 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Maps;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import com.spotify.helios.MockServiceRegistrarRegistry;
 import com.spotify.helios.client.HeliosClient;
@@ -28,6 +35,9 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Maps;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,16 +49,6 @@ import org.mockito.Mock;
 import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.Map;
-
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.Job.EMPTY_ENV;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class JobServiceRegistrationTest extends ServiceRegistrationTestBase {

@@ -17,6 +17,16 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeThat;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.client.HeliosClient;
@@ -28,16 +38,6 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 
 import org.junit.Before;
 import org.junit.Test;
-
-import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeThat;
 
 public class TerminationTest extends SystemTestBase {
 

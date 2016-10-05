@@ -17,6 +17,9 @@
 
 package com.spotify.helios.system;
 
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.junit.Assert.assertArrayEquals;
+
 import com.spotify.helios.Parallelized;
 import com.spotify.helios.ZooKeeperTestingClusterManager;
 
@@ -28,9 +31,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
-
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.junit.Assert.assertArrayEquals;
 
 @Ignore("This is an expensive test that tests the curator framework, not helios. " +
         "It is disabled as it likely gives travis grief")

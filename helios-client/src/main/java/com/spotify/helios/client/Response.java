@@ -17,11 +17,11 @@
 
 package com.spotify.helios.client;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+
 import java.net.URI;
 import java.util.List;
 import java.util.Map;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 class Response {
 

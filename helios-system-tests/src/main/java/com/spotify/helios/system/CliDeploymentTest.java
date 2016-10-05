@@ -17,10 +17,14 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableMap;
+import static com.google.common.base.CharMatcher.WHITESPACE;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Job;
@@ -31,18 +35,14 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableMap;
+
 import org.junit.Test;
 
 import java.util.Map;
 import java.util.concurrent.Callable;
-
-import static com.google.common.base.CharMatcher.WHITESPACE;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class CliDeploymentTest extends SystemTestBase {
 

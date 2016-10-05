@@ -32,6 +32,7 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+
 import org.junit.Test;
 
 import java.util.Map;

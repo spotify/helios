@@ -17,6 +17,16 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
@@ -39,16 +49,6 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.util.concurrent.TimeUnit;
-
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 public class UndeployFilteringTest extends SystemTestBase {
 

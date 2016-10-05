@@ -17,30 +17,6 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.collect.Lists;
-import com.google.common.io.Resources;
-
-import com.spotify.docker.client.DockerClient;
-import com.spotify.docker.client.LogStream;
-import com.spotify.docker.client.exceptions.DockerException;
-import com.spotify.docker.client.messages.ContainerConfig;
-import com.spotify.docker.client.messages.ContainerCreation;
-import com.spotify.docker.client.messages.ContainerInfo;
-import com.spotify.docker.client.messages.HostConfig;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
-
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Test;
-
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
 import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
@@ -52,6 +28,30 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import com.spotify.docker.client.DockerClient;
+import com.spotify.docker.client.LogStream;
+import com.spotify.docker.client.exceptions.DockerException;
+import com.spotify.docker.client.messages.ContainerConfig;
+import com.spotify.docker.client.messages.ContainerCreation;
+import com.spotify.docker.client.messages.ContainerInfo;
+import com.spotify.docker.client.messages.HostConfig;
+import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatus;
+
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
+
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
+
+import java.nio.file.Paths;
+import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class SyslogRedirectionTest extends SystemTestBase {
 
