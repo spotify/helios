@@ -1067,7 +1067,8 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     for (final Deployment deployment : getTasks(client, host).values()) {
 
-      if (!ownedByDeploymentGroup(deployment, deploymentGroup)) {
+      if (!ownedByDeploymentGroup(deployment, deploymentGroup)
+          && !isMigration(deployment, deploymentGroup)) {
         continue;
       }
 
@@ -1094,19 +1095,12 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private boolean ownedByDeploymentGroup(final Deployment deployment,
                                          final DeploymentGroup deploymentGroup) {
-    // This deployment was created by this deployment group.
-    if (Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName())) {
-      return true;
-    }
+    return Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName());
+  }
 
-    // This deployment was not created by this deployment group, but should be migrated into it
-    // because a migration was requested and it is of the deployment group's job.
-    if (deploymentGroup.getRolloutOptions().getMigrate() &&
-        deployment.getJobId().equals(deploymentGroup.getJobId())) {
-      return true;
-    }
-
-    return false;
+  private boolean isMigration(final Deployment deployment, final DeploymentGroup deploymentGroup) {
+    return (deploymentGroup.getRolloutOptions().getMigrate()
+           && deployment.getJobId().equals(deploymentGroup.getJobId()));
   }
 
   /**
