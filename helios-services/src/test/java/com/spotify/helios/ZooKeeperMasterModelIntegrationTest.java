@@ -303,7 +303,6 @@ public class ZooKeeperMasterModelIntegrationTest {
 
   @Test
   public void testRemoveNonExistingDeploymentGroup() throws Exception {
-    exception.expect(DeploymentGroupDoesNotExistException.class);
     model.removeDeploymentGroup(DEPLOYMENT_GROUP_NAME);
   }
 }

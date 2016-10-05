@@ -392,6 +392,7 @@ public class ZooKeeperMasterModel implements MasterModel {
    *   <li>/config/deployment-groups/[group-name]</li>
    *   <li>/status/deployment-groups/[group-name]</li>
    *   <li>/status/deployment-groups/[group-name]/hosts</li>
+   *   <li>/status/deployment-groups/[group-name]/removed</li>
    *   <li>/status/deployment-group-tasks/[group-name]</li>
    * </ul>
    * If the operation fails no ZK nodes will be removed.
@@ -409,26 +410,34 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       final List<ZooKeeperOperation> operations = Lists.newArrayList();
 
-      // /status/deployment-group-tasks/[group-name] might exist (if a rolling-update is in
-      // progress). To avoid inconsistent state make sure it's deleted if it does exist:
+      final List<String> paths = ImmutableList.of(
+          Paths.configDeploymentGroup(name),
+          Paths.statusDeploymentGroup(name),
+          Paths.statusDeploymentGroupHosts(name),
+          Paths.statusDeploymentGroupRemovedHosts(name),
+          Paths.statusDeploymentGroupTasks(name)
+      );
+
+      // For each deployment group path:
       //
       // * If it exists: delete it.
       // * If it doesn't exist, add and delete it in the same transaction. This is a round-about
       //   way of ensuring that it wasn't created when we commit the transaction.
       //
+      // This is particularly important for /status/deployment-group-tasks/[group-name], which
+      // might exist if a rolling-update is in progress. To avoid inconsistent state we make sure
+      // it's deleted if it does exist.
+      //
       // Having /status/deployment-group-tasks/[group-name] for removed groups around will cause
       // DGs to become slower and spam logs with errors so we want to avoid it.
-      if (client.exists(Paths.statusDeploymentGroupTasks(name)) != null) {
-        operations.add(delete(Paths.statusDeploymentGroupTasks(name)));
-      } else {
-        operations.add(create(Paths.statusDeploymentGroupTasks(name)));
-        operations.add(delete(Paths.statusDeploymentGroupTasks(name)));
+      for (final String path : paths) {
+        if (client.exists(path) == null) {
+          operations.add(create(path));
+        }
       }
-
-      operations.add(delete(Paths.configDeploymentGroup(name)));
-      operations.add(delete(Paths.statusDeploymentGroupHosts(name)));
-      operations.add(delete(Paths.statusDeploymentGroupRemovedHosts(name)));
-      operations.add(delete(Paths.statusDeploymentGroup(name)));
+      for (final String path : Lists.reverse(paths)) {
+        operations.add(delete(path));
+      }
 
       client.transaction(operations);
     } catch (final NoNodeException e) {
