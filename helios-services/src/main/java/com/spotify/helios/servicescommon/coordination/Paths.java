@@ -209,6 +209,11 @@ public class Paths {
     return STATUS_DEPLOYMENT_GROUPS.path(name, HOSTS);
   }
 
+  /**
+   * This path stores a list of hosts that have been removed from a deployment group.
+   * Hosts are removed from this list when we are confident the deployment group's job is no longer
+   * deployed to them.
+   */
   public static String statusDeploymentGroupRemovedHosts(final String name) {
     return STATUS_DEPLOYMENT_GROUPS.path(name, REMOVED_HOSTS);
   }
