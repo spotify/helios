@@ -794,11 +794,9 @@ public class ZooKeeperMasterModel implements MasterModel {
   private RollingUpdateOp rollingUpdateTimedoutError(final RollingUpdateOpFactory opFactory,
                                                      final String host,
                                                      final JobId jobId,
-                                                     final TaskStatus taskStatus,
-                                                     final TaskStatus.State desiredState) {
+                                                     final TaskStatus taskStatus) {
     final List<TaskStatus.State> previousJobStates = getPreviousJobStates(jobId, host, 10);
-    final String baseError = "timed out waiting for job " + jobId
-                             + " to reach state " + desiredState + " ";
+    final String baseError = "timed out waiting for job " + jobId + " to reach state RUNNING ";
     final String stateInfo = String.format(
             "(terminal job state %s, previous states: %s)",
             taskStatus.getState(),
@@ -830,26 +828,11 @@ public class ZooKeeperMasterModel implements MasterModel {
               RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
               metadata);
     }
-    switch (desiredState) {
-      case RUNNING:
-        return opFactory.error(
-            baseError + stateInfo,
-            host,
-            RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
-            metadata);
-      case STOPPED:
-        return opFactory.error(
-            baseError + stateInfo,
-            host,
-            RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_STOPPED,
-            metadata);
-      default:
-        return opFactory.error(
-            baseError + stateInfo,
-            host,
-            RollingUpdateError.UNKNOWN,
-            metadata);
-    }
+    return opFactory.error(
+        baseError + stateInfo,
+        host,
+        RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_REACH_RUNNING,
+        metadata);
   }
 
   private RollingUpdateOp rollingUpdateAwaitRunning(final ZooKeeperClient client,
@@ -884,8 +867,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       if (isRolloutTimedOut(client, deploymentGroup)) {
         // We exceeded the configured deploy timeout, and this job is still not running
-        return rollingUpdateTimedoutError(
-            opFactory, host, jobId, taskStatus, TaskStatus.State.RUNNING);
+        return rollingUpdateTimedoutError(opFactory, host, jobId, taskStatus);
       }
 
       return opFactory.yield();
@@ -959,37 +941,17 @@ public class ZooKeeperMasterModel implements MasterModel {
     final JobId jobId = deploymentGroup.getJobId();
 
     if (taskStatus == null) {
-      // Agent has not written job status to zookeeper.
-
-      if (getDeployment(host, jobId) == null) {
-        // The job is not listed under /config/hosts. It may have been manually undeployed?
-        // We can't undeploy it if it's not there anymore, so move on.
-        return opFactory.nextTask();
-      }
-
-      // Check if we've exceeded the timeout for the rollout operation.
-      if (isRolloutTimedOut(client, deploymentGroup)) {
-        return opFactory.error("timed out while retrieving job status", host,
-                               RollingUpdateError.TIMED_OUT_RETRIEVING_JOB_STATUS);
-      }
-
-      // We haven't detected any errors, so assume the agent will write the status soon.
-      return opFactory.yield();
+      // The task status (i.e. /status/hosts/<host>/job/<job-id>) has been removed, indicating the
+      // job has been undeployed.
+      return opFactory.nextTask();
     }
 
-    if (!taskStatus.getState().equals(TaskStatus.State.STOPPED)) {
-      // job isn't stopped yet.
-
-      // We exceeded the configured deploy timeout, and this job is still not stopped
-      if (isRolloutTimedOut(client, deploymentGroup)) {
-        return rollingUpdateTimedoutError(
-            opFactory, host, jobId, taskStatus, TaskStatus.State.STOPPED);
-      }
-
-      return opFactory.yield();
+    if (isRolloutTimedOut(client, deploymentGroup)) {
+      return opFactory.error("timed out while waiting for job undeployment", host,
+                             RollingUpdateError.TIMED_OUT_WAITING_FOR_JOB_TO_UNDEPLOY);
     }
 
-    return opFactory.nextTask();
+    return opFactory.yield();
   }
 
   private RollingUpdateOp rollingUpdateMarkUndeployed(final ZooKeeperClient client,
