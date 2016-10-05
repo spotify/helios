@@ -1034,25 +1034,35 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
+  /**
+   *  rollingUpdateUndeploy is used to undeploy jobs during a rolling update. It enables the
+   *  'skipRedundantUndeploys' flag, which enables the redundantDeployment() check.
+   */
   private RollingUpdateOp rollingUpdateUndeploy(final ZooKeeperClient client,
                                                 final RollingUpdateOpFactory opFactory,
                                                 final DeploymentGroup deploymentGroup,
                                                 final String host) {
-    return rollingUpdateUndeploy(client, opFactory, deploymentGroup, host, false);
+    return rollingUpdateUndeploy(client, opFactory, deploymentGroup, host, true);
   }
 
+
+  /**
+   * forceRollingUpdateUndeploy is used to undeploy jobs from hosts that have been removed from the
+   * deployment group. It disables the 'skipRedundantUndeploys' flag, which disables the
+   * redundantDeployment() check.
+   */
   private RollingUpdateOp forceRollingUpdateUndeploy(final ZooKeeperClient client,
                                                      final RollingUpdateOpFactory opFactory,
                                                      final DeploymentGroup deploymentGroup,
                                                      final String host) {
-    return rollingUpdateUndeploy(client, opFactory, deploymentGroup, host, true);
+    return rollingUpdateUndeploy(client, opFactory, deploymentGroup, host, false);
   }
 
   private RollingUpdateOp rollingUpdateUndeploy(final ZooKeeperClient client,
                                                 final RollingUpdateOpFactory opFactory,
                                                 final DeploymentGroup deploymentGroup,
                                                 final String host,
-                                                final boolean force) {
+                                                final boolean skipRedundantUndeploys) {
     final List<ZooKeeperOperation> operations = Lists.newArrayList();
 
     for (final Deployment deployment : getTasks(client, host).values()) {
@@ -1061,7 +1071,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         continue;
       }
 
-      if (!force && redundantDeployment(deployment, deploymentGroup)) {
+      if (skipRedundantUndeploys && redundantUndeployment(deployment, deploymentGroup)) {
         continue;
       }
 
@@ -1099,8 +1109,26 @@ public class ZooKeeperMasterModel implements MasterModel {
     return false;
   }
 
-  private boolean redundantDeployment(final Deployment deployment,
-                                      final DeploymentGroup deploymentGroup) {
+  /**
+   * redundantDeployment determines whether or not rollingUpdateUndeploy should actually emit
+   * RollingUpdateOps to undeploy a job.
+   *
+   * Jobs are undeployed in two cases:
+   *
+   * 1. During a rolling update
+   * 2. When a host leaves a deployment group
+   *
+   * In case 1. this redundancy check makes sense. The undeployment of a job during a rolling
+   * update is always coupled with the deployment of a job. If the 'new' job is the same job
+   * that is currently deployed, the undeployment would be redundant so we do not generate
+   * deployment operations.
+   *
+   * In case 2. undeployment can never be redundant. We always want to undeploy the job from hosts
+   * that have left the deployment group. Unfortunately in case case undeployments appear to be
+   * redundant to the following checks, so they must be skipped.
+   */
+  private boolean redundantUndeployment(final Deployment deployment,
+                                        final DeploymentGroup deploymentGroup) {
     // This deployment was not created by this deployment group.
     if (!Objects.equals(deployment.getDeploymentGroupName(), deploymentGroup.getName())) {
       return false;
