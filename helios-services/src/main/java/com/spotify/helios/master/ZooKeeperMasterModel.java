@@ -527,6 +527,10 @@ public class ZooKeeperMasterModel implements MasterModel {
         return;
       }
 
+      // statusDeploymentGroupRemovedHosts may not exist for deployment groups created before it was
+      // introduced.
+      client.ensurePath(Paths.statusDeploymentGroupRemovedHosts(groupName));
+
       final List<String> curHosts = getHosts(client, Paths.statusDeploymentGroupHosts(groupName));
       final List<String> previouslyRemovedHosts = getHosts(
           client, Paths.statusDeploymentGroupRemovedHosts(groupName));
