@@ -723,8 +723,8 @@ public class ZooKeeperMasterModel implements MasterModel {
         return rollingUpdateAwaitRunning(client, opFactory, deploymentGroup, host);
       case FORCE_UNDEPLOY_JOBS:
         return forceRollingUpdateUndeploy(client, opFactory, deploymentGroup, host);
-      case AWAIT_STOPPED:
-        return rollingUpdateAwaitStopped(client, opFactory, deploymentGroup, host);
+      case AWAIT_UNDEPLOYED:
+        return rollingUpdateAwaitUndeployed(client, opFactory, deploymentGroup, host);
       case MARK_UNDEPLOYED:
         return rollingUpdateMarkUndeployed(client, opFactory, deploymentGroup, host);
       default:
@@ -951,10 +951,10 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  private RollingUpdateOp rollingUpdateAwaitStopped(final ZooKeeperClient client,
-                                                    final RollingUpdateOpFactory opFactory,
-                                                    final DeploymentGroup deploymentGroup,
-                                                    final String host) {
+  private RollingUpdateOp rollingUpdateAwaitUndeployed(final ZooKeeperClient client,
+                                                       final RollingUpdateOpFactory opFactory,
+                                                       final DeploymentGroup deploymentGroup,
+                                                       final String host) {
     final TaskStatus taskStatus = getTaskStatus(client, host, deploymentGroup.getJobId());
     final JobId jobId = deploymentGroup.getJobId();
 
