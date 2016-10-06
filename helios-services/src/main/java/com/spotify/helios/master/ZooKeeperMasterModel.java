@@ -989,10 +989,8 @@ public class ZooKeeperMasterModel implements MasterModel {
           set(Paths.statusDeploymentGroupRemovedHosts(deploymentGroup.getName()),
               Json.asBytes(hostsToUndeploy))));
     } catch (KeeperException | IOException e) {
-      // We can't read the list of hosts to undeploy. Move on.
-      log.error("unable to mark host undeployed after removal from deployment group: "
-                + "deployment-group={}, host={}", deploymentGroup.getName(), host, e);
-      return opFactory.nextTask();
+        return opFactory.error("unable to mark host undeployed after removal from deployment group",
+                               host, RollingUpdateError.UNABLE_TO_MARK_HOST_UNDEPLOYED);
     }
   }
 
