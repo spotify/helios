@@ -18,12 +18,14 @@
 package com.spotify.helios.agent;
 
 import com.google.common.base.Optional;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.HostConfig;
 import com.spotify.docker.client.messages.ImageInfo;
+import com.spotify.docker.client.messages.LogConfig;
 import com.spotify.helios.common.descriptors.Job;
 
 import java.util.List;
@@ -42,18 +44,34 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
   }
 
   @Override
-  public void decorateHostConfig(HostConfig.Builder hostConfig) {
-    final List<String> binds = Lists.newArrayList();
-    if (hostConfig.binds() != null) {
-      binds.addAll(hostConfig.binds());
+  public void decorateHostConfig(Job job, Optional<String> dockerVersion,
+                                 HostConfig.Builder hostConfig) {
+    if (useSyslogRedirector(dockerVersion)) {
+      final List<String> binds = Lists.newArrayList();
+      if (hostConfig.binds() != null) {
+        binds.addAll(hostConfig.binds());
+      }
+      binds.add("/usr/lib/helios:/helios:ro");
+      hostConfig.binds(binds);
+    } else {
+      final ImmutableMap.Builder<String, String> logOpts = ImmutableMap.builder();
+
+      logOpts.put("syslog-address", "udp://" + syslogHostPort);
+      logOpts.put("syslog-facility", "local0"); // match the behavior of syslog-redirector
+
+      logOpts.put("tag", job.getId().toString());
+
+      hostConfig.logConfig(LogConfig.create("syslog", logOpts.build()));
     }
-    binds.add("/usr/lib/helios:/helios:ro");
-    hostConfig.binds(binds);
   }
 
   @Override
-  public void decorateContainerConfig(Job job, ImageInfo imageInfo,
+  public void decorateContainerConfig(Job job, ImageInfo imageInfo, Optional<String> dockerVersion,
                                       ContainerConfig.Builder containerConfig) {
+    if (!useSyslogRedirector(dockerVersion)) {
+      return;
+    }
+
     final ContainerConfig imageConfig = imageInfo.config();
 
     // Inject syslog-redirector in the entrypoint to capture std out/err
@@ -82,5 +100,21 @@ public class SyslogRedirectingContainerDecorator implements ContainerDecorator {
     }
     volumes.add("/helios");
     containerConfig.volumes(volumes);
+  }
+
+  private boolean useSyslogRedirector(Optional<String> dockerVersion) {
+    if (!dockerVersion.isPresent()) {
+      // always use syslog-redirector if we can't figure out the version
+      return true;
+    } else {
+      final String version = dockerVersion.get();
+
+      if (version.startsWith("1.6.") || version.startsWith("1.7.") || version.startsWith("1.8.")) {
+        // old version that doesn't have the builtin syslog configurability we need
+        return true;
+      }
+    }
+
+    return false;
   }
 }

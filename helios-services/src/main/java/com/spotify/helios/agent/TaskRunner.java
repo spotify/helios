@@ -245,10 +245,10 @@ class TaskRunner extends InterruptingExecutionThreadService {
       pullImage(image);
     }
 
-    return startContainer(image);
+    return startContainer(image, dockerVersion);
   }
 
-  private String startContainer(final String image)
+  private String startContainer(final String image, final Optional<String> dockerVersion)
       throws InterruptedException, DockerException {
 
     // Get container image info
@@ -258,8 +258,8 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
 
     // Create container
-    final HostConfig hostConfig = config.hostConfig();
-    final ContainerConfig containerConfig = config.containerConfig(imageInfo)
+    final HostConfig hostConfig = config.hostConfig(dockerVersion);
+    final ContainerConfig containerConfig = config.containerConfig(imageInfo, dockerVersion)
         .toBuilder()
         .hostConfig(hostConfig)
         .build();

@@ -17,6 +17,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.net.InetAddresses;
 
@@ -37,12 +38,14 @@ public class AddExtraHostContainerDecorator implements ContainerDecorator {
   }
 
   @Override
-  public void decorateHostConfig(final HostConfig.Builder hostConfig) {
+  public void decorateHostConfig(final Job job, final Optional<String> dockerVersion,
+                                 final HostConfig.Builder hostConfig) {
     hostConfig.extraHosts(this.extraHosts);
   }
 
   @Override
   public void decorateContainerConfig(final Job job, final ImageInfo imageInfo,
+                                      final Optional<String> dockerVersion,
                                       final ContainerConfig.Builder containerConfig) {
     //do nothing
   }

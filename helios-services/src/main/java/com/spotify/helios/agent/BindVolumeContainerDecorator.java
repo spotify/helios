@@ -17,6 +17,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 
@@ -64,7 +65,8 @@ public class BindVolumeContainerDecorator implements ContainerDecorator {
   }
 
   @Override
-  public void decorateHostConfig(HostConfig.Builder hostConfig) {
+  public void decorateHostConfig(Job job, Optional<String> dockerVersion,
+                                 HostConfig.Builder hostConfig) {
     final List<String> b = Lists.newArrayList();
 
     if (hostConfig.binds() != null) {
@@ -77,7 +79,7 @@ public class BindVolumeContainerDecorator implements ContainerDecorator {
   }
 
   @Override
-  public void decorateContainerConfig(Job job, ImageInfo imageInfo,
+  public void decorateContainerConfig(Job job, ImageInfo imageInfo, Optional<String> dockerVersion,
                                       ContainerConfig.Builder containerConfig) {
   }
 }

@@ -17,6 +17,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -99,7 +100,8 @@ public class TaskConfig {
    * @param imageInfo The ImageInfo object.
    * @return The ContainerConfig object.
    */
-  public ContainerConfig containerConfig(final ImageInfo imageInfo) {
+  public ContainerConfig containerConfig(final ImageInfo imageInfo,
+      final Optional<String> dockerVersion) {
     final ContainerConfig.Builder builder = ContainerConfig.builder();
 
     builder.image(job.getImage());
@@ -110,7 +112,7 @@ public class TaskConfig {
     builder.volumes(volumes());
 
     for (final ContainerDecorator decorator : containerDecorators) {
-      decorator.decorateContainerConfig(job, imageInfo, builder);
+      decorator.decorateContainerConfig(job, imageInfo, dockerVersion, builder);
     }
 
     return builder.build();
@@ -275,7 +277,7 @@ public class TaskConfig {
    * Create a container host configuration for the job.
    * @return The host configuration.
    */
-  public HostConfig hostConfig() {
+  public HostConfig hostConfig(final Optional<String> dockerVersion) {
     final List<String> securityOpt = job.getSecurityOpt();
     final HostConfig.Builder builder = HostConfig.builder()
         .binds(binds())
@@ -296,7 +298,7 @@ public class TaskConfig {
     builder.capDrop(ImmutableList.copyOf(job.getDropCapabilities()));
 
     for (final ContainerDecorator decorator : containerDecorators) {
-      decorator.decorateHostConfig(builder);
+      decorator.decorateHostConfig(job, dockerVersion, builder);
     }
 
     return builder.build();

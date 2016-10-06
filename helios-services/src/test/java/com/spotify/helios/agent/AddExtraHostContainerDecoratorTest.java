@@ -17,6 +17,7 @@
 
 package com.spotify.helios.agent;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 
 import com.spotify.docker.client.messages.HostConfig;
@@ -38,7 +39,7 @@ public class AddExtraHostContainerDecoratorTest {
     final AddExtraHostContainerDecorator decorator = new AddExtraHostContainerDecorator(hosts);
 
     final HostConfig.Builder hostBuilder = HostConfig.builder();
-    decorator.decorateHostConfig(hostBuilder);
+    decorator.decorateHostConfig(null, Optional.absent(), hostBuilder);
 
     final HostConfig config = hostBuilder.build();
     assertThat(config.extraHosts(), equalTo(hosts));

@@ -25,6 +25,7 @@ import com.google.common.io.Resources;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.docker.client.exceptions.DockerException;
+import com.spotify.docker.client.exceptions.DockerRequestException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerInfo;
@@ -151,15 +152,27 @@ public class SyslogRedirectionTest extends SystemTestBase {
 
       final TaskStatus taskStatus = awaitTaskState(jobId, testHost(), EXITED);
 
-      // Verify the log for the task container
       {
-        final String log;
-        try (LogStream logs = docker.logs(taskStatus.getContainerId(), stdout(), stderr())) {
-          log = logs.readFully();
-        }
+        // Verify the log for the task container
+        LogStream logs = null;
+        try {
+          logs = docker.logs(taskStatus.getContainerId(), stdout(), stderr());
+          final String log = logs.readFully();
 
-        // should be nothing in the docker output log, either error text or our message
-        assertEquals("", log);
+          // for old docker versions should be nothing in the docker output log, either error text
+          // or our message
+          assertEquals("", log);
+        } catch (DockerRequestException e) {
+          // for new docker versions, trying to read logs should throw an error but the syslog
+          // option should be set
+          final String logType = docker.inspectContainer(taskStatus.getContainerId())
+              .hostConfig().logConfig().logType();
+          assertEquals("syslog", logType);
+        } finally {
+          if (logs != null) {
+            logs.close();
+          }
+        }
       }
 
       // Verify the log for the syslog container
