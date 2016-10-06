@@ -17,15 +17,17 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Strings;
-import com.google.common.base.Suppliers;
-import com.google.common.base.Throwables;
-import com.google.common.collect.Lists;
-import com.google.common.io.Resources;
-import com.google.common.util.concurrent.AbstractIdleService;
+import static com.google.common.base.Charsets.UTF_8;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
+import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
+import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
+import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
+import static java.lang.management.ManagementFactory.getRuntimeMXBean;
+import static java.nio.file.StandardOpenOption.CREATE;
+import static java.nio.file.StandardOpenOption.WRITE;
 
-import com.codahale.metrics.MetricRegistry;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.spotify.docker.client.DockerCertificates;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.DockerCertificateException;
@@ -52,12 +54,25 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperHealthChecker;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperNodeUpdaterFactory;
+import com.spotify.helios.servicescommon.statistics.DockerVersionSupplier;
 import com.spotify.helios.servicescommon.statistics.FastForwardReporter;
 import com.spotify.helios.servicescommon.statistics.Metrics;
 import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
-import com.sun.management.OperatingSystemMXBean;
 
+import com.codahale.metrics.MetricRegistry;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.google.common.base.Strings;
+import com.google.common.base.Suppliers;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.io.Resources;
+import com.google.common.util.concurrent.AbstractIdleService;
+import com.sun.management.OperatingSystemMXBean;
+import io.dropwizard.configuration.ConfigurationException;
+import io.dropwizard.lifecycle.Managed;
+import io.dropwizard.setup.Environment;
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
@@ -77,21 +92,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
-import io.dropwizard.configuration.ConfigurationException;
-import io.dropwizard.lifecycle.Managed;
-import io.dropwizard.setup.Environment;
-
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.spotify.helios.agent.Agent.EMPTY_EXECUTIONS;
-import static com.spotify.helios.servicescommon.ServiceRegistrars.createServiceRegistrar;
-import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
-import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
-import static java.lang.management.ManagementFactory.getOperatingSystemMXBean;
-import static java.lang.management.ManagementFactory.getRuntimeMXBean;
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.WRITE;
+import java.util.function.Supplier;
 
 /**
  * The Helios agent.
@@ -177,6 +178,9 @@ public class AgentService extends AbstractIdleService implements Managed {
     final RiemannSupport riemannSupport = new RiemannSupport(
         metricsRegistry, config.getRiemannHostPort(), config.getName(), "helios-agent");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();
+
+    final DockerClient dockerClient = createDockerClient(config, riemannFacade);
+
     if (config.isInhibitMetrics()) {
       log.info("Not starting metrics");
       metrics = new NoopMetrics();
@@ -191,12 +195,21 @@ public class AgentService extends AbstractIdleService implements Managed {
 
       final FastForwardConfig ffwdConfig = config.getFfwdConfig();
       if (ffwdConfig != null) {
-        environment.lifecycle().manage(FastForwardReporter.create(
+
+        // include the version docker as an additional attribute in FastForwardReporter
+        final DockerVersionSupplier versionSupplier = new DockerVersionSupplier(dockerClient);
+
+        final Supplier<Map<String, String>> attributesSupplier =
+            () -> ImmutableMap.of("docker_version", versionSupplier.get());
+
+        final FastForwardReporter reporter = FastForwardReporter.create(
             metricsRegistry,
             ffwdConfig.getAddress(),
             ffwdConfig.getMetricKey(),
-            ffwdConfig.getReportingIntervalSeconds())
-        );
+            ffwdConfig.getReportingIntervalSeconds(),
+            attributesSupplier);
+
+        environment.lifecycle().manage(reporter);
       }
     }
 
@@ -243,24 +256,6 @@ public class AgentService extends AbstractIdleService implements Managed {
     final ZooKeeperNodeUpdaterFactory nodeUpdaterFactory =
         new ZooKeeperNodeUpdaterFactory(zooKeeperClient);
 
-    final DockerClient dockerClient;
-    if (isNullOrEmpty(config.getDockerHost().dockerCertPath())) {
-      dockerClient = new PollingDockerClient(config.getDockerHost().uri());
-    } else {
-      final Path dockerCertPath = java.nio.file.Paths.get(config.getDockerHost().dockerCertPath());
-      final DockerCertificates dockerCertificates;
-      try {
-        dockerCertificates = new DockerCertificates(dockerCertPath);
-      } catch (DockerCertificateException e) {
-        throw Throwables.propagate(e);
-      }
-
-      dockerClient = new PollingDockerClient(config.getDockerHost().uri(), dockerCertificates);
-    }
-
-    final DockerClient monitoredDockerClient = MonitoredDockerClient.wrap(riemannFacade,
-                                                                          dockerClient);
-
     this.hostInfoReporter =
         new HostInfoReporter((OperatingSystemMXBean) getOperatingSystemMXBean(), nodeUpdaterFactory,
                              config.getName(), dockerClient, config.getDockerHost(),
@@ -293,7 +288,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     }
 
     final SupervisorFactory supervisorFactory = new SupervisorFactory(
-        model, monitoredDockerClient,
+        model, dockerClient,
         config.getEnvVars(), serviceRegistrar,
         decorators,
         config.getDockerHost(),
@@ -349,6 +344,26 @@ public class AgentService extends AbstractIdleService implements Managed {
       this.server = null;
     }
     environment.lifecycle().manage(this);
+  }
+
+  private DockerClient createDockerClient(final AgentConfig config,
+                                          final RiemannFacade riemannFacade) {
+    final DockerClient dockerClient;
+    if (isNullOrEmpty(config.getDockerHost().dockerCertPath())) {
+      dockerClient = new PollingDockerClient(config.getDockerHost().uri());
+    } else {
+      final Path dockerCertPath = java.nio.file.Paths.get(config.getDockerHost().dockerCertPath());
+      final DockerCertificates dockerCertificates;
+      try {
+        dockerCertificates = new DockerCertificates(dockerCertPath);
+      } catch (DockerCertificateException e) {
+        throw Throwables.propagate(e);
+      }
+
+      dockerClient = new PollingDockerClient(config.getDockerHost().uri(), dockerCertificates);
+    }
+
+    return MonitoredDockerClient.wrap(riemannFacade, dockerClient);
   }
 
   /**
