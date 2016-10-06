@@ -66,6 +66,8 @@ public class RollingUndeployPlanner implements RolloutPlanner {
     final ImmutableList.Builder<RolloutTask> tasks = ImmutableList.builder();
     hosts.forEach(host -> {
       tasks.add(RolloutTask.of(RolloutTask.Action.FORCE_UNDEPLOY_JOBS, host));
+    });
+    hosts.forEach(host -> {
       tasks.add(RolloutTask.of(RolloutTask.Action.AWAIT_UNDEPLOYED, host));
       tasks.add(RolloutTask.of(RolloutTask.Action.MARK_UNDEPLOYED, host));
     });
