@@ -72,7 +72,7 @@ public class FastForwardReporterTest {
    * A matcher that matches when the actual object contains all of the given attributes
    * (note that the reverse isn't necessarily true; this is a partial matcher).
    */
-  private static CustomTypeSafeMatcher<Metric> containsAttributes(Map<String, String> attributes) {
+  private static Matcher<Metric> containsAttributes(Map<String, String> attributes) {
 
     final String description = String.format("a metric containing attributes=%s", attributes);
 
@@ -84,7 +84,7 @@ public class FastForwardReporterTest {
     };
   }
 
-  private static CustomTypeSafeMatcher<Metric> containsAttributes(String... strings) {
+  private static Matcher<Metric> containsAttributes(String... strings) {
     final ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
     for (int i = 0; i < strings.length; i += 2) {
       builder.put(strings[i], strings[i + 1]);
@@ -92,7 +92,7 @@ public class FastForwardReporterTest {
     return containsAttributes(builder.build());
   }
 
-  private static CustomTypeSafeMatcher<Metric> hasValue(double value) {
+  private static Matcher<Metric> hasValue(double value) {
     return new CustomTypeSafeMatcher<Metric>("a metric with value=" + value) {
       @Override
       protected boolean matchesSafely(final Metric item) {
@@ -101,7 +101,7 @@ public class FastForwardReporterTest {
     };
   }
 
-  private static CustomTypeSafeMatcher<Metric> hasKey(String key) {
+  private static Matcher<Metric> hasKey(String key) {
     return new CustomTypeSafeMatcher<Metric>("a metric with key=" + key) {
       @Override
       protected boolean matchesSafely(final Metric item) {
