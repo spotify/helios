@@ -32,7 +32,7 @@ undeploy them when the tests have completed.
     <dependency>
         <groupId>com.spotify</groupId>
         <artifactId>helios-testing</artifactId>
-        <version>0.8.1</version>
+        <version>0.9.2</version>
         <scope>test</scope>
     </dependency>
     ```
@@ -43,7 +43,7 @@ undeploy them when the tests have completed.
     <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
-        <version>2.17</version>
+        <version>2.19.1</version>
         <executions>
             <execution>
                 <goals>
