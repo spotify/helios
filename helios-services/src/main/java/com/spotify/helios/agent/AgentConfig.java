@@ -36,6 +36,7 @@ public class AgentConfig extends Configuration {
   private String name;
   private String zooKeeperConnectionString;
   private DockerHost dockerHost;
+  private boolean dockerAuth;
   private int zooKeeperSessionTimeoutMillis;
   private int zooKeeperConnectionTimeoutMillis;
   private String zooKeeperClusterId;
@@ -112,6 +113,16 @@ public class AgentConfig extends Configuration {
     this.zooKeeperConnectionString = connectionString;
     return this;
   }
+
+  public AgentConfig setDockerAuth(boolean dockerAuth) {
+    this.dockerAuth = noHttp;
+    return this;
+  }
+
+  public boolean getDockerAuth() {
+    return dockerAuth;
+  }
+
 
   public AgentConfig setDockerHost(final DockerHost dockerHost) {
     this.dockerHost = dockerHost;

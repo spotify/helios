@@ -56,6 +56,7 @@ public class AgentParser extends ServiceParser {
   private Argument httpArg;
   private Argument adminArg;
   private Argument dockerArg;
+  private Argument dockerAuthArg;
   private Argument dockerCertPathArg;
   private Argument envArg;
   private Argument syslogRedirectToArg;
@@ -129,6 +130,7 @@ public class AgentParser extends ServiceParser {
         .setDomain(getDomain())
         .setEnvVars(envVars)
         .setDockerHost(dockerHost)
+        .setDockerAuth(options.getBoolean(dockerAuthArg.getDest()))
         .setInhibitMetrics(getInhibitMetrics())
         .setRedirectToSyslog(options.getString(syslogRedirectToArg.getDest()))
         .setStateDirectory(getStateDirectory())
@@ -210,6 +212,11 @@ public class AgentParser extends ServiceParser {
     dockerArg = parser.addArgument("--docker")
         .setDefault(DockerHost.fromEnv().host())
         .help("docker endpoint");
+
+    dockerAuthArg = parser.addArgument("--docker-auth")
+            .action(storeTrue())
+            .setDefault(false)
+            .help("perform authentication by reusing Docker authentication info");
 
     dockerCertPathArg = parser.addArgument("--docker-cert-path")
         .setDefault(DockerHost.fromEnv().dockerCertPath())
