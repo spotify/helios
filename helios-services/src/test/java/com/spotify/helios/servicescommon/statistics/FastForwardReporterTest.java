@@ -17,60 +17,62 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import static org.mockito.Matchers.argThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.verify;
+
+import com.spotify.helios.common.Version;
 
 import com.codahale.metrics.Gauge;
 import com.codahale.metrics.Histogram;
 import com.codahale.metrics.MetricRegistry;
-import com.spotify.helios.common.Version;
-
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSet;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import eu.toolchain.ffwd.FastForward;
 import eu.toolchain.ffwd.Metric;
-
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 import java.util.stream.IntStream;
-
-import static org.mockito.Matchers.argThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 
 public class FastForwardReporterTest {
 
   private final FastForward ffwd = mock(FastForward.class);
   private final MetricRegistry metricRegistry = new MetricRegistry();
-
+  private ScheduledExecutorService executor;
   private FastForwardReporter reporter;
 
   @Before
   public void setUp() throws Exception {
     final ThreadFactory threadFactory = new ThreadFactoryBuilder().setDaemon(true).build();
 
-    final ScheduledExecutorService executor =
-        Executors.newSingleThreadScheduledExecutor(threadFactory);
+    this.executor = Executors.newSingleThreadScheduledExecutor(threadFactory);
 
     this.reporter = new FastForwardReporter(ffwd, metricRegistry, executor, "helios.test",
-                                            // these values do not matter:
-                                            30, TimeUnit.SECONDS);
+        // these interval values do not matter for this test:
+        30, TimeUnit.SECONDS,
+        Collections::emptyMap);
   }
 
   /**
    * A matcher that matches when the actual object contains all of the given attributes
    * (note that the reverse isn't necessarily true; this is a partial matcher).
    */
-  private static CustomTypeSafeMatcher<Metric> containsAttributes(Map<String, String> attributes) {
+  private static Matcher<Metric> containsAttributes(Map<String, String> attributes) {
 
     final String description = String.format("a metric containing attributes=%s", attributes);
 
@@ -82,7 +84,7 @@ public class FastForwardReporterTest {
     };
   }
 
-  private static CustomTypeSafeMatcher<Metric> containsAttributes(String... strings) {
+  private static Matcher<Metric> containsAttributes(String... strings) {
     final ImmutableMap.Builder<String, String> builder = ImmutableMap.builder();
     for (int i = 0; i < strings.length; i += 2) {
       builder.put(strings[i], strings[i + 1]);
@@ -90,7 +92,7 @@ public class FastForwardReporterTest {
     return containsAttributes(builder.build());
   }
 
-  private static CustomTypeSafeMatcher<Metric> hasValue(double value) {
+  private static Matcher<Metric> hasValue(double value) {
     return new CustomTypeSafeMatcher<Metric>("a metric with value=" + value) {
       @Override
       protected boolean matchesSafely(final Metric item) {
@@ -99,7 +101,7 @@ public class FastForwardReporterTest {
     };
   }
 
-  private static CustomTypeSafeMatcher<Metric> hasKey(String key) {
+  private static Matcher<Metric> hasKey(String key) {
     return new CustomTypeSafeMatcher<Metric>("a metric with key=" + key) {
       @Override
       protected boolean matchesSafely(final Metric item) {
@@ -208,5 +210,32 @@ public class FastForwardReporterTest {
     reporter.reportOnce();
 
     verify(ffwd).send(argThat(containsAttributes("helios_version", Version.POM_VERSION)));
+  }
+
+  @Test
+  public void testAttributesIncludeAdditionalAttributes() throws Exception {
+    // a counter to keep track of how often the Supplier is called
+    final AtomicInteger counter = new AtomicInteger(0);
+    final Supplier<Map<String, String>> additionalAttributes = () -> {
+      final int count = counter.incrementAndGet();
+      return ImmutableMap.of("foo", "bar", "counter", String.valueOf(count));
+    };
+
+    this.reporter = new FastForwardReporter(ffwd, metricRegistry, executor, "helios.test",
+        30, TimeUnit.SECONDS,
+        additionalAttributes);
+
+    metricRegistry.register("gauge1", (Gauge<Integer>) () -> 1);
+    metricRegistry.register("gauge2", (Gauge<Integer>) () -> 2);
+
+    reporter.reportOnce();
+    verify(ffwd).send(argThat(containsAttributes("what", "gauge1", "foo", "bar", "counter", "1")));
+    verify(ffwd).send(argThat(containsAttributes("what", "gauge2", "foo", "bar", "counter", "1")));
+
+    reset(ffwd);
+
+    reporter.reportOnce();
+    verify(ffwd).send(argThat(containsAttributes("what", "gauge1", "foo", "bar", "counter", "2")));
+    verify(ffwd).send(argThat(containsAttributes("what", "gauge2", "foo", "bar", "counter", "2")));
   }
 }

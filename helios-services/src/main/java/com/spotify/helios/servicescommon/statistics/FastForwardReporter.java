@@ -17,9 +17,7 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.google.common.annotations.VisibleForTesting;
-import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.spotify.helios.common.Version;
 
 import com.codahale.metrics.Counter;
 import com.codahale.metrics.Gauge;
@@ -29,24 +27,26 @@ import com.codahale.metrics.Metered;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Snapshot;
 import com.codahale.metrics.Timer;
-import com.spotify.helios.common.Version;
-
+import com.google.common.annotations.VisibleForTesting;
+import com.google.common.net.HostAndPort;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import eu.toolchain.ffwd.FastForward;
 import eu.toolchain.ffwd.Metric;
-
+import io.dropwizard.lifecycle.Managed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.SocketException;
 import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-
-import io.dropwizard.lifecycle.Managed;
+import java.util.function.Supplier;
 
 /**
  * Sends the metrics in a v3 MetricRegistry to
@@ -70,8 +70,36 @@ public class FastForwardReporter implements Managed {
 
   private static final Logger log = LoggerFactory.getLogger(FastForwardReporter.class);
 
-  public static FastForwardReporter create(MetricRegistry registry, Optional<HostAndPort> address,
-                                           String metricKey, int intervalSeconds)
+  /**
+   * Create a new FastForwardReporter instance.
+   *
+   * @param registry        MetricRegistry to report to ffwd
+   * @param address         Optional HostAndPort to override the defaults that ffwd client uses
+   * @param metricKey       key to use for all metrics
+   * @param intervalSeconds how often to report metrics to ffwd
+   */
+  public static FastForwardReporter create(
+      MetricRegistry registry,
+      Optional<HostAndPort> address,
+      String metricKey,
+      int intervalSeconds)
+      throws SocketException, UnknownHostException {
+
+    return create(registry, address, metricKey, intervalSeconds, Collections::emptyMap);
+  }
+
+  /**
+   * Overload of {@link #create(MetricRegistry, Optional, String, int)} which allows for setting
+   * additional attributes in each reported metric.
+   *
+   * The additional attributes are modeled as a Supplier to allow for attributes that might change
+   * values at runtime.
+   */
+  public static FastForwardReporter create(
+      MetricRegistry registry,
+      Optional<HostAndPort> address,
+      String metricKey, int intervalSeconds,
+      Supplier<Map<String, String>> additionalAttributes)
       throws SocketException, UnknownHostException {
 
     final FastForward ff;
@@ -90,7 +118,7 @@ public class FastForwardReporter implements Managed {
         Executors.newSingleThreadScheduledExecutor(threadFactory);
 
     return new FastForwardReporter(ff, registry, executorService, metricKey, intervalSeconds,
-                                   TimeUnit.SECONDS);
+        TimeUnit.SECONDS, additionalAttributes);
   }
 
   private final FastForward fastForward;
@@ -99,16 +127,20 @@ public class FastForwardReporter implements Managed {
   private final String key;
   private final long interval;
   private final TimeUnit intervalTimeUnit;
+  private final Supplier<Map<String, String>> additionalAttributesSupplier;
+  private Map<String, String> additionalAttributes;
 
   FastForwardReporter(FastForward fastForward, MetricRegistry metricRegistry,
                       ScheduledExecutorService executor, String key,
-                      long interval, TimeUnit intervalTimeUnit) {
+                      long interval, TimeUnit intervalTimeUnit,
+                      Supplier<Map<String, String>> additionalAttributes) {
     this.fastForward = fastForward;
     this.metricRegistry = metricRegistry;
     this.executor = executor;
     this.key = key;
     this.interval = interval;
     this.intervalTimeUnit = intervalTimeUnit;
+    this.additionalAttributesSupplier = additionalAttributes;
   }
 
   @Override
@@ -133,6 +165,13 @@ public class FastForwardReporter implements Managed {
 
   @VisibleForTesting
   void reportOnce() {
+
+    // resolve the additional attributes once per report
+    additionalAttributes = additionalAttributesSupplier.get();
+    if (additionalAttributes == null) {
+      additionalAttributes = Collections.emptyMap();
+    }
+
     metricRegistry.getGauges().forEach(this::reportGauge);
 
     metricRegistry.getCounters().forEach(this::reportCounter);
@@ -195,6 +234,7 @@ public class FastForwardReporter implements Managed {
 
   private Metric createMetric(String metricName, String metricType) {
     return FastForward.metric(key)
+        .attributes(additionalAttributes)
         .attribute("helios_version", Version.POM_VERSION)
         .attribute("metric_type", metricType)
         .attribute("what", metricName);
