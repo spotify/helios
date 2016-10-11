@@ -17,14 +17,14 @@
 
 package com.spotify.helios.system;
 
+import static com.spotify.helios.common.Version.POM_VERSION;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.protocol.VersionResponse;
 
 import org.junit.Test;
-
-import static com.spotify.helios.common.Version.POM_VERSION;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class VersionCommandTest extends SystemTestBase {
 

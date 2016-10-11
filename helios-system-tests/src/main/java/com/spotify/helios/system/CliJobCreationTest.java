@@ -17,11 +17,10 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.base.Charsets;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.common.Json;
@@ -31,6 +30,12 @@ import com.spotify.helios.common.descriptors.ServiceEndpoint;
 import com.spotify.helios.common.descriptors.ServicePorts;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 
+import com.google.common.base.Charsets;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+
 import org.junit.Before;
 import org.junit.Test;
 
@@ -39,11 +44,6 @@ import java.io.FileOutputStream;
 import java.util.ArrayList;
 import java.util.Map;
 import java.util.concurrent.Callable;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 
 public class CliJobCreationTest extends SystemTestBase {
 

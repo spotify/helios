@@ -17,16 +17,19 @@
 
 package com.spotify.helios;
 
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
+import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
+import static java.util.Arrays.asList;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import com.spotify.helios.cli.CliMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.testing.Prober;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -37,9 +40,6 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
-import static com.fasterxml.jackson.databind.node.JsonNodeType.STRING;
-import static java.util.Arrays.asList;
 
 public class Utils {
 

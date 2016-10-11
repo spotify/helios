@@ -17,12 +17,17 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.Lists;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
+import static com.google.common.base.Optional.fromNullable;
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.lang.System.getenv;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
-import com.spotify.helios.ZooKeeperTestingClusterManager;
 import com.spotify.helios.ZooKeeperTestManager;
+import com.spotify.helios.ZooKeeperTestingClusterManager;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -32,20 +37,15 @@ import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
+import com.google.common.collect.Lists;
+import com.google.common.util.concurrent.FutureCallback;
+import com.google.common.util.concurrent.Futures;
+
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-
-import static com.google.common.base.Optional.fromNullable;
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.lang.System.getenv;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
 
 public class ClusterDeploymentTest extends SystemTestBase {
 

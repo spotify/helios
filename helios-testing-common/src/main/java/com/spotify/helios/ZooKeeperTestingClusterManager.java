@@ -17,6 +17,10 @@
 
 package com.spotify.helios;
 
+import static com.google.common.collect.Iterables.transform;
+import static java.util.Arrays.asList;
+import static org.apache.commons.io.FileUtils.deleteDirectory;
+
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
 import com.google.common.base.Throwables;
@@ -46,10 +50,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.annotation.Nullable;
-
-import static com.google.common.collect.Iterables.transform;
-import static java.util.Arrays.asList;
-import static org.apache.commons.io.FileUtils.deleteDirectory;
 
 /**
  * A ZooKeeperTestManager that uses the {@link org.apache.curator.test.TestingServer}

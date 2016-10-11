@@ -17,13 +17,20 @@
 
 package com.spotify.helios;
 
-import com.google.common.net.HostAndPort;
+import static com.spotify.helios.system.SystemTestBase.ALPINE;
+import static com.spotify.helios.system.SystemTestBase.NGINX;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 import com.spotify.helios.testing.HeliosDeploymentResource;
 import com.spotify.helios.testing.HeliosSoloDeployment;
+import com.spotify.helios.testing.InMemoryLogStreamProvider;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
-import com.spotify.helios.testing.InMemoryLogStreamProvider;
+
+import com.google.common.net.HostAndPort;
 
 import org.apache.commons.io.IOUtils;
 import org.junit.ClassRule;
@@ -32,13 +39,6 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.net.Socket;
-
-import static com.spotify.helios.system.SystemTestBase.ALPINE;
-import static com.spotify.helios.system.SystemTestBase.NGINX;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
 
 public class HeliosSoloIT {
 

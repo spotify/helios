@@ -17,8 +17,20 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.Maps;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.HEALTHCHECKING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.MockServiceRegistrarRegistry;
@@ -40,6 +52,9 @@ import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
 
+import com.google.common.base.Splitter;
+import com.google.common.collect.Maps;
+
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -56,21 +71,6 @@ import java.net.Socket;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.Callable;
-
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.HEALTHCHECKING;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static com.spotify.helios.serviceregistration.ServiceRegistration.Endpoint;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeThat;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 @RunWith(MockitoJUnitRunner.class)
 public class HealthCheckTest extends ServiceRegistrationTestBase {

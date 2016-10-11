@@ -29,6 +29,7 @@ public class Paths {
   private static final String JOBS = "jobs";
   private static final String JOBREFS = "jobrefs";
   private static final String HOSTS = "hosts";
+  private static final String REMOVED_HOSTS = "removed";
   private static final String EVENTS = "events";
   private static final String MASTERS = "masters";
   private static final String HISTORY = "history";
@@ -206,6 +207,15 @@ public class Paths {
 
   public static String statusDeploymentGroupHosts(final String name) {
     return STATUS_DEPLOYMENT_GROUPS.path(name, HOSTS);
+  }
+
+  /**
+   * This path stores a list of hosts that have been removed from a deployment group.
+   * Hosts are removed from this list when we are confident the deployment group's job is no longer
+   * deployed to them.
+   */
+  public static String statusDeploymentGroupRemovedHosts(final String name) {
+    return STATUS_DEPLOYMENT_GROUPS.path(name, REMOVED_HOSTS);
   }
 
   public static String statusDeploymentGroupTasks() {

@@ -17,14 +17,18 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.base.Splitter;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
+import static com.google.common.base.Strings.isNullOrEmpty;
+import static com.google.common.collect.Iterables.getLast;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.hasEntry;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
 
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.spotify.helios.Polling;
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
@@ -38,9 +42,18 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.JobStatus;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.DeploymentGroupStatusResponse;
+import com.spotify.helios.common.protocol.HostDeregisterResponse;
 import com.spotify.helios.common.protocol.RemoveDeploymentGroupResponse;
 import com.spotify.helios.common.protocol.RollingUpdateResponse;
 import com.spotify.helios.master.MasterMain;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Splitter;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
+import com.google.common.collect.Sets;
 
 import org.junit.Before;
 import org.junit.Ignore;
@@ -51,16 +64,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Callable;
-
-import static com.google.common.base.Strings.isNullOrEmpty;
-import static com.google.common.collect.Iterables.getLast;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
 
 public class DeploymentGroupTest extends SystemTestBase {
 
@@ -176,6 +179,104 @@ public class DeploymentGroupTest extends SystemTestBase {
     startDefaultAgent(testHost() + "2", "--labels", "foo=bar");
 
     awaitTaskState(jobId, testHost() + "2", TaskStatus.State.RUNNING);
+  }
+
+  private void awaitUpWithLabel(final String host, final String key, final String val)
+      throws Exception {
+    final HostStatus status = awaitHostStatusWithLabels(
+        defaultClient(), host, HostStatus.Status.UP);
+    assertThat(status.getLabels(), hasEntry(key, val));
+  }
+
+  private void awaitUndeployed(final String host, final JobId jobId) throws Exception {
+    // Ensure the deployment is gone.
+    final Deployment oldDeployment = defaultClient().deployment(host, jobId).get();
+    assertThat(oldDeployment, is(nullValue()));
+
+    // Wait for the task to disappear
+    awaitTaskGone(defaultClient(), host, jobId, LONG_WAIT_SECONDS, SECONDS);
+  }
+
+  @Test
+  public void testRemovingAgentTagUndeploysJob() throws Exception {
+    final HeliosClient client = defaultClient();
+
+    final String oldHost = testHost();
+    final String deregisterHost = testHost() + "2";
+    final String unchangedHost = testHost() + "3";
+    final String newHost = testHost() + "4";
+    final String anotherNewHost = testHost() + "5";
+
+    AgentMain oldAgent;
+    oldAgent = startDefaultAgent(oldHost, "--labels", "foo=bar");
+    awaitUpWithLabel(oldHost, "foo", "bar");
+
+    AgentMain deregisterAgent;
+    deregisterAgent = startDefaultAgent(deregisterHost, "--labels", "foo=bar");
+    awaitUpWithLabel(deregisterHost, "foo", "bar");
+
+    startDefaultAgent(unchangedHost, "--labels", "foo=bar");
+    awaitUpWithLabel(unchangedHost, "foo", "bar");
+
+    cli("create-deployment-group", "--json", TEST_GROUP, "foo=bar");
+    final JobId jobId = createJob(testJobName, testJobVersion, BUSYBOX, IDLE_COMMAND);
+
+    cli("rolling-update", "--async",  testJobNameAndVersion, TEST_GROUP);
+
+    awaitTaskState(jobId, oldHost, TaskStatus.State.RUNNING);
+    awaitTaskState(jobId, deregisterHost, TaskStatus.State.RUNNING);
+    awaitTaskState(jobId, unchangedHost, TaskStatus.State.RUNNING);
+    awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.DONE);
+
+    // Rollout should be complete and on its second iteration at this point.
+    // Start another agent and wait for it to have the job deployed to it.
+    startDefaultAgent(newHost, "--labels", "foo=bar");
+    awaitUpWithLabel(newHost, "foo", "bar");
+    awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.ROLLING_OUT);
+    awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.DONE);
+    awaitTaskState(jobId, newHost, TaskStatus.State.RUNNING);
+
+    // Restart the old agent with labels that still match the deployment group
+    // The job should not be undeployed.
+    stopAgent(oldAgent);
+    oldAgent = startDefaultAgent(oldHost, "--labels", "foo=bar", "another=label");
+    awaitUpWithLabel(oldHost, "another", "label");
+    awaitTaskState(jobId, oldHost, TaskStatus.State.RUNNING);
+
+    // Restart the old agent with labels that do not match the deployment group.
+    stopAgent(oldAgent);
+    oldAgent = startDefaultAgent(oldHost, "--labels", "foo=notbar");
+    awaitUpWithLabel(oldHost, "foo", "notbar");
+
+    // ...which should trigger a rolling update
+    awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.ROLLING_OUT);
+
+    // Start yet another agent in order to trigger another rolling update.
+    startDefaultAgent(anotherNewHost, "--labels", "foo=bar");
+
+    // Wait for the rolling update(s) to finish.
+    awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.ROLLING_OUT);
+    awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.DONE);
+
+    // ...which should remove the job.
+    awaitUndeployed(oldHost, jobId);
+
+    // Restart the old agent with labels that match the deployment group (again)
+    // The job should be deployed.
+    stopAgent(oldAgent);
+    startDefaultAgent(oldHost, "--labels", "foo=bar");
+    awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.ROLLING_OUT);
+    awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.DONE);
+    awaitTaskState(jobId, oldHost, TaskStatus.State.RUNNING);
+
+    // Deregister an agent
+    stopAgent(deregisterAgent);
+    final HostDeregisterResponse deregisterResponse = client.deregisterHost(deregisterHost).get();
+    assertEquals(HostDeregisterResponse.Status.OK, deregisterResponse.getStatus());
+
+    // Make sure we 'undeploy' from the now non-existent agent.
+    awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.ROLLING_OUT);
+    awaitDeploymentGroupStatus(client, TEST_GROUP, DeploymentGroupStatus.State.DONE);
   }
 
   @Test

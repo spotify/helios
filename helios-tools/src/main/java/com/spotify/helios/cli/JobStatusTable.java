@@ -17,7 +17,9 @@
 
 package com.spotify.helios.cli;
 
-import com.google.common.base.Joiner;
+import static com.google.common.base.Ascii.truncate;
+import static com.google.common.base.Optional.fromNullable;
+import static com.spotify.helios.cli.Output.table;
 
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.JobId;
@@ -25,14 +27,12 @@ import com.spotify.helios.common.descriptors.PortMapping;
 import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.descriptors.ThrottleState;
 
+import com.google.common.base.Joiner;
+
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-
-import static com.google.common.base.Ascii.truncate;
-import static com.google.common.base.Optional.fromNullable;
-import static com.spotify.helios.cli.Output.table;
 
 public class JobStatusTable {
 

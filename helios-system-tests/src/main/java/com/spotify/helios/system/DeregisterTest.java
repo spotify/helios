@@ -17,7 +17,13 @@
 
 package com.spotify.helios.system;
 
-import com.google.common.collect.ImmutableMap;
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
+import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import com.spotify.helios.TemporaryPorts;
 import com.spotify.helios.agent.AgentMain;
@@ -35,20 +41,14 @@ import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 
+import com.google.common.collect.ImmutableMap;
+
 import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 
 import java.util.UUID;
 import java.util.concurrent.TimeoutException;
-
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.DOWN;
-import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
-import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 public class DeregisterTest extends SystemTestBase {
 

@@ -17,19 +17,6 @@
 
 package com.spotify.helios.system;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.spotify.helios.client.HeliosClient;
-import com.spotify.helios.common.descriptors.Deployment;
-import com.spotify.helios.common.descriptors.Goal;
-import com.spotify.helios.common.descriptors.JobId;
-
-import org.junit.Test;
-
-import java.util.Map;
-import java.util.Map.Entry;
-
 import static com.google.common.collect.Iterables.get;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
@@ -37,6 +24,20 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
+
+import com.spotify.helios.client.HeliosClient;
+import com.spotify.helios.common.descriptors.Deployment;
+import com.spotify.helios.common.descriptors.Goal;
+import com.spotify.helios.common.descriptors.JobId;
+
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import org.junit.Test;
+
+import java.util.Map;
+import java.util.Map.Entry;
 
 public class JobListTest extends SystemTestBase {
   private static final TypeReference<Map<String, Object>> MAP_TYPE =

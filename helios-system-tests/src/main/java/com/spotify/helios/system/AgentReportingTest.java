@@ -17,6 +17,10 @@
 
 package com.spotify.helios.system;
 
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.Polling;
 import com.spotify.helios.client.HeliosClient;
@@ -26,10 +30,6 @@ import com.spotify.helios.common.descriptors.HostStatus;
 import org.junit.Test;
 
 import java.util.concurrent.Callable;
-
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class AgentReportingTest extends SystemTestBase {
 
