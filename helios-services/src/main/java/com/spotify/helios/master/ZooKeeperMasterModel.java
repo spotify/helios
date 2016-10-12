@@ -74,6 +74,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
+import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.google.common.base.Function;
@@ -1229,7 +1230,7 @@ public class ZooKeeperMasterModel implements MasterModel {
   private List<String> getHosts(final ZooKeeperClient client, final String path) {
     try {
       return Json.read(client.getNode(path).getBytes(), STRING_LIST_TYPE);
-    } catch (JsonMappingException | NoNodeException e) {
+    } catch (JsonMappingException | JsonParseException | NoNodeException e) {
       return Collections.emptyList();
     } catch (KeeperException | IOException e) {
       throw new HeliosRuntimeException("failed to read deployment group hosts from " + path, e);
