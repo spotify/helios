@@ -530,7 +530,8 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       // statusDeploymentGroupRemovedHosts may not exist for deployment groups created before it was
       // introduced.
-      client.ensurePath(Paths.statusDeploymentGroupRemovedHosts(groupName));
+      client.ensurePathAndSetData(Paths.statusDeploymentGroupRemovedHosts(groupName),
+                                  Json.asBytesUnchecked(emptyList()));
 
       final List<String> curHosts = getHosts(client, Paths.statusDeploymentGroupHosts(groupName));
       final List<String> previouslyRemovedHosts = getHosts(
@@ -1231,7 +1232,7 @@ public class ZooKeeperMasterModel implements MasterModel {
     try {
       return Json.read(client.getNode(path).getBytes(), STRING_LIST_TYPE);
     } catch (JsonMappingException | JsonParseException | NoNodeException e) {
-      return Collections.emptyList();
+      return emptyList();
     } catch (KeeperException | IOException e) {
       throw new HeliosRuntimeException("failed to read deployment group hosts from " + path, e);
     }

@@ -134,6 +134,15 @@ public class DefaultZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
+  /** {@inheritDoc} */
+  public void ensurePathAndSetData(final String path, final byte[] data) throws KeeperException {
+    ensurePath(path, true);
+    if (exists(path) == null) {
+      createAndSetData(path, data);
+    }
+  }
+
+  @Override
   public byte[] getData(final String path) throws KeeperException {
     assertClusterIdFlagTrue();
     try {
