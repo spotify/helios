@@ -92,6 +92,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 
 import org.apache.zookeeper.KeeperException;
+import org.apache.zookeeper.KeeperException.BadVersionException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
 import org.apache.zookeeper.KeeperException.NodeExistsException;
 import org.apache.zookeeper.KeeperException.NotEmptyException;
@@ -573,12 +574,18 @@ public class ZooKeeperMasterModel implements MasterModel {
         events = op.events();
       }
 
-      log.info("starting zookeeper transaction for updateDeploymentGroupHosts on "
-               + "deployment-group name {} jobId={}. List of operations: {}",
+      log.info("starting zookeeper transaction for updateDeploymentGroupHosts on deployment-group: "
+               + "name={} jobId={} operations={}",
           groupName, deploymentGroup.getJobId(), ops);
 
       client.transaction(ops);
       emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, events);
+    } catch (BadVersionException e) {
+      // some other master beat us in processing this host update. not exceptional.
+      // ideally we would check the path in the exception, but curator doesn't provide a path
+      // for exceptions thrown as part of a transaction.
+      log.info("zookeeper transaction for updateDeploymentGroupHosts on deployment-group was "
+               + "processed by another master: name={}", groupName);
     } catch (NoNodeException e) {
       throw new DeploymentGroupDoesNotExistException(groupName, e);
     } catch (KeeperException | IOException e) {
@@ -771,11 +778,12 @@ public class ZooKeeperMasterModel implements MasterModel {
           try {
             client.transaction(ops);
             emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, op.events());
-          } catch (KeeperException.BadVersionException e) {
+          } catch (BadVersionException e) {
             // some other master beat us in processing this rolling update step. not exceptional.
             // ideally we would check the path in the exception, but curator doesn't provide a path
             // for exceptions thrown as part of a transaction.
-            log.debug("error saving rolling-update operations: {}", e);
+            log.info("rolling-update step on deployment-group was processed by another master"
+                     + ": name={}, zookeeper operations={}", deploymentGroupName, ops);
           } catch (KeeperException e) {
             log.error("rolling-update on deployment-group {} failed", deploymentGroupName, e);
           }
