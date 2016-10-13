@@ -45,6 +45,16 @@ public interface ZooKeeperClient {
 
   void ensurePath(String path, boolean excludingLast) throws KeeperException;
 
+  /**
+   * Ensure a path exists. Any node in the path that does not exist will be created.
+   * If the base of the path does not exist it will be created with the supplied data.
+   *
+   * @param path The path to ensure exists.
+   * @param data The data to write at the base of the path, if it does not exist.
+   * @throws KeeperException
+   */
+  void ensurePathAndSetData(String path, byte[] data) throws KeeperException;
+
   byte[] getData(String path) throws KeeperException;
 
   List<String> getChildren(String path) throws KeeperException;

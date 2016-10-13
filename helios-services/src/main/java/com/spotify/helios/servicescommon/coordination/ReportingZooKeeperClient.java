@@ -70,6 +70,14 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   }
 
   @Override
+  public void ensurePathAndSetData(String path, byte[] data) throws KeeperException {
+    reporter.time(tag, "ensurePathAndSetData", () -> {
+      client.ensurePathAndSetData(path, data);
+      return null;
+    });
+  }
+
+  @Override
   public byte[] getData(String path) throws KeeperException {
     return reporter.time(tag, "getData", () -> client.getData(path));
   }
