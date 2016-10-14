@@ -145,7 +145,7 @@ public abstract class SystemTestBase {
   private static final Logger log = LoggerFactory.getLogger(SystemTestBase.class);
 
   public static final int WAIT_TIMEOUT_SECONDS = 40;
-  public static final int LONG_WAIT_SECONDS = 400;
+  public static final int LONG_WAIT_SECONDS = 500;
 
   public static final String BUSYBOX = "busybox:latest";
   public static final String BUSYBOX_WITH_DIGEST =
