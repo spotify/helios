@@ -393,6 +393,7 @@
               <forkCount>1C</forkCount>
               <reuseForks>false</reuseForks>
               <argLine>${surefireArgLine}</argLine>
+              <rerunFailingTestsCount>2</rerunFailingTestsCount>
               <systemPropertyVariables>
                 <junit.parallel.threads>1</junit.parallel.threads>
                 <logToFile>false</logToFile>
