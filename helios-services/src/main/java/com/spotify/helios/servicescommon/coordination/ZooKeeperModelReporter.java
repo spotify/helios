@@ -74,7 +74,7 @@ public class ZooKeeperModelReporter {
     metrics.zookeeperTransientError();
   }
 
-  public <T> T time(final String tag, final String name, ZooKeeperCallable<T> callable)
+  public <T> T timeAndMeter(final String tag, final String name, ZooKeeperCallable<T> callable)
       throws KeeperException {
     final long startTime = clock.getTick();
     try {
@@ -86,6 +86,7 @@ public class ZooKeeperModelReporter {
       throw Throwables.propagate(e);
     } finally {
       metrics.updateTimer(name, clock.getTick() - startTime, TimeUnit.NANOSECONDS);
+      metrics.updateMeter(name);
     }
   }
 

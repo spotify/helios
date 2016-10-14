@@ -55,7 +55,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void ensurePath(String path) throws KeeperException {
-    reporter.time(tag, "ensurePath", () -> {
+    reporter.timeAndMeter(tag, "ensurePath", () -> {
       client.ensurePath(path);
       return null;
     });
@@ -63,7 +63,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void ensurePath(String path, boolean excludingLast) throws KeeperException {
-    reporter.time(tag, "ensurePath", () -> {
+    reporter.timeAndMeter(tag, "ensurePath", () -> {
       client.ensurePath(path, excludingLast);
       return null;
     });
@@ -79,17 +79,17 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public byte[] getData(String path) throws KeeperException {
-    return reporter.time(tag, "getData", () -> client.getData(path));
+    return reporter.timeAndMeter(tag, "getData", () -> client.getData(path));
   }
 
   @Override
   public List<String> getChildren(String path) throws KeeperException {
-    return reporter.time(tag, "getChildren", () -> client.getChildren(path));
+    return reporter.timeAndMeter(tag, "getChildren", () -> client.getChildren(path));
   }
 
   @Override
   public void delete(String path) throws KeeperException {
-    reporter.time(tag, "delete", () -> {
+    reporter.timeAndMeter(tag, "delete", () -> {
       client.delete(path);
       return null;
     });
@@ -97,7 +97,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void setData(String path, byte[] bytes) throws KeeperException {
-    reporter.time(tag, "setData", () -> {
+    reporter.timeAndMeter(tag, "setData", () -> {
       client.setData(path, bytes);
       return null;
     });
@@ -105,7 +105,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void createAndSetData(String path, byte[] data) throws KeeperException {
-    reporter.time(tag, "createAndSetData", () -> {
+    reporter.timeAndMeter(tag, "createAndSetData", () -> {
       client.createAndSetData(path, data);
       return null;
     });
@@ -113,7 +113,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void createWithMode(String path, CreateMode mode) throws KeeperException {
-    reporter.time(tag, "createWithMode", () -> {
+    reporter.timeAndMeter(tag, "createWithMode", () -> {
       client.createWithMode(path, mode);
       return null;
     });
@@ -121,12 +121,12 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public Stat stat(String path) throws KeeperException {
-    return reporter.time(tag, "stat", () -> client.stat(path));
+    return reporter.timeAndMeter(tag, "stat", () -> client.stat(path));
   }
 
   @Override
   public void deleteRecursive(String path) throws KeeperException {
-    reporter.time(tag, "deleteRecursive", () -> {
+    reporter.timeAndMeter(tag, "deleteRecursive", () -> {
       client.deleteRecursive(path);
       return null;
     });
@@ -134,12 +134,12 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public List<String> listRecursive(String path) throws KeeperException {
-    return reporter.time(tag, "listRecursive", () -> client.listRecursive(path));
+    return reporter.timeAndMeter(tag, "listRecursive", () -> client.listRecursive(path));
   }
 
   @Override
   public void create(String path) throws KeeperException {
-    reporter.time(tag, "create", () -> {
+    reporter.timeAndMeter(tag, "create", () -> {
       client.create(path);
       return null;
     });
@@ -155,18 +155,18 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   @Override
   public Collection<CuratorTransactionResult> transaction(List<ZooKeeperOperation> operations)
       throws KeeperException {
-    return reporter.time(tag, "transaction", () -> client.transaction(operations));
+    return reporter.timeAndMeter(tag, "transaction", () -> client.transaction(operations));
   }
 
   @Override
   public Collection<CuratorTransactionResult> transaction(ZooKeeperOperation... operations)
       throws KeeperException {
-    return reporter.time(tag, "transaction", () -> client.transaction(operations));
+    return reporter.timeAndMeter(tag, "transaction", () -> client.transaction(operations));
   }
 
   @Override
   public void delete(String path, int version) throws KeeperException {
-    reporter.time(tag, "delete", () -> {
+    reporter.timeAndMeter(tag, "delete", () -> {
       client.delete(path, version);
       return null;
     });
@@ -174,12 +174,12 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public Node getNode(String path) throws KeeperException {
-    return reporter.time(tag, "getNode", () -> client.getNode(path));
+    return reporter.timeAndMeter(tag, "getNode", () -> client.getNode(path));
   }
 
   @Override
   public Stat exists(String path) throws KeeperException {
-    return reporter.time(tag, "exists", () -> client.exists(path));
+    return reporter.timeAndMeter(tag, "exists", () -> client.exists(path));
   }
 
   @Override
@@ -189,7 +189,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public ZooKeeper.States getState() throws KeeperException {
-    return reporter.time(tag, "getState", client::getState);
+    return reporter.timeAndMeter(tag, "getState", client::getState);
   }
 
   @Override
@@ -216,7 +216,7 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public void setAcl(final String path, final List<ACL> aclList) throws KeeperException {
-    reporter.time(tag, "setAcl", () -> {
+    reporter.timeAndMeter(tag, "setAcl", () -> {
       client.setAcl(path, aclList);
       return null;
     });
@@ -224,6 +224,6 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
 
   @Override
   public List<ACL> getAcl(final String path) throws KeeperException {
-    return reporter.time(tag, "getAcl", () -> client.getAcl(path));
+    return reporter.timeAndMeter(tag, "getAcl", () -> client.getAcl(path));
   }
 }

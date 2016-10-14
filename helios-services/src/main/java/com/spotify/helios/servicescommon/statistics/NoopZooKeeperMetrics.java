@@ -26,4 +26,8 @@ public class NoopZooKeeperMetrics implements ZooKeeperMetrics {
   @Override
   public void updateTimer(String name, long duration, TimeUnit timeUnit) {
   }
+
+  @Override
+  public void updateMeter(final String name) {
+  }
 }

@@ -37,4 +37,12 @@ public interface ZooKeeperMetrics {
    * @param timeUnit Time unit of the duration.
    */
   void updateTimer(String name, long duration, TimeUnit timeUnit);
+
+  /**
+   * Call this to update the appropriate meter.
+   * A meter measures the rate of events over time (e.g., "requests per second").
+   *
+   * @param name The meter to update.
+   */
+  void updateMeter(String name);
 }
