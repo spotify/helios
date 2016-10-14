@@ -29,7 +29,8 @@ $ echo "deb https://dl.bintray.com/spotify/deb trusty main" | sudo tee -a /etc/a
 
 You can then `apt-get install helios`, `helios-agent`, and `helios-master`.
 Note that the Helios master and agent services both try to connect to ZooKeeper at `localhost:2181`
-when installed. You will need to configure and enable them as detailed below.
+when installed. You will need to configure and enable them as detailed below, and ensure that Helios
+has permission to reach the Docker socket.
 
 ### Whatever, just get me running
 
@@ -43,6 +44,9 @@ $ sudo apt-get install zookeeperd docker.io
 # install helios
 $ curl -sSL https://spotify.github.io/helios-apt/go | sudo sh -
 $ sudo apt-get install helios helios-agent helios-master
+
+# let helios access docker
+$ sudo usermod -aG docker helios && sudo restart helios-agent
 
 # check if it worked and the local agent is registered
 $ helios -z http://localhost:5801 hosts
