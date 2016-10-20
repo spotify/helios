@@ -560,13 +560,12 @@ public class ZooKeeperMasterModel implements MasterModel {
             .build();
 
         // Fail transaction if the deployment group has been updated elsewhere.
-        ops.add(check(Paths.configDeploymentGroup(groupName), deploymentGroupVersion));
-
         // NOTE: If the DG was removed this set() cause the transaction to fail, because
         // removing the DG removes this node. It's *important* that there's an operation that
         // causes the transaction to fail if the DG was removed or we'll end up with
         // inconsistent state.
-        ops.add(set(Paths.configDeploymentGroup(deploymentGroup.getName()), deploymentGroup));
+        ops.add(set(Paths.configDeploymentGroup(groupName), deploymentGroup,
+                    deploymentGroupVersion));
 
         final RollingUpdateOp op = getInitRollingUpdateOps(
             deploymentGroup, hosts, removedHosts, client);
@@ -979,7 +978,7 @@ public class ZooKeeperMasterModel implements MasterModel {
         return opFactory.nextTask();
       }
       /*
-      The below check() avoids the following race:
+      The below set() with version avoids the following race:
 
       1. Master A reads list of hosts X and Y
       2. Master B reads list of hosts X and Y
@@ -991,13 +990,13 @@ public class ZooKeeperMasterModel implements MasterModel {
       We would end up thinking we'd successfully removed both hosts, but in fact would have only
       removed host Y.
 
-      The check() will cause this RollingUpdateOp's ZK transaction to fail without incrementing the
-      task index, so this RollingUpdateOp will be retried by the next master that gets to it.
+      The set() with version will cause this RollingUpdateOp's ZK transaction to fail without
+      incrementing the task index, so this RollingUpdateOp will be retried by the next master that
+      gets to it.
       */
-      return opFactory.nextTask(ImmutableList.of(
-          check(Paths.statusDeploymentGroupRemovedHosts(deploymentGroup.getName()), version),
+      return opFactory.nextTask(singletonList(
           set(Paths.statusDeploymentGroupRemovedHosts(deploymentGroup.getName()),
-              Json.asBytes(hostsToUndeploy))));
+              Json.asBytes(hostsToUndeploy), version)));
     } catch (KeeperException | IOException e) {
         return opFactory.error("unable to mark host undeployed after removal from deployment group",
                                host, RollingUpdateError.UNABLE_TO_MARK_HOST_UNDEPLOYED);
