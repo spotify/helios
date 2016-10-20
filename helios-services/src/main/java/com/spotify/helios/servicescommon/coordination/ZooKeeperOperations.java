@@ -31,6 +31,16 @@ public class ZooKeeperOperations {
     return new SetData(path, bytes);
   }
 
+  public static ZooKeeperOperation set(final String path,
+                                       final Descriptor data,
+                                       final int version) {
+    return new SetDataAndVersion(path, data.toJsonBytes(), version);
+  }
+
+  public static ZooKeeperOperation set(final String path, final byte[] bytes, final int version) {
+    return new SetDataAndVersion(path, bytes, version);
+  }
+
   public static ZooKeeperOperation check(final String path, final int version) {
     return new CheckWithVersion(path, version);
   }
