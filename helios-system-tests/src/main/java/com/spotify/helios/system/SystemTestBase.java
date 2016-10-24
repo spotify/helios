@@ -152,7 +152,7 @@ public abstract class SystemTestBase {
       "busybox@sha256:16a2a52884c2a9481ed267c2d46483eac7693b813a63132368ab098a71303f8a";
   public static final String NGINX = "rohan/nginx-alpine:latest";
   public static final String UHTTPD = "fnichol/docker-uhttpd:latest";
-  public static final String ALPINE = "onescience/alpine:latest";
+  public static final String ALPINE = "spotify/alpine:latest";
   public static final String MEMCACHED = "rohan/memcached-mini:latest";
   public static final List<String> IDLE_COMMAND = asList(
       "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");

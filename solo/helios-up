@@ -65,8 +65,8 @@ else
   # Check that CONTAINER_DOCKER_HOST is reachable from within the container by starting a container
   # with a unique name and probing docker for the existence of this named container, from within the
   # container itself. If CONTINER_DOCKER_CERT_PATH exists, we will connect using TLS, otherwise HTTP.
-  # We're using the onescience/alpine image, which has curl with Unix socket support.
-  docker run --rm --name $PROBE $DOCKER_OPTS onescience/alpine \
+  # We're using the spotify/alpine image, which has curl with Unix socket support.
+  docker run --rm --name $PROBE $DOCKER_OPTS spotify/alpine:latest \
     curl -f $CURL_OPTS $PROTOCOL://$DOCKER_HOST_RAW/containers/$PROBE/json &>/dev/null
 
   DOCKER_HOST_OK=$?
@@ -80,7 +80,7 @@ else
   if [ "$HELIOS_HOST_ADDRESS" == "127.0.0.1" ]; then
     # HELIOS_HOST_ADDRESS must be addressable from both the physical host and containers.
     # If Docker is running on the localhost, use the bridge address instead of 127.0.0.1.
-    HELIOS_HOST_ADDRESS=$(docker run --rm onescience/alpine \
+    HELIOS_HOST_ADDRESS=$(docker run --rm spotify/alpine:latest \
       sh -c "ip route | awk '/default/ { print \$3 }'")
   fi
 

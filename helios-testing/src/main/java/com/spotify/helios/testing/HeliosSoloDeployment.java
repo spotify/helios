@@ -80,7 +80,7 @@ public class HeliosSoloDeployment implements HeliosDeployment {
   private static final Logger log = LoggerFactory.getLogger(HeliosSoloDeployment.class);
 
   public static final String BOOT2DOCKER_SIGNATURE = "Boot2Docker";
-  public static final String PROBE_IMAGE = "onescience/alpine:latest";
+  public static final String PROBE_IMAGE = "spotify/alpine:latest";
   public static final String HELIOS_NAME_SUFFIX = ".solo.local"; //  Required for SkyDNS discovery.
   public static final String HELIOS_ID_SUFFIX = "-solo-host";
   public static final String HELIOS_CONTAINER_PREFIX = "helios-solo-container-";
