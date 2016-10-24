@@ -322,9 +322,13 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     final List<String> cmd = new ArrayList<>(ImmutableList.of("curl", "-f"));
     switch (containerDockerHost.uri().getScheme()) {
       case "unix":
+        // A note on the URLs used below: since 7.50, curl requires a hostname when
+        // using unix-sockets. See https://github.com/curl/curl/issues/936 and
+        // https://github.com/docker/docker/pull/27640. The hostname we use does not matter since
+        // curl is establishing a connection to the unix socket anyway.
         cmd.addAll(ImmutableList.of(
                 "--unix-socket", containerDockerHost.uri().getSchemeSpecificPart(),
-                "http:/containers/" + probeName + "/json"));
+                "http://docker/containers/" + probeName + "/json"));
         break;
       case "https":
         cmd.addAll(ImmutableList.of(
