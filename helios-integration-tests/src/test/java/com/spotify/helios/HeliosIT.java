@@ -112,7 +112,7 @@ public class HeliosIT {
   @Test
   public void test() throws Exception {
     final CreateJobResponse create = cli(CreateJobResponse.class, "create", "test:1",
-                                         "busybox:latest");
+                                         "spotify/busybox:latest");
     assertThat(create.getStatus(), equalTo(CreateJobResponse.Status.OK));
 
     final JobDeployResponse deploy = cli(JobDeployResponse.class, "deploy", "test:1", TEST_HOST);

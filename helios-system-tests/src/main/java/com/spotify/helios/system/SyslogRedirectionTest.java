@@ -125,7 +125,7 @@ public class SyslogRedirectionTest extends SystemTestBase {
           .publishAllPorts(true)
           .build();
       final ContainerConfig config = ContainerConfig.builder()
-          .image(ALPINE) // includes busybox with netcat with udp support
+          .image(ALPINE) // includes spotify/busybox:latest with netcat with udp support
           .cmd(asList("nc", "-p", port, "-l", "-u"))
           .exposedPorts(ImmutableSet.of(expose))
           .hostConfig(hostConfig)

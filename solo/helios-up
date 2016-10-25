@@ -117,7 +117,7 @@ echo '    helios-solo <cmd>'
 echo
 echo 'E.g.:'
 echo
-echo '    helios-solo create test:1 busybox -- sh -c "while :; do sleep 1; done"'
+echo '    helios-solo create test:1 spotify/busybox:latest -- sh -c "while :; do sleep 1; done"'
 echo '    helios-solo deploy test:1 solo'
 echo '    helios-solo status'
 echo

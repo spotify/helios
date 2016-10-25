@@ -121,7 +121,7 @@ usage is identical to the `helios` CLI. Here's an example:
 $ helios-solo hosts
 
 # Create a trivial helios job
-$ helios-solo create test:1 busybox -- sh -c "while :; do sleep 1; done"
+$ helios-solo create test:1 spotify/busybox:latest -- sh -c "while :; do sleep 1; done"
 
 # Deploy the job on the (local) solo host
 $ helios-solo deploy test:1 solo
