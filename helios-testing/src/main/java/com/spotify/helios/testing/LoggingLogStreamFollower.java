@@ -46,7 +46,6 @@ final class LoggingLogStreamFollower implements LogStreamFollower {
   @Override
   public void followLog(final JobId jobId, final String containerId, final LogStream logStream)
       throws IOException {
-    final Closer closer = Closer.create();
     final Map<LogMessage.Stream, CharsetDecoder> streamDecoders = createStreamDecoders();
     final StringBuilder buffer = new StringBuilder();
 
@@ -78,13 +77,10 @@ final class LoggingLogStreamFollower implements LogStreamFollower {
 
         lastStream = stream;
       }
-    } catch (Throwable t) {
-      throw closer.rethrow(t);
     } finally {
       if (lastStream != null) {
         log(lastStream, containerId, jobId, buffer);
       }
-      closer.close();
     }
   }
 

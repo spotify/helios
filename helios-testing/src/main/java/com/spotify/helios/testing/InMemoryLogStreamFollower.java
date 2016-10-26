@@ -17,7 +17,6 @@
 
 package com.spotify.helios.testing;
 
-import com.google.common.io.Closer;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
 import java.io.ByteArrayOutputStream;
@@ -66,17 +65,11 @@ public class InMemoryLogStreamFollower implements LogStreamFollower {
   @Override
   public void followLog(final JobId jobId, final String containerId, final LogStream logStream)
       throws IOException {
-    final Closer closer = Closer.create();
-    try {
-      final ByteArrayOutputStream stdout = closer.register(new ByteArrayOutputStream());
-      final ByteArrayOutputStream stderr = closer.register(new ByteArrayOutputStream());
+    try (final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
+         final ByteArrayOutputStream stderr = new ByteArrayOutputStream()) {
       streamHolders.put(jobId, new StreamHolder(stdout, stderr));
 
       logStream.attach(stdout, stderr);
-    } catch (Throwable t) {
-      throw closer.rethrow(t);
-    } finally {
-      closer.close();
     }
   }
 

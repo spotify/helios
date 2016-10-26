@@ -24,11 +24,11 @@ import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 
 import com.google.common.base.Throwables;
 import com.google.common.collect.Maps;
-import com.google.common.io.Closer;
 import com.google.common.util.concurrent.AbstractScheduledService;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
+import com.spotify.docker.client.exceptions.DockerException;
 import com.spotify.helios.client.HeliosClient;
 import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.JobId;
@@ -140,11 +140,9 @@ class HeliosSoloLogService extends AbstractScheduledService {
     }
 
     @Override
-    public Void call() throws IOException {
-      final Closer closer = Closer.create();
-      try {
-        final LogStream logStream =
-            closer.register(dockerClient.logs(containerId, stdout(), stderr(), follow()));
+    public Void call() throws IOException, DockerException {
+      try (final LogStream logStream =
+               dockerClient.logs(containerId, stdout(), stderr(), follow())) {
         log.info("attaching stdout/stderr for job={}, container={}", jobId, containerId);
         logStreamFollower.followLog(jobId, containerId, logStream);
       } catch (InterruptedException e) {
@@ -153,9 +151,7 @@ class HeliosSoloLogService extends AbstractScheduledService {
         if (!(Throwables.getRootCause(t) instanceof ConnectionClosedException)) {
           log.warn("error streaming log for job={}, container={}", jobId, containerId, t);
         }
-        throw closer.rethrow(t);
-      } finally {
-        closer.close();
+        throw t;
       }
       return null;
     }
