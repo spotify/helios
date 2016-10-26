@@ -17,14 +17,12 @@
 
 package com.spotify.helios.testing;
 
+import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
+import java.io.IOException;
 
-import java.io.OutputStream;
+public interface LogStreamFollower {
 
-public interface LogStreamProvider {
-
-  OutputStream getStdoutStream(JobId jobId, String containerId);
-
-  OutputStream getStderrStream(JobId jobId, String containerId);
+  void followLog(JobId jobId, String containerId, LogStream logStream) throws IOException;
 
 }

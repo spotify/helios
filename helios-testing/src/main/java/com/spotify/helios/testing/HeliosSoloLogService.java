@@ -22,6 +22,7 @@ import static com.spotify.docker.client.DockerClient.LogsParam.follow;
 import static com.spotify.docker.client.DockerClient.LogsParam.stderr;
 import static com.spotify.docker.client.DockerClient.LogsParam.stdout;
 
+import com.google.common.io.Closer;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.client.HeliosClient;
@@ -32,6 +33,9 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.AbstractScheduledService;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.io.Closeable;
+import java.io.IOException;
+import java.util.concurrent.Callable;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,17 +55,17 @@ class HeliosSoloLogService extends AbstractScheduledService {
 
   private final HeliosClient heliosClient;
   private final DockerClient dockerClient;
-  private final LogStreamProvider logStreamProvider;
+  private final LogStreamFollower logStreamFollower;
 
   private Map<String, Future> logFutures = Maps.newHashMap();
 
   HeliosSoloLogService(@NotNull final HeliosClient heliosClient,
                        @NotNull final DockerClient dockerClient,
-                       @NotNull final LogStreamProvider logStreamProvider) {
+                       @NotNull final LogStreamFollower logStreamFollower) {
     super();
     this.heliosClient = heliosClient;
     this.dockerClient = dockerClient;
-    this.logStreamProvider = logStreamProvider;
+    this.logStreamFollower = logStreamFollower;
   }
 
   private static <T> T get(Future<T> future)
@@ -95,25 +99,7 @@ class HeliosSoloLogService extends AbstractScheduledService {
 
           if (!logFutures.containsKey(containerId)) {
             // for any containers we're not already tracking, attach to their stdout/stderr
-            final Future<?> future = this.executor().submit(new Runnable() {
-              @Override
-              public void run() {
-                try {
-                  final LogStream logStream = dockerClient.logs(containerId, stdout(), stderr(),
-                                                                follow());
-
-                  log.info("attaching stdout/stderr for job={}, container={}", jobId, containerId);
-                  logStream.attach(logStreamProvider.getStdoutStream(jobId, containerId),
-                                   logStreamProvider.getStderrStream(jobId, containerId));
-                } catch (final InterruptedException e) {
-                  // we're shutting down, no need to log anything
-                } catch (final Exception e) {
-                  log.warn("error streaming log for job={}, container={} - {}", jobId, containerId,
-                           e);
-                }
-              }
-            });
-
+            final Future<?> future = this.executor().submit(new LogFollowJob(containerId, jobId));
             logFutures.put(containerId, future);
           }
         }
@@ -137,4 +123,34 @@ class HeliosSoloLogService extends AbstractScheduledService {
     return Scheduler.newFixedDelaySchedule(0, 100, TimeUnit.MILLISECONDS);
   }
 
+  private class LogFollowJob implements Callable<Void> {
+
+    private final String containerId;
+    private final JobId jobId;
+
+    private LogFollowJob(final String containerId, final JobId jobId) {
+      this.containerId = containerId;
+      this.jobId = jobId;
+    }
+
+    @Override
+    public Void call() throws IOException {
+      final Closer closer = Closer.create();
+      try {
+        final LogStream logStream =
+            closer.register(dockerClient.logs(containerId, stdout(), stderr(), follow()));
+        log.info("attaching stdout/stderr for job={}, container={}", jobId, containerId);
+        logStreamFollower.followLog(jobId, containerId, logStream);
+      } catch (InterruptedException e) {
+        // Ignore
+      } catch (final Throwable t) {
+        log.warn("error streaming log for job={}, container={} - {}",
+                 jobId, containerId, t);
+        throw closer.rethrow(t);
+      } finally {
+        closer.close();
+      }
+      return null;
+    }
+  }
 }
