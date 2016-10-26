@@ -67,7 +67,7 @@ public class HeliosIT {
   public void setup() throws Exception {
     // zookeeper
     final TemporaryJob zk = temporaryJobs.job()
-        .image("jplock/zookeeper:3.4.5")
+        .image("spotify/zookeeper:3.4.5")
         .port("zk", 2181)
         .deploy();
 
