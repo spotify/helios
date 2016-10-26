@@ -2,6 +2,9 @@
 
 case "$1" in
   pre_machine)
+    # Install Docker 1.10.0. Default as of this writing is 1.8.2-circleci-cp-workaround
+    curl -sSL https://s3.amazonaws.com/circle-downloads/install-circleci-docker.sh | bash -s -- 1.10.0
+
     # ensure correct level of parallelism
     expected_nodes=6
     if [ "$CIRCLE_NODE_TOTAL" -ne "$expected_nodes" ]
