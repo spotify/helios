@@ -18,7 +18,6 @@
 package com.spotify.helios.testing;
 
 import com.google.common.base.Charsets;
-import com.google.common.io.Closer;
 import com.spotify.docker.client.LogMessage;
 import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
@@ -31,6 +30,9 @@ import java.util.EnumMap;
 import java.util.Map;
 import org.slf4j.Logger;
 
+/**
+ * Follows a Docker log stream by logging it to a {@link Logger}.
+ */
 final class LoggingLogStreamFollower implements LogStreamFollower {
 
   private final Logger log;
@@ -39,6 +41,12 @@ final class LoggingLogStreamFollower implements LogStreamFollower {
     this.log = log;
   }
 
+  /**
+   * Creates a new logging log stream follower.
+   *
+   * @param log the log to forward logs to
+   * @return a new instance
+   */
   public static LoggingLogStreamFollower create(final Logger log) {
     return new LoggingLogStreamFollower(log);
   }
@@ -84,6 +92,11 @@ final class LoggingLogStreamFollower implements LogStreamFollower {
     }
   }
 
+  /**
+   * Creates charset decoders for all available log message streams.
+   *
+   * @return a map containing a decoder for every log message stream type
+   */
   private Map<LogMessage.Stream, CharsetDecoder> createStreamDecoders() {
     final Map<LogMessage.Stream, CharsetDecoder> streamDecoders =
         new EnumMap<>(LogMessage.Stream.class);
