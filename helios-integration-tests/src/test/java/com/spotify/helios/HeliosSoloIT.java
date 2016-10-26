@@ -102,7 +102,7 @@ public class HeliosSoloIT {
         .image(ALPINE)
         .port("nc", 4711, ports.localPort("nc"))
         .command("sh", "-c",
-                 "apk-install bind-tools " +
+                 "apk add --update bind-tools " +
                  "&& export SRV=$(dig -t SRV +short _nginx._http.test.$SPOTIFY_DOMAIN) " +
                  "&& export HOST=$(echo $SRV | cut -d' ' -f4) " +
                  "&& export PORT=$(echo $SRV | cut -d' ' -f3) " +

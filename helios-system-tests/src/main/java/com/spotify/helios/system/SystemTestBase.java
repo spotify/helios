@@ -147,13 +147,13 @@ public abstract class SystemTestBase {
   public static final int WAIT_TIMEOUT_SECONDS = 40;
   public static final int LONG_WAIT_SECONDS = 400;
 
-  public static final String BUSYBOX = "busybox:latest";
+  public static final String BUSYBOX = "spotify/busybox:latest";
   public static final String BUSYBOX_WITH_DIGEST =
       "busybox@sha256:16a2a52884c2a9481ed267c2d46483eac7693b813a63132368ab098a71303f8a";
-  public static final String NGINX = "rohan/nginx-alpine:latest";
-  public static final String UHTTPD = "fnichol/docker-uhttpd:latest";
+  public static final String NGINX = "spotify/nginx-alpine:latest";
+  public static final String UHTTPD = "spotify/docker-uhttpd:latest";
   public static final String ALPINE = "spotify/alpine:latest";
-  public static final String MEMCACHED = "rohan/memcached-mini:latest";
+  public static final String MEMCACHED = "spotify/memcached-mini:latest";
   public static final List<String> IDLE_COMMAND = asList(
       "sh", "-c", "trap 'exit 0' SIGINT SIGTERM; while :; do sleep 1; done");
 
