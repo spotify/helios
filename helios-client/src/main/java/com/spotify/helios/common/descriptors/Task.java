@@ -121,6 +121,6 @@ public class Task extends Descriptor {
            ", deployerUser='" + deployerUser + '\'' +
            ", deployerMaster='" + deployerMaster + '\'' +
            ", deploymentGroupName='" + deploymentGroupName + '\'' +
-           "} " + super.toString();
+           '}';
   }
 }

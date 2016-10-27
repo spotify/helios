@@ -74,6 +74,6 @@ public class TaskStatusEvent extends Descriptor {
            "status=" + status +
            ", timestamp=" + timestamp +
            ", host='" + host + '\'' +
-           "} " + super.toString();
+           '}';
   }
 }

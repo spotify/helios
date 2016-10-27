@@ -69,7 +69,7 @@ public class RolloutTask extends Descriptor {
     return "RolloutTask{" +
            "action=" + action +
            ", target='" + target + '\'' +
-           "} " + super.toString();
+           '}';
   }
 
   @Override

@@ -92,4 +92,11 @@ public abstract class HealthCheck extends Descriptor {
   public static TcpHealthCheck.Builder newTcpHealthCheck() {
     return TcpHealthCheck.newBuilder();
   }
+
+  @Override
+  public String toString() {
+    return "HealthCheck{" +
+           "type='" + type + '\'' +
+           '}';
+  }
 }
