@@ -19,7 +19,6 @@ package com.spotify.helios.testing;
 
 import com.google.common.base.Charsets;
 import com.spotify.docker.client.LogMessage;
-import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,6 +26,7 @@ import java.nio.CharBuffer;
 import java.nio.charset.CharsetDecoder;
 import java.nio.charset.CodingErrorAction;
 import java.util.EnumMap;
+import java.util.Iterator;
 import java.util.Map;
 import org.slf4j.Logger;
 
@@ -52,10 +52,11 @@ final class LoggingLogStreamFollower implements LogStreamFollower {
   }
 
   @Override
-  public void followLog(final JobId jobId, final String containerId, final LogStream logStream)
+  public void followLog(
+      final JobId jobId, final String containerId, final Iterator<LogMessage> logStream)
       throws IOException {
-    final Map<LogMessage.Stream, CharsetDecoder> streamDecoders = createStreamDecoders();
-    final StringBuilder buffer = new StringBuilder();
+    final Map<LogMessage.Stream, Decoder> streamDecoders = createStreamDecoders();
+    final StringBuilder stringBuilder = new StringBuilder();
 
     LogMessage.Stream lastStream = null;
 
@@ -65,29 +66,59 @@ final class LoggingLogStreamFollower implements LogStreamFollower {
         final ByteBuffer content = message.content();
         final LogMessage.Stream stream = message.stream();
 
-        if (lastStream != null && lastStream != stream && buffer.length() > 0) {
-          log(lastStream, containerId, jobId, buffer);
+        if (lastStream != null && lastStream != stream && stringBuilder.length() > 0) {
+          log(lastStream, containerId, jobId, stringBuilder);
         }
 
-        final CharBuffer charBuffer = streamDecoders.get(stream).decode(content);
+        final Decoder decoder = streamDecoders.get(stream);
+        final CharsetDecoder charsetDecoder = decoder.charsetDecoder;
+        final ByteBuffer byteBuffer = decoder.byteBuffer;
+        final CharBuffer charBuffer = decoder.charBuffer;
 
-        while (charBuffer.hasRemaining()) {
-          final char c = charBuffer.get();
+        while (content.hasRemaining()) {
+          // Transfer as much of content into byteBuffer that we have room for
+          byteBuffer.put(content);
+          byteBuffer.flip();
 
-          switch (c) {
-            case '\n':
-              log(stream, containerId, jobId, buffer);
-              break;
-            default:
-              buffer.append(c);
+          // Decode as much of byteBuffer into charBuffer that we can
+          charsetDecoder.decode(byteBuffer, charBuffer, false);
+
+          // The decoder might have left some partial byte sequences in the byteBuffer... Since we
+          // don't have a ring buffer we should compact the buffer to not overflow.
+          // We MUST NOT clear the byteBuffer since then we can lose those partial byte sequences.
+          byteBuffer.compact();
+
+          // Now start consuming the charBuffer
+          charBuffer.flip();
+
+          // Heuristic to avoid allocations... this will allocate too much memory if the charBuffer
+          // contains any newlines or other special chars
+          stringBuilder.ensureCapacity(charBuffer.remaining());
+
+          while (charBuffer.hasRemaining()) {
+            final char c = charBuffer.get();
+
+            switch (c) {
+              case '\n':
+                log(stream, containerId, jobId, stringBuilder);
+                break;
+              default:
+                stringBuilder.append(c);
+            }
           }
+
+          // This buffer is completely drained so we can reset it
+          charBuffer.clear();
         }
 
         lastStream = stream;
       }
     } finally {
-      if (lastStream != null) {
-        log(lastStream, containerId, jobId, buffer);
+      if (lastStream != null && stringBuilder.length() > 0) {
+        // Yes, we are not checking for any trailing bytes in the decoder byteBuffers here.  That
+        // means that if the container wrote partial UTF-8 sequences before EOF they will be
+        // discarded.
+        log(lastStream, containerId, jobId, stringBuilder);
       }
     }
   }
@@ -97,15 +128,17 @@ final class LoggingLogStreamFollower implements LogStreamFollower {
    *
    * @return a map containing a decoder for every log message stream type
    */
-  private Map<LogMessage.Stream, CharsetDecoder> createStreamDecoders() {
-    final Map<LogMessage.Stream, CharsetDecoder> streamDecoders =
+  private Map<LogMessage.Stream, Decoder> createStreamDecoders() {
+    final Map<LogMessage.Stream, Decoder> streamDecoders =
         new EnumMap<>(LogMessage.Stream.class);
 
     for (final LogMessage.Stream stream : LogMessage.Stream.values()) {
-      final CharsetDecoder decoder = Charsets.UTF_8.newDecoder()
+      final CharsetDecoder charsetDecoder = Charsets.UTF_8.newDecoder()
           .onMalformedInput(CodingErrorAction.REPLACE)
           .onUnmappableCharacter(CodingErrorAction.REPLACE);
-      streamDecoders.put(stream, decoder);
+      final ByteBuffer byteBuffer = ByteBuffer.allocate(1024);
+      final CharBuffer charBuffer = CharBuffer.allocate(1024);
+      streamDecoders.put(stream, new Decoder(charsetDecoder, byteBuffer, charBuffer));
     }
 
     return streamDecoders;
@@ -115,12 +148,30 @@ final class LoggingLogStreamFollower implements LogStreamFollower {
       final LogMessage.Stream stream,
       final String containerId,
       final JobId jobId,
-      final StringBuilder buffer) {
+      final StringBuilder stringBuilder) {
     log.info("[{}] [{}] {} {}",
              jobId.getName(),
              containerId.substring(0, Math.min(7, containerId.length())),
              stream.id(),
-             buffer.toString());
-    buffer.setLength(0);
+             stringBuilder.toString());
+    stringBuilder.setLength(0);
+  }
+
+  private static final class Decoder {
+
+    // The decoder whose job is to transfer decoded bytes from byteBuffer to charBuffer
+    final CharsetDecoder charsetDecoder;
+    // As of yet unencoded bytes (might contain partial UTF-8 sequences)
+    final ByteBuffer byteBuffer;
+    // Characters that have not yet been written to a string builder
+    final CharBuffer charBuffer;
+
+    private Decoder(final CharsetDecoder charsetDecoder,
+                    final ByteBuffer byteBuffer,
+                    final CharBuffer charBuffer) {
+      this.charsetDecoder = charsetDecoder;
+      this.byteBuffer = byteBuffer;
+      this.charBuffer = charBuffer;
+    }
   }
 }

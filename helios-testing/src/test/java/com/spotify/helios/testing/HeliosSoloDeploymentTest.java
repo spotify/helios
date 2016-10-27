@@ -18,7 +18,6 @@
 package com.spotify.helios.testing;
 
 import static org.hamcrest.Matchers.hasItem;
-import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -58,7 +57,6 @@ import com.spotify.helios.common.protocol.JobUndeployResponse;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
-import java.io.OutputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -346,28 +344,11 @@ public class HeliosSoloDeploymentTest {
             .build());
     when(heliosClient.hostStatus(HOST1)).thenReturn(statusFuture);
 
-    final LogStream logStream = mock(LogStream.class);
     when(dockerClient.logs(anyString(), Matchers.<DockerClient.LogsParam>anyVararg()))
-        .thenReturn(logStream);
-
+        .thenReturn(mock(LogStream.class));
     logService.runOneIteration();
 
     verify(dockerClient, timeout(5000)).logs(eq(CONTAINER_ID),
                                              Matchers.<DockerClient.LogsParam>anyVararg());
-
-    final ArgumentCaptor<OutputStream> stdoutCaptor = ArgumentCaptor.forClass(OutputStream.class);
-    final ArgumentCaptor<OutputStream> stderrCaptor = ArgumentCaptor.forClass(OutputStream.class);
-    verify(logStream, timeout(5000)).attach(stdoutCaptor.capture(), stderrCaptor.capture());
-
-    stdoutCaptor.getValue().write(new byte[]{0x01, 0x02, 0x03});
-    stdoutCaptor.getValue().write(new byte[]{0x04, 0x05, 0x06});
-
-    stderrCaptor.getValue().write(new byte[]{0x06, 0x07, 0x08});
-    stderrCaptor.getValue().write(new byte[]{0x09, 0x0a, 0x0b});
-
-    assertArrayEquals(new byte[]{0x01, 0x02, 0x03, 0x04, 0x05, 0x06},
-                      logStreamProvider.getStdout(JOB_ID1));
-    assertArrayEquals(new byte[]{0x06, 0x07, 0x08, 0x09, 0x0a, 0x0b},
-                      logStreamProvider.getStderr(JOB_ID1));
   }
 }
