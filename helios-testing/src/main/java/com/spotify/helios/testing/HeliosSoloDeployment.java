@@ -151,8 +151,8 @@ public class HeliosSoloDeployment implements HeliosDeployment {
             .setEndpoints("http://" + deploymentAddress)
             .build());
 
-    if (builder.logStreamProvider != null) {
-      logService = new HeliosSoloLogService(heliosClient, dockerClient, builder.logStreamProvider);
+    if (builder.logStreamFollower != null) {
+      logService = new HeliosSoloLogService(heliosClient, dockerClient, builder.logStreamFollower);
       logService.startAsync().awaitRunning();
     }
   }
@@ -622,7 +622,9 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     private boolean pullBeforeCreate = true;
     private boolean removeHeliosSoloContainerOnExit = false;
     private int jobUndeployWaitSeconds = DEFAULT_WAIT_SECONDS;
-    private LogStreamProvider logStreamProvider = new DefaultLogStreamProvider();
+    // Intentionally picking a publicly accessible class for this log output
+    private LogStreamFollower logStreamFollower =
+        LoggingLogStreamFollower.create(LoggerFactory.getLogger(TemporaryJob.class));
 
     Builder(String profile, Config rootConfig) {
       this.env = new HashSet<>();
@@ -769,15 +771,15 @@ public class HeliosSoloDeployment implements HeliosDeployment {
     }
 
     /**
-     * Optionally provide a custom {@link LogStreamProvider} that provides streams for writing
+     * Optionally provide a custom {@link LogStreamFollower} that provides streams for writing
      * container stdout/stderr logs. If set to null, logging of container stdout/stderr will be
      * disabled.
      *
-     * @param logStreamProvider The provider to use.
+     * @param logStreamFollower The provider to use.
      * @return This Builder, with its log stream provider configured.
      */
-    public Builder logStreamProvider(final LogStreamProvider logStreamProvider) {
-      this.logStreamProvider = logStreamProvider;
+    public Builder logStreamProvider(final LogStreamFollower logStreamFollower) {
+      this.logStreamFollower = logStreamFollower;
       return this;
     }
 

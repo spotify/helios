@@ -26,7 +26,7 @@ import static org.junit.Assert.assertThat;
 
 import com.spotify.helios.testing.HeliosDeploymentResource;
 import com.spotify.helios.testing.HeliosSoloDeployment;
-import com.spotify.helios.testing.InMemoryLogStreamProvider;
+import com.spotify.helios.testing.InMemoryLogStreamFollower;
 import com.spotify.helios.testing.TemporaryJob;
 import com.spotify.helios.testing.TemporaryJobs;
 
@@ -45,8 +45,8 @@ public class HeliosSoloIT {
   @Rule
   public final ExpectedException expected = ExpectedException.none();
 
-  private static final InMemoryLogStreamProvider logStreamProvider =
-      new InMemoryLogStreamProvider();
+  private static final InMemoryLogStreamFollower logStreamProvider =
+      InMemoryLogStreamFollower.create();
 
   @ClassRule
   public static HeliosDeploymentResource solo = new HeliosDeploymentResource(

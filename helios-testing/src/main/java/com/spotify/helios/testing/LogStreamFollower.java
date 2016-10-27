@@ -17,14 +17,23 @@
 
 package com.spotify.helios.testing;
 
+import com.spotify.docker.client.LogStream;
 import com.spotify.helios.common.descriptors.JobId;
+import java.io.IOException;
 
-import java.io.OutputStream;
+/**
+ * Follows a log stream in a blocking fashion.
+ */
+public interface LogStreamFollower {
 
-public interface LogStreamProvider {
-
-  OutputStream getStdoutStream(JobId jobId, String containerId);
-
-  OutputStream getStderrStream(JobId jobId, String containerId);
+  /**
+   * Follows the specified log stream until it doesn't have any more log messages available.
+   *
+   * @param jobId       the job id that the log stream belongs to
+   * @param containerId the container id that the log stream belongs to
+   * @param logStream   the log stream to follow
+   * @throws IOException if an exception occurred
+   */
+  void followLog(JobId jobId, String containerId, LogStream logStream) throws IOException;
 
 }
