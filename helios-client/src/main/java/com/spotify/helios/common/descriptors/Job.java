@@ -106,6 +106,14 @@ import java.util.Set;
  *   "token": "insecure-access-token",
  *   "volumes" : {
  *     "/destination/path/in/container.yaml:ro" : "/source/path/in/host.yaml"
+ *   },
+ *   "secrets" {
+ *     "source": "Talos",
+ *     "path": "/secrets",
+ *     "keypairFromHost": {
+ *       "certificate": "/path/to/pem/cert/on/host",
+ *       "privateKey": "/path/to/pem/key/on/host"
+ *     }
  *   }
  * }
  * </pre>
@@ -133,6 +141,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   public static final Map<String, String> EMPTY_METADATA = emptyMap();
   public static final Set<String> EMPTY_CAPS = emptySet();
   public static final Integer EMPTY_SECONDS_TO_WAIT = null;
+  public static final Secrets EMPTY_SECRETS = null;
 
   private final JobId id;
   private final String image;
@@ -156,6 +165,7 @@ public class Job extends Descriptor implements Comparable<Job> {
   private final Set<String> addCapabilities;
   private final Set<String> dropCapabilities;
   private final Integer secondsToWaitBeforeKill;
+  private final Secrets secrets;
 
   /**
    * Create a Job.
@@ -192,6 +202,8 @@ public class Job extends Descriptor implements Comparable<Job> {
    * @see <a href="https://docs.docker.com/reference/run/#network-settings">Docker run reference</a>
    * @param secondsToWaitBeforeKill The time to ask Docker to wait after sending a SIGTERM to the
    *    container's main process before sending it a SIGKILL. Optional.
+   * @param secrets If set, secrets will be automatically procured for and exposed to this job's
+   *    container.
    */
   public Job(
       @JsonProperty("id") final JobId id,
@@ -215,7 +227,8 @@ public class Job extends Descriptor implements Comparable<Job> {
       @JsonProperty("metadata") @Nullable final Map<String, String> metadata,
       @JsonProperty("addCapabilities") @Nullable final Set<String> addCapabilities,
       @JsonProperty("dropCapabilities") @Nullable final Set<String> dropCapabilities,
-      @JsonProperty("secondsToWaitBeforeKill") @Nullable final Integer secondsToWaitBeforeKill) {
+      @JsonProperty("secondsToWaitBeforeKill") @Nullable final Integer secondsToWaitBeforeKill,
+      @JsonProperty("secrets") @Nullable final Secrets secrets) {
     this.id = id;
     this.image = image;
 
@@ -241,6 +254,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.addCapabilities = firstNonNull(addCapabilities, EMPTY_CAPS);
     this.dropCapabilities = firstNonNull(dropCapabilities, EMPTY_CAPS);
     this.secondsToWaitBeforeKill = secondsToWaitBeforeKill;
+    this.secrets = secrets;
   }
 
   private Job(final JobId id, final Builder.Parameters p) {
@@ -268,6 +282,7 @@ public class Job extends Descriptor implements Comparable<Job> {
     this.addCapabilities = ImmutableSet.copyOf(p.addCapabilities);
     this.dropCapabilities = ImmutableSet.copyOf(p.dropCapabilities);
     this.secondsToWaitBeforeKill = p.secondsToWaitBeforeKill;
+    this.secrets = p.secrets;
   }
 
   public JobId getId() {
@@ -358,6 +373,10 @@ public class Job extends Descriptor implements Comparable<Job> {
     return secondsToWaitBeforeKill;
   }
 
+  public Secrets getSecrets() {
+    return secrets;
+  }
+
   public static Builder newBuilder() {
     return new Builder();
   }
@@ -399,7 +418,8 @@ public class Job extends Descriptor implements Comparable<Job> {
            Objects.equals(this.metadata, that.metadata) &&
            Objects.equals(this.addCapabilities, that.addCapabilities) &&
            Objects.equals(this.dropCapabilities, that.dropCapabilities) &&
-           Objects.equals(this.secondsToWaitBeforeKill, that.secondsToWaitBeforeKill);
+           Objects.equals(this.secondsToWaitBeforeKill, that.secondsToWaitBeforeKill) &&
+           Objects.equals(this.secrets, that.secrets);
   }
 
   @Override
@@ -408,7 +428,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         id, image, hostname, expires, created, command, env, resources,
         ports, registration, registrationDomain, gracePeriod, volumes, creatingUser,
         token, healthCheck, securityOpt, networkMode, metadata, addCapabilities,
-        dropCapabilities, secondsToWaitBeforeKill);
+        dropCapabilities, secondsToWaitBeforeKill, secrets);
   }
 
   @Override
@@ -436,7 +456,8 @@ public class Job extends Descriptor implements Comparable<Job> {
            ", addCapabilities=" + addCapabilities +
            ", dropCapabilities=" + dropCapabilities +
            ", secondsToWaitBeforeKill=" + secondsToWaitBeforeKill +
-           '}';
+           ", secrets=" + secrets +
+           "} " + super.toString();
   }
 
   public Builder toBuilder() {
@@ -509,6 +530,7 @@ public class Job extends Descriptor implements Comparable<Job> {
       public Set<String> addCapabilities;
       public Set<String> dropCapabilities;
       public Integer secondsToWaitBeforeKill;
+      public Secrets secrets;
 
       private Parameters() {
         this.created = EMPTY_CREATED;
@@ -527,6 +549,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.metadata = Maps.newHashMap();
         this.addCapabilities = EMPTY_CAPS;
         this.dropCapabilities = EMPTY_CAPS;
+        this.secrets = EMPTY_SECRETS;
       }
 
       private Parameters(final Parameters p) {
@@ -553,6 +576,7 @@ public class Job extends Descriptor implements Comparable<Job> {
         this.addCapabilities = p.addCapabilities;
         this.dropCapabilities = p.dropCapabilities;
         this.secondsToWaitBeforeKill = p.secondsToWaitBeforeKill;
+        this.secrets = p.secrets;
       }
 
       private Parameters withoutMetaParameters() {
@@ -714,6 +738,11 @@ public class Job extends Descriptor implements Comparable<Job> {
       return this;
     }
 
+    public Builder setSecrets(final Secrets secrets) {
+      p.secrets = secrets;
+      return this;
+    }
+
     public String getName() {
       return p.name;
     }
@@ -796,6 +825,10 @@ public class Job extends Descriptor implements Comparable<Job> {
 
     public Integer secondsToWaitBeforeKill() {
       return p.secondsToWaitBeforeKill;
+    }
+
+    public Secrets getSecrets() {
+      return p.secrets;
     }
 
     @SuppressWarnings({"CloneDoesntDeclareCloneNotSupportedException", "CloneDoesntCallSuperClone"})

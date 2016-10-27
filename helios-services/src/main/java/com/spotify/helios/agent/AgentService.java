@@ -296,7 +296,8 @@ public class AgentService extends AbstractIdleService implements Managed {
         metrics.getSupervisorMetrics(),
         namespace,
         config.getDomain(),
-        config.getDns());
+        config.getDns(),
+        secretVolumeManager(config));
 
     final ReactorFactory reactorFactory = new ReactorFactory();
 
@@ -345,6 +346,17 @@ public class AgentService extends AbstractIdleService implements Managed {
     }
     environment.lifecycle().manage(this);
   }
+
+  private SecretVolumeManager secretVolumeManager(final AgentConfig config) {
+    if (config.getSecretVolumeManagerEndpoint() != null
+        && config.getSecretVolumePath() != null) {
+      return new DefaultSecretVolumeManager(
+          DefaultSecretVolumeManager.urlFromAddr(config.getSecretVolumeManagerEndpoint()),
+          config.getSecretVolumePath());
+    }
+    return null;
+  }
+
 
   private DockerClient createDockerClient(final AgentConfig config,
                                           final RiemannFacade riemannFacade) {

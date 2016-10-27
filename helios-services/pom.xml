@@ -15,6 +15,7 @@
     <masterImageName>helios-master:${project.version}</masterImageName>
     <agentImageName>helios-agent:${project.version}</agentImageName>
     <soloImageName>helios-solo:${project.version}</soloImageName>
+    <okhttp3.version>3.4.0</okhttp3.version>
   </properties>
 
   <profiles>
@@ -315,6 +316,11 @@
       <artifactId>jnr-unixsocket</artifactId>
       <version>0.8</version>
     </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>okhttp</artifactId>
+      <version>${okhttp3.version}</version>
+    </dependency>
 
     <!--test deps-->
     <dependency>
@@ -347,6 +353,12 @@
     <dependency>
       <groupId>org.awaitility</groupId>
       <artifactId>awaitility</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>com.squareup.okhttp3</groupId>
+      <artifactId>mockwebserver</artifactId>
+      <version>${okhttp3.version}</version>
       <scope>test</scope>
     </dependency>
   </dependencies>

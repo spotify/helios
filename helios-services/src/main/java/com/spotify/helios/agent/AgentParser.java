@@ -69,6 +69,8 @@ public class AgentParser extends ServiceParser {
   private Argument zkAclMasterDigest;
   private Argument zkAclAgentPassword;
   private Argument disableJobHistory;
+  private Argument secretVolumeManagerArg;
+  private Argument secretVolumePathArg;
 
   public AgentParser(final String... args) throws ArgumentParserException {
     super("helios-agent", "Spotify Helios Agent", args);
@@ -144,7 +146,8 @@ public class AgentParser extends ServiceParser {
         .setKafkaBrokers(getKafkaBrokers())
         .setLabels(labels)
         .setFfwdConfig(ffwdConfig(options))
-        .setJobHistoryDisabled(options.getBoolean(disableJobHistory.getDest()));
+        .setJobHistoryDisabled(options.getBoolean(disableJobHistory.getDest()))
+        .setSecretVolumePath(options.getString(secretVolumePathArg.getDest()));
 
     final String explicitId = options.getString(agentIdArg.getDest());
     if (explicitId != null) {
@@ -169,6 +172,12 @@ public class AgentParser extends ServiceParser {
         options.getList(addHostArg.getDest()),
         AddExtraHostContainerDecorator::isValidArg,
         arg -> "Invalid ExtraHost " + arg));
+
+    final String secretVolumeManagerHostPort = options.getString(secretVolumeManagerArg.getDest());
+    if (secretVolumeManagerHostPort != null) {
+      agentConfig.setSecretVolumeManagerEndpoint(parseSocketAddress(secretVolumeManagerHostPort));
+    }
+
   }
 
   /**
@@ -272,6 +281,13 @@ public class AgentParser extends ServiceParser {
         .action(storeTrue())
         .setDefault(false)
         .help("If specified, the agent won't write job histories to ZooKeeper.");
+
+    secretVolumeManagerArg = parser.addArgument("--secret-volume-manager")
+        .help("Enable automatic procurement of secrets using this secret volume manager.");
+
+    secretVolumePathArg = parser.addArgument("--secret-volume-path")
+        .setDefault("/secrets")
+        .help("Expect the secret volume manager to mount secret volumes under this path.");
   }
 
   public AgentConfig getAgentConfig() {

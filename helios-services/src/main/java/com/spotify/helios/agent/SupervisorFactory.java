@@ -49,6 +49,7 @@ public class SupervisorFactory {
   private final String defaultRegistrationDomain;
   private final List<String> dns;
   private final boolean agentRunningInContainer;
+  private final SecretVolumeManager secretVolumeManager;
 
   public SupervisorFactory(final AgentModel model, final DockerClient dockerClient,
                            final Map<String, String> envVars,
@@ -59,7 +60,8 @@ public class SupervisorFactory {
                            final SupervisorMetrics supervisorMetrics,
                            final String namespace,
                            final String defaultRegistrationDomain,
-                           final List<String> dns) {
+                           final List<String> dns,
+                           final SecretVolumeManager secretVolumeManager) {
     this.dockerClient = dockerClient;
     this.namespace = namespace;
     this.model = checkNotNull(model, "model");
@@ -73,6 +75,7 @@ public class SupervisorFactory {
                                                   "defaultRegistrationDomain");
     this.dns = checkNotNull(dns, "dns");
     this.agentRunningInContainer = checkIfAgentRunningInContainer();
+    this.secretVolumeManager = secretVolumeManager;
   }
 
   private static boolean checkIfAgentRunningInContainer() {
@@ -119,6 +122,7 @@ public class SupervisorFactory {
         .dockerClient(dockerClient)
         .healthChecker(healthChecker)
         .listener(taskMonitor)
+        .secretVolumeManager(secretVolumeManager)
         .build();
 
     return Supervisor.newBuilder()

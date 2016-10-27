@@ -67,6 +67,8 @@ public class AgentConfig extends Configuration {
   private FastForwardConfig fastForwardConfig;
   private List<String> extraHosts;
   private boolean jobHistoryDisabled;
+  private InetSocketAddress secretVolumeManagerEndpoint;
+  private String secretVolumePath;
 
   public boolean isInhibitMetrics() {
     return inhibitMetrics;
@@ -377,4 +379,23 @@ public class AgentConfig extends Configuration {
     this.extraHosts = extraHosts;
     return this;
   }
+
+  public InetSocketAddress getSecretVolumeManagerEndpoint() {
+    return this.secretVolumeManagerEndpoint;
+  }
+
+  public AgentConfig setSecretVolumeManagerEndpoint(final InetSocketAddress endpoint) {
+    this.secretVolumeManagerEndpoint = endpoint;
+    return this;
+  }
+
+  public String getSecretVolumePath() {
+    return this.secretVolumePath;
+  }
+
+  public AgentConfig setSecretVolumePath(final String path) {
+    this.secretVolumePath = path;
+    return this;
+  }
+
 }
