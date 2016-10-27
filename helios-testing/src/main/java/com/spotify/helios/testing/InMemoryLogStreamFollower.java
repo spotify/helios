@@ -17,10 +17,12 @@
 
 package com.spotify.helios.testing;
 
-import com.spotify.docker.client.LogStream;
+import com.spotify.docker.client.LogMessage;
 import com.spotify.helios.common.descriptors.JobId;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -63,13 +65,33 @@ public class InMemoryLogStreamFollower implements LogStreamFollower {
   }
 
   @Override
-  public void followLog(final JobId jobId, final String containerId, final LogStream logStream)
+  public void followLog(
+      final JobId jobId, final String containerId, final Iterator<LogMessage> logStream)
       throws IOException {
     try (final ByteArrayOutputStream stdout = new ByteArrayOutputStream();
          final ByteArrayOutputStream stderr = new ByteArrayOutputStream()) {
       streamHolders.put(jobId, new StreamHolder(stdout, stderr));
 
-      logStream.attach(stdout, stderr);
+      while (logStream.hasNext()) {
+        final LogMessage message = logStream.next();
+        final ByteBuffer content = message.content();
+
+        assert content.hasArray();
+
+        switch (message.stream()) {
+          case STDOUT:
+            stdout.write(content.array(), content.position(), content.remaining());
+            stdout.flush();
+            break;
+          case STDERR:
+            stderr.write(content.array(), content.position(), content.remaining());
+            stderr.flush();
+            break;
+          case STDIN:
+          default:
+            break;
+        }
+      }
     }
   }
 
