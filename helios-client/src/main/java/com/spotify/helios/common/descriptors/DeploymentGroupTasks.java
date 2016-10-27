@@ -110,7 +110,7 @@ public class DeploymentGroupTasks extends Descriptor {
            "rolloutTasks=" + rolloutTasks +
            ", taskIndex=" + taskIndex +
            ", deploymentGroup=" + deploymentGroup +
-           "} " + super.toString();
+           '}';
   }
 
   public static class Builder {

@@ -127,7 +127,7 @@ public class Deployment extends Descriptor {
            ", deployerUser='" + deployerUser + '\'' +
            ", deployerMaster='" + deployerMaster + '\'' +
            ", deploymentGroupName='" + deploymentGroupName + '\'' +
-           "} " + super.toString();
+           '}';
   }
 
   @Override

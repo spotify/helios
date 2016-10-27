@@ -144,6 +144,6 @@ public class PortMapping extends Descriptor {
            "internalPort=" + internalPort +
            ", externalPort=" + externalPort +
            ", protocol='" + protocol + '\'' +
-           "} " + super.toString();
+           '}';
   }
 }

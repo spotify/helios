@@ -114,6 +114,6 @@ public class Resources extends Descriptor {
            ", memorySwap=" + memorySwap +
            ", cpuShares=" + cpuShares +
            ", cpuset='" + cpuset + '\'' +
-           "} " + super.toString();
+           '}';
   }
 }

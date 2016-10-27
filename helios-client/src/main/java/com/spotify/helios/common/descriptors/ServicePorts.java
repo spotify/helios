@@ -77,7 +77,7 @@ public class ServicePorts extends Descriptor {
   public String toString() {
     return "ServicePorts{" +
            "ports=" + ports +
-           "} " + super.toString();
+           '}';
   }
 
   public static ServicePorts of(final String... ports) {

@@ -301,7 +301,7 @@ public class HostInfo extends Descriptor {
            ", dockerVersion=" + dockerVersion +
            ", dockerHost='" + dockerHost + '\'' +
            ", dockerCertPath='" + dockerCertPath + '\'' +
-           "} " + super.toString();
+           '}';
   }
 
   @Override

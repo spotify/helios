@@ -436,7 +436,7 @@ public class Job extends Descriptor implements Comparable<Job> {
            ", addCapabilities=" + addCapabilities +
            ", dropCapabilities=" + dropCapabilities +
            ", secondsToWaitBeforeKill=" + secondsToWaitBeforeKill +
-           "} " + super.toString();
+           '}';
   }
 
   public Builder toBuilder() {
