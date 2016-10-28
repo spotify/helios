@@ -33,12 +33,15 @@ import com.spotify.helios.testing.TemporaryJobs;
 import com.google.common.net.HostAndPort;
 
 import org.apache.commons.io.IOUtils;
+import org.awaitility.Awaitility;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 import java.net.Socket;
+import java.util.concurrent.Callable;
+import java.util.concurrent.TimeUnit;
 
 public class HeliosSoloIT {
 
@@ -114,10 +117,15 @@ public class HeliosSoloIT {
 
     // Connect to alpine container to get the curl response. If we get back the nginx welcome page
     // we know that helios properly registered the nginx service in SkyDNS.
-    try (final Socket s = new Socket(alpineAddress.getHostText(), alpineAddress.getPort())) {
-      final String result = IOUtils.toString(s.getInputStream()).trim();
-      assertThat(result, containsString("Welcome to nginx!"));
-    }
+    final Callable<String> socketResponse = () -> {
+      try (final Socket s = new Socket(alpineAddress.getHostText(), alpineAddress.getPort())) {
+        return IOUtils.toString(s.getInputStream()).trim();
+      }
+    };
+    // allow a few retries for a delay in the apk install of bind-tools
+    Awaitility.await("alpine container returns nginx welcome")
+        .atMost(10, TimeUnit.SECONDS)
+        .until(socketResponse, containsString("Welcome to nginx!"));
 
     // also throw in a check to make sure log streaming is working
     assertThat(new String(logStreamProvider.getStderr(nginx.job().getId())),
