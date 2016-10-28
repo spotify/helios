@@ -657,10 +657,17 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                   final ZooKeeperClient zooKeeperClient)
       throws KeeperException {
     final List<RolloutTask> rolloutTasks = new ArrayList<>();
-    rolloutTasks.addAll(RollingUpdatePlanner.of(deploymentGroup)
-                            .plan(getHostStatuses(updateHosts)));
+
+    // give precedence to the updateHosts list so we don't end up in a state where we updated a host
+    // and then removed the job from it (because of buggy logic in the calling method)
+    final List<String> updateHostsCopy = new ArrayList<>(updateHosts);
+    final List<String> undeployHostsCopy = new ArrayList<>(undeployHosts);
+    undeployHostsCopy.removeAll(updateHostsCopy);
+
     rolloutTasks.addAll(RollingUndeployPlanner.of(deploymentGroup)
-                            .plan(getHostStatuses(undeployHosts)));
+                            .plan(getHostStatuses(undeployHostsCopy)));
+    rolloutTasks.addAll(RollingUpdatePlanner.of(deploymentGroup)
+                            .plan(getHostStatuses(updateHostsCopy)));
 
     log.info("generated rolloutTasks for deployment-group name={} "
              + "updateHosts={} undeployHosts={}: {}",
@@ -957,7 +964,6 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                        final DeploymentGroup deploymentGroup,
                                                        final String host) {
     final TaskStatus taskStatus = getTaskStatus(client, host, deploymentGroup.getJobId());
-    final JobId jobId = deploymentGroup.getJobId();
 
     if (taskStatus == null) {
       // The task status (i.e. /status/hosts/<host>/job/<job-id>) has been removed, indicating the
@@ -983,7 +989,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       final int version = node.getStat().getVersion();
       final List<String> hostsToUndeploy = Json.read(node.getBytes(), STRING_LIST_TYPE);
 
-      if (!hostsToUndeploy.removeAll(ImmutableList.of(host))) {
+      if (!hostsToUndeploy.remove(host)) {
         // Something already removed this host. Don't bother trying to update the removed hosts.
         return opFactory.nextTask();
       }
