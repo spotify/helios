@@ -19,8 +19,10 @@ package com.spotify.helios.testing;
 
 import com.spotify.docker.client.LogMessage;
 import com.spotify.helios.common.descriptors.JobId;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.concurrent.ConcurrentHashMap;
@@ -76,16 +78,12 @@ public class InMemoryLogStreamFollower implements LogStreamFollower {
         final LogMessage message = logStream.next();
         final ByteBuffer content = message.content();
 
-        assert content.hasArray();
-
         switch (message.stream()) {
           case STDOUT:
-            stdout.write(content.array(), content.position(), content.remaining());
-            stdout.flush();
+            writeAndFlush(content, stdout);
             break;
           case STDERR:
-            stderr.write(content.array(), content.position(), content.remaining());
-            stderr.flush();
+            writeAndFlush(content, stderr);
             break;
           case STDIN:
           default:
@@ -93,6 +91,26 @@ public class InMemoryLogStreamFollower implements LogStreamFollower {
         }
       }
     }
+  }
+
+  /** Write the contents of the given ByteBuffer to the OutputStream and flush the stream. */
+  private static void writeAndFlush(
+      final ByteBuffer buffer, final OutputStream outputStream) throws IOException {
+
+    if (buffer.hasArray()) {
+      outputStream.write(buffer.array(), buffer.position(), buffer.remaining());
+    } else {
+      // cannot access underlying byte array, need to copy into a temporary array
+      while (buffer.hasRemaining()) {
+        // figure out how much to read, but use an upper limit of 8kb. LogMessages should be rather
+        // small so we don't expect this to get hit but avoid large temporary buffers, just in case.
+        final int size = Math.min(buffer.remaining(), 8 * 1024);
+        final byte[] chunk = new byte[size];
+        buffer.get(chunk);
+        outputStream.write(chunk);
+      }
+    }
+    outputStream.flush();
   }
 
   private static final class StreamHolder {
