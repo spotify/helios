@@ -29,7 +29,7 @@ if [ ! -z "$1" ]; then
 
   echo "Switching to $requested_version"
   docker pull "$REPO:$requested_version"
-  docker tag -f "$REPO:$requested_version" "$REPO:latest"
+  docker tag "$REPO:$requested_version" "$REPO:latest"
   echo
 
   new_version=$(get_helios_version)
