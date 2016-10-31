@@ -181,11 +181,11 @@ public class DeploymentGroupTest {
         changed);
 
     // Ensure ZK tasks are written to:
-    // - Perform a rolling update for the added (new) host and the unchanged host
     // - Perform a rolling undeploy for the removed (old) host
+    // - Perform a rolling update for the added (new) host and the unchanged host
     final List<RolloutTask> tasks = ImmutableList.<RolloutTask>builder()
-        .addAll(RollingUpdatePlanner.of(changed).plan(updateHostStatuses))
         .addAll(RollingUndeployPlanner.of(changed).plan(undeployHostStatuses))
+        .addAll(RollingUpdatePlanner.of(changed).plan(updateHostStatuses))
         .build();
 
     final ZooKeeperOperation setDeploymentGroupTasks = set(
