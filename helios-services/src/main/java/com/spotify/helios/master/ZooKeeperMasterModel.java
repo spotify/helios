@@ -103,6 +103,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
@@ -544,6 +545,10 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       final List<String> removedHosts = removedHosts(curHosts, hosts, previouslyRemovedHosts);
 
+      log.info("for deployment-group name={}, curHosts={}, new hosts={}, "
+               + "previouslyRemovedHosts={}, derived removedHosts={}",
+          groupName, curHosts, hosts, previouslyRemovedHosts, removedHosts);
+
       final List<ZooKeeperOperation> ops = Lists.newArrayList();
       ops.add(set(Paths.statusDeploymentGroupHosts(groupName), Json.asBytes(hosts)));
       ops.add(set(Paths.statusDeploymentGroupRemovedHosts(groupName), Json.asBytes(removedHosts)));
@@ -651,14 +656,18 @@ public class ZooKeeperMasterModel implements MasterModel {
                                                   final List<String> undeployHosts,
                                                   final ZooKeeperClient zooKeeperClient)
       throws KeeperException {
-    final ImmutableList.Builder<RolloutTask> rolloutTasks = ImmutableList.builder();
+    final List<RolloutTask> rolloutTasks = new ArrayList<>();
     rolloutTasks.addAll(RollingUpdatePlanner.of(deploymentGroup)
                             .plan(getHostStatuses(updateHosts)));
     rolloutTasks.addAll(RollingUndeployPlanner.of(deploymentGroup)
                             .plan(getHostStatuses(undeployHosts)));
 
+    log.info("generated rolloutTasks for deployment-group name={} "
+             + "updateHosts={} undeployHosts={}: {}",
+        deploymentGroup.getName(), updateHosts, undeployHosts, rolloutTasks);
+
     final DeploymentGroupTasks tasks = DeploymentGroupTasks.newBuilder()
-        .setRolloutTasks(rolloutTasks.build())
+        .setRolloutTasks(rolloutTasks)
         .setTaskIndex(0)
         .setDeploymentGroup(deploymentGroup)
         .build();
