@@ -22,7 +22,6 @@ import static com.google.common.collect.Iterables.getLast;
 import static com.spotify.helios.common.descriptors.HostStatus.Status.UP;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasEntry;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.Assert.assertEquals;
@@ -49,17 +48,18 @@ import com.spotify.helios.master.MasterMain;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.common.base.Preconditions;
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -181,11 +181,18 @@ public class DeploymentGroupTest extends SystemTestBase {
     awaitTaskState(jobId, testHost() + "2", TaskStatus.State.RUNNING);
   }
 
-  private void awaitUpWithLabel(final String host, final String key, final String val)
+  private void awaitUpWithLabel(final String host, final String... labelPairs)
       throws Exception {
-    final HostStatus status = awaitHostStatusWithLabels(
-        defaultClient(), host, HostStatus.Status.UP);
-    assertThat(status.getLabels(), hasEntry(key, val));
+
+    Preconditions.checkArgument(labelPairs.length % 2 == 0,
+        "Must pass even number of pairs for labels");
+
+    final Map<String, String> labels = new HashMap<>();
+    for (int i = 0; i < labelPairs.length - 1; i += 2) {
+      labels.put(labelPairs[i], labelPairs[i + 1]);
+    }
+
+    awaitHostStatusWithLabels(defaultClient(), host, HostStatus.Status.UP, labels);
   }
 
   private void awaitUndeployed(final String host, final JobId jobId) throws Exception {
@@ -207,12 +214,10 @@ public class DeploymentGroupTest extends SystemTestBase {
     final String newHost = testHost() + "4";
     final String anotherNewHost = testHost() + "5";
 
-    AgentMain oldAgent;
-    oldAgent = startDefaultAgent(oldHost, "--labels", "foo=bar");
+    AgentMain oldAgent = startDefaultAgent(oldHost, "--labels", "foo=bar");
     awaitUpWithLabel(oldHost, "foo", "bar");
 
-    AgentMain deregisterAgent;
-    deregisterAgent = startDefaultAgent(deregisterHost, "--labels", "foo=bar");
+    final AgentMain deregisterAgent = startDefaultAgent(deregisterHost, "--labels", "foo=bar");
     awaitUpWithLabel(deregisterHost, "foo", "bar");
 
     startDefaultAgent(unchangedHost, "--labels", "foo=bar");
@@ -240,7 +245,7 @@ public class DeploymentGroupTest extends SystemTestBase {
     // The job should not be undeployed.
     stopAgent(oldAgent);
     oldAgent = startDefaultAgent(oldHost, "--labels", "foo=bar", "another=label");
-    awaitUpWithLabel(oldHost, "another", "label");
+    awaitUpWithLabel(oldHost, "foo", "bar", "another", "label");
     awaitTaskState(jobId, oldHost, TaskStatus.State.RUNNING);
 
     // Restart the old agent with labels that do not match the deployment group.

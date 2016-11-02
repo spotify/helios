@@ -198,12 +198,15 @@ public class HostsResource {
       @PathParam("id") final String host,
       @QueryParam("status") @DefaultValue("") final String statusFilter) {
     final HostStatus status = model.getHostStatus(host);
+    final Optional<HostStatus> response;
     if (status != null &&
         (isNullOrEmpty(statusFilter) || statusFilter.equals(status.getStatus().toString()))) {
-      return Optional.of(status);
+      response = Optional.of(status);
     } else {
-      return Optional.absent();
+      response = Optional.absent();
     }
+    log.debug("hostStatus: host={}, statusFilter={}, returning: {}", host, statusFilter, response);
+    return response;
   }
 
   /**
