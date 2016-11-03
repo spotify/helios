@@ -38,7 +38,9 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.HEALTHCHECKING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLED_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE_FAILED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
 import static com.spotify.helios.common.descriptors.ThrottleState.FLAPPING;
@@ -132,10 +134,12 @@ public class TaskMonitor implements TaskRunner.Listener, Closeable {
 
   @Override
   public void pulled() {
+    updateState(PULLED_IMAGE);
   }
 
   @Override
   public void pullFailed() {
+    updateState(PULLING_IMAGE_FAILED);
   }
 
   @Override

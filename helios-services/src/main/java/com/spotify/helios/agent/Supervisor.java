@@ -19,6 +19,7 @@ package com.spotify.helios.agent;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.util.concurrent.MoreExecutors.directExecutor;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
 import static java.util.concurrent.TimeUnit.SECONDS;
@@ -101,6 +102,11 @@ public class Supervisor {
     this.goal = goal;
     statusUpdater.setGoal(goal);
     switch (goal) {
+      case PULL_IMAGE:
+        currentCommand = new PullImage();
+        reactor.signal();
+        metrics.supervisorStarted();
+        break;
       case START:
         currentCommand = new Start();
         reactor.signal();
@@ -290,6 +296,30 @@ public class Supervisor {
      * @throws InterruptedException If thread is interrupted.
      */
     void perform(final boolean done) throws InterruptedException;
+  }
+
+  /**
+   * Pulls a docker image.
+   */
+  private class PullImage implements Command {
+
+    @Override
+    public void perform(final boolean done) throws InterruptedException {
+      if (done) {
+        // TODO (dxia) We need to check if the progress of the pull
+        return;
+      }
+
+      statusUpdater.setState(PULLING_IMAGE);
+      statusUpdater.update();
+
+      final ImagePuller imagePuller = null;
+      try {
+        imagePuller.pullImage(job.getImage());
+      } catch (DockerException e) {
+        e.printStackTrace();
+      }
+    }
   }
 
   /**

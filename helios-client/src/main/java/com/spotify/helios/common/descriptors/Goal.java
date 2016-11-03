@@ -21,6 +21,7 @@ package com.spotify.helios.common.descriptors;
  * An enum representing a Job Goal.  That is: what would we like to do to the job?
  */
 public enum Goal {
+  PULL_IMAGE,
   START,
   STOP,
   UNDEPLOY

@@ -67,6 +67,8 @@ public class TaskStatus extends Descriptor {
 
   public enum State {
     PULLING_IMAGE,
+    PULLED_IMAGE,
+    PULLING_IMAGE_FAILED,
     CREATING,
     STARTING,
     HEALTHCHECKING,
