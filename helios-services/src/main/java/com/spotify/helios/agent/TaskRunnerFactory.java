@@ -17,17 +17,17 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.base.Optional;
-import com.google.common.collect.Lists;
+import static com.google.common.base.Preconditions.checkNotNull;
+import static com.google.common.collect.Iterables.concat;
+import static java.util.Collections.singletonList;
 
 import com.spotify.docker.client.DockerClient;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 
-import java.util.List;
+import com.google.common.base.Optional;
+import com.google.common.collect.Lists;
 
-import static com.google.common.base.Preconditions.checkNotNull;
-import static com.google.common.collect.Iterables.concat;
-import static java.util.Collections.singletonList;
+import java.util.List;
 
 /**
  * As you might guess, creates {@link TaskRunner}s
@@ -52,15 +52,19 @@ public class TaskRunnerFactory {
                            final String containerId,
                            final TaskRunner.Listener listener,
                            final int secondsToWaitBeforeKill) {
+    final TaskRunner.Listener broadcastingListener =
+        new BroadcastingListener(concat(this.listeners, singletonList(listener)));
+
     return TaskRunner.builder()
         .delayMillis(delay)
         .config(taskConfig)
         .docker(docker)
         .healthChecker(healthChecker.orNull())
         .existingContainerId(containerId)
-        .listener(new BroadcastingListener(concat(this.listeners, singletonList(listener))))
+        .listener(broadcastingListener)
         .registrar(registrar)
         .secondsToWaitBeforeKill(secondsToWaitBeforeKill)
+        .imagePuller(DockerClientImagePuller.create(broadcastingListener, docker))
         .build();
   }
 

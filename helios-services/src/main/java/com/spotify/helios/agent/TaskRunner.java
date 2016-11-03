@@ -23,9 +23,6 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.ContainerNotFoundException;
 import com.spotify.docker.client.exceptions.DockerException;
-import com.spotify.docker.client.exceptions.DockerTimeoutException;
-import com.spotify.docker.client.exceptions.ImageNotFoundException;
-import com.spotify.docker.client.exceptions.ImagePullFailedException;
 import com.spotify.docker.client.messages.ContainerConfig;
 import com.spotify.docker.client.messages.ContainerCreation;
 import com.spotify.docker.client.messages.ContainerExit;
@@ -40,10 +37,8 @@ import com.spotify.helios.serviceregistration.ServiceRegistrationHandle;
 import com.spotify.helios.servicescommon.InterruptingExecutionThreadService;
 
 import com.google.common.base.Optional;
-import com.google.common.base.Stopwatch;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.SettableFuture;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +61,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
   private Optional<String> containerId;
   private final String containerName;
   private int secondsToWaitBeforeKill;
+  private final ImagePuller imagePuller;
 
   private TaskRunner(final Builder builder) {
     super("TaskRunner(" + builder.taskConfig.name() + ")");
@@ -80,6 +76,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     this.healthChecker = Optional.fromNullable(builder.healthChecker);
     this.serviceRegistrationHandle = Optional.absent();
     this.containerId = Optional.absent();
+    this.imagePuller = checkNotNull(builder.imagePuller);
   }
 
   public Result<Integer> result() {
@@ -238,11 +235,11 @@ class TaskRunner extends InterruptingExecutionThreadService {
 
     final String image = config.containerImage();
     if (serializePulls) {
-      synchronized (docker) {
-        pullImage(image);
+      synchronized (imagePuller) {
+        imagePuller.pullImage(image);
       }
     } else {
-      pullImage(image);
+      imagePuller.pullImage(image);
     }
 
     return startContainer(image, dockerVersion);
@@ -309,41 +306,6 @@ class TaskRunner extends InterruptingExecutionThreadService {
     }
   }
 
-  private void pullImage(final String image) throws DockerException, InterruptedException {
-    listener.pulling();
-
-    DockerTimeoutException wasTimeout = null;
-    final Stopwatch pullTime = Stopwatch.createStarted();
-
-    // Attempt to pull.  Failure, while less than ideal, is ok.
-    try {
-      docker.pull(image);
-      listener.pulled();
-      log.info("Pulled image {} in {}s", image, pullTime.elapsed(SECONDS));
-    } catch (DockerTimeoutException e) {
-      log.warn("Pulling image {} failed with timeout after {}s", image,
-               pullTime.elapsed(SECONDS), e);
-      listener.pullFailed();
-      wasTimeout = e;
-    } catch (DockerException e) {
-      log.warn("Pulling image {} failed after {}s", image, pullTime.elapsed(SECONDS), e);
-      listener.pullFailed();
-    }
-
-    try {
-      // If we don't have the image by now, fail.
-      docker.inspectImage(image);
-    } catch (ImageNotFoundException e) {
-      // If we get not found, see if we timed out above, since that's what we actually care
-      // to know, as the pull should have fixed the not found-ness.
-      if (wasTimeout != null) {
-        throw new ImagePullFailedException("Failed pulling image " + image + " because of timeout",
-            wasTimeout);
-      }
-      throw e;
-    }
-  }
-
   public interface Listener {
 
     void failed(Throwable t, String containerError);
@@ -385,6 +347,7 @@ class TaskRunner extends InterruptingExecutionThreadService {
     private Listener listener;
     private HealthChecker healthChecker;
     private int secondsToWaitBeforeKill;
+    private ImagePuller imagePuller;
     public ServiceRegistrar registrar = new NopServiceRegistrar();
 
     public Builder delayMillis(final long delayMillis) {
@@ -422,8 +385,13 @@ class TaskRunner extends InterruptingExecutionThreadService {
       return this;
     }
 
-    public Builder secondsToWaitBeforeKill(int seconds) {
+    public Builder secondsToWaitBeforeKill(final int seconds) {
       this.secondsToWaitBeforeKill = seconds;
+      return this;
+    }
+
+    Builder imagePuller(final ImagePuller imagePuller) {
+      this.imagePuller = imagePuller;
       return this;
     }
 
