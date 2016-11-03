@@ -138,11 +138,16 @@ public class TemporaryJobs implements TestRule {
     final Path testReportDirectory = Paths.get(fromNullable(builder.testReportDirectory)
                                                    .or(DEFAULT_TEST_REPORT_DIRECTORY));
     this.reports = new TemporaryJobReports(testReportDirectory);
+    final TemporaryJobReports.ReportWriter defaultReportWriter = builder.defaultReportWriter;
     this.reportWriter = new ThreadLocal<TemporaryJobReports.ReportWriter>() {
       @Override
       protected TemporaryJobReports.ReportWriter initialValue() {
-        log.warn("unable to determine test context, writing event log to stdout");
-        return TemporaryJobs.this.reports.getWriterForStream(System.out);
+        if (defaultReportWriter == null) {
+          log.warn("unable to determine test context, writing event log to stdout");
+          return TemporaryJobs.this.reports.getWriterForStream(System.out);
+        } else {
+          return defaultReportWriter;
+        }
       }
     };
 
@@ -523,6 +528,7 @@ public class TemporaryJobs implements TestRule {
     private String jobDeployedMessageFormat;
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
     private long deployTimeoutMillis = DEFAULT_DEPLOY_TIMEOUT_MILLIS;
+    private TemporaryJobReports.ReportWriter defaultReportWriter;
 
     Builder(String profile, Config rootConfig, Map<String, String> env,
             HeliosClient.Builder clientBuilder) {
@@ -726,6 +732,12 @@ public class TemporaryJobs implements TestRule {
 
     public Builder deployTimeoutMillis(final long timeout) {
       this.deployTimeoutMillis = timeout;
+      return this;
+    }
+
+    public Builder defaultReportWriter(
+        final TemporaryJobReports.ReportWriter reportWriter) {
+      this.defaultReportWriter = reportWriter;
       return this;
     }
 
