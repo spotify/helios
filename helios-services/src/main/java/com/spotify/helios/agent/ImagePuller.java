@@ -22,6 +22,7 @@ import com.spotify.docker.client.exceptions.DockerException;
 /**
  * Pulls docker images and keeps track of the progress.
  */
+@FunctionalInterface
 interface ImagePuller {
 
   // TODO (dxia) Async?

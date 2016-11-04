@@ -36,6 +36,7 @@ import org.mockito.stubbing.Answer;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.EXITED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLED_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
@@ -78,6 +79,12 @@ public class TaskMonitorTest {
     verify(statusUpdater).update();
     reset(statusUpdater);
 
+    sut.pulled();
+    verify(statusUpdater, never()).setThrottleState(any(ThrottleState.class));
+    verify(statusUpdater).setState(PULLED_IMAGE);
+    verify(statusUpdater).update();
+    reset(statusUpdater);
+
     sut.creating();
     verify(statusUpdater).setState(CREATING);
     verify(statusUpdater, never()).setThrottleState(any(ThrottleState.class));
@@ -105,6 +112,12 @@ public class TaskMonitorTest {
     sut.failed(new Exception(), "Error herping derps.");
     verify(statusUpdater).setState(FAILED);
     verify(statusUpdater).setContainerError("Error herping derps.");
+    verify(statusUpdater).update();
+    verify(statusUpdater, never()).setThrottleState(any(ThrottleState.class));
+    reset(statusUpdater);
+
+    sut.pullFailed();
+    verify(statusUpdater).setState(FAILED);
     verify(statusUpdater).update();
     verify(statusUpdater, never()).setThrottleState(any(ThrottleState.class));
     reset(statusUpdater);

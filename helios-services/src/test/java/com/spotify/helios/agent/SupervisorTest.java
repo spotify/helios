@@ -21,6 +21,7 @@ import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.FAILED;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLED_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
@@ -64,7 +65,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.SettableFuture;
-
 import org.hamcrest.FeatureMatcher;
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -83,13 +83,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
 @RunWith(MockitoJUnitRunner.class)
 public class SupervisorTest {
-
-  private final ExecutorService executor = Executors.newCachedThreadPool();
 
   private static final String NAMESPACE = "helios-deadbeef";
   private static final String REPOSITORY = "spotify";
@@ -253,6 +249,16 @@ public class SupervisorTest {
                                                        .build())
     );
 
+    // Verify that the pulled state is signalled
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(START)
+                                                       .setState(PULLED_IMAGE)
+                                                       .setContainerId(null)
+                                                       .setEnv(ENV)
+                                                       .build())
+    );
 
     // Verify that the STOPPING and STOPPED states are signalled
     verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),

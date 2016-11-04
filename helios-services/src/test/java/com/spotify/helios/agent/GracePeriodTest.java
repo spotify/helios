@@ -69,6 +69,7 @@ import java.util.concurrent.TimeUnit;
 import static com.spotify.helios.common.descriptors.Goal.START;
 import static com.spotify.helios.common.descriptors.Goal.STOP;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.CREATING;
+import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLED_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.PULLING_IMAGE;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.RUNNING;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STARTING;
@@ -255,6 +256,18 @@ public class GracePeriodTest {
                                                        .setJob(JOB)
                                                        .setGoal(START)
                                                        .setState(PULLING_IMAGE)
+                                                       .setPorts(PORTS)
+                                                       .setContainerId(null)
+                                                       .setEnv(ENV)
+                                                       .build())
+    );
+
+    // Verify that the pulled state is signalled
+    verify(model, timeout(30000)).setTaskStatus(eq(JOB.getId()),
+                                                eq(TaskStatus.newBuilder()
+                                                       .setJob(JOB)
+                                                       .setGoal(START)
+                                                       .setState(PULLED_IMAGE)
                                                        .setPorts(PORTS)
                                                        .setContainerId(null)
                                                        .setEnv(ENV)

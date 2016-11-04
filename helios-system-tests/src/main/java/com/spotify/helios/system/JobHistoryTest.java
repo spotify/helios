@@ -66,7 +66,7 @@ public class JobHistoryTest extends SystemTestBase {
         int requiredEventCount = -1;
         for (int i = 0; i < size; i++) {
           if (events.getEvents().get(i).getStatus().getState() != State.PULLING_IMAGE) {
-            requiredEventCount = i + 5;
+            requiredEventCount = i + 6;
             break;
           }
         }
@@ -92,6 +92,8 @@ public class JobHistoryTest extends SystemTestBase {
       }
       assertThat(event, not(hasContainerId()));
     }
+
+    assertThat(it.next(), allOf(hasState(State.PULLED_IMAGE), not(hasContainerId())));
 
     assertThat(it.next(), allOf(hasState(State.CREATING), not(hasContainerId())));
 

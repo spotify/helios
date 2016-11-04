@@ -306,7 +306,7 @@ public class Supervisor {
     @Override
     public void perform(final boolean done) throws InterruptedException {
       if (done) {
-        // TODO (dxia) We need to check if the progress of the pull
+        // TODO (dxia) We need to check the progress of the pull
         return;
       }
 
