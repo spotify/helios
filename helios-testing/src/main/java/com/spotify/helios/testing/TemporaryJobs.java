@@ -135,19 +135,19 @@ public class TemporaryJobs implements TestRule {
       throw Throwables.propagate(e);
     }
 
-    final Path testReportDirectory = Paths.get(fromNullable(builder.testReportDirectory)
-                                                   .or(DEFAULT_TEST_REPORT_DIRECTORY));
-    this.reports = new TemporaryJobReports(testReportDirectory);
-    final TemporaryJobReports.ReportWriter defaultReportWriter = builder.defaultReportWriter;
+    if (builder.reports == null) {
+      final Path testReportDirectory = Paths.get(
+          fromNullable(builder.testReportDirectory).or(DEFAULT_TEST_REPORT_DIRECTORY));
+      this.reports = new TemporaryJobJsonReports(testReportDirectory);
+    } else {
+      this.reports = builder.reports;
+    }
+
     this.reportWriter = new ThreadLocal<TemporaryJobReports.ReportWriter>() {
       @Override
       protected TemporaryJobReports.ReportWriter initialValue() {
-        if (defaultReportWriter == null) {
-          log.warn("unable to determine test context, writing event log to stdout");
-          return TemporaryJobs.this.reports.getWriterForStream(System.out);
-        } else {
-          return defaultReportWriter;
-        }
+        log.warn("unable to determine test context, writing to default event log");
+        return TemporaryJobs.this.reports.getDefaultWriter();
       }
     };
 
@@ -528,7 +528,7 @@ public class TemporaryJobs implements TestRule {
     private String jobDeployedMessageFormat;
     private HostPickingStrategy hostPickingStrategy = HostPickingStrategies.randomOneHost();
     private long deployTimeoutMillis = DEFAULT_DEPLOY_TIMEOUT_MILLIS;
-    private TemporaryJobReports.ReportWriter defaultReportWriter;
+    private TemporaryJobReports reports;
 
     Builder(String profile, Config rootConfig, Map<String, String> env,
             HeliosClient.Builder clientBuilder) {
@@ -720,6 +720,11 @@ public class TemporaryJobs implements TestRule {
       return this;
     }
 
+    public Builder reports(final TemporaryJobReports reports) {
+      this.reports = reports;
+      return this;
+    }
+
     public Builder testReportDirectory(final String testReportDirectory) {
       this.testReportDirectory = testReportDirectory;
       return this;
@@ -732,12 +737,6 @@ public class TemporaryJobs implements TestRule {
 
     public Builder deployTimeoutMillis(final long timeout) {
       this.deployTimeoutMillis = timeout;
-      return this;
-    }
-
-    public Builder defaultReportWriter(
-        final TemporaryJobReports.ReportWriter reportWriter) {
-      this.defaultReportWriter = reportWriter;
       return this;
     }
 
