@@ -39,6 +39,7 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -101,7 +102,6 @@ import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
 import com.sun.jersey.api.client.ClientResponse;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.CloseableHttpResponse;
@@ -922,25 +922,26 @@ public abstract class SystemTestBase {
 
   protected HostStatus awaitHostStatusWithLabels(final HeliosClient client,
                                                  final String host,
-                                                 final HostStatus.Status status)
-      throws Exception {
-    return awaitHostStatusWithLabels(client, host, status, LONG_WAIT_SECONDS, SECONDS);
-  }
-
-  protected HostStatus awaitHostStatusWithLabels(final HeliosClient client, final String host,
                                                  final HostStatus.Status status,
-                                                 final int timeout,
-                                                 final TimeUnit timeUnit) throws Exception {
-    return Polling.await(timeout, timeUnit, new Callable<HostStatus>() {
-      @Override
-      public HostStatus call() throws Exception {
-        final HostStatus hostStatus = getOrNull(client.hostStatus(host));
-        if (hostStatus == null || hostStatus.getLabels().size() == 0) {
-          return null;
-        }
-        return (hostStatus.getStatus() == status) ? hostStatus : null;
+                                                 final Map<String, String> labels)
+      throws Exception {
+
+    final HostStatus hostStatus = Polling.await(LONG_WAIT_SECONDS, SECONDS, () -> {
+      final HostStatus candidate = getOrNull(client.hostStatus(host));
+
+      if (candidate == null || candidate.getStatus() != status
+          // labels are stored in ZK after the host has come up
+          || candidate.getLabels().size() == 0) {
+
+        return null;
       }
+      return candidate;
     });
+
+    assertThat("host " + host + " has status=" + status + " with labels=" + hostStatus.getLabels(),
+        hostStatus.getLabels(), is(labels));
+
+    return hostStatus;
   }
 
   protected HostStatus awaitHostStatusWithHostInfo(final HeliosClient client, final String host,
