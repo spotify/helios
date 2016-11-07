@@ -26,7 +26,6 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.descriptors.Deployment;
@@ -42,7 +41,7 @@ import com.spotify.helios.master.JobDoesNotExistException;
 import com.spotify.helios.master.JobNotDeployedException;
 import com.spotify.helios.master.JobStillDeployedException;
 import com.spotify.helios.master.ZooKeeperMasterModel;
-import com.spotify.helios.servicescommon.KafkaSender;
+import com.spotify.helios.servicescommon.EventSender;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -62,6 +61,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.runners.MockitoJUnitRunner;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -113,9 +113,9 @@ public class ZooKeeperMasterModelIntegrationTest {
     final ZooKeeperClientProvider zkProvider =
         new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop());
 
-    final KafkaSender kafkaSender = mock(KafkaSender.class);
+    final List<EventSender> eventSenders = Collections.emptyList();
 
-    model = new ZooKeeperMasterModel(zkProvider, getClass().getName(), kafkaSender);
+    model = new ZooKeeperMasterModel(zkProvider, getClass().getName(), eventSenders);
   }
 
   @Test

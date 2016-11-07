@@ -86,6 +86,7 @@ public class MasterParser extends ServiceParser {
         .setAdminEndpoint(adminAddress)
         .setHttpEndpoint(httpAddress)
         .setKafkaBrokers(getKafkaBrokers())
+        .setPubsubPrefixes(getPubsubPrefixes())
         .setStateDirectory(getStateDirectory())
         .setAgentReapingTimeout(options.getLong(agentReapingTimeout.getDest()))
         .setJobRetention(options.getLong(jobRetention.getDest()))

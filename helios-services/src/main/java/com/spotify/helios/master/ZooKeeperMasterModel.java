@@ -64,8 +64,7 @@ import com.spotify.helios.rollingupdate.RollingUpdateError;
 import com.spotify.helios.rollingupdate.RollingUpdateOp;
 import com.spotify.helios.rollingupdate.RollingUpdateOpFactory;
 import com.spotify.helios.rollingupdate.RollingUpdatePlanner;
-import com.spotify.helios.servicescommon.KafkaRecord;
-import com.spotify.helios.servicescommon.KafkaSender;
+import com.spotify.helios.servicescommon.EventSender;
 import com.spotify.helios.servicescommon.VersionedValue;
 import com.spotify.helios.servicescommon.ZooKeeperRegistrarUtil;
 import com.spotify.helios.servicescommon.coordination.Node;
@@ -152,20 +151,20 @@ public class ZooKeeperMasterModel implements MasterModel {
 
   private final ZooKeeperClientProvider provider;
   private final String name;
-  private final KafkaSender kafkaSender;
+  private final List<EventSender> eventSenders;
 
   /**
    * Constructor
    * @param provider         {@link ZooKeeperClientProvider}
    * @param name             The hostname of the machine running the {@link MasterModel}
-   * @param kafkaSender      {@link KafkaSender}
+   * @param eventSenders     {@link EventSender}
    */
   public ZooKeeperMasterModel(final ZooKeeperClientProvider provider,
                               final String name,
-                              final KafkaSender kafkaSender) {
+                              final List<EventSender> eventSenders) {
     this.provider = Preconditions.checkNotNull(provider);
     this.name = Preconditions.checkNotNull(name);
-    this.kafkaSender = Preconditions.checkNotNull(kafkaSender);
+    this.eventSenders = Preconditions.checkNotNull(eventSenders);
   }
 
   /**
@@ -813,7 +812,10 @@ public class ZooKeeperMasterModel implements MasterModel {
   private void emitEvents(final String topic, final List<Map<String, Object>> events) {
     // Emit events
     for (final Map<String, Object> event : events) {
-      kafkaSender.send(KafkaRecord.of(topic, Json.asBytesUnchecked(event)));
+      final byte[] message = Json.asBytesUnchecked(event);
+      for (final EventSender sender : eventSenders) {
+        sender.send(topic, message);
+      }
     }
   }
 

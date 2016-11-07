@@ -77,6 +77,7 @@ public class ServiceParser {
   private final Argument logconfigArg;
   private final Argument noLogSetupArg;
   private final Argument kafkaArg;
+  private final Argument pubsubTopicPrefixArg;
   private final Argument stateDirArg;
 
   // ffwd arguments:
@@ -184,6 +185,11 @@ public class ServiceParser {
         .action(append())
         .setDefault(new ArrayList<String>())
         .help("Kafka brokers to bootstrap with");
+
+    pubsubTopicPrefixArg = parser.addArgument("--pubsub-topic-prefix")
+        .action(append())
+        .setDefault(new ArrayList<String>())
+        .help("Google pubsub topic prefixes to send to");
 
     stateDirArg = parser.addArgument("--state-dir")
         .setDefault(".")
@@ -301,6 +307,10 @@ public class ServiceParser {
   public List<String> getKafkaBrokers() {
     final List<String> kafkaBrokers = options.getList(kafkaArg.getDest());
     return kafkaBrokers.isEmpty() ? null : kafkaBrokers;
+  }
+
+  public List<String> getPubsubPrefixes() {
+    return options.getList(pubsubTopicPrefixArg.getDest());
   }
 
   public Path getStateDirectory() {

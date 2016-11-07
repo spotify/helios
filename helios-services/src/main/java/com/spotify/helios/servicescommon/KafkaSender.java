@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
 /**
  * A class that wraps {@link org.apache.kafka.clients.producer.KafkaProducer}.
  */
-public class KafkaSender {
+public class KafkaSender implements EventSender {
 
   private static final Logger log = LoggerFactory.getLogger(KafkaSender.class);
 
@@ -48,6 +48,11 @@ public class KafkaSender {
     } else {
       log.debug("KafkaProducer isn't set. Not sending anything.");
     }
+  }
+
+  @Override
+  public void send(final String topic, final byte[] message) {
+    send(KafkaRecord.of(topic, message));
   }
 
   private static class LoggingCallback implements Callback {

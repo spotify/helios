@@ -40,7 +40,10 @@ import com.spotify.helios.master.resources.VersionResource;
 import com.spotify.helios.rollingupdate.RollingUpdateService;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.serviceregistration.ServiceRegistration;
+import com.spotify.helios.servicescommon.EventSender;
 import com.spotify.helios.servicescommon.FastForwardConfig;
+import com.spotify.helios.servicescommon.GooglePubSubProvider;
+import com.spotify.helios.servicescommon.GooglePubSubSender;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
@@ -66,6 +69,7 @@ import ch.qos.logback.access.jetty.RequestLogImpl;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
+
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
 import com.google.common.collect.ImmutableList;
@@ -102,6 +106,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.FilterRegistration;
@@ -190,6 +196,8 @@ public class MasterService extends AbstractIdleService {
         zooKeeperClient, modelReporter);
     final KafkaClientProvider kafkaClientProvider = new KafkaClientProvider(
         config.getKafkaBrokers());
+    final GooglePubSubProvider googlePubSubProvider = new GooglePubSubProvider(
+        config.getPubsubPrefixes());
 
     // Create state directory, if necessary
     final Path stateDirectory = config.getStateDirectory().toAbsolutePath().normalize();
@@ -206,8 +214,15 @@ public class MasterService extends AbstractIdleService {
     // and wrap it in our KafkaSender.
     final KafkaSender kafkaSender = new KafkaSender(kafkaClientProvider.getDefaultProducer());
 
+    // Make GooglePubsub senders
+    final List<GooglePubSubSender> pubSubSenders = googlePubSubProvider.senders();
+
+    final List<EventSender> eventSenders = Stream.concat(
+        Stream.of(kafkaSender),
+        pubSubSenders.stream()).collect(Collectors.toList());
+
     final ZooKeeperMasterModel model =
-        new ZooKeeperMasterModel(zkClientProvider, config.getName(), kafkaSender);
+        new ZooKeeperMasterModel(zkClientProvider, config.getName(), eventSenders);
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
         zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);

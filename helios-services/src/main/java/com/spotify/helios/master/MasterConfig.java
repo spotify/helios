@@ -51,6 +51,7 @@ public class MasterConfig extends Configuration {
   private InetSocketAddress adminEndpoint;
   private InetSocketAddress httpEndpoint;
   private List<String> kafkaBrokers;
+  private List<String> pubsubPrefixes;
   private Path stateDirectory;
   private boolean zooKeeperEnableAcls;
   private String zookeeperAclAgentUser;
@@ -196,6 +197,15 @@ public class MasterConfig extends Configuration {
 
   public MasterConfig setKafkaBrokers(List<String> kafkaBrokers) {
     this.kafkaBrokers = kafkaBrokers;
+    return this;
+  }
+
+  public List<String> getPubsubPrefixes() {
+    return pubsubPrefixes;
+  }
+
+  public MasterConfig setPubsubPrefixes(List<String> pubsubPrefixes) {
+    this.pubsubPrefixes = pubsubPrefixes;
     return this;
   }
 
