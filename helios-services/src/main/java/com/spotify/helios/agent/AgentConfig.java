@@ -58,6 +58,7 @@ public class AgentConfig extends Configuration {
   private boolean noHttp;
   private List<String> binds;
   private List<String> kafkaBrokers;
+  private List<String> pubsubPrefixes;
   private Map<String, String> labels;
   private boolean zooKeeperEnableAcls;
   private String zookeeperAclMasterUser;
@@ -294,6 +295,15 @@ public class AgentConfig extends Configuration {
 
   public AgentConfig setKafkaBrokers(List<String> kafkaBrokers) {
     this.kafkaBrokers = kafkaBrokers;
+    return this;
+  }
+
+  public List<String> getPubsubPrefixes() {
+    return pubsubPrefixes;
+  }
+
+  public AgentConfig setPubsubPrefixes(List<String> pubsubPrefixes) {
+    this.pubsubPrefixes = pubsubPrefixes;
     return this;
   }
 

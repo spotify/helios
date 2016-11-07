@@ -142,6 +142,7 @@ public class AgentParser extends ServiceParser {
         .setHttpEndpoint(httpAddress)
         .setNoHttp(options.getBoolean(noHttpArg.getDest()))
         .setKafkaBrokers(getKafkaBrokers())
+        .setPubsubPrefixes(getPubsubPrefixes())
         .setLabels(labels)
         .setFfwdConfig(ffwdConfig(options))
         .setJobHistoryDisabled(options.getBoolean(disableJobHistory.getDest()));

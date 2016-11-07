@@ -36,8 +36,12 @@ import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
+import com.spotify.helios.servicescommon.EventSender;
 import com.spotify.helios.servicescommon.FastForwardConfig;
+import com.spotify.helios.servicescommon.GooglePubSubProvider;
+import com.spotify.helios.servicescommon.GooglePubSubSender;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
+import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -93,6 +97,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The Helios agent.
@@ -233,6 +239,20 @@ public class AgentService extends AbstractIdleService implements Managed {
     final KafkaClientProvider kafkaClientProvider = new KafkaClientProvider(
         config.getKafkaBrokers());
 
+    final GooglePubSubProvider googlePubSubProvider = new GooglePubSubProvider(
+        config.getPubsubPrefixes());
+
+    // Make a KafkaProducer for events that can be serialized to an array of bytes,
+    // and wrap it in our KafkaSender.
+    final KafkaSender kafkaSender = new KafkaSender(kafkaClientProvider.getDefaultProducer());
+
+    // Make GooglePubsub senders
+    final List<GooglePubSubSender> pubSubSenders = googlePubSubProvider.senders();
+
+    final List<EventSender> eventSenders = Stream.concat(
+        Stream.of(kafkaSender),
+        pubSubSenders.stream()).collect(Collectors.toList());
+
     final TaskHistoryWriter historyWriter;
     if (config.isJobHistoryDisabled()) {
       historyWriter = null;
@@ -242,8 +262,9 @@ public class AgentService extends AbstractIdleService implements Managed {
     }
 
     try {
-      this.model = new ZooKeeperAgentModel(zkClientProvider, kafkaClientProvider,
-                                           config.getName(), stateDirectory, historyWriter);
+      this.model = new ZooKeeperAgentModel(zkClientProvider,
+                                           config.getName(), stateDirectory, historyWriter,
+                                           eventSenders);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
