@@ -25,7 +25,6 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
 
 import com.spotify.helios.agent.AgentMain;
 import com.spotify.helios.client.HeliosClient;
@@ -38,7 +37,7 @@ import com.spotify.helios.common.descriptors.TaskStatus.State;
 import com.spotify.helios.common.protocol.CreateJobResponse;
 import com.spotify.helios.common.protocol.JobDeployResponse;
 import com.spotify.helios.master.ZooKeeperMasterModel;
-import com.spotify.helios.servicescommon.KafkaSender;
+import com.spotify.helios.servicescommon.EventSender;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
@@ -48,6 +47,8 @@ import org.apache.curator.framework.CuratorFramework;
 import org.junit.Before;
 import org.junit.Test;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class UndeployFilteringTest extends SystemTestBase {
@@ -76,9 +77,9 @@ public class UndeployFilteringTest extends SystemTestBase {
     zkcp = new ZooKeeperClientProvider(
         new DefaultZooKeeperClient(curator), ZooKeeperModelReporter.noop());
 
-    final KafkaSender kafkaSender = mock(KafkaSender.class);
+    final List<EventSender> eventSenders = Collections.emptyList();
 
-    zkMasterModel = new ZooKeeperMasterModel(zkcp, getClass().getName(), kafkaSender);
+    zkMasterModel = new ZooKeeperMasterModel(zkcp, getClass().getName(), eventSenders);
     startDefaultMaster();
 
     agent = startDefaultAgent(TEST_HOST);

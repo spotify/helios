@@ -47,7 +47,6 @@ import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
 import com.spotify.helios.rollingupdate.RollingUndeployPlanner;
 import com.spotify.helios.rollingupdate.RollingUpdatePlanner;
-import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.coordination.DefaultZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.Paths;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
@@ -76,6 +75,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.MockitoAnnotations;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
@@ -126,7 +126,7 @@ public class DeploymentGroupTest {
     final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
         getClass().getName(),
-        mock(KafkaSender.class)));
+        Collections.emptyList()));
 
     // Return a job so we can add a real deployment group.
     final Job job = Job.newBuilder()
@@ -208,7 +208,7 @@ public class DeploymentGroupTest {
     final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
         getClass().getName(),
-        mock(KafkaSender.class)));
+        Collections.emptyList()));
 
     // Return a job so we can add a real deployment group.
     final Job job = Job.newBuilder()
@@ -264,7 +264,7 @@ public class DeploymentGroupTest {
     final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
         getClass().getName(),
-        mock(KafkaSender.class)));
+        Collections.emptyList()));
 
     // Return a job so we can add a real deployment group.
     final Job job = Job.newBuilder()
@@ -338,7 +338,7 @@ public class DeploymentGroupTest {
     final ZooKeeperMasterModel masterModel = new ZooKeeperMasterModel(
         new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
         getClass().getName(),
-        mock(KafkaSender.class));
+        Collections.emptyList());
 
     if (dgExists) {
       final DeploymentGroup dg = DeploymentGroup.newBuilder()
