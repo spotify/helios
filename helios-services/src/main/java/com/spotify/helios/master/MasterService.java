@@ -89,6 +89,7 @@ import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.zookeeper.data.ACL;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
@@ -210,19 +211,21 @@ public class MasterService extends AbstractIdleService {
       }
     }
 
+    final ImmutableList.Builder<EventSender> eventSenders = ImmutableList.builder();
+
     // Make a KafkaProducer for events that can be serialized to an array of bytes,
     // and wrap it in our KafkaSender.
-    final KafkaSender kafkaSender = new KafkaSender(kafkaClientProvider.getDefaultProducer());
+    final com.google.common.base.Optional<KafkaProducer<String, byte[]>> kafkaProducer =
+        kafkaClientProvider.getDefaultProducer();
+    if (kafkaProducer.isPresent()) {
+      eventSenders.add(new KafkaSender(kafkaProducer));
+    }
 
-    // Make GooglePubsub senders
-    final List<GooglePubSubSender> pubSubSenders = googlePubSubProvider.senders();
-
-    final List<EventSender> eventSenders = Stream.concat(
-        Stream.of(kafkaSender),
-        pubSubSenders.stream()).collect(Collectors.toList());
+    // GooglePubsub senders
+    eventSenders.addAll(googlePubSubProvider.senders());
 
     final ZooKeeperMasterModel model =
-        new ZooKeeperMasterModel(zkClientProvider, config.getName(), eventSenders);
+        new ZooKeeperMasterModel(zkClientProvider, config.getName(), eventSenders.build());
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
         zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);

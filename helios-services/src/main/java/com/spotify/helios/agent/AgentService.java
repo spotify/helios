@@ -69,6 +69,7 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
@@ -82,6 +83,7 @@ import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
+import org.apache.kafka.clients.producer.KafkaProducer;
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -242,16 +244,18 @@ public class AgentService extends AbstractIdleService implements Managed {
     final GooglePubSubProvider googlePubSubProvider = new GooglePubSubProvider(
         config.getPubsubPrefixes());
 
+    final ImmutableList.Builder<EventSender> eventSenders = ImmutableList.builder();
+
     // Make a KafkaProducer for events that can be serialized to an array of bytes,
     // and wrap it in our KafkaSender.
-    final KafkaSender kafkaSender = new KafkaSender(kafkaClientProvider.getDefaultProducer());
+    final com.google.common.base.Optional<KafkaProducer<String, byte[]>> kafkaProducer =
+        kafkaClientProvider.getDefaultProducer();
+    if (kafkaProducer.isPresent()) {
+      eventSenders.add(new KafkaSender(kafkaProducer));
+    }
 
-    // Make GooglePubsub senders
-    final List<GooglePubSubSender> pubSubSenders = googlePubSubProvider.senders();
-
-    final List<EventSender> eventSenders = Stream.concat(
-        Stream.of(kafkaSender),
-        pubSubSenders.stream()).collect(Collectors.toList());
+    // GooglePubsub senders
+    eventSenders.addAll(googlePubSubProvider.senders());
 
     final TaskHistoryWriter historyWriter;
     if (config.isJobHistoryDisabled()) {
@@ -264,7 +268,7 @@ public class AgentService extends AbstractIdleService implements Managed {
     try {
       this.model = new ZooKeeperAgentModel(zkClientProvider,
                                            config.getName(), stateDirectory, historyWriter,
-                                           eventSenders);
+                                           eventSenders.build());
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }
