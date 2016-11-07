@@ -39,7 +39,6 @@ import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.EventSender;
 import com.spotify.helios.servicescommon.FastForwardConfig;
 import com.spotify.helios.servicescommon.GooglePubSubProvider;
-import com.spotify.helios.servicescommon.GooglePubSubSender;
 import com.spotify.helios.servicescommon.KafkaClientProvider;
 import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
@@ -96,11 +95,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 /**
  * The Helios agent.
@@ -248,7 +246,7 @@ public class AgentService extends AbstractIdleService implements Managed {
 
     // Make a KafkaProducer for events that can be serialized to an array of bytes,
     // and wrap it in our KafkaSender.
-    final com.google.common.base.Optional<KafkaProducer<String, byte[]>> kafkaProducer =
+    final Optional<KafkaProducer<String, byte[]>> kafkaProducer =
         kafkaClientProvider.getDefaultProducer();
     if (kafkaProducer.isPresent()) {
       eventSenders.add(new KafkaSender(kafkaProducer));
