@@ -24,6 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.function.Supplier;
 
 import static java.util.Collections.emptyList;
 import static java.util.stream.Collectors.toList;
@@ -38,9 +39,13 @@ public class GooglePubSubProvider {
   }
 
   public List<GooglePubSubSender> senders() {
-    if (pubsubPrefixes != null) {
+    return senders(() -> PubSubOptions.getDefaultInstance().getService());
+  }
+
+  public List<GooglePubSubSender> senders(Supplier<PubSub> pubsubSupplier) {
+    if (pubsubPrefixes != null && !pubsubPrefixes.isEmpty()) {
       try {
-        final PubSub pubsub = PubSubOptions.getDefaultInstance().getService();
+        final PubSub pubsub = pubsubSupplier.get();
         return pubsubPrefixes.stream()
             .map(prefix -> new GooglePubSubSender(pubsub, prefix))
             .collect(toList());
