@@ -99,6 +99,13 @@ public class TemporaryJobReports {
       }
     }
 
+    protected ReportWriter() {
+      jg = null;
+      testClassName = null;
+      testName = null;
+    }
+
+
     public Step step(final String step) {
       return new Step(this, step);
     }
@@ -118,7 +125,7 @@ public class TemporaryJobReports {
       writeEvent(event);
     }
 
-    private void writeEvent(final TemporaryJobEvent event) {
+    protected void writeEvent(final TemporaryJobEvent event) {
       if (jg == null) {
         return;
       }
