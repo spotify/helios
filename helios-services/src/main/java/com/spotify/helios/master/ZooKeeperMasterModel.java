@@ -145,7 +145,7 @@ public class ZooKeeperMasterModel implements MasterModel {
       STRING_LIST_TYPE =
       new TypeReference<List<String>>() {};
 
-  private static final String DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC = "HeliosDeploymentGroupEvents";
+  private static final String DEPLOYMENT_GROUP_EVENT_TOPIC = "HeliosDeploymentGroupEvents";
   private static final DeploymentGroupEventFactory DEPLOYMENT_GROUP_EVENT_FACTORY =
       new DeploymentGroupEventFactory();
 
@@ -583,7 +583,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           groupName, deploymentGroup.getJobId(), ops);
 
       client.transaction(ops);
-      emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, events);
+      emitEvents(DEPLOYMENT_GROUP_EVENT_TOPIC, events);
     } catch (BadVersionException e) {
       // some other master beat us in processing this host update. not exceptional.
       // ideally we would check the path in the exception, but curator doesn't provide a path
@@ -632,7 +632,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       client.transaction(operations);
 
-      emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, op.events());
+      emitEvents(DEPLOYMENT_GROUP_EVENT_TOPIC, op.events());
       log.info("initiated rolling-update on deployment-group: name={}, jobId={}",
           deploymentGroup.getName(), jobId);
     } catch (final NoNodeException e) {
@@ -792,7 +792,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
           try {
             client.transaction(ops);
-            emitEvents(DEPLOYMENT_GROUP_EVENTS_KAFKA_TOPIC, op.events());
+            emitEvents(DEPLOYMENT_GROUP_EVENT_TOPIC, op.events());
           } catch (BadVersionException e) {
             // some other master beat us in processing this rolling update step. not exceptional.
             // ideally we would check the path in the exception, but curator doesn't provide a path

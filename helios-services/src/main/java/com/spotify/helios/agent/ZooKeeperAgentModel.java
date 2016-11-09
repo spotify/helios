@@ -168,7 +168,7 @@ public class ZooKeeperAgentModel extends AbstractIdleService implements AgentMod
     final TaskStatusEvent event = new TaskStatusEvent(status, System.currentTimeMillis(), agent);
     final byte[] message = event.toJsonBytes();
     for (final EventSender sender : eventSenders) {
-      sender.send(TaskStatusEvent.KAFKA_TOPIC, message);
+      sender.send(TaskStatusEvent.TASK_STATUS_EVENT_TOPIC, message);
     }
   }
 
