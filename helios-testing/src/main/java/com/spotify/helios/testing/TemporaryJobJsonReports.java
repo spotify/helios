@@ -81,9 +81,8 @@ public class TemporaryJobJsonReports extends TemporaryJobReports {
         jg.writeStartArray();
       } catch (IOException e) {
         log.error("exception creating event log: {} - {}", logFile.getAbsolutePath(), e);
-      } finally {
-        this.jg = jg;
       }
+      this.jg = jg;
     }
 
     private JsonReportWriter(final OutputStream outputStream) {
@@ -95,9 +94,8 @@ public class TemporaryJobJsonReports extends TemporaryJobReports {
         jg = new JsonFactory().createGenerator(outputStream, JsonEncoding.UTF8);
       } catch (IOException e) {
         log.error("exception creating event log: {}", e);
-      } finally {
-        this.jg = jg;
       }
+      this.jg = jg;
     }
 
     public Step step(final String step) {
