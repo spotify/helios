@@ -24,6 +24,7 @@ import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPED;
 import static com.spotify.helios.common.descriptors.TaskStatus.State.STOPPING;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
+import com.google.common.annotations.VisibleForTesting;
 import com.spotify.docker.client.DockerClient;
 import com.spotify.docker.client.exceptions.ContainerNotFoundException;
 import com.spotify.docker.client.exceptions.DockerException;
@@ -35,14 +36,12 @@ import com.spotify.helios.servicescommon.Reactor;
 import com.spotify.helios.servicescommon.statistics.MetricsContext;
 import com.spotify.helios.servicescommon.statistics.SupervisorMetrics;
 
-import com.google.common.annotations.VisibleForTesting;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.InterruptedIOException;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Supervises docker containers for a single job.
@@ -69,6 +68,7 @@ public class Supervisor {
   private final StatusUpdater statusUpdater;
   private final TaskMonitor monitor;
   private final Sleeper sleeper;
+  private final ImagePuller imagePuller;
 
   private volatile Goal goal;
   private volatile String containerId;
@@ -76,7 +76,7 @@ public class Supervisor {
   private volatile Command currentCommand;
   private volatile Command performedCommand;
 
-  public Supervisor(final Builder builder) {
+  private Supervisor(final Builder builder) {
     this.job = checkNotNull(builder.job, "job");
     this.docker = checkNotNull(builder.dockerClient, "docker");
     this.restartPolicy = checkNotNull(builder.restartPolicy, "restartPolicy");
@@ -87,6 +87,7 @@ public class Supervisor {
     this.runnerFactory = checkNotNull(builder.runnerFactory, "runnerFactory");
     this.statusUpdater = checkNotNull(builder.statusUpdater, "statusUpdater");
     this.monitor = checkNotNull(builder.monitor, "monitor");
+    this.imagePuller = checkNotNull(builder.imagePuller, "imagePuller");
     this.reactor = new DefaultReactor("supervisor-" + job.getId(), new Update(),
                                       SECONDS.toMillis(30));
     this.reactor.startAsync();
@@ -105,7 +106,6 @@ public class Supervisor {
       case PULL_IMAGE:
         currentCommand = new PullImage();
         reactor.signal();
-        metrics.supervisorStarted();
         break;
       case START:
         currentCommand = new Start();
@@ -221,7 +221,7 @@ public class Supervisor {
     private StatusUpdater statusUpdater;
     private TaskMonitor monitor;
     private Sleeper sleeper = new ThreadSleeper();
-
+    private ImagePuller imagePuller = new NopImagePuller();
 
     public Builder setJob(final Job job) {
       this.job = job;
@@ -273,6 +273,11 @@ public class Supervisor {
       return this;
     }
 
+    Builder setImagePuller(final ImagePuller imagePuller) {
+      this.imagePuller = imagePuller;
+      return this;
+    }
+
     public Supervisor build() {
       return new Supervisor(this);
     }
@@ -282,6 +287,12 @@ public class Supervisor {
       @Override
       public void stateChanged(final Supervisor supervisor) {
 
+      }
+    }
+
+    private class NopImagePuller implements ImagePuller {
+      @Override
+      public void pullImage(final String image) throws DockerException, InterruptedException {
       }
     }
   }
@@ -313,7 +324,6 @@ public class Supervisor {
       statusUpdater.setState(PULLING_IMAGE);
       statusUpdater.update();
 
-      final ImagePuller imagePuller = null;
       try {
         imagePuller.pullImage(job.getImage());
       } catch (DockerException e) {

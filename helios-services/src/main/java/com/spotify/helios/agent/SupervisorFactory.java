@@ -131,6 +131,7 @@ public class SupervisorFactory {
         .setRunnerFactory(runnerFactory)
         .setStatusUpdater(statusUpdater)
         .setMonitor(taskMonitor)
+        .setImagePuller(DockerClientImagePuller.create(taskMonitor, dockerClient))
         .build();
   }
 }

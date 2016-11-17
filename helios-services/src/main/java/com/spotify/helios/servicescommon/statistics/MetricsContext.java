@@ -19,10 +19,10 @@ package com.spotify.helios.servicescommon.statistics;
 
 public interface MetricsContext {
 
-  public void success();
+  void success();
 
-  public void failure();
+  void failure();
 
-  public void userError();
+  void userError();
 
 }
