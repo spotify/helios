@@ -42,6 +42,7 @@ import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.common.protocol.JobUndeployResponse;
 
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.base.Function;
 import com.google.common.base.Optional;
 import com.google.common.base.Preconditions;
 import com.google.common.base.Throwables;
@@ -49,7 +50,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.net.HostAndPort;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.typesafe.config.Config;
@@ -555,10 +555,10 @@ public class HeliosSoloDeployment implements HeliosDeployment {
 
   private <T> T getOrNull(final ListenableFuture<T> future)
       throws ExecutionException, InterruptedException {
-    return Futures.withFallback(future, new FutureFallback<T>() {
+    return Futures.catching(future, Exception.class, new Function<Exception, T>() {
       @Override
-      public ListenableFuture<T> create(@NotNull final Throwable t) throws Exception {
-        return Futures.immediateFuture(null);
+      public T apply(@NotNull final Exception e) {
+        return null;
       }
     }).get();
   }
