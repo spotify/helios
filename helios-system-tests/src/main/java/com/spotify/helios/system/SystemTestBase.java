@@ -89,6 +89,7 @@ import com.spotify.helios.servicescommon.coordination.Paths;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Charsets;
+import com.google.common.base.Function;
 import com.google.common.base.Strings;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
@@ -97,7 +98,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Range;
 import com.google.common.io.Files;
-import com.google.common.util.concurrent.FutureFallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.Service;
@@ -1033,10 +1033,10 @@ public abstract class SystemTestBase {
 
   protected <T> T getOrNull(final ListenableFuture<T> future)
       throws ExecutionException, InterruptedException {
-    return Futures.withFallback(future, new FutureFallback<T>() {
+    return Futures.catching(future, Exception.class, new Function<Exception, T>() {
       @Override
-      public ListenableFuture<T> create(@NotNull final Throwable t) throws Exception {
-        return Futures.immediateFuture(null);
+      public T apply(@NotNull final Exception e) {
+        return null;
       }
     }).get();
   }
