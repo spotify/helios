@@ -64,6 +64,8 @@ import com.spotify.helios.servicescommon.statistics.MetricsImpl;
 import com.spotify.helios.servicescommon.statistics.NoopMetrics;
 
 import com.codahale.metrics.MetricRegistry;
+import com.codahale.metrics.jvm.GarbageCollectorMetricSet;
+import com.codahale.metrics.jvm.MemoryUsageGaugeSet;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.google.common.base.Suppliers;
@@ -181,6 +183,9 @@ public class AgentService extends AbstractIdleService implements Managed {
 
     // Configure metrics
     final MetricRegistry metricsRegistry = environment.metrics();
+    metricsRegistry.registerAll(new GarbageCollectorMetricSet());
+    metricsRegistry.registerAll(new MemoryUsageGaugeSet());
+
     final RiemannSupport riemannSupport = new RiemannSupport(
         metricsRegistry, config.getRiemannHostPort(), config.getName(), "helios-agent");
     final RiemannFacade riemannFacade = riemannSupport.getFacade();
