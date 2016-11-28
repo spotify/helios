@@ -2,7 +2,7 @@
 
 This guide gives an overview of Helios, and what you need to know to deploy and run your Docker containers using it.
 
-Note that this guide assumes that you are familiar with [Docker](http://docker.io) and concepts like images and containers. If you aren't familiar with Docker, see the [getting started page](https://www.docker.io/gettingstarted/).
+Note that this guide assumes that you are familiar with [Docker](http://docker.io) and concepts like images and containers. If you aren't familiar with Docker, see the [getting started page](https://docs.docker.com/engine/getstarted/).
 
 
 * [Basic Concepts in Helios](#basic-concepts-in-helios)
