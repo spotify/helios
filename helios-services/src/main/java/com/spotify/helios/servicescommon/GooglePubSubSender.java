@@ -20,29 +20,86 @@ package com.spotify.helios.servicescommon;
 import com.google.cloud.ByteArray;
 import com.google.cloud.pubsub.Message;
 import com.google.cloud.pubsub.PubSub;
+import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
-
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.Closeable;
+import java.io.IOException;
+import java.time.Duration;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.annotation.Nullable;
 
-public class GooglePubSubSender implements EventSender {
+/** An EventSender that publishes events to Google Cloud PubSub. */
+public class GooglePubSubSender implements EventSender, Closeable {
+
   private static final Logger log = LoggerFactory.getLogger(GooglePubSubSender.class);
 
   private final PubSub pubsub;
   private final String topicPrefix;
+  private final HealthChecker healthchecker;
 
-  public GooglePubSubSender(final PubSub pubSub, final String topicPrefix) {
+  public static GooglePubSubSender create(final PubSub pubSub, final String topicPrefix) {
+    final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
+        new ThreadFactoryBuilder()
+            .setDaemon(true)
+            .setNameFormat("pubsub-healthchecker-%d")
+            .build()
+    );
+    final DefaultHealthChecker healthchecker =
+        new DefaultHealthChecker(pubSub, topicPrefix + "canary", executor, Duration.ofMinutes(5));
+
+    return create(pubSub, topicPrefix, healthchecker);
+  }
+
+  public static GooglePubSubSender create(final PubSub pubSub,
+                                          final String topicPrefix,
+                                          final HealthChecker healthchecker) {
+    return new GooglePubSubSender(pubSub, topicPrefix, healthchecker);
+  }
+
+  private GooglePubSubSender(final PubSub pubSub,
+                             final String topicPrefix,
+                             final HealthChecker healthchecker) {
     this.pubsub = pubSub;
     this.topicPrefix = topicPrefix;
+    this.healthchecker = healthchecker;
+  }
+
+//  public void start() {
+//    final Runnable runnable = () -> healthy.set(doCheckHealth());
+//    final long intervalMillis = healthcheckInterval.toMillis();
+//    executor.scheduleWithFixedDelay(runnable, 0, intervalMillis, TimeUnit.MILLISECONDS);
+//  }
+//
+//  @Override
+//  public void close() {
+//    executor.shutdown();
+//  }
+
+  @Override
+  public void close() throws IOException {
+    healthchecker.close();
   }
 
   @Override
   public void send(final String topic, final byte[] message) {
     final String combinedTopic = topicPrefix + topic;
+
+    if (!healthchecker.isHealthy()) {
+      log.warn("will not publish message to pubsub topic={} as the pubsub client "
+               + "appears to be unhealthy", combinedTopic);
+      return;
+    }
+
     try {
       Futures.addCallback(
           JdkFutureAdapters.listenInPoolThread(
@@ -61,5 +118,67 @@ public class GooglePubSubSender implements EventSender {
     } catch (Exception e) {
       log.warn("Failed to publish Google PubSub message, topic: {}", combinedTopic, e);
     }
+  }
+
+  public interface HealthChecker extends Closeable {
+
+    boolean isHealthy();
+  }
+
+  public static class DefaultHealthChecker implements HealthChecker {
+
+    private final PubSub pubsub;
+    private final String topic;
+    private final ScheduledExecutorService executor;
+    private final Duration healthcheckInterval;
+    private AtomicBoolean healthy = new AtomicBoolean(false);
+
+    public DefaultHealthChecker(final PubSub pubsub, final String topic,
+                                final ScheduledExecutorService executor,
+                                final Duration healthcheckInterval) {
+      this.pubsub = pubsub;
+      this.topic = topic;
+      this.executor = executor;
+      this.healthcheckInterval = healthcheckInterval;
+    }
+
+    public void start() {
+      final long millis = healthcheckInterval.toMillis();
+      executor.scheduleWithFixedDelay(this::checkHealth, 0, millis, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void close() {
+      executor.shutdown();
+    }
+
+    @Override
+    public boolean isHealthy() {
+      return healthy.get();
+    }
+
+    @VisibleForTesting
+    void checkHealth() {
+      healthy.set(doCheckHealth());
+    }
+
+    private boolean doCheckHealth() {
+      try {
+        // perform a blocking call to see if we can connect to pubsub at all
+        // if the topic does not exist, getTopic() returns null and does not throw an exception
+        pubsub.getTopic(topic);
+        log.info("successfully checked if pubsub topic {} exists - this instance is healthy",
+            topic);
+        return true;
+      } catch (RuntimeException ex) {
+        // PubSubException is an instance of RuntimeException, catch any other subtypes too
+        log.warn("caught exception checking if pubsub topic {} exists. "
+                 + "Publishing to pubsub will be disabled until connectivity is restored "
+                 + "(next check is in {})",
+            topic, healthcheckInterval, ex);
+        return false;
+      }
+    }
+
   }
 }

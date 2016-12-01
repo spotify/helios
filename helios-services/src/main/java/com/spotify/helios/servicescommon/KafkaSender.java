@@ -29,6 +29,7 @@ import java.util.Optional;
 /**
  * A class that wraps {@link org.apache.kafka.clients.producer.KafkaProducer}.
  */
+// TODO (mbrown): the KafkaProducer should be closed when done
 public class KafkaSender implements EventSender {
 
   private static final Logger log = LoggerFactory.getLogger(KafkaSender.class);
@@ -39,7 +40,7 @@ public class KafkaSender implements EventSender {
     this.kafkaProducer = kafkaProducer;
   }
 
-  public void send(final KafkaRecord kafkaRecord) {
+  private void send(final KafkaRecord kafkaRecord) {
     if (kafkaProducer.isPresent()) {
       final ProducerRecord<String, byte[]> record =
           new ProducerRecord<>(kafkaRecord.getKafkaTopic(), kafkaRecord.getKafkaData());

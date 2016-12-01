@@ -37,10 +37,8 @@ import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.EventSender;
+import com.spotify.helios.servicescommon.EventSenderFactory;
 import com.spotify.helios.servicescommon.FastForwardConfig;
-import com.spotify.helios.servicescommon.GooglePubSubProvider;
-import com.spotify.helios.servicescommon.KafkaClientProvider;
-import com.spotify.helios.servicescommon.KafkaSender;
 import com.spotify.helios.servicescommon.ManagedStatsdReporter;
 import com.spotify.helios.servicescommon.PersistentAtomicReference;
 import com.spotify.helios.servicescommon.ReactorFactory;
@@ -70,7 +68,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.google.common.base.Strings;
 import com.google.common.base.Suppliers;
 import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.io.Resources;
@@ -84,7 +81,6 @@ import org.apache.curator.framework.AuthInfo;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.ACLProvider;
 import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.kafka.clients.producer.KafkaProducer;
 import org.eclipse.jetty.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -97,7 +93,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
@@ -241,24 +236,8 @@ public class AgentService extends AbstractIdleService implements Managed {
         new ZooKeeperModelReporter(riemannFacade, metrics.getZooKeeperMetrics());
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
-    final KafkaClientProvider kafkaClientProvider = new KafkaClientProvider(
-        config.getKafkaBrokers());
 
-    final GooglePubSubProvider googlePubSubProvider = new GooglePubSubProvider(
-        config.getPubsubPrefixes());
-
-    final ImmutableList.Builder<EventSender> eventSenders = ImmutableList.builder();
-
-    // Make a KafkaProducer for events that can be serialized to an array of bytes,
-    // and wrap it in our KafkaSender.
-    final Optional<KafkaProducer<String, byte[]>> kafkaProducer =
-        kafkaClientProvider.getDefaultProducer();
-    if (kafkaProducer.isPresent()) {
-      eventSenders.add(new KafkaSender(kafkaProducer));
-    }
-
-    // GooglePubsub senders
-    eventSenders.addAll(googlePubSubProvider.senders());
+    final List<EventSender> eventSenders = new EventSenderFactory(config).get();
 
     final TaskHistoryWriter historyWriter;
     if (config.isJobHistoryDisabled()) {
@@ -269,9 +248,8 @@ public class AgentService extends AbstractIdleService implements Managed {
     }
 
     try {
-      this.model = new ZooKeeperAgentModel(zkClientProvider,
-                                           config.getName(), stateDirectory, historyWriter,
-                                           eventSenders.build());
+      this.model = new ZooKeeperAgentModel(
+          zkClientProvider, config.getName(), stateDirectory, historyWriter, eventSenders);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }

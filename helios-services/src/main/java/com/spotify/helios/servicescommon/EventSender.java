@@ -18,5 +18,6 @@
 package com.spotify.helios.servicescommon;
 
 public interface EventSender {
+
   void send(String topic, byte[] message);
 }
