@@ -17,17 +17,17 @@
 
 package com.spotify.helios.servicescommon;
 
+import static java.util.Collections.emptyList;
+import static java.util.stream.Collectors.toList;
+
 import com.google.cloud.pubsub.PubSub;
 import com.google.cloud.pubsub.PubSubOptions;
-
+import com.google.common.annotations.VisibleForTesting;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.function.Supplier;
-
-import static java.util.Collections.emptyList;
-import static java.util.stream.Collectors.toList;
 
 public class GooglePubSubProvider {
   private static final Logger log = LoggerFactory.getLogger(GooglePubSubProvider.class);
@@ -42,18 +42,18 @@ public class GooglePubSubProvider {
     return senders(() -> PubSubOptions.getDefaultInstance().getService());
   }
 
-  public List<GooglePubSubSender> senders(Supplier<PubSub> pubsubSupplier) {
-    if (pubsubPrefixes != null && !pubsubPrefixes.isEmpty()) {
-      try {
-        final PubSub pubsub = pubsubSupplier.get();
-        return pubsubPrefixes.stream()
-            .map(prefix -> new GooglePubSubSender(pubsub, prefix))
-            .collect(toList());
-      } catch (Exception e) {
-        log.warn("Failed to set up google pubsub service", e);
-        return emptyList();
-      }
-    } else {
+  @VisibleForTesting
+  List<GooglePubSubSender> senders(Supplier<PubSub> pubsubSupplier) {
+    if (pubsubPrefixes == null || pubsubPrefixes.isEmpty()) {
+      return emptyList();
+    }
+    try {
+      final PubSub pubsub = pubsubSupplier.get();
+      return pubsubPrefixes.stream()
+          .map(prefix -> new GooglePubSubSender(pubsub, prefix))
+          .collect(toList());
+    } catch (Exception e) {
+      log.warn("Failed to set up google pubsub service", e);
       return emptyList();
     }
   }

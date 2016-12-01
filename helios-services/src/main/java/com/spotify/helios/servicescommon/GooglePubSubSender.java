@@ -41,6 +41,23 @@ public class GooglePubSubSender implements EventSender {
   }
 
   @Override
+  public boolean isHealthy() {
+    final String topic = topicPrefix + "canary";
+    try {
+      // perform a blocking call to see if we can connect to pubsub at all
+      // if the topic does not exist, this method returns null and does not throw an exception
+      pubsub.getTopic(topic);
+      log.info("successfully checked if topic {} exists - this instance is healthy", topic);
+      return true;
+    } catch (RuntimeException ex) {
+      // PubSubException is an instance of RuntimeException, catch any other subtypes too
+      log.warn("caught exception checking if topic {} exists - this instance is unhealthy",
+          topic, ex);
+      return false;
+    }
+  }
+
+  @Override
   public void send(final String topic, final byte[] message) {
     final String combinedTopic = topicPrefix + topic;
     try {

@@ -17,18 +17,26 @@
 
 package com.spotify.helios.servicescommon;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.google.cloud.pubsub.Message;
 import com.google.cloud.pubsub.PubSub;
-
+import com.google.cloud.pubsub.PubSubException;
+import com.google.cloud.pubsub.Topic;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.verify;
+import java.io.IOException;
 
 public class GooglePubSubSenderTest {
+
   private PubSub pubsub;
   private String prefix = "prefix.";
   private GooglePubSubSender sender;
@@ -45,5 +53,25 @@ public class GooglePubSubSenderTest {
     sender.send(topic, new byte['x']);
 
     verify(pubsub).publishAsync(eq(prefix + topic), any(Message.class));
+  }
+
+
+  @Test
+  public void testIsHealthy() {
+    final GooglePubSubSender sender = new GooglePubSubSender(pubsub, "foo.");
+
+    when(pubsub.getTopic("foo.canary")).thenReturn(mock(Topic.class));
+
+    assertThat(sender.isHealthy(), is(true));
+  }
+
+  @Test
+  public void testIsUnhealthy() {
+    final GooglePubSubSender sender = new GooglePubSubSender(pubsub, "foo.");
+
+    when(pubsub.getTopic("foo.canary"))
+        .thenThrow(new PubSubException(new IOException("oops"), false));
+
+    assertThat(sender.isHealthy(), is(false));
   }
 }

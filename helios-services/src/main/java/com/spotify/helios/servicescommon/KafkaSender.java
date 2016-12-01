@@ -39,7 +39,12 @@ public class KafkaSender implements EventSender {
     this.kafkaProducer = kafkaProducer;
   }
 
-  public void send(final KafkaRecord kafkaRecord) {
+  @Override
+  public boolean isHealthy() {
+    return true;
+  }
+
+  private void send(final KafkaRecord kafkaRecord) {
     if (kafkaProducer.isPresent()) {
       final ProducerRecord<String, byte[]> record =
           new ProducerRecord<>(kafkaRecord.getKafkaTopic(), kafkaRecord.getKafkaData());
