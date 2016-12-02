@@ -24,8 +24,6 @@ import org.apache.kafka.clients.producer.RecordMetadata;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Optional;
-
 /**
  * A class that wraps {@link org.apache.kafka.clients.producer.KafkaProducer}.
  */
@@ -33,9 +31,9 @@ public class KafkaSender implements EventSender {
 
   private static final Logger log = LoggerFactory.getLogger(KafkaSender.class);
 
-  private final Optional<KafkaProducer<String, byte[]>> kafkaProducer;
+  private final KafkaProducer<String, byte[]> kafkaProducer;
 
-  public KafkaSender(final Optional<KafkaProducer<String, byte[]>> kafkaProducer) {
+  public KafkaSender(final KafkaProducer<String, byte[]> kafkaProducer) {
     this.kafkaProducer = kafkaProducer;
   }
 
@@ -46,18 +44,14 @@ public class KafkaSender implements EventSender {
 
   @Override
   public void stop() throws Exception {
-    kafkaProducer.ifPresent(KafkaProducer::close);
+    kafkaProducer.close();
   }
 
   private void send(final KafkaRecord kafkaRecord) {
-    if (kafkaProducer.isPresent()) {
-      final ProducerRecord<String, byte[]> record =
-          new ProducerRecord<>(kafkaRecord.getKafkaTopic(), kafkaRecord.getKafkaData());
+    final ProducerRecord<String, byte[]> record =
+        new ProducerRecord<>(kafkaRecord.getKafkaTopic(), kafkaRecord.getKafkaData());
 
-      kafkaProducer.get().send(record, new LoggingCallback());
-    } else {
-      log.debug("KafkaProducer isn't set. Not sending anything.");
-    }
+    kafkaProducer.send(record, new LoggingCallback());
   }
 
   @Override

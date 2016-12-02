@@ -52,9 +52,7 @@ public final class EventSenderFactory {
     final Optional<KafkaProducer<String, byte[]>> kafkaProducer =
         kafkaClientProvider.getDefaultProducer();
 
-    if (kafkaProducer.isPresent()) {
-      senders.add(new KafkaSender(kafkaProducer));
-    }
+    kafkaProducer.ifPresent(producer -> senders.add(new KafkaSender(producer)));
 
     final LifecycleEnvironment lifecycle = environment.lifecycle();
 
