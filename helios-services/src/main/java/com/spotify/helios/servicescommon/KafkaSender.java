@@ -29,7 +29,6 @@ import java.util.Optional;
 /**
  * A class that wraps {@link org.apache.kafka.clients.producer.KafkaProducer}.
  */
-// TODO (mbrown): the KafkaProducer should be closed when done
 public class KafkaSender implements EventSender {
 
   private static final Logger log = LoggerFactory.getLogger(KafkaSender.class);
@@ -38,6 +37,16 @@ public class KafkaSender implements EventSender {
 
   public KafkaSender(final Optional<KafkaProducer<String, byte[]>> kafkaProducer) {
     this.kafkaProducer = kafkaProducer;
+  }
+
+  @Override
+  public void start() throws Exception {
+    // nothing to do
+  }
+
+  @Override
+  public void stop() throws Exception {
+    kafkaProducer.ifPresent(KafkaProducer::close);
   }
 
   private void send(final KafkaRecord kafkaRecord) {

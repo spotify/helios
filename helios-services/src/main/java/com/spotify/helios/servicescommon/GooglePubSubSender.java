@@ -25,11 +25,10 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import io.dropwizard.lifecycle.Managed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.time.Duration;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -39,7 +38,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import javax.annotation.Nullable;
 
 /** An EventSender that publishes events to Google Cloud PubSub. */
-public class GooglePubSubSender implements EventSender, Closeable {
+public class GooglePubSubSender implements EventSender {
 
   private static final Logger log = LoggerFactory.getLogger(GooglePubSubSender.class);
 
@@ -74,20 +73,14 @@ public class GooglePubSubSender implements EventSender, Closeable {
     this.healthchecker = healthchecker;
   }
 
-//  public void start() {
-//    final Runnable runnable = () -> healthy.set(doCheckHealth());
-//    final long intervalMillis = healthcheckInterval.toMillis();
-//    executor.scheduleWithFixedDelay(runnable, 0, intervalMillis, TimeUnit.MILLISECONDS);
-//  }
-//
-//  @Override
-//  public void close() {
-//    executor.shutdown();
-//  }
+  @Override
+  public void start() throws Exception {
+    healthchecker.start();
+  }
 
   @Override
-  public void close() throws IOException {
-    healthchecker.close();
+  public void stop() throws Exception {
+    healthchecker.stop();
   }
 
   @Override
@@ -120,7 +113,7 @@ public class GooglePubSubSender implements EventSender, Closeable {
     }
   }
 
-  public interface HealthChecker extends Closeable {
+  public interface HealthChecker extends Managed {
 
     boolean isHealthy();
   }
@@ -142,13 +135,14 @@ public class GooglePubSubSender implements EventSender, Closeable {
       this.healthcheckInterval = healthcheckInterval;
     }
 
+    @Override
     public void start() {
       final long millis = healthcheckInterval.toMillis();
       executor.scheduleWithFixedDelay(this::checkHealth, 0, millis, TimeUnit.MILLISECONDS);
     }
 
     @Override
-    public void close() {
+    public void stop() throws Exception {
       executor.shutdown();
     }
 

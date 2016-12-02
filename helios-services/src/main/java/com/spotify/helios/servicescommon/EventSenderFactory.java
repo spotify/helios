@@ -19,27 +19,22 @@ package com.spotify.helios.servicescommon;
 
 import com.google.cloud.pubsub.PubSub;
 import com.google.cloud.pubsub.PubSubOptions;
+import io.dropwizard.lifecycle.Managed;
+import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
+import io.dropwizard.setup.Environment;
 import org.apache.kafka.clients.producer.KafkaProducer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Supplier;
 
-public class EventSenderFactory implements Supplier<List<EventSender>> {
+public final class EventSenderFactory {
 
-  private static final Logger log = LoggerFactory.getLogger(EventSenderFactory.class);
-
-  private final CommonConfiguration<?> config;
-
-  public EventSenderFactory(final CommonConfiguration<?> config) {
-    this.config = config;
+  private EventSenderFactory() {
   }
 
-  @Override
-  public List<EventSender> get() {
+  public static List<EventSender> build(Environment environment, CommonConfiguration<?> config) {
+
     final List<EventSender> senders = new ArrayList<>();
 
     final KafkaClientProvider kafkaClientProvider =
@@ -58,6 +53,31 @@ public class EventSenderFactory implements Supplier<List<EventSender>> {
       senders.add(GooglePubSubSender.create(pubsub, prefix));
     }
 
+    // register the senders with the lifecycle so they will be started/stopped when the
+    // service starts and stops.
+    final LifecycleEnvironment lifecycle = environment.lifecycle();
+    lifecycle.manage(new ManagedPubSub(pubsub));
+    senders.forEach(lifecycle::manage);
+
     return senders;
+  }
+
+  /** Small wrapper so we can close the PubSub instance when service shuts down. */
+  private static final class ManagedPubSub implements Managed {
+
+    private final PubSub pubsub;
+
+    private ManagedPubSub(final PubSub pubsub) {
+      this.pubsub = pubsub;
+    }
+
+    @Override
+    public void start() throws Exception {
+    }
+
+    @Override
+    public void stop() throws Exception {
+      pubsub.close();
+    }
   }
 }

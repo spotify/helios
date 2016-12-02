@@ -17,7 +17,9 @@
 
 package com.spotify.helios.servicescommon;
 
-public interface EventSender {
+import io.dropwizard.lifecycle.Managed;
+
+public interface EventSender extends Managed {
 
   void send(String topic, byte[] message);
 }
