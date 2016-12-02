@@ -17,23 +17,32 @@
 
 package com.spotify.helios.servicescommon;
 
+import com.codahale.metrics.Gauge;
+import com.codahale.metrics.MetricRegistry;
 import com.google.cloud.pubsub.PubSub;
 import com.google.cloud.pubsub.PubSubOptions;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.dropwizard.lifecycle.Managed;
 import io.dropwizard.lifecycle.setup.LifecycleEnvironment;
 import io.dropwizard.setup.Environment;
 import org.apache.kafka.clients.producer.KafkaProducer;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 
 public final class EventSenderFactory {
 
   private EventSenderFactory() {
   }
 
-  public static List<EventSender> build(Environment environment, CommonConfiguration<?> config) {
+  public static List<EventSender> build(
+      final Environment environment,
+      final CommonConfiguration<?> config,
+      final MetricRegistry metricRegistry) {
 
     final List<EventSender> senders = new ArrayList<>();
 
@@ -47,16 +56,32 @@ public final class EventSenderFactory {
       senders.add(new KafkaSender(kafkaProducer));
     }
 
-    final PubSub pubsub = PubSubOptions.getDefaultInstance().getService();
+    final LifecycleEnvironment lifecycle = environment.lifecycle();
 
-    for (final String prefix : config.getPubsubPrefixes()) {
-      senders.add(GooglePubSubSender.create(pubsub, prefix));
+    if (!config.getPubsubPrefixes().isEmpty()) {
+      final PubSub pubsub = PubSubOptions.getDefaultInstance().getService();
+
+      final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
+          new ThreadFactoryBuilder()
+              .setDaemon(true)
+              .setNameFormat("pubsub-healthchecker-%d")
+              .build()
+      );
+
+      final GooglePubSubSender.DefaultHealthChecker healthchecker =
+          new GooglePubSubSender.DefaultHealthChecker(pubsub, "health.canary", executor,
+              Duration.ofMinutes(5));
+
+      metricRegistry.register("pubsub-health", (Gauge<Boolean>) healthchecker::isHealthy);
+
+      for (final String prefix : config.getPubsubPrefixes()) {
+        final GooglePubSubSender sender = GooglePubSubSender.create(pubsub, prefix, healthchecker);
+        senders.add(sender);
+      }
+
+      lifecycle.manage(new ManagedPubSub(pubsub));
     }
 
-    // register the senders with the lifecycle so they will be started/stopped when the
-    // service starts and stops.
-    final LifecycleEnvironment lifecycle = environment.lifecycle();
-    lifecycle.manage(new ManagedPubSub(pubsub));
     senders.forEach(lifecycle::manage);
 
     return senders;

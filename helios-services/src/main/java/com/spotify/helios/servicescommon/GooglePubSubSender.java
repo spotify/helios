@@ -24,13 +24,11 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.JdkFutureAdapters;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.dropwizard.lifecycle.Managed;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -45,19 +43,6 @@ public class GooglePubSubSender implements EventSender {
   private final PubSub pubsub;
   private final String topicPrefix;
   private final HealthChecker healthchecker;
-
-  public static GooglePubSubSender create(final PubSub pubSub, final String topicPrefix) {
-    final ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor(
-        new ThreadFactoryBuilder()
-            .setDaemon(true)
-            .setNameFormat("pubsub-healthchecker-%d")
-            .build()
-    );
-    final DefaultHealthChecker healthchecker =
-        new DefaultHealthChecker(pubSub, topicPrefix + "canary", executor, Duration.ofMinutes(5));
-
-    return create(pubSub, topicPrefix, healthchecker);
-  }
 
   public static GooglePubSubSender create(final PubSub pubSub,
                                           final String topicPrefix,

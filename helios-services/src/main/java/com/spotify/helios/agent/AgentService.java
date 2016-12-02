@@ -237,7 +237,8 @@ public class AgentService extends AbstractIdleService implements Managed {
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
 
-    final List<EventSender> eventSenders = EventSenderFactory.build(environment, config);
+    final List<EventSender> eventSenders =
+        EventSenderFactory.build(environment, config, metricsRegistry);
 
     final TaskHistoryWriter historyWriter;
     if (config.isJobHistoryDisabled()) {

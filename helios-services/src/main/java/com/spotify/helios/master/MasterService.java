@@ -200,7 +200,8 @@ public class MasterService extends AbstractIdleService {
       }
     }
 
-    final List<EventSender> eventSenders = EventSenderFactory.build(environment, config);
+    final List<EventSender> eventSenders =
+        EventSenderFactory.build(environment, config, metricsRegistry);
 
     final ZooKeeperMasterModel model =
         new ZooKeeperMasterModel(zkClientProvider, config.getName(), eventSenders);
