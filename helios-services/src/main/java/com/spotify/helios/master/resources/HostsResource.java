@@ -27,6 +27,7 @@ import static com.spotify.helios.common.protocol.JobUndeployResponse.Status.OK;
 import static com.spotify.helios.master.http.Responses.badRequest;
 import static com.spotify.helios.master.http.Responses.forbidden;
 import static com.spotify.helios.master.http.Responses.notFound;
+import static java.util.Collections.emptyMap;
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON;
 
 import com.spotify.helios.common.descriptors.Deployment;
@@ -122,11 +123,7 @@ public class HostsResource {
           })
           .collect(Collectors.toList());
 
-      final Map<String, Map<String, String>> hostsAndLabels = hosts.stream()
-          .collect(Collectors.toMap(Function.identity(),
-                                    host -> model.getHostStatus(host).getLabels()
-                   )
-          );
+      final Map<String, Map<String, String>> hostsAndLabels = getLabels(hosts);
 
       final HostMatcher matcher = new HostMatcher(hostsAndLabels);
       hosts = matcher.getMatchingHosts(selectors);
@@ -360,5 +357,15 @@ public class HostsResource {
       throw badRequest();
     }
     return Optional.fromNullable(model.getDeployment(host, jobId));
+  }
+
+  private Map<String, Map<String, String>> getLabels(final List<String> hosts) {
+    final Function<String, Map<String, String>> getLabels =
+        host -> {
+          final HostStatus hostStatus = model.getHostStatus(host);
+          return hostStatus == null ? emptyMap() : hostStatus.getLabels();
+        };
+
+    return hosts.stream().collect(Collectors.toMap(Function.identity(), getLabels));
   }
 }
