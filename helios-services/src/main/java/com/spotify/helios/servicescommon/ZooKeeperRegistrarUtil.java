@@ -30,6 +30,7 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
+import org.apache.zookeeper.data.Stat;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +45,15 @@ import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations
 public class ZooKeeperRegistrarUtil {
 
   private static final Logger log = LoggerFactory.getLogger(ZooKeeperRegistrarUtil.class);
+
+  public static boolean isHostRegistered(final ZooKeeperClient client, final String host) {
+    try {
+      final Stat stat = client.exists(Paths.configHostId(host));
+      return stat != null;
+    } catch (KeeperException e) {
+      throw new HeliosRuntimeException("getting host " + host + " id failed", e);
+    }
+  }
 
   public static void registerHost(final ZooKeeperClient client, final String idPath,
                                   final String hostname, final String hostId)

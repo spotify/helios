@@ -17,6 +17,7 @@
 
 package com.spotify.helios.master.resources;
 
+import static java.util.Collections.emptyMap;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -66,8 +67,8 @@ public class HostsResourceTest {
 
     final HostStatus.Builder statusBuilder = HostStatus.newBuilder()
         .setStatus(HostStatus.Status.UP)
-        .setJobs(Collections.emptyMap())
-        .setStatuses(Collections.emptyMap());
+        .setJobs(emptyMap())
+        .setStatuses(emptyMap());
 
     int i = 1;
     for (final String host : hosts) {
@@ -79,7 +80,7 @@ public class HostsResourceTest {
           .setLabels(labels)
           .build();
 
-      when(model.getHostStatus(host)).thenReturn(hostStatus);
+      when(model.getHostLabels(host)).thenReturn(labels);
     }
   }
 
@@ -111,7 +112,7 @@ public class HostsResourceTest {
 
   @Test
   public void listHostsSelectorFilterMissingStatus() {
-    when(model.getHostStatus(hosts.get(0))).thenReturn(null);
+    when(model.getHostLabels(hosts.get(0))).thenReturn(emptyMap());
     assertThat(resource.list(null, ImmutableList.of("site=foo")),
                equalTo(hosts.subList(1, hosts.size())));
 
