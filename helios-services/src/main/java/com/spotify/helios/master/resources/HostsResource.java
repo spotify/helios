@@ -122,11 +122,7 @@ public class HostsResource {
           })
           .collect(Collectors.toList());
 
-      final Map<String, Map<String, String>> hostsAndLabels = hosts.stream()
-          .collect(Collectors.toMap(Function.identity(),
-                                    host -> model.getHostStatus(host).getLabels()
-                   )
-          );
+      final Map<String, Map<String, String>> hostsAndLabels = getLabels(hosts);
 
       final HostMatcher matcher = new HostMatcher(hostsAndLabels);
       hosts = matcher.getMatchingHosts(selectors);
@@ -360,5 +356,9 @@ public class HostsResource {
       throw badRequest();
     }
     return Optional.fromNullable(model.getDeployment(host, jobId));
+  }
+
+  private Map<String, Map<String, String>> getLabels(final List<String> hosts) {
+    return hosts.stream().collect(Collectors.toMap(Function.identity(), model::getHostLabels));
   }
 }

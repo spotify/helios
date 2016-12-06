@@ -44,6 +44,11 @@ public interface MasterModel {
 
   HostStatus getHostStatus(String host);
 
+  /**
+   * Returns labels for {@code host}. Returns an empty map for hosts not found in the store.
+   */
+  Map<String, String> getHostLabels(String host);
+
   void addJob(Job job) throws JobExistsException;
 
   Job getJob(JobId jobId);

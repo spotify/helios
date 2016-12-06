@@ -1692,17 +1692,10 @@ public class ZooKeeperMasterModel implements MasterModel {
    */
   @Override
   public HostStatus getHostStatus(final String host) {
-    final Stat stat;
     final ZooKeeperClient client = provider.get("getHostStatus");
 
-    try {
-      stat = client.exists(Paths.configHostId(host));
-    } catch (KeeperException e) {
-      throw new HeliosRuntimeException("Failed to check host status", e);
-    }
-
-    if (stat == null) {
-      log.warn("Missing configuration for host {}", host);
+    if (!ZooKeeperRegistrarUtil.isHostRegistered(client, host)) {
+      log.warn("Host {} isn't registered in ZooKeeper.", host);
       return null;
     }
 
@@ -1723,6 +1716,18 @@ public class ZooKeeperMasterModel implements MasterModel {
         .setEnvironment(environment)
         .setLabels(labels)
         .build();
+  }
+
+  @Override
+  public Map<String, String> getHostLabels(final String host) {
+    final ZooKeeperClient client = provider.get("getHostStatus");
+
+    if (!ZooKeeperRegistrarUtil.isHostRegistered(client, host)) {
+      return emptyMap();
+    }
+
+    final Map<String, String> labels = getLabels(client, host);
+    return labels == null ? emptyMap() : labels;
   }
 
   private <T> T tryGetEntity(final ZooKeeperClient client, String path, TypeReference<T> type,
