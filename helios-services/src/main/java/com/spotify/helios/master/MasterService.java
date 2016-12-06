@@ -100,7 +100,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
@@ -124,7 +123,6 @@ public class MasterService extends AbstractIdleService {
   private final ExpiredJobReaper expiredJobReaper;
   private final CuratorClientFactory curatorClientFactory;
   private final RollingUpdateService rollingUpdateService;
-  private final Map<String, String> environmentVariables;
   private final Optional<DeadAgentReaper> agentReaper;
   private final Optional<OldJobReaper> oldJobReaper;
   private final Optional<JobHistoryReaper> jobHistoryReaper;
@@ -137,19 +135,16 @@ public class MasterService extends AbstractIdleService {
    * @param config The service configuration.
    * @param environment The DropWizard environment.
    * @param curatorClientFactory The zookeeper curator factory.
-   * @param environmentVariables Env vars
    * @throws ConfigurationException If there is a problem with the DropWizard configuration.
    * @throws IOException IOException
    * @throws InterruptedException InterruptedException
    */
   public MasterService(final MasterConfig config,
                        final Environment environment,
-                       final CuratorClientFactory curatorClientFactory,
-                       final Map<String, String> environmentVariables)
+                       final CuratorClientFactory curatorClientFactory)
       throws ConfigurationException, IOException, InterruptedException {
     this.config = config;
     this.curatorClientFactory = curatorClientFactory;
-    this.environmentVariables = environmentVariables;
 
     // Configure metrics
     final MetricRegistry metricsRegistry = environment.metrics();
