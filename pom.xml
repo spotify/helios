@@ -145,12 +145,12 @@
       <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>slf4j-api</artifactId>
-        <version>1.7.12</version>
+        <version>1.7.21</version>
       </dependency>
       <dependency>
         <groupId>com.google.guava</groupId>
         <artifactId>guava</artifactId>
-        <version>19.0</version>
+        <version>20.0</version>
       </dependency>
       <dependency>
         <groupId>com.fasterxml.jackson.dataformat</groupId>
@@ -317,6 +317,11 @@
             <artifactId>netty-codec-http2</artifactId>
           </exclusion>
         </exclusions>
+      </dependency>
+      <dependency>
+        <groupId>com.spotify</groupId>
+        <artifactId>ssh-agent-tls</artifactId>
+        <version>0.0.1</version>
       </dependency>
 
       <!--

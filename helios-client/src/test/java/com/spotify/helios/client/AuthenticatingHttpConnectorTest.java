@@ -25,8 +25,10 @@ import static org.junit.Assert.assertSame;
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.argThat;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Matchers.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -34,10 +36,11 @@ import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.net.InetAddresses;
-import com.spotify.helios.client.HttpsHandlers.CertificateFileHttpsHandler;
-import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
+import com.spotify.sshagenttls.CertKeyPaths;
+import com.spotify.sshagenttls.HttpsHandler;
+
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.URI;
@@ -48,7 +51,6 @@ import javax.net.ssl.HttpsURLConnection;
 import org.hamcrest.CustomTypeSafeMatcher;
 import org.junit.Before;
 import org.junit.Test;
-import org.mockito.ArgumentMatcher;
 
 public class AuthenticatingHttpConnectorTest {
 
@@ -77,7 +79,7 @@ public class AuthenticatingHttpConnectorTest {
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
     return new AuthenticatingHttpConnector(USER,
         proxy,
-        Optional.<ClientCertificatePath>absent(),
+        Optional.<CertKeyPaths>absent(),
         endpointIterator,
         connector,
         identities);
@@ -87,8 +89,8 @@ public class AuthenticatingHttpConnectorTest {
 
     final EndpointIterator endpointIterator = EndpointIterator.of(endpoints);
 
-    final ClientCertificatePath clientCertificatePath =
-        new ClientCertificatePath(CERTIFICATE_PATH, KEY_PATH);
+    final CertKeyPaths clientCertificatePath =
+        CertKeyPaths.create(CERTIFICATE_PATH, KEY_PATH);
 
     return new AuthenticatingHttpConnector(USER,
         Optional.<AgentProxy>absent(),
@@ -163,8 +165,7 @@ public class AuthenticatingHttpConnectorTest {
 
     authConnector.connect(uri, method, entity, headers);
 
-    verify(connector).setExtraHttpsHandler(certFileHttpsHandlerWithArgs(
-        USER, CERTIFICATE_PATH, KEY_PATH));
+    verify(connector).setExtraHttpsHandler(isA(HttpsHandler.class));
   }
 
   @Test
@@ -190,7 +191,7 @@ public class AuthenticatingHttpConnectorTest {
 
     authConnector.connect(uri, method, entity, headers);
 
-    verify(connector).setExtraHttpsHandler(sshAgentHttpsHandlerWithArgs(USER, proxy, identity));
+    verify(connector).setExtraHttpsHandler(isA(HttpsHandler.class));
   }
 
   @Test
@@ -217,7 +218,7 @@ public class AuthenticatingHttpConnectorTest {
     final HttpURLConnection returnedConnection = authConnector.connect(
         uri, method, entity, headers);
 
-    verify(connector).setExtraHttpsHandler(sshAgentHttpsHandlerWithArgs(USER, proxy, identity));
+    verify(connector).setExtraHttpsHandler(isA(HttpsHandler.class));
 
     assertSame("If there is only one identity do not expect any additional endpoints to "
                + "be called after the first returns Unauthorized",
@@ -254,8 +255,8 @@ public class AuthenticatingHttpConnectorTest {
     final HttpURLConnection returnedConnection = authConnector.connect(
         uri, method, entity, headers);
 
-    verify(connector).setExtraHttpsHandler(sshAgentHttpsHandlerWithArgs(USER, proxy, id1));
-    verify(connector).setExtraHttpsHandler(sshAgentHttpsHandlerWithArgs(USER, proxy, id2));
+    verify(connector, times(2))
+        .setExtraHttpsHandler(isA(HttpsHandler.class));
 
     assertSame("Expect returned connection to be the second one, with successful response code",
         returnedConnection, connection2);
@@ -273,43 +274,6 @@ public class AuthenticatingHttpConnectorTest {
         return ip;
       }
     };
-  }
-
-  private static HttpsHandler sshAgentHttpsHandlerWithArgs(
-      final String user, final AgentProxy agentProxy, final Identity identity) {
-    return argThat(new ArgumentMatcher<HttpsHandler>() {
-      @Override
-      public boolean matches(final Object handler) {
-        if (!(handler instanceof SshAgentHttpsHandler)) {
-          return false;
-        }
-
-        final SshAgentHttpsHandler authHandler = (SshAgentHttpsHandler) handler;
-        return authHandler.getUser().equals(user)
-               && authHandler.getAgentProxy().equals(agentProxy)
-               && authHandler.getIdentity().equals(identity);
-      }
-    });
-  }
-
-  private static HttpsHandler certFileHttpsHandlerWithArgs(
-      final String user, final Path certificatePath, final Path keyPath) {
-    return argThat(new ArgumentMatcher<HttpsHandler>() {
-      @Override
-      public boolean matches(final Object handler) {
-        if (!(handler instanceof HttpsHandlers.CertificateFileHttpsHandler)) {
-          return false;
-        }
-
-        final CertificateFileHttpsHandler authHandler = (CertificateFileHttpsHandler) handler;
-
-        final ClientCertificatePath expectedCertPath =
-            new ClientCertificatePath(certificatePath, keyPath);
-
-        return authHandler.getUser().equals(user)
-               && authHandler.getClientCertificatePath().equals(expectedCertPath);
-      }
-    });
   }
 
   @Test

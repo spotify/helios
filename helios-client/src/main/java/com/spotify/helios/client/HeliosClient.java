@@ -62,6 +62,7 @@ import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListeningScheduledExecutorService;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+
 import com.spotify.helios.common.HeliosException;
 import com.spotify.helios.common.Json;
 import com.spotify.helios.common.Resolver;
@@ -89,6 +90,8 @@ import com.spotify.helios.common.protocol.TaskStatusEvents;
 import com.spotify.helios.common.protocol.VersionResponse;
 import com.spotify.sshagentproxy.AgentProxies;
 import com.spotify.sshagentproxy.AgentProxy;
+import com.spotify.sshagenttls.CertKeyPaths;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.URI;
@@ -570,7 +573,7 @@ public class HeliosClient implements Closeable {
     private static final AtomicInteger clientCounter = new AtomicInteger(0);
 
     private String user;
-    private ClientCertificatePath clientCertificatePath;
+    private CertKeyPaths certKeyPaths;
     private Supplier<List<Endpoint>> endpointSupplier;
     private boolean sslHostnameVerification = true;
     private ListeningScheduledExecutorService executorService;
@@ -624,8 +627,8 @@ public class HeliosClient implements Closeable {
       return this;
     }
 
-    public Builder setClientCertificatePath(final ClientCertificatePath clientCertificatePath) {
-      this.clientCertificatePath = clientCertificatePath;
+    public Builder setCertKeyPaths(final CertKeyPaths certKeyPaths) {
+      this.certKeyPaths = certKeyPaths;
       return this;
     }
 
@@ -711,16 +714,15 @@ public class HeliosClient implements Closeable {
         log.debug("Exception (possibly benign) while loading AgentProxy", e);
       }
 
-      // set up the ClientCertificatePath, giving precedence to any values set
-      // with setClientCertificatePath()
-      if (clientCertificatePath == null) {
+      // set up the CertKeyPaths, giving precedence to any values set with setCertKeyPaths()
+      if (certKeyPaths == null) {
         final String heliosCertPath = System.getenv(HELIOS_CERT_PATH);
         if (!isNullOrEmpty(heliosCertPath)) {
           final Path certPath = Paths.get(heliosCertPath, "cert.pem");
           final Path keyPath = Paths.get(heliosCertPath, "key.pem");
 
           if (certPath.toFile().canRead() && keyPath.toFile().canRead()) {
-            this.clientCertificatePath = new ClientCertificatePath(certPath, keyPath);
+            this.certKeyPaths = CertKeyPaths.create(certPath, keyPath);
           } else {
             log.warn("{} is set to {}, but {} and/or {} do not exist or cannot be read. "
                      + "Will not send client certificate in HeliosClient requests.",
@@ -731,7 +733,7 @@ public class HeliosClient implements Closeable {
 
       return new AuthenticatingHttpConnector(user,
           agentProxyOpt,
-          Optional.fromNullable(clientCertificatePath),
+          Optional.fromNullable(certKeyPaths),
           endpointIterator,
           connector);
     }

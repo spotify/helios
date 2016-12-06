@@ -26,11 +26,12 @@ import static java.net.HttpURLConnection.HTTP_UNAUTHORIZED;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
-import com.spotify.helios.client.HttpsHandlers.CertificateFileHttpsHandler;
-import com.spotify.helios.client.HttpsHandlers.SshAgentHttpsHandler;
 import com.spotify.helios.common.HeliosException;
 import com.spotify.sshagentproxy.AgentProxy;
 import com.spotify.sshagentproxy.Identity;
+import com.spotify.sshagenttls.CertKeyPaths;
+import com.spotify.sshagenttls.HttpsHandlers;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.HttpURLConnection;
@@ -55,7 +56,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
 
   private final String user;
   private final Optional<AgentProxy> agentProxy;
-  private final Optional<ClientCertificatePath> clientCertificatePath;
+  private final Optional<CertKeyPaths> clientCertificatePath;
   private final List<Identity> identities;
   private final EndpointIterator endpointIterator;
 
@@ -63,7 +64,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
 
   public AuthenticatingHttpConnector(final String user,
                                      final Optional<AgentProxy> agentProxyOpt,
-                                     final Optional<ClientCertificatePath> clientCertificatePath,
+                                     final Optional<CertKeyPaths> clientCertificatePath,
                                      final EndpointIterator endpointIterator,
                                      final DefaultHttpConnector delegate) {
     this(user, agentProxyOpt, clientCertificatePath, endpointIterator,
@@ -73,7 +74,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
   @VisibleForTesting
   AuthenticatingHttpConnector(final String user,
                               final Optional<AgentProxy> agentProxyOpt,
-                              final Optional<ClientCertificatePath> clientCertificatePath,
+                              final Optional<CertKeyPaths> clientCertificatePath,
                               final EndpointIterator endpointIterator,
                               final DefaultHttpConnector delegate,
                               final List<Identity> identities) {
@@ -129,11 +130,11 @@ public class AuthenticatingHttpConnector implements HttpConnector {
                                                        final Map<String, List<String>> headers)
       throws HeliosException {
 
-    final ClientCertificatePath clientCertificatePath = this.clientCertificatePath.get();
+    final CertKeyPaths clientCertificatePath = this.clientCertificatePath.get();
     log.debug("configuring CertificateFileHttpsHandler with {}", clientCertificatePath);
 
     delegate.setExtraHttpsHandler(
-        new CertificateFileHttpsHandler(user, false, clientCertificatePath)
+        HttpsHandlers.createCertFileHttpsHandler(user, false, clientCertificatePath)
     );
 
     return doConnect(ipUri, method, entity, headers);
@@ -154,7 +155,7 @@ public class AuthenticatingHttpConnector implements HttpConnector {
       final Identity identity = queue.poll();
 
       delegate.setExtraHttpsHandler(
-          new SshAgentHttpsHandler(user, false, agentProxy.get(), identity));
+          HttpsHandlers.createSshAgentHttpsHandler(user, false, agentProxy.get(), identity));
 
       connection = doConnect(uri, method, entity, headers);
 

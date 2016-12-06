@@ -78,6 +78,6 @@ The latter is typically not suitable for non-interactive use cases (e.g. a scrip
 
 ### Authenticating with the Helios API
 
-When you use the Helios API (via the `HeliosClient` class) you have the same options as when using the CLI, as explained above. You can also explicitly set the path where the certificate and key is via the `HeliosClient.Builder.setClientCertificatePath()` method. If a certificate path is set explicitly the `HELIOS_CERT_PATH` is ignored.
+When you use the Helios API (via the `HeliosClient` class) you have the same options as when using the CLI, as explained above. You can also explicitly set the path where the certificate and key is via the `HeliosClient.Builder.setCertKeyPaths()` method. If a certificate path is set explicitly the `HELIOS_CERT_PATH` is ignored.
 
 Again, for non-interactive use cases relying on ssh-agent is typically not a suitable solution so we recommend that you specify a path either explicitly or via the `HELIOS_CERT_PATH` environment variable.
