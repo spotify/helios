@@ -18,5 +18,12 @@
 package com.spotify.helios.servicescommon;
 
 public interface EventSender {
+
   void send(String topic, byte[] message);
+
+  /**
+   * Tests if the sender is healthy. Provides a way for callers to filter out unhealthy event
+   * senders to avoid sending events via unhealthy senders.
+   */
+  boolean isHealthy();
 }
