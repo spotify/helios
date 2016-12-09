@@ -17,33 +17,46 @@
 
 package com.spotify.helios.servicescommon;
 
-import com.google.cloud.pubsub.Message;
-import com.google.cloud.pubsub.PubSub;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Mockito;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.google.cloud.pubsub.Message;
+import com.google.cloud.pubsub.PubSub;
+import org.junit.Test;
 
 public class GooglePubSubSenderTest {
-  private PubSub pubsub;
-  private String prefix = "prefix.";
-  private GooglePubSubSender sender;
 
-  @Before
-  public void setUp() {
-    pubsub = Mockito.mock(PubSub.class);
-    sender = new GooglePubSubSender(pubsub, prefix);
-  }
+  private final PubSub pubsub = mock(PubSub.class);
+  private final String prefix = "prefix.";
+
+  private final GooglePubSubSender.HealthChecker healthchecker =
+      mock(GooglePubSubSender.HealthChecker.class);
+
+  private final GooglePubSubSender sender =
+      GooglePubSubSender.create(pubsub, prefix, healthchecker);
 
   @Test
-  public void testSend() throws Exception {
+  public void testSendWhenHealthy() throws Exception {
+    when(healthchecker.isHealthy()).thenReturn(true);
+
     final String topic = "Event";
     sender.send(topic, new byte['x']);
 
     verify(pubsub).publishAsync(eq(prefix + topic), any(Message.class));
   }
+
+  @Test
+  public void testSendWhenUnhealthy() throws Exception {
+    when(healthchecker.isHealthy()).thenReturn(false);
+
+    final String topic = "Event";
+    sender.send(topic, new byte['x']);
+
+    verify(pubsub, never()).publishAsync(eq(prefix + topic), any(Message.class));
+  }
+
 }
