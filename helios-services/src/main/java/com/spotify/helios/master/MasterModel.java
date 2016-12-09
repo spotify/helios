@@ -17,6 +17,7 @@
 
 package com.spotify.helios.master;
 
+import com.spotify.helios.common.descriptors.AgentInfo;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
 import com.spotify.helios.common.descriptors.DeploymentGroupStatus;
@@ -48,6 +49,10 @@ public interface MasterModel {
    * Returns labels for {@code host}. Returns an empty map for hosts not found in the store.
    */
   Map<String, String> getHostLabels(String host);
+
+  boolean isHostUp(String host);
+
+  AgentInfo getAgentInfo(String host);
 
   void addJob(Job job) throws JobExistsException;
 

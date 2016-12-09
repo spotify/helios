@@ -1728,6 +1728,17 @@ public class ZooKeeperMasterModel implements MasterModel {
     return labels == null ? emptyMap() : labels;
   }
 
+  @Override
+  public boolean isHostUp(final String host) {
+    final ZooKeeperClient client = provider.get("isHostUp");
+    return ZooKeeperRegistrarUtil.isHostRegistered(client, host) && checkHostUp(client, host);
+  }
+
+  @Override
+  public AgentInfo getAgentInfo(final String host) {
+    return getAgentInfo(provider.get("getAgentInfo"), host);
+  }
+
   private <T> T tryGetEntity(final ZooKeeperClient client, String path, TypeReference<T> type,
                              String name) {
     try {
