@@ -22,6 +22,7 @@ import static com.spotify.helios.common.descriptors.DeploymentGroup.RollingUpdat
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.DONE;
 import static com.spotify.helios.common.descriptors.DeploymentGroupStatus.State.FAILED;
 import static com.spotify.helios.servicescommon.coordination.ZooKeeperOperations.set;
+import static java.util.Collections.singletonList;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
@@ -150,8 +151,8 @@ public class DeploymentGroupTest {
     // Setup some hosts
     final String oldHost = "host1";
     final String newHost = "host2";
-    final Map<String, HostStatus> undeployHostStatuses = mockHostStatus(masterModel, oldHost);
-    final Map<String, HostStatus> updateHostStatuses = mockHostStatus(masterModel, newHost);
+    client.ensurePath(Paths.statusHostUp(oldHost));
+    client.ensurePath(Paths.statusHostUp(newHost));
 
     // Give the deployment group a host.
     client.setData(
@@ -184,8 +185,8 @@ public class DeploymentGroupTest {
     // - Perform a rolling undeploy for the removed (old) host
     // - Perform a rolling update for the added (new) host and the unchanged host
     final List<RolloutTask> tasks = ImmutableList.<RolloutTask>builder()
-        .addAll(RollingUndeployPlanner.of(changed).plan(undeployHostStatuses))
-        .addAll(RollingUpdatePlanner.of(changed).plan(updateHostStatuses))
+        .addAll(RollingUndeployPlanner.of(changed).plan(singletonList(oldHost)))
+        .addAll(RollingUpdatePlanner.of(changed).plan(singletonList(newHost)))
         .build();
 
     final ZooKeeperOperation setDeploymentGroupTasks = set(
