@@ -90,6 +90,7 @@ import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
 
+import java.util.stream.Collectors;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.BadVersionException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -663,10 +664,18 @@ public class ZooKeeperMasterModel implements MasterModel {
     final List<String> undeployHostsCopy = new ArrayList<>(undeployHosts);
     undeployHostsCopy.removeAll(updateHostsCopy);
 
+    // we only care about hosts that are UP
+    final List<String> upHostsToUndeploy = undeployHostsCopy.stream()
+        .filter(host -> checkHostUp(zooKeeperClient, host))
+        .collect(Collectors.toList());
+    final List<String> upHostsToDeploy = updateHostsCopy.stream()
+        .filter(host -> checkHostUp(zooKeeperClient, host))
+        .collect(Collectors.toList());
+
     rolloutTasks.addAll(RollingUndeployPlanner.of(deploymentGroup)
-                            .plan(getHostStatuses(undeployHostsCopy)));
+                            .plan(upHostsToUndeploy));
     rolloutTasks.addAll(RollingUpdatePlanner.of(deploymentGroup)
-                            .plan(getHostStatuses(updateHostsCopy)));
+                            .plan(upHostsToDeploy));
 
     log.info("generated rolloutTasks for deployment-group name={} "
              + "updateHosts={} undeployHosts={}: {}",
@@ -680,17 +689,6 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     return new RollingUpdateOpFactory(tasks, DEPLOYMENT_GROUP_EVENT_FACTORY)
         .start(deploymentGroup, zooKeeperClient);
-  }
-
-  private Map<String, HostStatus> getHostStatuses(final List<String> hosts) {
-    final ImmutableMap.Builder<String, HostStatus> hostsAndStatuses = ImmutableMap.builder();
-    hosts.forEach(host -> {
-      final HostStatus status = getHostStatus(host);
-      if (status != null) {
-        hostsAndStatuses.put(host, status);
-      }
-    });
-    return hostsAndStatuses.build();
   }
 
   private Map<String, VersionedValue<DeploymentGroupTasks>> getDeploymentGroupTasks(

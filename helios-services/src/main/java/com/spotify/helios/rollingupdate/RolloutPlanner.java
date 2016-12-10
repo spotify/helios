@@ -17,12 +17,15 @@
 
 package com.spotify.helios.rollingupdate;
 
-import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.common.descriptors.RolloutTask;
 
 import java.util.List;
-import java.util.Map;
 
 public interface RolloutPlanner {
-  List<RolloutTask> plan(final Map<String, HostStatus> hostsAndStatuses);
+
+  /**
+   * Returns a list of {@link RolloutTask}s.
+   * Caller is responsible for passing in a list of hosts that are up.
+   */
+  List<RolloutTask> plan(final List<String> hosts);
 }

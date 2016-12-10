@@ -22,7 +22,6 @@ import static com.spotify.helios.servicescommon.Reactor.Callback;
 import static java.util.concurrent.TimeUnit.SECONDS;
 
 import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.master.HostMatcher;
 import com.spotify.helios.master.MasterModel;
 import com.spotify.helios.servicescommon.Reactor;
@@ -95,10 +94,7 @@ public class RollingUpdateService extends AbstractIdleService {
 
       // determine all hosts and their labels
       for (final String host : allHosts) {
-        final HostStatus hostStatus = masterModel.getHostStatus(host);
-        if (hostStatus != null) {
-          hostsToLabels.put(host, hostStatus.getLabels());
-        }
+        hostsToLabels.put(host, masterModel.getHostLabels(host));
       }
 
       final HostMatcher hostMatcher = new HostMatcher(hostsToLabels);
