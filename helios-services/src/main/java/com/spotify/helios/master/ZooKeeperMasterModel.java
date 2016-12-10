@@ -183,14 +183,27 @@ public class ZooKeeperMasterModel implements MasterModel {
     }
   }
 
-  /**
-   * Returns a list of the hosts/agents that have been registered.
-   */
   @Override
   public List<String> listHosts() {
     try {
       // TODO (dano): only return hosts whose agents completed registration (i.e. has id nodes)
       return provider.get("listHosts").getChildren(Paths.configHosts());
+    } catch (KeeperException.NoNodeException e) {
+      return emptyList();
+    } catch (KeeperException e) {
+      throw new HeliosRuntimeException("listing hosts failed", e);
+    }
+  }
+
+  @Override
+  public List<String> listUpHosts() {
+    try {
+      // TODO (dano): only return hosts whose agents completed registration (i.e. has id nodes)
+      final ZooKeeperClient client = provider.get("listHosts");
+      return client.getChildren(Paths.configHosts())
+          .stream()
+          .filter(host -> checkHostUp(client, host))
+          .collect(Collectors.toList());
     } catch (KeeperException.NoNodeException e) {
       return emptyList();
     } catch (KeeperException e) {

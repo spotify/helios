@@ -89,7 +89,7 @@ public class RollingUpdateService extends AbstractIdleService {
 
     @Override
     public void run(final boolean timeout) throws InterruptedException {
-      final List<String> allHosts = masterModel.listHosts();
+      final List<String> allHosts = masterModel.listUpHosts();
       final Map<String, Map<String, String>> hostsToLabels = Maps.newHashMap();
 
       // determine all hosts and their labels
