@@ -21,16 +21,12 @@ import com.google.common.collect.Lists;
 
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.descriptors.AgentInfo;
-import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.HostStatus;
-import com.spotify.helios.common.descriptors.JobId;
-import com.spotify.helios.common.descriptors.TaskStatus;
 import com.spotify.helios.master.MasterModel;
 
 import org.joda.time.Instant;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -85,16 +81,12 @@ public class DeadAgentReaperTest {
         datapoints.stream().map(input -> input.host).collect(Collectors.toList())));
 
     for (final Datapoint datapoint : datapoints) {
-      when(masterModel.getHostStatus(datapoint.host)).thenReturn(
-          HostStatus.newBuilder()
-              .setStatus(datapoint.status)
-              .setAgentInfo(AgentInfo.newBuilder()
+      when(masterModel.isHostUp(datapoint.host))
+          .thenReturn(HostStatus.Status.UP == datapoint.status);
+      when(masterModel.getAgentInfo(datapoint.host)).thenReturn(AgentInfo.newBuilder()
                                 .setStartTime(datapoint.startTime)
                                 .setUptime(datapoint.uptime)
-                                .build())
-              .setJobs(Collections.<JobId, Deployment>emptyMap())
-              .setStatuses(Collections.<JobId, TaskStatus>emptyMap())
-              .build());
+                                .build());
     }
 
     final DeadAgentReaper reaper = new DeadAgentReaper(masterModel, TIMEOUT_HOURS, clock, 100, 0);

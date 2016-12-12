@@ -20,7 +20,6 @@ package com.spotify.helios.master.reaper;
 import com.spotify.helios.common.Clock;
 import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.AgentInfo;
-import com.spotify.helios.common.descriptors.HostStatus;
 import com.spotify.helios.master.MasterModel;
 
 import com.google.common.annotations.VisibleForTesting;
@@ -76,13 +75,12 @@ public class DeadAgentReaper extends RateLimitedService<String> {
   @Override
   void processItem(final String agent) {
     try {
-      final HostStatus hostStatus = masterModel.getHostStatus(agent);
-      if (hostStatus == null || hostStatus.getStatus() != HostStatus.Status.DOWN) {
-        // Host not found or host not DOWN -- nothing to do
+      if (masterModel.isHostUp(agent)) {
+        // Host UP -- nothing to do
         return;
       }
 
-      final AgentInfo agentInfo = hostStatus.getAgentInfo();
+      final AgentInfo agentInfo = masterModel.getAgentInfo(agent);
       if (agentInfo == null) {
         return;
       }
