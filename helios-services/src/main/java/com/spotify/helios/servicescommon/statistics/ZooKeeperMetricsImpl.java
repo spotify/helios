@@ -17,7 +17,6 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 
@@ -28,20 +27,17 @@ public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
   private static final String TYPE = "zookeeper";
 
   private final String prefix;
-  private final Counter transientErrorCounter;
   private final Meter transientErrorMeter;
   private final MetricRegistry registry;
 
   public ZooKeeperMetricsImpl(final String group, final MetricRegistry registry) {
     prefix = MetricRegistry.name(group, TYPE) + ".";
     this.registry = registry;
-    transientErrorCounter = registry.counter(prefix + "transient_error_count");
     transientErrorMeter = registry.meter(prefix + "transient_error_meter");
   }
 
   @Override
   public void zookeeperTransientError() {
-    transientErrorCounter.inc();
     transientErrorMeter.mark();
   }
 
