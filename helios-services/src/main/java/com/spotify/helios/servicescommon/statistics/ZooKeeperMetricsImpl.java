@@ -21,8 +21,6 @@ import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
 import org.apache.curator.framework.state.ConnectionState;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
@@ -32,7 +30,6 @@ public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
   private final String prefix;
   private final Meter transientErrorMeter;
   private final Meter connectionStateChanged;
-  private final Map<ConnectionState, Meter> connectionStates = new HashMap<>();
   private final MetricRegistry registry;
 
   public ZooKeeperMetricsImpl(final String group, final MetricRegistry registry) {
@@ -40,6 +37,11 @@ public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
     this.registry = registry;
     this.transientErrorMeter = registry.meter(prefix + "transient_error_meter");
     this.connectionStateChanged = registry.meter(prefix + "connection_state_changed");
+
+    // create all of the meter instances immediately so that we report 0 values after a restart
+    for (final ConnectionState state : ConnectionState.values()) {
+      connectionStateMeter(state);
+    }
   }
 
   @Override
@@ -55,11 +57,10 @@ public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
   @Override
   public void connectionStateChanged(final ConnectionState newState) {
     connectionStateChanged.mark();
+    connectionStateMeter(newState).mark();
+  }
 
-    final Meter meter = connectionStates.computeIfAbsent(newState,
-        state -> registry.meter(prefix + "connection_state_" + state.name()));
-    if (meter != null) {
-      meter.mark();
-    }
+  private Meter connectionStateMeter(final ConnectionState state) {
+    return registry.meter(prefix + "connection_state_" + state.name());
   }
 }
