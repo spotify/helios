@@ -17,6 +17,8 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
+import org.apache.curator.framework.state.ConnectionState;
+
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -37,4 +39,6 @@ public interface ZooKeeperMetrics {
    * @param timeUnit Time unit of the duration.
    */
   void updateTimer(String name, long duration, TimeUnit timeUnit);
+
+  void connectionStateChanged(ConnectionState newState);
 }

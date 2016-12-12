@@ -19,7 +19,10 @@ package com.spotify.helios.servicescommon.statistics;
 
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.curator.framework.state.ConnectionState;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
@@ -28,12 +31,15 @@ public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
 
   private final String prefix;
   private final Meter transientErrorMeter;
+  private final Meter connectionStateChanged;
+  private final Map<ConnectionState, Meter> connectionStates = new HashMap<>();
   private final MetricRegistry registry;
 
   public ZooKeeperMetricsImpl(final String group, final MetricRegistry registry) {
-    prefix = MetricRegistry.name(group, TYPE) + ".";
+    this.prefix = MetricRegistry.name(group, TYPE) + ".";
     this.registry = registry;
-    transientErrorMeter = registry.meter(prefix + "transient_error_meter");
+    this.transientErrorMeter = registry.meter(prefix + "transient_error_meter");
+    this.connectionStateChanged = registry.meter(prefix + "connection_state_changed");
   }
 
   @Override
@@ -44,5 +50,16 @@ public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
   @Override
   public void updateTimer(final String name, final long duration, final TimeUnit timeUnit) {
     registry.timer(prefix + name).update(duration, timeUnit);
+  }
+
+  @Override
+  public void connectionStateChanged(final ConnectionState newState) {
+    connectionStateChanged.mark();
+
+    final Meter meter = connectionStates.computeIfAbsent(newState,
+        state -> registry.meter(prefix + "connection_state_" + state.name()));
+    if (meter != null) {
+      meter.mark();
+    }
   }
 }

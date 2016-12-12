@@ -17,32 +17,49 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.hasKey;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.Timer;
-
+import org.apache.curator.framework.state.ConnectionState;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.mockito.Mock;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-@RunWith(MockitoJUnitRunner.class)
 public class ZooKeeperMetricsImplTest {
 
-  @Mock MetricRegistry registry;
-  @Mock Timer timer;
+  private final MetricRegistry registry = new MetricRegistry();
+  private final ZooKeeperMetrics metrics = new ZooKeeperMetricsImpl("group", registry);
 
   @Test
   public void testTimer() throws Exception {
-    when(registry.timer("group.zookeeper.timer")).thenReturn(timer);
-    final ZooKeeperMetrics zkMetrics = new ZooKeeperMetricsImpl("group", registry);
-    zkMetrics.updateTimer("timer", 100, TimeUnit.NANOSECONDS);
-    verify(registry).timer(eq("group.zookeeper.timer"));
-    verify(timer).update(100, TimeUnit.NANOSECONDS);
+    metrics.updateTimer("timer", 100, TimeUnit.NANOSECONDS);
+
+    final String name = "group.zookeeper.timer";
+    assertThat(registry.getTimers(), hasKey(name));
+
+    final Timer timer = registry.timer(name);
+    assertEquals(1, timer.getCount());
+    assertArrayEquals(new long[]{100}, timer.getSnapshot().getValues());
+  }
+
+  @Test
+  public void testConnectionStateChanged() throws Exception {
+    metrics.connectionStateChanged(ConnectionState.SUSPENDED);
+    metrics.connectionStateChanged(ConnectionState.RECONNECTED);
+
+    assertThat(registry.getMeters(), allOf(
+        hasKey("group.zookeeper.connection_state_changed"),
+        hasKey("group.zookeeper.connection_state_SUSPENDED"),
+        hasKey("group.zookeeper.connection_state_RECONNECTED")
+    ));
+
+    assertEquals(2, registry.meter("group.zookeeper.connection_state_changed").getCount());
+    assertEquals(1, registry.meter("group.zookeeper.connection_state_SUSPENDED").getCount());
+    assertEquals(1, registry.meter("group.zookeeper.connection_state_RECONNECTED").getCount());
   }
 }
