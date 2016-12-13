@@ -17,6 +17,8 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
+import org.apache.curator.framework.state.ConnectionState;
+
 import java.util.concurrent.TimeUnit;
 
 public class NoopZooKeeperMetrics implements ZooKeeperMetrics {
@@ -25,5 +27,9 @@ public class NoopZooKeeperMetrics implements ZooKeeperMetrics {
 
   @Override
   public void updateTimer(String name, long duration, TimeUnit timeUnit) {
+  }
+
+  @Override
+  public void connectionStateChanged(final ConnectionState newState) {
   }
 }

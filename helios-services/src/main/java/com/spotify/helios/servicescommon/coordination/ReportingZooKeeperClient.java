@@ -18,7 +18,6 @@
 package com.spotify.helios.servicescommon.coordination;
 
 import com.fasterxml.jackson.databind.JavaType;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.transaction.CuratorTransactionResult;
 import org.apache.curator.framework.listen.Listenable;
@@ -202,6 +201,8 @@ public class ReportingZooKeeperClient implements ZooKeeperClient {
   @Override
   public void start() {
     client.start();
+    client.getConnectionStateListenable().addListener(
+        (client, newState) -> reporter.connectionStateChanged(newState));
   }
 
   @Override

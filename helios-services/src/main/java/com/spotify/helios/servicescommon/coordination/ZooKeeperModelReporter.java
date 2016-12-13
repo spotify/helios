@@ -17,16 +17,18 @@
 
 package com.spotify.helios.servicescommon.coordination;
 
-import com.google.common.base.Throwables;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
+import static com.google.common.base.Preconditions.checkNotNull;
 
-import com.codahale.metrics.Clock;
 import com.spotify.helios.servicescommon.NoOpRiemannClient;
 import com.spotify.helios.servicescommon.RiemannFacade;
 import com.spotify.helios.servicescommon.statistics.NoopZooKeeperMetrics;
 import com.spotify.helios.servicescommon.statistics.ZooKeeperMetrics;
 
+import com.codahale.metrics.Clock;
+import com.google.common.base.Throwables;
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Lists;
+import org.apache.curator.framework.state.ConnectionState;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.ConnectionLossException;
 import org.apache.zookeeper.KeeperException.OperationTimeoutException;
@@ -34,8 +36,6 @@ import org.apache.zookeeper.KeeperException.RuntimeInconsistencyException;
 
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-
-import static com.google.common.base.Preconditions.checkNotNull;
 
 public class ZooKeeperModelReporter {
   private final RiemannFacade riemannFacade;
@@ -87,6 +87,10 @@ public class ZooKeeperModelReporter {
     } finally {
       metrics.updateTimer(name, clock.getTick() - startTime, TimeUnit.NANOSECONDS);
     }
+  }
+
+  public void connectionStateChanged(final ConnectionState newState) {
+    metrics.connectionStateChanged(newState);
   }
 
   public static ZooKeeperModelReporter noop() {

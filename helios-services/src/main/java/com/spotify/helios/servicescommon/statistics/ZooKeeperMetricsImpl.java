@@ -17,9 +17,9 @@
 
 package com.spotify.helios.servicescommon.statistics;
 
-import com.codahale.metrics.Counter;
 import com.codahale.metrics.Meter;
 import com.codahale.metrics.MetricRegistry;
+import org.apache.curator.framework.state.ConnectionState;
 
 import java.util.concurrent.TimeUnit;
 
@@ -28,25 +28,39 @@ public class ZooKeeperMetricsImpl implements ZooKeeperMetrics {
   private static final String TYPE = "zookeeper";
 
   private final String prefix;
-  private final Counter transientErrorCounter;
   private final Meter transientErrorMeter;
+  private final Meter connectionStateChanged;
   private final MetricRegistry registry;
 
   public ZooKeeperMetricsImpl(final String group, final MetricRegistry registry) {
-    prefix = MetricRegistry.name(group, TYPE) + ".";
+    this.prefix = MetricRegistry.name(group, TYPE) + ".";
     this.registry = registry;
-    transientErrorCounter = registry.counter(prefix + "transient_error_count");
-    transientErrorMeter = registry.meter(prefix + "transient_error_meter");
+    this.transientErrorMeter = registry.meter(prefix + "transient_error_meter");
+    this.connectionStateChanged = registry.meter(prefix + "connection_state_changed");
+
+    // create all of the meter instances immediately so that we report 0 values after a restart
+    for (final ConnectionState state : ConnectionState.values()) {
+      connectionStateMeter(state);
+    }
   }
 
   @Override
   public void zookeeperTransientError() {
-    transientErrorCounter.inc();
     transientErrorMeter.mark();
   }
 
   @Override
   public void updateTimer(final String name, final long duration, final TimeUnit timeUnit) {
     registry.timer(prefix + name).update(duration, timeUnit);
+  }
+
+  @Override
+  public void connectionStateChanged(final ConnectionState newState) {
+    connectionStateChanged.mark();
+    connectionStateMeter(newState).mark();
+  }
+
+  private Meter connectionStateMeter(final ConnectionState state) {
+    return registry.meter(prefix + "connection_state_" + state.name());
   }
 }
