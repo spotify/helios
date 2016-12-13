@@ -151,6 +151,8 @@ public class DeploymentGroupTest {
     // Setup some hosts
     final String oldHost = "host1";
     final String newHost = "host2";
+    client.ensurePath(Paths.configHost(oldHost));
+    client.ensurePath(Paths.configHost(newHost));
     client.ensurePath(Paths.statusHostUp(oldHost));
     client.ensurePath(Paths.statusHostUp(newHost));
 

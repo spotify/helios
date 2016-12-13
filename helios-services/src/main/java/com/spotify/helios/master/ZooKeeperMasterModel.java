@@ -516,7 +516,10 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     // Calculate the freshly removed hosts (current - new) and add in any previously removed hosts
     // that haven't been undeployed yet.
-    return ImmutableList.copyOf(Sets.union(Sets.difference(ch, nh), prh));
+    final Set<String> rh = Sets.union(Sets.difference(ch, nh), prh);
+
+    // Finally, only include hosts that are still registered
+    return ImmutableList.copyOf(Sets.intersection(rh, ImmutableSet.copyOf(listHosts())));
   }
 
   @Override
@@ -539,11 +542,11 @@ public class ZooKeeperMasterModel implements MasterModel {
       final List<String> previouslyRemovedHosts = getHosts(
           client, Paths.statusDeploymentGroupRemovedHosts(groupName));
 
-      if (hosts.equals(curHosts)) {
+      final List<String> removedHosts = removedHosts(curHosts, hosts, previouslyRemovedHosts);
+
+      if (hosts.equals(curHosts) && removedHosts.equals(previouslyRemovedHosts)) {
         return;
       }
-
-      final List<String> removedHosts = removedHosts(curHosts, hosts, previouslyRemovedHosts);
 
       log.info("for deployment-group name={}, curHosts={}, new hosts={}, "
                + "previouslyRemovedHosts={}, derived removedHosts={}",
