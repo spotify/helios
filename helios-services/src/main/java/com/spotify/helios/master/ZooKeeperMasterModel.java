@@ -660,18 +660,22 @@ public class ZooKeeperMasterModel implements MasterModel {
 
     // give precedence to the updateHosts list so we don't end up in a state where we updated a host
     // and then removed the job from it (because of buggy logic in the calling method)
-    final List<String> actualHostsToUndeploy = new ArrayList<>(undeployHosts);
-    actualHostsToUndeploy.removeAll(updateHosts);
+    final List<String> updateHostsCopy = new ArrayList<>(updateHosts);
+    final List<String> undeployHostsCopy = new ArrayList<>(undeployHosts);
+    undeployHostsCopy.removeAll(updateHostsCopy);
 
-    // only try to deploy to hosts that are UP
-    final List<String> hostsToDeploy = updateHosts.stream()
+    // we only care about hosts that are UP
+    final List<String> upHostsToUndeploy = undeployHostsCopy.stream()
+        .filter(host -> checkHostUp(zooKeeperClient, host))
+        .collect(Collectors.toList());
+    final List<String> upHostsToDeploy = updateHostsCopy.stream()
         .filter(host -> checkHostUp(zooKeeperClient, host))
         .collect(Collectors.toList());
 
     rolloutTasks.addAll(RollingUndeployPlanner.of(deploymentGroup)
-                            .plan(actualHostsToUndeploy));
+                            .plan(upHostsToUndeploy));
     rolloutTasks.addAll(RollingUpdatePlanner.of(deploymentGroup)
-                            .plan(hostsToDeploy));
+                            .plan(upHostsToDeploy));
 
     log.info("generated rolloutTasks for deployment-group name={} "
              + "updateHosts={} undeployHosts={}: {}",
