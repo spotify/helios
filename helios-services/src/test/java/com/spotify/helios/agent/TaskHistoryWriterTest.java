@@ -17,8 +17,15 @@
 
 package com.spotify.helios.agent;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.Iterables;
+import static com.spotify.helios.Polling.await;
+import static com.spotify.helios.common.descriptors.Goal.START;
+import static org.apache.zookeeper.KeeperException.ConnectionLossException;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.AdditionalAnswers.delegatesTo;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 import com.spotify.helios.Polling;
 import com.spotify.helios.ZooKeeperTestManager;
@@ -36,6 +43,8 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClient;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.Iterables;
 import org.apache.zookeeper.KeeperException;
 import org.junit.After;
 import org.junit.Before;
@@ -50,16 +59,6 @@ import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-
-import static com.spotify.helios.Polling.await;
-import static com.spotify.helios.common.descriptors.Goal.START;
-import static org.apache.zookeeper.KeeperException.ConnectionLossException;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.AdditionalAnswers.delegatesTo;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 
 public class TaskHistoryWriterTest {
 
@@ -98,7 +97,8 @@ public class TaskHistoryWriterTest {
 
     final List<EventSender> eventSenders = Collections.emptyList();
 
-    masterModel = new ZooKeeperMasterModel(zkProvider, "test", eventSenders);
+    masterModel = new ZooKeeperMasterModel(zkProvider, "test", eventSenders,
+        TaskStatusEvent.TASK_STATUS_EVENT_TOPIC);
 
     client.ensurePath(Paths.configJobs());
     client.ensurePath(Paths.configJobRefs());

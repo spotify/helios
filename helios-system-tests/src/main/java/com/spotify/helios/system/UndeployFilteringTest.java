@@ -56,7 +56,6 @@ public class UndeployFilteringTest extends SystemTestBase {
   private static final String TEST_HOST = "testhost";
 
   private CuratorFramework curator;
-  private ZooKeeperClientProvider zkcp;
   private ZooKeeperMasterModel zkMasterModel;
   private AgentMain agent;
   private HeliosClient client;
@@ -74,12 +73,12 @@ public class UndeployFilteringTest extends SystemTestBase {
     // make zookeeper interfaces
     curator = zk().curatorWithSuperAuth();
 
-    zkcp = new ZooKeeperClientProvider(
+    final ZooKeeperClientProvider zkcp = new ZooKeeperClientProvider(
         new DefaultZooKeeperClient(curator), ZooKeeperModelReporter.noop());
 
     final List<EventSender> eventSenders = Collections.emptyList();
 
-    zkMasterModel = new ZooKeeperMasterModel(zkcp, getClass().getName(), eventSenders);
+    zkMasterModel = new ZooKeeperMasterModel(zkcp, getClass().getName(), eventSenders, "");
     startDefaultMaster();
 
     agent = startDefaultAgent(TEST_HOST);

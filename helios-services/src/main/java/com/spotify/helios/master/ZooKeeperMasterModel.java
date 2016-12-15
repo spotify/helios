@@ -89,8 +89,6 @@ import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Ordering;
 import com.google.common.collect.Sets;
-
-import java.util.stream.Collectors;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.KeeperException.BadVersionException;
 import org.apache.zookeeper.KeeperException.NoNodeException;
@@ -111,6 +109,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * The Helios Master's view into ZooKeeper.
@@ -146,14 +145,13 @@ public class ZooKeeperMasterModel implements MasterModel {
       STRING_LIST_TYPE =
       new TypeReference<List<String>>() {};
 
-  private static final String DEPLOYMENT_GROUP_EVENT_TOPIC = "HeliosDeploymentGroupEvents";
   private static final DeploymentGroupEventFactory DEPLOYMENT_GROUP_EVENT_FACTORY =
       new DeploymentGroupEventFactory();
 
   private final ZooKeeperClientProvider provider;
   private final String name;
   private final List<EventSender> eventSenders;
-
+  private final String deploymentGroupEventTopic;
   /**
    * Constructor
    * @param provider         {@link ZooKeeperClientProvider}
@@ -162,10 +160,12 @@ public class ZooKeeperMasterModel implements MasterModel {
    */
   public ZooKeeperMasterModel(final ZooKeeperClientProvider provider,
                               final String name,
-                              final List<EventSender> eventSenders) {
+                              final List<EventSender> eventSenders,
+                              final String deploymentGroupEventTopic) {
     this.provider = Preconditions.checkNotNull(provider);
     this.name = Preconditions.checkNotNull(name);
     this.eventSenders = Preconditions.checkNotNull(eventSenders);
+    this.deploymentGroupEventTopic = deploymentGroupEventTopic;
   }
 
   /**
@@ -587,7 +587,7 @@ public class ZooKeeperMasterModel implements MasterModel {
           groupName, deploymentGroup.getJobId(), ops);
 
       client.transaction(ops);
-      emitEvents(DEPLOYMENT_GROUP_EVENT_TOPIC, events);
+      emitEvents(deploymentGroupEventTopic, events);
     } catch (BadVersionException e) {
       // some other master beat us in processing this host update. not exceptional.
       // ideally we would check the path in the exception, but curator doesn't provide a path
@@ -636,7 +636,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
       client.transaction(operations);
 
-      emitEvents(DEPLOYMENT_GROUP_EVENT_TOPIC, op.events());
+      emitEvents(deploymentGroupEventTopic, op.events());
       log.info("initiated rolling-update on deployment-group: name={}, jobId={}",
           deploymentGroup.getName(), jobId);
     } catch (final NoNodeException e) {
@@ -793,7 +793,7 @@ public class ZooKeeperMasterModel implements MasterModel {
 
           try {
             client.transaction(ops);
-            emitEvents(DEPLOYMENT_GROUP_EVENT_TOPIC, op.events());
+            emitEvents(deploymentGroupEventTopic, op.events());
           } catch (BadVersionException e) {
             // some other master beat us in processing this rolling update step. not exceptional.
             // ideally we would check the path in the exception, but curator doesn't provide a path
