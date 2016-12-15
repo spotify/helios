@@ -150,7 +150,11 @@ public class JobValidator {
         errors.add("Volume path is not absolute: " + path);
         continue;
       }
-      if (isNullOrEmpty(source) && !source.startsWith("/")) {
+      if (isNullOrEmpty(source)) {
+        errors.add("Volume source is null or empty");
+        continue;
+      }
+      if (!source.startsWith("/")) {
         errors.add("Volume source is not absolute: " + source);
         continue;
       }
