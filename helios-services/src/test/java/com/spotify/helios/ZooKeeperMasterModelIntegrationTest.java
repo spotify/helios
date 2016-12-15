@@ -34,17 +34,13 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import com.spotify.helios.common.HeliosException;
-import com.spotify.helios.common.Json;
 import com.spotify.helios.common.descriptors.Deployment;
 import com.spotify.helios.common.descriptors.DeploymentGroup;
-import com.spotify.helios.common.descriptors.DeploymentGroupTasks;
 import com.spotify.helios.common.descriptors.Goal;
 import com.spotify.helios.common.descriptors.HostSelector;
 import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
-import com.spotify.helios.common.descriptors.RolloutTask;
-import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
 import com.spotify.helios.master.HostNotFoundException;
@@ -60,23 +56,18 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperClientProvider;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 
 import com.google.common.collect.ImmutableList;
-
 import org.apache.curator.RetryPolicy;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.runner.RunWith;
-import org.mockito.runners.MockitoJUnitRunner;
 
 import java.util.List;
 import java.util.Map;
 
-@RunWith(MockitoJUnitRunner.class)
 public class ZooKeeperMasterModelIntegrationTest {
 
   private static final String IMAGE = "IMAGE";
@@ -98,13 +89,12 @@ public class ZooKeeperMasterModelIntegrationTest {
       .setRolloutOptions(RolloutOptions.newBuilder().build())
       .build();
 
-  private ZooKeeperClient client;
   private ZooKeeperMasterModel model;
 
-  private EventSender eventSender;
+  private final EventSender eventSender = mock(EventSender.class);;
   private final String deploymentGroupEventTopic = "deploymentGroupEventTopic";
 
-  private ZooKeeperTestManager zk = new ZooKeeperTestingServerManager();
+  private final ZooKeeperTestManager zk = new ZooKeeperTestingServerManager();
 
   @Rule
   public ExpectedException exception = ExpectedException.none();
@@ -115,7 +105,7 @@ public class ZooKeeperMasterModelIntegrationTest {
     final CuratorFramework curator = CuratorFrameworkFactory.newClient(zk.connectString(),
                                                                        retryPolicy);
     curator.start();
-    client = new DefaultZooKeeperClient(curator);
+    final ZooKeeperClient client = new DefaultZooKeeperClient(curator);
 
     // TODO (dano): this bootstrapping is essentially duplicated from MasterService,
     // should be moved into ZooKeeperMasterModel?
@@ -129,7 +119,6 @@ public class ZooKeeperMasterModelIntegrationTest {
     final ZooKeeperClientProvider zkProvider =
         new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop());
 
-    eventSender = mock(EventSender.class);
     final List<EventSender> eventSenders = ImmutableList.of(eventSender);
 
     model = new ZooKeeperMasterModel(zkProvider, getClass().getName(), eventSenders,
@@ -337,28 +326,6 @@ public class ZooKeeperMasterModelIntegrationTest {
     model.addDeploymentGroup(DEPLOYMENT_GROUP);
     model.addJob(JOB);
     model.rollingUpdate(DEPLOYMENT_GROUP, JOB_ID, RolloutOptions.newBuilder().build());
-    verify(eventSender, times(2)).send(eq("HeliosDeploymentGroupEvents"), any(byte[].class));
-    verifyNoMoreInteractions(eventSender);
-  }
-
-  @Ignore
-  @Test
-  public void testRollingUpdateStepSendsEvent() throws Exception {
-    model.addDeploymentGroup(DEPLOYMENT_GROUP);
-    model.addJob(JOB);
-    final DeploymentGroupTasks task = DeploymentGroupTasks.newBuilder()
-        .setTaskIndex(0)
-        .setDeploymentGroup(DEPLOYMENT_GROUP)
-        .setRolloutTasks(ImmutableList.of(
-            RolloutTask.newBuilder()
-                .setTarget(HOST)
-                .setAction(RolloutTask.Action.DEPLOY_NEW_JOB)
-                .build()))
-        .build();
-    client.ensurePathAndSetData(
-        "/status/deployment-group-tasks/my_group", Json.asBytesUnchecked(task));
-    client.ensurePathAndSetData(Paths.configHost(HOST), Json.asBytesUnchecked(null));
-    model.rollingUpdateStep();  // There's a NoNode KeeperException in client.transaction(ops)
     verify(eventSender, times(2)).send(eq(deploymentGroupEventTopic), any(byte[].class));
     verifyNoMoreInteractions(eventSender);
   }
