@@ -44,6 +44,7 @@ import com.spotify.helios.common.descriptors.Job;
 import com.spotify.helios.common.descriptors.JobId;
 import com.spotify.helios.common.descriptors.RolloutOptions;
 import com.spotify.helios.common.descriptors.RolloutTask;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.DeploymentGroupDoesNotExistException;
 import com.spotify.helios.master.DeploymentGroupExistsException;
 import com.spotify.helios.master.HostNotFoundException;
@@ -101,6 +102,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   private ZooKeeperMasterModel model;
 
   private EventSender eventSender;
+  private final String deploymentGroupEventTopic = "deploymentGroupEventTopic";
 
   private ZooKeeperTestManager zk = new ZooKeeperTestingServerManager();
 
@@ -130,7 +132,8 @@ public class ZooKeeperMasterModelIntegrationTest {
     eventSender = mock(EventSender.class);
     final List<EventSender> eventSenders = ImmutableList.of(eventSender);
 
-    model = new ZooKeeperMasterModel(zkProvider, getClass().getName(), eventSenders);
+    model = new ZooKeeperMasterModel(zkProvider, getClass().getName(), eventSenders,
+        deploymentGroupEventTopic);
   }
 
   @Test
@@ -325,7 +328,7 @@ public class ZooKeeperMasterModelIntegrationTest {
   public void testUpdateDeploymentGroupHostsSendsEvent() throws Exception {
     model.addDeploymentGroup(DEPLOYMENT_GROUP);
     model.updateDeploymentGroupHosts(DEPLOYMENT_GROUP_NAME, ImmutableList.of(HOST));
-    verify(eventSender, times(2)).send(eq("HeliosDeploymentGroupEvents"), any(byte[].class));
+    verify(eventSender, times(2)).send(eq(deploymentGroupEventTopic), any(byte[].class));
     verifyNoMoreInteractions(eventSender);
   }
 
@@ -356,7 +359,7 @@ public class ZooKeeperMasterModelIntegrationTest {
         "/status/deployment-group-tasks/my_group", Json.asBytesUnchecked(task));
     client.ensurePathAndSetData(Paths.configHost(HOST), Json.asBytesUnchecked(null));
     model.rollingUpdateStep();  // There's a NoNode KeeperException in client.transaction(ops)
-    verify(eventSender, times(1)).send(eq("HeliosDeploymentGroupEvents"), any(byte[].class));
+    verify(eventSender, times(2)).send(eq(deploymentGroupEventTopic), any(byte[].class));
     verifyNoMoreInteractions(eventSender);
   }
 }

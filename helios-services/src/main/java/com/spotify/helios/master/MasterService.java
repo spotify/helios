@@ -24,6 +24,7 @@ import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.digest;
 import static com.spotify.helios.servicescommon.ZooKeeperAclProviders.heliosAclProvider;
 
 import com.spotify.helios.common.HeliosRuntimeException;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.http.VersionResponseFilter;
 import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.master.metrics.ReportingResourceMethodDispatchAdapter;
@@ -200,11 +201,14 @@ public class MasterService extends AbstractIdleService {
       }
     }
 
+    final String deploymentGroupEventTopic = TaskStatusEvent.TASK_STATUS_EVENT_TOPIC;
+
     final List<EventSender> eventSenders =
-        EventSenderFactory.build(environment, config, metricsRegistry);
+        EventSenderFactory.build(environment, config, metricsRegistry, deploymentGroupEventTopic);
 
     final ZooKeeperMasterModel model =
-        new ZooKeeperMasterModel(zkClientProvider, config.getName(), eventSenders);
+        new ZooKeeperMasterModel(zkClientProvider, config.getName(), eventSenders,
+            deploymentGroupEventTopic);
 
     final ZooKeeperHealthChecker zooKeeperHealthChecker = new ZooKeeperHealthChecker(
         zooKeeperClient, Paths.statusMasters(), riemannFacade, TimeUnit.MINUTES, 2);

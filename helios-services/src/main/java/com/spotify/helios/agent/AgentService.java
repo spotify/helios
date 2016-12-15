@@ -34,6 +34,7 @@ import com.spotify.docker.client.exceptions.DockerCertificateException;
 import com.spotify.helios.common.HeliosRuntimeException;
 import com.spotify.helios.common.SystemClock;
 import com.spotify.helios.common.descriptors.JobId;
+import com.spotify.helios.common.descriptors.TaskStatusEvent;
 import com.spotify.helios.master.metrics.HealthCheckGauge;
 import com.spotify.helios.serviceregistration.ServiceRegistrar;
 import com.spotify.helios.servicescommon.EventSender;
@@ -237,8 +238,10 @@ public class AgentService extends AbstractIdleService implements Managed {
     final ZooKeeperClientProvider zkClientProvider = new ZooKeeperClientProvider(
         zooKeeperClient, modelReporter);
 
-    final List<EventSender> eventSenders =
-        EventSenderFactory.build(environment, config, metricsRegistry);
+    final String taskStatusEventTopic = TaskStatusEvent.TASK_STATUS_EVENT_TOPIC;
+
+    final List<EventSender> eventSenders = EventSenderFactory
+        .build(environment, config, metricsRegistry, taskStatusEventTopic);
 
     final TaskHistoryWriter historyWriter;
     if (config.isJobHistoryDisabled()) {
@@ -249,8 +252,9 @@ public class AgentService extends AbstractIdleService implements Managed {
     }
 
     try {
-      this.model = new ZooKeeperAgentModel(
-          zkClientProvider, config.getName(), stateDirectory, historyWriter, eventSenders);
+      this.model =
+          new ZooKeeperAgentModel(zkClientProvider, config.getName(), stateDirectory, historyWriter,
+              eventSenders, taskStatusEventTopic);
     } catch (IOException e) {
       throw Throwables.propagate(e);
     }

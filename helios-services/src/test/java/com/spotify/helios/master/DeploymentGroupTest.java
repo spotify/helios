@@ -56,8 +56,6 @@ import com.spotify.helios.servicescommon.coordination.ZooKeeperModelReporter;
 import com.spotify.helios.servicescommon.coordination.ZooKeeperOperation;
 
 import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
 import org.apache.curator.retry.ExponentialBackoffRetry;
@@ -78,7 +76,6 @@ import org.mockito.MockitoAnnotations;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 @RunWith(Theories.class)
 public class DeploymentGroupTest {
@@ -112,11 +109,12 @@ public class DeploymentGroupTest {
     zkServer.close();
   }
 
-  private Map<String, HostStatus> mockHostStatus(final MasterModel model, final String host) {
-    final HostStatus statusUp = mock(HostStatus.class);
-    doReturn(HostStatus.Status.UP).when(statusUp).getStatus();
-    doReturn(statusUp).when(model).getHostStatus(host);
-    return ImmutableMap.of(host, statusUp);
+  private ZooKeeperMasterModel newMasterModel(final ZooKeeperClient client) {
+    return new ZooKeeperMasterModel(
+        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
+        getClass().getName(),
+        Collections.emptyList(),
+        "");
   }
 
   // A test that ensures healthy deployment groups will perform a rolling update when their hosts
@@ -124,10 +122,7 @@ public class DeploymentGroupTest {
   @Test
   public void testUpdateDeploymentGroupHosts() throws Exception {
     final ZooKeeperClient client = spy(this.client);
-    final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
-        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
-        getClass().getName(),
-        Collections.emptyList()));
+    final ZooKeeperMasterModel masterModel = spy(newMasterModel(client));
 
     // Return a job so we can add a real deployment group.
     final Job job = Job.newBuilder()
@@ -206,10 +201,7 @@ public class DeploymentGroupTest {
   @Test
   public void testUpdateFailedHostsChangedDeploymentGroupHosts() throws Exception {
     final ZooKeeperClient client = spy(this.client);
-    final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
-        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
-        getClass().getName(),
-        Collections.emptyList()));
+    final ZooKeeperMasterModel masterModel = spy(newMasterModel(client));
 
     // Return a job so we can add a real deployment group.
     final Job job = Job.newBuilder()
@@ -262,10 +254,7 @@ public class DeploymentGroupTest {
   @Test
   public void testUpdateFailedManualDeploymentGroupHosts() throws Exception {
     final ZooKeeperClient client = spy(this.client);
-    final ZooKeeperMasterModel masterModel = spy(new ZooKeeperMasterModel(
-        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
-        getClass().getName(),
-        Collections.emptyList()));
+    final ZooKeeperMasterModel masterModel = spy(newMasterModel(client));
 
     // Return a job so we can add a real deployment group.
     final Job job = Job.newBuilder()
@@ -336,10 +325,7 @@ public class DeploymentGroupTest {
     when(client.exists(Paths.statusDeploymentGroupTasks(GROUP_NAME)))
         .thenReturn(tasksExist ? mock(Stat.class) : null);
 
-    final ZooKeeperMasterModel masterModel = new ZooKeeperMasterModel(
-        new ZooKeeperClientProvider(client, ZooKeeperModelReporter.noop()),
-        getClass().getName(),
-        Collections.emptyList());
+    final ZooKeeperMasterModel masterModel = newMasterModel(client);
 
     if (dgExists) {
       final DeploymentGroup dg = DeploymentGroup.newBuilder()

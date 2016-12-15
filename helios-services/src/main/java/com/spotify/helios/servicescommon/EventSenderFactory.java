@@ -42,7 +42,7 @@ public final class EventSenderFactory {
   public static List<EventSender> build(
       final Environment environment,
       final CommonConfiguration<?> config,
-      final MetricRegistry metricRegistry) {
+      final MetricRegistry metricRegistry, final String pubsubHealthcheckTopic) {
 
     final List<EventSender> senders = new ArrayList<>();
 
@@ -66,8 +66,13 @@ public final class EventSenderFactory {
               .build()
       );
 
+      // choose an arbitrary prefix to use in the healthcheck. we assume if we can connect to
+      // one we can connect to all
+      final String topicToHealthcheck =
+          config.getPubsubPrefixes().iterator().next() + pubsubHealthcheckTopic;
+
       final GooglePubSubSender.DefaultHealthChecker healthchecker =
-          new GooglePubSubSender.DefaultHealthChecker(pubsub, "health.canary", executor,
+          new GooglePubSubSender.DefaultHealthChecker(pubsub, topicToHealthcheck, executor,
               Duration.ofMinutes(5));
 
       metricRegistry.register("pubsub-health", (Gauge<Boolean>) healthchecker::isHealthy);
